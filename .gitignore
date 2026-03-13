@@ -1,0 +1,38 @@
+# ===== ANGULAR =====
+node_modules/
+dist/
+.angular/
+.env
+*.env.local
+
+# ===== .NET =====
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.log
+appsettings.Development.json
+
+# ===== DATABASE =====
+*.sql.bak
+*.dump
+*.sqlite
+*.db
+
+# ===== .NET MCP =====
+*.nupkg
+*.snupkg
+.nuget/
+TestResults/
+coverage/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.swp
