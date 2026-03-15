@@ -1,0 +1,31 @@
+<div class="top-bar">
+  <button style="color: orange" *ngIf="!isLoggedIn" (click)="toggleLoginForm()">Login</button>
+  <button *ngIf="isLoggedIn" (click)="logout()">Logout</button>
+</div>
+
+<app-login *ngIf="loginFormVisible" (loginSuccess)="loginFormVisible = false"></app-login>
+
+<div *ngIf="isAdmin" class="add-post">
+  <input [(ngModel)]="newTitle" placeholder="Title" />
+  <textarea [(ngModel)]="newContent" placeholder="Content"></textarea>
+  <button style="color: orange" (click)="addPost()">Add Post</button>
+</div>
+
+<div *ngFor="let post of posts" class="post">
+  <div *ngIf="editPostId !== post.id">
+    <h3>{{ post.title }}</h3>
+    <p>{{ post.content }}</p>
+
+    <div *ngIf="isAdmin">
+      <button style="color: orange" (click)="startEdit(post)">Edit</button>
+      <button style="color: orange" (click)="deletePost(post.id)">Delete</button>
+    </div>
+  </div>
+
+  <div *ngIf="editPostId === post.id">
+    <input [(ngModel)]="editTitle" />
+    <textarea [(ngModel)]="editContent"></textarea>
+    <button (click)="saveEdit(post)">Save</button>
+    <button (click)="cancelEdit()">Cancel</button>
+  </div>
+</div>
