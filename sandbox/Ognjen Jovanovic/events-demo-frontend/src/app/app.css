@@ -1,0 +1,21 @@
+.actions,
+.card-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.edit-btn {
+  background: #1565c0;
+  color: white;
+}
+
+.cancel-btn {
+  background: #757575;
+  color: white;
+}
+
+.delete-btn {
+  background: #c62828;
+  color: white;
+}
