@@ -36,3 +36,6 @@ desktop.ini
 .vscode/
 .idea/
 *.swp
+
+# === Fitlogger (Demo app) ===
+sandbox/Stefan Mirkovic/fitlogger/backend/FitLogger/appsettings.json
