@@ -1,3 +1,80 @@
+.container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 16px;
+  font-family: Arial, sans-serif;
+}
+
+h1 {
+  margin-bottom: 24px;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.form-card,
+.event-card {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 16px;
+  background: #f9f9f9;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 10px;
+  font-size: 14px;
+}
+
+.form-group textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+button {
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+}
+
+form button {
+  background: #222;
+  color: white;
+}
+
+.events-list {
+  display: grid;
+  gap: 16px;
+}
+
+.delete-btn {
+  margin-top: 10px;
+  background: #c62828;
+  color: white;
+}
+
 .actions,
 .card-actions {
   display: flex;
