@@ -1,0 +1,61 @@
+<div class="login-wrapper">
+  <div class="login-box">
+    <h2>Biblioteka</h2>
+    <p class="podnaslov">Napravite novi nalog</p>
+
+    @if (greska()) {
+      <div class="greska">{{ greska() }}</div>
+    }
+
+    <div class="forma">
+      <div class="polje">
+        <label>Ime i prezime</label>
+        <input
+          type="text"
+          [(ngModel)]="ime"
+          placeholder="Vaše ime"
+          (keyup.enter)="registruj()"
+        />
+      </div>
+
+      <div class="polje">
+        <label>Email</label>
+        <input
+          type="email"
+          [(ngModel)]="email"
+          placeholder="vas@email.com"
+          (keyup.enter)="registruj()"
+        />
+      </div>
+
+      <div class="polje">
+        <label>Lozinka</label>
+        <input
+          type="password"
+          [(ngModel)]="lozinka"
+          placeholder="Minimum 6 karaktera"
+          (keyup.enter)="registruj()"
+        />
+      </div>
+
+      <div class="polje">
+        <label>Potvrda lozinke</label>
+        <input
+          type="password"
+          [(ngModel)]="potvrda"
+          placeholder="Ponovite lozinku"
+          (keyup.enter)="registruj()"
+        />
+      </div>
+
+      <button (click)="registruj()" [disabled]="ucitavanje()">
+        {{ ucitavanje() ? 'Registracija...' : 'Registruj se' }}
+      </button>
+
+      <!-- link na login stranicu -->
+      <p style="text-align: center; font-size: 13px; color: #888; margin-top: 8px;">
+        Već imate nalog? <a routerLink="/login">Prijavite se</a>
+      </p>
+    </div>
+  </div>
+</div>

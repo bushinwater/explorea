@@ -1,0 +1,77 @@
+<div class="layout">
+  <!-- navigacija -->
+  <nav class="navbar">
+    <span class="nav-logo">📚 Biblioteka</span>
+    <div class="nav-links">
+      <a routerLink="/user/books" class="aktivan">Knjige</a>
+      <a routerLink="/user/reservations">Moje rezervacije</a>
+    </div>
+    <div class="nav-korisnik">
+      <span>{{ trenutniKorisnik?.name }}</span>
+      <button (click)="odjavi()" class="btn-odjava">Odjavi se</button>
+    </div>
+  </nav>
+
+  <div class="sadrzaj">
+    <h1>Katalog knjiga</h1>
+
+    <!-- pretraga -->
+    <div class="pretraga">
+      <input
+        type="text"
+        [(ngModel)]="pojamPretrage"
+        placeholder="Pretraži po naslovu, autoru ili žanru..."
+        (keyup.enter)="pretrazi()"
+      />
+      <button (click)="pretrazi()">Pretraži</button>
+      @if (pojamPretrage) {
+        <button (click)="pojamPretrage = ''; ucitajKnjige()">Poništi</button>
+      }
+    </div>
+
+    <!-- poruka o uspešnoj rezervaciji ili grešci -->
+    @if (poruka()) {
+      <div class="poruka-uspeh">{{ poruka() }}</div>
+    }
+    @if (greska()) {
+      <div class="greska">{{ greska() }}</div>
+    }
+
+    <!-- učitavanje -->
+    @if (ucitavanje()) {
+      <div class="ucitavanje">Učitavanje...</div>
+    }
+
+    <!-- lista knjiga -->
+    @if (!ucitavanje()) {
+      <div class="knjige-grid">
+        @for (knjiga of knjige(); track knjiga.id) {
+          <div class="knjiga-kartica">
+            <h3>{{ knjiga.title }}</h3>
+            <p class="autor">{{ knjiga.author }}</p>
+            <p class="zanr">{{ knjiga.genre }}</p>
+            <div class="primerci">
+              <span [class.slobodno]="knjiga.availableCopies > 0"
+                    [class.zauzeto]="knjiga.availableCopies === 0">
+                {{ knjiga.availableCopies }} / {{ knjiga.totalCopies }} slobodno
+              </span>
+            </div>
+
+            <!-- dugme za rezervaciju -->
+            @if (knjiga.hasActiveReservation) {
+              <button class="btn-rezervisano" disabled>Već rezervisano</button>
+            } @else if (knjiga.availableCopies > 0) {
+              <button class="btn-rezervisi" (click)="rezervisi(knjiga.id)">
+                Rezerviši
+              </button>
+            } @else {
+              <button class="btn-nedostupno" disabled>Nedostupno</button>
+            }
+          </div>
+        } @empty {
+          <p class="prazno">Nema knjiga koje odgovaraju pretrazi.</p>
+        }
+      </div>
+    }
+  </div>
+</div>
