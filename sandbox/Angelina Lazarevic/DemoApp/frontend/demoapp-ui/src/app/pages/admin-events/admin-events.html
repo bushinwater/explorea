@@ -1,0 +1,60 @@
+<div class="page-header">
+  <h2>Upravljanje događajima</h2>
+</div>
+
+<div class="form-card">
+  <h3>Dodaj novi događaj</h3>
+
+  <div class="form-group">
+    <label>Naziv</label>
+    <input type="text" [(ngModel)]="title" name="title" />
+  </div>
+
+  <div class="form-group">
+    <label>Opis</label>
+    <textarea [(ngModel)]="description" name="description"></textarea>
+  </div>
+
+  <div class="form-group">
+    <label>Lokacija</label>
+    <input type="text" [(ngModel)]="location" name="location" />
+  </div>
+
+  <div class="form-group">
+    <label>Datum</label>
+    <input type="datetime-local" [(ngModel)]="date" name="date" />
+  </div>
+
+  <div class="form-group">
+    <label>Kapacitet</label>
+    <input type="number" [(ngModel)]="capacity" name="capacity" />
+  </div>
+
+  @if (successMessage) {
+    <div class="alert success">{{ successMessage }}</div>
+  }
+
+  @if (errorMessage) {
+    <div class="alert error">{{ errorMessage }}</div>
+  }
+
+  <button (click)="createEvent()">Dodaj događaj</button>
+</div>
+
+<div class="list-card">
+  <h3>Postojeći događaji</h3>
+
+  <div class="cards-grid">
+    @for (event of events; track event.id) {
+      <div class="event-card">
+        <h4>{{ event.title }}</h4>
+        <p>{{ event.description }}</p>
+        <p><strong>Lokacija:</strong> {{ event.location }}</p>
+        <p><strong>Datum:</strong> {{ event.date | date:'dd.MM.yyyy HH:mm' }}</p>
+        <p><strong>Kapacitet:</strong> {{ event.capacity }}</p>
+
+        <button class="delete-btn" (click)="deleteEvent(event.id)">Obriši</button>
+      </div>
+    }
+  </div>
+</div>

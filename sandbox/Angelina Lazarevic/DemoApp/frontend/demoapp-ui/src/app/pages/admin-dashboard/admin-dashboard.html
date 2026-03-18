@@ -1,0 +1,35 @@
+<div class="page-header">
+  <h2>Admin dashboard</h2>
+  <p>Pregled svih prijava na događaje.</p>
+</div>
+
+@if (errorMessage) {
+  <div class="alert error">{{ errorMessage }}</div>
+}
+
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Korisnik</th>
+        <th>Email</th>
+        <th>Događaj</th>
+        <th>Lokacija</th>
+        <th>Datum događaja</th>
+        <th>Datum prijave</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (item of registrations; track item.id) {
+        <tr>
+          <td>{{ item.user.fullName }}</td>
+          <td>{{ item.user.email }}</td>
+          <td>{{ item.event.title }}</td>
+          <td>{{ item.event.location }}</td>
+          <td>{{ item.event.date | date:'dd.MM.yyyy HH:mm' }}</td>
+          <td>{{ item.registeredAt | date:'dd.MM.yyyy HH:mm' }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,31 @@
+<nav class="navbar">
+  <div class="nav-brand">
+    <a routerLink="/events">DemoApp</a>
+  </div>
+
+  <div class="nav-links">
+    <a routerLink="/events">Događaji</a>
+
+    @if (auth.isLoggedIn()) {
+      <a routerLink="/my-registrations">Moje prijave</a>
+    }
+
+    @if (auth.isAdmin()) {
+      <a routerLink="/admin">Admin</a>
+      <a routerLink="/admin/events">Upravljanje događajima</a>
+    }
+
+    @if (!auth.isLoggedIn()) {
+      <a routerLink="/login">Prijava</a>
+      <a routerLink="/register">Registracija</a>
+    }
+
+    @if (auth.isLoggedIn()) {
+      <button class="logout-btn" (click)="logout()">Odjava</button>
+    }
+  </div>
+</nav>
+
+<main class="page-container">
+  <router-outlet></router-outlet>
+</main>
