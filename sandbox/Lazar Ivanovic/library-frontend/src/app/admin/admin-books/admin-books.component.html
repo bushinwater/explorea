@@ -1,0 +1,116 @@
+<div class="layout">
+  <nav class="navbar">
+    <span class="nav-logo">📚 Biblioteka — Admin</span>
+    <div class="nav-links">
+      <a routerLink="/admin/books" class="aktivan">Knjige</a>
+      <a routerLink="/admin/reservations">Rezervacije</a>
+    </div>
+    <div class="nav-korisnik">
+      <span>{{ trenutniKorisnik?.name }}</span>
+      <button (click)="odjavi()" class="btn-odjava">Odjavi se</button>
+    </div>
+  </nav>
+
+  <div class="sadrzaj">
+    <div class="zaglavlje-sa-dugmetom">
+      <h1>Upravljanje knjigama</h1>
+      <button class="btn-dodaj" (click)="otvoriFormuZaDodavanje()">
+        + Dodaj knjigu
+      </button>
+    </div>
+
+    @if (poruka()) {
+      <div class="poruka-uspeh">{{ poruka() }}</div>
+    }
+    @if (greska() && !prikaziFormu()) {
+      <div class="greska">{{ greska() }}</div>
+    }
+
+    <!-- forma za dodavanje/editovanje knjige -->
+    @if (prikaziFormu()) {
+      <div class="forma-kartica">
+        <h2>{{ knjigaZaEdit() ? 'Izmeni knjigu' : 'Dodaj novu knjigu' }}</h2>
+
+        @if (greska()) {
+          <div class="greska">{{ greska() }}</div>
+        }
+
+        <div class="forma-grid">
+          <div class="polje">
+            <label>Naziv</label>
+            <input type="text" [(ngModel)]="forma.title" placeholder="Naziv knjige" />
+          </div>
+          <div class="polje">
+            <label>Autor</label>
+            <input type="text" [(ngModel)]="forma.author" placeholder="Ime autora" />
+          </div>
+          <div class="polje">
+            <label>ISBN</label>
+            <input type="text" [(ngModel)]="forma.isbn" placeholder="978-..." />
+          </div>
+          <div class="polje">
+            <label>Žanr</label>
+            <input type="text" [(ngModel)]="forma.genre" placeholder="Fantastika, Drama..." />
+          </div>
+          <div class="polje">
+            <label>Broj primeraka</label>
+            <input type="number" [(ngModel)]="forma.totalCopies" min="1" />
+          </div>
+        </div>
+
+        <div class="forma-dugmad">
+          <button class="btn-sacuvaj" (click)="sacuvaj()">Sačuvaj</button>
+          <button class="btn-otkazi" (click)="zatvoriFormu()">Otkaži</button>
+        </div>
+      </div>
+    }
+
+    <!-- tabela knjiga -->
+    @if (ucitavanje()) {
+      <div class="ucitavanje">Učitavanje...</div>
+    } @else {
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Naziv</th>
+            <th>Autor</th>
+            <th>ISBN</th>
+            <th>Žanr</th>
+            <th>Primerci</th>
+            <th>Slobodno</th>
+            <th>Akcije</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (knjiga of knjige(); track knjiga.id) {
+            <tr>
+              <td>{{ knjiga.title }}</td>
+              <td>{{ knjiga.author }}</td>
+              <td>{{ knjiga.isbn }}</td>
+              <td>{{ knjiga.genre }}</td>
+              <td>{{ knjiga.totalCopies }}</td>
+              <td>
+                <span [class.slobodno]="knjiga.availableCopies > 0"
+                      [class.zauzeto]="knjiga.availableCopies === 0">
+                  {{ knjiga.availableCopies }}
+                </span>
+              </td>
+              <td class="akcije">
+                <button class="btn-edit" (click)="otvoriFormuZaEdit(knjiga)">
+                  Izmeni
+                </button>
+                <button class="btn-obrisi" (click)="obrisi(knjiga.id)">
+                  Obriši
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="prazno">Nema knjiga u katalogu.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>

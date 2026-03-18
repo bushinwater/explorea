@@ -1,0 +1,78 @@
+<div class="layout">
+  <nav class="navbar">
+    <span class="nav-logo">📚 Biblioteka</span>
+    <div class="nav-links">
+      <a routerLink="/user/books">Knjige</a>
+      <a routerLink="/user/reservations" class="aktivan">Moje rezervacije</a>
+    </div>
+    <div class="nav-korisnik">
+      <span>{{ trenutniKorisnik?.name }}</span>
+      <button (click)="odjavi()" class="btn-odjava">Odjavi se</button>
+    </div>
+  </nav>
+
+  <div class="sadrzaj">
+    <h1>Moje rezervacije</h1>
+
+    @if (poruka()) {
+      <div class="poruka-uspeh">{{ poruka() }}</div>
+    }
+    @if (greska()) {
+      <div class="greska">{{ greska() }}</div>
+    }
+    @if (ucitavanje()) {
+      <div class="ucitavanje">Učitavanje...</div>
+    }
+
+    @if (!ucitavanje()) {
+      <div class="tabela-wrapper">
+        @if (rezervacije().length === 0) {
+          <p class="prazno">Nemate nijednu rezervaciju.</p>
+        } @else {
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th>Knjiga</th>
+                <th>Autor</th>
+                <th>Status</th>
+                <th>Rezervisano</th>
+                <th>Vraćeno</th>
+                <th>Akcija</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (rez of rezervacije(); track rez.id) {
+                <tr>
+                  <td>{{ rez.bookTitle }}</td>
+                  <td>{{ rez.bookAuthor }}</td>
+                  <td>
+                    <span class="status-badge status-{{ rez.status }}">
+                      {{ statusTekst(rez.status) }}
+                    </span>
+                  </td>
+                  <td>{{ formatirajDatum(rez.reservedAt) }}</td>
+                                    <td>
+                    @if (rez.status === 'returned' && rez.returnedAt) {
+                        {{ formatirajDatum(rez.returnedAt) }}
+                    } @else {
+                        —
+                    }
+                    </td>
+
+                  <td>
+                    <!-- otkazivanje je moguće samo za pending rezervacije -->
+                    @if (rez.status === 'pending') {
+                      <button class="btn-otkazi" (click)="otkazi(rez.id)">
+                        Otkaži
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    }
+  </div>
+</div>
