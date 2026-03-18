@@ -8,7 +8,7 @@
 
 Pre instalacije Angular-a 20 potrebno je imati:
 
-- instaliran Node.js (`^20.19.0`, `^22.12.0`, `^24.0.0`), TypeScri (`>=5.8.0 <6.0.0`), RxJS(`^6.5.3` ili `^7.4.0`).
+- instaliran Node.js (`^20.19.0`, `^22.12.0`, `^24.0.0`), TypeScript (`>=5.8.0 <6.0.0`), RxJS(`^6.5.3` ili `^7.4.0`).
 - instaliran npm (dolazi uz Node.js)
 - preporučeno: Visual Studio Code
 - preporučeno: Git
