@@ -1,0 +1,47 @@
+<div class="page-header">
+    <h1>Katalog vežbi</h1>
+</div>
+
+<div class="two-col">
+    <div class="form-card">
+        <h3>Dodaj vežbu</h3>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+            <div class="field">
+                <label>Naziv</label>
+                <input type="text" formControlName="name" placeholder="Bench Press" />
+            </div>
+            <div class="field">
+                <label>Mišićna grupa</label>
+                <select formControlName="muscleGroup">
+                    <option value="">— Izaberi —</option>
+                    <option>Chest</option>
+                    <option>Back</option>
+                    <option>Legs</option>
+                    <option>Shoulders</option>
+                    <option>Arms</option>
+                    <option>Core</option>
+                    <option>Cardio</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Opis</label>
+                <textarea formControlName="description" rows="2" placeholder="Kratak opis vežbe..."></textarea>
+            </div>
+            <div class="form-success" *ngIf="success">Vežba dodata!</div>
+            <div class="form-error" *ngIf="error">{{ error }}</div>
+            <button type="submit" class="btn-primary" [disabled]="loading()">Dodaj</button>
+        </form>
+    </div>
+
+    <div>
+        <div *ngIf="fetchLoading()" class="loading">Učitavanje...</div>
+        <div class="exercise-admin-row" *ngFor="let e of exercises()">
+            <div>
+                <strong>{{ e.name }}</strong>
+                <span class="muscle-badge">{{ e.muscleGroup }}</span>
+                <p class="text-muted">{{ e.description }}</p>
+            </div>
+            <button class="btn-danger-sm" (click)="delete(e)">Obriši</button>
+        </div>
+    </div>
+</div>

@@ -8,39 +8,7 @@ import { AuthService } from '../../shared/services/auth.service';
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
-  template: `
-    <div class="auth-container">
-      <div class="auth-card">
-        <div class="auth-logo">
-          <span class="logo-icon">💪</span>
-          <h1>FitLogger</h1>
-        </div>
-        <h2>Registracija</h2>
-
-        <form [formGroup]="form" (ngSubmit)="submit()">
-          <div class="field">
-            <label>Ime</label>
-            <input type="text" formControlName="name" placeholder="Ime i prezime" />
-          </div>
-          <div class="field">
-            <label>Email</label>
-            <input type="email" formControlName="email" placeholder="vas@email.com" />
-          </div>
-          <div class="field">
-            <label>Lozinka</label>
-            <input type="password" formControlName="password" placeholder="Min. 6 karaktera" />
-          </div>
-          <div class="form-error" *ngIf="error">{{ error }}</div>
-          <div class="form-success" *ngIf="success">{{ success }}</div>
-          <button type="submit" class="btn-primary" [disabled]="loading">
-            {{ loading ? 'Učitavanje...' : 'Registruj se' }}
-          </button>
-        </form>
-
-        <p class="auth-link">Imaš nalog? <a routerLink="/login">Prijavi se</a></p>
-      </div>
-    </div>
-  `,
+  templateUrl: './register.component.html',
 })
 export class RegisterComponent {
   form = this.fb.group({
