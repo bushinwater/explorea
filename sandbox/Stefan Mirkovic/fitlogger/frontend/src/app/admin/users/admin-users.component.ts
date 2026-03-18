@@ -7,38 +7,7 @@ import { UserAdmin } from '../../shared/models/models';
   selector: 'app-admin-users',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="page-header">
-      <h1>Korisnici</h1>
-    </div>
-
-    <div *ngIf="loading()" class="loading">Učitavanje...</div>
-
-    <table class="data-table" *ngIf="!loading()">
-      <thead>
-        <tr>
-          <th>Ime</th>
-          <th>Email</th>
-          <th>Uloga</th>
-          <th>Treninga</th>
-          <th>Registrovan</th>
-          <th>Akcije</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let u of users()">
-          <td>{{ u.name }}</td>
-          <td>{{ u.email }}</td>
-          <td><span class="badge" [class.badge-admin]="u.role === 'admin'">{{ u.role }}</span></td>
-          <td>{{ u.workoutCount }}</td>
-          <td>{{ u.createdAt | date:'dd.MM.yyyy' }}</td>
-          <td>
-            <button class="btn-danger-sm" (click)="delete(u)" *ngIf="u.role !== 'admin'">Obriši</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  `,
+  templateUrl: './admin-users.component.html',
 })
 export class AdminUsersComponent implements OnInit {
   users = signal<UserAdmin[]>([]);
