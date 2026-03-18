@@ -1,0 +1,19 @@
+<div class="page-header">
+  <h2>Moje prijave</h2>
+</div>
+
+@if (errorMessage) {
+  <div class="alert error">{{ errorMessage }}</div>
+}
+
+<div class="cards-grid">
+  @for (registration of registrations; track registration.id) {
+    <div class="event-card">
+      <h3>{{ registration.event.title }}</h3>
+      <p>{{ registration.event.description }}</p>
+      <p><strong>Lokacija:</strong> {{ registration.event.location }}</p>
+      <p><strong>Datum događaja:</strong> {{ registration.event.date | date:'dd.MM.yyyy HH:mm' }}</p>
+      <p><strong>Prijavljen:</strong> {{ registration.registeredAt | date:'dd.MM.yyyy HH:mm' }}</p>
+    </div>
+  }
+</div>

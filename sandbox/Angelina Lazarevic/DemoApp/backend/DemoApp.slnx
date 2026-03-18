@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="DemoApp.Api/DemoApp.Api.csproj" />
+  <Project Path="DemoApp.McpServer/DemoApp.McpServer.csproj" />
+</Solution>

@@ -1,0 +1,30 @@
+<div class="page-header">
+  <h2>Događaji</h2>
+  <p>Pregled dostupnih događaja iz sistema.</p>
+</div>
+
+@if (successMessage) {
+  <div class="alert success">{{ successMessage }}</div>
+}
+
+@if (errorMessage) {
+  <div class="alert error">{{ errorMessage }}</div>
+}
+
+<div class="cards-grid">
+  @for (event of events; track event.id) {
+    <div class="event-card">
+      <h3>{{ event.title }}</h3>
+      <p>{{ event.description }}</p>
+      <p><strong>Lokacija:</strong> {{ event.location }}</p>
+      <p><strong>Datum:</strong> {{ event.date | date:'dd.MM.yyyy HH:mm' }}</p>
+      <p><strong>Kapacitet:</strong> {{ event.capacity }}</p>
+
+      @if (authService.isLoggedIn()) {
+        <button (click)="registerForEvent(event.id)">Prijavi se</button>
+      } @else {
+        <p class="login-note">Prijavi se da bi se registrovao na događaj.</p>
+      }
+    </div>
+  }
+</div>
