@@ -1,0 +1,139 @@
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 230px;
+    min-width: 230px;
+    background-color: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 22px 20px 16px;
+    border-bottom: 1px solid #2a2a45;
+}
+
+.sidebar-logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.02em;
+}
+
+.nav-group {
+    padding: 16px 12px 0;
+    flex: 1;
+}
+
+.nav-group-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #5a5a80;
+    padding: 0 8px;
+    margin-bottom: 6px;
+}
+
+.nav-link {
+    display: block;
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #a0a0c0;
+    text-decoration: none;
+    margin-bottom: 2px;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.nav-link:hover {
+    background-color: #252545;
+    color: #fff;
+    text-decoration: none;
+}
+
+.nav-link.active {
+    background-color: #3a7bd5;
+    color: #fff;
+}
+
+.sidebar-footer {
+    padding: 16px 12px;
+    border-top: 1px solid #2a2a45;
+    margin-top: auto;
+}
+
+.user-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.user-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background-color: #3a7bd5;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.user-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e0e0f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-role {
+    font-size: 11px;
+    color: #5a5a80;
+}
+
+.btn-logout {
+    width: 100%;
+    background: transparent;
+    color: #a0a0c0;
+    border: 1px solid #2a2a45;
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.btn-logout:hover {
+    background-color: #d9534f;
+    color: #fff;
+    border-color: #d9534f;
+}
+
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #f0f2f5;
+}
+
+.content-inner {
+    padding: 32px;
+    max-width: 900px;
+}

@@ -4,6 +4,7 @@ dist/
 .angular/
 .env
 *.env.local
+package-lock.json
 
 # ===== .NET =====
 bin/

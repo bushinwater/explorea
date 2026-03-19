@@ -1,0 +1,16 @@
+.section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 16px;
+}
+
+.task-title {
+    font-weight: 500;
+}
+
+.task-desc {
+    color: #888;
+    font-size: 13px;
+    max-width: 300px;
+}

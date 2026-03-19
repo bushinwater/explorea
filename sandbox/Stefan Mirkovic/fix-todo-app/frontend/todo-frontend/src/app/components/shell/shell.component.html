@@ -1,0 +1,51 @@
+<div class="layout">
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo-text">TodoApp</span>
+        </div>
+
+        @if (!auth.isAdmin()) {
+        <div class="nav-group">
+            <span class="nav-group-label">Meni</span>
+            <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
+                Moji zadaci
+            </a>
+        </div>
+        }
+
+        @if (auth.isAdmin()) {
+        <div class="nav-group">
+            <span class="nav-group-label">Admin</span>
+            <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+                class="nav-link">
+                Pregled
+            </a>
+            <a routerLink="/admin/users" routerLinkActive="active" class="nav-link">
+                Korisnici
+            </a>
+            <a routerLink="/admin/tasks" routerLinkActive="active" class="nav-link">
+                Predefinisani zadaci
+            </a>
+        </div>
+        }
+
+        <div class="sidebar-footer">
+            <div class="user-block">
+                <div class="user-avatar" aria-hidden="true">
+                    {{ auth.fullName()?.charAt(0)?.toUpperCase() }}
+                </div>
+                <div class="user-info">
+                    <span class="user-name">{{ auth.fullName() }}</span>
+                    <span class="user-role">{{ auth.isAdmin() ? 'Administrator' : 'Korisnik' }}</span>
+                </div>
+            </div>
+            <button class="btn-logout" (click)="auth.logout()">Odjava</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="content-inner">
+            <router-outlet />
+        </div>
+    </main>
+</div>

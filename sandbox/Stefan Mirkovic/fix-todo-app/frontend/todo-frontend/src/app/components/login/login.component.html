@@ -1,0 +1,40 @@
+<div class="auth-wrapper">
+    <div class="auth-box">
+        <div class="auth-title">
+            <h1>TodoApp</h1>
+            <p>Prijava na nalog</p>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="submit()">
+            <div class="field">
+                <label for="email">Email adresa</label>
+                <input id="email" type="email" formControlName="email" placeholder="vas@email.com"
+                    autocomplete="email" />
+                @if (form.get('email')?.touched && form.get('email')?.invalid) {
+                <span class="field-error">Unesite ispravnu email adresu.</span>
+                }
+            </div>
+
+            <div class="field">
+                <label for="password">Lozinka</label>
+                <input id="password" type="password" formControlName="password" placeholder="Unesite lozinku"
+                    autocomplete="current-password" />
+                @if (form.get('password')?.touched && form.get('password')?.invalid) {
+                <span class="field-error">Lozinka je obavezna.</span>
+                }
+            </div>
+
+            @if (error()) {
+            <div class="form-error" role="alert">{{ error() }}</div>
+            }
+
+            <button type="submit" class="btn-primary btn-full" [disabled]="loading()">
+                {{ loading() ? 'Prijavljivanje...' : 'Prijavi se' }}
+            </button>
+        </form>
+
+        <p class="auth-footer">
+            Nemas nalog? <a routerLink="/register">Registruj se</a>
+        </p>
+    </div>
+</div>
