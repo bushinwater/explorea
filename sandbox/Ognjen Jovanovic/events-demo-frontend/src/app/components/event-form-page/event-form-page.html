@@ -1,0 +1,53 @@
+<div class="container">
+  <h1>{{ isEditMode ? 'Izmeni event' : 'Dodaj novi event' }}</h1>
+
+  @if (loading) {
+  <p>Ucitavanje...</p>
+  }
+
+  @if (error) {
+  <p>{{ error }}</p>
+  }
+
+  @if (!loading) {
+  <div class="form-card">
+    <form (ngSubmit)="submitForm()">
+      <div class="form-group">
+        <label for="title">Naslov</label>
+        <input id="title" type="text" name="title" [(ngModel)]="formData.title" placeholder="Unesi naslov" />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Opis</label>
+        <input id="description" type="text" name="description" [(ngModel)]="formData.description"
+          placeholder="Unesi opis" />
+      </div>
+
+      <div class="form-group">
+        <label for="eventDate">Datum i vreme</label>
+        <input id="eventDate" type="datetime-local" name="eventDate" [(ngModel)]="formData.eventDate" />
+      </div>
+
+      <div class="form-group">
+        <label for="location">Lokacija</label>
+        <input id="location" type="text" name="location" [(ngModel)]="formData.location" placeholder="Unesi lokaciju" />
+      </div>
+
+      <div class="checkbox-group">
+        <input id="isCompleted" type="checkbox" name="isCompleted" [(ngModel)]="formData.isCompleted" />
+        <label for="isCompleted">Zavrseno</label>
+      </div>
+
+      <div class="actions">
+        <button type="submit">
+          {{ isEditMode ? 'Sacuvaj izmene' : 'Dodaj event' }}
+        </button>
+
+        <button type="button" class="cancel-btn" (click)="cancel()">
+          Odustani
+        </button>
+      </div>
+    </form>
+  </div>
+  }
+</div>

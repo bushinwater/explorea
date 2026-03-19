@@ -1,74 +1,14 @@
-<div class="container">
-  <h1>Events Demo</h1>
+<div class="app-shell">
+  <nav class="navbar">
+    <h1 class="logo">Events Demo</h1>
 
-  <div class="form-card">
-    <h2>{{ isEditMode ? 'Izmeni event' : 'Dodaj novi event' }}</h2>
-
-    <form (ngSubmit)="submitForm()">
-      <div class="form-group">
-        <label for="title">Naslov</label>
-        <input id="title" type="text" name="title" [(ngModel)]="formData.title" placeholder="Unesi naslov" />
-      </div>
-
-      <div class="form-group">
-        <label for="description">Opis</label>
-        <input id="description" type="text" name="description" [(ngModel)]="formData.description"
-          placeholder="Unesi opis" />
-      </div>
-
-      <div class="form-group">
-        <label for="eventDate">Datum i vreme</label>
-        <input id="eventDate" type="datetime-local" name="eventDate" [(ngModel)]="formData.eventDate" />
-      </div>
-
-      <div class="form-group">
-        <label for="location">Lokacija</label>
-        <input id="location" type="text" name="location" [(ngModel)]="formData.location" placeholder="Unesi lokaciju" />
-      </div>
-
-      <div class="checkbox-group">
-        <input id="isCompleted" type="checkbox" name="isCompleted" [(ngModel)]="formData.isCompleted" />
-        <label for="isCompleted">Zavrseno</label>
-      </div>
-
-      <div class="actions">
-        <button type="submit">
-          {{ isEditMode ? 'Sacuvaj izmene' : 'Dodaj event' }}
-        </button>
-
-        @if (isEditMode) {
-        <button type="button" class="cancel-btn" (click)="resetForm()">
-          Odustani
-        </button>
-        }
-      </div>
-    </form>
-  </div>
-
-  @if(loading){
-  <p>Ucitavanje dogadjaja...</p>
-  }
-
-  @if(error){
-  <p>{{ error }}</p>
-  }
-
-  @if(!loading && !error){
-  <div class="events-list">
-    @for(event of events; track event.id){
-    <div class="event-card">
-      <h3>{{ event.title }}</h3>
-      <p><strong>Opis:</strong> {{ event.description || 'Nema opisa' }}</p>
-      <p><strong>Datum:</strong> {{ event.eventDate | date:'dd.MM.yyyy HH:mm' }}</p>
-      <p><strong>Lokacija:</strong> {{ event.location || 'Nije uneta' }}</p>
-      <p><strong>Zavrseno:</strong> {{ event.isCompleted ? 'Da' : 'Ne' }}</p>
-
-      <div class="card-actions">
-        <button class="edit-btn" (click)="startEdit(event)">Izmeni</button>
-        <button class="delete-btn" (click)="deleteEvent(event.id)">Obrisi</button>
-      </div>
+    <div class="nav-links">
+      <a routerLink="/events" routerLinkActive="active-link">Aktivni eventovi</a>
+      <a routerLink="/deleted-events" routerLinkActive="active-link">Istorija brisanja</a>
     </div>
-    }
-  </div>
-  }
+  </nav>
+
+  <main class="page-content">
+    <router-outlet></router-outlet>
+  </main>
 </div>

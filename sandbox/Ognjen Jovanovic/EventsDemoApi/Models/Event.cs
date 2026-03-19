@@ -9,4 +9,7 @@ public class Event{
   public bool IsCompleted { get; set; }
   public DateTime Created { get; set; }
   public DateTime Updated { get; set; }
+
+  public bool IsDeleted { get; set; }
+  public DateTime? DeletedAt { get; set; }
 }

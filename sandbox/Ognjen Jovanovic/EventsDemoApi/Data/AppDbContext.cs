@@ -27,6 +27,10 @@ public class AppDbContext : DbContext{
       entity.Property(e => e.Created).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
       entity.Property(e => e.Updated).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+      entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+
+      entity.Property(e => e.DeletedAt);
     });
   }
 }

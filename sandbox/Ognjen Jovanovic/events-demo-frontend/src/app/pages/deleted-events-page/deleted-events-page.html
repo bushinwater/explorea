@@ -1,0 +1,41 @@
+<div class="container">
+  <h1>Istorija brisanja</h1>
+
+  <div class="top-actions">
+    <button class="cleanup-btn" (click)="cleanupDeletedEvents()">
+      Ocisti istoriju
+    </button>
+  </div>
+
+  <app-search-bar (searchChanged)="onSearchChanged($event)"></app-search-bar>
+
+  @if (loading) {
+  <p>Ucitavanje obrisanih dogadjaja...</p>
+  }
+
+  @if (error) {
+  <p>{{ error }}</p>
+  }
+
+  @if (!loading && !error) {
+  @if (filteredDeletedEvents.length === 0) {
+  <p>Nema obrisanih dogadjaja.</p>
+  }
+
+  <div class="events-list">
+    @for (event of filteredDeletedEvents; track event.id) {
+    <div class="event-card">
+      <h3>{{ event.title }}</h3>
+      <p><strong>Opis:</strong> {{ event.description || 'Nema opisa' }}</p>
+      <p><strong>Datum eventa:</strong> {{ event.eventDate | date:'dd.MM.yyyy HH:mm' }}</p>
+      <p><strong>Lokacija:</strong> {{ event.location || 'Nije uneta' }}</p>
+      <p><strong>Obrisan:</strong> {{ event.deletedAt | date:'dd.MM.yyyy HH:mm' }}</p>
+
+      <button class="restore-btn" (click)="restoreEvent(event.id)">
+        Vrati
+      </button>
+    </div>
+    }
+  </div>
+  }
+</div>
