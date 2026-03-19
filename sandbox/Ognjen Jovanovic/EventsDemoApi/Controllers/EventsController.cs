@@ -15,7 +15,7 @@ public class EventsController : ControllerBase {
   [HttpGet]
   public async Task<ActionResult<IEnumerable<Event>>> GetAll()
   {
-    var events = await _context.Events.OrderBy(e => e.EventDate).ToListAsync();
+    var events = await _context.Events.Where(e => !e.IsDeleted).OrderBy(e => e.EventDate).ToListAsync();
 
     return Ok(events);
   }
@@ -25,9 +25,17 @@ public class EventsController : ControllerBase {
   {
     var eventItem = await _context.Events.FindAsync(id);
 
-    if(eventItem == null) return NotFound();
+    if(eventItem == null || eventItem.IsDeleted) return NotFound();
 
     return Ok(eventItem);
+  }
+
+  [HttpGet("deleted")]
+  public async Task<ActionResult<IEnumerable<Event>>> GetDeleted()
+  {
+    var deletedEvents = await _context.Events.Where(e => e.IsDeleted).OrderByDescending(e => e.DeletedAt).ToListAsync();
+
+    return Ok(deletedEvents);
   }
 
   [HttpPost]
@@ -49,19 +57,35 @@ public class EventsController : ControllerBase {
     if(id != updatedEvent.Id) 
       return BadRequest("Id iz URLa i tela zahteva se ne poklapaju");
     
-    var exsistingEvent = await _context.Events.FindAsync(id);
+    var existingEvent = await _context.Events.FindAsync(id);
 
-    if (exsistingEvent == null) return NotFound();
+    if (existingEvent == null || existingEvent.IsDeleted) return NotFound();
 
-    exsistingEvent.Title = updatedEvent.Title;
-    exsistingEvent.Description = updatedEvent.Description;
-    exsistingEvent.EventDate = DateTime.SpecifyKind(updatedEvent.EventDate, DateTimeKind.Utc);
-    exsistingEvent.Location = updatedEvent.Location;
-    exsistingEvent.IsCompleted = updatedEvent.IsCompleted;
-    exsistingEvent.Updated = DateTime.UtcNow;
+    existingEvent.Title = updatedEvent.Title;
+    existingEvent.Description = updatedEvent.Description;
+    existingEvent.EventDate = DateTime.SpecifyKind(updatedEvent.EventDate, DateTimeKind.Utc);
+    existingEvent.Location = updatedEvent.Location;
+    existingEvent.IsCompleted = updatedEvent.IsCompleted;
+    existingEvent.Updated = DateTime.UtcNow;
 
     await _context.SaveChangesAsync();
 
+    return NoContent();
+  }
+
+  [HttpPut("{id}/restore")]
+  public async Task<IActionResult> Restore(int id)
+  {
+    var eventItem = await _context.Events.FindAsync(id);
+
+    if(eventItem == null || !eventItem.IsDeleted) return NotFound();
+
+    eventItem.IsDeleted = false;
+    eventItem.DeletedAt = null;
+    eventItem.Updated = DateTime.UtcNow;
+
+    await _context.SaveChangesAsync();
+    
     return NoContent();
   }
 
@@ -70,9 +94,27 @@ public class EventsController : ControllerBase {
   {
     var eventItem = await _context.Events.FindAsync(id);
 
-    if(eventItem == null) return NotFound();
+    if(eventItem == null || eventItem.IsDeleted) return NotFound();
 
-    _context.Events.Remove(eventItem);
+    eventItem.IsDeleted = true;
+    eventItem.DeletedAt = DateTime.UtcNow;
+    eventItem.Updated = DateTime.UtcNow;
+
+    await _context.SaveChangesAsync();
+
+    return NoContent();
+  }
+
+  [HttpDelete("deleted/cleanup")]
+  public async Task<IActionResult> CleanupDeleted()
+  {
+    var cutoff = DateTime.UtcNow.AddSeconds(-10);
+
+    var oldDeletedEvents = await _context.Events
+        .Where(e => e.IsDeleted && e.DeletedAt != null)
+        .ToListAsync();
+
+    _context.Events.RemoveRange(oldDeletedEvents);
     await _context.SaveChangesAsync();
 
     return NoContent();

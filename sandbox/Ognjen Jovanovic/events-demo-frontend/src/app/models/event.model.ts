@@ -7,4 +7,6 @@ export interface Event {
   isCompleted: boolean;
   created: string;
   updated: string;
+  isDeleted: boolean;
+  deletedAt: string | null;
 }
