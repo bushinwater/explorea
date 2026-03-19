@@ -1,0 +1,77 @@
+<div class="page-header">
+    <h2>Moji zadaci</h2>
+</div>
+
+@if (error()) {
+<div class="form-error" role="alert">{{ error() }}</div>
+}
+
+<!--forma za novi zad-->
+<div class="card">
+    <h3 class="section-title">Dodaj novi zadatak</h3>
+    <form [formGroup]="form" (ngSubmit)="addTodo()">
+        <div class="field">
+            <label for="title">Naziv zadatka</label>
+            <input id="title" type="text" formControlName="title" placeholder="Sta treba da uradis?" />
+            @if (form.get('title')?.touched && form.get('title')?.invalid) {
+            <span class="field-error">Naziv je obavezan.</span>
+            }
+        </div>
+        <div class="field">
+            <label for="description">Opis (opciono)</label>
+            <textarea id="description" formControlName="description" placeholder="Dodatni detalji..."
+                rows="2"></textarea>
+        </div>
+        <button type="submit" class="btn-primary" [disabled]="form.invalid">
+            Dodaj zadatak
+        </button>
+    </form>
+</div>
+
+<!--predefinisani-->
+@if (predefined().length > 0) {
+<div class="card">
+    <h3 class="section-title">Predefinisani zadaci</h3>
+    <p class="section-desc">Klikni na zadatak da ga dodas na svoju listu.</p>
+    <div class="predefined-list">
+        @for (task of predefined(); track task.id) {
+        <button class="predefined-item" (click)="addFromPredefined(task)" type="button">
+            <span class="predefined-title">{{ task.title }}</span>
+            @if (task.description) {
+            <span class="predefined-desc">{{ task.description }}</span>
+            }
+        </button>
+        }
+    </div>
+</div>
+}
+
+<!--lista yad-->
+<div class="card">
+    <h3 class="section-title">Lista zadataka</h3>
+
+    @if (loading()) {
+    <div class="loading">Ucitavanje...</div>
+    } @else if (todos().length === 0) {
+    <div class="empty-state">Nema zadataka. Dodaj prvi!</div>
+    } @else {
+    <ul class="todo-list" role="list">
+        @for (todo of todos(); track todo.id) {
+        <li class="todo-item" [class.completed]="todo.isCompleted">
+            <label class="todo-check-label">
+                <input type="checkbox" [checked]="todo.isCompleted" (change)="toggle(todo.id)"
+                    [attr.aria-label]="'Označi zadatak: ' + todo.title" />
+                <span class="todo-title">{{ todo.title }}</span>
+            </label>
+            @if (todo.description) {
+            <p class="todo-desc">{{ todo.description }}</p>
+            }
+            <button class="btn-danger-sm" (click)="delete(todo.id)" type="button"
+                [attr.aria-label]="'Obrisi zadatak: ' + todo.title">
+                Obrisi
+            </button>
+        </li>
+        }
+    </ul>
+    }
+</div>

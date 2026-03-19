@@ -1,0 +1,49 @@
+<div class="auth-wrapper">
+    <div class="auth-box">
+        <div class="auth-title">
+            <h1>TodoApp</h1>
+            <p>Kreiranje naloga</p>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="submit()">
+            <div class="field">
+                <label for="fullName">Ime i prezime</label>
+                <input id="fullName" type="text" formControlName="fullName" placeholder="Petar Petrovic"
+                    autocomplete="name" />
+                @if (form.get('fullName')?.touched && form.get('fullName')?.invalid) {
+                <span class="field-error">Ime je obavezno.</span>
+                }
+            </div>
+
+            <div class="field">
+                <label for="email">Email adresa</label>
+                <input id="email" type="email" formControlName="email" placeholder="vas@email.com"
+                    autocomplete="email" />
+                @if (form.get('email')?.touched && form.get('email')?.invalid) {
+                <span class="field-error">Unesite ispravnu email adresu.</span>
+                }
+            </div>
+
+            <div class="field">
+                <label for="password">Lozinka</label>
+                <input id="password" type="password" formControlName="password" placeholder="Najmanje 6 karaktera"
+                    autocomplete="new-password" />
+                @if (form.get('password')?.touched && form.get('password')?.invalid) {
+                <span class="field-error">Lozinka mora imati najmanje 6 karaktera.</span>
+                }
+            </div>
+
+            @if (error()) {
+            <div class="form-error" role="alert">{{ error() }}</div>
+            }
+
+            <button type="submit" class="btn-primary btn-full" [disabled]="loading()">
+                {{ loading() ? 'Registrovanje...' : 'Registruj se' }}
+            </button>
+        </form>
+
+        <p class="auth-footer">
+            Vec imate nalog? <a routerLink="/login">Prijavi se</a>
+        </p>
+    </div>
+</div>

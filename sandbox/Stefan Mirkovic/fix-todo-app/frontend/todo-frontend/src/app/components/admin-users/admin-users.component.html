@@ -1,0 +1,52 @@
+<div class="page-header">
+    <h2>Korisnici</h2>
+</div>
+
+@if (error()) {
+<div class="form-error" role="alert">{{ error() }}</div>
+}
+
+<div class="card">
+    @if (loading()) {
+    <div class="loading">Ucitavanje korisnika...</div>
+    } @else if (users().length === 0) {
+    <div class="empty-state">Nema registrovanih korisnika.</div>
+    } @else {
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ime</th>
+                    <th>Email</th>
+                    <th>Uloga</th>
+                    <th>Zadaci</th>
+                    <th>Registrovan</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (user of users(); track user.id) {
+                <tr>
+                    <td>{{ user.fullName }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        <span [class]="user.role === 'Admin' ? 'badge badge-success' : 'badge badge-pending'">
+                            {{ user.role }}
+                        </span>
+                    </td>
+                    <td>{{ user.todoCount }}</td>
+                    <td>{{ formatDate(user.createdAt) }}</td>
+                    <td>
+                        @if (user.role !== 'Admin') {
+                        <button class="btn-danger-sm" (click)="deleteUser(user.id, user.fullName)" type="button">
+                            Obrisi
+                        </button>
+                        }
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    }
+</div>

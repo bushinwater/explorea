@@ -1,0 +1,67 @@
+<div class="page-header">
+    <h2>Predefinisani zadaci</h2>
+</div>
+
+@if (error()) {
+<div class="form-error" role="alert">{{ error() }}</div>
+}
+
+<!-- forma za novi predefinisani zadatak -->
+<div class="card">
+    <h3 class="section-title">Dodaj predefinisani zadatak</h3>
+    <form [formGroup]="form" (ngSubmit)="addTask()">
+        <div class="field">
+            <label for="title">Naziv zadatka</label>
+            <input id="title" type="text" formControlName="title" placeholder="npr. Nauci angular" />
+            @if (form.get('title')?.touched && form.get('title')?.invalid) {
+            <span class="field-error">Naziv je obavezan.</span>
+            }
+        </div>
+        <div class="field">
+            <label for="description">Opis (opciono)</label>
+            <textarea id="description" formControlName="description" placeholder="Kratki opis zadatka..."
+                rows="2"></textarea>
+        </div>
+        <button type="submit" class="btn-primary" [disabled]="form.invalid">
+            Dodaj zadatak
+        </button>
+    </form>
+</div>
+
+<!-- Lista predefinisanih zadataka -->
+<div class="card">
+    <h3 class="section-title">Lista predefinisanih zadataka</h3>
+
+    @if (loading()) {
+    <div class="loading">Ucitavanje...</div>
+    } @else if (tasks().length === 0) {
+    <div class="empty-state">Nema predefinisanih zadataka.</div>
+    } @else {
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Naziv</th>
+                    <th>Opis</th>
+                    <th>Dodat</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (task of tasks(); track task.id) {
+                <tr>
+                    <td class="task-title">{{ task.title }}</td>
+                    <td class="task-desc">{{ task.description || '—' }}</td>
+                    <td>{{ formatDate(task.createdAt) }}</td>
+                    <td>
+                        <button class="btn-danger-sm" (click)="deleteTask(task.id, task.title)" type="button">
+                            Obrisi
+                        </button>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    }
+</div>

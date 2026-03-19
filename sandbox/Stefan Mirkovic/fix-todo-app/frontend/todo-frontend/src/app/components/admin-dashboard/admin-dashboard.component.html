@@ -1,0 +1,38 @@
+<div class="page-header">
+  <h2>Admin pregled</h2>
+</div>
+
+@if (loading()) {
+  <div class="loading">Ucitavanje statistike...</div>
+} @else if (stats()) {
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-number">{{ stats()!.totalUsers }}</div> <!-- posle signala() kada stoji ! znaci da garantuje da nije null -->
+      <div class="stat-label">Registrovanih korisnika</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ stats()!.totalTodos }}</div>
+      <div class="stat-label">Ukupno zadataka</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ stats()!.completedTodos }}</div>
+      <div class="stat-label">Zavrsenih zadataka</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ stats()!.predefinedTasks }}</div>
+      <div class="stat-label">Predefinisanih zadataka</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="section-title">Brze akcije</h3>
+    <div class="quick-links">
+      <a href="/admin/users" class="quick-link">
+        Upravljaj korisnicima
+      </a>
+      <a href="/admin/tasks" class="quick-link">
+        Predefinisani zadaci
+      </a>
+    </div>
+  </div>
+}
