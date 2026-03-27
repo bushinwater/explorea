@@ -40,3 +40,10 @@ desktop.ini
 
 # === Fitlogger (Demo app) ===
 sandbox/Stefan Mirkovic/fitlogger/backend/FitLogger/appsettings.json
+# app settings (secrets)
+appsettings.json
+appsettings.*.json
+!appsettings_example.json
+
+# launch settings (optional)
+**/launchSettings.json

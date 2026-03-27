@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Explorea.AppHost/Explorea.AppHost.csproj" />
+  <Project Path="Explorea.Server/Explorea.Server.csproj" />
+</Solution>
