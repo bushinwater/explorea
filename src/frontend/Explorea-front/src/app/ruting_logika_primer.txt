@@ -1,0 +1,14 @@
+/                         → HomeComponent (shell)
+/istrazite                → ExploreComponent (shell)
+/pretrazi                 → SearchComponent (shell)
+/dogadjaji                → EventsComponent (shell)
+/profil                   → ProfileComponent (shell + auth guard)
+/login                    → LoginComponent (guest guard)
+/register                 → RegisterComponent (guest guard)
+/interests                → InterestsComponent (auth guard, samo posle registracije)
+/destinacije/:slug        → DestinationDetailComponent
+/objekti/:slug            → PlaceDetailComponent
+/dogadjaji/:slug          → EventDetailComponent
+/aktivnosti/:slug         → ActivityDetailComponent
+/profil/sacuvano          → SavedItemsComponent
+/profil/recenzije         → MyReviewsComponent
