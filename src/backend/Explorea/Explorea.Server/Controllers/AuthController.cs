@@ -70,7 +70,11 @@ namespace Explorea.Server.Controllers
         }
 
         [HttpPost("forgot-password")]
-        public IActionResult ForgotPassword() => Ok();
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+        {
+            await _authService.ForgotPasswordAsync(dto.Email);
+            return Ok(new { message = "Password reset email sent successfully." });
+        }
 
         [HttpPost("reset-password")]
         public IActionResult ResetPassword() => Ok();

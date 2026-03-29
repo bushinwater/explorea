@@ -11,5 +11,6 @@ namespace Explorea.Server.Services.Interfaces
 
         Task VerifyEmailAsync(string token);
         Task ResendVerificationEmailAsync(string email);
+        Task ForgotPasswordAsync(string email);
     }
 }

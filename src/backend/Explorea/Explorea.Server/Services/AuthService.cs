@@ -204,6 +204,41 @@ namespace Explorea.Server.Services
             await CreateAndSendEmailVerificationAsync(user);
         }
 
+        public async Task ForgotPasswordAsync(string email)
+        {
+            var normalizedEmail = email.Trim().ToLower();
+            var user = await _userRepository.GetByEmailAsync(normalizedEmail);
+
+            if (user == null)
+                throw new Exception("User with this email does not exist.");
+
+            var rawToken = _jwtHelper.GenerateRefreshToken();
+            var tokenHash = _jwtHelper.HashToken(rawToken);
+            var now = DateTimeOffset.UtcNow;
+            var expiryHours = int.Parse(_configuration["PasswordResetSettings:ExpiryHours"]!);
+
+            var resetToken = new PasswordResetToken
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                TokenHash = tokenHash,
+                ExpiresAt = now.AddHours(expiryHours),
+                CreatedAt = now,
+                CreatedBy = user.Id,
+                UpdatedBy = user.Id
+            };
+
+            await _authRepository.CreatePasswordResetTokenAsync(resetToken);
+
+            var frontendBaseUrl = _configuration["FrontendSettings:BaseUrl"]!;
+            var resetLink = $"{frontendBaseUrl}/reset-password?token={Uri.EscapeDataString(rawToken)}";
+
+            await _emailService.SendForgotPasswordEmailAsync(
+                user.Email,
+                user.FirstName,
+                resetLink);
+        }
+
         private async Task CreateAndSendEmailVerificationAsync(User user)
         {
             var rawToken = _jwtHelper.GenerateRefreshToken();

@@ -67,5 +67,61 @@ namespace Explorea.Server.Services
 
             await client.SendMailAsync(message);
         }
+
+        public async Task SendForgotPasswordEmailAsync(string toEmail, string firstName, string resetLink)
+        {
+            var smtpSection = _configuration.GetSection("SmtpSettings");
+
+            var host = smtpSection["Host"];
+            var port = int.Parse(smtpSection["Port"]!);
+            var username = smtpSection["Username"];
+            var password = smtpSection["Password"];
+            var fromEmail = smtpSection["FromEmail"];
+            var fromName = smtpSection["FromName"];
+            var enableSsl = bool.Parse(smtpSection["EnableSsl"]!);
+
+            if (string.IsNullOrWhiteSpace(host) ||
+                string.IsNullOrWhiteSpace(username) ||
+                string.IsNullOrWhiteSpace(password) ||
+                string.IsNullOrWhiteSpace(fromEmail))
+            {
+                throw new Exception("SMTP settings are not configured properly.");
+            }
+
+            using var message = new MailMessage();
+            message.From = new MailAddress(fromEmail, fromName);
+            message.To.Add(toEmail);
+            message.Subject = "Reset lozinke";
+            message.IsBodyHtml = true;
+            message.Body = $@"
+                <html>
+                    <body>
+                        <p>Zdravo, {firstName}!</p>
+                        <p>Primili smo zahtev za reset lozinke. Klikni na dugme ispod da postaviš novu lozinku:</p>
+                        <p>
+                            <a href='{resetLink}' style='
+                                display:inline-block;
+                                padding:12px 20px;
+                                background:#dc2626;
+                                color:#ffffff;
+                                text-decoration:none;
+                                border-radius:8px;
+                                font-weight:bold;
+                            '>Resetuj lozinku</a>
+                        </p>
+                        <p>Ako nisi ti tražio reset lozinke, slobodno ignoriši ovu poruku.</p>
+                        <p>Ako dugme ne radi, kopiraj ovaj link u browser:</p>
+                        <p>{resetLink}</p>
+                    </body>
+                </html>";
+
+            using var client = new SmtpClient(host, port)
+            {
+                Credentials = new NetworkCredential(username, password),
+                EnableSsl = enableSsl
+            };
+
+            await client.SendMailAsync(message);
+        }
     }
 }
