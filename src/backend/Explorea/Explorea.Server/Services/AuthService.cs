@@ -14,19 +14,22 @@ namespace Explorea.Server.Services
         private readonly PasswordHelper _passwordHelper;
         private readonly JwtHelper _jwtHelper;
         private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
 
         public AuthService(
             IUserRepository userRepository,
             IAuthRepository authRepository,
             PasswordHelper passwordHelper,
             JwtHelper jwtHelper,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IEmailService emailService)
         {
             _userRepository = userRepository;
             _authRepository = authRepository;
             _passwordHelper = passwordHelper;
             _jwtHelper = jwtHelper;
             _configuration = configuration;
+            _emailService = emailService;
         }
 
         public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto, string? ipAddress, string? userAgent)
@@ -79,6 +82,8 @@ namespace Explorea.Server.Services
                 now);
 
             await _authRepository.CreateRefreshTokenAsync(refreshTokenEntity);
+
+            await CreateAndSendEmailVerificationAsync(user);
 
             return BuildAuthResponse(user, accessToken, refreshToken, true);
         }
@@ -154,6 +159,80 @@ namespace Explorea.Server.Services
         {
             var tokenHash = _jwtHelper.HashToken(refreshToken);
             await _authRepository.RevokeRefreshTokenAsync(tokenHash);
+        }
+
+        public async Task VerifyEmailAsync(string token)
+        {
+            var decodedToken = WebUtility.UrlDecode(token);
+
+            var tokenHash = _jwtHelper.HashToken(decodedToken);
+            var verification = await _authRepository.GetEmailVerificationAsync(tokenHash);
+
+            if (verification == null)
+                throw new Exception("Invalid verification token.");
+
+            if (verification.ExpiresAt <= DateTimeOffset.UtcNow)
+                throw new Exception("Verification token has expired.");
+
+            var user = await _userRepository.GetByIdAsync(verification.UserId);
+            if (user == null)
+                throw new Exception("User not found.");
+
+            if (user.EmailVerifiedAt != null)
+                return;
+
+            user.EmailVerifiedAt = DateTimeOffset.UtcNow;
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
+
+            await _authRepository.MarkEmailVerifiedAsync(tokenHash);
+        }
+
+        public async Task ResendVerificationEmailAsync(string email)
+        {
+            var normalizedEmail = email.Trim().ToLower();
+            var user = await _userRepository.GetByEmailAsync(normalizedEmail);
+
+            if (user == null)
+                throw new Exception("User with this email does not exist.");
+
+            if (user.EmailVerifiedAt != null)
+                throw new Exception("Email is already verified.");
+
+            await CreateAndSendEmailVerificationAsync(user);
+        }
+
+        private async Task CreateAndSendEmailVerificationAsync(User user)
+        {
+            var rawToken = _jwtHelper.GenerateRefreshToken();
+            var tokenHash = _jwtHelper.HashToken(rawToken);
+            var now = DateTimeOffset.UtcNow;
+            var expiryHours = int.Parse(_configuration["EmailVerificationSettings:ExpiryHours"]!);
+
+            var verification = new EmailVerification
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                Email = user.Email,
+                TokenHash = tokenHash,
+                ExpiresAt = now.AddHours(expiryHours),
+                CreatedAt = now,
+                UpdatedAt = now,
+                CreatedBy = user.Id,
+                UpdatedBy = user.Id
+            };
+
+            await _authRepository.CreateEmailVerificationAsync(verification);
+
+            var frontendBaseUrl = _configuration["FrontendSettings:BaseUrl"]!;
+            var verificationLink = $"{frontendBaseUrl}/verify-email?token={Uri.EscapeDataString(rawToken)}";
+
+            await _emailService.SendVerificationEmailAsync(
+                user.Email,
+                user.FirstName,
+                verificationLink);
         }
 
         private RefreshToken BuildRefreshTokenEntity(

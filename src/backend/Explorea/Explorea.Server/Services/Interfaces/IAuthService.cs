@@ -8,5 +8,8 @@ namespace Explorea.Server.Services.Interfaces
         Task<AuthResponseDto> LoginAsync(LoginDto dto, string? ipAddress, string? userAgent);
         Task<AuthResponseDto> RefreshAsync(string refreshToken, string? ipAddress, string? userAgent);
         Task LogoutAsync(string refreshToken);
+
+        Task VerifyEmailAsync(string token);
+        Task ResendVerificationEmailAsync(string email);
     }
 }

@@ -35,6 +35,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<PasswordHelper>();
 builder.Services.AddScoped<JwtHelper>();
 

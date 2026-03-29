@@ -55,6 +55,20 @@ namespace Explorea.Server.Controllers
             return NoContent();
         }
 
+        [HttpPost("verify-email")]
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDto dto)
+        {
+            await _authService.VerifyEmailAsync(dto.Token);
+            return Ok(new { message = "Email successfully verified." });
+        }
+
+        [HttpPost("resend-verification")]
+        public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationDto dto)
+        {
+            await _authService.ResendVerificationEmailAsync(dto.Email);
+            return Ok(new { message = "Verification email sent successfully." });
+        }
+
         [HttpPost("forgot-password")]
         public IActionResult ForgotPassword() => Ok();
 
