@@ -239,6 +239,32 @@ namespace Explorea.Server.Services
                 resetLink);
         }
 
+        public async Task ResetPasswordAsync(string token, string newPassword)
+        {
+            var decodedToken = WebUtility.UrlDecode(token);
+            var tokenHash = _jwtHelper.HashToken(decodedToken);
+
+            var resetToken = await _authRepository.GetPasswordResetTokenAsync(tokenHash);
+
+            if (resetToken == null)
+                throw new Exception("Invalid password reset token.");
+
+            if (resetToken.ExpiresAt <= DateTimeOffset.UtcNow)
+                throw new Exception("Password reset token has expired.");
+
+            var user = await _userRepository.GetByIdAsync(resetToken.UserId);
+            if (user == null)
+                throw new Exception("User not found.");
+
+            user.PasswordHash = _passwordHelper.HashPassword(newPassword);
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
+
+            await _authRepository.MarkPasswordResetTokenUsedAsync(tokenHash);
+        }
+
         private async Task CreateAndSendEmailVerificationAsync(User user)
         {
             var rawToken = _jwtHelper.GenerateRefreshToken();
