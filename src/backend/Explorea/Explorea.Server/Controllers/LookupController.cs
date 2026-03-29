@@ -24,7 +24,7 @@ namespace Explorea.Server.Controllers
         [HttpGet("seasons")]
         public IActionResult GetSeasons() => Ok();
 
-        [HttpGet("interests")]
+        [HttpGet("interests-tags")]
         public IActionResult GetInterests() => Ok();
     }
 }
