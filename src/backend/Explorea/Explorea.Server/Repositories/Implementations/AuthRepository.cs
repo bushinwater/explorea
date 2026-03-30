@@ -78,5 +78,16 @@ namespace Explorea.Server.Repositories.Implementations
                 await _db.SaveChangesAsync();
             }
         }
+
+        public async Task CreateRefreshTokenAsync(RefreshToken token)
+        {
+            await _db.RefreshTokens.AddAsync(token);
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task<Role?> GetRoleByNameAsync(string roleName)
+        {
+            return await _db.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+        }
     }
 }
