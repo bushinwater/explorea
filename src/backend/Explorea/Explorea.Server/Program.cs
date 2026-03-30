@@ -1,4 +1,8 @@
 using Explorea.Server.Data;
+using Explorea.Server.Repositories.Implementations;
+using Explorea.Server.Repositories.Interfaces;
+using Explorea.Server.Services;
+using Explorea.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +18,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped<ISearchRepository, SearchRepository>();
+builder.Services.AddScoped<ISearchService, SearchService>();
 
 builder.Services.AddCors(options =>
 {

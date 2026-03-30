@@ -12,5 +12,12 @@ namespace Explorea.Server.Repositories.Interfaces
 
         Task<(List<Place> Places, List<Event> Events, List<Activity> Activities)>
             SearchMapAsync(double lat, double lng, double radiusKm, string type);
+
+        // DEDICATED METODE
+        Task<List<Destination>> SearchDestinationsAsync(string query, int take = 25);
+        Task<List<Place>> SearchPlacesAsync(string query, int take = 25);
+        Task<List<Event>> SearchEventsAsync(string query, DateTimeOffset now, int take = 25);
+        Task<List<Activity>> SearchActivitiesAsync(string query, int take = 25);
+
     }
 }
