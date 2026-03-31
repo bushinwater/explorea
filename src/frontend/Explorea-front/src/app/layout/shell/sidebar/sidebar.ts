@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { ThemeService } from '../../../core/services/theme.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -10,6 +11,8 @@ import { Component } from '@angular/core';
 })
 export class Sidebar {
   isOpen = false;
+
+  constructor(public themeService: ThemeService) {} // light-dark theme
 
   toggle() {
     this.isOpen = !this.isOpen;
