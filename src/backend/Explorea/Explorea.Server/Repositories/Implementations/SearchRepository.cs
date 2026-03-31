@@ -1,7 +1,10 @@
 using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Repositories.Interfaces;
+using Explorea.Server.Repositories.Models;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using System.Data;
 using Activity = Explorea.API.Models.Activity;
 
 namespace Explorea.Server.Repositories.Implementations
@@ -205,5 +208,628 @@ namespace Explorea.Server.Repositories.Implementations
 
             return (places, events, activities);
         }
+
+    private const double NameSimilarityThreshold = 0.25;
+    private const double RelatedSimilarityThreshold = 0.30;
+
+    // RAW SQL DEO
+    async Task<List<SearchProjection<Destination>>> ISearchRepository.SearchDestinationsAsync(string query, int take = 25)
+    {
+        var rows = await ExecuteDestinationSearchAsync(query, take);
+        if(rows.Count == 0) return new List<SearchProjection<Destination>>();
+
+        var ids = rows.Select(r => r.Id).ToList();
+
+        var entities = await _db.Destinations
+            .AsNoTracking()
+            .Include(d => d.City)
+            .Where(d => ids.Contains(d.Id))
+            .ToDictionaryAsync(d => d.Id);
+
+        return rows
+            .Where(r => entities.ContainsKey(r.Id))
+            .Select(r => new SearchProjection<Destination>
+            {
+               Entity = entities[r.Id],
+               NameSimilarity = r.NameSimilarity,
+               CitySimilarity = r.CitySimilarity 
+            })
+            .ToList();
     }
+
+    private async Task<List<DestinationSearchHitRow>> ExecuteDestinationSearchAsync(string query, int take)
+    {
+        const string sql = """
+        SELECT
+            d.id AS id,
+            GREATEST(
+                similarity(d.name, @q),
+                word_similarity(@q, COALESCE(d.name, ''))
+            ) AS name_similarity,
+            CASE
+                WHEN c.name IS NULL THEN NULL
+                ELSE GREATEST(
+                    similarity(c.name, @q),
+                    word_similarity(@q, COALESCE(c.name, ''))
+                )
+            END AS city_similarity
+        FROM destinations d
+        LEFT JOIN cities c ON c.id = d.city_id
+        WHERE d.is_deleted = FALSE
+          AND (
+                d.name ILIKE @contains
+             OR COALESCE(d.description, '') ILIKE @contains
+             OR COALESCE(c.name, '') ILIKE @contains
+             OR (
+                    @enableFuzzy = TRUE
+                AND (
+                        GREATEST(
+                            similarity(d.name, @q),
+                            word_similarity(@q, COALESCE(d.name, ''))
+                        ) >= @nameThreshold
+                     OR GREATEST(
+                            similarity(COALESCE(c.name, ''), @q),
+                            word_similarity(@q, COALESCE(c.name, ''))
+                        ) >= @relatedThreshold
+                )
+             )
+          )
+        ORDER BY
+            GREATEST(
+                GREATEST(
+                    similarity(d.name, @q),
+                    word_similarity(@q, COALESCE(d.name, ''))
+                ),
+                COALESCE(
+                    GREATEST(
+                        similarity(c.name, @q),
+                        word_similarity(@q, COALESCE(c.name, ''))
+                    ),
+                    0
+                )
+            ) DESC,
+            d.is_featured DESC,
+            d.avg_rating DESC,
+            d.name ASC
+        LIMIT @take;
+        """;
+
+        var result = new List<DestinationSearchHitRow>();
+        await using var conn = CreateConnection();
+        await conn.OpenAsync();
+
+        await using var cmd = CreateSearchCommand(conn, sql, query, take);
+        await using var reader = await cmd.ExecuteReaderAsync();
+
+        while(await reader.ReadAsync())
+        {
+          result.Add(new DestinationSearchHitRow
+          {
+              Id = reader.GetGuid(reader.GetOrdinal("id")),
+              NameSimilarity = reader.GetDouble(reader.GetOrdinal("name_similarity")),
+              CitySimilarity = GetNullableDouble(reader, "city_similarity")
+          });      
+        }
+
+        return result;
+    }
+    // OBUHVATA DESTINACIJE --------------------------------------------------------------------------------
+    
+    async Task<List<SearchProjection<Place>>> ISearchRepository.SearchPlacesAsync(string query, int take = 25)
+    {
+       var rows = await ExecutePlaceSearchAsync(query, take);
+       if(rows.Count == 0) return new List<SearchProjection<Place>>();
+
+       var ids = rows.Select(r => r.Id).ToList();
+
+       var entities = await _db.Places
+            .AsNoTracking()
+            .Include(p => p.City)
+            .Include(p => p.Destination)
+            .Include(p => p.Type)
+            .Include(p => p.Images)
+            .Where(p => ids.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id);
+
+        return rows
+            .Where(r => entities.ContainsKey(r.Id))
+            .Select(r => new SearchProjection<Place>
+            {
+                Entity = entities[r.Id],
+                NameSimilarity = r.NameSimilarity,
+                CitySimilarity = r.CitySimilarity,
+                DestinationSimilarity = r.DestinationSimilarity,
+                TypeSimilarity = r.TypeSimilarity,
+            })
+            .ToList();
+    }
+    private async Task<List<PlaceSearchHitRow>> ExecutePlaceSearchAsync(string query, int take){
+        const string sql = """
+            SELECT
+                p.id AS id,
+                GREATEST(
+                    similarity(p.name, @q),
+                    word_similarity(@q, COALESCE(p.name, ''))
+                ) AS name_similarity,
+                CASE
+                    WHEN c.name IS NULL THEN NULL
+                    ELSE GREATEST(
+                        similarity(c.name, @q),
+                        word_similarity(@q, COALESCE(c.name, ''))
+                    )
+                END AS city_similarity,
+                CASE
+                    WHEN d.name IS NULL THEN NULL
+                    ELSE GREATEST(
+                        similarity(d.name, @q),
+                        word_similarity(@q, COALESCE(d.name, ''))
+                    )
+                END AS destination_similarity,
+                CASE
+                    WHEN pt.name IS NULL THEN NULL
+                    ELSE GREATEST(
+                        similarity(pt.name, @q),
+                        word_similarity(@q, COALESCE(pt.name, ''))
+                    )
+                END AS type_similarity
+            FROM places p
+            LEFT JOIN cities c ON c.id = p.city_id
+            LEFT JOIN destinations d ON d.id = p.destination_id AND d.is_deleted = FALSE
+            LEFT JOIN place_types pt ON pt.id = p.type_id
+            WHERE p.is_deleted = FALSE
+              AND (
+                    p.name ILIKE @contains
+                 OR COALESCE(p.description, '') ILIKE @contains
+                 OR COALESCE(p.address, '') ILIKE @contains
+                 OR COALESCE(c.name, '') ILIKE @contains
+                 OR COALESCE(d.name, '') ILIKE @contains
+                 OR COALESCE(pt.name, '') ILIKE @contains
+                 OR (
+                        @enableFuzzy = TRUE
+                    AND (
+                            GREATEST(
+                                similarity(p.name, @q),
+                                word_similarity(@q, COALESCE(p.name, ''))
+                            ) >= @nameThreshold
+                         OR GREATEST(
+                                similarity(COALESCE(c.name, ''), @q),
+                                word_similarity(@q, COALESCE(c.name, ''))
+                            ) >= @relatedThreshold
+                         OR GREATEST(
+                                similarity(COALESCE(d.name, ''), @q),
+                                word_similarity(@q, COALESCE(d.name, ''))
+                            ) >= @relatedThreshold
+                         OR GREATEST(
+                                similarity(COALESCE(pt.name, ''), @q),
+                                word_similarity(@q, COALESCE(pt.name, ''))
+                            ) >= @relatedThreshold
+                    )
+                 )
+              )
+            ORDER BY
+                GREATEST(
+                    GREATEST(
+                        similarity(p.name, @q),
+                        word_similarity(@q, COALESCE(p.name, ''))
+                    ),
+                    COALESCE(
+                        GREATEST(
+                            similarity(c.name, @q),
+                            word_similarity(@q, COALESCE(c.name, ''))
+                        ),
+                        0
+                    ),
+                    COALESCE(
+                        GREATEST(
+                            similarity(d.name, @q),
+                            word_similarity(@q, COALESCE(d.name, ''))
+                        ),
+                        0
+                    ),
+                    COALESCE(
+                        GREATEST(
+                            similarity(pt.name, @q),
+                            word_similarity(@q, COALESCE(pt.name, ''))
+                        ),
+                        0
+                    )
+                ) DESC,
+                p.is_featured DESC,
+                p.avg_rating DESC,
+                p.name ASC
+            LIMIT @take;
+            """;
+
+        var result = new List<PlaceSearchHitRow>();
+        await using var conn = CreateConnection();
+        await conn.OpenAsync();
+
+        await using var cmd = CreateSearchCommand(conn, sql, query, take);
+        await using var reader = await cmd.ExecuteReaderAsync();
+
+        while(await reader.ReadAsync())
+        {
+          result.Add(new PlaceSearchHitRow
+          {
+              Id = reader.GetGuid(reader.GetOrdinal("id")),
+              NameSimilarity = reader.GetDouble(reader.GetOrdinal("name_similarity")),
+              CitySimilarity = GetNullableDouble(reader, "city_similarity"),
+              DestinationSimilarity = GetNullableDouble(reader, "destination_similarity"),
+              TypeSimilarity = GetNullableDouble(reader, "type_similarity")
+          });      
+        }
+
+        return result;
+    }
+    // OBUHVATA MESTA --------------------------------------------------------------------------------
+
+    async Task<List<SearchProjection<Event>>> ISearchRepository.SearchEventsAsync(string query, DateTimeOffset now, int take = 25)
+    {
+        var rows = await ExecuteEventSearchAsync(query, now, take);
+        if(rows.Count == 0) return new List<SearchProjection<Event>>();
+
+        var ids = rows.Select(r => r.Id).ToList();
+
+        var entities = await _db.Events
+            .AsNoTracking()
+            .Include(e => e.City)        
+            .Include(e => e.Destination)        
+            .Include(e => e.Place)        
+            .Include(e => e.Type)        
+            .Include(e => e.Images)
+            .Where(e => ids.Contains(e.Id))
+            .ToDictionaryAsync(e => e.Id);
+
+        return rows
+            .Where(r => entities.ContainsKey(r.Id))
+            .Select(r => new SearchProjection<Event>
+            {
+                Entity = entities[r.Id],
+                NameSimilarity = r.NameSimilarity,
+                CitySimilarity = r.CitySimilarity,
+                DestinationSimilarity = r.DestinationSimilarity,
+                PlaceSimilarity = r.PlaceSimilarity,
+                TypeSimilarity = r.TypeSimilarity
+            }).ToList();        
+    }
+    private async Task<List<EventSearchHitRow>> ExecuteEventSearchAsync(string query, DateTimeOffset now, int take)
+    {
+        const string sql = """
+        SELECT
+            e.id AS id,
+            GREATEST(
+                similarity(e.name, @q),
+                word_similarity(@q, COALESCE(e.name, ''))
+            ) AS name_similarity,
+            CASE
+                WHEN c.name IS NULL THEN NULL
+                ELSE GREATEST(
+                    similarity(c.name, @q),
+                    word_similarity(@q, COALESCE(c.name, ''))
+                )
+            END AS city_similarity,
+            CASE
+                WHEN d.name IS NULL THEN NULL
+                ELSE GREATEST(
+                    similarity(d.name, @q),
+                    word_similarity(@q, COALESCE(d.name, ''))
+                )
+            END AS destination_similarity,
+            CASE
+                WHEN p.name IS NULL THEN NULL
+                ELSE GREATEST(
+                    similarity(p.name, @q),
+                    word_similarity(@q, COALESCE(p.name, ''))
+                )
+            END AS place_similarity,
+            GREATEST(
+                similarity(et.name, @q),
+                word_similarity(@q, COALESCE(et.name, ''))
+            ) AS type_similarity
+        FROM events e
+        LEFT JOIN cities c ON c.id = e.city_id
+        LEFT JOIN destinations d ON d.id = e.destination_id AND d.is_deleted = FALSE
+        LEFT JOIN places p ON p.id = e.place_id AND p.is_deleted = FALSE
+        INNER JOIN event_types et ON et.id = e.type_id
+        WHERE e.is_deleted = FALSE
+          AND e.end_datetime >= @now
+          AND (
+                e.name ILIKE @contains
+             OR COALESCE(e.description, '') ILIKE @contains
+             OR COALESCE(e.address, '') ILIKE @contains
+             OR COALESCE(c.name, '') ILIKE @contains
+             OR COALESCE(d.name, '') ILIKE @contains
+             OR COALESCE(p.name, '') ILIKE @contains
+             OR et.name ILIKE @contains
+             OR (
+                    @enableFuzzy = TRUE
+                AND (
+                        GREATEST(
+                            similarity(e.name, @q),
+                            word_similarity(@q, COALESCE(e.name, ''))
+                        ) >= @nameThreshold
+                     OR GREATEST(
+                            similarity(COALESCE(c.name, ''), @q),
+                            word_similarity(@q, COALESCE(c.name, ''))
+                        ) >= @relatedThreshold
+                     OR GREATEST(
+                            similarity(COALESCE(d.name, ''), @q),
+                            word_similarity(@q, COALESCE(d.name, ''))
+                        ) >= @relatedThreshold
+                     OR GREATEST(
+                            similarity(COALESCE(p.name, ''), @q),
+                            word_similarity(@q, COALESCE(p.name, ''))
+                        ) >= @relatedThreshold
+                     OR GREATEST(
+                            similarity(et.name, @q),
+                            word_similarity(@q, COALESCE(et.name, ''))
+                        ) >= @relatedThreshold
+                )
+             )
+          )
+        ORDER BY
+            GREATEST(
+                GREATEST(
+                    similarity(e.name, @q),
+                    word_similarity(@q, COALESCE(e.name, ''))
+                ),
+                COALESCE(
+                    GREATEST(
+                        similarity(c.name, @q),
+                        word_similarity(@q, COALESCE(c.name, ''))
+                    ),
+                    0
+                ),
+                COALESCE(
+                    GREATEST(
+                        similarity(d.name, @q),
+                        word_similarity(@q, COALESCE(d.name, ''))
+                    ),
+                    0
+                ),
+                COALESCE(
+                    GREATEST(
+                        similarity(p.name, @q),
+                        word_similarity(@q, COALESCE(p.name, ''))
+                    ),
+                    0
+                ),
+                GREATEST(
+                    similarity(et.name, @q),
+                    word_similarity(@q, COALESCE(et.name, ''))
+                )
+            ) DESC,
+            e.is_featured DESC,
+            e.start_datetime ASC,
+            e.name ASC
+        LIMIT @take;
+        """;
+
+        var result = new List<EventSearchHitRow>();
+        await using var conn = CreateConnection();
+        await conn.OpenAsync();
+
+        await using var cmd = CreateSearchCommand(conn, sql, query, take);
+        cmd.Parameters.Add(new NpgsqlParameter("@now", now));
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            result.Add(new EventSearchHitRow
+            {
+                Id = reader.GetGuid(reader.GetOrdinal("id")),
+                NameSimilarity = reader.GetDouble(reader.GetOrdinal("name_similarity")),
+                CitySimilarity = GetNullableDouble(reader, "city_similarity"),
+                DestinationSimilarity = GetNullableDouble(reader, "destination_similarity"),
+                PlaceSimilarity = GetNullableDouble(reader, "place_similarity"),
+                TypeSimilarity = GetNullableDouble(reader, "type_similarity")
+            });
+        }
+
+        return result;
+    }
+    // OBUHVATA DOGADJAJE --------------------------------------------------------------------------------
+
+    async Task<List<SearchProjection<Activity>>> ISearchRepository.SearchActivitiesAsync(string query, int take = 25)
+    {
+      var rows = await ExecuteActivitySearchAsync(query, take);
+      if (rows.Count == 0) return new List<SearchProjection<Activity>>();
+      
+      var ids = rows.Select(r => r.Id).ToList();
+      
+      var entities = await _db.Activities
+          .AsNoTracking()
+          .Include(a => a.City)
+          .Include(a => a.Destination)
+          .Include(a => a.Place)
+          .Include(a => a.Category)
+          .Include(a => a.Images)
+          .Where(a => ids.Contains(a.Id))
+          .ToDictionaryAsync(a => a.Id);
+      
+      return rows
+          .Where(r => entities.ContainsKey(r.Id))
+          .Select(r => new SearchProjection<Activity>
+          {
+              Entity = entities[r.Id],
+              NameSimilarity = r.NameSimilarity,
+              CitySimilarity = r.CitySimilarity,
+              DestinationSimilarity = r.DestinationSimilarity,
+              PlaceSimilarity = r.PlaceSimilarity,
+              CategorySimilarity = r.CategorySimilarity
+          })
+          .ToList();
+    }
+    private async Task<List<ActivitySearchHitRow>> ExecuteActivitySearchAsync(string query, int take){
+        const string sql = """
+            SELECT
+                a.id AS id,
+                GREATEST(
+                    similarity(a.name, @q),
+                    word_similarity(@q, COALESCE(a.name, ''))
+                ) AS name_similarity,
+                CASE
+                    WHEN c.name IS NULL THEN NULL
+                    ELSE GREATEST(
+                        similarity(c.name, @q),
+                        word_similarity(@q, COALESCE(c.name, ''))
+                    )
+                END AS city_similarity,
+                CASE
+                    WHEN d.name IS NULL THEN NULL
+                    ELSE GREATEST(
+                        similarity(d.name, @q),
+                        word_similarity(@q, COALESCE(d.name, ''))
+                    )
+                END AS destination_similarity,
+                CASE
+                    WHEN p.name IS NULL THEN NULL
+                    ELSE GREATEST(
+                        similarity(p.name, @q),
+                        word_similarity(@q, COALESCE(p.name, ''))
+                    )
+                END AS place_similarity,
+                GREATEST(
+                    similarity(ac.name, @q),
+                    word_similarity(@q, COALESCE(ac.name, ''))
+                ) AS category_similarity
+            FROM activities a
+            LEFT JOIN cities c ON c.id = a.city_id
+            LEFT JOIN destinations d ON d.id = a.destination_id AND d.is_deleted = FALSE
+            LEFT JOIN places p ON p.id = a.place_id AND p.is_deleted = FALSE
+            INNER JOIN activity_categories ac ON ac.id = a.category_id
+            WHERE a.is_deleted = FALSE
+              AND (
+                    a.name ILIKE @contains
+                 OR COALESCE(a.description, '') ILIKE @contains
+                 OR COALESCE(a.start_point, '') ILIKE @contains
+                 OR COALESCE(c.name, '') ILIKE @contains
+                 OR COALESCE(d.name, '') ILIKE @contains
+                 OR COALESCE(p.name, '') ILIKE @contains
+                 OR ac.name ILIKE @contains
+                 OR (
+                        @enableFuzzy = TRUE
+                    AND (
+                            GREATEST(
+                                similarity(a.name, @q),
+                                word_similarity(@q, COALESCE(a.name, ''))
+                            ) >= @nameThreshold
+                         OR GREATEST(
+                                similarity(COALESCE(c.name, ''), @q),
+                                word_similarity(@q, COALESCE(c.name, ''))
+                            ) >= @relatedThreshold
+                         OR GREATEST(
+                                similarity(COALESCE(d.name, ''), @q),
+                                word_similarity(@q, COALESCE(d.name, ''))
+                            ) >= @relatedThreshold
+                         OR GREATEST(
+                                similarity(COALESCE(p.name, ''), @q),
+                                word_similarity(@q, COALESCE(p.name, ''))
+                            ) >= @relatedThreshold
+                         OR GREATEST(
+                                similarity(ac.name, @q),
+                                word_similarity(@q, COALESCE(ac.name, ''))
+                            ) >= @relatedThreshold
+                    )
+                 )
+              )
+            ORDER BY
+                GREATEST(
+                    GREATEST(
+                        similarity(a.name, @q),
+                        word_similarity(@q, COALESCE(a.name, ''))
+                    ),
+                    COALESCE(
+                        GREATEST(
+                            similarity(c.name, @q),
+                            word_similarity(@q, COALESCE(c.name, ''))
+                        ),
+                        0
+                    ),
+                    COALESCE(
+                        GREATEST(
+                            similarity(d.name, @q),
+                            word_similarity(@q, COALESCE(d.name, ''))
+                        ),
+                        0
+                    ),
+                    COALESCE(
+                        GREATEST(
+                            similarity(p.name, @q),
+                            word_similarity(@q, COALESCE(p.name, ''))
+                        ),
+                        0
+                    ),
+                    GREATEST(
+                        similarity(ac.name, @q),
+                        word_similarity(@q, COALESCE(ac.name, ''))
+                    )
+                ) DESC,
+                a.is_featured DESC,
+                a.avg_rating DESC,
+                a.name ASC
+            LIMIT @take;
+            """;
+
+        var result = new List<ActivitySearchHitRow>();
+        await using var conn = CreateConnection();
+        await conn.OpenAsync();
+
+        await using var cmd = CreateSearchCommand(conn, sql, query, take);
+        await using var reader = await cmd.ExecuteReaderAsync();
+
+        while(await reader.ReadAsync())
+        {
+          result.Add(new ActivitySearchHitRow
+          {
+              Id = reader.GetGuid(reader.GetOrdinal("id")),
+              NameSimilarity = reader.GetDouble(reader.GetOrdinal("name_similarity")),
+              CitySimilarity = GetNullableDouble(reader, "city_similarity"),
+              DestinationSimilarity = GetNullableDouble(reader, "destination_similarity"),
+              PlaceSimilarity = GetNullableDouble(reader, "place_similarity"),
+              CategorySimilarity = GetNullableDouble(reader, "category_similarity")
+          });      
+        }
+
+        return result;
+    }
+    // OBUHVATA AKTIVNOSTI --------------------------------------------------------------------------------
+
+    private NpgsqlConnection CreateConnection()
+    {
+      var connectionString = _db.Database.GetConnectionString()
+          ?? throw new InvalidOperationException("Database connection string is not configured");
+
+      return new NpgsqlConnection(connectionString);
+    }
+    private NpgsqlCommand CreateSearchCommand(
+      NpgsqlConnection conn,
+      string sql,
+      string query,
+      int take
+    )
+    { 
+       var enableFuzzy = query.Trim().Length >= 3;
+       var contains = $"%{query}";
+      
+       var cmd = new NpgsqlCommand(sql, conn);
+       
+       cmd.Parameters.AddWithValue("@q", query);     
+       cmd.Parameters.AddWithValue("@contains", contains);     
+       cmd.Parameters.AddWithValue("@enableFuzzy", enableFuzzy);     
+       cmd.Parameters.AddWithValue("@nameThreshold", NameSimilarityThreshold);     
+       cmd.Parameters.AddWithValue("@relatedThreshold", RelatedSimilarityThreshold);     
+       cmd.Parameters.AddWithValue("@take", take);
+       
+       return cmd;     
+    }
+
+    private static double? GetNullableDouble(NpgsqlDataReader reader, string columnName)
+    {
+      var ordinal = reader.GetOrdinal(columnName);
+      if(reader.IsDBNull(ordinal)) return null;
+      return Convert.ToDouble(reader.GetValue(ordinal));    
+    } 
+  }
 }

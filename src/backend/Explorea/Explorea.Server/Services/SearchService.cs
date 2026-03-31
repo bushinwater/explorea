@@ -7,6 +7,7 @@ using Explorea.API.DTOs.Search;
 using Explorea.API.Models;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Interfaces;
+using Explorea.Server.Repositories.Models;
 
 namespace Explorea.Server.Services
 {
@@ -40,13 +41,15 @@ namespace Explorea.Server.Services
 
       var candidates = new List<SearchCandidate>();
 
-      foreach(var destination in destinations)
+      foreach(var destinationHit in destinations)
       {
+        var destination = destinationHit.Entity;
+
         candidates.Add(new SearchCandidate
         {
           EntityType = "destination",
           Entity = destination,
-          Score = ScoreDestination(destination, query),
+          Score = ScoreDestination(destination, query) + ScoreDestinationFuzzy(destinationHit, query),
           IsFeatured = destination.IsFeatured,
           AvgRating = destination.AvgRating,
           EventStartDatetime = null,
@@ -54,13 +57,14 @@ namespace Explorea.Server.Services
         });
       }
 
-      foreach (var place in places)
+      foreach (var placeHit in places)
       {
+        var place = placeHit.Entity;
         candidates.Add(new SearchCandidate
         {
           EntityType = "place",
           Entity = place,
-          Score = ScorePlace(place, query),
+          Score = ScorePlace(place, query) + ScorePlaceFuzzy(placeHit, query),
           IsFeatured = place.IsFeatured,
           AvgRating = place.AvgRating,
           EventStartDatetime = null,
@@ -68,13 +72,14 @@ namespace Explorea.Server.Services
         });
       }
       
-      foreach (var ev in events)
+      foreach (var evHit in events)
       {
+        var ev = evHit.Entity;
         candidates.Add(new SearchCandidate
         {
           EntityType = "event",
           Entity = ev,
-          Score = ScoreEvent(ev, query),
+          Score = ScoreEvent(ev, query) + ScoreEventFuzzy(evHit, query),
           IsFeatured = ev.IsFeatured,
           AvgRating = null,
           EventStartDatetime = ev.StartDatetime,
@@ -82,13 +87,14 @@ namespace Explorea.Server.Services
         });
       }
 
-      foreach (var activity in activities)
+      foreach (var activityHit in activities)
       {
+        var activity = activityHit.Entity;
         candidates.Add(new SearchCandidate
         {
           EntityType = "activity",
           Entity = activity,
-          Score = ScoreActivity(activity, query),
+          Score = ScoreActivity(activity, query) + ScoreActivityFuzzy(activityHit, query),
           IsFeatured = activity.IsFeatured,
           AvgRating = activity.AvgRating,
           EventStartDatetime = null,
@@ -209,6 +215,63 @@ namespace Explorea.Server.Services
       if(string.IsNullOrWhiteSpace(value)) return 0;
 
       return ContainsInsensitive(value, query) ? scoreValue : 0;
+    }
+
+    private int ScoreDestinationFuzzy(SearchProjection<Destination> hit, string query)
+    {
+      if(query.Length < 3) return 0;
+
+      int score = 0;
+      score += SimilarityToScore(hit.NameSimilarity, weight: 40, threshold: 0.30);
+      score += SimilarityToScore(hit.CitySimilarity, weight: 15, threshold: 0.35);
+
+      return score;
+    }
+    private int ScorePlaceFuzzy(SearchProjection<Place> hit, string query)
+    {
+      if(query.Length < 3) return 0;
+
+      int score = 0;
+      score += SimilarityToScore(hit.NameSimilarity, weight: 40, threshold: 0.30);
+      score += SimilarityToScore(hit.CitySimilarity, weight: 15, threshold: 0.35);
+      score += SimilarityToScore(hit.DestinationSimilarity, weight: 20, threshold: 0.35);
+      score += SimilarityToScore(hit.TypeSimilarity, weight: 10, threshold: 0.35);
+
+      return score;
+    }
+    private int ScoreEventFuzzy(SearchProjection<Event> hit, string query)
+    {
+      if(query.Length < 3) return 0;
+
+      int score = 0;
+      score += SimilarityToScore(hit.NameSimilarity, weight: 40, threshold: 0.30);
+      score += SimilarityToScore(hit.CitySimilarity, weight: 15, threshold: 0.35);
+      score += SimilarityToScore(hit.DestinationSimilarity, weight: 20, threshold: 0.35);
+      score += SimilarityToScore(hit.PlaceSimilarity, weight: 15, threshold: 0.35);
+      score += SimilarityToScore(hit.TypeSimilarity, weight: 10, threshold: 0.35);
+
+      return score;
+    }
+    private int ScoreActivityFuzzy(SearchProjection<Activity> hit, string query)
+    {
+      if(query.Length < 3) return 0;
+
+      int score = 0;
+      score += SimilarityToScore(hit.NameSimilarity, weight: 40, threshold: 0.30);
+      score += SimilarityToScore(hit.CitySimilarity, weight: 15, threshold: 0.35);
+      score += SimilarityToScore(hit.DestinationSimilarity, weight: 20, threshold: 0.35);
+      score += SimilarityToScore(hit.PlaceSimilarity, weight: 15, threshold: 0.35);
+      score += SimilarityToScore(hit.CategorySimilarity, weight: 10, threshold: 0.35);
+
+      return score;
+    }
+
+    private static int SimilarityToScore(double? similarity, int weight, double threshold)
+    {
+      if(!similarity.HasValue) return 0;      
+      if(similarity.Value < threshold) return 0;      
+
+      return (int)Math.Round(similarity.Value * weight);
     }
 
     // mapping metode 
