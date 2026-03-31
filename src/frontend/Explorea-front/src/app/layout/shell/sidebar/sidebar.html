@@ -26,7 +26,9 @@
       <span class="material-icons nav-icon">settings</span> Podešavanja
     </a>
     <button class="nav-item theme-toggle" (click)="themeService.toggle()">
-      <span class="material-icons nav-icon">{{ themeService.isDark ? 'light_mode' : 'dark_mode' }}</span>
+      <span class="material-icons nav-icon">{{
+        themeService.isDark ? 'light_mode' : 'dark_mode'
+      }}</span>
       {{ themeService.isDark ? 'Light mode' : 'Dark mode' }}
     </button>
     <a href="#" class="nav-item danger">
