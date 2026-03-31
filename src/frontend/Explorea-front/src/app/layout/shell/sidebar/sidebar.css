@@ -109,3 +109,13 @@
   flex-direction: column;
   gap: var(--spacing-xs);
 }
+
+.theme-toggle {
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-size: var(--font-size-small);
+  font-family: var(--font-primary);
+  cursor: pointer;
+}
