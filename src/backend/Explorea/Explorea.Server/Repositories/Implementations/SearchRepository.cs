@@ -209,8 +209,6 @@ namespace Explorea.Server.Repositories.Implementations
             return (places, events, activities);
         }
 
-    private const double NameSimilarityThreshold = 0.25;
-    private const double RelatedSimilarityThreshold = 0.30;
 
     // RAW SQL DEO
     async Task<List<SearchProjection<Destination>>> ISearchRepository.SearchDestinationsAsync(string query, int take = 25)
@@ -259,7 +257,6 @@ namespace Explorea.Server.Repositories.Implementations
           AND (
                 d.name ILIKE @contains
              OR COALESCE(d.description, '') ILIKE @contains
-             OR COALESCE(c.name, '') ILIKE @contains
              OR (
                     @enableFuzzy = TRUE
                 AND (
@@ -267,13 +264,9 @@ namespace Explorea.Server.Repositories.Implementations
                             similarity(d.name, @q),
                             word_similarity(@q, COALESCE(d.name, ''))
                         ) >= @nameThreshold
-                     OR GREATEST(
-                            similarity(COALESCE(c.name, ''), @q),
-                            word_similarity(@q, COALESCE(c.name, ''))
-                        ) >= @relatedThreshold
+                    )
                 )
-             )
-          )
+            )
         ORDER BY
             GREATEST(
                 GREATEST(
@@ -391,21 +384,9 @@ namespace Explorea.Server.Repositories.Implementations
                                 similarity(p.name, @q),
                                 word_similarity(@q, COALESCE(p.name, ''))
                             ) >= @nameThreshold
-                         OR GREATEST(
-                                similarity(COALESCE(c.name, ''), @q),
-                                word_similarity(@q, COALESCE(c.name, ''))
-                            ) >= @relatedThreshold
-                         OR GREATEST(
-                                similarity(COALESCE(d.name, ''), @q),
-                                word_similarity(@q, COALESCE(d.name, ''))
-                            ) >= @relatedThreshold
-                         OR GREATEST(
-                                similarity(COALESCE(pt.name, ''), @q),
-                                word_similarity(@q, COALESCE(pt.name, ''))
-                            ) >= @relatedThreshold
+                        )
                     )
-                 )
-              )
+               )
             ORDER BY
                 GREATEST(
                     GREATEST(
@@ -537,10 +518,6 @@ namespace Explorea.Server.Repositories.Implementations
                 e.name ILIKE @contains
              OR COALESCE(e.description, '') ILIKE @contains
              OR COALESCE(e.address, '') ILIKE @contains
-             OR COALESCE(c.name, '') ILIKE @contains
-             OR COALESCE(d.name, '') ILIKE @contains
-             OR COALESCE(p.name, '') ILIKE @contains
-             OR et.name ILIKE @contains
              OR (
                     @enableFuzzy = TRUE
                 AND (
@@ -548,25 +525,10 @@ namespace Explorea.Server.Repositories.Implementations
                             similarity(e.name, @q),
                             word_similarity(@q, COALESCE(e.name, ''))
                         ) >= @nameThreshold
-                     OR GREATEST(
-                            similarity(COALESCE(c.name, ''), @q),
-                            word_similarity(@q, COALESCE(c.name, ''))
-                        ) >= @relatedThreshold
-                     OR GREATEST(
-                            similarity(COALESCE(d.name, ''), @q),
-                            word_similarity(@q, COALESCE(d.name, ''))
-                        ) >= @relatedThreshold
-                     OR GREATEST(
-                            similarity(COALESCE(p.name, ''), @q),
-                            word_similarity(@q, COALESCE(p.name, ''))
-                        ) >= @relatedThreshold
-                     OR GREATEST(
-                            similarity(et.name, @q),
-                            word_similarity(@q, COALESCE(et.name, ''))
-                        ) >= @relatedThreshold
+                     
+                    )
                 )
-             )
-          )
+            )
         ORDER BY
             GREATEST(
                 GREATEST(
@@ -704,10 +666,6 @@ namespace Explorea.Server.Repositories.Implementations
                     a.name ILIKE @contains
                  OR COALESCE(a.description, '') ILIKE @contains
                  OR COALESCE(a.start_point, '') ILIKE @contains
-                 OR COALESCE(c.name, '') ILIKE @contains
-                 OR COALESCE(d.name, '') ILIKE @contains
-                 OR COALESCE(p.name, '') ILIKE @contains
-                 OR ac.name ILIKE @contains
                  OR (
                         @enableFuzzy = TRUE
                     AND (
@@ -715,25 +673,10 @@ namespace Explorea.Server.Repositories.Implementations
                                 similarity(a.name, @q),
                                 word_similarity(@q, COALESCE(a.name, ''))
                             ) >= @nameThreshold
-                         OR GREATEST(
-                                similarity(COALESCE(c.name, ''), @q),
-                                word_similarity(@q, COALESCE(c.name, ''))
-                            ) >= @relatedThreshold
-                         OR GREATEST(
-                                similarity(COALESCE(d.name, ''), @q),
-                                word_similarity(@q, COALESCE(d.name, ''))
-                            ) >= @relatedThreshold
-                         OR GREATEST(
-                                similarity(COALESCE(p.name, ''), @q),
-                                word_similarity(@q, COALESCE(p.name, ''))
-                            ) >= @relatedThreshold
-                         OR GREATEST(
-                                similarity(ac.name, @q),
-                                word_similarity(@q, COALESCE(ac.name, ''))
-                            ) >= @relatedThreshold
+                         
+                        )
                     )
-                 )
-              )
+                )
             ORDER BY
                 GREATEST(
                     GREATEST(
@@ -803,6 +746,17 @@ namespace Explorea.Server.Repositories.Implementations
 
       return new NpgsqlConnection(connectionString);
     }
+
+    private static (double nameThreshold, double RelatedThreshold) GetSimilarityThreshold(string query)
+    {
+        var normalizedLength = query.Trim().Length;
+
+        if(normalizedLength <= 4) return (0.35, 0.40);
+
+        if(normalizedLength <= 7) return (0.30, 0.35);
+        
+        return (0.25, 0.30);    
+    }
     private NpgsqlCommand CreateSearchCommand(
       NpgsqlConnection conn,
       string sql,
@@ -810,16 +764,19 @@ namespace Explorea.Server.Repositories.Implementations
       int take
     )
     { 
+       var trimmedQuery = query.Trim();
        var enableFuzzy = query.Trim().Length >= 3;
-       var contains = $"%{query}";
+       var contains = $"%{trimmedQuery}";
+
+       var (nameThreshold, relatedThreshold) = GetSimilarityThreshold(trimmedQuery);
       
        var cmd = new NpgsqlCommand(sql, conn);
        
        cmd.Parameters.AddWithValue("@q", query);     
        cmd.Parameters.AddWithValue("@contains", contains);     
        cmd.Parameters.AddWithValue("@enableFuzzy", enableFuzzy);     
-       cmd.Parameters.AddWithValue("@nameThreshold", NameSimilarityThreshold);     
-       cmd.Parameters.AddWithValue("@relatedThreshold", RelatedSimilarityThreshold);     
+       cmd.Parameters.AddWithValue("@nameThreshold", nameThreshold);     
+       cmd.Parameters.AddWithValue("@relatedThreshold", relatedThreshold);     
        cmd.Parameters.AddWithValue("@take", take);
        
        return cmd;     
