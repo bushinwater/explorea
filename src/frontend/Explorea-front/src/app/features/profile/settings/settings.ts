@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UpdatePreferencesDto, UpdateUserDto, UserProfile } from '../../../core/models/user.model';
+import { ThemeService } from '../../../core/services/theme.service';
 import { UserService } from '../../../core/services/user.service';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 
@@ -21,7 +22,7 @@ export class Settings implements OnInit {
   privateProfile = false;
   language = 'sr';
 
-  constructor(private userService: UserService) {}
+  constructor(private userService: UserService, public themeService: ThemeService) {}
 
   ngOnInit() {
     // Mock podaci dok backend nije implementiran
