@@ -7,7 +7,7 @@ using Explorea.API.DTOs.Search;
 using Explorea.API.Models;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Interfaces;
-using Explorea.Server.Repositories.Models;
+using Explorea.Server.Models;
 
 namespace Explorea.Server.Services
 {

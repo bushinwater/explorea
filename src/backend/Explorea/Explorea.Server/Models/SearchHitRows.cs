@@ -1,4 +1,4 @@
-namespace Explorea.Server.Repositories.Models
+namespace Explorea.Server.Models
 {
   public class DestinationSearchHitRow
   {

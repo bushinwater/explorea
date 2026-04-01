@@ -1,5 +1,5 @@
 using Explorea.API.Models;
-using Explorea.Server.Repositories.Models;
+using Explorea.Server.Models;
 using Activity = Explorea.API.Models.Activity;
 
 namespace Explorea.Server.Repositories.Interfaces

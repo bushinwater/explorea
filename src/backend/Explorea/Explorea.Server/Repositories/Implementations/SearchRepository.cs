@@ -1,7 +1,7 @@
 using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Repositories.Interfaces;
-using Explorea.Server.Repositories.Models;
+using Explorea.Server.Models;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System.Data;
