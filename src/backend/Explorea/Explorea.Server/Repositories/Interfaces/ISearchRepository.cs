@@ -1,4 +1,5 @@
 using Explorea.API.Models;
+using Explorea.Server.Repositories.Models;
 using Activity = Explorea.API.Models.Activity;
 
 namespace Explorea.Server.Repositories.Interfaces
@@ -12,5 +13,16 @@ namespace Explorea.Server.Repositories.Interfaces
 
         Task<(List<Place> Places, List<Event> Events, List<Activity> Activities)>
             SearchMapAsync(double lat, double lng, double radiusKm, string type);
+
+        // DEDICATED METODE
+        Task<List<SearchProjection<Destination>>> SearchDestinationsAsync(string query, int take = 25);
+        Task<List<SearchProjection<Place>>> SearchPlacesAsync(string query, int take = 25);
+        Task<List<SearchProjection<Event>>> SearchEventsAsync(string query, DateTimeOffset now, int take = 25);
+        Task<List<SearchProjection<Activity>>> SearchActivitiesAsync(string query, int take = 25);
+
+        Task<List<Destination>> GetDestinationsForSearchAsync(int take = 10);
+        Task<List<Place>> GetPlacesForSearchAsync(int take = 10);
+        Task <List<Event>> GetEventsForSearchAsync(DateTimeOffset now, int take = 10);
+        Task<List<Activity>> GetActivitiesForSearchAsync(int take = 10);
     }
 }
