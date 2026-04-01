@@ -30,6 +30,33 @@ namespace Explorea.Server.Services
 
       limit = Math.Clamp(limit, 1, 10);
 
+      switch (query)
+      {
+        case "aktivnost":
+        case "aktivnosti":
+        case "activity":
+        case "activities":
+          return await SearchAllActivitiesAsync(limit);
+
+        case "destinacije":
+        case "destinacija":
+        case "destination":
+        case "destinations":
+          return await SearchAllDestinationsAsync(limit);
+
+        case "mesta":
+        case "mesto":
+        case "place":
+        case "places":
+          return await SearchAllPlacesAsync(limit);
+
+        case "dogadjaji":
+        case "dogadjaj":
+        case "event":
+        case "events":
+          return await SearchAllEventsAsync(limit);
+      }
+      
       var now = DateTimeOffset.UtcNow;
 
       var destinations = await _searchRepository.SearchDestinationsAsync(query);
@@ -132,7 +159,66 @@ namespace Explorea.Server.Services
       };
     }
 
-    // scoring metode
+    // SEARCH HELPERI
+    private async Task<SearchResultDto> SearchAllActivitiesAsync(int limit)
+    {
+      var activities = await _searchRepository.GetActivitiesForSearchAsync(limit);
+
+      return new SearchResultDto
+      {
+        Total = activities.Count,
+        Results = activities.Select(a => new SearchItemDto
+        {
+          EntityType = "activity",
+          Entity = MapActivityToSearchItem(a)
+        }).ToList()
+      };
+    }
+    private async Task<SearchResultDto> SearchAllDestinationsAsync(int limit)
+    {
+      var destinations = await _searchRepository.GetDestinationsForSearchAsync(limit);
+
+      return new SearchResultDto
+      {
+        Total = destinations.Count,
+        Results = destinations.Select(d => new SearchItemDto
+        {
+          EntityType = "destination",
+          Entity = MapDestinationToSearchItem(d)
+        }).ToList()
+      };
+    }
+    private async Task<SearchResultDto> SearchAllPlacesAsync(int limit)
+    {
+      var places = await _searchRepository.GetPlacesForSearchAsync(limit);
+
+      return new SearchResultDto
+      {
+        Total = places.Count,
+        Results = places.Select(p => new SearchItemDto
+        {
+          EntityType = "place",
+          Entity = MapPlaceToSearchItem(p)
+        }).ToList()
+      };
+    }
+    private async Task<SearchResultDto> SearchAllEventsAsync(int limit)
+    {
+      var events = await _searchRepository.GetEventsForSearchAsync(DateTimeOffset.UtcNow, limit);
+
+      return new SearchResultDto
+      {
+        Total = events.Count,
+        Results = events.Select(e => new SearchItemDto
+        {
+          EntityType = "event",
+          Entity = MapEventToSearchItem(e)
+        }).ToList()
+      };
+    
+    }
+
+    // SCORING METODE
     private int ScoreDestination(Destination destination, string query)
     {
       int score = 0;
@@ -198,7 +284,6 @@ namespace Explorea.Server.Services
 
       return 0;
     }
-
     private static int ScoreRelatedField(string? value, string query, int exactScore, int containsScore)
     {
       if(string.IsNullOrWhiteSpace(value)) return 0;
@@ -209,7 +294,6 @@ namespace Explorea.Server.Services
 
       return 0;
     }
-
     private static int ScoreDescriptionField(string? value, string query, int scoreValue)
     {
       if(string.IsNullOrWhiteSpace(value)) return 0;

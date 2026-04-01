@@ -20,5 +20,9 @@ namespace Explorea.Server.Repositories.Interfaces
         Task<List<SearchProjection<Event>>> SearchEventsAsync(string query, DateTimeOffset now, int take = 25);
         Task<List<SearchProjection<Activity>>> SearchActivitiesAsync(string query, int take = 25);
 
+        Task<List<Destination>> GetDestinationsForSearchAsync(int take = 10);
+        Task<List<Place>> GetPlacesForSearchAsync(int take = 10);
+        Task <List<Event>> GetEventsForSearchAsync(DateTimeOffset now, int take = 10);
+        Task<List<Activity>> GetActivitiesForSearchAsync(int take = 10);
     }
 }

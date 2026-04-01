@@ -209,6 +209,61 @@ namespace Explorea.Server.Repositories.Implementations
             return (places, events, activities);
         }
 
+    // SHORTCUTS ZA PRETRAGU
+    async Task<List<Destination>> ISearchRepository.GetDestinationsForSearchAsync(int take)
+    {
+      return await _db.Destinations
+      .AsNoTracking()
+      .Include(d => d.City)
+      .Where(d => !d.IsDeleted)
+      .OrderByDescending(d => d.IsFeatured)
+      .ThenByDescending(d => d.AvgRating)
+      .ThenBy(d => d.Name)
+      .Take(take)
+      .ToListAsync();
+    }
+    async Task<List<Activity>> ISearchRepository.GetActivitiesForSearchAsync(int take)
+    {
+      return await _db.Activities
+        .AsNoTracking()
+        .Include(a => a.Category)
+        .Include(a => a.Images)
+        .Where(a => !a.IsDeleted)
+        .OrderByDescending(a => a.IsFeatured)
+        .ThenByDescending(a => a.AvgRating)
+        .ThenBy(a => a.Name)
+        .Take(take)
+        .ToListAsync();
+    }
+
+    async Task<List<Place>> ISearchRepository.GetPlacesForSearchAsync(int take)
+    {
+      return await _db.Places
+        .AsNoTracking()
+        .Include(p => p.Type)
+        .Include(p => p.Images)
+        .Where(p => !p.IsDeleted)
+        .OrderByDescending(p => p.IsFeatured)
+        .ThenByDescending(p => p.AvgRating)
+        .ThenBy(p => p.Name)
+        .Take(take)
+        .ToListAsync();
+    }
+
+    async Task<List<Event>> ISearchRepository.GetEventsForSearchAsync(DateTimeOffset now, int take)
+    {
+      return await _db.Events
+        .AsNoTracking()
+        .Include(e => e.Type)
+        .Include(e => e.City)
+        .Include(e => e.Images)
+        .Where(e => !e.IsDeleted && e.EndDatetime >= now)
+        .OrderByDescending(e => e.IsFeatured)
+        .ThenBy(e => e.StartDatetime)
+        .ThenBy(e => e.Name)
+        .Take(take)
+        .ToListAsync();
+    }
 
     // RAW SQL DEO
     async Task<List<SearchProjection<Destination>>> ISearchRepository.SearchDestinationsAsync(string query, int take = 25)
