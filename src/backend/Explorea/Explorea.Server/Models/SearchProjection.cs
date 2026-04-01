@@ -1,5 +1,5 @@
 // interni repository model, pomoc pri projekciji za search
-namespace Explorea.Server.Repositories.Models
+namespace Explorea.Server.Models
 {
   public class SearchProjection<T>
   {
