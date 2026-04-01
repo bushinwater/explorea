@@ -1,0 +1,26 @@
+<div class="wrapper">
+  <div class="logo">
+    <span class="logo-icon">◇</span>
+    <span class="logo-text">Explorea</span>
+  </div>
+
+  <h2>Molim Vas, selektujte Vaše interese:</h2>
+
+  <div class="grid">
+    <div
+      class="card interest-card"
+      *ngFor="let interest of interests"
+      [class.selected]="interest.selected"
+      (click)="toggle(interest)"
+    >
+      <div class="icon-box">
+        <div class="icon-box">
+          <img src="assets/icons/mountain.png" alt="Avanture" width="24" height="24" />
+        </div>
+      </div>
+      <span>{{ interest.label }}</span>
+    </div>
+  </div>
+
+  <button class="btn btn-primary nastavi" (click)="nastavi()">Nastavi</button>
+</div>

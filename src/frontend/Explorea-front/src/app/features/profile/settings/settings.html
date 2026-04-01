@@ -1,0 +1,189 @@
+<div class="page">
+  <app-sidebar></app-sidebar>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>Profil & Podešavanja</h1>
+      <p>Upravljaj svojim nalogom, preferencijama i privatnošću na Explorea platformi.</p>
+    </div>
+
+    <!-- PROFIL KARTICA -->
+    <div class="profile-card card">
+      <div class="avatar">{{ user?.firstName?.[0] }}{{ user?.lastName?.[0] }}</div>
+      <h2>{{ user?.firstName }} {{ user?.lastName }}</h2>
+      <p class="email">✉ {{ user?.email }}</p>
+      <span class="rank-badge">{{ user?.travelerRank }}</span>
+
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-value">{{ user?.totalVisits }}</span>
+          <span class="stat-label">AVANTURE</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">0</span>
+          <span class="stat-label">RECENZIJE</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">0</span>
+          <span class="stat-label">SAČUVANO</span>
+        </div>
+      </div>
+
+      <div class="meta">
+        <span>Član od: {{ user?.memberSince | date: 'MMM yyyy' }}</span>
+      </div>
+    </div>
+
+    <!-- SEKCIJE DESNO -->
+    <div class="sections">
+      <section class="section">
+        <h3>Informacije o nalogu</h3>
+        <p>Ažuriraj svoje lične podatke i sigurnosna podešavanja.</p>
+
+        <div class="fields">
+          <div class="field">
+            <div class="field-icon"><span class="material-icons">person</span></div>
+            <div class="field-info">
+              <strong>Korisničko ime</strong>
+              <span>Ovo ime će biti vidljivo na tvojim recenzijama i postovima.</span>
+            </div>
+            <input class="input" [(ngModel)]="username" placeholder="Korisničko ime" />
+          </div>
+
+          <div class="field">
+            <div class="field-icon"><span class="material-icons">email</span></div>
+            <div class="field-info">
+              <strong>Email adresa</strong>
+              <span>Primarna adresa za obaveštenja i potvrde rezervacija.</span>
+            </div>
+            <input class="input" [value]="user?.email || ''" disabled />
+          </div>
+
+          <div class="field">
+            <div class="field-icon"><span class="material-icons">lock</span></div>
+            <div class="field-info">
+              <strong>Lozinka</strong>
+              <span>Poslednja promena pre 3 meseca. Preporučujemo redovnu promenu.</span>
+            </div>
+            <button class="btn btn-secondary">Promeni lozinku</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3>Obaveštenja</h3>
+        <p>Izaberi kako i kada želiš da primaš novosti od nas.</p>
+
+        <div class="fields">
+          <div class="field">
+            <div class="field-icon"><span class="material-icons">notifications</span></div>
+            <div class="field-info">
+              <strong>Push obaveštenja</strong>
+              <span>Primaj obaveštenja o novim događajima i porukama direktno u browseru.</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" [(ngModel)]="notificationsEnabled" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="field">
+            <div class="field-icon"><span class="material-icons">mail</span></div>
+            <div class="field-info">
+              <strong>Marketing emailovi</strong>
+              <span>Specijalne ponude, popusti i AI preporuke za tvoje sledeće putovanje.</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3>Povezani nalozi</h3>
+        <p>Poveži svoje profile za lakše deljenje avantura.</p>
+
+        <div class="fields">
+          <div class="field">
+            <div class="field-icon"><span class="material-icons">share</span></div>
+            <div class="field-info">
+              <strong>Instagram profil</strong>
+              <span>Poveži Instagram da bi automatski delio svoje fotografije sa putovanja.</span>
+            </div>
+            <button class="btn btn-secondary">Poveži nalog ↗</button>
+          </div>
+
+          <div class="field">
+            <div class="field-icon"><span class="material-icons">share</span></div>
+            <div class="field-info">
+              <strong>Facebook</strong>
+              <span>Tvoj nalog je uspešno povezan sa Facebook profilom.</span>
+            </div>
+            <span class="connected-label">Povezano</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3>Lokalizacija i Privatnost</h3>
+
+        <div class="fields">
+          <div class="field">
+            <div class="field-icon"><span class="material-icons">language</span></div>
+            <div class="field-info">
+              <strong>Jezik aplikacije</strong>
+              <span>Izaberi primarni jezik za interfejs aplikacije.</span>
+            </div>
+            <select class="input" [(ngModel)]="language">
+              <option value="sr">Srpski (SR)</option>
+              <option value="en">English (EN)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <div class="field-icon"><span class="material-icons">{{ themeService.isDark ? 'dark_mode' : 'light_mode' }}</span></div>
+            <div class="field-info">
+              <strong>Tema aplikacije</strong>
+              <span>{{ themeService.isDark ? 'Tamna tema je aktivna.' : 'Svetla tema je aktivna.' }}</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" [checked]="themeService.isDark" (change)="themeService.toggle()" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- AKCIJE -->
+    <div class="actions">
+      <button class="btn btn-primary" (click)="sacuvaj()">Sačuvaj sve izmene</button>
+      <button class="btn btn-secondary">Otkaži</button>
+      <button class="btn btn-danger">Obriši nalog</button>
+    </div>
+  </main>
+  <nav class="bottom-nav">
+    <a href="#" class="nav-item">
+      <span class="material-icons">home</span>
+      <span>Početna</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="material-icons">explore</span>
+      <span>Istraži</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="material-icons">search</span>
+      <span>Pretraži</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="material-icons">event</span>
+      <span>Događaji</span>
+    </a>
+    <a href="#" class="nav-item active">
+      <span class="material-icons">person</span>
+      <span>Profil</span>
+    </a>
+  </nav>
+</div>
