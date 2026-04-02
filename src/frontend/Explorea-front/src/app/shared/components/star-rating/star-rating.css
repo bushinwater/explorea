@@ -1,0 +1,21 @@
+.stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.star .material-icons {
+  font-size: 16px;
+  color: var(--color-accent);
+}
+
+.star.empty .material-icons {
+  color: var(--color-border);
+}
+
+.rating-value {
+  margin-left: 4px;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}

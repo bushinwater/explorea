@@ -1,0 +1,12 @@
+<section class="section travel-reviews" *ngIf="reviews.length">
+  <div class="section__header">
+    <div>
+      <h2 class="section__title">Iskustva istraživača</h2>
+      <p class="section__subtitle">Šta kažu naši putnici o doživljajima širom Srbije</p>
+    </div>
+  </div>
+
+  <div class="scroll-row">
+    <app-review-card *ngFor="let review of reviews" [review]="review" />
+  </div>
+</section>

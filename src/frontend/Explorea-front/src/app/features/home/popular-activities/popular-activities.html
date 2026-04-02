@@ -1,0 +1,28 @@
+<section class="section popular-activities">
+  <div class="section__header">
+    <div>
+      <h2 class="section__title">Popularne aktivnosti</h2>
+    </div>
+    <a href="#" class="section__link">Sve aktivnosti <span class="material-icons">arrow_forward</span></a>
+  </div>
+
+  <div class="activities-grid">
+    <div class="activity-item" *ngFor="let activity of activities">
+      <div class="activity-item__image-wrap">
+        <img [src]="activity.previewImageUrl" [alt]="activity.name" class="activity-item__image" loading="lazy" />
+        <span class="activity-item__category">{{ activity.category.name }}</span>
+        <div class="activity-item__overlay">
+          <span class="activity-item__name">{{ activity.name }}</span>
+          <div class="activity-item__meta">
+            <span class="activity-item__rating">
+              <span class="material-icons">star</span>
+              {{ activity.avgRating | number: '1.1-1' }}
+            </span>
+            <span *ngIf="activity.price" class="activity-item__price">{{ activity.price | number }} RSD</span>
+            <span *ngIf="!activity.price" class="activity-item__price">Besplatno</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

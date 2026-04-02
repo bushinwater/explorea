@@ -1,0 +1,16 @@
+<section class="section featured-destinations">
+  <div class="section__header">
+    <div>
+      <h2 class="section__title">Istaknute destinacije</h2>
+    </div>
+    <a href="#" class="section__link">Sve destinacije <span class="material-icons">arrow_forward</span></a>
+  </div>
+
+  <div class="scroll-row">
+    <app-destination-card
+      *ngFor="let dest of destinations"
+      [destination]="dest"
+      [featured]="!!dest.isFeatured"
+    />
+  </div>
+</section>

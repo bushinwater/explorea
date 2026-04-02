@@ -1,0 +1,42 @@
+<div class="home-layout">
+  <!-- Sidebar (desktop overlay) -->
+  <app-sidebar />
+
+  <!-- Main content -->
+  <main class="home-main">
+    <!-- Hero Banner -->
+    <app-hero-banner
+      [banners]="heroBanners"
+      [cityFilters]="cityFilters"
+      (citySelected)="onCitySelected($event)"
+      (searchSubmitted)="onSearch($event)"
+    />
+
+    <!-- Page sections -->
+    <div class="home-content">
+      <app-featured-destinations [destinations]="featuredDestinations" />
+
+      <app-upcoming-events [events]="upcomingEvents" />
+
+      <app-popular-activities [activities]="popularActivities" />
+
+      <app-ai-recommendations [recommendations]="recommendations" />
+
+      <app-travel-reviews [reviews]="travelerReviews" />
+    </div>
+
+    <!-- Footer -->
+    <footer class="home-footer">
+      <div class="home-footer__inner">
+        <div class="home-footer__brand">
+          <span class="logo-icon">◇</span>
+          <span class="logo-text">Explorea</span>
+        </div>
+        <p class="home-footer__copy">© 2025 Explorea · Turistički vodič Srbije</p>
+      </div>
+    </footer>
+  </main>
+
+  <!-- Bottom nav (mobile) -->
+  <app-bottom-nav />
+</div>

@@ -1,0 +1,126 @@
+.popular-activities {
+  padding: var(--spacing-xl) 0;
+}
+
+/* Desktop: horizontal scroll row */
+.activities-grid {
+  display: flex;
+  gap: var(--spacing-md);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+  padding-bottom: var(--spacing-sm);
+}
+
+.activities-grid::-webkit-scrollbar {
+  height: 4px;
+}
+
+.activities-grid::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+.activity-item {
+  flex-shrink: 0;
+  width: 200px;
+}
+
+.activity-item__image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.activity-item__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.activity-item__image-wrap:hover .activity-item__image {
+  transform: scale(1.06);
+}
+
+.activity-item__category {
+  position: absolute;
+  top: var(--spacing-sm);
+  left: var(--spacing-sm);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.activity-item__overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.activity-item__name {
+  color: #fff;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity-item__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.activity-item__rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+}
+
+.activity-item__rating .material-icons {
+  font-size: 13px;
+  color: var(--color-accent);
+}
+
+.activity-item__price {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+}
+
+/* Mobile: 2x2 grid */
+@media (max-width: 768px) {
+  .activities-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow-x: visible;
+    gap: var(--spacing-sm);
+    padding-bottom: 0;
+  }
+
+  .activity-item {
+    width: 100%;
+  }
+
+  /* Prikaži samo 4 stavke (2x2) */
+  .activity-item:nth-child(n + 5) {
+    display: none;
+  }
+}

@@ -1,0 +1,65 @@
+<section class="hero" *ngIf="banners.length">
+  <!-- Transform-based beskonačni carousel -->
+  <div
+    class="hero__track"
+    [class.no-transition]="noTransition"
+    [style.transform]="trackTranslate"
+    (transitionend)="onTransitionEnd()"
+  >
+    <div class="hero__slide" *ngFor="let banner of extendedSlides">
+      <img [src]="banner.imageUrl" [alt]="banner.title" class="hero__bg" loading="eager" />
+      <div class="hero__overlay"></div>
+    </div>
+  </div>
+
+  <!-- Mobile: top gradient s logom -->
+  <div class="hero__top-gradient">
+    <span class="hero__mobile-logo-icon">◇</span>
+    <span class="hero__mobile-logo-text">Explorea</span>
+  </div>
+
+  <!-- Content overlay -->
+  <div class="hero__content">
+    <div class="hero__text">
+      <h1 class="hero__title">{{ banners[currentIndex].title }}</h1>
+      <p class="hero__subtitle">{{ banners[currentIndex].subtitle }}</p>
+    </div>
+
+    <div class="hero__search">
+      <span class="material-icons search-icon">search</span>
+      <input
+        type="text"
+        class="hero__search-input"
+        placeholder="Pretraži destinacije, događaje, aktivnosti..."
+        [(ngModel)]="searchQuery"
+        (keydown)="onSearchKeydown($event)"
+      />
+      <button class="btn btn-primary hero__search-btn" (click)="onSearch()">Pretraži</button>
+    </div>
+
+    <div class="hero__filters">
+      <button
+        *ngFor="let city of cityFilters"
+        class="hero__filter-chip"
+        [class.active]="selectedCityId === city.id"
+        (click)="selectCity(city.id)"
+      >
+        {{ city.name }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom gradient: prelaz od slike ka pozadini sajta -->
+  <div class="hero__bottom-gradient"></div>
+
+  <!-- Dots -->
+  <div class="hero__dots">
+    <button
+      *ngFor="let banner of banners; let i = index"
+      class="hero__dot"
+      [class.active]="i === currentIndex"
+      (click)="goTo(i)"
+      [attr.aria-label]="'Slajd ' + (i + 1)"
+    ></button>
+  </div>
+</section>

@@ -1,38 +1,47 @@
-<div class="logo-trigger" (click)="toggle()">
-  <span class="logo-icon">◇</span>
-  <span class="logo-text">Explorea</span>
-</div>
+<div class="overlay desktop-overlay" *ngIf="isExpanded" (click)="toggle()"></div>
+<div class="overlay mobile-overlay" *ngIf="isOpen" (click)="toggle()"></div>
 
-<div class="overlay" *ngIf="isOpen" (click)="toggle()"></div>
-
-<aside class="sidebar" [class.open]="isOpen">
+<aside class="sidebar" [class.open]="isOpen" [class.expanded]="isExpanded">
   <div class="logo" (click)="toggle()">
     <span class="logo-icon">◇</span>
     <span class="logo-text">Explorea</span>
   </div>
 
   <nav class="nav">
-    <a href="#" class="nav-item"> <span class="material-icons nav-icon">home</span> Početna </a>
-    <a href="#" class="nav-item"> <span class="material-icons nav-icon">map</span> Istraži mapu </a>
-    <a href="#" class="nav-item"> <span class="material-icons nav-icon">search</span> Pretraga </a>
-    <a href="#" class="nav-item"> <span class="material-icons nav-icon">event</span> Događaji </a>
+    <a [routerLink]="'/home'" routerLinkActive="active" class="nav-item">
+      <span class="material-icons nav-icon">home</span>
+      <span class="nav-label">Početna</span>
+    </a>
+    <a [routerLink]="'/explore'" routerLinkActive="active" class="nav-item">
+      <span class="material-icons nav-icon">explore</span>
+      <span class="nav-label">Istraži mapu</span>
+    </a>
+    <a [routerLink]="'/search'" routerLinkActive="active" class="nav-item">
+      <span class="material-icons nav-icon">search</span>
+      <span class="nav-label">Pretraga</span>
+    </a>
+    <a [routerLink]="'/events'" routerLinkActive="active" class="nav-item">
+      <span class="material-icons nav-icon">event</span>
+      <span class="nav-label">Događaji</span>
+    </a>
   </nav>
 
   <div class="sidebar-bottom">
-    <a href="#" class="nav-item active">
-      <span class="material-icons nav-icon">person</span> Profil
+    <a [routerLink]="'/profile'" routerLinkActive="active" class="nav-item">
+      <span class="material-icons nav-icon">person</span>
+      <span class="nav-label">Profil</span>
     </a>
-    <a href="#" class="nav-item">
-      <span class="material-icons nav-icon">settings</span> Podešavanja
+    <a [routerLink]="'/settings'" routerLinkActive="active" class="nav-item">
+      <span class="material-icons nav-icon">settings</span>
+      <span class="nav-label">Podešavanja</span>
     </a>
     <button class="nav-item theme-toggle" (click)="themeService.toggle()">
-      <span class="material-icons nav-icon">{{
-        themeService.isDark ? 'light_mode' : 'dark_mode'
-      }}</span>
-      {{ themeService.isDark ? 'Light mode' : 'Dark mode' }}
+      <span class="material-icons nav-icon">{{ themeService.isDark ? 'light_mode' : 'dark_mode' }}</span>
+      <span class="nav-label">{{ themeService.isDark ? 'Light mode' : 'Dark mode' }}</span>
     </button>
     <a href="#" class="nav-item danger">
-      <span class="material-icons nav-icon">logout</span> Odjavi se
+      <span class="material-icons nav-icon">logout</span>
+      <span class="nav-label">Odjavi se</span>
     </a>
   </div>
 </aside>
