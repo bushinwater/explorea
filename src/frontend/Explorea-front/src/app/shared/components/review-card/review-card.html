@@ -1,0 +1,14 @@
+<div class="review-card">
+  <div class="review-card__header">
+    <div class="review-card__avatar">{{ initials }}</div>
+    <div class="review-card__user-info">
+      <span class="review-card__name">{{ review.user.firstName }} {{ review.user.lastName }}</span>
+      <span class="review-card__rank">
+        <span class="material-icons rank-icon">{{ rankIcon }}</span>
+        {{ review.user.travelerRank }}
+      </span>
+    </div>
+    <app-star-rating [rating]="review.rating" [showValue]="false" class="review-card__stars" />
+  </div>
+  <p class="review-card__comment">{{ review.comment }}</p>
+</div>

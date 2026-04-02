@@ -1,0 +1,8 @@
+<span class="stars">
+  <span *ngFor="let star of stars" class="star" [class.full]="star === 'full'" [class.half]="star === 'half'" [class.empty]="star === 'empty'">
+    <span class="material-icons">
+      {{ star === 'full' ? 'star' : star === 'half' ? 'star_half' : 'star_border' }}
+    </span>
+  </span>
+  <span *ngIf="showValue" class="rating-value">{{ rating | number: '1.1-1' }}</span>
+</span>

@@ -1,0 +1,15 @@
+<section class="section upcoming-events">
+  <div class="section__header">
+    <div>
+      <h2 class="section__title">Nadolazeći događaji</h2>
+    </div>
+    <a href="#" class="section__link">Svi događaji <span class="material-icons">arrow_forward</span></a>
+  </div>
+
+  <div class="scroll-row">
+    <app-event-card
+      *ngFor="let event of events"
+      [event]="event"
+    />
+  </div>
+</section>

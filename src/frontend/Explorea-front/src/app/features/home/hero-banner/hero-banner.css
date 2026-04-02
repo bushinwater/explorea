@@ -1,0 +1,262 @@
+.hero {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  overflow: hidden;
+}
+
+/* Transform carousel track */
+.hero__track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.hero__track.no-transition {
+  transition: none;
+}
+
+.hero__slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.hero__bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.1) 0%,
+    rgba(0, 0, 0, 0.5) 50%,
+    rgba(0, 0, 0, 0.72) 100%
+  );
+}
+
+/* Content sits on top of track */
+.hero__content {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl) var(--spacing-lg);
+  gap: var(--spacing-lg);
+  pointer-events: none;
+}
+
+/* Re-enable pointer events for interactive children */
+.hero__content > * {
+  pointer-events: auto;
+}
+
+.hero__text {
+  text-align: center;
+}
+
+.hero__title {
+  font-size: 36px;
+  font-weight: var(--font-weight-bold);
+  color: #fff;
+  margin-bottom: var(--spacing-sm);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.hero__subtitle {
+  font-size: var(--font-size-body);
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Search */
+.hero__search {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) var(--spacing-md);
+  width: 100%;
+  max-width: 560px;
+  gap: var(--spacing-sm);
+}
+
+.search-icon {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.hero__search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: var(--font-size-body);
+  font-family: var(--font-primary);
+  min-width: 0;
+}
+
+.hero__search-input::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.hero__search-btn {
+  flex-shrink: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-small);
+  border-radius: var(--radius-md);
+}
+
+/* Filters */
+.hero__filters {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.hero__filters::-webkit-scrollbar {
+  display: none;
+}
+
+.hero__filter-chip {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: var(--font-size-small);
+  font-family: var(--font-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.hero__filter-chip:hover,
+.hero__filter-chip.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+/* Mobile top gradient with logo */
+.hero__top-gradient {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hero__top-gradient {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(to bottom, var(--color-bg) 0%, transparent 100%);
+    z-index: 3;
+    padding: 0 var(--spacing-lg);
+    pointer-events: none;
+  }
+
+  .hero__mobile-logo-icon {
+    background: var(--color-primary);
+    padding: 5px 8px;
+    border-radius: var(--radius-md);
+    color: #fff;
+    font-size: 14px;
+  }
+
+  .hero__mobile-logo-text {
+    font-size: 1.1rem;
+    font-weight: var(--font-weight-bold);
+    color: #fff;
+    font-family: var(--font-heading);
+  }
+}
+
+/* Bottom gradient — prelaz ka pozadini sajta */
+.hero__bottom-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: linear-gradient(to bottom, transparent 0%, transparent 30%, var(--color-bg) 100%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+[data-theme="light"] .hero__bottom-gradient {
+  height: 70px;
+  opacity: 0.7;
+}
+
+/* Dots */
+.hero__dots {
+  position: absolute;
+  bottom: var(--spacing-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.hero__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  padding: 0;
+}
+
+.hero__dot.active {
+  background: #fff;
+  width: 24px;
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    height: 340px;
+  }
+
+  .hero__title {
+    font-size: 24px;
+  }
+
+  .hero__search-btn {
+    display: none;
+  }
+
+  .hero__content {
+    padding: var(--spacing-md);
+    gap: var(--spacing-md);
+  }
+}

@@ -254,8 +254,10 @@
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
   padding: 0.5rem 0;
-  position: sticky;
+  position: fixed;
   bottom: 0;
+  left: 0;
+  right: 0;
   width: 100%;
   z-index: 1000;
 }
@@ -379,6 +381,7 @@ app-sidebar {
   }
 
   .main {
-    grid-template-columns: 1fr; /* uklanja kolonu za sidebar */
+    grid-template-columns: 1fr;
+    padding-bottom: 70px;
   }
 }
