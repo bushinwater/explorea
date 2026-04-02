@@ -3,8 +3,8 @@
 
   <main class="main">
     <div class="page-header">
-      <h1>Profil & Podešavanja</h1>
-      <p>Upravljaj svojim nalogom, preferencijama i privatnošću na Explorea platformi.</p>
+      <h1>{{ 'SETTINGS_PAGE.TITLE' | translate }}</h1>
+      <p>{{ 'SETTINGS_PAGE.SUBTITLE' | translate }}</p>
     </div>
 
     <!-- PROFIL KARTICA -->
@@ -17,44 +17,44 @@
       <div class="stats">
         <div class="stat">
           <span class="stat-value">{{ user?.totalVisits }}</span>
-          <span class="stat-label">AVANTURE</span>
+          <span class="stat-label">{{ 'SETTINGS_PAGE.STATS.ADVENTURES' | translate }}</span>
         </div>
         <div class="stat">
           <span class="stat-value">0</span>
-          <span class="stat-label">RECENZIJE</span>
+          <span class="stat-label">{{ 'SETTINGS_PAGE.STATS.REVIEWS' | translate }}</span>
         </div>
         <div class="stat">
           <span class="stat-value">0</span>
-          <span class="stat-label">SAČUVANO</span>
+          <span class="stat-label">{{ 'SETTINGS_PAGE.STATS.SAVED' | translate }}</span>
         </div>
       </div>
 
       <div class="meta">
-        <span>Član od: {{ user?.memberSince | date: 'MMM yyyy' }}</span>
+        <span>{{ 'SETTINGS_PAGE.MEMBER_SINCE' | translate }}: {{ user?.memberSince | date: 'MMM yyyy' }}</span>
       </div>
     </div>
 
     <!-- SEKCIJE DESNO -->
     <div class="sections">
       <section class="section">
-        <h3>Informacije o nalogu</h3>
-        <p>Ažuriraj svoje lične podatke i sigurnosna podešavanja.</p>
+        <h3>{{ 'SETTINGS_PAGE.ACCOUNT.TITLE' | translate }}</h3>
+        <p>{{ 'SETTINGS_PAGE.ACCOUNT.SUBTITLE' | translate }}</p>
 
         <div class="fields">
           <div class="field">
             <div class="field-icon"><span class="material-icons">person</span></div>
             <div class="field-info">
-              <strong>Korisničko ime</strong>
-              <span>Ovo ime će biti vidljivo na tvojim recenzijama i postovima.</span>
+              <strong>{{ 'SETTINGS_PAGE.ACCOUNT.USERNAME' | translate }}</strong>
+              <span>{{ 'SETTINGS_PAGE.ACCOUNT.USERNAME_DESC' | translate }}</span>
             </div>
-            <input class="input" [(ngModel)]="username" placeholder="Korisničko ime" />
+            <input class="input" [(ngModel)]="username" [placeholder]="'SETTINGS_PAGE.ACCOUNT.USERNAME' | translate" />
           </div>
 
           <div class="field">
             <div class="field-icon"><span class="material-icons">email</span></div>
             <div class="field-info">
-              <strong>Email adresa</strong>
-              <span>Primarna adresa za obaveštenja i potvrde rezervacija.</span>
+              <strong>{{ 'SETTINGS_PAGE.ACCOUNT.EMAIL' | translate }}</strong>
+              <span>{{ 'SETTINGS_PAGE.ACCOUNT.EMAIL_DESC' | translate }}</span>
             </div>
             <input class="input" [value]="user?.email || ''" disabled />
           </div>
@@ -62,24 +62,24 @@
           <div class="field">
             <div class="field-icon"><span class="material-icons">lock</span></div>
             <div class="field-info">
-              <strong>Lozinka</strong>
-              <span>Poslednja promena pre 3 meseca. Preporučujemo redovnu promenu.</span>
+              <strong>{{ 'SETTINGS_PAGE.ACCOUNT.PASSWORD' | translate }}</strong>
+              <span>{{ 'SETTINGS_PAGE.ACCOUNT.PASSWORD_DESC' | translate }}</span>
             </div>
-            <button class="btn btn-secondary">Promeni lozinku</button>
+            <button class="btn btn-secondary">{{ 'SETTINGS_PAGE.ACCOUNT.CHANGE_PASSWORD' | translate }}</button>
           </div>
         </div>
       </section>
 
       <section class="section">
-        <h3>Obaveštenja</h3>
-        <p>Izaberi kako i kada želiš da primaš novosti od nas.</p>
+        <h3>{{ 'SETTINGS_PAGE.NOTIFICATIONS.TITLE' | translate }}</h3>
+        <p>{{ 'SETTINGS_PAGE.NOTIFICATIONS.SUBTITLE' | translate }}</p>
 
         <div class="fields">
           <div class="field">
             <div class="field-icon"><span class="material-icons">notifications</span></div>
             <div class="field-info">
-              <strong>Push obaveštenja</strong>
-              <span>Primaj obaveštenja o novim događajima i porukama direktno u browseru.</span>
+              <strong>{{ 'SETTINGS_PAGE.NOTIFICATIONS.PUSH' | translate }}</strong>
+              <span>{{ 'SETTINGS_PAGE.NOTIFICATIONS.PUSH_DESC' | translate }}</span>
             </div>
             <label class="toggle">
               <input type="checkbox" [(ngModel)]="notificationsEnabled" />
@@ -90,8 +90,8 @@
           <div class="field">
             <div class="field-icon"><span class="material-icons">mail</span></div>
             <div class="field-info">
-              <strong>Marketing emailovi</strong>
-              <span>Specijalne ponude, popusti i AI preporuke za tvoje sledeće putovanje.</span>
+              <strong>{{ 'SETTINGS_PAGE.NOTIFICATIONS.MARKETING' | translate }}</strong>
+              <span>{{ 'SETTINGS_PAGE.NOTIFICATIONS.MARKETING_DESC' | translate }}</span>
             </div>
             <label class="toggle">
               <input type="checkbox" />
@@ -102,39 +102,39 @@
       </section>
 
       <section class="section">
-        <h3>Povezani nalozi</h3>
-        <p>Poveži svoje profile za lakše deljenje avantura.</p>
+        <h3>{{ 'SETTINGS_PAGE.CONNECTED.TITLE' | translate }}</h3>
+        <p>{{ 'SETTINGS_PAGE.CONNECTED.SUBTITLE' | translate }}</p>
 
         <div class="fields">
           <div class="field">
             <div class="field-icon"><span class="material-icons">share</span></div>
             <div class="field-info">
-              <strong>Instagram profil</strong>
-              <span>Poveži Instagram da bi automatski delio svoje fotografije sa putovanja.</span>
+              <strong>{{ 'SETTINGS_PAGE.CONNECTED.INSTAGRAM' | translate }}</strong>
+              <span>{{ 'SETTINGS_PAGE.CONNECTED.INSTAGRAM_DESC' | translate }}</span>
             </div>
-            <button class="btn btn-secondary">Poveži nalog ↗</button>
+            <button class="btn btn-secondary">{{ 'SETTINGS_PAGE.CONNECTED.CONNECT' | translate }} ↗</button>
           </div>
 
           <div class="field">
             <div class="field-icon"><span class="material-icons">share</span></div>
             <div class="field-info">
-              <strong>Facebook</strong>
-              <span>Tvoj nalog je uspešno povezan sa Facebook profilom.</span>
+              <strong>{{ 'SETTINGS_PAGE.CONNECTED.FACEBOOK' | translate }}</strong>
+              <span>{{ 'SETTINGS_PAGE.CONNECTED.FACEBOOK_DESC' | translate }}</span>
             </div>
-            <span class="connected-label">Povezano</span>
+            <span class="connected-label">{{ 'SETTINGS_PAGE.CONNECTED.CONNECTED_LABEL' | translate }}</span>
           </div>
         </div>
       </section>
 
       <section class="section">
-        <h3>Lokalizacija i Privatnost</h3>
+        <h3>{{ 'SETTINGS_PAGE.LOCALIZATION.TITLE' | translate }}</h3>
 
         <div class="fields">
           <div class="field">
             <div class="field-icon"><span class="material-icons">language</span></div>
             <div class="field-info">
-              <strong>Jezik aplikacije</strong>
-              <span>Izaberi primarni jezik za interfejs aplikacije.</span>
+              <strong>{{ 'SETTINGS_PAGE.LOCALIZATION.LANGUAGE' | translate }}</strong>
+              <span>{{ 'SETTINGS_PAGE.LOCALIZATION.LANGUAGE_DESC' | translate }}</span>
             </div>
             <select class="input" [(ngModel)]="language">
               <option value="sr">Srpski (SR)</option>
@@ -145,8 +145,8 @@
           <div class="field">
             <div class="field-icon"><span class="material-icons">{{ themeService.isDark ? 'dark_mode' : 'light_mode' }}</span></div>
             <div class="field-info">
-              <strong>Tema aplikacije</strong>
-              <span>{{ themeService.isDark ? 'Tamna tema je aktivna.' : 'Svetla tema je aktivna.' }}</span>
+              <strong>{{ 'SETTINGS_PAGE.LOCALIZATION.THEME' | translate }}</strong>
+              <span>{{ (themeService.isDark ? 'SETTINGS_PAGE.LOCALIZATION.THEME_DARK' : 'SETTINGS_PAGE.LOCALIZATION.THEME_LIGHT') | translate }}</span>
             </div>
             <label class="toggle">
               <input type="checkbox" [checked]="themeService.isDark" (change)="themeService.toggle()" />
@@ -159,31 +159,32 @@
 
     <!-- AKCIJE -->
     <div class="actions">
-      <button class="btn btn-primary" (click)="sacuvaj()">Sačuvaj sve izmene</button>
-      <button class="btn btn-secondary">Otkaži</button>
-      <button class="btn btn-danger">Obriši nalog</button>
+      <button class="btn btn-primary" (click)="sacuvaj()">{{ 'SETTINGS_PAGE.ACTIONS.SAVE' | translate }}</button>
+      <button class="btn btn-secondary">{{ 'SETTINGS_PAGE.ACTIONS.CANCEL' | translate }}</button>
+      <button class="btn btn-danger">{{ 'SETTINGS_PAGE.ACTIONS.DELETE' | translate }}</button>
     </div>
   </main>
+
   <nav class="bottom-nav">
     <a href="#" class="nav-item">
       <span class="material-icons">home</span>
-      <span>Početna</span>
+      <span>{{ 'BOTTOM_NAV.HOME' | translate }}</span>
     </a>
     <a href="#" class="nav-item">
       <span class="material-icons">explore</span>
-      <span>Istraži</span>
+      <span>{{ 'BOTTOM_NAV.EXPLORE' | translate }}</span>
     </a>
     <a href="#" class="nav-item">
       <span class="material-icons">search</span>
-      <span>Pretraži</span>
+      <span>{{ 'BOTTOM_NAV.SEARCH' | translate }}</span>
     </a>
     <a href="#" class="nav-item">
       <span class="material-icons">event</span>
-      <span>Događaji</span>
+      <span>{{ 'BOTTOM_NAV.EVENTS' | translate }}</span>
     </a>
     <a href="#" class="nav-item active">
       <span class="material-icons">person</span>
-      <span>Profil</span>
+      <span>{{ 'BOTTOM_NAV.PROFILE' | translate }}</span>
     </a>
   </nav>
 </div>

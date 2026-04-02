@@ -1,0 +1,115 @@
+{
+  "SIDEBAR": {
+    "HOME": "Home",
+    "EXPLORE": "Explore map",
+    "SEARCH": "Search",
+    "EVENTS": "Events",
+    "PROFILE": "Profile",
+    "SETTINGS": "Settings",
+    "LOGOUT": "Log out",
+    "LIGHT_MODE": "Light mode",
+    "DARK_MODE": "Dark mode",
+    "LANGUAGE": "English"
+  },
+  "SETTINGS_PAGE": {
+    "TITLE": "Profile & Settings",
+    "SUBTITLE": "Manage your account, preferences and privacy on the Explorea platform.",
+    "STATS": {
+      "ADVENTURES": "ADVENTURES",
+      "REVIEWS": "REVIEWS",
+      "SAVED": "SAVED"
+    },
+    "MEMBER_SINCE": "Member since",
+    "ACCOUNT": {
+      "TITLE": "Account information",
+      "SUBTITLE": "Update your personal data and security settings.",
+      "USERNAME": "Username",
+      "USERNAME_DESC": "This name will be visible on your reviews and posts.",
+      "EMAIL": "Email address",
+      "EMAIL_DESC": "Primary address for notifications and booking confirmations.",
+      "PASSWORD": "Password",
+      "PASSWORD_DESC": "Last changed 3 months ago. We recommend changing it regularly.",
+      "CHANGE_PASSWORD": "Change password"
+    },
+    "NOTIFICATIONS": {
+      "TITLE": "Notifications",
+      "SUBTITLE": "Choose how and when you want to receive news from us.",
+      "PUSH": "Push notifications",
+      "PUSH_DESC": "Receive notifications about new events and messages directly in the browser.",
+      "MARKETING": "Marketing emails",
+      "MARKETING_DESC": "Special offers, discounts and AI recommendations for your next trip."
+    },
+    "CONNECTED": {
+      "TITLE": "Connected accounts",
+      "SUBTITLE": "Connect your profiles for easier adventure sharing.",
+      "INSTAGRAM": "Instagram profile",
+      "INSTAGRAM_DESC": "Connect Instagram to automatically share your travel photos.",
+      "FACEBOOK": "Facebook",
+      "FACEBOOK_DESC": "Your account is successfully connected to Facebook.",
+      "CONNECT": "Connect account",
+      "CONNECTED_LABEL": "Connected"
+    },
+    "LOCALIZATION": {
+      "TITLE": "Localization & Privacy",
+      "LANGUAGE": "App language",
+      "LANGUAGE_DESC": "Choose the primary language for the app interface.",
+      "THEME": "App theme",
+      "THEME_DARK": "Dark theme is active.",
+      "THEME_LIGHT": "Light theme is active."
+    },
+    "ACTIONS": {
+      "SAVE": "Save all changes",
+      "CANCEL": "Cancel",
+      "DELETE": "Delete account"
+    }
+  },
+  "HOME": {
+    "HERO": {
+      "SEARCH_PLACEHOLDER": "Search destinations, events, activities...",
+      "SEARCH_BTN": "Search",
+      "POPULAR": "Popular"
+    },
+    "FEATURED": {
+      "TITLE": "Featured destinations",
+      "VIEW_ALL": "All destinations"
+    },
+    "EVENTS": {
+      "TITLE": "Upcoming events",
+      "VIEW_ALL": "All events"
+    },
+    "ACTIVITIES": {
+      "TITLE": "Popular activities",
+      "VIEW_ALL": "All activities",
+      "FREE": "Free"
+    },
+    "AI": {
+      "TITLE": "Just for you",
+      "SUBTITLE": "Personalized recommendations based on your interests",
+      "BADGE": "AI recommendations",
+      "HEADER": "Handpicked especially for you",
+      "DESC": "Based on your interests and previous visits, we found destinations you might love.",
+      "VIEW_ALL": "Show all recommendations"
+    },
+    "NEWSLETTER": {
+      "TITLE": "Don't miss any adventure",
+      "DESC": "Subscribe to our newsletter and get the latest news about destinations, events and exclusive offers.",
+      "PLACEHOLDER": "Enter your email address",
+      "SUBMIT": "Subscribe",
+      "SUCCESS": "Successfully subscribed! Welcome to the explorer community."
+    },
+    "REVIEWS": {
+      "TITLE": "Explorer experiences",
+      "SUBTITLE": "What our travelers say about their adventures across Serbia"
+    },
+    "FOOTER": {
+      "COPY": "© 2025 Explorea · Tourism guide of Serbia"
+    }
+  },
+  "BOTTOM_NAV": {
+    "HOME": "Home",
+    "EXPLORE": "Explore",
+    "SEARCH": "Search",
+    "EVENTS": "Events",
+    "PROFILE": "Profile"
+  }
+}

@@ -1,5 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { LanguageService } from './core/services/language.service';
 import { ThemeService } from './core/services/theme.service';
 
 @Component({
@@ -11,5 +12,5 @@ import { ThemeService } from './core/services/theme.service';
 export class App {
   protected readonly title = signal('Explorea-front');
 
-  constructor(private themeService: ThemeService) {}
+  constructor(private themeService: ThemeService, private languageService: LanguageService) {}
 }

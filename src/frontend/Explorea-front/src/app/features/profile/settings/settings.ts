@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { UpdatePreferencesDto, UpdateUserDto, UserProfile } from '../../../core/models/user.model';
+import { LanguageService } from '../../../core/services/language.service';
 import { ThemeService } from '../../../core/services/theme.service';
 import { UserService } from '../../../core/services/user.service';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
@@ -9,7 +11,7 @@ import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, Sidebar],
+  imports: [CommonModule, FormsModule, Sidebar, TranslateModule],
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })
@@ -20,9 +22,20 @@ export class Settings implements OnInit {
   notificationsEnabled = false;
   marketingEmails = false;
   privateProfile = false;
-  language = 'sr';
 
-  constructor(private userService: UserService, public themeService: ThemeService) {}
+  constructor(
+    private userService: UserService,
+    public themeService: ThemeService,
+    public languageService: LanguageService
+  ) {}
+
+  get language() {
+    return this.languageService.current;
+  }
+
+  set language(lang: string) {
+    this.languageService.set(lang as 'sr' | 'en');
+  }
 
   ngOnInit() {
     // Mock podaci dok backend nije implementiran
@@ -43,7 +56,6 @@ export class Settings implements OnInit {
 
     this.username = this.user.firstName + '_' + this.user.lastName.toLowerCase();
     this.notificationsEnabled = this.user.preferences?.notificationsEnabled ?? false;
-    this.language = this.user.preferences?.language ?? 'sr';
   }
 
   sacuvaj() {
@@ -54,7 +66,7 @@ export class Settings implements OnInit {
 
     const prefsDto: UpdatePreferencesDto = {
       theme: 'system',
-      language: this.language,
+      language: this.languageService.current,
       notificationsEnabled: this.notificationsEnabled,
     };
 

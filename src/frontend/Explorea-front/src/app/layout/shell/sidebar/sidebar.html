@@ -10,38 +10,56 @@
   <nav class="nav">
     <a [routerLink]="'/home'" routerLinkActive="active" class="nav-item">
       <span class="material-icons nav-icon">home</span>
-      <span class="nav-label">Početna</span>
+      <span class="nav-label">{{ 'SIDEBAR.HOME' | translate }}</span>
     </a>
     <a [routerLink]="'/explore'" routerLinkActive="active" class="nav-item">
       <span class="material-icons nav-icon">explore</span>
-      <span class="nav-label">Istraži mapu</span>
+      <span class="nav-label">{{ 'SIDEBAR.EXPLORE' | translate }}</span>
     </a>
     <a [routerLink]="'/search'" routerLinkActive="active" class="nav-item">
       <span class="material-icons nav-icon">search</span>
-      <span class="nav-label">Pretraga</span>
+      <span class="nav-label">{{ 'SIDEBAR.SEARCH' | translate }}</span>
     </a>
     <a [routerLink]="'/events'" routerLinkActive="active" class="nav-item">
       <span class="material-icons nav-icon">event</span>
-      <span class="nav-label">Događaji</span>
+      <span class="nav-label">{{ 'SIDEBAR.EVENTS' | translate }}</span>
     </a>
   </nav>
 
   <div class="sidebar-bottom">
     <a [routerLink]="'/profile'" routerLinkActive="active" class="nav-item">
       <span class="material-icons nav-icon">person</span>
-      <span class="nav-label">Profil</span>
+      <span class="nav-label">{{ 'SIDEBAR.PROFILE' | translate }}</span>
     </a>
     <a [routerLink]="'/settings'" routerLinkActive="active" class="nav-item">
       <span class="material-icons nav-icon">settings</span>
-      <span class="nav-label">Podešavanja</span>
+      <span class="nav-label">{{ 'SIDEBAR.SETTINGS' | translate }}</span>
     </a>
+
+    <!-- Language picker — desktop only -->
+    <div class="lang-wrapper desktop-only">
+      <button class="nav-item" (click)="toggleLangPopup($event)" [class.active]="langPopupOpen">
+        <span class="material-icons nav-icon">language</span>
+        <span class="nav-label">{{ 'SIDEBAR.LANGUAGE' | translate }}</span>
+      </button>
+    </div>
+
+    <div class="lang-popup" *ngIf="langPopupOpen" [style.top.px]="langPopupTop" [style.left.px]="langPopupLeft">
+      <button class="lang-option" [class.selected]="languageService.current === 'sr'" (click)="setLang('sr')">
+        Srpski
+      </button>
+      <button class="lang-option" [class.selected]="languageService.current === 'en'" (click)="setLang('en')">
+        English
+      </button>
+    </div>
+
     <button class="nav-item theme-toggle" (click)="themeService.toggle()">
       <span class="material-icons nav-icon">{{ themeService.isDark ? 'light_mode' : 'dark_mode' }}</span>
-      <span class="nav-label">{{ themeService.isDark ? 'Light mode' : 'Dark mode' }}</span>
+      <span class="nav-label">{{ themeService.isDark ? ('SIDEBAR.LIGHT_MODE' | translate) : ('SIDEBAR.DARK_MODE' | translate) }}</span>
     </button>
     <a href="#" class="nav-item danger">
       <span class="material-icons nav-icon">logout</span>
-      <span class="nav-label">Odjavi se</span>
+      <span class="nav-label">{{ 'SIDEBAR.LOGOUT' | translate }}</span>
     </a>
   </div>
 </aside>
