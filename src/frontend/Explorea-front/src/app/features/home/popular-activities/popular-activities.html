@@ -1,9 +1,9 @@
 <section class="section popular-activities">
   <div class="section__header">
     <div>
-      <h2 class="section__title">Popularne aktivnosti</h2>
+      <h2 class="section__title">{{ 'HOME.ACTIVITIES.TITLE' | translate }}</h2>
     </div>
-    <a href="#" class="section__link">Sve aktivnosti <span class="material-icons">arrow_forward</span></a>
+    <a href="#" class="section__link">{{ 'HOME.ACTIVITIES.VIEW_ALL' | translate }} <span class="material-icons">arrow_forward</span></a>
   </div>
 
   <div class="activities-grid">
@@ -19,7 +19,7 @@
               {{ activity.avgRating | number: '1.1-1' }}
             </span>
             <span *ngIf="activity.price" class="activity-item__price">{{ activity.price | number }} RSD</span>
-            <span *ngIf="!activity.price" class="activity-item__price">Besplatno</span>
+            <span *ngIf="!activity.price" class="activity-item__price">{{ 'HOME.ACTIVITIES.FREE' | translate }}</span>
           </div>
         </div>
       </div>

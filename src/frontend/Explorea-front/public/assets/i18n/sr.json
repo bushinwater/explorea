@@ -1,0 +1,115 @@
+{
+  "SIDEBAR": {
+    "HOME": "Početna",
+    "EXPLORE": "Istraži mapu",
+    "SEARCH": "Pretraga",
+    "EVENTS": "Događaji",
+    "PROFILE": "Profil",
+    "SETTINGS": "Podešavanja",
+    "LOGOUT": "Odjavi se",
+    "LIGHT_MODE": "Light mode",
+    "DARK_MODE": "Dark mode",
+    "LANGUAGE": "Srpski"
+  },
+  "SETTINGS_PAGE": {
+    "TITLE": "Profil & Podešavanja",
+    "SUBTITLE": "Upravljaj svojim nalogom, preferencijama i privatnošću na Explorea platformi.",
+    "STATS": {
+      "ADVENTURES": "AVANTURE",
+      "REVIEWS": "RECENZIJE",
+      "SAVED": "SAČUVANO"
+    },
+    "MEMBER_SINCE": "Član od",
+    "ACCOUNT": {
+      "TITLE": "Informacije o nalogu",
+      "SUBTITLE": "Ažuriraj svoje lične podatke i sigurnosna podešavanja.",
+      "USERNAME": "Korisničko ime",
+      "USERNAME_DESC": "Ovo ime će biti vidljivo na tvojim recenzijama i postovima.",
+      "EMAIL": "Email adresa",
+      "EMAIL_DESC": "Primarna adresa za obaveštenja i potvrde rezervacija.",
+      "PASSWORD": "Lozinka",
+      "PASSWORD_DESC": "Poslednja promena pre 3 meseca. Preporučujemo redovnu promenu.",
+      "CHANGE_PASSWORD": "Promeni lozinku"
+    },
+    "NOTIFICATIONS": {
+      "TITLE": "Obaveštenja",
+      "SUBTITLE": "Izaberi kako i kada želiš da primaš novosti od nas.",
+      "PUSH": "Push obaveštenja",
+      "PUSH_DESC": "Primaj obaveštenja o novim događajima i porukama direktno u browseru.",
+      "MARKETING": "Marketing emailovi",
+      "MARKETING_DESC": "Specijalne ponude, popusti i AI preporuke za tvoje sledeće putovanje."
+    },
+    "CONNECTED": {
+      "TITLE": "Povezani nalozi",
+      "SUBTITLE": "Poveži svoje profile za lakše deljenje avantura.",
+      "INSTAGRAM": "Instagram profil",
+      "INSTAGRAM_DESC": "Poveži Instagram da bi automatski delio svoje fotografije sa putovanja.",
+      "FACEBOOK": "Facebook",
+      "FACEBOOK_DESC": "Tvoj nalog je uspešno povezan sa Facebook profilom.",
+      "CONNECT": "Poveži nalog",
+      "CONNECTED_LABEL": "Povezano"
+    },
+    "LOCALIZATION": {
+      "TITLE": "Lokalizacija i Privatnost",
+      "LANGUAGE": "Jezik aplikacije",
+      "LANGUAGE_DESC": "Izaberi primarni jezik za interfejs aplikacije.",
+      "THEME": "Tema aplikacije",
+      "THEME_DARK": "Tamna tema je aktivna.",
+      "THEME_LIGHT": "Svetla tema je aktivna."
+    },
+    "ACTIONS": {
+      "SAVE": "Sačuvaj sve izmene",
+      "CANCEL": "Otkaži",
+      "DELETE": "Obriši nalog"
+    }
+  },
+  "HOME": {
+    "HERO": {
+      "SEARCH_PLACEHOLDER": "Pretraži destinacije, događaje, aktivnosti...",
+      "SEARCH_BTN": "Pretraži",
+      "POPULAR": "Popularne"
+    },
+    "FEATURED": {
+      "TITLE": "Istaknute destinacije",
+      "VIEW_ALL": "Sve destinacije"
+    },
+    "EVENTS": {
+      "TITLE": "Nadolazeći događaji",
+      "VIEW_ALL": "Svi događaji"
+    },
+    "ACTIVITIES": {
+      "TITLE": "Popularne aktivnosti",
+      "VIEW_ALL": "Sve aktivnosti",
+      "FREE": "Besplatno"
+    },
+    "AI": {
+      "TITLE": "Samo za tebe",
+      "SUBTITLE": "Personalizovane preporuke zasnovane na tvojim interesovanjima",
+      "BADGE": "AI preporuke",
+      "HEADER": "Odabrano specijalno za tebe",
+      "DESC": "Na osnovu tvojih interesovanja i prethodnih poseta, pronašli smo destinacije koje bi ti se svidele.",
+      "VIEW_ALL": "Prikaži sve preporuke"
+    },
+    "NEWSLETTER": {
+      "TITLE": "Ne propusti nijednu avanturu",
+      "DESC": "Prijavi se na naš newsletter i dobijaj najnovije vesti o destinacijama, događajima i ekskluzivne ponude.",
+      "PLACEHOLDER": "Unesi svoju email adresu",
+      "SUBMIT": "Prijavi se",
+      "SUCCESS": "Uspešno si se prijavio! Dobrodošao u zajednicu istraživača."
+    },
+    "REVIEWS": {
+      "TITLE": "Iskustva istraživača",
+      "SUBTITLE": "Šta kažu naši putnici o doživljajima širom Srbije"
+    },
+    "FOOTER": {
+      "COPY": "© 2025 Explorea · Turistički vodič Srbije"
+    }
+  },
+  "BOTTOM_NAV": {
+    "HOME": "Početna",
+    "EXPLORE": "Istraži",
+    "SEARCH": "Pretraži",
+    "EVENTS": "Događaji",
+    "PROFILE": "Profil"
+  }
+}

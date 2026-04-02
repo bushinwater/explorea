@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslateModule } from '@ngx-translate/core';
 import { Sidebar } from '../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../shared/bottom-nav/bottom-nav';
 import { HeroBanner } from './hero-banner/hero-banner';
@@ -23,6 +24,7 @@ import {
   standalone: true,
   imports: [
     CommonModule,
+    TranslateModule,
     Sidebar,
     BottomNav,
     HeroBanner,

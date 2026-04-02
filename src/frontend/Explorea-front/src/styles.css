@@ -187,6 +187,11 @@ button:focus-visible {
   color: var(--color-text-primary);
 }
 
+select.input {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
 .input:focus {
   outline: none;
   border-color: var(--color-primary);

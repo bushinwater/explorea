@@ -30,11 +30,11 @@
       <input
         type="text"
         class="hero__search-input"
-        placeholder="Pretraži destinacije, događaje, aktivnosti..."
+        [placeholder]="'HOME.HERO.SEARCH_PLACEHOLDER' | translate"
         [(ngModel)]="searchQuery"
         (keydown)="onSearchKeydown($event)"
       />
-      <button class="btn btn-primary hero__search-btn" (click)="onSearch()">Pretraži</button>
+      <button class="btn btn-primary hero__search-btn" (click)="onSearch()">{{ 'HOME.HERO.SEARCH_BTN' | translate }}</button>
     </div>
 
     <div class="hero__filters">
@@ -44,7 +44,7 @@
         [class.active]="selectedCityId === city.id"
         (click)="selectCity(city.id)"
       >
-        {{ city.name }}
+        {{ city.id === null ? ('HOME.HERO.POPULAR' | translate) : city.name }}
       </button>
     </div>
   </div>

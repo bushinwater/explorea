@@ -1,13 +1,14 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { DestinationCard } from '../../../shared/components/destination-card/destination-card';
 import { DestinationCard as DestinationCardModel } from '../../../core/models/home.model';
 
 @Component({
   selector: 'app-ai-recommendations',
   standalone: true,
-  imports: [CommonModule, FormsModule, DestinationCard],
+  imports: [CommonModule, FormsModule, TranslateModule, DestinationCard],
   templateUrl: './ai-recommendations.html',
   styleUrl: './ai-recommendations.css',
 })

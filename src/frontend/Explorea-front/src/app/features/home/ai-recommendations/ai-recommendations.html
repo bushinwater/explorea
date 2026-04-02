@@ -2,8 +2,8 @@
 <section class="section recommendations" *ngIf="recommendations.length">
   <div class="section__header">
     <div>
-      <h2 class="section__title">Samo za tebe</h2>
-      <p class="section__subtitle">Personalizovane preporuke zasnovane na tvojim interesovanjima</p>
+      <h2 class="section__title">{{ 'HOME.AI.TITLE' | translate }}</h2>
+      <p class="section__subtitle">{{ 'HOME.AI.SUBTITLE' | translate }}</p>
     </div>
   </div>
 
@@ -11,11 +11,11 @@
     <div class="recommendations__info">
       <span class="recommendations__ai-badge">
         <span class="material-icons">auto_awesome</span>
-        AI preporuke
+        {{ 'HOME.AI.BADGE' | translate }}
       </span>
-      <h3>Odabrano specijalano za tebe</h3>
-      <p>Na osnovu tvojih interesovanja i prethodnih poseta, pronašli smo destinacije koje bi ti se svidele.</p>
-      <a href="#" class="btn btn-primary recommendations__btn">Prikaži sve preporuke</a>
+      <h3>{{ 'HOME.AI.HEADER' | translate }}</h3>
+      <p>{{ 'HOME.AI.DESC' | translate }}</p>
+      <a href="#" class="btn btn-primary recommendations__btn">{{ 'HOME.AI.VIEW_ALL' | translate }}</a>
     </div>
     <div class="scroll-row recommendations__cards">
       <app-destination-card
@@ -33,21 +33,21 @@
       <span class="material-icons">explore</span>
     </div>
     <div class="newsletter__text">
-      <h2>Ne propusti nijednu avanturu</h2>
-      <p>Prijavi se na naš newsletter i dobijaj najnovije vesti o destinacijama, događajima i ekskluzivne ponude.</p>
+      <h2>{{ 'HOME.NEWSLETTER.TITLE' | translate }}</h2>
+      <p>{{ 'HOME.NEWSLETTER.DESC' | translate }}</p>
     </div>
     <div class="newsletter__form" *ngIf="!newsletterSent">
       <input
         type="email"
         class="input newsletter__input"
-        placeholder="Unesi svoju email adresu"
+        [placeholder]="'HOME.NEWSLETTER.PLACEHOLDER' | translate"
         [(ngModel)]="newsletterEmail"
       />
-      <button class="btn btn-primary newsletter__submit" (click)="submitNewsletter()">Prijavi se</button>
+      <button class="btn btn-primary newsletter__submit" (click)="submitNewsletter()">{{ 'HOME.NEWSLETTER.SUBMIT' | translate }}</button>
     </div>
     <div class="newsletter__success" *ngIf="newsletterSent">
       <span class="material-icons">check_circle</span>
-      <span>Uspešno si se prijavio! Dobrodošao u zajednicu istraživača.</span>
+      <span>{{ 'HOME.NEWSLETTER.SUCCESS' | translate }}</span>
     </div>
   </div>
 </section>
