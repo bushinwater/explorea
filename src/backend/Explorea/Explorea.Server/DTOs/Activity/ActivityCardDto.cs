@@ -1,3 +1,5 @@
+using Explorea.API.DTOs.Common;
+
 namespace Explorea.API.DTOs.Activity
 {
     public class ActivityCardDto
@@ -11,5 +13,7 @@ namespace Explorea.API.DTOs.Activity
         public decimal? Price { get; set; }
         public string? DifficultyLevel { get; set; }
         public string? PreviewImageUrl { get; set; }
+        public int Popularity { get; set; }
+        public CountryRefDto? Country { get; set; }
     }
 }

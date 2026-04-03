@@ -1,3 +1,5 @@
+using Explorea.API.DTOs.Common;
+
 namespace Explorea.API.DTOs.Place
 {
     public class PlaceCardDto
@@ -12,5 +14,7 @@ namespace Explorea.API.DTOs.Place
         public string? PreviewImageUrl { get; set; }
         public bool IsOpen { get; set; }
         public string? PriceRange { get; set; }
+        public int Popularity { get; set; }
+        public CountryRefDto? Country { get; set; }
     }
 }

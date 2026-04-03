@@ -46,6 +46,7 @@ namespace Explorea.Server.Data
         public DbSet<TripPlanItem> TripPlanItems { get; set; }
         public DbSet<InterestTag> InterestTags { get; set; }
         public DbSet<UserInterestTag> UserInterestTags { get; set; }
+        public DbSet<Country> Countries { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

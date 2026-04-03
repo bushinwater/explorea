@@ -40,6 +40,9 @@ namespace Explorea.API.Models
         [MaxLength(500), Column("ticket_url")]
         public string? TicketUrl { get; set; }
 
+        [Column("country_id")] public int? CountryId { get; set; }
+        [Column("popularity")] public int Popularity { get; set; } = 0;
+
         [Column("is_featured")] public bool IsFeatured { get; set; } = false;
         [Column("is_deleted")]  public bool IsDeleted  { get; set; } = false;
         [Column("deleted_at")]  public DateTimeOffset? DeletedAt { get; set; }
@@ -53,6 +56,7 @@ namespace Explorea.API.Models
         [ForeignKey("DestinationId")] public Destination? Destination { get; set; }
         [ForeignKey("PlaceId")]       public Place?       Place       { get; set; }
         [ForeignKey("TypeId")]        public EventType    Type        { get; set; } = null!;
+        [ForeignKey("CountryId")]     public Country?     Country     { get; set; }
 
         public ICollection<EventImage> Images { get; set; } = new List<EventImage>();
     }

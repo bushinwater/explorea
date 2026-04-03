@@ -47,6 +47,9 @@ namespace Explorea.API.Models
         [Column("location", TypeName = "geography(Point, 4326)")]
         public Point? Location { get; set; }
 
+        [Column("country_id")] public int? CountryId { get; set; }
+        [Column("popularity")] public int Popularity { get; set; } = 0;
+
         [Column("is_featured")] public bool IsFeatured { get; set; } = false;
         [Column("is_deleted")]  public bool IsDeleted  { get; set; } = false;
         [Column("deleted_at")]  public DateTimeOffset? DeletedAt { get; set; }
@@ -61,6 +64,7 @@ namespace Explorea.API.Models
         [ForeignKey("PlaceId")]       public Place?            Place       { get; set; }
         [ForeignKey("CategoryId")]    public ActivityCategory  Category    { get; set; } = null!;
         [ForeignKey("SeasonId")]      public Season?           Season      { get; set; }
+        [ForeignKey("CountryId")]     public Country?          Country     { get; set; }
 
         public ICollection<ActivityInclusion> Inclusions { get; set; } = new List<ActivityInclusion>();
         public ICollection<ActivityImage>     Images     { get; set; } = new List<ActivityImage>();

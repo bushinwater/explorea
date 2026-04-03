@@ -11,5 +11,8 @@ namespace Explorea.API.DTOs.Destination
         public decimal AvgRating { get; set; }
         public CityRefDto? City { get; set; }
         public LocationDto? Location { get; set; }
+        public string? HeroImageUrl { get; set; }
+        public int Popularity { get; set; }
+        public CountryRefDto? Country { get; set; }
     }
 }

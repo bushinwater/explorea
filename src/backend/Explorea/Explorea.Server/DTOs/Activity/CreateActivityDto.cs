@@ -16,5 +16,6 @@ namespace Explorea.API.DTOs.Activity
         public decimal? DistanceKm { get; set; }
         public string? StartPoint { get; set; }
         public bool IsFeatured { get; set; } = false;
+        public int? CountryId { get; set; }
     }
 }

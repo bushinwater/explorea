@@ -1,5 +1,6 @@
 using Explorea.API.DTOs.Destination;
 using Explorea.API.DTOs.Place;
+using Explorea.API.DTOs.Common;
 
 namespace Explorea.API.DTOs.Event
 {
@@ -16,5 +17,7 @@ namespace Explorea.API.DTOs.Event
         public CityRefDto? City { get; set; }
         public string? PreviewImageUrl { get; set; }
         public bool IsFeatured { get; set; }
+        public int Popularity { get; set; }
+        public CountryRefDto? Country { get; set; }
     }
 }

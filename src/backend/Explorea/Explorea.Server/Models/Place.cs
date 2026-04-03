@@ -33,6 +33,9 @@ namespace Explorea.API.Models
         [MaxLength(50),  Column("phone")]        public string? Phone      { get; set; }
         [MaxLength(500), Column("website_url")]  public string? WebsiteUrl { get; set; }
 
+        [Column("country_id")] public int? CountryId { get; set; }
+        [Column("popularity")] public int Popularity { get; set; } = 0;
+
         [Column("avg_rating")]  public decimal AvgRating  { get; set; } = 0;
         [Column("is_featured")] public bool    IsFeatured { get; set; } = false;
         [Column("is_deleted")]  public bool    IsDeleted  { get; set; } = false;
@@ -46,6 +49,8 @@ namespace Explorea.API.Models
         [ForeignKey("CityId")]        public City?        City        { get; set; }
         [ForeignKey("DestinationId")] public Destination? Destination { get; set; }
         [ForeignKey("TypeId")]        public PlaceType?   Type        { get; set; }
+        [ForeignKey("CountryId")]     public Country?     Country     { get; set; }
+
 
         public ICollection<PlaceImage>        Images      { get; set; } = new List<PlaceImage>();
         public ICollection<PlaceAmenityLink>  AmenityLinks{ get; set; } = new List<PlaceAmenityLink>();
