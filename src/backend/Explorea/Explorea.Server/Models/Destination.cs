@@ -36,6 +36,12 @@ namespace Explorea.API.Models
         [Column("is_deleted")]  public bool    IsDeleted  { get; set; } = false;
         [Column("deleted_at")]  public DateTimeOffset? DeletedAt { get; set; }
 
+        [Column("country_id")] public int? CountryId { get; set; }
+        [MaxLength(500), Column("hero_image_url")] 
+        public string? HeroImageUrl { get; set; }
+
+        [Column("popularity")] public int Popularity { get; set; } = 0;
+
         [Column("created_at")] public DateTimeOffset CreatedAt { get; set; }
         [Column("updated_at")] public DateTimeOffset UpdatedAt { get; set; }
         [Column("created_by")] public Guid? CreatedBy { get; set; }
@@ -43,6 +49,9 @@ namespace Explorea.API.Models
 
         [ForeignKey("CityId")]
         public City? City { get; set; }
+
+        [ForeignKey("CountryId")]
+        public Country? Country { get; set; }
 
         public ICollection<DestinationImage> Images     { get; set; } = new List<DestinationImage>();
         public ICollection<Place>            Places     { get; set; } = new List<Place>();

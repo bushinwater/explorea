@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using NetTopologySuite.Geometries;
 
 namespace Explorea.API.Models
 {
@@ -42,6 +43,18 @@ namespace Explorea.API.Models
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
 
+        [Column("current_latitude")]
+        public double? CurrentLatitude { get; set; }
+
+        [Column("current_longitude")]
+        public double? CurrentLongitude { get; set; }
+
+        [Column("current_city_id")]
+        public int? CurrentCityId { get; set; }
+
+        [Column("current_location", TypeName = "geography(Point, 4326)")]
+        public Point? CurrentLocation { get; set; }
+
         [Column("created_at")] public DateTimeOffset CreatedAt { get; set; }
         [Column("updated_at")] public DateTimeOffset UpdatedAt { get; set; }
         [Column("created_by")] public Guid? CreatedBy { get; set; }
@@ -49,6 +62,8 @@ namespace Explorea.API.Models
 
         [ForeignKey("RoleId")]
         public Role Role { get; set; } = null!;
+
+        [ForeignKey("CurrentCityId")] public City? CurrentCity { get; set; }
 
         public UserPreferences?             Preferences  { get; set; }
         public ICollection<UserAuthAccount> AuthAccounts { get; set; } = new List<UserAuthAccount>();
