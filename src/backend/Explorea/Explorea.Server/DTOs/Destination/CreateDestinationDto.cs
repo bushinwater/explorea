@@ -10,5 +10,7 @@ namespace Explorea.API.DTOs.Destination
         public double Longitude { get; set; }
         public string? PreviewImageUrl { get; set; }
         public bool IsFeatured { get; set; } = false;
+        public int? CountryId { get; set; }
+        public string? HeroImageUrl { get; set; }
     }
 }

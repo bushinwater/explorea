@@ -17,5 +17,6 @@ namespace Explorea.API.DTOs.Event
         public double? Longitude { get; set; }
         public string? TicketUrl { get; set; }
         public bool IsFeatured { get; set; } = false;
+        public int? CountryId { get; set; }
     }
 }

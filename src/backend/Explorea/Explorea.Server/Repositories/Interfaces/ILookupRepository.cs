@@ -11,5 +11,6 @@ namespace Explorea.Server.Repositories.Interfaces
         Task<List<ActivityCategory>> GetActivityCategoriesAsync();
         Task<List<Season>> GetSeasonsAsync();
         Task<List<InterestTag>> GetInterestTagsAsync();
+        Task<List<Country>> GetCountriesAsync();
     }
 }

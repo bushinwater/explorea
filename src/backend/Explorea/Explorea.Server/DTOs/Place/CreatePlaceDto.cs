@@ -15,5 +15,6 @@ namespace Explorea.API.DTOs.Place
         public string? Phone { get; set; }
         public string? WebsiteUrl { get; set; }
         public bool IsFeatured { get; set; } = false;
+        public int? CountryId { get; set; }
     }
 }

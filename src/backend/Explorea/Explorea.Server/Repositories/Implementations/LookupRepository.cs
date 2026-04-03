@@ -51,5 +51,10 @@ namespace Explorea.Server.Repositories.Implementations
         {
             return await _db.InterestTags.OrderBy(t => t.Name).ToListAsync();
         }
+
+        public async Task<List<Country>> GetCountriesAsync()
+        {
+            return await _db.Countries.OrderBy(c => c.Name).ToListAsync();
+        }
     }
 }
