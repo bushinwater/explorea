@@ -9,6 +9,7 @@ namespace Explorea.API.DTOs.Destination
         public string Slug { get; set; } = null!;
         public string? PreviewImageUrl { get; set; }
         public decimal AvgRating { get; set; }
+        public bool IsFeatured {get; set; }
         public CityRefDto? City { get; set; }
         public LocationDto? Location { get; set; }
         public string? HeroImageUrl { get; set; }
