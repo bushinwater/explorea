@@ -1,0 +1,143 @@
+.page {
+  display: flex;
+  min-height: 100vh;
+}
+.main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  text-align: center;
+}
+
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.logo-img {
+  height: 64px;
+  width: auto;
+}
+
+.logo-text {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+}
+
+h1 {
+  margin-top: var(--spacing-sm);
+}
+
+.subtitle {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  max-width: 300px;
+}
+
+.form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: var(--spacing-md);
+  color: var(--color-text-secondary);
+  font-size: 20px;
+}
+
+.input {
+  padding-left: calc(var(--spacing-md) * 2 + 20px);
+}
+
+.forgot {
+  text-align: right;
+  font-size: var(--font-size-small);
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: var(--font-size-small);
+  text-align: left;
+}
+
+.login-btn {
+  width: 100%;
+  padding: var(--spacing-md);
+  font-size: var(--font-size-body);
+  border-radius: var(--radius-lg);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.social-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+}
+
+.register-link {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+}
+
+.guest-link {
+  font-size: var(--font-size-small);
+}
+
+.guest-link a {
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding: var(--spacing-lg) var(--spacing-md);
+    padding-top: var(--spacing-lg);
+    padding-bottom: 80px;
+    align-items: flex-start;
+  }
+}
