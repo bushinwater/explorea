@@ -1,4 +1,6 @@
+using System.Threading.Tasks;
 using Explorea.Server.Data;
+using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,15 +10,25 @@ namespace Explorea.Server.Controllers
     [Route("api/home")]
     public class HomeController : ControllerBase
     {
-        [HttpGet]
-        public IActionResult GetHome() => Ok();
+        private readonly IHomeService _homeService;
 
-        // Test konekcije sa bazom
-        //[HttpGet]
-        //public async Task<IActionResult> GetHome([FromServices] AppDbContext db)
-        //{
-        //    var count = await db.Destinations.CountAsync();
-        //    return Ok(new { message = "Konekcija radi!", destinationsCount = count });
-        //}
+        public HomeController(IHomeService homeService)
+        {
+            _homeService = homeService;
+        }
+        
+        [HttpGet]
+        public async Task<IActionResult> GetHome()
+        {
+            var result = await _homeService.GetHomeDataAsync();
+            return Ok(result);
+        }
+
+        [HttpGet("recommendations")]
+        public async Task<IActionResult> GetRecommendations()
+        {
+            var result = await _homeService.GetRecommendationsAsync();
+            return Ok(result);
+        }
     }
 }
