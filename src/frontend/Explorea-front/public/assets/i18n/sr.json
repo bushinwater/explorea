@@ -111,5 +111,42 @@
     "SEARCH": "Pretraži",
     "EVENTS": "Događaji",
     "PROFILE": "Profil"
+  },
+  "LOGIN": {
+    "TITLE": "Dobrodošli nazad",
+    "SUBTITLE": "Prijavite se kako biste nastavili sa planiranjem svog sledećeg putovanja.",
+    "NOTICE": "Morate biti prijavljeni da biste pristupili ovoj stranici.",
+    "EMAIL": "Email adresa",
+    "PASSWORD": "Lozinka",
+    "FORGOT_PASSWORD": "Zaboravljena lozinka?",
+    "SUBMIT": "Prijavi se",
+    "OR": "ILI NASTAVITE PUTEM",
+    "GOOGLE": "Google",
+    "FACEBOOK": "Facebook",
+    "NO_ACCOUNT": "Nemate nalog?",
+    "REGISTER": "Registrujte se",
+    "GUEST": "Nastavi bez naloga",
+    "ERROR": "Pogrešan email ili lozinka."
+  },
+  "REGISTER": {
+    "TITLE": "Kreiraj nalog",
+    "SUBTITLE": "Pridruži se i istraži najbolje destinacije, događaje i aktivnosti.",
+    "FULL_NAME": "Ime i prezime",
+    "NAME_PLACEHOLDER": "Unesite vaše ime",
+    "EMAIL": "Email adresa",
+    "EMAIL_PLACEHOLDER": "vas@email.com",
+    "PASSWORD": "Lozinka",
+    "CONFIRM_PASSWORD": "Potvrdi lozinku",
+    "TERMS": "Prihvatam",
+    "TERMS_LINK": "Uslove korišćenja",
+    "AND": "i",
+    "PRIVACY_LINK": "Politiku privatnosti",
+    "SUBMIT": "Registruj se",
+    "OR": "ILI SE REGISTRUJ PREKO",
+    "HAVE_ACCOUNT": "Već imaš nalog?",
+    "LOGIN": "Prijavi se",
+    "ERROR_TERMS": "Morate prihvatiti uslove korišćenja.",
+    "ERROR_PASSWORD": "Lozinke se ne poklapaju.",
+    "ERROR_GENERAL": "Registracija nije uspela. Pokušajte ponovo."
   }
 }

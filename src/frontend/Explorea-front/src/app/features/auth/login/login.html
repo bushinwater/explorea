@@ -1,0 +1,75 @@
+<div class="page">
+  <app-sidebar></app-sidebar>
+  <app-bottom-nav></app-bottom-nav>
+
+  <main class="main">
+    <div class="login-card">
+      <div class="logo">
+        <img src="assets/logo.png" alt="Explorea" class="logo-img" />
+        <span class="logo-text">Explorea</span>
+      </div>
+
+      <div class="notice" *ngIf="returnUrl !== '/home'">
+        <span class="material-icons">info</span>
+        {{ 'LOGIN.NOTICE' | translate }}
+      </div>
+
+      <h1>{{ 'LOGIN.TITLE' | translate }}</h1>
+      <p class="subtitle">{{ 'LOGIN.SUBTITLE' | translate }}</p>
+
+      <div class="form">
+        <div class="input-wrapper">
+          <span class="material-icons input-icon">email</span>
+          <input
+            class="input"
+            type="email"
+            [(ngModel)]="email"
+            [placeholder]="'LOGIN.EMAIL' | translate"
+          />
+        </div>
+
+        <div class="input-wrapper">
+          <span class="material-icons input-icon">lock</span>
+          <input
+            class="input"
+            type="password"
+            [(ngModel)]="password"
+            [placeholder]="'LOGIN.PASSWORD' | translate"
+          />
+        </div>
+
+        <div class="forgot">
+          <a routerLink="/forgot-password">{{ 'LOGIN.FORGOT_PASSWORD' | translate }}</a>
+        </div>
+
+        <div class="error" *ngIf="error">{{ error | translate }}</div>
+
+        <button class="btn btn-primary login-btn" (click)="login()">
+          {{ 'LOGIN.SUBMIT' | translate }}
+        </button>
+
+        <div class="divider">
+          <span>{{ 'LOGIN.OR' | translate }}</span>
+        </div>
+
+        <button class="btn btn-secondary social-btn">
+          <span class="material-icons">language</span>
+          {{ 'LOGIN.GOOGLE' | translate }}
+        </button>
+
+        <button class="btn btn-secondary social-btn">
+          <span class="material-icons">facebook</span>
+          {{ 'LOGIN.FACEBOOK' | translate }}
+        </button>
+        <div class="register-link">
+          {{ 'LOGIN.NO_ACCOUNT' | translate }}
+          <a routerLink="/register">{{ 'LOGIN.REGISTER' | translate }} →</a>
+        </div>
+
+        <div class="guest-link">
+          <a href="#">{{ 'LOGIN.GUEST' | translate }}</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

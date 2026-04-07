@@ -111,5 +111,42 @@
     "SEARCH": "Search",
     "EVENTS": "Events",
     "PROFILE": "Profile"
+  },
+  "LOGIN": {
+    "TITLE": "Welcome back",
+    "SUBTITLE": "Sign in to continue planning your next adventure.",
+    "NOTICE": "You need to be logged in to access this page.",
+    "EMAIL": "Email address",
+    "PASSWORD": "Password",
+    "FORGOT_PASSWORD": "Forgot password?",
+    "SUBMIT": "Sign in",
+    "OR": "OR CONTINUE WITH",
+    "GOOGLE": "Google",
+    "FACEBOOK": "Facebook",
+    "NO_ACCOUNT": "Don't have an account?",
+    "REGISTER": "Register",
+    "GUEST": "Continue without account",
+    "ERROR": "Invalid email or password."
+  },
+  "REGISTER": {
+    "TITLE": "Create account",
+    "SUBTITLE": "Join and explore the best destinations, events and activities.",
+    "FULL_NAME": "Full name",
+    "NAME_PLACEHOLDER": "Enter your name",
+    "EMAIL": "Email address",
+    "EMAIL_PLACEHOLDER": "you@email.com",
+    "PASSWORD": "Password",
+    "CONFIRM_PASSWORD": "Confirm password",
+    "TERMS": "I accept",
+    "TERMS_LINK": "Terms of service",
+    "AND": "and",
+    "PRIVACY_LINK": "Privacy policy",
+    "SUBMIT": "Register",
+    "OR": "OR REGISTER WITH",
+    "HAVE_ACCOUNT": "Already have an account?",
+    "LOGIN": "Sign in",
+    "ERROR_TERMS": "You must accept the terms of service.",
+    "ERROR_PASSWORD": "Passwords do not match.",
+    "ERROR_GENERAL": "Registration failed. Please try again."
   }
 }

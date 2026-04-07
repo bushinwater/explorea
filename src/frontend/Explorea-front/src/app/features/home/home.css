@@ -140,6 +140,57 @@
   margin: 0;
 }
 
+/* Skeleton loader */
+@keyframes shimmer {
+  0% { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.skeleton-hero {
+  width: 100%;
+  height: 480px;
+  background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-border) 50%, var(--color-surface) 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skeleton-section {
+  padding-top: var(--spacing-xl);
+  padding-bottom: var(--spacing-xl);
+  border-top: 1px solid var(--color-border);
+}
+
+.skeleton-title {
+  height: 24px;
+  width: 220px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-border) 50%, var(--color-surface) 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite;
+  margin-bottom: var(--spacing-lg);
+}
+
+.skeleton-row {
+  display: flex;
+  gap: var(--spacing-md);
+  overflow: hidden;
+}
+
+.skeleton-card {
+  flex-shrink: 0;
+  width: 240px;
+  height: 200px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-border) 50%, var(--color-surface) 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skeleton-card--wide {
+  width: 300px;
+  height: 180px;
+}
+
 /* Mobile padding for bottom nav */
 @media (max-width: 768px) {
   .home-content {

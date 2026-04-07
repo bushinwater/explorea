@@ -57,9 +57,9 @@
       <span class="material-icons nav-icon">{{ themeService.isDark ? 'light_mode' : 'dark_mode' }}</span>
       <span class="nav-label">{{ themeService.isDark ? ('SIDEBAR.LIGHT_MODE' | translate) : ('SIDEBAR.DARK_MODE' | translate) }}</span>
     </button>
-    <a href="#" class="nav-item danger">
+    <button class="nav-item danger" (click)="logout()">
       <span class="material-icons nav-icon">logout</span>
       <span class="nav-label">{{ 'SIDEBAR.LOGOUT' | translate }}</span>
-    </a>
+    </button>
   </div>
 </aside>

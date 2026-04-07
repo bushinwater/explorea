@@ -1,5 +1,5 @@
 export interface HeroBanner {
-  id: number;
+  id: string;
   title: string;
   subtitle: string;
   imageUrl: string;
@@ -13,7 +13,7 @@ export interface City {
 }
 
 export interface DestinationCard {
-  id: number;
+  id: string;
   name: string;
   slug: string;
   previewImageUrl: string;
@@ -24,7 +24,7 @@ export interface DestinationCard {
 }
 
 export interface EventCard {
-  id: number;
+  id: string;
   name: string;
   slug: string;
   type: { id: number; name: string };
@@ -38,7 +38,7 @@ export interface EventCard {
 }
 
 export interface ActivityCard {
-  id: number;
+  id: string;
   name: string;
   slug: string;
   category: { id: number; name: string };
@@ -50,12 +50,12 @@ export interface ActivityCard {
 }
 
 export interface ReviewDto {
-  id: number;
+  id: string;
   rating: number;
   comment: string;
   createdAt: string;
   user: {
-    id: number;
+    id: string;
     firstName: string;
     lastName: string;
     travelerRank: string;

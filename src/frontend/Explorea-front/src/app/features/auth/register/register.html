@@ -1,0 +1,112 @@
+<div class="page">
+  <app-sidebar></app-sidebar>
+  <app-bottom-nav></app-bottom-nav>
+  <main class="main">
+    <div class="register-card">
+      <div class="logo">
+        <img src="assets/logo.png" alt="Explorea" class="logo-img" />
+        <span class="logo-text">Explorea</span>
+      </div>
+
+      <h1>{{ 'REGISTER.TITLE' | translate }}</h1>
+      <p class="subtitle">{{ 'REGISTER.SUBTITLE' | translate }}</p>
+
+      <div class="form">
+        <div class="form-group">
+          <label>{{ 'REGISTER.FULL_NAME' | translate }}</label>
+          <div class="input-wrapper">
+            <span class="material-icons input-icon">person</span>
+            <input
+              class="input"
+              type="text"
+              [(ngModel)]="firstName"
+              [placeholder]="'REGISTER.NAME_PLACEHOLDER' | translate"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>{{ 'REGISTER.EMAIL' | translate }}</label>
+          <div class="input-wrapper">
+            <span class="material-icons input-icon">email</span>
+            <input
+              class="input"
+              type="email"
+              [(ngModel)]="email"
+              [placeholder]="'REGISTER.EMAIL_PLACEHOLDER' | translate"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>{{ 'REGISTER.PASSWORD' | translate }}</label>
+          <div class="input-wrapper">
+            <span class="material-icons input-icon">lock</span>
+            <input
+              class="input"
+              [type]="showPassword ? 'text' : 'password'"
+              [(ngModel)]="password"
+              placeholder="••••••••"
+            />
+            <span class="material-icons input-icon-right" (click)="togglePassword()">
+              {{ showPassword ? 'visibility_off' : 'visibility' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>{{ 'REGISTER.CONFIRM_PASSWORD' | translate }}</label>
+          <div class="input-wrapper">
+            <span class="material-icons input-icon">lock</span>
+            <input
+              class="input"
+              [type]="showConfirmPassword ? 'text' : 'password'"
+              [(ngModel)]="confirmPassword"
+              placeholder="••••••••"
+            />
+            <span class="material-icons input-icon-right" (click)="toggleConfirmPassword()">
+              {{ showConfirmPassword ? 'visibility_off' : 'visibility' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="terms">
+          <input type="checkbox" [(ngModel)]="acceptTerms" id="terms" />
+          <label for="terms">
+            {{ 'REGISTER.TERMS' | translate }}
+            <a href="#">{{ 'REGISTER.TERMS_LINK' | translate }}</a>
+            {{ 'REGISTER.AND' | translate }}
+            <a href="#">{{ 'REGISTER.PRIVACY_LINK' | translate }}</a>
+          </label>
+        </div>
+
+        <div class="error" *ngIf="error">{{ error | translate }}</div>
+
+        <button class="btn btn-primary register-btn" (click)="register()">
+          {{ 'REGISTER.SUBMIT' | translate }}
+        </button>
+
+        <div class="divider">
+          <span>{{ 'REGISTER.OR' | translate }}</span>
+        </div>
+
+        <div class="social-buttons">
+          <button class="btn btn-secondary social-btn">
+            <span class="material-icons">language</span>
+            {{ 'LOGIN.GOOGLE' | translate }}
+          </button>
+
+          <button class="btn btn-secondary social-btn">
+            <span class="material-icons">facebook</span>
+            {{ 'LOGIN.FACEBOOK' | translate }}
+          </button>
+        </div>
+
+        <div class="login-link">
+          {{ 'REGISTER.HAVE_ACCOUNT' | translate }}
+          <a routerLink="/login">{{ 'REGISTER.LOGIN' | translate }}</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
