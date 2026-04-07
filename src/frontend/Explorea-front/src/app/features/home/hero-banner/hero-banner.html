@@ -5,6 +5,8 @@
     [class.no-transition]="noTransition"
     [style.transform]="trackTranslate"
     (transitionend)="onTransitionEnd()"
+    (touchstart)="onTouchStart($event)"
+    (touchend)="onTouchEnd($event)"
   >
     <div class="hero__slide" *ngFor="let banner of extendedSlides">
       <img [src]="banner.imageUrl" [alt]="banner.title" class="hero__bg" loading="eager" />

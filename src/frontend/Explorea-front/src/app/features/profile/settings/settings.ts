@@ -1,17 +1,20 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { UpdatePreferencesDto, UpdateUserDto, UserProfile } from '../../../core/models/user.model';
+import { AuthService } from '../../../core/services/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { ThemeService } from '../../../core/services/theme.service';
 import { UserService } from '../../../core/services/user.service';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
+import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, Sidebar, TranslateModule],
+  imports: [CommonModule, FormsModule, Sidebar, BottomNav, TranslateModule],
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })
@@ -25,8 +28,10 @@ export class Settings implements OnInit {
 
   constructor(
     private userService: UserService,
+    private authService: AuthService,
+    private router: Router,
     public themeService: ThemeService,
-    public languageService: LanguageService
+    public languageService: LanguageService,
   ) {}
 
   get language() {
@@ -56,6 +61,25 @@ export class Settings implements OnInit {
 
     this.username = this.user.firstName + '_' + this.user.lastName.toLowerCase();
     this.notificationsEnabled = this.user.preferences?.notificationsEnabled ?? false;
+  }
+
+  logout() {
+    const refreshToken = this.authService.getRefreshToken();
+    if (refreshToken) {
+      this.authService.logout({ refreshToken }).subscribe({
+        complete: () => {
+          this.authService.clearTokens();
+          this.router.navigate(['/login']);
+        },
+        error: () => {
+          this.authService.clearTokens();
+          this.router.navigate(['/login']);
+        },
+      });
+    } else {
+      this.authService.clearTokens();
+      this.router.navigate(['/login']);
+    }
   }
 
   sacuvaj() {
