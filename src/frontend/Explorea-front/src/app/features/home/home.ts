@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { Sidebar } from '../../layout/shell/sidebar/sidebar';
@@ -45,8 +45,9 @@ export class Home implements OnInit {
   travelerReviews: ReviewDto[] = [];
   recommendations: DestinationCard[] = [];
   cityFilters: CityFilter[] = [];
+  loading = true;
 
-  constructor(private homeService: HomeService) {}
+  constructor(private homeService: HomeService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.cityFilters = this.homeService.getCityFilters();
@@ -57,6 +58,8 @@ export class Home implements OnInit {
       this.upcomingEvents = data.upcomingEvents;
       this.popularActivities = data.popularActivities;
       this.travelerReviews = data.travelerReviews;
+      this.loading = false;
+      this.cdr.detectChanges();
     });
 
     this.homeService.getRecommendations().subscribe((recs) => {

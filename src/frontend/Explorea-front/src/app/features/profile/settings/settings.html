@@ -161,30 +161,9 @@
     <div class="actions">
       <button class="btn btn-primary" (click)="sacuvaj()">{{ 'SETTINGS_PAGE.ACTIONS.SAVE' | translate }}</button>
       <button class="btn btn-secondary">{{ 'SETTINGS_PAGE.ACTIONS.CANCEL' | translate }}</button>
-      <button class="btn btn-danger">{{ 'SETTINGS_PAGE.ACTIONS.DELETE' | translate }}</button>
+      <button class="btn btn-danger" (click)="logout()">{{ 'SIDEBAR.LOGOUT' | translate }}</button>
     </div>
   </main>
 
-  <nav class="bottom-nav">
-    <a href="#" class="nav-item">
-      <span class="material-icons">home</span>
-      <span>{{ 'BOTTOM_NAV.HOME' | translate }}</span>
-    </a>
-    <a href="#" class="nav-item">
-      <span class="material-icons">explore</span>
-      <span>{{ 'BOTTOM_NAV.EXPLORE' | translate }}</span>
-    </a>
-    <a href="#" class="nav-item">
-      <span class="material-icons">search</span>
-      <span>{{ 'BOTTOM_NAV.SEARCH' | translate }}</span>
-    </a>
-    <a href="#" class="nav-item">
-      <span class="material-icons">event</span>
-      <span>{{ 'BOTTOM_NAV.EVENTS' | translate }}</span>
-    </a>
-    <a href="#" class="nav-item active">
-      <span class="material-icons">person</span>
-      <span>{{ 'BOTTOM_NAV.PROFILE' | translate }}</span>
-    </a>
-  </nav>
+  <app-bottom-nav />
 </div>

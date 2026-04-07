@@ -115,6 +115,7 @@
   "LOGIN": {
     "TITLE": "Dobrodošli nazad",
     "SUBTITLE": "Prijavite se kako biste nastavili sa planiranjem svog sledećeg putovanja.",
+    "NOTICE": "Morate biti prijavljeni da biste pristupili ovoj stranici.",
     "EMAIL": "Email adresa",
     "PASSWORD": "Lozinka",
     "FORGOT_PASSWORD": "Zaboravljena lozinka?",

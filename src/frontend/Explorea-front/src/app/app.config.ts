@@ -16,7 +16,6 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
-    provideHttpClient(),
     importProvidersFrom(
       TranslateModule.forRoot({
         defaultLanguage: 'sr',

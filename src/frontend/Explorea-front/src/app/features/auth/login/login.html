@@ -9,6 +9,11 @@
         <span class="logo-text">Explorea</span>
       </div>
 
+      <div class="notice" *ngIf="returnUrl !== '/home'">
+        <span class="material-icons">info</span>
+        {{ 'LOGIN.NOTICE' | translate }}
+      </div>
+
       <h1>{{ 'LOGIN.TITLE' | translate }}</h1>
       <p class="subtitle">{{ 'LOGIN.SUBTITLE' | translate }}</p>
 

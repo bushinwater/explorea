@@ -115,6 +115,7 @@
   "LOGIN": {
     "TITLE": "Welcome back",
     "SUBTITLE": "Sign in to continue planning your next adventure.",
+    "NOTICE": "You need to be logged in to access this page.",
     "EMAIL": "Email address",
     "PASSWORD": "Password",
     "FORGOT_PASSWORD": "Forgot password?",

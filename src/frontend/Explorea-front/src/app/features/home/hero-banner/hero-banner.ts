@@ -27,6 +27,7 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   selectedCityId: number | null = null;
   searchQuery = '';
   private timer: ReturnType<typeof setInterval> | null = null;
+  private touchStartX = 0;
 
   constructor(private cdr: ChangeDetectorRef) {}
 
@@ -124,5 +125,21 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
 
   onSearchKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter') this.onSearch();
+  }
+
+  onTouchStart(event: TouchEvent) {
+    this.touchStartX = event.touches[0].clientX;
+  }
+
+  onTouchEnd(event: TouchEvent) {
+    const diff = this.touchStartX - event.changedTouches[0].clientX;
+    if (Math.abs(diff) < 50) return;
+    this.stopAutoAdvance();
+    if (diff > 0) {
+      this.next();
+    } else {
+      this.prev();
+    }
+    this.startAutoAdvance();
   }
 }

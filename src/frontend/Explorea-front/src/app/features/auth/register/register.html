@@ -80,7 +80,7 @@
           </label>
         </div>
 
-        <div class="error" *ngIf="error">{{ error }}</div>
+        <div class="error" *ngIf="error">{{ error | translate }}</div>
 
         <button class="btn btn-primary register-btn" (click)="register()">
           {{ 'REGISTER.SUBMIT' | translate }}
