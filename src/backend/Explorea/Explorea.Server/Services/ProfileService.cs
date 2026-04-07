@@ -206,6 +206,22 @@ namespace Explorea.Server.Services
             await _aiBotService.ForwardSupportQueryAsync(userId, dto.Query.Trim());
         }
 
+        public async Task<ProfileStatsDto> GetStatsAsync(Guid userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId)
+                ?? throw new Exception("User not found.");
+
+            var reviewsCount = await _db.Reviews.CountAsync(r => r.UserId == userId);
+            var savedItemsCount = await _db.SavedItems.CountAsync(s => s.UserId == userId);
+
+            return new ProfileStatsDto
+            {
+                ReviewsCount = reviewsCount,
+                SavedItemsCount = savedItemsCount,
+                MemberSince = user.MemberSince
+            };
+        }
+
         private static UserProfileDto MapUserProfile(User user, UserPreferences? preferences)
         {
             return new UserProfileDto
