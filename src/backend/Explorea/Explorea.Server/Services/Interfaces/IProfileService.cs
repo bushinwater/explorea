@@ -11,5 +11,8 @@ namespace Explorea.Server.Services.Interfaces
 
         Task<List<ProfileReviewDto>> GetMyReviewsAsync(Guid userId);
         Task<ProfileReviewDto> AddReviewAsync(Guid userId, CreateReviewDto dto);
+
+        Task<UserProfileDto> GetProfileAsync(Guid userId);
+        Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateUserDto dto);
     }
 }

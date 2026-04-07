@@ -16,12 +16,15 @@ namespace Explorea.Server.Services
         private readonly ISavedItemRepository _savedItemRepository;
         private readonly AppDbContext _db;
         private readonly IReviewRepository _reviewRepository;
+        private readonly IUserRepository _userRepository;
 
         public ProfileService(
+            IUserRepository userRepository,
             ISavedItemRepository savedItemRepository,
             IReviewRepository reviewRepository,
             AppDbContext db)
         {
+            _userRepository = userRepository;
             _savedItemRepository = savedItemRepository;
             _reviewRepository = reviewRepository;
             _db = db;
@@ -152,6 +155,70 @@ namespace Explorea.Server.Services
 
             return await MapReviewAsync(existingReview)
                 ?? throw new Exception("Unable to map review.");
+        }
+
+        public async Task<UserProfileDto> GetProfileAsync(Guid userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId)
+                ?? throw new Exception("User not found.");
+
+            var preferences = await _userRepository.GetPreferencesAsync(userId);
+
+            return MapUserProfile(user, preferences);
+        }
+
+        public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateUserDto dto)
+        {
+            var user = await _userRepository.GetByIdAsync(userId)
+                ?? throw new Exception("User not found.");
+
+            if (string.IsNullOrWhiteSpace(dto.FirstName))
+                throw new Exception("First name is required.");
+
+            if (string.IsNullOrWhiteSpace(dto.LastName))
+                throw new Exception("Last name is required.");
+
+            user.FirstName = dto.FirstName.Trim();
+            user.LastName = dto.LastName.Trim();
+            user.ProfileImageUrl = string.IsNullOrWhiteSpace(dto.ProfileImageUrl)
+                ? null
+                : dto.ProfileImageUrl.Trim();
+
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+            user.UpdatedBy = userId;
+
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
+
+            var preferences = await _userRepository.GetPreferencesAsync(userId);
+
+            return MapUserProfile(user, preferences);
+        }
+
+        private static UserProfileDto MapUserProfile(User user, UserPreferences? preferences)
+        {
+            return new UserProfileDto
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                TravelerRank = user.TravelerRank,
+                TotalVisits = user.TotalVisits,
+                MemberSince = user.MemberSince,
+                ProfileImageUrl = user.ProfileImageUrl,
+                CurrentLatitude = user.CurrentLatitude,
+                CurrentLongitude = user.CurrentLongitude,
+                CurrentCityId = user.CurrentCityId,
+                Preferences = preferences == null
+                    ? null
+                    : new UserPreferencesDto
+                    {
+                        Theme = preferences.Theme,
+                        Language = preferences.Language,
+                        NotificationsEnabled = preferences.NotificationsEnabled
+                    }
+            };
         }
 
         private static string NormalizeEntityType(string entityType)

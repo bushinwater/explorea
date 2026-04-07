@@ -59,6 +59,22 @@ namespace Explorea.Server.Controllers
             return Ok(result);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetProfile()
+        {
+            var userId = GetCurrentUserId();
+            var result = await _profileService.GetProfileAsync(userId);
+            return Ok(result);
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserDto dto)
+        {
+            var userId = GetCurrentUserId();
+            var result = await _profileService.UpdateProfileAsync(userId, dto);
+            return Ok(result);
+        }
+
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
