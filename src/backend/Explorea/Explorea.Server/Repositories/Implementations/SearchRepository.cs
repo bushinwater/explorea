@@ -284,6 +284,7 @@ namespace Explorea.Server.Repositories.Implementations
             .Select(r => new SearchProjection<Destination>
             {
                Entity = entities[r.Id],
+               FtsRank = r.FtsRank,
                NameSimilarity = r.NameSimilarity,
                CitySimilarity = r.CitySimilarity 
             })
@@ -295,6 +296,10 @@ namespace Explorea.Server.Repositories.Implementations
         const string sql = """
         SELECT
             d.id AS id,
+            ts_rank(
+                d.search_vector,
+                websearch_to_tsquery('simple', @q)
+            ) AS fts_rank,
             GREATEST(
                 similarity(d.name, @q),
                 word_similarity(@q, COALESCE(d.name, ''))
@@ -309,8 +314,9 @@ namespace Explorea.Server.Repositories.Implementations
         FROM destinations d
         LEFT JOIN cities c ON c.id = d.city_id
         WHERE d.is_deleted = FALSE
-          AND (
-                d.name ILIKE @contains
+          AND ( 
+                d.search_vector @@ websearch_to_tsquery('simple', @q)
+             OR d.name ILIKE @contains
              OR COALESCE(d.description, '') ILIKE @contains
              OR (
                     @enableFuzzy = TRUE
@@ -323,6 +329,10 @@ namespace Explorea.Server.Repositories.Implementations
                 )
             )
         ORDER BY
+            ts_rank(
+                d.search_vector,
+                websearch_to_tsquery('simple', @q)
+            ) DESC,
             GREATEST(
                 GREATEST(
                     similarity(d.name, @q),
@@ -354,6 +364,7 @@ namespace Explorea.Server.Repositories.Implementations
           result.Add(new DestinationSearchHitRow
           {
               Id = reader.GetGuid(reader.GetOrdinal("id")),
+              FtsRank = Convert.ToDouble(reader.GetValue(reader.GetOrdinal("fts_rank"))),
               NameSimilarity = reader.GetDouble(reader.GetOrdinal("name_similarity")),
               CitySimilarity = GetNullableDouble(reader, "city_similarity")
           });      
@@ -361,7 +372,9 @@ namespace Explorea.Server.Repositories.Implementations
 
         return result;
     }
+    // =====================================================================================================
     // OBUHVATA DESTINACIJE --------------------------------------------------------------------------------
+    // =====================================================================================================
     
     async Task<List<SearchProjection<Place>>> ISearchRepository.SearchPlacesAsync(string query, int take = 25)
     {
@@ -384,6 +397,7 @@ namespace Explorea.Server.Repositories.Implementations
             .Select(r => new SearchProjection<Place>
             {
                 Entity = entities[r.Id],
+                FtsRank = r.FtsRank,
                 NameSimilarity = r.NameSimilarity,
                 CitySimilarity = r.CitySimilarity,
                 DestinationSimilarity = r.DestinationSimilarity,
@@ -395,6 +409,10 @@ namespace Explorea.Server.Repositories.Implementations
         const string sql = """
             SELECT
                 p.id AS id,
+                ts_rank(
+                    p.search_vector,
+                    websearch_to_tsquery('simple', @q)
+                ) AS fts_rank,
                 GREATEST(
                     similarity(p.name, @q),
                     word_similarity(@q, COALESCE(p.name, ''))
@@ -426,7 +444,8 @@ namespace Explorea.Server.Repositories.Implementations
             LEFT JOIN place_types pt ON pt.id = p.type_id
             WHERE p.is_deleted = FALSE
               AND (
-                    p.name ILIKE @contains
+                    p.search_vector @@ websearch_to_tsquery('simple', @q)
+                 OR p.name ILIKE @contains
                  OR COALESCE(p.description, '') ILIKE @contains
                  OR COALESCE(p.address, '') ILIKE @contains
                  OR COALESCE(c.name, '') ILIKE @contains
@@ -439,10 +458,26 @@ namespace Explorea.Server.Repositories.Implementations
                                 similarity(p.name, @q),
                                 word_similarity(@q, COALESCE(p.name, ''))
                             ) >= @nameThreshold
+                            OR GREATEST(
+                                similarity(c.name, @q),
+                                word_similarity(@q, COALESCE(c.name, ''))
+                            ) >= @relatedThreshold
+                            OR GREATEST(
+                                similarity(d.name, @q),
+                                word_similarity(@q, COALESCE(d.name, ''))
+                            ) >= @relatedThreshold
+                            OR GREATEST(
+                                similarity(pt.name, @q),
+                                word_similarity(@q, COALESCE(pt.name, ''))
+                            ) >= @relatedThreshold
                         )
                     )
                )
             ORDER BY
+                ts_rank(
+                    p.search_vector, 
+                    websearch_to_tsquery('simple', @q)
+                ) DESC,
                 GREATEST(
                     GREATEST(
                         similarity(p.name, @q),
@@ -471,6 +506,7 @@ namespace Explorea.Server.Repositories.Implementations
                     )
                 ) DESC,
                 p.is_featured DESC,
+                p.popularity DESC,
                 p.avg_rating DESC,
                 p.name ASC
             LIMIT @take;
@@ -488,6 +524,7 @@ namespace Explorea.Server.Repositories.Implementations
           result.Add(new PlaceSearchHitRow
           {
               Id = reader.GetGuid(reader.GetOrdinal("id")),
+              FtsRank = Convert.ToDouble(reader.GetValue(reader.GetOrdinal("fts_rank"))),
               NameSimilarity = reader.GetDouble(reader.GetOrdinal("name_similarity")),
               CitySimilarity = GetNullableDouble(reader, "city_similarity"),
               DestinationSimilarity = GetNullableDouble(reader, "destination_similarity"),
@@ -521,6 +558,7 @@ namespace Explorea.Server.Repositories.Implementations
             .Select(r => new SearchProjection<Event>
             {
                 Entity = entities[r.Id],
+                FtsRank = r.FtsRank,
                 NameSimilarity = r.NameSimilarity,
                 CitySimilarity = r.CitySimilarity,
                 DestinationSimilarity = r.DestinationSimilarity,
@@ -533,6 +571,10 @@ namespace Explorea.Server.Repositories.Implementations
         const string sql = """
         SELECT
             e.id AS id,
+            ts_rank(
+                e.search_vector,
+                websearch_to_tsquery('simple', @q)
+            ) AS fts_rank,
             GREATEST(
                 similarity(e.name, @q),
                 word_similarity(@q, COALESCE(e.name, ''))
@@ -570,7 +612,8 @@ namespace Explorea.Server.Repositories.Implementations
         WHERE e.is_deleted = FALSE
           AND e.end_datetime >= @now
           AND (
-                e.name ILIKE @contains
+                e.search_vector @@ websearch_to_tsquery('simple', @q)
+             OR e.name ILIKE @contains
              OR COALESCE(e.description, '') ILIKE @contains
              OR COALESCE(e.address, '') ILIKE @contains
              OR (
@@ -580,11 +623,30 @@ namespace Explorea.Server.Repositories.Implementations
                             similarity(e.name, @q),
                             word_similarity(@q, COALESCE(e.name, ''))
                         ) >= @nameThreshold
-                     
+                        OR GREATEST(
+                            similarity(COALESCE(c.name, ''), @q),
+                            word_similarity(@q, COALESCE(c.name, ''))
+                        ) >=  @relatedThreshold
+                        OR GREATEST(
+                            similarity(COALESCE(d.name, ''), @q),
+                            word_similarity(@q, COALESCE(d.name, ''))
+                        ) >=  @relatedThreshold
+                        OR GREATEST(
+                            similarity(COALESCE(p.name, ''), @q),
+                            word_similarity(@q, COALESCE(d.name, ''))
+                        ) >=  @relatedThreshold
+                        OR GREATEST(
+                            similarity(COALESCE(et.name, ''), @q),
+                            word_similarity(@q, COALESCE(et.name, ''))
+                        ) >=  @relatedThreshold
                     )
                 )
             )
         ORDER BY
+            ts_rank(
+                e.search_vector, 
+                websearch_to_tsquery('simple', @q)
+            ) DESC,
             GREATEST(
                 GREATEST(
                     similarity(e.name, @q),
@@ -617,6 +679,7 @@ namespace Explorea.Server.Repositories.Implementations
                 )
             ) DESC,
             e.is_featured DESC,
+            e.popularity DESC,
             e.start_datetime ASC,
             e.name ASC
         LIMIT @take;
@@ -636,6 +699,7 @@ namespace Explorea.Server.Repositories.Implementations
             result.Add(new EventSearchHitRow
             {
                 Id = reader.GetGuid(reader.GetOrdinal("id")),
+                FtsRank = Convert.ToDouble(reader.GetValue(reader.GetOrdinal("fts_rank"))),
                 NameSimilarity = reader.GetDouble(reader.GetOrdinal("name_similarity")),
                 CitySimilarity = GetNullableDouble(reader, "city_similarity"),
                 DestinationSimilarity = GetNullableDouble(reader, "destination_similarity"),
@@ -670,6 +734,7 @@ namespace Explorea.Server.Repositories.Implementations
           .Select(r => new SearchProjection<Activity>
           {
               Entity = entities[r.Id],
+              FtsRank = r.FtsRank,
               NameSimilarity = r.NameSimilarity,
               CitySimilarity = r.CitySimilarity,
               DestinationSimilarity = r.DestinationSimilarity,
@@ -682,6 +747,10 @@ namespace Explorea.Server.Repositories.Implementations
         const string sql = """
             SELECT
                 a.id AS id,
+                ts_rank(
+                    a.search_vector,
+                    websearch_to_tsquery('simple', @q)
+                ) AS fts_rank,
                 GREATEST(
                     similarity(a.name, @q),
                     word_similarity(@q, COALESCE(a.name, ''))
@@ -718,7 +787,8 @@ namespace Explorea.Server.Repositories.Implementations
             INNER JOIN activity_categories ac ON ac.id = a.category_id
             WHERE a.is_deleted = FALSE
               AND (
-                    a.name ILIKE @contains
+                    a.search_vector @@ websearch_to_tsquery('simple', @q)
+                 OR a.name ILIKE @contains
                  OR COALESCE(a.description, '') ILIKE @contains
                  OR COALESCE(a.start_point, '') ILIKE @contains
                  OR (
@@ -728,11 +798,30 @@ namespace Explorea.Server.Repositories.Implementations
                                 similarity(a.name, @q),
                                 word_similarity(@q, COALESCE(a.name, ''))
                             ) >= @nameThreshold
-                         
+                            OR GREATEST(
+                                similarity(COALESCE(c.name, ''), @q),
+                                word_similarity(@q, COALESCE(c.name, ''))
+                            ) >= @relatedThreshold
+                            OR GREATEST(
+                                similarity(COALESCE(d.name, ''), @q),
+                                word_similarity(@q, COALESCE(d.name, ''))
+                            ) >= @relatedThreshold
+                            OR GREATEST(
+                                similarity(COALESCE(p.name, ''), @q),
+                                word_similarity(@q, COALESCE(p.name, ''))
+                            ) >= @relatedThreshold
+                            OR GREATEST(
+                                similarity(COALESCE(ac.name, ''), @q),
+                                word_similarity(@q, COALESCE(ac.name, ''))
+                            ) >= @relatedThreshold
                         )
                     )
                 )
             ORDER BY
+                ts_rank(
+                    a.search_vector,
+                    websearch_to_tsquery('simple', @q)
+                ) DESC,
                 GREATEST(
                     GREATEST(
                         similarity(a.name, @q),
@@ -765,6 +854,7 @@ namespace Explorea.Server.Repositories.Implementations
                     )
                 ) DESC,
                 a.is_featured DESC,
+                a.popularity DESC,
                 a.avg_rating DESC,
                 a.name ASC
             LIMIT @take;
@@ -782,6 +872,7 @@ namespace Explorea.Server.Repositories.Implementations
           result.Add(new ActivitySearchHitRow
           {
               Id = reader.GetGuid(reader.GetOrdinal("id")),
+              FtsRank = Convert.ToDouble(reader.GetValue(reader.GetOrdinal("fts_rank"))),
               NameSimilarity = reader.GetDouble(reader.GetOrdinal("name_similarity")),
               CitySimilarity = GetNullableDouble(reader, "city_similarity"),
               DestinationSimilarity = GetNullableDouble(reader, "destination_similarity"),
