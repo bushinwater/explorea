@@ -1,3 +1,4 @@
+using Explorea.API.DTOs.Review;
 using Explorea.API.DTOs.User;
 
 namespace Explorea.Server.Services.Interfaces
@@ -7,5 +8,8 @@ namespace Explorea.Server.Services.Interfaces
         Task<List<SavedItemDto>> GetSavedItemsAsync(Guid userId);
         Task SaveItemAsync(Guid userId, SavedItemRequestDto dto);
         Task RemoveSavedItemAsync(Guid userId, string entityType, Guid entityId);
+
+        Task<List<ProfileReviewDto>> GetMyReviewsAsync(Guid userId);
+        Task<ProfileReviewDto> AddReviewAsync(Guid userId, CreateReviewDto dto);
     }
 }

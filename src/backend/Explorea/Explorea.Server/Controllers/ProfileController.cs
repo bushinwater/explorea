@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Explorea.API.DTOs.Review;
 using Explorea.API.DTOs.User;
 using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -40,6 +41,22 @@ namespace Explorea.Server.Controllers
             var userId = GetCurrentUserId();
             await _profileService.RemoveSavedItemAsync(userId, entityType, entityId);
             return NoContent();
+        }
+
+        [HttpGet("reviews")]
+        public async Task<IActionResult> GetMyReviews()
+        {
+            var userId = GetCurrentUserId();
+            var result = await _profileService.GetMyReviewsAsync(userId);
+            return Ok(result);
+        }
+
+        [HttpPost("reviews")]
+        public async Task<IActionResult> AddReview([FromBody] CreateReviewDto dto)
+        {
+            var userId = GetCurrentUserId();
+            var result = await _profileService.AddReviewAsync(userId, dto);
+            return Ok(result);
         }
 
         private Guid GetCurrentUserId()
