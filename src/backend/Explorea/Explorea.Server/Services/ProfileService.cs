@@ -17,16 +17,19 @@ namespace Explorea.Server.Services
         private readonly AppDbContext _db;
         private readonly IReviewRepository _reviewRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IAiBotService _aiBotService;
 
         public ProfileService(
             IUserRepository userRepository,
             ISavedItemRepository savedItemRepository,
             IReviewRepository reviewRepository,
+            IAiBotService aiBotService,
             AppDbContext db)
         {
             _userRepository = userRepository;
             _savedItemRepository = savedItemRepository;
             _reviewRepository = reviewRepository;
+            _aiBotService = aiBotService;
             _db = db;
         }
 
@@ -193,6 +196,14 @@ namespace Explorea.Server.Services
             var preferences = await _userRepository.GetPreferencesAsync(userId);
 
             return MapUserProfile(user, preferences);
+        }
+
+        public async Task SendSupportAsync(Guid userId, SupportRequestDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Query))
+                throw new Exception("Support query is required.");
+
+            await _aiBotService.ForwardSupportQueryAsync(userId, dto.Query.Trim());
         }
 
         private static UserProfileDto MapUserProfile(User user, UserPreferences? preferences)

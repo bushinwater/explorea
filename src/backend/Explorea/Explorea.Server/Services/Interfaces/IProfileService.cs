@@ -14,5 +14,7 @@ namespace Explorea.Server.Services.Interfaces
 
         Task<UserProfileDto> GetProfileAsync(Guid userId);
         Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateUserDto dto);
+
+        Task SendSupportAsync(Guid userId, SupportRequestDto dto);
     }
 }

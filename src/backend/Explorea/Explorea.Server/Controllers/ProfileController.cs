@@ -75,6 +75,14 @@ namespace Explorea.Server.Controllers
             return Ok(result);
         }
 
+        [HttpPost("support")]
+        public async Task<IActionResult> SendSupport([FromBody] SupportRequestDto dto)
+        {
+            var userId = GetCurrentUserId();
+            await _profileService.SendSupportAsync(userId, dto);
+            return Ok(new { message = "Support query forwarded successfully." });
+        }
+
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
