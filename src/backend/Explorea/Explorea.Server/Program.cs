@@ -55,6 +55,7 @@ builder.Services.AddScoped<ISavedItemRepository, SavedItemRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IAiBotService, AiBotService>();
+builder.Services.AddScoped<IDestinationService, DestinationService>();
 
 var jwtSection = builder.Configuration.GetSection("JwtSettings");
 var key = jwtSection["SecretKey"]!;
