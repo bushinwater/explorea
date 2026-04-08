@@ -105,6 +105,54 @@
       "COPY": "© 2025 Explorea · Turistički vodič Srbije"
     }
   },
+  "ACTIVITY_DETAIL": {
+    "BACK": "Aktivnost",
+    "REVIEWS_COUNT": "recenzija",
+    "FREE": "Besplatno",
+    "STATS": {
+      "DURATION": "TRAJANJE",
+      "DISTANCE": "DUŽINA",
+      "ELEVATION": "USPON",
+      "TRAIL_TYPE": "TIP STAZE"
+    },
+    "ABOUT": "O aktivnosti",
+    "INCLUDED": {
+      "TITLE": "Šta je uključeno"
+    },
+    "PACKING": {
+      "TITLE": "Šta poneti",
+      "SUBTITLE": "Označite stavke koje ste već spakovali",
+      "ITEMS": {
+        "BOOTS": "Planinske cipele (Gore-Tex)",
+        "SNACKS": "Energetske barove/užinu",
+        "WATER": "Voda (minimum 2.5L)",
+        "POLES": "Planinarske štapove"
+      }
+    },
+    "MAP": {
+      "TITLE": "Mapa rute",
+      "OPEN": "Otvori interaktivnu mapu"
+    },
+    "SIMILAR": {
+      "TITLE": "Slične aktivnosti",
+      "VIEW_ALL": "Pogledaj sve",
+      "FROM": "Od"
+    },
+    "BOOK": {
+      "LABEL": "CENA PO OSOBI",
+      "PRICE_LABEL": "Cena po osobi",
+      "FIXED": "fiksno",
+      "DATE_LABEL": "DATUM POLASKA",
+      "DATE_PLACEHOLDER": "Izaberi datum",
+      "PERSONS_LABEL": "BROJ OSOBA",
+      "TOUR_LABEL": "Obilazak",
+      "EQUIPMENT": "Oprema (iznajmljivanje)",
+      "INCLUDED": "Uključeno",
+      "TOTAL": "Ukupno",
+      "CTA": "Rezerviši odmah",
+      "DISCLAIMER": "Klikom na dugme potvrđujete da se slažete sa našim uslovima korišćenja i politikom otkazivanja."
+    }
+  },
   "BOTTOM_NAV": {
     "HOME": "Početna",
     "EXPLORE": "Istraži",

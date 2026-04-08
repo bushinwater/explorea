@@ -1,0 +1,78 @@
+<div class="booking-card">
+
+  <!-- Header -->
+  <div class="booking-card__header">
+    <span class="booking-card__header-label">{{ 'ACTIVITY_DETAIL.BOOK.PRICE_LABEL' | translate }}</span>
+    <div class="booking-card__header-price">
+      @if (activity.price) {
+        <span class="booking-card__amount">{{ activity.price | number }} RSD</span>
+        <span class="booking-card__per">/ {{ 'ACTIVITY_DETAIL.BOOK.FIXED' | translate }}</span>
+      } @else {
+        <span class="booking-card__amount">{{ 'ACTIVITY_DETAIL.FREE' | translate }}</span>
+      }
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="booking-card__body">
+
+    <!-- Date -->
+    <div class="booking-card__field">
+      <span class="booking-card__field-label">
+        <span class="material-icons">calendar_month</span>
+        {{ 'ACTIVITY_DETAIL.BOOK.DATE_LABEL' | translate }}
+      </span>
+      <div class="booking-card__input-row">
+        <span class="booking-card__input-placeholder">{{ 'ACTIVITY_DETAIL.BOOK.DATE_PLACEHOLDER' | translate }}</span>
+        <span class="material-icons">chevron_right</span>
+      </div>
+    </div>
+
+    <!-- Persons -->
+    <div class="booking-card__field">
+      <span class="booking-card__field-label">
+        <span class="material-icons">group</span>
+        {{ 'ACTIVITY_DETAIL.BOOK.PERSONS_LABEL' | translate }}
+      </span>
+      <div class="counter">
+        <button class="counter__btn" (click)="decrement()">−</button>
+        <span class="counter__value">{{ persons }}</span>
+        <button class="counter__btn" (click)="increment()">+</button>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="booking-card__summary">
+      @if (activity.price) {
+        <div class="booking-card__summary-row">
+          <span>{{ 'ACTIVITY_DETAIL.BOOK.TOUR_LABEL' | translate }} x {{ persons }}</span>
+          <span>{{ activity.price * persons | number }} RSD</span>
+        </div>
+      }
+      @if (activity.inclusions.length) {
+        <div class="booking-card__summary-row">
+          <span>{{ 'ACTIVITY_DETAIL.BOOK.EQUIPMENT' | translate }}</span>
+          <span>{{ 'ACTIVITY_DETAIL.BOOK.INCLUDED' | translate }}</span>
+        </div>
+      }
+      <div class="booking-card__summary-divider"></div>
+      <div class="booking-card__summary-row booking-card__total-row">
+        <span class="booking-card__total-label">{{ 'ACTIVITY_DETAIL.BOOK.TOTAL' | translate }}</span>
+        @if (activity.price) {
+          <span class="booking-card__total-value">{{ activity.price * persons | number }} RSD</span>
+        } @else {
+          <span class="booking-card__total-value">{{ 'ACTIVITY_DETAIL.FREE' | translate }}</span>
+        }
+      </div>
+    </div>
+
+    <button class="btn btn-primary booking-card__cta">
+      {{ 'ACTIVITY_DETAIL.BOOK.CTA' | translate }}
+    </button>
+
+    <p class="booking-card__disclaimer">
+      {{ 'ACTIVITY_DETAIL.BOOK.DISCLAIMER' | translate }}
+    </p>
+
+  </div>
+</div>
