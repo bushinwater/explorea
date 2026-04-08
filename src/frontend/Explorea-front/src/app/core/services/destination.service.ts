@@ -8,7 +8,7 @@ import { DestinationCard, DestinationDetail } from '../models/destination.model'
 })
 export class DestinationService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5235/api/destinations';
+  private apiUrl = '/api/destinations';
 
   getAllDestinations(): Observable<DestinationCard[]> {
     return this.http.get<DestinationCard[]>(this.apiUrl);
