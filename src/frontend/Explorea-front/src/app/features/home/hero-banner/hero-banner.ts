@@ -1,8 +1,17 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges, AfterViewInit, SimpleChanges, ChangeDetectorRef } from '@angular/core';
+import {
+  Component, Input, Output, EventEmitter,
+  OnInit, OnDestroy, OnChanges, AfterViewInit,
+  SimpleChanges, ChangeDetectorRef, ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
+import { Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, filter, switchMap, tap, takeUntil } from 'rxjs/operators';
 import { HeroBanner as HeroBannerModel, CityFilter } from '../../../core/models/home.model';
+import { SearchService } from '../../../core/services/search.service';
+import { SearchItem } from '../../../core/models/search.model';
 
 @Component({
   selector: 'app-hero-banner',
@@ -10,6 +19,7 @@ import { HeroBanner as HeroBannerModel, CityFilter } from '../../../core/models/
   imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './hero-banner.html',
   styleUrl: './hero-banner.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   @Input() banners: HeroBannerModel[] = [];
@@ -26,12 +36,53 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
 
   selectedCityId: number | null = null;
   searchQuery = '';
+
+  // live search
+  searchResults: SearchItem[] = [];
+  showDropdown = false;
+  searchLoading = false;
+
   private timer: ReturnType<typeof setInterval> | null = null;
   private touchStartX = 0;
+  private searchSubject = new Subject<string>();
+  private destroy$ = new Subject<void>();
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private router: Router,
+    private searchService: SearchService,
+  ) {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.searchSubject.pipe(
+      debounceTime(150),
+      distinctUntilChanged(),
+      tap(q => {
+        if (q.length < 2) {
+          this.searchResults = [];
+          this.showDropdown = false;
+          this.searchLoading = false;
+        } else {
+          this.searchLoading = true;
+        }
+        this.cdr.markForCheck();
+      }),
+      filter(q => q.length >= 2),
+      switchMap(q => this.searchService.search(q, 8)),
+      takeUntil(this.destroy$),
+    ).subscribe({
+      next: result => {
+        this.searchResults = result.results;
+        this.showDropdown = result.results.length > 0;
+        this.searchLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.searchLoading = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['banners'] && this.banners.length && !this.timer) {
@@ -47,6 +98,8 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
 
   ngOnDestroy() {
     this.stopAutoAdvance();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   get extendedSlides(): HeroBannerModel[] {
@@ -119,12 +172,52 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
 
   onSearch() {
     if (this.searchQuery.trim()) {
+      this.showDropdown = false;
       this.searchSubmitted.emit(this.searchQuery.trim());
     }
   }
 
   onSearchKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter') this.onSearch();
+    if (event.key === 'Escape') {
+      this.showDropdown = false;
+    }
+  }
+
+  onSearchInput(value: string) {
+    if (value.length >= 2) {
+      this.searchLoading = true;
+      this.cdr.markForCheck();
+    } else {
+      this.searchResults = [];
+      this.showDropdown = false;
+      this.searchLoading = false;
+      this.cdr.markForCheck();
+    }
+    this.searchSubject.next(value);
+  }
+
+  onSearchBlur() {
+    setTimeout(() => {
+      this.showDropdown = false;
+      this.cdr.markForCheck();
+    }, 200);
+  }
+
+  onSelectResult(item: SearchItem) {
+    this.showDropdown = false;
+    this.searchQuery = item.entity.name;
+    this.router.navigate([`/${item.entityType}`, item.entity.slug]);
+  }
+
+  getEntityIcon(type: string): string {
+    const icons: Record<string, string> = {
+      destination: 'place',
+      place: 'store',
+      event: 'event',
+      activity: 'directions_run',
+    };
+    return icons[type] ?? 'search';
   }
 
   onTouchStart(event: TouchEvent) {
