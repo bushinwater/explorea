@@ -2,15 +2,38 @@ using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Activity = Explorea.API.Models.Activity;
 
 namespace Explorea.Server.Repositories.Implementations
 {
-    public class ActivityRepository : BaseRepository<Activity>, IActivityRepository
-    {
-        public ActivityRepository(AppDbContext db) : base(db) { }
+  public class ActivityRepository : BaseRepository<Activity>, IActivityRepository
+  {
+    public ActivityRepository(AppDbContext db) : base(db) { }
 
-        public async Task<Activity?> GetBySlugAsync(string slug)
+    public async Task<Activity?> GetActivityDetailsBySlugAsync(string slug)
+    {
+      return await _db.Activities
+        .AsNoTracking()
+        .Include(a => a.Category)
+        .Include(a => a.Season)
+        .Include(a => a.Inclusions)
+        .Include(a => a.Images)
+        .FirstOrDefaultAsync(a => a.Slug == slug);
+    }
+
+    public async Task<List<Review>> GetActivityReviewsAsync(Guid activityId, int take = 10)
+    {
+        return await _db.Reviews
+            .AsNoTracking()
+            .Include(r => r.User)
+            .Where(r => r.EntityType == "activity" && r.EntityId == activityId)
+            .OrderByDescending(r => r.CreatedAt)
+            .Take(take)
+            .ToListAsync();    
+    }
+
+    public async Task<Activity?> GetBySlugAsync(string slug)
         {
             return await _set
                 .Include(a => a.City)
@@ -53,5 +76,26 @@ namespace Explorea.Server.Repositories.Implementations
 
             return (items, total);
         }
+
+    public async Task<List<Activity>> GetSimilarActivitiesAsync(Activity activity, int take = 6)
+    {
+      return await _db.Activities
+        .AsNoTracking()
+        .Include(a => a.Category)
+        .Include(a => a.Images)
+        .Where(a => 
+            a.Id != activity.Id && 
+            a.Slug != activity.Slug && 
+            (
+                a.CategoryId == activity.CategoryId || 
+                (activity.DestinationId != null && a.DestinationId == activity.DestinationId)
+            ))
+        .OrderByDescending(a => a.IsFeatured)
+        .ThenByDescending(a => a.Popularity)
+        .ThenByDescending(a => a.AvgRating)
+        .ThenBy(a => a.Name)
+        .Take(take)
+        .ToListAsync();
     }
+  }
 }
