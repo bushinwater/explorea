@@ -20,6 +20,25 @@
       "SAVED": "SAVED"
     },
     "MEMBER_SINCE": "Member since",
+    "TABS": {
+      "SAVED": "Saved",
+      "SAVED_DESC": "Activities and destinations you saved for later",
+      "REVIEWS": "My reviews",
+      "REVIEWS_DESC": "Reviews you left on activities"
+    },
+    "ACTIVITIES": {
+      "TITLE": "For you",
+      "VIEW_ALL": "All activities"
+    },
+    "SETTINGS_LABEL": "Settings",
+    "PROFILE_SETTINGS": {
+      "TITLE": "Profile settings",
+      "SUBTITLE": "Update your username, email and password"
+    },
+    "APP_SETTINGS": {
+      "TITLE": "App settings",
+      "SUBTITLE": "Customize theme and language"
+    },
     "ACCOUNT": {
       "TITLE": "Account information",
       "SUBTITLE": "Update your personal data and security settings.",
@@ -29,7 +48,13 @@
       "EMAIL_DESC": "Primary address for notifications and booking confirmations.",
       "PASSWORD": "Password",
       "PASSWORD_DESC": "Last changed 3 months ago. We recommend changing it regularly.",
-      "CHANGE_PASSWORD": "Change password"
+      "CHANGE_PASSWORD": "Change password",
+      "PASSWORD_EMAIL_SENT": "We sent you an email with a password reset link. Check your inbox.",
+      "PROFILE_PICTURE": "Profile picture",
+      "PROFILE_PICTURE_DESC": "JPG or PNG, max 5MB",
+      "UPLOAD_PHOTO": "Upload photo",
+      "INTERESTS": "Interests",
+      "EDIT_INTERESTS": "Edit"
     },
     "NOTIFICATIONS": {
       "TITLE": "Notifications",

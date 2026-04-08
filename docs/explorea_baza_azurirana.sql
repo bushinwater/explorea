@@ -82,6 +82,9 @@ CREATE TABLE users (
     email_verified_at    TIMESTAMPTZ,
     last_login_at        TIMESTAMPTZ,
     is_active            BOOLEAN      NOT NULL DEFAULT TRUE,
+    gender               VARCHAR(20),
+    date_of_birth        DATE,
+    profile_image_url    VARCHAR(500),
     current_latitude     DOUBLE PRECISION,
     current_longitude    DOUBLE PRECISION,
     current_location     GEOGRAPHY(POINT, 4326),
@@ -493,6 +496,7 @@ CREATE TABLE activities (
     start_point       VARCHAR(200),
     avg_rating        NUMERIC(3,2)     NOT NULL DEFAULT 0,
     popularity        INT              NOT NULL DEFAULT 0 CHECK (popularity >= 0),
+    search_vector     TSVECTOR,
     extra_data        JSONB,
     latitude          DOUBLE PRECISION,
     longitude         DOUBLE PRECISION,
@@ -530,6 +534,7 @@ CREATE INDEX idx_activities_category ON activities(category_id) WHERE is_deleted
 CREATE INDEX idx_activities_season ON activities(season_id) WHERE is_deleted = FALSE;
 CREATE INDEX idx_activities_featured ON activities(is_featured) WHERE is_featured = TRUE AND is_deleted = FALSE;
 CREATE INDEX idx_activities_popularity ON activities(popularity DESC) WHERE is_deleted = FALSE;
+CREATE INDEX idx_activities_search_vector ON activities USING GIN (search_vector);
 CREATE INDEX idx_activities_location ON activities USING GIST (location) WHERE is_deleted = FALSE AND location IS NOT NULL;
 CREATE INDEX idx_activities_extra ON activities USING GIN (extra_data);
 
@@ -651,6 +656,7 @@ CREATE INDEX idx_trip_plan_items_planned_at ON trip_plan_items(planned_at);
 CREATE TABLE interest_tags (
     id                SERIAL PRIMARY KEY,
     name              VARCHAR(100) NOT NULL UNIQUE,
+    icon              VARCHAR(100),
     created_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_by        UUID,
@@ -661,6 +667,30 @@ CREATE TABLE user_interest_tags (
     user_id           UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     interest_tag_id   INT  NOT NULL REFERENCES interest_tags(id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, interest_tag_id)
+);
+
+CREATE TABLE destination_interest_tags (
+    destination_id    UUID NOT NULL REFERENCES destinations(id) ON DELETE CASCADE,
+    interest_tag_id   INT  NOT NULL REFERENCES interest_tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (destination_id, interest_tag_id)
+);
+
+CREATE TABLE place_interest_tags (
+    place_id          UUID NOT NULL REFERENCES places(id) ON DELETE CASCADE,
+    interest_tag_id   INT  NOT NULL REFERENCES interest_tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (place_id, interest_tag_id)
+);
+
+CREATE TABLE event_interest_tags (
+    event_id          UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    interest_tag_id   INT  NOT NULL REFERENCES interest_tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (event_id, interest_tag_id)
+);
+
+CREATE TABLE activity_interest_tags (
+    activity_id       UUID NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+    interest_tag_id   INT  NOT NULL REFERENCES interest_tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (activity_id, interest_tag_id)
 );
 
 -- ------------------------------------------------------------
@@ -973,6 +1003,10 @@ FOR EACH ROW EXECUTE FUNCTION sync_search_vector();
 
 CREATE TRIGGER trg_events_search_vector
 BEFORE INSERT OR UPDATE OF name, description ON events
+FOR EACH ROW EXECUTE FUNCTION sync_search_vector();
+
+CREATE TRIGGER trg_activities_search_vector
+BEFORE INSERT OR UPDATE OF name, description ON activities
 FOR EACH ROW EXECUTE FUNCTION sync_search_vector();
 
 CREATE TRIGGER trg_destination_rating_upsert

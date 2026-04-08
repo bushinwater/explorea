@@ -186,6 +186,8 @@ namespace Explorea.Server.Services
             user.ProfileImageUrl = string.IsNullOrWhiteSpace(dto.ProfileImageUrl)
                 ? null
                 : dto.ProfileImageUrl.Trim();
+            user.Gender = string.IsNullOrWhiteSpace(dto.Gender) ? null : dto.Gender.Trim().ToLower();
+            user.DateOfBirth = dto.DateOfBirth;
 
             user.UpdatedAt = DateTimeOffset.UtcNow;
             user.UpdatedBy = userId;
@@ -222,6 +224,173 @@ namespace Explorea.Server.Services
             };
         }
 
+        public async Task<List<ForYouItemDto>> GetForYouAsync(Guid userId)
+        {
+            var interestIds = await _db.UserInterestTags
+                .Where(x => x.UserId == userId)
+                .Select(x => x.InterestTagId)
+                .ToListAsync();
+
+            var items = new List<ForYouItemDto>();
+
+            if (interestIds.Count > 0)
+            {
+                // Destinations
+                var destMatches = await _db.DestinationInterestTags
+                    .Where(x => interestIds.Contains(x.InterestTagId))
+                    .GroupBy(x => x.DestinationId)
+                    .Select(g => new { Id = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                if (destMatches.Count > 0)
+                {
+                    var destIds = destMatches.Select(x => x.Id).ToList();
+                    var dests = await _db.Destinations
+                        .Where(d => destIds.Contains(d.Id))
+                        .Select(d => new { d.Id, d.Name, d.Slug, d.PreviewImageUrl, d.AvgRating })
+                        .ToListAsync();
+
+                    items.AddRange(destMatches.Join(dests, m => m.Id, d => d.Id, (m, d) => new ForYouItemDto
+                    {
+                        Id = d.Id, EntityType = "destination",
+                        Name = d.Name, Slug = d.Slug,
+                        PreviewImageUrl = d.PreviewImageUrl,
+                        AvgRating = (double)d.AvgRating, MatchedTagsCount = m.Count
+                    }));
+                }
+
+                // Places
+                var placeMatches = await _db.PlaceInterestTags
+                    .Where(x => interestIds.Contains(x.InterestTagId))
+                    .GroupBy(x => x.PlaceId)
+                    .Select(g => new { Id = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                if (placeMatches.Count > 0)
+                {
+                    var placeIds = placeMatches.Select(x => x.Id).ToList();
+                    var places = await _db.Places
+                        .Where(p => placeIds.Contains(p.Id))
+                        .Select(p => new { p.Id, p.Name, p.Slug, p.Address, p.AvgRating,
+                            PreviewImageUrl = p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault() })
+                        .ToListAsync();
+
+                    items.AddRange(placeMatches.Join(places, m => m.Id, p => p.Id, (m, p) => new ForYouItemDto
+                    {
+                        Id = p.Id, EntityType = "place",
+                        Name = p.Name, Slug = p.Slug,
+                        PreviewImageUrl = p.PreviewImageUrl,
+                        Subtitle = p.Address,
+                        AvgRating = (double)p.AvgRating, MatchedTagsCount = m.Count
+                    }));
+                }
+
+                // Events
+                var eventMatches = await _db.EventInterestTags
+                    .Where(x => interestIds.Contains(x.InterestTagId))
+                    .GroupBy(x => x.EventId)
+                    .Select(g => new { Id = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                if (eventMatches.Count > 0)
+                {
+                    var eventIds = eventMatches.Select(x => x.Id).ToList();
+                    var events = await _db.Events
+                        .Where(e => eventIds.Contains(e.Id))
+                        .Select(e => new { e.Id, e.Name, e.Slug, e.Address, e.Popularity,
+                            PreviewImageUrl = e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault() })
+                        .ToListAsync();
+
+                    items.AddRange(eventMatches.Join(events, m => m.Id, e => e.Id, (m, e) => new ForYouItemDto
+                    {
+                        Id = e.Id, EntityType = "event",
+                        Name = e.Name, Slug = e.Slug,
+                        PreviewImageUrl = e.PreviewImageUrl,
+                        Subtitle = e.Address,
+                        AvgRating = e.Popularity, MatchedTagsCount = m.Count
+                    }));
+                }
+
+                // Activities
+                var actMatches = await _db.ActivityInterestTags
+                    .Where(x => interestIds.Contains(x.InterestTagId))
+                    .GroupBy(x => x.ActivityId)
+                    .Select(g => new { Id = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                if (actMatches.Count > 0)
+                {
+                    var actIds = actMatches.Select(x => x.Id).ToList();
+                    var acts = await _db.Activities
+                        .Where(a => actIds.Contains(a.Id))
+                        .Select(a => new { a.Id, a.Name, a.Slug, a.StartPoint, a.AvgRating,
+                            PreviewImageUrl = a.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault() })
+                        .ToListAsync();
+
+                    items.AddRange(actMatches.Join(acts, m => m.Id, a => a.Id, (m, a) => new ForYouItemDto
+                    {
+                        Id = a.Id, EntityType = "activity",
+                        Name = a.Name, Slug = a.Slug,
+                        PreviewImageUrl = a.PreviewImageUrl,
+                        Subtitle = a.StartPoint,
+                        AvgRating = (double)a.AvgRating, MatchedTagsCount = m.Count
+                    }));
+                }
+            }
+
+            // Fallback: ako nema interesa ili nema poklapanja, vrati top-rated po svim tipovima
+            if (items.Count == 0)
+            {
+                var topDests = await _db.Destinations
+                    .OrderByDescending(d => d.Popularity).ThenByDescending(d => d.AvgRating)
+                    .Take(3)
+                    .Select(d => new ForYouItemDto
+                    {
+                        Id = d.Id, EntityType = "destination",
+                        Name = d.Name, Slug = d.Slug,
+                        PreviewImageUrl = d.PreviewImageUrl,
+                        AvgRating = (double)d.AvgRating, MatchedTagsCount = 0
+                    })
+                    .ToListAsync();
+
+                var topActs = await _db.Activities
+                    .OrderByDescending(a => a.Popularity).ThenByDescending(a => a.AvgRating)
+                    .Take(4)
+                    .Select(a => new ForYouItemDto
+                    {
+                        Id = a.Id, EntityType = "activity",
+                        Name = a.Name, Slug = a.Slug,
+                        PreviewImageUrl = a.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
+                        Subtitle = a.StartPoint,
+                        AvgRating = (double)a.AvgRating, MatchedTagsCount = 0
+                    })
+                    .ToListAsync();
+
+                var topEvents = await _db.Events
+                    .OrderByDescending(e => e.Popularity)
+                    .Take(3)
+                    .Select(e => new ForYouItemDto
+                    {
+                        Id = e.Id, EntityType = "event",
+                        Name = e.Name, Slug = e.Slug,
+                        PreviewImageUrl = e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
+                        Subtitle = e.Address,
+                        AvgRating = e.Popularity, MatchedTagsCount = 0
+                    })
+                    .ToListAsync();
+
+                items.AddRange(topDests);
+                items.AddRange(topActs);
+                items.AddRange(topEvents);
+            }
+
+            return items
+                .OrderByDescending(x => x.MatchedTagsCount)
+                .ThenByDescending(x => x.AvgRating)
+                .Take(10)
+                .ToList();
+        }
+
         private static UserProfileDto MapUserProfile(User user, UserPreferences? preferences)
         {
             return new UserProfileDto
@@ -234,6 +403,8 @@ namespace Explorea.Server.Services
                 TotalVisits = user.TotalVisits,
                 MemberSince = user.MemberSince,
                 ProfileImageUrl = user.ProfileImageUrl,
+                Gender = user.Gender,
+                DateOfBirth = user.DateOfBirth,
                 CurrentLatitude = user.CurrentLatitude,
                 CurrentLongitude = user.CurrentLongitude,
                 CurrentCityId = user.CurrentCityId,

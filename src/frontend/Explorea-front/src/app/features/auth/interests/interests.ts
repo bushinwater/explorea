@@ -1,6 +1,16 @@
 import { NgFor } from '@angular/common';
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { InterestsService } from '../../../core/services/interests.service';
+
+const ALL_INTERESTS = [
+  { id: 1, label: 'Avanture' },
+  { id: 2, label: 'Clubing' },
+  { id: 3, label: 'Kultura' },
+  { id: 4, label: 'Umetnost' },
+  { id: 5, label: 'Hrana' },
+  { id: 6, label: 'Sport' },
+];
 
 @Component({
   selector: 'app-interests',
@@ -9,25 +19,39 @@ import { Router } from '@angular/router';
   templateUrl: './interests.html',
   styleUrl: './interests.css',
 })
-export class Interests {
-  interests = [
-    { id: 1, label: 'Avanture', selected: false },
-    { id: 2, label: 'Clubing', selected: false },
-    { id: 3, label: 'Kultura', selected: false },
-    { id: 4, label: 'Umetnost', selected: false },
-    { id: 5, label: 'Hrana', selected: false },
-    { id: 6, label: 'Sport', selected: false },
-  ];
+export class Interests implements OnInit {
+  interests: { id: number; label: string; selected: boolean }[] = [];
+  fromProfile = false;
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private interestsService: InterestsService,
+  ) {}
 
-  toggle(interest: any) {
+  ngOnInit() {
+    this.fromProfile = this.route.snapshot.queryParamMap.get('from') === 'profile';
+
+    const savedIds = this.interestsService.getSelectedIds();
+
+    this.interests = ALL_INTERESTS.map((i) => ({
+      ...i,
+      selected: savedIds.includes(i.id),
+    }));
+  }
+
+  toggle(interest: { id: number; label: string; selected: boolean }) {
     interest.selected = !interest.selected;
   }
 
   nastavi() {
-    const selected = this.interests.filter((i) => i.selected);
-    console.log('Selektovani interesi:', selected);
-    this.router.navigate(['/home']); // zameni sa pravom rutom
+    const selectedIds = this.interests.filter((i) => i.selected).map((i) => i.id);
+    this.interestsService.saveSelectedIds(selectedIds);
+
+    if (this.fromProfile) {
+      this.router.navigate(['/profile']);
+    } else {
+      this.router.navigate(['/home']);
+    }
   }
 }

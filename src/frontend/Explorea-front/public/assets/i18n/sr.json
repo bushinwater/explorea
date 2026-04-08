@@ -20,6 +20,25 @@
       "SAVED": "SAČUVANO"
     },
     "MEMBER_SINCE": "Član od",
+    "TABS": {
+      "SAVED": "Sačuvano",
+      "SAVED_DESC": "Aktivnosti i destinacije koje si sačuvao za kasnije",
+      "REVIEWS": "Moje recenzije",
+      "REVIEWS_DESC": "Recenzije koje si ostavio na aktivnostima"
+    },
+    "ACTIVITIES": {
+      "TITLE": "Za tebe",
+      "VIEW_ALL": "Sve aktivnosti"
+    },
+    "SETTINGS_LABEL": "Podešavanja",
+    "PROFILE_SETTINGS": {
+      "TITLE": "Podešavanja profila",
+      "SUBTITLE": "Izmeni korisničko ime, email i lozinku"
+    },
+    "APP_SETTINGS": {
+      "TITLE": "Podešavanja aplikacije",
+      "SUBTITLE": "Prilagodi temu i jezik aplikacije"
+    },
     "ACCOUNT": {
       "TITLE": "Informacije o nalogu",
       "SUBTITLE": "Ažuriraj svoje lične podatke i sigurnosna podešavanja.",
@@ -29,7 +48,13 @@
       "EMAIL_DESC": "Primarna adresa za obaveštenja i potvrde rezervacija.",
       "PASSWORD": "Lozinka",
       "PASSWORD_DESC": "Poslednja promena pre 3 meseca. Preporučujemo redovnu promenu.",
-      "CHANGE_PASSWORD": "Promeni lozinku"
+      "CHANGE_PASSWORD": "Promeni lozinku",
+      "PASSWORD_EMAIL_SENT": "Poslali smo ti email sa linkom za promenu lozinke. Proveri inbox.",
+      "PROFILE_PICTURE": "Profilna slika",
+      "PROFILE_PICTURE_DESC": "JPG ili PNG, maksimalno 5MB",
+      "UPLOAD_PHOTO": "Postavi sliku",
+      "INTERESTS": "Interesi",
+      "EDIT_INTERESTS": "Izmeni"
     },
     "NOTIFICATIONS": {
       "TITLE": "Obaveštenja",

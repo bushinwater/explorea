@@ -83,6 +83,14 @@ namespace Explorea.Server.Controllers
             return Ok(new { message = "Support query forwarded successfully." });
         }
 
+        [HttpGet("for-you")]
+        public async Task<IActionResult> GetForYou()
+        {
+            var userId = GetCurrentUserId();
+            var result = await _profileService.GetForYouAsync(userId);
+            return Ok(result);
+        }
+
         [HttpGet("stats")]
         public async Task<IActionResult> GetStats()
         {
