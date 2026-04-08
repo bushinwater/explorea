@@ -3,6 +3,7 @@ namespace Explorea.Server.Models
   public class DestinationSearchHitRow
   {
     public Guid Id {get; set;}
+    public double FtsRank {get; set;}
     public double NameSimilarity {get; set;}
     public double? CitySimilarity {get; set;}
   }
@@ -10,6 +11,7 @@ namespace Explorea.Server.Models
   public class PlaceSearchHitRow
   {
     public Guid Id {get; set;}
+    public double FtsRank {get; set;}
     public double NameSimilarity {get; set;}
     public double? CitySimilarity {get; set;}
     public double? DestinationSimilarity {get; set;}
@@ -19,6 +21,7 @@ namespace Explorea.Server.Models
   public class EventSearchHitRow
   {
     public Guid Id {get; set;}
+    public double FtsRank {get; set;}
     public double NameSimilarity {get; set;}
     public double? CitySimilarity {get; set;}
     public double? DestinationSimilarity {get; set;}
@@ -29,6 +32,7 @@ namespace Explorea.Server.Models
   public class ActivitySearchHitRow
   {
     public Guid Id {get; set;}
+    public double FtsRank {get; set;}
     public double NameSimilarity {get; set;}
     public double? CitySimilarity {get; set;}
     public double? DestinationSimilarity {get; set;}

@@ -5,6 +5,8 @@ namespace Explorea.Server.Models
   {
     public T Entity {get; set;} = default!;
 
+    public double FtsRank {get; set;} 
+
     public double NameSimilarity {get; set;} 
     public double? CitySimilarity {get; set;} 
     public double? DestinationSimilarity {get; set;} 

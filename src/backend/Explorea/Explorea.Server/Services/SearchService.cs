@@ -76,7 +76,7 @@ namespace Explorea.Server.Services
         {
           EntityType = "destination",
           Entity = destination,
-          Score = ScoreDestination(destination, query) + ScoreDestinationFuzzy(destinationHit, query),
+          Score = ScoreDestination(destination, query) + ScoreDestinationHybrid(destinationHit, query),
           IsFeatured = destination.IsFeatured,
           AvgRating = destination.AvgRating,
           EventStartDatetime = null,
@@ -91,7 +91,7 @@ namespace Explorea.Server.Services
         {
           EntityType = "place",
           Entity = place,
-          Score = ScorePlace(place, query) + ScorePlaceFuzzy(placeHit, query),
+          Score = ScorePlace(place, query) + ScorePlaceHybrid(placeHit, query),
           IsFeatured = place.IsFeatured,
           AvgRating = place.AvgRating,
           EventStartDatetime = null,
@@ -106,7 +106,7 @@ namespace Explorea.Server.Services
         {
           EntityType = "event",
           Entity = ev,
-          Score = ScoreEvent(ev, query) + ScoreEventFuzzy(evHit, query),
+          Score = ScoreEvent(ev, query) + ScoreEventHybrid(evHit, query),
           IsFeatured = ev.IsFeatured,
           AvgRating = null,
           EventStartDatetime = ev.StartDatetime,
@@ -121,7 +121,7 @@ namespace Explorea.Server.Services
         {
           EntityType = "activity",
           Entity = activity,
-          Score = ScoreActivity(activity, query) + ScoreActivityFuzzy(activityHit, query),
+          Score = ScoreActivity(activity, query) + ScoreActivityHybrid(activityHit, query),
           IsFeatured = activity.IsFeatured,
           AvgRating = activity.AvgRating,
           EventStartDatetime = null,
@@ -221,7 +221,7 @@ namespace Explorea.Server.Services
     // SCORING METODE
     private int ScoreDestination(Destination destination, string query)
     {
-      int score = 0;
+      var score = 0;
 
       score += ScoreName(destination.Name, query);
       score += ScoreRelatedField(destination.City?.Name, query, exactScore: 40, containsScore: 30);
@@ -231,7 +231,7 @@ namespace Explorea.Server.Services
     }
     private int ScorePlace(Place place, string query)
     {
-      int score = 0;
+      var score = 0;
 
       score += ScoreName(place.Name, query);
       score += ScoreRelatedField(place.Destination?.Name, query, exactScore: 45, containsScore: 35);
@@ -245,7 +245,7 @@ namespace Explorea.Server.Services
     }
     private int ScoreEvent(Event ev, string query)
     {
-      int score = 0;
+      var score = 0;
 
       score += ScoreName(ev.Name, query);
       score += ScoreRelatedField(ev.Destination?.Name, query, exactScore: 45, containsScore: 35);
@@ -259,7 +259,7 @@ namespace Explorea.Server.Services
     }
     private int ScoreActivity(Activity activity, string query)
     {
-      int score = 0;
+      var score = 0;
 
       score += ScoreName(activity.Name, query);
       score += ScoreRelatedField(activity.Destination?.Name, query, exactScore: 45, containsScore: 35);
@@ -301,52 +301,84 @@ namespace Explorea.Server.Services
       return ContainsInsensitive(value, query) ? scoreValue : 0;
     }
 
-    private int ScoreDestinationFuzzy(SearchProjection<Destination> hit, string query)
+    private static bool isShortQuery(string query)
     {
-      if(query.Length < 3) return 0;
+      return query.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length == 1;
+    }
 
-      int score = 0;
-      score += SimilarityToScore(hit.NameSimilarity, weight: 40, threshold: 0.30);
-      score += SimilarityToScore(hit.CitySimilarity, weight: 15, threshold: 0.35);
+    private int ScoreDestinationHybrid(SearchProjection<Destination> hit, string query)
+    {
+      var score = 0;
 
+      if(isShortQuery(query)) {
+        score += 25;
+        if(hit.NameSimilarity >= 0.45) score += 25;
+      }
+      
+      score += FtsRankToScore(hit.FtsRank, weight: 120);
+
+      if(query.Length >= 3) {
+        score += SimilarityToScore(hit.NameSimilarity, weight: 65, threshold: 0.30);
+        score += SimilarityToScore(hit.CitySimilarity, weight: 15, threshold: 0.35);
+      }
       return score;
     }
-    private int ScorePlaceFuzzy(SearchProjection<Place> hit, string query)
+
+    // private int ScorePlaceFuzzy(SearchProjection<Place> hit, string query)
+    // {
+    //   if(query.Length < 3) return 0;
+
+    //   var score = 0;
+    //   score += SimilarityToScore(hit.NameSimilarity, weight: 40, threshold: 0.30);
+    //   score += SimilarityToScore(hit.CitySimilarity, weight: 15, threshold: 0.35);
+    //   score += SimilarityToScore(hit.DestinationSimilarity, weight: 20, threshold: 0.35);
+    //   score += SimilarityToScore(hit.TypeSimilarity, weight: 10, threshold: 0.35);
+
+    //   return score;
+    // }
+    
+    private int ScorePlaceHybrid(SearchProjection<Place> hit, string query)
     {
-      if(query.Length < 3) return 0;
+      var score = 0;
 
-      int score = 0;
-      score += SimilarityToScore(hit.NameSimilarity, weight: 40, threshold: 0.30);
-      score += SimilarityToScore(hit.CitySimilarity, weight: 15, threshold: 0.35);
-      score += SimilarityToScore(hit.DestinationSimilarity, weight: 20, threshold: 0.35);
-      score += SimilarityToScore(hit.TypeSimilarity, weight: 10, threshold: 0.35);
+      score += FtsRankToScore(hit.FtsRank, weight: 120);
 
+      if(query.Length >= 3){
+        score += SimilarityToScore(hit.NameSimilarity, weight: 65, threshold: 0.30);
+        score += SimilarityToScore(hit.CitySimilarity, weight: 8, threshold: 0.35);
+        score += SimilarityToScore(hit.DestinationSimilarity, weight: 10, threshold: 0.35);
+        score += SimilarityToScore(hit.TypeSimilarity, weight: 6, threshold: 0.35);
+      }
       return score;
     }
-    private int ScoreEventFuzzy(SearchProjection<Event> hit, string query)
+    private int ScoreEventHybrid(SearchProjection<Event> hit, string query)
     {
-      if(query.Length < 3) return 0;
+      var score = 0;
 
-      int score = 0;
-      score += SimilarityToScore(hit.NameSimilarity, weight: 40, threshold: 0.30);
-      score += SimilarityToScore(hit.CitySimilarity, weight: 15, threshold: 0.35);
-      score += SimilarityToScore(hit.DestinationSimilarity, weight: 20, threshold: 0.35);
-      score += SimilarityToScore(hit.PlaceSimilarity, weight: 15, threshold: 0.35);
-      score += SimilarityToScore(hit.TypeSimilarity, weight: 10, threshold: 0.35);
+      score += FtsRankToScore(hit.FtsRank, weight: 120);
 
+      if(query.Length >= 3){
+        score += SimilarityToScore(hit.NameSimilarity, weight: 65, threshold: 0.30);
+        score += SimilarityToScore(hit.CitySimilarity, weight: 8, threshold: 0.35);
+        score += SimilarityToScore(hit.DestinationSimilarity, weight: 10, threshold: 0.35);
+        score += SimilarityToScore(hit.PlaceSimilarity, weight: 8, threshold: 0.35);
+        score += SimilarityToScore(hit.TypeSimilarity, weight: 6, threshold: 0.35);
+      }
       return score;
     }
-    private int ScoreActivityFuzzy(SearchProjection<Activity> hit, string query)
+    private int ScoreActivityHybrid(SearchProjection<Activity> hit, string query)
     {
-      if(query.Length < 3) return 0;
+      var score = 0;
 
-      int score = 0;
-      score += SimilarityToScore(hit.NameSimilarity, weight: 40, threshold: 0.30);
-      score += SimilarityToScore(hit.CitySimilarity, weight: 15, threshold: 0.35);
-      score += SimilarityToScore(hit.DestinationSimilarity, weight: 20, threshold: 0.35);
-      score += SimilarityToScore(hit.PlaceSimilarity, weight: 15, threshold: 0.35);
-      score += SimilarityToScore(hit.CategorySimilarity, weight: 10, threshold: 0.35);
+      score += FtsRankToScore(hit.FtsRank, weight: 120);
 
+      if(query.Length >= 3){ 
+        score += SimilarityToScore(hit.NameSimilarity, weight: 65, threshold: 0.30);
+        score += SimilarityToScore(hit.CitySimilarity, weight: 8, threshold: 0.35);
+        score += SimilarityToScore(hit.DestinationSimilarity, weight: 10, threshold: 0.35);
+        score += SimilarityToScore(hit.PlaceSimilarity, weight: 8, threshold: 0.35);
+        score += SimilarityToScore(hit.CategorySimilarity, weight: 6, threshold: 0.35);
+      }
       return score;
     }
 
@@ -356,6 +388,12 @@ namespace Explorea.Server.Services
       if(similarity.Value < threshold) return 0;      
 
       return (int)Math.Round(similarity.Value * weight);
+    }
+
+    private static int FtsRankToScore(double ftsRank, int weight = 100)
+    {
+      if(ftsRank <= 0) return 0;
+      return (int)Math.Round(ftsRank * weight);
     }
 
     // mapping metode 
