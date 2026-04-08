@@ -48,6 +48,10 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<PasswordHelper>();
 builder.Services.AddScoped<JwtHelper>();
+builder.Services.AddScoped<ISavedItemRepository, SavedItemRepository>();
+builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IAiBotService, AiBotService>();
 
 var jwtSection = builder.Configuration.GetSection("JwtSettings");
 var key = jwtSection["SecretKey"]!;
