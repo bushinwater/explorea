@@ -7,7 +7,7 @@
   </div>
 
   <div class="activities-grid">
-    <div class="activity-item" *ngFor="let activity of activities">
+    <a class="activity-item" *ngFor="let activity of activities" [routerLink]="['/activities', activity.slug]">
       <div class="activity-item__image-wrap">
         <img [src]="activity.previewImageUrl" [alt]="activity.name" class="activity-item__image" loading="lazy" />
         <span class="activity-item__category">{{ activity.category.name }}</span>
@@ -23,6 +23,6 @@
           </div>
         </div>
       </div>
-    </div>
+    </a>
   </div>
 </section>

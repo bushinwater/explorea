@@ -22,5 +22,7 @@
     </div>
   </div>
 
-  <button class="btn btn-primary nastavi" (click)="nastavi()">Nastavi</button>
+  <button class="btn btn-primary nastavi" (click)="nastavi()">
+    {{ fromProfile ? 'Sačuvaj interese' : 'Nastavi' }}
+  </button>
 </div>
