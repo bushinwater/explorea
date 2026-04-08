@@ -266,7 +266,7 @@ namespace Explorea.Server.Repositories.Implementations
     }
 
     // RAW SQL DEO
-    async Task<List<SearchProjection<Destination>>> ISearchRepository.SearchDestinationsAsync(string query, int take = 25)
+    async Task<List<SearchProjection<Destination>>> ISearchRepository.SearchDestinationsAsync(string query, int take)
     {
         var rows = await ExecuteDestinationSearchAsync(query, take);
         if(rows.Count == 0) return new List<SearchProjection<Destination>>();
@@ -376,7 +376,7 @@ namespace Explorea.Server.Repositories.Implementations
     // OBUHVATA DESTINACIJE --------------------------------------------------------------------------------
     // =====================================================================================================
     
-    async Task<List<SearchProjection<Place>>> ISearchRepository.SearchPlacesAsync(string query, int take = 25)
+    async Task<List<SearchProjection<Place>>> ISearchRepository.SearchPlacesAsync(string query, int take)
     {
        var rows = await ExecutePlaceSearchAsync(query, take);
        if(rows.Count == 0) return new List<SearchProjection<Place>>();
@@ -524,7 +524,7 @@ namespace Explorea.Server.Repositories.Implementations
           result.Add(new PlaceSearchHitRow
           {
               Id = reader.GetGuid(reader.GetOrdinal("id")),
-              FtsRank = Convert.ToDouble(reader.GetValue(reader.GetOrdinal("fts_rank"))),
+              FtsRank = Convert.ToDouble(reader.GetValue(reader.GetOrdinal("fts_"))),
               NameSimilarity = reader.GetDouble(reader.GetOrdinal("name_similarity")),
               CitySimilarity = GetNullableDouble(reader, "city_similarity"),
               DestinationSimilarity = GetNullableDouble(reader, "destination_similarity"),
@@ -536,7 +536,7 @@ namespace Explorea.Server.Repositories.Implementations
     }
     // OBUHVATA MESTA --------------------------------------------------------------------------------
 
-    async Task<List<SearchProjection<Event>>> ISearchRepository.SearchEventsAsync(string query, DateTimeOffset now, int take = 25)
+    async Task<List<SearchProjection<Event>>> ISearchRepository.SearchEventsAsync(string query, DateTimeOffset now, int take)
     {
         var rows = await ExecuteEventSearchAsync(query, now, take);
         if(rows.Count == 0) return new List<SearchProjection<Event>>();
@@ -712,7 +712,7 @@ namespace Explorea.Server.Repositories.Implementations
     }
     // OBUHVATA DOGADJAJE --------------------------------------------------------------------------------
 
-    async Task<List<SearchProjection<Activity>>> ISearchRepository.SearchActivitiesAsync(string query, int take = 25)
+    async Task<List<SearchProjection<Activity>>> ISearchRepository.SearchActivitiesAsync(string query, int take)
     {
       var rows = await ExecuteActivitySearchAsync(query, take);
       if (rows.Count == 0) return new List<SearchProjection<Activity>>();
