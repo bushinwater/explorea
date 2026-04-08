@@ -1,0 +1,195 @@
+<div class="activity-layout">
+  <app-sidebar />
+
+  <main class="activity-main">
+    @if (activity) {
+
+      <!-- HERO -->
+      <div class="hero">
+        <img src="assets/backgorund-activities.png" [alt]="activity.name" class="hero__img" />
+        <div class="hero__overlay">
+          <div class="hero__inner">
+            <span class="category-badge">{{ activity.category?.name }}</span>
+            <h1 class="hero__title">{{ activity.name }}</h1>
+            <p class="hero__location" *ngIf="activity.startPoint">
+              <span class="material-icons">location_on</span>
+              {{ activity.startPoint }}
+            </p>
+            <div class="hero__stats">
+              <div class="hero__stat">
+                <span class="material-icons">schedule</span>
+                <div>
+                  <span class="hero__stat-label">{{ 'ACTIVITY_DETAIL.STATS.DURATION' | translate }}</span>
+                  <span class="hero__stat-value">{{ formatDuration(activity.durationMinutes) }}</span>
+                </div>
+              </div>
+              <div class="hero__stat">
+                <span class="material-icons">straighten</span>
+                <div>
+                  <span class="hero__stat-label">{{ 'ACTIVITY_DETAIL.STATS.DISTANCE' | translate }}</span>
+                  <span class="hero__stat-value">{{ activity.distanceKm }} km</span>
+                </div>
+              </div>
+              @if (getElevation()) {
+                <div class="hero__stat">
+                  <span class="material-icons">terrain</span>
+                  <div>
+                    <span class="hero__stat-label">{{ 'ACTIVITY_DETAIL.STATS.ELEVATION' | translate }}</span>
+                    <span class="hero__stat-value">{{ getElevation() }}</span>
+                  </div>
+                </div>
+              }
+              @if (getTrailType()) {
+                <div class="hero__stat">
+                  <span class="material-icons">route</span>
+                  <div>
+                    <span class="hero__stat-label">{{ 'ACTIVITY_DETAIL.STATS.TRAIL_TYPE' | translate }}</span>
+                    <span class="hero__stat-value">{{ getTrailType() }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+        <!-- Mobile back button -->
+        <div class="hero__topbar">
+          <button class="back-btn" (click)="goBack()">
+            <span class="material-icons">arrow_back_ios</span>
+            <span>{{ 'ACTIVITY_DETAIL.BACK' | translate }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TWO-COLUMN CONTENT -->
+      <div class="page-content">
+
+        <!-- LEFT COLUMN -->
+        <div class="content-main">
+
+          <!-- Rating (mobile only, desktop shown in hero) -->
+          <div class="rating mobile-rating">
+            <span class="material-icons rating__star">star</span>
+            <span class="rating__value">{{ activity.avgRating }}</span>
+            <span class="rating__count">({{ activity.reviews.length }} {{ 'ACTIVITY_DETAIL.REVIEWS_COUNT' | translate }})</span>
+          </div>
+
+          <!-- Description -->
+          @if (activity.description) {
+            <div class="section">
+              <h2 class="section__title">{{ 'ACTIVITY_DETAIL.ABOUT' | translate }}</h2>
+              <p class="section__text">{{ activity.description }}</p>
+            </div>
+          }
+
+          <!-- Map -->
+          @if (activity.location) {
+            <div class="section">
+              <h2 class="section__title">{{ 'ACTIVITY_DETAIL.MAP.TITLE' | translate }}</h2>
+              <div class="map-preview">
+                <img src="https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800" alt="Mapa" class="map-preview__img" />
+                <button class="map-preview__btn">{{ 'ACTIVITY_DETAIL.MAP.OPEN' | translate }}</button>
+              </div>
+            </div>
+          }
+
+          <!-- What's Included -->
+          @if (activity.inclusions.length) {
+            <div class="section">
+              <h2 class="section__title">{{ 'ACTIVITY_DETAIL.INCLUDED.TITLE' | translate }}</h2>
+              <div class="inclusions-grid">
+                @for (item of activity.inclusions; track item.id) {
+                  <div class="inclusion-item">
+                    <span class="material-icons inclusion-item__icon">check_circle</span>
+                    <span>{{ item.item }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Packing List -->
+          <div class="section">
+            <h2 class="section__title">{{ 'ACTIVITY_DETAIL.PACKING.TITLE' | translate }}</h2>
+            <p class="section__subtitle">{{ 'ACTIVITY_DETAIL.PACKING.SUBTITLE' | translate }}</p>
+            <ul class="packing-list">
+              @for (item of packingList; track item.key; let i = $index) {
+                <li (click)="toggleItem(i)" [class.checked]="item.checked">
+                  <span class="checkbox" [class.checkbox--checked]="item.checked">
+                    @if (item.checked) {
+                      <span class="material-icons">check</span>
+                    }
+                  </span>
+                  {{ item.key | translate }}
+                </li>
+              }
+            </ul>
+          </div>
+
+          <!-- Similar Activities -->
+          @if (activity.similarActivities.length) {
+            <div class="section">
+              <div class="section__header">
+                <h2 class="section__title">{{ 'ACTIVITY_DETAIL.SIMILAR.TITLE' | translate }}</h2>
+                <a href="#" class="section__link">
+                  {{ 'ACTIVITY_DETAIL.SIMILAR.VIEW_ALL' | translate }}
+                  <span class="material-icons">arrow_forward</span>
+                </a>
+              </div>
+              <div class="similar-scroll">
+                @for (act of activity.similarActivities; track act.id) {
+                  <div class="similar-card">
+                    <div class="similar-card__img-wrap">
+                      <img [src]="act.previewImageUrl" [alt]="act.name" class="similar-card__img" />
+                      <span class="similar-card__badge">{{ act.difficultyLevel }}</span>
+                    </div>
+                    <div class="similar-card__body">
+                      <p class="similar-card__name">{{ act.name }}</p>
+                      <div class="similar-card__footer">
+                        <span class="similar-card__price">
+                          @if (act.price) {
+                            {{ 'ACTIVITY_DETAIL.SIMILAR.FROM' | translate }} {{ act.price | number }} RSD
+                          } @else {
+                            {{ 'ACTIVITY_DETAIL.FREE' | translate }}
+                          }
+                        </span>
+                        @if (act.avgRating) {
+                          <span class="similar-card__rating">
+                            <span class="material-icons">star</span>{{ act.avgRating }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+        </div>
+
+        <app-booking-card [activity]="activity" />
+
+      </div>
+
+      <!-- Mobile Sticky Bottom Bar -->
+      <div class="bottom-bar">
+        <div class="bottom-bar__price">
+          <span class="bottom-bar__label">{{ 'ACTIVITY_DETAIL.BOOK.LABEL' | translate }}</span>
+          <span class="bottom-bar__amount">
+            @if (activity.price) {
+              {{ activity.price | number }} RSD
+            } @else {
+              {{ 'ACTIVITY_DETAIL.FREE' | translate }}
+            }
+          </span>
+        </div>
+        <button class="btn btn-primary bottom-bar__cta">
+          {{ 'ACTIVITY_DETAIL.BOOK.CTA' | translate }}
+        </button>
+      </div>
+
+    }
+  </main>
+
+  <app-bottom-nav />
+</div>

@@ -105,6 +105,54 @@
       "COPY": "© 2025 Explorea · Tourism guide of Serbia"
     }
   },
+  "ACTIVITY_DETAIL": {
+    "BACK": "Activity",
+    "REVIEWS_COUNT": "reviews",
+    "FREE": "Free",
+    "STATS": {
+      "DURATION": "DURATION",
+      "DISTANCE": "DISTANCE",
+      "ELEVATION": "ELEVATION",
+      "TRAIL_TYPE": "TRAIL TYPE"
+    },
+    "ABOUT": "About the activity",
+    "INCLUDED": {
+      "TITLE": "What's included"
+    },
+    "PACKING": {
+      "TITLE": "What to bring",
+      "SUBTITLE": "Check items you've already packed",
+      "ITEMS": {
+        "BOOTS": "Hiking boots (Gore-Tex)",
+        "SNACKS": "Energy bars/snacks",
+        "WATER": "Water (minimum 2.5L)",
+        "POLES": "Trekking poles"
+      }
+    },
+    "MAP": {
+      "TITLE": "Route map",
+      "OPEN": "Open interactive map"
+    },
+    "SIMILAR": {
+      "TITLE": "Similar activities",
+      "VIEW_ALL": "View all",
+      "FROM": "From"
+    },
+    "BOOK": {
+      "LABEL": "PRICE PER PERSON",
+      "PRICE_LABEL": "Price per person",
+      "FIXED": "fixed",
+      "DATE_LABEL": "DEPARTURE DATE",
+      "DATE_PLACEHOLDER": "Select date",
+      "PERSONS_LABEL": "NUMBER OF PERSONS",
+      "TOUR_LABEL": "Tour",
+      "EQUIPMENT": "Equipment (rental)",
+      "INCLUDED": "Included",
+      "TOTAL": "Total",
+      "CTA": "Book now",
+      "DISCLAIMER": "By clicking the button you agree to our terms of use and cancellation policy."
+    }
+  },
   "BOTTOM_NAV": {
     "HOME": "Home",
     "EXPLORE": "Explore",
