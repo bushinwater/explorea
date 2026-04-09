@@ -19,7 +19,7 @@ export class Login implements OnInit {
   email = '';
   password = '';
   error = '';
-  returnUrl = '/home';
+  returnUrl = '/profile';
 
   constructor(
     private authService: AuthService,
@@ -28,7 +28,7 @@ export class Login implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/home';
+    this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/profile';
   }
 
   login() {

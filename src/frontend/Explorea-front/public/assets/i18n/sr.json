@@ -50,6 +50,8 @@
       "PASSWORD_DESC": "Poslednja promena pre 3 meseca. Preporučujemo redovnu promenu.",
       "CHANGE_PASSWORD": "Promeni lozinku",
       "PASSWORD_EMAIL_SENT": "Poslali smo ti email sa linkom za promenu lozinke. Proveri inbox.",
+      "FIRST_NAME": "Ime",
+      "LAST_NAME": "Prezime",
       "PROFILE_PICTURE": "Profilna slika",
       "PROFILE_PICTURE_DESC": "JPG ili PNG, maksimalno 5MB",
       "UPLOAD_PHOTO": "Postavi sliku",
@@ -200,6 +202,30 @@
     "REGISTER": "Registrujte se",
     "GUEST": "Nastavi bez naloga",
     "ERROR": "Pogrešan email ili lozinka."
+  },
+  "RESET_PASSWORD": {
+    "TITLE": "Nova lozinka",
+    "SUBTITLE": "Unesite novu lozinku za vaš nalog.",
+    "NEW_PASSWORD": "Nova lozinka",
+    "CONFIRM_PASSWORD": "Potvrdi lozinku",
+    "SUBMIT": "Sačuvaj lozinku",
+    "BACK_TO_LOGIN": "Nazad na prijavu",
+    "GO_TO_LOGIN": "Prijavi se",
+    "SUCCESS_TITLE": "Lozinka promenjena",
+    "SUCCESS_DESC": "Možete se prijaviti sa novom lozinkom.",
+    "ERROR_EMPTY": "Unesite lozinku.",
+    "ERROR_TOO_SHORT": "Lozinka mora imati najmanje 6 karaktera.",
+    "ERROR_MISMATCH": "Lozinke se ne poklapaju.",
+    "ERROR_EXPIRED": "Link je istekao. Zatražite novi.",
+    "ERROR_GENERAL": "Link nije validan. Zatražite novi.",
+    "ERROR_INVALID_LINK": "Link za resetovanje nije validan.",
+    "ERROR_SAME_PASSWORD": "Nova lozinka mora biti različita od trenutne.",
+    "SUCCESS_REDIRECT": "Bićete preusmereni automatski...",
+    "STRENGTH": {
+      "WEAK": "Slaba",
+      "MEDIUM": "Srednja",
+      "STRONG": "Jaka"
+    }
   },
   "REGISTER": {
     "TITLE": "Kreiraj nalog",

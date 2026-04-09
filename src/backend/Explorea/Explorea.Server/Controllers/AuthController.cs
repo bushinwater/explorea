@@ -79,8 +79,15 @@ namespace Explorea.Server.Controllers
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
         {
-            await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword);
-            return Ok(new { message = "Password has been reset successfully." });
+            try
+            {
+                await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword);
+                return Ok(new { message = "Password has been reset successfully." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

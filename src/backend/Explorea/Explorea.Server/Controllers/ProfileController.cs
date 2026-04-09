@@ -91,6 +91,28 @@ namespace Explorea.Server.Controllers
             return Ok(result);
         }
 
+        [HttpDelete("avatar")]
+        public async Task<IActionResult> RemoveAvatar()
+        {
+            var userId = GetCurrentUserId();
+            await _profileService.RemoveAvatarAsync(userId);
+            return NoContent();
+        }
+
+        [HttpPost("avatar")]
+        public async Task<IActionResult> UploadAvatar(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { message = "No file provided." });
+
+            if (file.Length > 5 * 1024 * 1024)
+                return BadRequest(new { message = "File size must not exceed 5 MB." });
+
+            var userId = GetCurrentUserId();
+            var url = await _profileService.UploadAvatarAsync(userId, file);
+            return Ok(new { url });
+        }
+
         [HttpGet("stats")]
         public async Task<IActionResult> GetStats()
         {

@@ -18,18 +18,21 @@ namespace Explorea.Server.Services
         private readonly IReviewRepository _reviewRepository;
         private readonly IUserRepository _userRepository;
         private readonly IAiBotService _aiBotService;
+        private readonly ICloudinaryService _cloudinaryService;
 
         public ProfileService(
             IUserRepository userRepository,
             ISavedItemRepository savedItemRepository,
             IReviewRepository reviewRepository,
             IAiBotService aiBotService,
+            ICloudinaryService cloudinaryService,
             AppDbContext db)
         {
             _userRepository = userRepository;
             _savedItemRepository = savedItemRepository;
             _reviewRepository = reviewRepository;
             _aiBotService = aiBotService;
+            _cloudinaryService = cloudinaryService;
             _db = db;
         }
 
@@ -170,16 +173,33 @@ namespace Explorea.Server.Services
             return MapUserProfile(user, preferences);
         }
 
+        private static readonly string[] NameBlacklist =
+        [
+            "kurac", "picka", "pička", "pizda", "guzica", "sisa", "jebem", "jebo",
+            "nigger", "nigga", "niger", "fuck", "shit", "dick", "cunt", "bitch",
+            "asshole", "retard", "faggot", "pussy", "cock", "whore", "slut",
+        ];
+
+        private static void ValidateName(string value, string fieldName)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                throw new Exception($"{fieldName} is required.");
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(value.Trim(), @"^[a-zA-ZčćžšđČĆŽŠĐ]+$"))
+                throw new Exception($"{fieldName} must contain letters only.");
+
+            var lower = value.Trim().ToLower();
+            if (NameBlacklist.Any(w => lower.Contains(w)))
+                throw new Exception($"{fieldName} contains forbidden content.");
+        }
+
         public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateUserDto dto)
         {
             var user = await _userRepository.GetByIdAsync(userId)
                 ?? throw new Exception("User not found.");
 
-            if (string.IsNullOrWhiteSpace(dto.FirstName))
-                throw new Exception("First name is required.");
-
-            if (string.IsNullOrWhiteSpace(dto.LastName))
-                throw new Exception("Last name is required.");
+            ValidateName(dto.FirstName, "First name");
+            ValidateName(dto.LastName, "Last name");
 
             user.FirstName = dto.FirstName.Trim();
             user.LastName = dto.LastName.Trim();
@@ -389,6 +409,36 @@ namespace Explorea.Server.Services
                 .ThenByDescending(x => x.AvgRating)
                 .Take(10)
                 .ToList();
+        }
+
+        public async Task RemoveAvatarAsync(Guid userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId)
+                ?? throw new Exception("User not found.");
+
+            user.ProfileImageUrl = null;
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+            user.UpdatedBy = userId;
+
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
+        }
+
+        public async Task<string> UploadAvatarAsync(Guid userId, IFormFile file)
+        {
+            var url = await _cloudinaryService.UploadImageAsync(file, "explorea/avatars");
+
+            var user = await _userRepository.GetByIdAsync(userId)
+                ?? throw new Exception("User not found.");
+
+            user.ProfileImageUrl = url;
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+            user.UpdatedBy = userId;
+
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
+
+            return url;
         }
 
         private static UserProfileDto MapUserProfile(User user, UserPreferences? preferences)

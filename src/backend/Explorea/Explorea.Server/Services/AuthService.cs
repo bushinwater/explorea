@@ -163,9 +163,7 @@ namespace Explorea.Server.Services
 
         public async Task VerifyEmailAsync(string token)
         {
-            var decodedToken = WebUtility.UrlDecode(token);
-
-            var tokenHash = _jwtHelper.HashToken(decodedToken);
+            var tokenHash = _jwtHelper.HashToken(token);
             var verification = await _authRepository.GetEmailVerificationAsync(tokenHash);
 
             if (verification == null)
@@ -241,8 +239,7 @@ namespace Explorea.Server.Services
 
         public async Task ResetPasswordAsync(string token, string newPassword)
         {
-            var decodedToken = WebUtility.UrlDecode(token);
-            var tokenHash = _jwtHelper.HashToken(decodedToken);
+            var tokenHash = _jwtHelper.HashToken(token);
 
             var resetToken = await _authRepository.GetPasswordResetTokenAsync(tokenHash);
 
@@ -255,6 +252,9 @@ namespace Explorea.Server.Services
             var user = await _userRepository.GetByIdAsync(resetToken.UserId);
             if (user == null)
                 throw new Exception("User not found.");
+
+            if (_passwordHelper.VerifyPassword(newPassword, user.PasswordHash))
+                throw new Exception("New password must be different from the current password.");
 
             user.PasswordHash = _passwordHelper.HashPassword(newPassword);
             user.UpdatedAt = DateTimeOffset.UtcNow;

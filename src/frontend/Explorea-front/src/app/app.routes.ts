@@ -5,6 +5,7 @@ import { ActivityDetailComponent } from './features/activities/activity-detail/a
 import { Interests } from './features/auth/interests/interests';
 import { Login } from './features/auth/login/login';
 import { Register } from './features/auth/register/register';
+import { ResetPassword } from './features/auth/reset-password/reset-password';
 import { Home } from './features/home/home';
 import { Settings } from './features/profile/settings/settings';
 
@@ -16,4 +17,5 @@ export const routes: Routes = [
   { path: 'profile', component: Settings, canActivate: [authGuard] },
   { path: 'login', component: Login, canActivate: [guestGuard] },
   { path: 'register', component: Register, canActivate: [guestGuard] },
+  { path: 'reset-password', component: ResetPassword },
 ];

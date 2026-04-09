@@ -50,6 +50,8 @@
       "PASSWORD_DESC": "Last changed 3 months ago. We recommend changing it regularly.",
       "CHANGE_PASSWORD": "Change password",
       "PASSWORD_EMAIL_SENT": "We sent you an email with a password reset link. Check your inbox.",
+      "FIRST_NAME": "First name",
+      "LAST_NAME": "Last name",
       "PROFILE_PICTURE": "Profile picture",
       "PROFILE_PICTURE_DESC": "JPG or PNG, max 5MB",
       "UPLOAD_PHOTO": "Upload photo",
@@ -200,6 +202,30 @@
     "REGISTER": "Register",
     "GUEST": "Continue without account",
     "ERROR": "Invalid email or password."
+  },
+  "RESET_PASSWORD": {
+    "TITLE": "New password",
+    "SUBTITLE": "Enter a new password for your account.",
+    "NEW_PASSWORD": "New password",
+    "CONFIRM_PASSWORD": "Confirm password",
+    "SUBMIT": "Save password",
+    "BACK_TO_LOGIN": "Back to login",
+    "GO_TO_LOGIN": "Sign in",
+    "SUCCESS_TITLE": "Password changed",
+    "SUCCESS_DESC": "You can now sign in with your new password.",
+    "ERROR_EMPTY": "Please enter a password.",
+    "ERROR_TOO_SHORT": "Password must be at least 6 characters.",
+    "ERROR_MISMATCH": "Passwords do not match.",
+    "ERROR_EXPIRED": "The link has expired. Please request a new one.",
+    "ERROR_GENERAL": "The link is invalid. Please request a new one.",
+    "ERROR_INVALID_LINK": "The reset link is invalid.",
+    "ERROR_SAME_PASSWORD": "New password must be different from your current password.",
+    "SUCCESS_REDIRECT": "You will be redirected automatically...",
+    "STRENGTH": {
+      "WEAK": "Weak",
+      "MEDIUM": "Medium",
+      "STRONG": "Strong"
+    }
   },
   "REGISTER": {
     "TITLE": "Create account",

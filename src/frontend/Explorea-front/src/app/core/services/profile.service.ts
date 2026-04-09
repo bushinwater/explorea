@@ -39,4 +39,8 @@ export class ProfileService {
   getStats(): Observable<ProfileStatsDto> {
     return this.http.get<ProfileStatsDto>(`${this.api}/stats`);
   }
+
+  removeAvatar(): Observable<void> {
+    return this.http.delete<void>(`${this.api}/avatar`);
+  }
 }
