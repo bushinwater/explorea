@@ -196,5 +196,44 @@
     "ERROR_TERMS": "You must accept the terms of service.",
     "ERROR_PASSWORD": "Passwords do not match.",
     "ERROR_GENERAL": "Registration failed. Please try again."
+  },
+  "DESTINATION_DETAIL": {
+    "LOADING": "Loading destination details...",
+    "ABOUT": "About the destination",
+    "GALLERY": "Photo gallery",
+    "VIEW_ALL_IMAGES": "View all images ({{count}})",
+    "LOCATION_AND_MAP": "Location and map",
+    "OPEN_IN_GOOGLE_MAPS": "Open in Google Maps",
+    "DETAILS": "Details",
+    "SHOW_ALL": "Show all",
+    "EMPTY_TAB": "There are currently no available items for this section.",
+    "EMPTY_REVIEWS": "There are no reviews for this destination yet.",
+    "LOCATION_NOT_AVAILABLE": "Location is not available",
+    "META": {
+      "RATING": "Rating",
+      "EVENT": "Event"
+    },
+    "ITEM_TYPES": {
+      "PLACE": "Place",
+      "EVENT": "Event",
+      "ACTIVITY": "Activity"
+    },
+    "TABS": {
+      "PLACES": "Places",
+      "EVENTS": "Events",
+      "ACTIVITIES": "Activities",
+      "REVIEWS": "Reviews"
+    },
+    "SECTIONS": {
+      "POPULAR_PLACES": "Popular places",
+      "POPULAR_EVENTS": "Popular events",
+      "POPULAR_ACTIVITIES": "Popular activities",
+      "TRAVELER_REVIEWS": "Traveler reviews",
+      "SIMILAR_DESTINATIONS": "Similar destinations"
+    },
+    "ERRORS": {
+      "MISSING_SLUG": "Destination slug was not provided.",
+      "LOAD_FAILED": "Error loading destination details."
+    }
   }
 }

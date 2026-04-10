@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, ChangeDetectorRef, HostListener, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
 
 import { DestinationService } from '../../../core/services/destination.service';
@@ -28,6 +28,7 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private destinationService = inject(DestinationService);
   private cdr = inject(ChangeDetectorRef);
+  private translate = inject(TranslateService);
 
   private routeSub?: Subscription;
   private requestSub?: Subscription;
@@ -45,7 +46,7 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
       const slug = params.get('slug');
 
       if (!slug) {
-        this.error = 'Slug destinacije nije prosleđen.';
+        this.error = this.translate.instant('DESTINATION_DETAIL.ERRORS.MISSING_SLUG');
         this.isLoading = false;
         this.destination = null;
         this.cdr.detectChanges();
@@ -80,7 +81,7 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
       error: () => {
-        this.error = 'Greška pri učitavanju detalja destinacije.';
+        this.error = this.translate.instant('DESTINATION_DETAIL.ERRORS.LOAD_FAILED');
         this.isLoading = false;
         this.cdr.detectChanges();
       }
@@ -145,29 +146,31 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
   getItemTypeLabel(): string {
     switch (this.selectedTab) {
       case 'places':
-        return 'Objekat';
+        return this.translate.instant('DESTINATION_DETAIL.ITEM_TYPES.PLACE');
       case 'events':
-        return 'Događaj';
+        return this.translate.instant('DESTINATION_DETAIL.ITEM_TYPES.EVENT');
       case 'activities':
-        return 'Aktivnost';
+        return this.translate.instant('DESTINATION_DETAIL.ITEM_TYPES.ACTIVITY');
       default:
         return '';
     }
   }
 
   getItemLocationText(item: TabItem): string {
+    const locationNotAvailable = this.translate.instant('DESTINATION_DETAIL.LOCATION_NOT_AVAILABLE');
+
     if (this.isPlace(item)) {
-      return item.address || item.country?.name || 'Lokacija nije dostupna';
+      return item.address || item.country?.name || locationNotAvailable;
     }
 
     if (this.isEvent(item)) {
       const city = item.city?.name;
       const country = item.country?.name;
       const address = item.address;
-      return [address, city, country].filter(Boolean).join(', ') || 'Lokacija nije dostupna';
+      return [address, city, country].filter(Boolean).join(', ') || locationNotAvailable;
     }
 
-    return item.country?.name || 'Lokacija nije dostupna';
+    return item.country?.name || locationNotAvailable;
   }
 
   getItemRating(item: TabItem): number | null {
@@ -180,10 +183,10 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
 
   getItemMetaLabel(item: TabItem): string {
     if (this.isEvent(item)) {
-      return 'Događaj';
+      return this.translate.instant('DESTINATION_DETAIL.META.EVENT');
     }
 
-    return 'Ocena';
+    return this.translate.instant('DESTINATION_DETAIL.META.RATING');
   }
 
   getItemRoute(item: TabItem): string[] {
@@ -196,6 +199,10 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
     }
 
     return ['/activities', item.slug];
+  }
+
+  getStarsArray(): number[] {
+    return [1, 2, 3, 4, 5];
   }
 
   openLightbox(index: number): void {
@@ -229,7 +236,9 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
     const lat = this.destination?.location?.lat;
     const lng = this.destination?.location?.lng;
 
-    if (lat == null || lng == null) return 'Lokacija nije dostupna';
+    if (lat == null || lng == null) {
+      return this.translate.instant('DESTINATION_DETAIL.LOCATION_NOT_AVAILABLE');
+    }
 
     return `${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E`;
   }
@@ -243,10 +252,6 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
     }
 
     return `https://www.google.com/maps?q=${lat},${lng}`;
-  }
-
-  getStarsArray(): number[] {
-    return [1, 2, 3, 4, 5];
   }
 
   private isPlace(item: TabItem): item is PlaceCard {

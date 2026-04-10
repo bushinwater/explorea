@@ -2,8 +2,13 @@
   <app-sidebar />
 
   <main class="detail-main">
-    <div class="state-block" *ngIf="isLoading">Učitavanje detalja destinacije...</div>
-    <div class="state-block error" *ngIf="!isLoading && error">{{ error }}</div>
+    <div class="state-block" *ngIf="isLoading">
+      {{ 'DESTINATION_DETAIL.LOADING' | translate }}
+    </div>
+
+    <div class="state-block error" *ngIf="!isLoading && error">
+      {{ error }}
+    </div>
 
     <ng-container *ngIf="!isLoading && destination">
       <section class="detail-hero">
@@ -58,7 +63,7 @@
         <div class="detail-content__main">
           <section class="detail-section detail-section--plain" *ngIf="destination.description">
             <div class="detail-section__head detail-section__head--about">
-              <h2>O destinaciji</h2>
+              <h2>{{ 'DESTINATION_DETAIL.ABOUT' | translate }}</h2>
             </div>
 
             <p class="detail-copy detail-copy--about">
@@ -68,9 +73,9 @@
 
           <section class="detail-section detail-section--gallery" *ngIf="galleryImages.length > 0">
             <div class="detail-section__head">
-              <h2>Galerija fotografija</h2>
+              <h2>{{ 'DESTINATION_DETAIL.GALLERY' | translate }}</h2>
               <a class="section-link section-link--subtle" href="javascript:void(0)">
-                Pogledaj sve slike ({{ galleryImages.length }})
+                {{ 'DESTINATION_DETAIL.VIEW_ALL_IMAGES' | translate:{ count: galleryImages.length } }}
               </a>
             </div>
 
@@ -87,12 +92,12 @@
 
           <section class="detail-section detail-section--map">
             <div class="detail-section__head detail-section__head--map">
-              <h2>Lokacija i mapa</h2>
+              <h2>{{ 'DESTINATION_DETAIL.LOCATION_AND_MAP' | translate }}</h2>
 
               <a class="ghost-btn map-link-btn map-link-btn--floating" [href]="googleMapsUrl" target="_blank"
                 rel="noopener noreferrer">
                 <span class="material-icons">north_east</span>
-                Otvori u Google Mapama
+                {{ 'DESTINATION_DETAIL.OPEN_IN_GOOGLE_MAPS' | translate }}
               </a>
             </div>
 
@@ -110,7 +115,7 @@
                 </div>
 
                 <button class="map-pin-card__details" type="button">
-                  Detalji
+                  {{ 'DESTINATION_DETAIL.DETAILS' | translate }}
                 </button>
               </div>
             </div>
@@ -119,36 +124,42 @@
           <section class="tab-section">
             <div class="tabs-line">
               <button type="button" [class.active]="selectedTab === 'places'" (click)="setTab('places')">
-                Objekti
+                {{ 'DESTINATION_DETAIL.TABS.PLACES' | translate }}
               </button>
 
               <button type="button" [class.active]="selectedTab === 'events'" (click)="setTab('events')">
-                Događaji
+                {{ 'DESTINATION_DETAIL.TABS.EVENTS' | translate }}
               </button>
 
               <button type="button" [class.active]="selectedTab === 'activities'" (click)="setTab('activities')">
-                Aktivnosti
+                {{ 'DESTINATION_DETAIL.TABS.ACTIVITIES' | translate }}
               </button>
 
               <button type="button" [class.active]="selectedTab === 'reviews'" (click)="setTab('reviews')">
-                Recenzije
+                {{ 'DESTINATION_DETAIL.TABS.REVIEWS' | translate }}
               </button>
             </div>
 
             <div class="tab-block" *ngIf="selectedTab !== 'reviews'">
               <div class="section-head tab-block__head" *ngIf="selectedTab === 'places'">
-                <h2>Popularni objekti</h2>
-                <a class="section-link" href="javascript:void(0)">Prikaži sve</a>
+                <h2>{{ 'DESTINATION_DETAIL.SECTIONS.POPULAR_PLACES' | translate }}</h2>
+                <a class="section-link" href="javascript:void(0)">
+                  {{ 'DESTINATION_DETAIL.SHOW_ALL' | translate }}
+                </a>
               </div>
 
               <div class="section-head tab-block__head" *ngIf="selectedTab === 'events'">
-                <h2>Popularni događaji</h2>
-                <a class="section-link" href="javascript:void(0)">Prikaži sve</a>
+                <h2>{{ 'DESTINATION_DETAIL.SECTIONS.POPULAR_EVENTS' | translate }}</h2>
+                <a class="section-link" href="javascript:void(0)">
+                  {{ 'DESTINATION_DETAIL.SHOW_ALL' | translate }}
+                </a>
               </div>
 
               <div class="section-head tab-block__head" *ngIf="selectedTab === 'activities'">
-                <h2>Popularne aktivnosti</h2>
-                <a class="section-link" href="javascript:void(0)">Prikaži sve</a>
+                <h2>{{ 'DESTINATION_DETAIL.SECTIONS.POPULAR_ACTIVITIES' | translate }}</h2>
+                <a class="section-link" href="javascript:void(0)">
+                  {{ 'DESTINATION_DETAIL.SHOW_ALL' | translate }}
+                </a>
               </div>
 
               <ng-container *ngIf="activeTabItems.length > 0; else emptyTab">
@@ -192,7 +203,7 @@
 
             <div class="tab-block" *ngIf="selectedTab === 'reviews'">
               <div class="section-head tab-block__head">
-                <h2>Recenzije putnika</h2>
+                <h2>{{ 'DESTINATION_DETAIL.SECTIONS.TRAVELER_REVIEWS' | translate }}</h2>
               </div>
 
               <ng-container *ngIf="destination.reviews.length > 0; else emptyReviews">
@@ -220,17 +231,21 @@
             </div>
 
             <ng-template #emptyTab>
-              <p class="empty-text">Trenutno nema dostupnih stavki za ovu sekciju.</p>
+              <p class="empty-text">
+                {{ 'DESTINATION_DETAIL.EMPTY_TAB' | translate }}
+              </p>
             </ng-template>
 
             <ng-template #emptyReviews>
-              <p class="empty-text">Još nema recenzija za ovu destinaciju.</p>
+              <p class="empty-text">
+                {{ 'DESTINATION_DETAIL.EMPTY_REVIEWS' | translate }}
+              </p>
             </ng-template>
           </section>
 
           <section *ngIf="destination.similarDestinations.length > 0" class="similar-section">
             <div class="section-head">
-              <h2>Slične destinacije</h2>
+              <h2>{{ 'DESTINATION_DETAIL.SECTIONS.SIMILAR_DESTINATIONS' | translate }}</h2>
             </div>
 
             <div class="similar-grid">

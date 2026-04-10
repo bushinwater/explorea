@@ -196,5 +196,44 @@
     "ERROR_TERMS": "Morate prihvatiti uslove korišćenja.",
     "ERROR_PASSWORD": "Lozinke se ne poklapaju.",
     "ERROR_GENERAL": "Registracija nije uspela. Pokušajte ponovo."
+  },
+  "DESTINATION_DETAIL": {
+    "LOADING": "Učitavanje detalja destinacije...",
+    "ABOUT": "O destinaciji",
+    "GALLERY": "Galerija fotografija",
+    "VIEW_ALL_IMAGES": "Pogledaj sve slike ({{count}})",
+    "LOCATION_AND_MAP": "Lokacija i mapa",
+    "OPEN_IN_GOOGLE_MAPS": "Otvori u Google Mapama",
+    "DETAILS": "Detalji",
+    "SHOW_ALL": "Prikaži sve",
+    "EMPTY_TAB": "Trenutno nema dostupnih stavki za ovu sekciju.",
+    "EMPTY_REVIEWS": "Još nema recenzija za ovu destinaciju.",
+    "LOCATION_NOT_AVAILABLE": "Lokacija nije dostupna",
+    "META": {
+      "RATING": "Ocena",
+      "EVENT": "Događaj"
+    },
+    "ITEM_TYPES": {
+      "PLACE": "Objekat",
+      "EVENT": "Događaj",
+      "ACTIVITY": "Aktivnost"
+    },
+    "TABS": {
+      "PLACES": "Objekti",
+      "EVENTS": "Događaji",
+      "ACTIVITIES": "Aktivnosti",
+      "REVIEWS": "Recenzije"
+    },
+    "SECTIONS": {
+      "POPULAR_PLACES": "Popularni objekti",
+      "POPULAR_EVENTS": "Popularni događaji",
+      "POPULAR_ACTIVITIES": "Popularne aktivnosti",
+      "TRAVELER_REVIEWS": "Recenzije putnika",
+      "SIMILAR_DESTINATIONS": "Slične destinacije"
+    },
+    "ERRORS": {
+      "MISSING_SLUG": "Slug destinacije nije prosleđen.",
+      "LOAD_FAILED": "Greška pri učitavanju detalja destinacije."
+    }
   }
 }
