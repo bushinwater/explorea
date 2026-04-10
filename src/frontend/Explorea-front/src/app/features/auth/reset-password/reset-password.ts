@@ -1,17 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { ResetPasswordDto } from '../../../core/models/auth.model';
 import { AuthService } from '../../../core/services/auth.service';
-import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
-import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, Sidebar, BottomNav, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './reset-password.html',
   styleUrl: './reset-password.css',
 })

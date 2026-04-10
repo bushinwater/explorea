@@ -18,24 +18,33 @@
       <p class="subtitle">{{ 'LOGIN.SUBTITLE' | translate }}</p>
 
       <div class="form">
-        <div class="input-wrapper">
+        <div class="input-wrapper" [class.input-error]="emailError">
           <span class="material-icons input-icon">email</span>
           <input
-            class="input"
+            class="input no-right-icon"
             type="email"
             [(ngModel)]="email"
             [placeholder]="'LOGIN.EMAIL' | translate"
+            (ngModelChange)="emailError = ''"
+            (keydown.enter)="onEmailEnter()"
+            (blur)="validateEmail()"
           />
         </div>
+        <div class="field-error" *ngIf="emailError">{{ emailError | translate }}</div>
 
         <div class="input-wrapper">
           <span class="material-icons input-icon">lock</span>
           <input
+            #passwordInput
             class="input"
-            type="password"
+            [type]="showPassword ? 'text' : 'password'"
             [(ngModel)]="password"
             [placeholder]="'LOGIN.PASSWORD' | translate"
+            (keydown.enter)="onPasswordEnter()"
           />
+          <button class="input-icon-right" type="button" (click)="showPassword = !showPassword" tabindex="-1">
+            <span class="material-icons">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+          </button>
         </div>
 
         <div class="forgot">
@@ -44,23 +53,35 @@
 
         <div class="error" *ngIf="error">{{ error | translate }}</div>
 
-        <button class="btn btn-primary login-btn" (click)="login()">
-          {{ 'LOGIN.SUBMIT' | translate }}
+        <div class="unverified-notice" *ngIf="emailNotVerified">
+          <span class="material-icons">mark_email_unread</span>
+          <div class="unverified-body">
+            <span>{{ 'LOGIN.ERROR_NOT_VERIFIED' | translate }}</span>
+            <button class="resend-btn" (click)="resendVerification()" [disabled]="resendSent">
+              {{ (resendSent ? 'LOGIN.RESEND_SENT' : 'LOGIN.RESEND') | translate }}
+            </button>
+          </div>
+        </div>
+
+        <button #loginBtn class="btn btn-primary login-btn" (click)="login()" [disabled]="loading">
+          <span class="btn-spinner" *ngIf="loading"></span>
+          <span *ngIf="!loading">{{ 'LOGIN.SUBMIT' | translate }}</span>
         </button>
 
         <div class="divider">
           <span>{{ 'LOGIN.OR' | translate }}</span>
         </div>
 
-        <button class="btn btn-secondary social-btn">
+        <button class="social-btn google">
           <span class="material-icons">language</span>
           {{ 'LOGIN.GOOGLE' | translate }}
         </button>
 
-        <button class="btn btn-secondary social-btn">
+        <button class="social-btn facebook">
           <span class="material-icons">facebook</span>
           {{ 'LOGIN.FACEBOOK' | translate }}
         </button>
+
         <div class="register-link">
           {{ 'LOGIN.NO_ACCOUNT' | translate }}
           <a routerLink="/register">{{ 'LOGIN.REGISTER' | translate }} →</a>

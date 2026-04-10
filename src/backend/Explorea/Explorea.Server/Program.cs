@@ -19,6 +19,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
+builder.Services.AddMemoryCache();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -52,6 +53,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<PasswordHelper>();
 builder.Services.AddScoped<JwtHelper>();
+builder.Services.AddScoped<ILookupRepository, LookupRepository>();
 builder.Services.AddScoped<ISavedItemRepository, SavedItemRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IProfileService, ProfileService>();

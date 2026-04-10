@@ -66,21 +66,11 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
     return this.firstName !== this.originalFirstName || this.lastName !== this.originalLastName;
   }
 
-  private readonly ALL_INTERESTS = [
-    { id: 1, label: 'Avanture' },
-    { id: 2, label: 'Clubing' },
-    { id: 3, label: 'Kultura' },
-    { id: 4, label: 'Umetnost' },
-    { id: 5, label: 'Hrana' },
-    { id: 6, label: 'Sport' },
-  ];
-
   get selectedInterestsLabel(): string {
     const ids = this.interestsService.getSelectedIds();
     if (ids.length === 0) return 'Nisu izabrani interesi';
-    return this.ALL_INTERESTS.filter((i) => ids.includes(i.id))
-      .map((i) => i.label)
-      .join(', ');
+    const label = this.interestsService.getSelectedLabels();
+    return label || 'Nisu izabrani interesi';
   }
 
   constructor(
@@ -105,6 +95,7 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit() {
     this.avatarUrl = this.avatarService.getUrl();
+    this.interestsService.getInterestTags().subscribe();  // popuni cache za selectedInterestsLabel
 
     const savedSection = sessionStorage.getItem(SECTION_KEY);
     if (savedSection === 'profile' || savedSection === 'app') {

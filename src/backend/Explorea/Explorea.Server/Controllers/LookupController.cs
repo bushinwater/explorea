@@ -1,3 +1,4 @@
+using Explorea.Server.Repositories.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Explorea.Server.Controllers
@@ -6,6 +7,13 @@ namespace Explorea.Server.Controllers
     [Route("api")]
     public class LookupController : ControllerBase
     {
+        private readonly ILookupRepository _lookup;
+
+        public LookupController(ILookupRepository lookup)
+        {
+            _lookup = lookup;
+        }
+
         [HttpGet("cities")]
         public IActionResult GetCities() => Ok();
 
@@ -24,7 +32,11 @@ namespace Explorea.Server.Controllers
         [HttpGet("seasons")]
         public IActionResult GetSeasons() => Ok();
 
-        [HttpGet("interests-tags")]
-        public IActionResult GetInterests() => Ok();
+        [HttpGet("interest-tags")]
+        public async Task<IActionResult> GetInterestTags()
+        {
+            var tags = await _lookup.GetInterestTagsAsync();
+            return Ok(tags.Select(t => new { t.Id, t.Name, t.Icon }));
+        }
     }
 }

@@ -2,7 +2,26 @@
   <app-sidebar></app-sidebar>
   <app-bottom-nav></app-bottom-nav>
   <main class="main">
-    <div class="register-card">
+
+    <!-- ===== CHECK INBOX SCREEN ===== -->
+    <div class="register-card" *ngIf="registrationDone">
+      <img src="assets/logo.png" alt="Explorea" class="logo-img" />
+      <div class="inbox-icon">
+        <span class="material-icons">mark_email_unread</span>
+      </div>
+      <h1>{{ 'REGISTER.VERIFY_TITLE' | translate }}</h1>
+      <p class="subtitle">{{ 'REGISTER.VERIFY_DESC' | translate: { email: email } }}</p>
+      <p class="resend-hint">{{ 'REGISTER.VERIFY_NO_EMAIL' | translate }}</p>
+      <button class="btn btn-primary register-btn" (click)="resendVerification()" [disabled]="resendSent">
+        {{ (resendSent ? 'LOGIN.RESEND_SENT' : 'LOGIN.RESEND') | translate }}
+      </button>
+      <div class="login-link">
+        <a routerLink="/login">← {{ 'REGISTER.LOGIN' | translate }}</a>
+      </div>
+    </div>
+
+    <!-- ===== REGISTER FORM ===== -->
+    <div class="register-card" *ngIf="!registrationDone">
       <div class="logo">
         <img src="assets/logo.png" alt="Explorea" class="logo-img" />
         <span class="logo-text">Explorea</span>
@@ -12,93 +31,143 @@
       <p class="subtitle">{{ 'REGISTER.SUBTITLE' | translate }}</p>
 
       <div class="form">
-        <div class="form-group">
-          <label>{{ 'REGISTER.FULL_NAME' | translate }}</label>
-          <div class="input-wrapper">
-            <span class="material-icons input-icon">person</span>
-            <input
-              class="input"
-              type="text"
-              [(ngModel)]="firstName"
-              [placeholder]="'REGISTER.NAME_PLACEHOLDER' | translate"
-            />
+
+        <!-- IME + PREZIME -->
+        <div class="name-row">
+          <div class="form-group">
+            <label>{{ 'REGISTER.FIRST_NAME' | translate }}</label>
+            <div class="input-wrapper" [class.input-error]="firstNameError">
+              <span class="material-icons input-icon">person</span>
+              <input class="input no-right-icon" type="text" [(ngModel)]="firstName"
+                [placeholder]="'REGISTER.FIRST_NAME_PLACEHOLDER' | translate"
+                (ngModelChange)="firstNameError = ''"
+                (blur)="validateFirstName()" />
+            </div>
+            <span class="field-error" *ngIf="firstNameError">{{ firstNameError | translate }}</span>
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'REGISTER.LAST_NAME' | translate }}</label>
+            <div class="input-wrapper" [class.input-error]="lastNameError">
+              <span class="material-icons input-icon">person_outline</span>
+              <input class="input no-right-icon" type="text" [(ngModel)]="lastName"
+                [placeholder]="'REGISTER.LAST_NAME_PLACEHOLDER' | translate"
+                (ngModelChange)="lastNameError = ''"
+                (blur)="validateLastName()" />
+            </div>
+            <span class="field-error" *ngIf="lastNameError">{{ lastNameError | translate }}</span>
           </div>
         </div>
 
+        <!-- GENDER + DATE OF BIRTH -->
+        <div class="name-row">
+          <div class="form-group">
+            <label>{{ 'REGISTER.GENDER' | translate }}</label>
+            <div class="select-wrapper" [class.input-error]="genderError">
+              <span class="material-icons input-icon">person_outline</span>
+              <select class="input select-input" [(ngModel)]="gender"
+                (ngModelChange)="genderError = ''">
+                <option value="">{{ 'REGISTER.GENDER_PLACEHOLDER' | translate }}</option>
+                <option value="male">{{ 'REGISTER.GENDER_MALE' | translate }}</option>
+                <option value="female">{{ 'REGISTER.GENDER_FEMALE' | translate }}</option>
+                <option value="other">{{ 'REGISTER.GENDER_OTHER' | translate }}</option>
+                <option value="prefer_not">{{ 'REGISTER.GENDER_PREFER_NOT' | translate }}</option>
+              </select>
+              <span class="material-icons select-arrow">expand_more</span>
+            </div>
+            <span class="field-error" *ngIf="genderError">{{ genderError | translate }}</span>
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'REGISTER.DATE_OF_BIRTH' | translate }}</label>
+            <div class="input-wrapper" [class.input-error]="dateOfBirthError">
+              <span class="material-icons input-icon">cake</span>
+              <input class="input no-right-icon" type="date" [(ngModel)]="dateOfBirth"
+                [min]="minDate" [max]="maxDate"
+                (ngModelChange)="dateOfBirthError = ''"
+                (blur)="validateDateOfBirth()" />
+            </div>
+            <span class="field-error" *ngIf="dateOfBirthError">{{ dateOfBirthError | translate }}</span>
+          </div>
+        </div>
+
+        <!-- EMAIL -->
         <div class="form-group">
           <label>{{ 'REGISTER.EMAIL' | translate }}</label>
-          <div class="input-wrapper">
+          <div class="input-wrapper" [class.input-error]="emailError">
             <span class="material-icons input-icon">email</span>
-            <input
-              class="input"
-              type="email"
-              [(ngModel)]="email"
+            <input class="input" [class.no-right-icon]="!emailChecking" type="email" [(ngModel)]="email"
               [placeholder]="'REGISTER.EMAIL_PLACEHOLDER' | translate"
-            />
+              (ngModelChange)="emailError = ''"
+              (blur)="onEmailBlur()"
+              (keydown.enter)="onEmailEnter()" />
+            <span class="email-checking-spinner" *ngIf="emailChecking"></span>
           </div>
+          <span class="field-error" *ngIf="emailError">{{ emailError | translate }}</span>
         </div>
 
+        <!-- LOZINKA -->
         <div class="form-group">
           <label>{{ 'REGISTER.PASSWORD' | translate }}</label>
           <div class="input-wrapper">
             <span class="material-icons input-icon">lock</span>
-            <input
-              class="input"
-              [type]="showPassword ? 'text' : 'password'"
-              [(ngModel)]="password"
-              placeholder="••••••••"
-            />
-            <span class="material-icons input-icon-right" (click)="togglePassword()">
-              {{ showPassword ? 'visibility_off' : 'visibility' }}
+            <input #passwordInput class="input" [type]="showPassword ? 'text' : 'password'"
+              [(ngModel)]="password" placeholder="••••••••"
+              (keydown.enter)="onPasswordEnter()" />
+            <button class="input-icon-right" type="button" (click)="togglePassword()" tabindex="-1">
+              <span class="material-icons">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+            </button>
+          </div>
+          <div class="strength-bar" *ngIf="password">
+            <div class="strength-track">
+              <div class="strength-fill" [class]="passwordStrength"></div>
+            </div>
+            <span class="strength-label" [class]="passwordStrength">
+              {{ ('RESET_PASSWORD.STRENGTH.' + (passwordStrength | uppercase)) | translate }}
             </span>
           </div>
         </div>
 
+        <!-- POTVRDI LOZINKU -->
         <div class="form-group">
           <label>{{ 'REGISTER.CONFIRM_PASSWORD' | translate }}</label>
           <div class="input-wrapper">
             <span class="material-icons input-icon">lock</span>
-            <input
-              class="input"
-              [type]="showConfirmPassword ? 'text' : 'password'"
-              [(ngModel)]="confirmPassword"
-              placeholder="••••••••"
-            />
-            <span class="material-icons input-icon-right" (click)="toggleConfirmPassword()">
-              {{ showConfirmPassword ? 'visibility_off' : 'visibility' }}
-            </span>
+            <input #confirmPasswordInput class="input" [type]="showConfirmPassword ? 'text' : 'password'"
+              [(ngModel)]="confirmPassword" placeholder="••••••••"
+              (keydown.enter)="onConfirmPasswordEnter()" />
+            <button class="input-icon-right" type="button" (click)="toggleConfirmPassword()" tabindex="-1">
+              <span class="material-icons">{{ showConfirmPassword ? 'visibility_off' : 'visibility' }}</span>
+            </button>
           </div>
         </div>
 
+        <!-- TERMS -->
         <div class="terms">
-          <input type="checkbox" [(ngModel)]="acceptTerms" id="terms" />
+          <input type="checkbox" [(ngModel)]="acceptTerms" id="terms" (ngModelChange)="onTermsChange()" />
           <label for="terms">
             {{ 'REGISTER.TERMS' | translate }}
-            <a href="#">{{ 'REGISTER.TERMS_LINK' | translate }}</a>
+            <a (click)="activeModal = 'terms'; $event.preventDefault()">{{ 'REGISTER.TERMS_LINK' | translate }}</a>
             {{ 'REGISTER.AND' | translate }}
-            <a href="#">{{ 'REGISTER.PRIVACY_LINK' | translate }}</a>
+            <a (click)="activeModal = 'privacy'; $event.preventDefault()">{{ 'REGISTER.PRIVACY_LINK' | translate }}</a>
           </label>
         </div>
 
         <div class="error" *ngIf="error">{{ error | translate }}</div>
 
-        <button class="btn btn-primary register-btn" (click)="register()">
-          {{ 'REGISTER.SUBMIT' | translate }}
+        <button #registerBtn class="btn btn-primary register-btn" (click)="register()" [disabled]="loading">
+          <span class="btn-spinner" *ngIf="loading"></span>
+          <span *ngIf="!loading">{{ 'REGISTER.SUBMIT' | translate }}</span>
         </button>
 
-        <div class="divider">
-          <span>{{ 'REGISTER.OR' | translate }}</span>
-        </div>
+        <div class="divider"><span>{{ 'REGISTER.OR' | translate }}</span></div>
 
         <div class="social-buttons">
-          <button class="btn btn-secondary social-btn">
-            <span class="material-icons">language</span>
-            {{ 'LOGIN.GOOGLE' | translate }}
+          <button class="social-btn google">
+            <span class="material-icons">language</span>{{ 'LOGIN.GOOGLE' | translate }}
           </button>
-
-          <button class="btn btn-secondary social-btn">
-            <span class="material-icons">facebook</span>
-            {{ 'LOGIN.FACEBOOK' | translate }}
+          <button class="social-btn facebook">
+            <span class="material-icons">facebook</span>{{ 'LOGIN.FACEBOOK' | translate }}
           </button>
         </div>
 
@@ -108,5 +177,29 @@
         </div>
       </div>
     </div>
+
   </main>
+</div>
+
+<!-- TERMS / PRIVACY MODAL -->
+<div class="legal-backdrop" *ngIf="activeModal" (click)="activeModal = null">
+  <div class="legal-modal" (click)="$event.stopPropagation()">
+    <div class="legal-header">
+      <h3>{{ (activeModal === 'terms' ? 'REGISTER.TERMS_LINK' : 'REGISTER.PRIVACY_LINK') | translate }}</h3>
+      <button class="legal-close" (click)="activeModal = null">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+    <div class="legal-body">
+      <ng-container *ngFor="let s of activeSections">
+        <h4>{{ s.title | translate }}</h4>
+        <p>{{ s.body | translate }}</p>
+      </ng-container>
+    </div>
+    <div class="legal-footer">
+      <button class="btn btn-primary legal-accept-btn" (click)="acceptTerms = true; error = ''; activeModal = null">
+        {{ 'REGISTER.MODAL_ACCEPT' | translate }}
+      </button>
+    </div>
+  </div>
 </div>

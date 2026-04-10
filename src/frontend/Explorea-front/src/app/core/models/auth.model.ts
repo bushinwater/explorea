@@ -9,6 +9,8 @@ export interface RegisterDto {
   email: string;
   password: string;
   confirmPassword: string;
+  gender?: string;
+  dateOfBirth?: string;
 }
 
 export interface AuthUserDto {

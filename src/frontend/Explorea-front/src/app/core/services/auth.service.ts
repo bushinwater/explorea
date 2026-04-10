@@ -22,8 +22,8 @@ export class AuthService {
     return this.http.post<AuthResponseDto>(`${this.api}/login`, dto);
   }
 
-  register(dto: RegisterDto): Observable<AuthResponseDto> {
-    return this.http.post<AuthResponseDto>(`${this.api}/register`, dto);
+  register(dto: RegisterDto): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.api}/register`, dto);
   }
 
   refresh(dto: RefreshTokenRequestDto): Observable<AuthResponseDto> {
@@ -34,12 +34,16 @@ export class AuthService {
     return this.http.post<void>(`${this.api}/logout`, dto);
   }
 
-  verifyEmail(dto: VerifyEmailDto): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.api}/verify-email`, dto);
+  verifyEmail(dto: VerifyEmailDto): Observable<AuthResponseDto> {
+    return this.http.post<AuthResponseDto>(`${this.api}/verify-email`, dto);
   }
 
   resendVerification(dto: ResendVerificationDto): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.api}/resend-verification`, dto);
+  }
+
+  checkEmail(email: string): Observable<{ exists: boolean }> {
+    return this.http.get<{ exists: boolean }>(`${this.api}/check-email`, { params: { email } });
   }
 
   forgotPassword(dto: ForgotPasswordDto): Observable<{ message: string }> {

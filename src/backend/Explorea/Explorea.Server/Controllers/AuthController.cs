@@ -18,23 +18,33 @@ namespace Explorea.Server.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
-            var result = await _authService.RegisterAsync(
-                dto,
-                HttpContext.Connection.RemoteIpAddress?.ToString(),
-                Request.Headers.UserAgent.ToString());
-
-            return Ok(result);
+            try
+            {
+                await _authService.RegisterAsync(dto);
+                return Ok(new { message = "Verification email sent." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
-            var result = await _authService.LoginAsync(
-                dto,
-                HttpContext.Connection.RemoteIpAddress?.ToString(),
-                Request.Headers.UserAgent.ToString());
+            try
+            {
+                var result = await _authService.LoginAsync(
+                    dto,
+                    HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    Request.Headers.UserAgent.ToString());
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost("refresh")]
@@ -58,8 +68,18 @@ namespace Explorea.Server.Controllers
         [HttpPost("verify-email")]
         public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDto dto)
         {
-            await _authService.VerifyEmailAsync(dto.Token);
-            return Ok(new { message = "Email successfully verified." });
+            try
+            {
+                var result = await _authService.VerifyEmailAsync(
+                    dto.Token,
+                    HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    Request.Headers.UserAgent.ToString());
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost("resend-verification")]
@@ -67,6 +87,16 @@ namespace Explorea.Server.Controllers
         {
             await _authService.ResendVerificationEmailAsync(dto.Email);
             return Ok(new { message = "Verification email sent successfully." });
+        }
+
+        [HttpGet("check-email")]
+        public async Task<IActionResult> CheckEmail([FromQuery] string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest(new { message = "Email is required." });
+
+            var exists = await _authService.CheckEmailExistsAsync(email);
+            return Ok(new { exists });
         }
 
         [HttpPost("forgot-password")]
