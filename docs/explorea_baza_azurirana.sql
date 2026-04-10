@@ -1082,6 +1082,14 @@ INSERT INTO place_amenities (name) VALUES
     ('WiFi'), ('Parking'), ('Bazen'), ('Spa'), ('Pet friendly'),
     ('Doručak uključen'), ('Pristup osobama sa invaliditetom');
 
-INSERT INTO interest_tags (name) VALUES
-    ('Priroda'), ('Avantura'), ('Wellness'), ('Hrana'), ('Kultura'),
-    ('Noćni život'), ('Porodični odmor'), ('Sport'), ('Fotografija'), ('Istorija');
+INSERT INTO interest_tags (name, icon) VALUES
+    ('Priroda',         'park'),
+    ('Avantura',        'hiking'),
+    ('Wellness',        'spa'),
+    ('Hrana',           'restaurant'),
+    ('Kultura',         'museum'),
+    ('Noćni život',     'nightlife'),
+    ('Porodični odmor', 'family_restroom'),
+    ('Sport',           'sports'),
+    ('Fotografija',     'photo_camera'),
+    ('Istorija',        'account_balance');

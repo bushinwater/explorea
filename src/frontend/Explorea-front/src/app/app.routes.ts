@@ -2,9 +2,14 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
 import { guestGuard } from './core/guards/guest-guard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
+import { ForgotPassword } from './features/auth/forgot-password/forgot-password';
 import { Interests } from './features/auth/interests/interests';
 import { Login } from './features/auth/login/login';
 import { Register } from './features/auth/register/register';
+import { ResetPassword } from './features/auth/reset-password/reset-password';
+import { CompleteProfile } from './features/auth/complete-profile/complete-profile';
+import { FacebookCallback } from './features/auth/facebook-callback/facebook-callback';
+import { VerifyEmail } from './features/auth/verify-email/verify-email';
 import { Home } from './features/home/home';
 import { Settings } from './features/profile/settings/settings';
 
@@ -16,4 +21,9 @@ export const routes: Routes = [
   { path: 'profile', component: Settings, canActivate: [authGuard] },
   { path: 'login', component: Login, canActivate: [guestGuard] },
   { path: 'register', component: Register, canActivate: [guestGuard] },
+  { path: 'forgot-password', component: ForgotPassword },
+  { path: 'reset-password', component: ResetPassword },
+  { path: 'verify-email', component: VerifyEmail },
+  { path: 'complete-profile', component: CompleteProfile, canActivate: [authGuard] },
+  { path: 'auth/facebook/callback', component: FacebookCallback },
 ];

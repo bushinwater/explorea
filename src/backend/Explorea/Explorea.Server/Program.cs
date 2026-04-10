@@ -3,6 +3,7 @@ using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Implementations;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services;
+using Explorea.Server.Services;
 using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
+builder.Services.AddMemoryCache();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -51,10 +53,12 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<PasswordHelper>();
 builder.Services.AddScoped<JwtHelper>();
+builder.Services.AddScoped<ILookupRepository, LookupRepository>();
 builder.Services.AddScoped<ISavedItemRepository, SavedItemRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IAiBotService, AiBotService>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
 var jwtSection = builder.Configuration.GetSection("JwtSettings");
 var key = jwtSection["SecretKey"]!;

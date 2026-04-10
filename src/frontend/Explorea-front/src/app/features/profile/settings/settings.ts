@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
+import { ImageCropperComponent, ImageCroppedEvent } from 'ngx-image-cropper';
 import { forkJoin } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { ForYouItemDto, ProfileStatsDto, UpdateUserDto, UserProfile } from '../../../core/models/user.model';
@@ -22,12 +23,14 @@ const SECTION_KEY = 'profile_open_section';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, Sidebar, BottomNav, TranslateModule],
+  imports: [CommonModule, FormsModule, RouterModule, Sidebar, BottomNav, TranslateModule, ImageCropperComponent],
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })
-export class Settings implements OnInit, AfterViewInit {
+export class Settings implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+
+  private pollInterval: ReturnType<typeof setInterval> | null = null;
 
   user: UserProfile | null = null;
   stats: ProfileStatsDto | null = null;
@@ -35,32 +38,40 @@ export class Settings implements OnInit, AfterViewInit {
   isHeroLoading = true;
   isForYouLoading = true;
 
-  username = '';
-  private originalUsername = '';
+  firstName = '';
+  lastName = '';
+  firstNameError = '';
+  lastNameError = '';
+  fileError = '';
+  private originalFirstName = '';
+  private originalLastName = '';
   passwordChangeRequested = false;
+  passwordChangeSending = false;
   avatarUrl: string | null = null;
+  newsletter = false;
+
+  private readonly NAME_BLACKLIST = [
+    'kurac', 'kurац', 'picka', 'pička', 'pizda', 'guzica', 'sisa', 'jebem', 'jebo',
+    'nigger', 'nigga', 'niger', 'fuck', 'shit', 'dick', 'cunt', 'bitch', 'asshole',
+    'retard', 'faggot', 'pussy', 'cock', 'whore', 'slut',
+  ];
+
+  showCropper = false;
+  isUploading = false;
+  imageChangedEvent: Event | null = null;
+  private lastCropEvent: ImageCroppedEvent | null = null;
 
   openSection: 'profile' | 'app' | null = null;
 
   get isDirty(): boolean {
-    return this.username !== this.originalUsername;
+    return this.firstName !== this.originalFirstName || this.lastName !== this.originalLastName;
   }
-
-  private readonly ALL_INTERESTS = [
-    { id: 1, label: 'Avanture' },
-    { id: 2, label: 'Clubing' },
-    { id: 3, label: 'Kultura' },
-    { id: 4, label: 'Umetnost' },
-    { id: 5, label: 'Hrana' },
-    { id: 6, label: 'Sport' },
-  ];
 
   get selectedInterestsLabel(): string {
     const ids = this.interestsService.getSelectedIds();
     if (ids.length === 0) return 'Nisu izabrani interesi';
-    return this.ALL_INTERESTS.filter((i) => ids.includes(i.id))
-      .map((i) => i.label)
-      .join(', ');
+    const label = this.interestsService.getSelectedLabels();
+    return label || 'Nisu izabrani interesi';
   }
 
   constructor(
@@ -84,7 +95,8 @@ export class Settings implements OnInit, AfterViewInit {
   }
 
   ngOnInit() {
-    this.avatarUrl = this.avatarService.getDataUrl();
+    this.avatarUrl = this.avatarService.getUrl();
+    this.interestsService.getInterestTags().subscribe();  // popuni cache za selectedInterestsLabel
 
     const savedSection = sessionStorage.getItem(SECTION_KEY);
     if (savedSection === 'profile' || savedSection === 'app') {
@@ -101,10 +113,23 @@ export class Settings implements OnInit, AfterViewInit {
         next: ({ profile, stats }) => {
           this.user = profile;
           this.stats = stats;
-          this.username = profile.firstName + '_' + profile.lastName.toLowerCase();
-          this.originalUsername = this.username;
+          this.firstName = profile.firstName;
+          this.lastName = profile.lastName;
+          this.originalFirstName = profile.firstName;
+          this.originalLastName = profile.lastName;
+          this.newsletter = profile.newsletter;
+          // Sinhronizuj avatar sa serverom (server je izvor istine)
+          if (profile.profileImageUrl) {
+            this.avatarUrl = profile.profileImageUrl;
+            this.avatarService.setUrl(profile.profileImageUrl);
+          } else {
+            this.avatarUrl = null;
+            this.avatarService.clear();
+          }
           this.cdr.detectChanges();
+          this.startPolling();
         },
+        error: () => { this.cdr.detectChanges(); },
       });
 
     // For you — nezavisno
@@ -115,6 +140,7 @@ export class Settings implements OnInit, AfterViewInit {
           this.forYouItems = items;
           this.cdr.detectChanges();
         },
+        error: () => { this.cdr.detectChanges(); },
       });
   }
 
@@ -123,6 +149,33 @@ export class Settings implements OnInit, AfterViewInit {
     if (savedY !== null) {
       sessionStorage.removeItem(SCROLL_KEY);
       setTimeout(() => window.scrollTo({ top: parseInt(savedY, 10), behavior: 'instant' }), 0);
+    }
+  }
+
+  ngOnDestroy() {
+    this.stopPolling();
+  }
+
+  private startPolling() {
+    this.pollInterval = setInterval(() => {
+      if (this.isUploading) return;
+      this.profileService.getProfile().subscribe({
+        next: (p) => {
+          const serverUrl = p.profileImageUrl ?? null;
+          if (serverUrl !== this.avatarUrl) {
+            this.avatarUrl = serverUrl;
+            this.avatarService.setUrl(serverUrl);
+            this.cdr.detectChanges();
+          }
+        },
+      });
+    }, 30000);
+  }
+
+  private stopPolling() {
+    if (this.pollInterval !== null) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
     }
   }
 
@@ -154,45 +207,155 @@ export class Settings implements OnInit, AfterViewInit {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      this.avatarUrl = dataUrl;
-      this.avatarService.saveDataUrl(dataUrl);
-    };
-    reader.readAsDataURL(file);
+    this.fileError = '';
+
+    if (file.size > 5 * 1024 * 1024) {
+      this.fileError = 'Slika ne sme biti veća od 5MB.';
+      this.fileInput.nativeElement.value = '';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.imageChangedEvent = event;
+    this.lastCropEvent = null;
+    this.showCropper = true;
+    this.cdr.detectChanges();
   }
 
-  removeAvatar() {
-    this.avatarUrl = null;
-    this.avatarService.clear();
+  onImageCropped(event: ImageCroppedEvent) {
+    this.lastCropEvent = event;
+  }
+
+  onCropConfirm() {
+    if (!this.lastCropEvent) return;
+
+    if (this.lastCropEvent.blob) {
+      this.uploadCropBlob(this.lastCropEvent.blob);
+    } else if (this.lastCropEvent.base64) {
+      const base64 = this.lastCropEvent.base64.split(',')[1];
+      const bytes = atob(base64);
+      const ab = new ArrayBuffer(bytes.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < bytes.length; i++) ia[i] = bytes.charCodeAt(i);
+      this.uploadCropBlob(new Blob([ab], { type: 'image/jpeg' }));
+    }
+  }
+
+  private uploadCropBlob(blob: Blob) {
+    // Zatvori modal odmah, pokaži skeleton u avataru
+    this.showCropper = false;
+    this.imageChangedEvent = null;
+    this.lastCropEvent = null;
+    this.isUploading = true;
+    this.fileInput.nativeElement.value = '';
+    this.cdr.detectChanges();
+
+    const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+    this.avatarService.upload(file).subscribe({
+      next: (url) => {
+        this.avatarUrl = url;
+        this.isUploading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isUploading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  onCropCancel() {
+    this.showCropper = false;
+    this.imageChangedEvent = null;
+    this.lastCropEvent = null;
     this.fileInput.nativeElement.value = '';
   }
 
+  removeAvatar() {
+    const previousUrl = this.avatarUrl;
+    this.avatarUrl = null;
+    this.avatarService.clear();
+    this.fileInput.nativeElement.value = '';
+    this.profileService.removeAvatar().subscribe({
+      error: () => {
+        // Vrati ako backend ne uspe
+        this.avatarUrl = previousUrl;
+        if (previousUrl) this.avatarService.setUrl(previousUrl);
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   cancelProfileEdit() {
-    this.username = this.originalUsername;
+    this.firstName = this.originalFirstName;
+    this.lastName = this.originalLastName;
     this.passwordChangeRequested = false;
     this.openSection = null;
   }
 
   requestPasswordChange() {
-    this.passwordChangeRequested = true;
+    if (!this.user?.email || this.passwordChangeSending) return;
+    this.passwordChangeSending = true;
+    this.cdr.detectChanges();
+    this.authService.forgotPassword({ email: this.user.email }).subscribe({
+      next: () => {
+        this.passwordChangeSending = false;
+        this.passwordChangeRequested = true;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.passwordChangeSending = false;
+        this.passwordChangeRequested = true;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  toggleNewsletter() {
+    const newValue = !this.newsletter;
+    this.newsletter = newValue;
+    this.cdr.detectChanges();
+    this.profileService.updateNewsletter(newValue).subscribe({
+      error: () => {
+        this.newsletter = !newValue;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  validateName(value: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) return 'Polje ne sme biti prazno.';
+    if (!/^[a-zA-ZčćžšđČĆŽŠĐ]+$/.test(trimmed)) return 'Dozvoljena su samo slova.';
+    if (this.NAME_BLACKLIST.some(w => trimmed.toLowerCase().includes(w)))
+      return 'Ovo ime nije dozvoljeno.';
+    return '';
   }
 
   sacuvajProfil() {
     if (!this.user) return;
 
+    this.firstNameError = this.validateName(this.firstName);
+    this.lastNameError  = this.validateName(this.lastName);
+    this.cdr.detectChanges();
+    if (this.firstNameError || this.lastNameError) return;
+
     const dto: UpdateUserDto = {
-      firstName: this.user.firstName,
-      lastName: this.user.lastName,
+      firstName: this.firstName.trim(),
+      lastName: this.lastName.trim(),
       profileImageUrl: this.avatarUrl ?? undefined,
     };
 
     this.profileService.updateProfile(dto).subscribe({
       next: (updated) => {
         this.user = updated;
-        this.originalUsername = this.username;
-        this.openSection = null;
+        this.originalFirstName = updated.firstName;
+        this.originalLastName = updated.lastName;
+        this.firstName = updated.firstName;
+        this.lastName = updated.lastName;
+        this.firstNameError = '';
+        this.lastNameError  = '';
+        this.cdr.detectChanges();
       },
     });
   }

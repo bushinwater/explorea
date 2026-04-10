@@ -43,6 +43,9 @@ namespace Explorea.API.Models
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
 
+        [Column("newsletter")]
+        public bool Newsletter { get; set; } = false;
+
         [MaxLength(20), Column("gender")]
         public string? Gender { get; set; }
 
