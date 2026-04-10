@@ -389,77 +389,91 @@
   display: none;
 }
 
-.similar-card {
+.activity-item {
   flex-shrink: 0;
   width: 180px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.activity-item__image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   border-radius: var(--radius-lg);
   overflow: hidden;
+  cursor: pointer;
 }
 
-.similar-card__img-wrap {
-  position: relative;
-  height: 120px;
-}
-
-.similar-card__img {
+.activity-item__image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
-.similar-card__badge {
+.activity-item__image-wrap:hover .activity-item__image {
+  transform: scale(1.06);
+}
+
+.activity-item__category {
   position: absolute;
   top: var(--spacing-sm);
   left: var(--spacing-sm);
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
   color: #fff;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: var(--font-weight-medium);
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: var(--radius-sm);
 }
 
-.similar-card__body {
-  padding: var(--spacing-sm);
+.activity-item__overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
-.similar-card__name {
-  font-size: 13px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
+.activity-item__name {
+  color: #fff;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin: 0;
 }
 
-.similar-card__footer {
+.activity-item__meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.similar-card__price {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-}
-
-.similar-card__rating {
+.activity-item__rating {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
+  color: #fff;
   font-size: 12px;
-  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
 }
 
-.similar-card__rating .material-icons {
+.activity-item__rating .material-icons {
   font-size: 13px;
   color: var(--color-accent);
+}
+
+.activity-item__price {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
 }
 
 

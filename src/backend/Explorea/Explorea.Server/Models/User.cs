@@ -43,6 +43,15 @@ namespace Explorea.API.Models
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
 
+        [Column("newsletter")]
+        public bool Newsletter { get; set; } = false;
+
+        [MaxLength(20), Column("gender")]
+        public string? Gender { get; set; }
+
+        [Column("date_of_birth")]
+        public DateOnly? DateOfBirth { get; set; }
+
         [Column("current_latitude")]
         public double? CurrentLatitude { get; set; }
 

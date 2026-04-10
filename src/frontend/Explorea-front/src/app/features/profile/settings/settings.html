@@ -2,168 +2,336 @@
   <app-sidebar></app-sidebar>
 
   <main class="main">
-    <div class="page-header">
-      <h1>{{ 'SETTINGS_PAGE.TITLE' | translate }}</h1>
-      <p>{{ 'SETTINGS_PAGE.SUBTITLE' | translate }}</p>
+    <input #fileInput type="file" accept="image/*" class="file-input-hidden" (change)="onFileSelected($event)" />
+
+    <!-- ===== HERO SKELETON ===== -->
+    <div class="skel-hero" *ngIf="isHeroLoading">
+      <div class="skel skel-avatar"></div>
+      <div class="skel skel-name"></div>
+      <div class="skel skel-email"></div>
+      <div class="skel skel-badge"></div>
+      <div class="skel-stats-row">
+        <div class="skel skel-stat"></div>
+        <div class="skel skel-stat"></div>
+        <div class="skel skel-stat"></div>
+      </div>
     </div>
 
-    <!-- PROFIL KARTICA -->
-    <div class="profile-card card">
-      <div class="avatar">{{ user?.firstName?.[0] }}{{ user?.lastName?.[0] }}</div>
-      <h2>{{ user?.firstName }} {{ user?.lastName }}</h2>
-      <p class="email">✉ {{ user?.email }}</p>
-      <span class="rank-badge">{{ user?.travelerRank }}</span>
+    <!-- ===== PROFILE HERO ===== -->
+    <div class="profile-hero" *ngIf="!isHeroLoading">
+      <div class="hero-avatar avatar-clickable" (click)="triggerFileInput()">
+        <ng-container *ngIf="isUploading">
+          <div class="skel skel-avatar-upload"></div>
+        </ng-container>
+        <ng-container *ngIf="!isUploading">
+          <img *ngIf="avatarUrl" [src]="avatarUrl" alt="avatar" class="avatar-img" />
+          <span *ngIf="!avatarUrl">{{ user?.firstName?.[0] }}{{ user?.lastName?.[0] }}</span>
+        </ng-container>
+        <div class="avatar-hover-overlay" *ngIf="!isUploading">
+          <span class="material-icons">photo_camera</span>
+          <span>{{ avatarUrl ? 'Edit' : 'Upload' }}</span>
+        </div>
+      </div>
+      <h2 class="hero-name">{{ user?.firstName }} {{ user?.lastName }}</h2>
+      <p class="hero-email">{{ user?.email }}</p>
+      <div class="hero-meta">
+        <span class="rank-badge">{{ user?.travelerRank }}</span>
+        <span class="member-since">{{ 'SETTINGS_PAGE.MEMBER_SINCE' | translate }} {{ user?.memberSince | date: 'MMM yyyy' }}</span>
+      </div>
 
-      <div class="stats">
+      <div class="hero-stats">
         <div class="stat">
-          <span class="stat-value">{{ user?.totalVisits }}</span>
+          <span class="stat-value">{{ user?.totalVisits ?? 0 }}</span>
           <span class="stat-label">{{ 'SETTINGS_PAGE.STATS.ADVENTURES' | translate }}</span>
         </div>
+        <div class="stat-divider"></div>
         <div class="stat">
-          <span class="stat-value">0</span>
+          <span class="stat-value">{{ stats?.reviewsCount ?? 0 }}</span>
           <span class="stat-label">{{ 'SETTINGS_PAGE.STATS.REVIEWS' | translate }}</span>
         </div>
+        <div class="stat-divider"></div>
         <div class="stat">
-          <span class="stat-value">0</span>
+          <span class="stat-value">{{ stats?.savedItemsCount ?? 0 }}</span>
           <span class="stat-label">{{ 'SETTINGS_PAGE.STATS.SAVED' | translate }}</span>
         </div>
       </div>
+    </div>
 
-      <div class="meta">
-        <span>{{ 'SETTINGS_PAGE.MEMBER_SINCE' | translate }}: {{ user?.memberSince | date: 'MMM yyyy' }}</span>
+    <!-- ===== CONTENT AREA ===== -->
+    <div class="content">
+
+      <!-- NAV CARDS: Sačuvano / Moje recenzije -->
+      <div class="nav-cards">
+        <div class="nav-card">
+          <div class="accordion-icon">
+            <span class="material-icons">bookmark</span>
+          </div>
+          <div class="accordion-info">
+            <strong>{{ 'SETTINGS_PAGE.TABS.SAVED' | translate }}</strong>
+            <span>{{ 'SETTINGS_PAGE.TABS.SAVED_DESC' | translate }}</span>
+          </div>
+          <span class="material-icons nav-arrow">chevron_right</span>
+        </div>
+
+        <div class="nav-card">
+          <div class="accordion-icon">
+            <span class="material-icons">rate_review</span>
+          </div>
+          <div class="accordion-info">
+            <strong>{{ 'SETTINGS_PAGE.TABS.REVIEWS' | translate }}</strong>
+            <span>{{ 'SETTINGS_PAGE.TABS.REVIEWS_DESC' | translate }}</span>
+          </div>
+          <span class="material-icons nav-arrow">chevron_right</span>
+        </div>
       </div>
-    </div>
 
-    <!-- SEKCIJE DESNO -->
-    <div class="sections">
-      <section class="section">
-        <h3>{{ 'SETTINGS_PAGE.ACCOUNT.TITLE' | translate }}</h3>
-        <p>{{ 'SETTINGS_PAGE.ACCOUNT.SUBTITLE' | translate }}</p>
+      <!-- FOR YOU SKELETON -->
+      <div class="skel-scroll-section" *ngIf="isForYouLoading">
+        <div class="skel skel-section-title"></div>
+        <div class="skel-scroll-row">
+          <div class="skel skel-card" *ngFor="let i of [1,2,3,4]"></div>
+        </div>
+      </div>
 
-        <div class="fields">
-          <div class="field">
-            <div class="field-icon"><span class="material-icons">person</span></div>
-            <div class="field-info">
-              <strong>{{ 'SETTINGS_PAGE.ACCOUNT.USERNAME' | translate }}</strong>
-              <span>{{ 'SETTINGS_PAGE.ACCOUNT.USERNAME_DESC' | translate }}</span>
+      <!-- FOR YOU SECTION -->
+      <section class="activities-section" *ngIf="!isForYouLoading && forYouItems.length > 0">
+        <div class="section-header">
+          <h3>{{ 'SETTINGS_PAGE.ACTIVITIES.TITLE' | translate }}</h3>
+          <a routerLink="/activities" class="section-link">
+            {{ 'SETTINGS_PAGE.ACTIVITIES.VIEW_ALL' | translate }}
+            <span class="material-icons">arrow_forward</span>
+          </a>
+        </div>
+
+        <div class="activities-scroll">
+          <a class="activity-card"
+             *ngFor="let item of forYouItems"
+             [routerLink]="getEntityRoute(item)">
+            <div class="activity-card__wrap">
+              <img [src]="item.previewImageUrl" [alt]="item.name" loading="lazy" />
+              <span class="activity-card__category">{{ item.entityType }}</span>
+              <div class="activity-card__overlay">
+                <span class="activity-card__name">{{ item.name }}</span>
+                <div class="activity-card__meta">
+                  <span class="activity-card__rating" *ngIf="item.avgRating > 0">
+                    <span class="material-icons">star</span>
+                    {{ item.avgRating | number: '1.1-1' }}
+                  </span>
+                  <span class="activity-card__subtitle" *ngIf="item.subtitle">{{ item.subtitle }}</span>
+                </div>
+              </div>
             </div>
-            <input class="input" [(ngModel)]="username" [placeholder]="'SETTINGS_PAGE.ACCOUNT.USERNAME' | translate" />
+          </a>
+        </div>
+      </section>
+
+      <!-- SETTINGS SECTION -->
+      <section class="settings-section">
+        <h3 class="settings-title">{{ 'SETTINGS_PAGE.SETTINGS_LABEL' | translate }}</h3>
+
+        <!-- Podešavanja profila -->
+        <div class="accordion-item" [class.open]="openSection === 'profile'">
+          <div class="accordion-header" (click)="toggleSection('profile')">
+            <div class="accordion-icon">
+              <span class="material-icons">manage_accounts</span>
+            </div>
+            <div class="accordion-info">
+              <strong>{{ 'SETTINGS_PAGE.PROFILE_SETTINGS.TITLE' | translate }}</strong>
+              <span>{{ 'SETTINGS_PAGE.PROFILE_SETTINGS.SUBTITLE' | translate }}</span>
+            </div>
+            <span class="material-icons chevron">expand_more</span>
           </div>
 
-          <div class="field">
-            <div class="field-icon"><span class="material-icons">email</span></div>
-            <div class="field-info">
-              <strong>{{ 'SETTINGS_PAGE.ACCOUNT.EMAIL' | translate }}</strong>
-              <span>{{ 'SETTINGS_PAGE.ACCOUNT.EMAIL_DESC' | translate }}</span>
+          <div class="accordion-body" *ngIf="openSection === 'profile'">
+
+            <div class="field">
+              <div class="avatar-preview avatar-clickable" (click)="triggerFileInput()">
+                <ng-container *ngIf="isUploading">
+                  <div class="skel" style="width:100%;height:100%;border-radius:50%"></div>
+                </ng-container>
+                <ng-container *ngIf="!isUploading">
+                  <img *ngIf="avatarUrl" [src]="avatarUrl" alt="avatar" class="avatar-img" />
+                  <span *ngIf="!avatarUrl">{{ user?.firstName?.[0] }}{{ user?.lastName?.[0] }}</span>
+                </ng-container>
+                <div class="avatar-hover-overlay" *ngIf="!isUploading">
+                  <span class="material-icons">photo_camera</span>
+                </div>
+              </div>
+              <div class="field-info">
+                <strong>{{ 'SETTINGS_PAGE.ACCOUNT.PROFILE_PICTURE' | translate }}</strong>
+                <span>{{ 'SETTINGS_PAGE.ACCOUNT.PROFILE_PICTURE_DESC' | translate }}</span>
+              </div>
+              <div class="avatar-actions">
+                <button *ngIf="!avatarUrl" class="btn btn-secondary" (click)="triggerFileInput()">
+                  {{ 'SETTINGS_PAGE.ACCOUNT.UPLOAD_PHOTO' | translate }}
+                </button>
+                <button *ngIf="avatarUrl" class="btn btn-ghost" (click)="removeAvatar()">
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
             </div>
-            <input class="input" [value]="user?.email || ''" disabled />
+            <p class="error-msg" *ngIf="fileError">{{ fileError }}</p>
+
+            <div class="field" [class.field-error]="firstNameError">
+              <div class="field-icon"><span class="material-icons">person</span></div>
+              <div class="field-info">
+                <strong>{{ 'SETTINGS_PAGE.ACCOUNT.FIRST_NAME' | translate }}</strong>
+                <span class="error-msg" *ngIf="firstNameError">{{ firstNameError }}</span>
+              </div>
+              <input class="input" [(ngModel)]="firstName" placeholder="Ime"
+                (ngModelChange)="firstNameError = ''"
+                (keydown.enter)="isDirty && sacuvajProfil()" />
+            </div>
+
+            <div class="field" [class.field-error]="lastNameError">
+              <div class="field-icon"><span class="material-icons">person_outline</span></div>
+              <div class="field-info">
+                <strong>{{ 'SETTINGS_PAGE.ACCOUNT.LAST_NAME' | translate }}</strong>
+                <span class="error-msg" *ngIf="lastNameError">{{ lastNameError }}</span>
+              </div>
+              <input class="input" [(ngModel)]="lastName" placeholder="Prezime"
+                (ngModelChange)="lastNameError = ''"
+                (keydown.enter)="isDirty && sacuvajProfil()" />
+            </div>
+
+            <div class="field">
+              <div class="field-icon"><span class="material-icons">email</span></div>
+              <div class="field-info">
+                <strong>{{ 'SETTINGS_PAGE.ACCOUNT.EMAIL' | translate }}</strong>
+                <span>{{ 'SETTINGS_PAGE.ACCOUNT.EMAIL_DESC' | translate }}</span>
+              </div>
+              <input class="input" [value]="user?.email || ''" disabled />
+            </div>
+
+            <div class="field">
+              <div class="field-icon"><span class="material-icons">mail_outline</span></div>
+              <div class="field-info">
+                <strong>{{ 'SETTINGS_PAGE.ACCOUNT.NEWSLETTER' | translate }}</strong>
+                <span>{{ 'SETTINGS_PAGE.ACCOUNT.NEWSLETTER_DESC' | translate }}</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [checked]="newsletter" (change)="toggleNewsletter()" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="field">
+              <div class="field-icon"><span class="material-icons">lock</span></div>
+              <div class="field-info">
+                <strong>{{ 'SETTINGS_PAGE.ACCOUNT.PASSWORD' | translate }}</strong>
+                <span>{{ 'SETTINGS_PAGE.ACCOUNT.PASSWORD_DESC' | translate }}</span>
+              </div>
+              <button class="btn btn-secondary pwd-btn"
+                [class.pwd-btn--sending]="passwordChangeSending"
+                [disabled]="passwordChangeSending || passwordChangeRequested"
+                (click)="requestPasswordChange()">
+                <span class="material-icons pwd-spin" *ngIf="passwordChangeSending">refresh</span>
+                <span *ngIf="!passwordChangeSending">{{ 'SETTINGS_PAGE.ACCOUNT.CHANGE_PASSWORD' | translate }}</span>
+              </button>
+            </div>
+
+            <div class="field">
+              <div class="field-icon"><span class="material-icons">interests</span></div>
+              <div class="field-info">
+                <strong>{{ 'SETTINGS_PAGE.ACCOUNT.INTERESTS' | translate }}</strong>
+                <span>{{ selectedInterestsLabel }}</span>
+              </div>
+              <button class="btn btn-secondary" (click)="izmeniInterese()">
+                {{ 'SETTINGS_PAGE.ACCOUNT.EDIT_INTERESTS' | translate }}
+              </button>
+            </div>
+
+            <div class="password-notice" *ngIf="passwordChangeRequested">
+              <span class="material-icons">mark_email_read</span>
+              {{ 'SETTINGS_PAGE.ACCOUNT.PASSWORD_EMAIL_SENT' | translate }}
+            </div>
+
+            <div class="accordion-actions" *ngIf="isDirty">
+              <button class="btn btn-primary" (click)="sacuvajProfil()">{{ 'SETTINGS_PAGE.ACTIONS.SAVE' | translate }}</button>
+              <button class="btn btn-secondary" (click)="cancelProfileEdit()">{{ 'SETTINGS_PAGE.ACTIONS.CANCEL' | translate }}</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Podešavanja aplikacije -->
+        <div class="accordion-item" [class.open]="openSection === 'app'">
+          <div class="accordion-header" (click)="toggleSection('app')">
+            <div class="accordion-icon">
+              <span class="material-icons">tune</span>
+            </div>
+            <div class="accordion-info">
+              <strong>{{ 'SETTINGS_PAGE.APP_SETTINGS.TITLE' | translate }}</strong>
+              <span>{{ 'SETTINGS_PAGE.APP_SETTINGS.SUBTITLE' | translate }}</span>
+            </div>
+            <span class="material-icons chevron">expand_more</span>
           </div>
 
-          <div class="field">
-            <div class="field-icon"><span class="material-icons">lock</span></div>
-            <div class="field-info">
-              <strong>{{ 'SETTINGS_PAGE.ACCOUNT.PASSWORD' | translate }}</strong>
-              <span>{{ 'SETTINGS_PAGE.ACCOUNT.PASSWORD_DESC' | translate }}</span>
+          <div class="accordion-body" *ngIf="openSection === 'app'">
+            <div class="field">
+              <div class="field-icon">
+                <span class="material-icons">{{ themeService.isDark ? 'dark_mode' : 'light_mode' }}</span>
+              </div>
+              <div class="field-info">
+                <strong>{{ 'SETTINGS_PAGE.LOCALIZATION.THEME' | translate }}</strong>
+                <span>{{ (themeService.isDark ? 'SETTINGS_PAGE.LOCALIZATION.THEME_DARK' : 'SETTINGS_PAGE.LOCALIZATION.THEME_LIGHT') | translate }}</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [checked]="themeService.isDark" (change)="themeService.toggle()" />
+                <span class="slider"></span>
+              </label>
             </div>
-            <button class="btn btn-secondary">{{ 'SETTINGS_PAGE.ACCOUNT.CHANGE_PASSWORD' | translate }}</button>
+
+            <div class="field">
+              <div class="field-icon"><span class="material-icons">language</span></div>
+              <div class="field-info">
+                <strong>{{ 'SETTINGS_PAGE.LOCALIZATION.LANGUAGE' | translate }}</strong>
+                <span>{{ 'SETTINGS_PAGE.LOCALIZATION.LANGUAGE_DESC' | translate }}</span>
+              </div>
+              <select class="input select" [(ngModel)]="language">
+                <option value="sr">Srpski (SR)</option>
+                <option value="en">English (EN)</option>
+              </select>
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="section">
-        <h3>{{ 'SETTINGS_PAGE.NOTIFICATIONS.TITLE' | translate }}</h3>
-        <p>{{ 'SETTINGS_PAGE.NOTIFICATIONS.SUBTITLE' | translate }}</p>
+      <!-- LOGOUT -->
+      <div class="logout-row">
+        <button class="btn btn-danger logout-btn" (click)="logout()">
+          <span class="material-icons">logout</span>
+          {{ 'SIDEBAR.LOGOUT' | translate }}
+        </button>
+      </div>
 
-        <div class="fields">
-          <div class="field">
-            <div class="field-icon"><span class="material-icons">notifications</span></div>
-            <div class="field-info">
-              <strong>{{ 'SETTINGS_PAGE.NOTIFICATIONS.PUSH' | translate }}</strong>
-              <span>{{ 'SETTINGS_PAGE.NOTIFICATIONS.PUSH_DESC' | translate }}</span>
-            </div>
-            <label class="toggle">
-              <input type="checkbox" [(ngModel)]="notificationsEnabled" />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="field">
-            <div class="field-icon"><span class="material-icons">mail</span></div>
-            <div class="field-info">
-              <strong>{{ 'SETTINGS_PAGE.NOTIFICATIONS.MARKETING' | translate }}</strong>
-              <span>{{ 'SETTINGS_PAGE.NOTIFICATIONS.MARKETING_DESC' | translate }}</span>
-            </div>
-            <label class="toggle">
-              <input type="checkbox" />
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <h3>{{ 'SETTINGS_PAGE.CONNECTED.TITLE' | translate }}</h3>
-        <p>{{ 'SETTINGS_PAGE.CONNECTED.SUBTITLE' | translate }}</p>
-
-        <div class="fields">
-          <div class="field">
-            <div class="field-icon"><span class="material-icons">share</span></div>
-            <div class="field-info">
-              <strong>{{ 'SETTINGS_PAGE.CONNECTED.INSTAGRAM' | translate }}</strong>
-              <span>{{ 'SETTINGS_PAGE.CONNECTED.INSTAGRAM_DESC' | translate }}</span>
-            </div>
-            <button class="btn btn-secondary">{{ 'SETTINGS_PAGE.CONNECTED.CONNECT' | translate }} ↗</button>
-          </div>
-
-          <div class="field">
-            <div class="field-icon"><span class="material-icons">share</span></div>
-            <div class="field-info">
-              <strong>{{ 'SETTINGS_PAGE.CONNECTED.FACEBOOK' | translate }}</strong>
-              <span>{{ 'SETTINGS_PAGE.CONNECTED.FACEBOOK_DESC' | translate }}</span>
-            </div>
-            <span class="connected-label">{{ 'SETTINGS_PAGE.CONNECTED.CONNECTED_LABEL' | translate }}</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <h3>{{ 'SETTINGS_PAGE.LOCALIZATION.TITLE' | translate }}</h3>
-
-        <div class="fields">
-          <div class="field">
-            <div class="field-icon"><span class="material-icons">language</span></div>
-            <div class="field-info">
-              <strong>{{ 'SETTINGS_PAGE.LOCALIZATION.LANGUAGE' | translate }}</strong>
-              <span>{{ 'SETTINGS_PAGE.LOCALIZATION.LANGUAGE_DESC' | translate }}</span>
-            </div>
-            <select class="input" [(ngModel)]="language">
-              <option value="sr">Srpski (SR)</option>
-              <option value="en">English (EN)</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <div class="field-icon"><span class="material-icons">{{ themeService.isDark ? 'dark_mode' : 'light_mode' }}</span></div>
-            <div class="field-info">
-              <strong>{{ 'SETTINGS_PAGE.LOCALIZATION.THEME' | translate }}</strong>
-              <span>{{ (themeService.isDark ? 'SETTINGS_PAGE.LOCALIZATION.THEME_DARK' : 'SETTINGS_PAGE.LOCALIZATION.THEME_LIGHT') | translate }}</span>
-            </div>
-            <label class="toggle">
-              <input type="checkbox" [checked]="themeService.isDark" (change)="themeService.toggle()" />
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <!-- AKCIJE -->
-    <div class="actions">
-      <button class="btn btn-primary" (click)="sacuvaj()">{{ 'SETTINGS_PAGE.ACTIONS.SAVE' | translate }}</button>
-      <button class="btn btn-secondary">{{ 'SETTINGS_PAGE.ACTIONS.CANCEL' | translate }}</button>
-      <button class="btn btn-danger" (click)="logout()">{{ 'SIDEBAR.LOGOUT' | translate }}</button>
     </div>
   </main>
 
   <app-bottom-nav />
+
+  <!-- CROP MODAL -->
+  <div class="crop-modal-backdrop" *ngIf="showCropper">
+    <div class="crop-modal">
+      <div class="crop-modal-header">
+        <h4>Izreži fotografiju</h4>
+        <button class="btn btn-ghost" (click)="onCropCancel()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="crop-modal-body">
+        <image-cropper
+          [imageChangedEvent]="imageChangedEvent"
+          [maintainAspectRatio]="true"
+          [aspectRatio]="1"
+          [roundCropper]="true"
+          format="jpeg"
+          (imageCropped)="onImageCropped($event)"
+        />
+      </div>
+      <div class="crop-modal-actions">
+        <button class="btn btn-secondary" (click)="onCropCancel()">Otkaži</button>
+        <button class="btn btn-primary" (click)="onCropConfirm()">Primeni</button>
+      </div>
+    </div>
+  </div>
 </div>

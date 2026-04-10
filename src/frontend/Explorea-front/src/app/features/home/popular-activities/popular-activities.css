@@ -24,6 +24,9 @@
 .activity-item {
   flex-shrink: 0;
   width: 200px;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
 .activity-item__image-wrap {

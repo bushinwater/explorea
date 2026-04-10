@@ -1,6 +1,7 @@
 import { CommonModule, Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute, RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
 import { ActivityDetail } from '../../../core/models/activity.model';
 import { ActivityService } from '../../../core/services/activity.service';
@@ -11,11 +12,11 @@ import { BookingCardComponent } from '../../../shared/components/booking-card/bo
 @Component({
   selector: 'app-activity-detail',
   standalone: true,
-  imports: [CommonModule, TranslateModule, Sidebar, BottomNav, BookingCardComponent],
+  imports: [CommonModule, RouterModule, TranslateModule, Sidebar, BottomNav, BookingCardComponent],
   templateUrl: './activity-detail.html',
   styleUrl: './activity-detail.css',
 })
-export class ActivityDetailComponent implements OnInit {
+export class ActivityDetailComponent implements OnInit, OnDestroy {
   activity: ActivityDetail | null = null;
   loading = true;
 
@@ -26,23 +27,37 @@ export class ActivityDetailComponent implements OnInit {
     { key: 'ACTIVITY_DETAIL.PACKING.ITEMS.POLES', checked: false },
   ];
 
+  private routeSub?: Subscription;
+
   constructor(
     private route: ActivatedRoute,
     private activityService: ActivityService,
     private location: Location,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
-    const slug = this.route.snapshot.paramMap.get('slug') ?? '';
-    this.activityService.getBySlug(slug).subscribe({
-      next: (data) => {
-        this.activity = data;
-        this.loading = false;
-      },
-      error: () => {
-        this.loading = false;
-      },
+    this.routeSub = this.route.paramMap.subscribe(params => {
+      const slug = params.get('slug') ?? '';
+      this.loading = true;
+      this.activity = null;
+      this.packingList = this.packingList.map(item => ({ ...item, checked: false }));
+      this.activityService.getBySlug(slug).subscribe({
+        next: (data) => {
+          this.activity = data;
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+      });
     });
+  }
+
+  ngOnDestroy(): void {
+    this.routeSub?.unsubscribe();
   }
 
   get heroImage(): string {

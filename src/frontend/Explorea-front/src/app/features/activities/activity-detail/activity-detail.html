@@ -137,29 +137,28 @@
               </div>
               <div class="similar-scroll">
                 @for (act of activity.similarActivities; track act.id) {
-                  <div class="similar-card">
-                    <div class="similar-card__img-wrap">
-                      <img [src]="act.previewImageUrl" [alt]="act.name" class="similar-card__img" />
-                      <span class="similar-card__badge">{{ act.difficultyLevel }}</span>
-                    </div>
-                    <div class="similar-card__body">
-                      <p class="similar-card__name">{{ act.name }}</p>
-                      <div class="similar-card__footer">
-                        <span class="similar-card__price">
-                          @if (act.price) {
-                            {{ 'ACTIVITY_DETAIL.SIMILAR.FROM' | translate }} {{ act.price | number }} RSD
-                          } @else {
-                            {{ 'ACTIVITY_DETAIL.FREE' | translate }}
-                          }
-                        </span>
-                        @if (act.avgRating) {
-                          <span class="similar-card__rating">
-                            <span class="material-icons">star</span>{{ act.avgRating }}
+                  <a class="activity-item" [routerLink]="['/activities', act.slug]">
+                    <div class="activity-item__image-wrap">
+                      <img [src]="act.previewImageUrl" [alt]="act.name" class="activity-item__image" loading="lazy" />
+                      @if (act.category) {
+                        <span class="activity-item__category">{{ act.category.name }}</span>
+                      }
+                      <div class="activity-item__overlay">
+                        <span class="activity-item__name">{{ act.name }}</span>
+                        <div class="activity-item__meta">
+                          <span class="activity-item__rating">
+                            <span class="material-icons">star</span>
+                            {{ act.avgRating | number: '1.1-1' }}
                           </span>
-                        }
+                          @if (act.price) {
+                            <span class="activity-item__price">{{ act.price | number }} RSD</span>
+                          } @else {
+                            <span class="activity-item__price">{{ 'ACTIVITY_DETAIL.FREE' | translate }}</span>
+                          }
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </a>
                 }
               </div>
             </div>

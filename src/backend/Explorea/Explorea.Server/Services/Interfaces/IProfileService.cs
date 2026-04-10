@@ -18,5 +18,12 @@ namespace Explorea.Server.Services.Interfaces
         Task SendSupportAsync(Guid userId, SupportRequestDto dto);
 
         Task<ProfileStatsDto> GetStatsAsync(Guid userId);
+
+        Task<List<ForYouItemDto>> GetForYouAsync(Guid userId);
+
+        Task<string> UploadAvatarAsync(Guid userId, IFormFile file);
+        Task RemoveAvatarAsync(Guid userId);
+
+        Task<bool> UpdateNewsletterAsync(Guid userId, bool newsletter);
     }
 }
