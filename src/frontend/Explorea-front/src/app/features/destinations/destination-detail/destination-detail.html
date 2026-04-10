@@ -75,21 +75,13 @@
             </div>
 
             <div class="destination-gallery desktop-gallery">
-              <img
-                *ngFor="let image of galleryImages; let i = index"
-                [src]="image"
-                [alt]="destination.name + ' gallery ' + i"
-                (click)="openLightbox(i)"
-              />
+              <img *ngFor="let image of galleryImages; let i = index" [src]="image"
+                [alt]="destination.name + ' gallery ' + i" (click)="openLightbox(i)" />
             </div>
 
             <div class="destination-gallery-mobile mobile-gallery">
-              <img
-                *ngFor="let image of galleryImages; let i = index"
-                [src]="image"
-                [alt]="destination.name + ' gallery mobile ' + i"
-                (click)="openLightbox(i)"
-              />
+              <img *ngFor="let image of galleryImages; let i = index" [src]="image"
+                [alt]="destination.name + ' gallery mobile ' + i" (click)="openLightbox(i)" />
             </div>
           </section>
 
@@ -97,12 +89,8 @@
             <div class="detail-section__head detail-section__head--map">
               <h2>Lokacija i mapa</h2>
 
-              <a
-                class="ghost-btn map-link-btn map-link-btn--floating"
-                [href]="googleMapsUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a class="ghost-btn map-link-btn map-link-btn--floating" [href]="googleMapsUrl" target="_blank"
+                rel="noopener noreferrer">
                 <span class="material-icons">north_east</span>
                 Otvori u Google Mapama
               </a>
@@ -130,35 +118,19 @@
 
           <section class="tab-section">
             <div class="tabs-line">
-              <button
-                type="button"
-                [class.active]="selectedTab === 'places'"
-                (click)="setTab('places')"
-              >
+              <button type="button" [class.active]="selectedTab === 'places'" (click)="setTab('places')">
                 Objekti
               </button>
 
-              <button
-                type="button"
-                [class.active]="selectedTab === 'events'"
-                (click)="setTab('events')"
-              >
+              <button type="button" [class.active]="selectedTab === 'events'" (click)="setTab('events')">
                 Događaji
               </button>
 
-              <button
-                type="button"
-                [class.active]="selectedTab === 'activities'"
-                (click)="setTab('activities')"
-              >
+              <button type="button" [class.active]="selectedTab === 'activities'" (click)="setTab('activities')">
                 Aktivnosti
               </button>
 
-              <button
-                type="button"
-                [class.active]="selectedTab === 'reviews'"
-                (click)="setTab('reviews')"
-              >
+              <button type="button" [class.active]="selectedTab === 'reviews'" (click)="setTab('reviews')">
                 Recenzije
               </button>
             </div>
@@ -181,36 +153,39 @@
 
               <ng-container *ngIf="activeTabItems.length > 0; else emptyTab">
                 <div class="stack-list">
-                  <div class="stack-item" *ngFor="let item of activeTabItems; trackBy: trackById">
-                    <div class="stack-item__image"></div>
+                  <a class="stack-item" *ngFor="let item of activeTabItems; trackBy: trackById"
+                    [routerLink]="getItemRoute(item)">
+                    <div class="stack-item__image"
+                      [style.background-image]="'linear-gradient(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.08)), url(' + getItemImage(item) + ')'"
+                      [style.background-position]="'center'" [style.background-size]="'cover'"
+                      [style.background-repeat]="'no-repeat'"></div>
 
                     <div class="stack-item__content">
                       <div class="stack-item__top">
                         <div>
                           <h3>{{ item.name }}</h3>
                           <span class="stack-item__type">
-                            {{
-                              selectedTab === 'places'
-                                ? 'Objekat'
-                                : selectedTab === 'events'
-                                ? 'Događaj'
-                                : 'Aktivnost'
-                            }}
+                            {{ getItemTypeLabel() }}
                           </span>
                         </div>
 
-                        <span class="stack-item__rating">
+                        <span class="stack-item__rating" *ngIf="getItemRating(item) !== null">
                           <span class="material-icons">star</span>
-                          4.8
+                          {{ getItemRating(item) | number: '1.1-1' }}
+                        </span>
+
+                        <span class="stack-item__rating" *ngIf="getItemRating(item) === null">
+                          <span class="material-icons">event</span>
+                          {{ getItemMetaLabel(item) }}
                         </span>
                       </div>
 
                       <p>
                         <span class="material-icons">location_on</span>
-                        {{ locationText || 'Srbija' }}
+                        {{ getItemLocationText(item) }}
                       </p>
                     </div>
-                  </div>
+                  </a>
                 </div>
               </ng-container>
             </div>
@@ -229,9 +204,12 @@
                         <span>{{ review.user.travelerRank }}</span>
                       </div>
 
-                      <div class="review-item__rating">
-                        <span class="material-icons">star</span>
-                        {{ review.rating }}
+                      <div class="review-item__rating review-item__rating--stars">
+                        <span *ngFor="let star of getStarsArray(); let i = index" class="material-icons"
+                          [class.review-star--filled]="i < review.rating"
+                          [class.review-star--empty]="i >= review.rating">
+                          star
+                        </span>
                       </div>
                     </div>
 
@@ -256,15 +234,10 @@
             </div>
 
             <div class="similar-grid">
-              <a
-                class="similar-card"
-                *ngFor="let item of destination.similarDestinations"
-                [routerLink]="['/destinations', item.slug]"
-              >
-                <img
-                  [src]="item.previewImageUrl || item.heroImageUrl || 'https://via.placeholder.com/400x250'"
-                  [alt]="item.name"
-                />
+              <a class="similar-card" *ngFor="let item of destination.similarDestinations"
+                [routerLink]="['/destinations', item.slug]">
+                <img [src]="item.previewImageUrl || item.heroImageUrl || 'https://via.placeholder.com/400x250'"
+                  [alt]="item.name" />
 
                 <div class="similar-card__body">
                   <div class="similar-card__top">
@@ -310,7 +283,8 @@
           <img [src]="currentLightboxImage" alt="Gallery image" />
         </div>
 
-        <button class="lightbox__nav lightbox__nav--right" type="button" (click)="nextImage(); $event.stopPropagation()">
+        <button class="lightbox__nav lightbox__nav--right" type="button"
+          (click)="nextImage(); $event.stopPropagation()">
           <span class="material-icons">chevron_right</span>
         </button>
       </div>

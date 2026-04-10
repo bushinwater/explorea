@@ -1,5 +1,8 @@
+using Explorea.API.DTOs.Activity;
 using Explorea.API.DTOs.Common;
 using Explorea.API.DTOs.Destination;
+using Explorea.API.DTOs.Event;
+using Explorea.API.DTOs.Place;
 using Explorea.API.DTOs.Review;
 using Explorea.Server.Data;
 using Explorea.Server.Services.Interfaces;
@@ -59,9 +62,24 @@ namespace Explorea.Server.Services
                 .Include(d => d.City)
                 .Include(d => d.Country)
                 .Include(d => d.Images)
+
                 .Include(d => d.Places)
+                    .ThenInclude(p => p.Images)
+                .Include(d => d.Places)
+                    .ThenInclude(p => p.Country)
+
                 .Include(d => d.Events)
+                    .ThenInclude(e => e.Images)
+                .Include(d => d.Events)
+                    .ThenInclude(e => e.City)
+                .Include(d => d.Events)
+                    .ThenInclude(e => e.Country)
+
                 .Include(d => d.Activities)
+                    .ThenInclude(a => a.Images)
+                .Include(d => d.Activities)
+                    .ThenInclude(a => a.Country)
+
                 .FirstOrDefaultAsync(d => d.Slug == slug);
 
             if (destination == null)
@@ -75,6 +93,26 @@ namespace Explorea.Server.Services
                 .Take(4)
                 .ToListAsync();
 
+            var reviews = await _context.Reviews
+                .Include(r => r.User)
+                .Where(r => r.EntityType == "destination" && r.EntityId == destination.Id)
+                .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new ReviewDto
+                {
+                    Id = r.Id,
+                    Rating = r.Rating,
+                    Comment = r.Comment,
+                    CreatedAt = r.CreatedAt,
+                    User = new ReviewUserDto
+                    {
+                        Id = r.User.Id,
+                        FirstName = r.User.FirstName,
+                        LastName = r.User.LastName,
+                        TravelerRank = r.User.TravelerRank
+                    }
+                })
+                .ToListAsync();
+
             return new DestinationDetailDto
             {
                 Id = destination.Id,
@@ -86,22 +124,26 @@ namespace Explorea.Server.Services
                 AvgRating = destination.AvgRating,
                 IsFeatured = destination.IsFeatured,
                 Popularity = destination.Popularity,
+
                 City = destination.City == null ? null : new CityRefDto
                 {
                     Id = destination.City.Id,
                     Name = destination.City.Name
                 },
+
                 Country = destination.Country == null ? null : new CountryRefDto
                 {
                     Id = destination.Country.Id,
                     Name = destination.Country.Name,
                     Code = destination.Country.Code
                 },
+
                 Location = new LocationDto
                 {
                     Lat = destination.Latitude,
                     Lng = destination.Longitude
                 },
+
                 Images = destination.Images
                     .OrderBy(i => i.SortOrder)
                     .Select(i => new DestinationImageDto
@@ -110,31 +152,90 @@ namespace Explorea.Server.Services
                         SortOrder = i.SortOrder
                     })
                     .ToList(),
+
                 Places = destination.Places
-                    .Select(p => new
+                    .OrderByDescending(p => p.Popularity)
+                    .Select(p => new PlaceCardDto
                     {
-                        p.Id,
-                        p.Name
+                        Id = p.Id,
+                        Name = p.Name,
+                        Slug = p.Slug,
+                        AvgRating = p.AvgRating,
+                        Address = p.Address,
+                        PriceRange = p.PriceRange,
+                        IsOpen = false,
+                        Popularity = p.Popularity,
+                        PreviewImageUrl = p.Images
+                            .OrderBy(i => i.SortOrder)
+                            .Select(i => i.ImageUrl)
+                            .FirstOrDefault(),
+                        Country = p.Country == null ? null : new CountryRefDto
+                        {
+                            Id = p.Country.Id,
+                            Name = p.Country.Name,
+                            Code = p.Country.Code
+                        }
                     })
-                    .Cast<object>()
                     .ToList(),
+
                 Events = destination.Events
-                    .Select(e => new
+                    .OrderByDescending(e => e.Popularity)
+                    .Select(e => new EventCardDto
                     {
-                        e.Id,
-                        e.Name
+                        Id = e.Id,
+                        Name = e.Name,
+                        Slug = e.Slug,
+                        StartDatetime = e.StartDatetime,
+                        EndDatetime = e.EndDatetime,
+                        Price = e.Price,
+                        Address = e.Address,
+                        IsFeatured = e.IsFeatured,
+                        Popularity = e.Popularity,
+                        PreviewImageUrl = e.Images
+                            .OrderBy(i => i.SortOrder)
+                            .Select(i => i.ImageUrl)
+                            .FirstOrDefault(),
+                        City = e.City == null ? null : new CityRefDto
+                        {
+                            Id = e.City.Id,
+                            Name = e.City.Name
+                        },
+                        Country = e.Country == null ? null : new CountryRefDto
+                        {
+                            Id = e.Country.Id,
+                            Name = e.Country.Name,
+                            Code = e.Country.Code
+                        }
                     })
-                    .Cast<object>()
                     .ToList(),
+
                 Activities = destination.Activities
-                    .Select(a => new
+                    .OrderByDescending(a => a.Popularity)
+                    .Select(a => new ActivityCardDto
                     {
-                        a.Id,
-                        a.Name
+                        Id = a.Id,
+                        Name = a.Name,
+                        Slug = a.Slug,
+                        AvgRating = a.AvgRating,
+                        DurationMinutes = a.DurationMinutes,
+                        Price = a.Price,
+                        DifficultyLevel = a.DifficultyLevel,
+                        Popularity = a.Popularity,
+                        PreviewImageUrl = a.Images
+                            .OrderBy(i => i.SortOrder)
+                            .Select(i => i.ImageUrl)
+                            .FirstOrDefault(),
+                        Country = a.Country == null ? null : new CountryRefDto
+                        {
+                            Id = a.Country.Id,
+                            Name = a.Country.Name,
+                            Code = a.Country.Code
+                        }
                     })
-                    .Cast<object>()
                     .ToList(),
-                Reviews = new List<ReviewDto>(),
+
+                Reviews = reviews,
+
                 SimilarDestinations = similarDestinations.Select(d => new DestinationCardDto
                 {
                     Id = d.Id,

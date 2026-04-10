@@ -5,9 +5,17 @@ import { TranslateModule } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
 
 import { DestinationService } from '../../../core/services/destination.service';
-import { DestinationDetail } from '../../../core/models/destination.model';
+import {
+  ActivityCard,
+  DestinationDetail,
+  EventCard,
+  PlaceCard
+} from '../../../core/models/destination.model';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
+
+type DetailTab = 'places' | 'events' | 'activities' | 'reviews';
+type TabItem = PlaceCard | EventCard | ActivityCard;
 
 @Component({
   selector: 'app-destination-detail',
@@ -27,7 +35,7 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
   destination: DestinationDetail | null = null;
   isLoading = true;
   error: string | null = null;
-  selectedTab: 'places' | 'events' | 'activities' | 'reviews' = 'places';
+  selectedTab: DetailTab = 'places';
 
   lightboxOpen = false;
   selectedImageIndex = 0;
@@ -79,7 +87,7 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  setTab(tab: 'places' | 'events' | 'activities' | 'reviews'): void {
+  setTab(tab: DetailTab): void {
     this.selectedTab = tab;
   }
 
@@ -111,7 +119,7 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
     ].filter(Boolean) as string[];
   }
 
-  get activeTabItems(): { id: string; name: string }[] {
+  get activeTabItems(): TabItem[] {
     if (!this.destination) return [];
 
     switch (this.selectedTab) {
@@ -126,8 +134,68 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  trackById(_: number, item: { id: string }): string {
+  trackById(_: number, item: TabItem): string {
     return item.id;
+  }
+
+  getItemImage(item: TabItem): string {
+    return item.previewImageUrl || 'https://via.placeholder.com/300x200';
+  }
+
+  getItemTypeLabel(): string {
+    switch (this.selectedTab) {
+      case 'places':
+        return 'Objekat';
+      case 'events':
+        return 'Događaj';
+      case 'activities':
+        return 'Aktivnost';
+      default:
+        return '';
+    }
+  }
+
+  getItemLocationText(item: TabItem): string {
+    if (this.isPlace(item)) {
+      return item.address || item.country?.name || 'Lokacija nije dostupna';
+    }
+
+    if (this.isEvent(item)) {
+      const city = item.city?.name;
+      const country = item.country?.name;
+      const address = item.address;
+      return [address, city, country].filter(Boolean).join(', ') || 'Lokacija nije dostupna';
+    }
+
+    return item.country?.name || 'Lokacija nije dostupna';
+  }
+
+  getItemRating(item: TabItem): number | null {
+    if (this.isPlace(item) || this.isActivity(item)) {
+      return item.avgRating;
+    }
+
+    return null;
+  }
+
+  getItemMetaLabel(item: TabItem): string {
+    if (this.isEvent(item)) {
+      return 'Događaj';
+    }
+
+    return 'Ocena';
+  }
+
+  getItemRoute(item: TabItem): string[] {
+    if (this.isPlace(item)) {
+      return ['/places', item.slug];
+    }
+
+    if (this.isEvent(item)) {
+      return ['/events', item.slug];
+    }
+
+    return ['/activities', item.slug];
   }
 
   openLightbox(index: number): void {
@@ -175,6 +243,22 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
     }
 
     return `https://www.google.com/maps?q=${lat},${lng}`;
+  }
+
+  getStarsArray(): number[] {
+    return [1, 2, 3, 4, 5];
+  }
+
+  private isPlace(item: TabItem): item is PlaceCard {
+    return this.selectedTab === 'places';
+  }
+
+  private isEvent(item: TabItem): item is EventCard {
+    return this.selectedTab === 'events';
+  }
+
+  private isActivity(item: TabItem): item is ActivityCard {
+    return this.selectedTab === 'activities';
   }
 
   @HostListener('document:keydown.escape')

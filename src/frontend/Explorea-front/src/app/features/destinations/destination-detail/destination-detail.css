@@ -669,9 +669,40 @@
   font-weight: var(--font-weight-medium);
 }
 
+.review-item__rating--stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.review-star--filled {
+  color: #f5c560;
+  font-size: 20px;
+}
+
+.review-star--empty {
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 20px;
+}
+
 .review-item__rating .material-icons,
 .similar-card__rating .material-icons {
   font-size: 18px;
+}
+
+.review-item__rating--stars {
+  color: inherit;
+  gap: 2px;
+}
+
+.review-item__rating--stars .material-icons.review-star--filled {
+  color: #f5c560;
+  font-size: 20px;
+}
+
+.review-item__rating--stars .material-icons.review-star--empty {
+  color: rgba(255, 255, 255, 0.22);
+  font-size: 20px;
 }
 
 .mini-btn,

@@ -48,17 +48,60 @@ export interface Review {
   user: ReviewUser;
 }
 
-export interface SimpleLinkedItem {
+export interface PlaceCard {
   id: string;
   name: string;
+  slug: string;
+  avgRating: number;
+  address?: string | null;
+  distanceKm?: number | null;
+  previewImageUrl?: string | null;
+  isOpen: boolean;
+  priceRange?: string | null;
+  popularity: number;
+  country?: CountryRef | null;
+}
+
+export interface EventCard {
+  id: string;
+  name: string;
+  slug: string;
+  startDatetime: string;
+  endDatetime: string;
+  price?: number | null;
+  address?: string | null;
+  city?: CityRef | null;
+  previewImageUrl?: string | null;
+  isFeatured: boolean;
+  popularity: number;
+  country?: CountryRef | null;
+}
+
+export interface ActivityCategoryRef {
+  id: number;
+  name: string;
+}
+
+export interface ActivityCard {
+  id: string;
+  name: string;
+  slug: string;
+  category?: ActivityCategoryRef | null;
+  avgRating: number;
+  durationMinutes?: number | null;
+  price?: number | null;
+  difficultyLevel?: string | null;
+  previewImageUrl?: string | null;
+  popularity: number;
+  country?: CountryRef | null;
 }
 
 export interface DestinationDetail extends DestinationCard {
   description?: string | null;
   images: DestinationImage[];
-  places: SimpleLinkedItem[];
-  events: SimpleLinkedItem[];
-  activities: SimpleLinkedItem[];
+  places: PlaceCard[];
+  events: EventCard[];
+  activities: ActivityCard[];
   reviews: Review[];
   similarDestinations: DestinationCard[];
 }
