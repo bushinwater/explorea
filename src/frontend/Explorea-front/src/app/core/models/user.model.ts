@@ -16,6 +16,7 @@ export interface UserProfile {
   gender?: string;
   dateOfBirth?: string;
   preferences?: UserPreferences;
+  newsletter: boolean;
 }
 
 export interface UpdateUserDto {

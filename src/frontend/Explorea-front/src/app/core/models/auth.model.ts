@@ -13,20 +13,23 @@ export interface RegisterDto {
   dateOfBirth?: string;
 }
 
-export interface AuthUserDto {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  travelerRank: string;
-}
-
 export interface AuthResponseDto {
   accessToken: string;
   refreshToken: string;
   needsInterests: boolean;
-  user: AuthUserDto;
+  needsProfileCompletion: boolean;
+}
+
+export interface CompleteProfileDto {
+  gender: string;
+  dateOfBirth: string;
+}
+
+export interface SocialLoginDto {
+  provider: 'google' | 'facebook';
+  token?: string;       // Google: access token
+  code?: string;        // Facebook: authorization code
+  redirectUri?: string; // Facebook: must match what was sent to the dialog
 }
 
 export interface ForgotPasswordDto {

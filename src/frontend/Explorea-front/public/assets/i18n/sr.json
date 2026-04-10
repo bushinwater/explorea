@@ -56,7 +56,9 @@
       "PROFILE_PICTURE_DESC": "JPG ili PNG, maksimalno 5MB",
       "UPLOAD_PHOTO": "Postavi sliku",
       "INTERESTS": "Interesi",
-      "EDIT_INTERESTS": "Izmeni"
+      "EDIT_INTERESTS": "Izmeni",
+      "NEWSLETTER": "Newsletter",
+      "NEWSLETTER_DESC": "Primaj novosti o novim destinacijama, događajima i ponudama."
     },
     "NOTIFICATIONS": {
       "TITLE": "Obaveštenja",
@@ -314,5 +316,10 @@
       "PRIVACY_S5_TITLE": "5. Vaša prava",
       "PRIVACY_S5_BODY": "Imate pravo na uvid, ispravku i brisanje vaših podataka. Zahtev možete poslati na kontakt@explorea.rs."
     }
+  },
+  "COMPLETE_PROFILE": {
+    "TITLE": "Završi profil",
+    "SUBTITLE": "Potrebne su nam još neke informacije da bismo personalizovali tvoje iskustvo.",
+    "SUBMIT": "Nastavi"
   }
 }

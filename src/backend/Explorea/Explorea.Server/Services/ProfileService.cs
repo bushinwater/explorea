@@ -465,8 +465,24 @@ namespace Explorea.Server.Services
                         Theme = preferences.Theme,
                         Language = preferences.Language,
                         NotificationsEnabled = preferences.NotificationsEnabled
-                    }
+                    },
+                Newsletter = user.Newsletter
             };
+        }
+
+        public async Task<bool> UpdateNewsletterAsync(Guid userId, bool newsletter)
+        {
+            var user = await _userRepository.GetByIdAsync(userId)
+                ?? throw new Exception("User not found.");
+
+            user.Newsletter = newsletter;
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+            user.UpdatedBy = userId;
+
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
+
+            return user.Newsletter;
         }
 
         private static string NormalizeEntityType(string entityType)

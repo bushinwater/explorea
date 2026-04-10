@@ -3,7 +3,7 @@
 
 <aside class="sidebar" [class.open]="isOpen" [class.expanded]="isExpanded">
   <div class="logo" (click)="toggle()">
-    <span class="logo-icon">◇</span>
+    <img src="assets/logo.png" alt="Explorea" class="logo-icon" />
     <span class="logo-text">Explorea</span>
   </div>
 
@@ -31,11 +31,6 @@
       <span class="material-icons nav-icon">person</span>
       <span class="nav-label">{{ 'SIDEBAR.PROFILE' | translate }}</span>
     </a>
-    <a [routerLink]="'/settings'" routerLinkActive="active" class="nav-item">
-      <span class="material-icons nav-icon">settings</span>
-      <span class="nav-label">{{ 'SIDEBAR.SETTINGS' | translate }}</span>
-    </a>
-
     <!-- Language picker — desktop only -->
     <div class="lang-wrapper desktop-only">
       <button class="nav-item" (click)="toggleLangPopup($event)" [class.active]="langPopupOpen">
@@ -53,7 +48,7 @@
       </button>
     </div>
 
-    <button class="nav-item theme-toggle" (click)="themeService.toggle()">
+    <button class="nav-item theme-toggle" (mousedown)="$event.preventDefault()" (click)="themeService.toggle()">
       <span class="material-icons nav-icon">{{ themeService.isDark ? 'light_mode' : 'dark_mode' }}</span>
       <span class="nav-label">{{ themeService.isDark ? ('SIDEBAR.LIGHT_MODE' | translate) : ('SIDEBAR.DARK_MODE' | translate) }}</span>
     </button>

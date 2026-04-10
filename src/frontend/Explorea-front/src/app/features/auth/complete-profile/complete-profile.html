@@ -1,0 +1,54 @@
+<div class="page">
+  <app-sidebar></app-sidebar>
+  <app-bottom-nav></app-bottom-nav>
+  <main class="main">
+    <div class="card">
+      <div class="logo">
+        <img src="assets/logo.png" alt="Explorea" class="logo-img" />
+        <span class="logo-text">Explorea</span>
+      </div>
+
+      <h1>{{ 'COMPLETE_PROFILE.TITLE' | translate }}</h1>
+      <p class="subtitle">{{ 'COMPLETE_PROFILE.SUBTITLE' | translate }}</p>
+
+      <div class="form">
+
+        <!-- GENDER -->
+        <div class="form-group">
+          <label>{{ 'REGISTER.GENDER' | translate }}</label>
+          <div class="select-wrapper" [class.input-error]="genderError">
+            <span class="material-icons input-icon">person_outline</span>
+            <select class="input select-input" [(ngModel)]="gender" (ngModelChange)="genderError = ''">
+              <option value="">{{ 'REGISTER.GENDER_PLACEHOLDER' | translate }}</option>
+              <option value="male">{{ 'REGISTER.GENDER_MALE' | translate }}</option>
+              <option value="female">{{ 'REGISTER.GENDER_FEMALE' | translate }}</option>
+              <option value="other">{{ 'REGISTER.GENDER_OTHER' | translate }}</option>
+              <option value="prefer_not">{{ 'REGISTER.GENDER_PREFER_NOT' | translate }}</option>
+            </select>
+            <span class="material-icons select-arrow">expand_more</span>
+          </div>
+          <span class="field-error" *ngIf="genderError">{{ genderError | translate }}</span>
+        </div>
+
+        <!-- DATE OF BIRTH -->
+        <div class="form-group">
+          <label>{{ 'REGISTER.DATE_OF_BIRTH' | translate }}</label>
+          <div class="input-wrapper" [class.input-error]="dateOfBirthError">
+            <span class="material-icons input-icon">cake</span>
+            <input class="input no-right-icon" type="date" [(ngModel)]="dateOfBirth"
+              [min]="minDate" [max]="maxDate"
+              (ngModelChange)="dateOfBirthError = ''"
+              (blur)="validateDateOfBirth()" />
+          </div>
+          <span class="field-error" *ngIf="dateOfBirthError">{{ dateOfBirthError | translate }}</span>
+        </div>
+
+        <button class="btn btn-primary submit-btn" (click)="submit()" [disabled]="loading">
+          <span class="btn-spinner" *ngIf="loading"></span>
+          <span *ngIf="!loading">{{ 'COMPLETE_PROFILE.SUBMIT' | translate }}</span>
+        </button>
+
+      </div>
+    </div>
+  </main>
+</div>

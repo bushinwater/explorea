@@ -56,7 +56,9 @@
       "PROFILE_PICTURE_DESC": "JPG or PNG, max 5MB",
       "UPLOAD_PHOTO": "Upload photo",
       "INTERESTS": "Interests",
-      "EDIT_INTERESTS": "Edit"
+      "EDIT_INTERESTS": "Edit",
+      "NEWSLETTER": "Newsletter",
+      "NEWSLETTER_DESC": "Receive news about new destinations, events and offers."
     },
     "NOTIFICATIONS": {
       "TITLE": "Notifications",
@@ -314,5 +316,10 @@
       "PRIVACY_S5_TITLE": "5. Your rights",
       "PRIVACY_S5_BODY": "You have the right to access, correct and delete your data. Requests can be sent to contact@explorea.rs."
     }
+  },
+  "COMPLETE_PROFILE": {
+    "TITLE": "Complete your profile",
+    "SUBTITLE": "We need a few more details to personalize your experience.",
+    "SUBMIT": "Continue"
   }
 }

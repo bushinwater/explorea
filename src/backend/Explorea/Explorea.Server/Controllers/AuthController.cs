@@ -119,5 +119,23 @@ namespace Explorea.Server.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost("social")]
+        public async Task<IActionResult> SocialLogin([FromBody] SocialLoginDto dto)
+        {
+            try
+            {
+                var result = await _authService.SocialLoginAsync(
+                    dto,
+                    HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    Request.Headers.UserAgent.ToString());
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

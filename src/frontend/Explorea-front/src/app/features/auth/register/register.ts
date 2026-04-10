@@ -42,6 +42,7 @@ export class Register implements OnInit {
   registrationDone = false;
   resendSent = false;
   loading = false;
+  socialLoading: 'google' | 'facebook' | null = null;
   activeModal: 'terms' | 'privacy' | null = null;
 
   readonly termsSections = [
@@ -68,6 +69,8 @@ export class Register implements OnInit {
     'retard', 'faggot', 'pussy', 'cock', 'whore', 'slut',
   ];
 
+  private static readonly FB_APP_ID = '2054189815159488';
+
   constructor(
     private authService: AuthService,
     private router: Router,
@@ -76,6 +79,104 @@ export class Register implements OnInit {
   ) {}
 
   ngOnInit() {}
+
+  registerWithGoogle() {
+    const google = (window as any).google;
+    if (!google?.accounts?.oauth2) return;
+
+    this.socialLoading = 'google';
+    this.cdr.detectChanges();
+
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: '758311997770-l1tn09bqi3892kfhmr3ini1ovsdenb26.apps.googleusercontent.com',
+      scope: 'email profile openid',
+      callback: (response: { access_token?: string }) => {
+        if (!response.access_token) {
+          this.socialLoading = null;
+          this.cdr.detectChanges();
+          return;
+        }
+        this.handleSocialLogin('google', response.access_token);
+        this.cdr.detectChanges();
+      },
+    });
+
+    client.requestAccessToken();
+  }
+
+  registerWithFacebook() {
+    const redirectUri = `${window.location.origin}/auth/facebook/callback`;
+    const url = `https://www.facebook.com/dialog/oauth?client_id=${Register.FB_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=public_profile,email&response_type=code`;
+
+    const width = 600, height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    const popup = window.open(url, 'facebook-register', `width=${width},height=${height},left=${left},top=${top}`);
+
+    this.socialLoading = 'facebook';
+    this.cdr.detectChanges();
+
+    const handler = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== 'facebook-oauth-code') return;
+      window.removeEventListener('message', handler);
+      clearInterval(closedCheck);
+      if (!event.data.code) {
+        this.socialLoading = null;
+        this.cdr.detectChanges();
+        return;
+      }
+      this.authService.socialLogin({ provider: 'facebook', code: event.data.code, redirectUri }).subscribe({
+        next: (response) => {
+          this.authService.saveTokens(response);
+          if (response.needsProfileCompletion) {
+            this.router.navigate(['/complete-profile']);
+          } else if (response.needsInterests) {
+            this.router.navigate(['/interests']);
+          } else {
+            this.router.navigate(['/profile']);
+          }
+        },
+        error: () => {
+          this.socialLoading = null;
+          this.error = 'LOGIN.ERROR';
+          this.cdr.detectChanges();
+        },
+      });
+    };
+    window.addEventListener('message', handler);
+
+    const closedCheck = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(closedCheck);
+        window.removeEventListener('message', handler);
+        if (this.socialLoading === 'facebook') {
+          this.socialLoading = null;
+          this.cdr.detectChanges();
+        }
+      }
+    }, 500);
+  }
+
+  private handleSocialLogin(provider: 'google' | 'facebook', token: string) {
+    this.authService.socialLogin({ provider, token }).subscribe({
+      next: (response) => {
+        this.authService.saveTokens(response);
+        if (response.needsProfileCompletion) {
+          this.router.navigate(['/complete-profile']);
+        } else if (response.needsInterests) {
+          this.router.navigate(['/interests']);
+        } else {
+          this.router.navigate(['/profile']);
+        }
+      },
+      error: () => {
+        this.socialLoading = null;
+        this.error = 'LOGIN.ERROR';
+        this.cdr.detectChanges();
+      },
+    });
+  }
 
   get minDate(): string {
     const d = new Date();

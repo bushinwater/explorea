@@ -8,10 +8,19 @@ namespace Explorea.Server.Controllers
     public class LookupController : ControllerBase
     {
         private readonly ILookupRepository _lookup;
+        private readonly IConfiguration _config;
 
-        public LookupController(ILookupRepository lookup)
+        public LookupController(ILookupRepository lookup, IConfiguration config)
         {
             _lookup = lookup;
+            _config = config;
+        }
+
+        [HttpGet("app-info")]
+        public IActionResult GetAppInfo()
+        {
+            var country = _config["AppSettings:MarketCountry"] ?? "Srbija";
+            return Ok(new { countryName = country });
         }
 
         [HttpGet("cities")]

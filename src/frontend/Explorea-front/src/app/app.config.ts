@@ -6,7 +6,6 @@ import {
 import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
-
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth-interceptor';
 

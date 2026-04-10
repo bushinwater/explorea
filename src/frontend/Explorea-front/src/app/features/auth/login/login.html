@@ -72,14 +72,16 @@
           <span>{{ 'LOGIN.OR' | translate }}</span>
         </div>
 
-        <button class="social-btn google">
-          <span class="material-icons">language</span>
-          {{ 'LOGIN.GOOGLE' | translate }}
+        <button class="social-btn google" (click)="loginWithGoogle()" [disabled]="socialLoading !== null">
+          <span class="btn-spinner" *ngIf="socialLoading === 'google'"></span>
+          <span class="material-icons" *ngIf="socialLoading !== 'google'">language</span>
+          <span *ngIf="socialLoading !== 'google'">{{ 'LOGIN.GOOGLE' | translate }}</span>
         </button>
 
-        <button class="social-btn facebook">
-          <span class="material-icons">facebook</span>
-          {{ 'LOGIN.FACEBOOK' | translate }}
+        <button class="social-btn facebook" (click)="loginWithFacebook()" [disabled]="socialLoading !== null">
+          <span class="btn-spinner" *ngIf="socialLoading === 'facebook'"></span>
+          <span class="material-icons" *ngIf="socialLoading !== 'facebook'">facebook</span>
+          <span *ngIf="socialLoading !== 'facebook'">{{ 'LOGIN.FACEBOOK' | translate }}</span>
         </button>
 
         <div class="register-link">

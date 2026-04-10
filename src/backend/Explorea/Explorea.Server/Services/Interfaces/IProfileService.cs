@@ -23,5 +23,7 @@ namespace Explorea.Server.Services.Interfaces
 
         Task<string> UploadAvatarAsync(Guid userId, IFormFile file);
         Task RemoveAvatarAsync(Guid userId);
+
+        Task<bool> UpdateNewsletterAsync(Guid userId, bool newsletter);
     }
 }

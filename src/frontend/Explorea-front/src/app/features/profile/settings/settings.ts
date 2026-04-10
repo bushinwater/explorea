@@ -48,6 +48,7 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
   passwordChangeRequested = false;
   passwordChangeSending = false;
   avatarUrl: string | null = null;
+  newsletter = false;
 
   private readonly NAME_BLACKLIST = [
     'kurac', 'kurац', 'picka', 'pička', 'pizda', 'guzica', 'sisa', 'jebem', 'jebo',
@@ -116,6 +117,7 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
           this.lastName = profile.lastName;
           this.originalFirstName = profile.firstName;
           this.originalLastName = profile.lastName;
+          this.newsletter = profile.newsletter;
           // Sinhronizuj avatar sa serverom (server je izvor istine)
           if (profile.profileImageUrl) {
             this.avatarUrl = profile.profileImageUrl;
@@ -127,6 +129,7 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
           this.cdr.detectChanges();
           this.startPolling();
         },
+        error: () => { this.cdr.detectChanges(); },
       });
 
     // For you — nezavisno
@@ -137,6 +140,7 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
           this.forYouItems = items;
           this.cdr.detectChanges();
         },
+        error: () => { this.cdr.detectChanges(); },
       });
   }
 
@@ -302,6 +306,18 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
       error: () => {
         this.passwordChangeSending = false;
         this.passwordChangeRequested = true;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  toggleNewsletter() {
+    const newValue = !this.newsletter;
+    this.newsletter = newValue;
+    this.cdr.detectChanges();
+    this.profileService.updateNewsletter(newValue).subscribe({
+      error: () => {
+        this.newsletter = !newValue;
         this.cdr.detectChanges();
       },
     });

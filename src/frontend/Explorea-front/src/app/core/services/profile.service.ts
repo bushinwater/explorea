@@ -43,4 +43,8 @@ export class ProfileService {
   removeAvatar(): Observable<void> {
     return this.http.delete<void>(`${this.api}/avatar`);
   }
+
+  updateNewsletter(newsletter: boolean): Observable<{ newsletter: boolean }> {
+    return this.http.patch<{ newsletter: boolean }>(`${this.api}/newsletter`, { newsletter });
+  }
 }

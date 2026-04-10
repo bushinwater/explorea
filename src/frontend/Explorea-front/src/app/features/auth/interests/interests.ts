@@ -28,7 +28,7 @@ export class Interests implements OnInit {
 
   ngOnInit() {
     this.fromProfile = this.route.snapshot.queryParamMap.get('from') === 'profile';
-    const savedIds = this.interestsService.getSelectedIds();
+    const savedIds = this.fromProfile ? this.interestsService.getSelectedIds() : [];
 
     this.interestsService.getInterestTags().subscribe({
       next: (tags) => {

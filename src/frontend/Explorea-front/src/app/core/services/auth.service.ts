@@ -3,12 +3,14 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   AuthResponseDto,
+  CompleteProfileDto,
   ForgotPasswordDto,
   LoginDto,
   RefreshTokenRequestDto,
   RegisterDto,
   ResendVerificationDto,
   ResetPasswordDto,
+  SocialLoginDto,
   VerifyEmailDto,
 } from '../models/auth.model';
 
@@ -52,6 +54,14 @@ export class AuthService {
 
   resetPassword(dto: ResetPasswordDto): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.api}/reset-password`, dto);
+  }
+
+  socialLogin(dto: SocialLoginDto): Observable<AuthResponseDto> {
+    return this.http.post<AuthResponseDto>(`${this.api}/social`, dto);
+  }
+
+  completeProfile(dto: CompleteProfileDto): Observable<void> {
+    return this.http.patch<void>('/api/profile/complete', dto);
   }
 
   saveTokens(response: AuthResponseDto): void {

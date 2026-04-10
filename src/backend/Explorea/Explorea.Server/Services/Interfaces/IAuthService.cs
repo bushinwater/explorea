@@ -15,5 +15,7 @@ namespace Explorea.Server.Services.Interfaces
         Task<bool> CheckEmailExistsAsync(string email);
         Task ForgotPasswordAsync(string email);
         Task ResetPasswordAsync(string token, string newPassword);
+
+        Task<AuthResponseDto> SocialLoginAsync(SocialLoginDto dto, string? ipAddress, string? userAgent);
     }
 }

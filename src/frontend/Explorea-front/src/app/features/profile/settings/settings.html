@@ -204,6 +204,18 @@
             </div>
 
             <div class="field">
+              <div class="field-icon"><span class="material-icons">mail_outline</span></div>
+              <div class="field-info">
+                <strong>{{ 'SETTINGS_PAGE.ACCOUNT.NEWSLETTER' | translate }}</strong>
+                <span>{{ 'SETTINGS_PAGE.ACCOUNT.NEWSLETTER_DESC' | translate }}</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [checked]="newsletter" (change)="toggleNewsletter()" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="field">
               <div class="field-icon"><span class="material-icons">lock</span></div>
               <div class="field-info">
                 <strong>{{ 'SETTINGS_PAGE.ACCOUNT.PASSWORD' | translate }}</strong>

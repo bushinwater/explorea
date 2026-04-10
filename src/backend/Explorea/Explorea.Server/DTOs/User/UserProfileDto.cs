@@ -16,5 +16,6 @@ namespace Explorea.API.DTOs.User
         public double? CurrentLatitude { get; set; }
         public double? CurrentLongitude { get; set; }
         public int? CurrentCityId { get; set; }
+        public bool Newsletter { get; set; }
     }
 }
