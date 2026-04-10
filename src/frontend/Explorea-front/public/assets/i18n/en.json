@@ -195,6 +195,76 @@
     "LOGIN": "Sign in",
     "ERROR_TERMS": "You must accept the terms of service.",
     "ERROR_PASSWORD": "Passwords do not match.",
-    "ERROR_GENERAL": "Registration failed. Please try again."
+    "ERROR_GENERAL": "Registration failed. Please try again.",
+    "MODAL_ACCEPT": "I understand and accept",
+    "VERIFY_TITLE": "Check your email",
+    "VERIFY_DESC": "We sent a verification link to {{ email }}. Click the link to activate your account.",
+    "VERIFY_NO_EMAIL": "Didn't receive the email?",
+    "LEGAL": {
+      "TERMS_S1_TITLE": "1. Acceptance of terms",
+      "TERMS_S1_BODY": "By using the Explorea platform you accept these terms of service. If you disagree, please do not use the platform.",
+      "TERMS_S2_TITLE": "2. User account",
+      "TERMS_S2_BODY": "You are responsible for the accuracy of the data you provide during registration. Creating an account on behalf of another person without their consent is not allowed.",
+      "TERMS_S3_TITLE": "3. User conduct",
+      "TERMS_S3_BODY": "Publishing offensive, false or harmful content is prohibited. Explorea reserves the right to remove content that violates these rules.",
+      "TERMS_S4_TITLE": "4. Intellectual property",
+      "TERMS_S4_BODY": "All content on the platform (logos, descriptions, photos) is protected by copyright. Copying without written permission is not allowed.",
+      "TERMS_S5_TITLE": "5. Changes to terms",
+      "TERMS_S5_BODY": "Explorea reserves the right to modify these terms. Users will be notified of significant changes by email.",
+      "PRIVACY_S1_TITLE": "1. What data we collect",
+      "PRIVACY_S1_BODY": "We collect first name, last name, email address and profile picture. Optionally, we record interests and destination visit history.",
+      "PRIVACY_S2_TITLE": "2. How we use your data",
+      "PRIVACY_S2_BODY": "Your data is used solely to personalize your experience, send relevant notifications and improve the platform. We do not sell your data to third parties.",
+      "PRIVACY_S3_TITLE": "3. Data retention",
+      "PRIVACY_S3_BODY": "Data is stored on secure servers and retained while your account exists. Upon account deletion, data is removed within 30 days.",
+      "PRIVACY_S4_TITLE": "4. Cookies",
+      "PRIVACY_S4_BODY": "We use cookies for authentication and visit analytics. You can disable them in your browser settings, but this may limit functionality.",
+      "PRIVACY_S5_TITLE": "5. Your rights",
+      "PRIVACY_S5_BODY": "You have the right to access, correct and delete your data. Requests can be sent to contact@explorea.rs."
+    }
+  },
+  "COMPLETE_PROFILE": {
+    "TITLE": "Complete your profile",
+    "SUBTITLE": "We need a few more details to personalize your experience.",
+    "SUBMIT": "Continue"
+  },
+  "DESTINATION_DETAIL": {
+    "LOADING": "Loading destination details...",
+    "ABOUT": "About the destination",
+    "GALLERY": "Photo gallery",
+    "VIEW_ALL_IMAGES": "View all images ({{count}})",
+    "LOCATION_AND_MAP": "Location and map",
+    "OPEN_IN_GOOGLE_MAPS": "Open in Google Maps",
+    "DETAILS": "Details",
+    "SHOW_ALL": "Show all",
+    "EMPTY_TAB": "There are currently no available items for this section.",
+    "EMPTY_REVIEWS": "There are no reviews for this destination yet.",
+    "LOCATION_NOT_AVAILABLE": "Location is not available",
+    "META": {
+      "RATING": "Rating",
+      "EVENT": "Event"
+    },
+    "ITEM_TYPES": {
+      "PLACE": "Place",
+      "EVENT": "Event",
+      "ACTIVITY": "Activity"
+    },
+    "TABS": {
+      "PLACES": "Places",
+      "EVENTS": "Events",
+      "ACTIVITIES": "Activities",
+      "REVIEWS": "Reviews"
+    },
+    "SECTIONS": {
+      "POPULAR_PLACES": "Popular places",
+      "POPULAR_EVENTS": "Popular events",
+      "POPULAR_ACTIVITIES": "Popular activities",
+      "TRAVELER_REVIEWS": "Traveler reviews",
+      "SIMILAR_DESTINATIONS": "Similar destinations"
+    },
+    "ERRORS": {
+      "MISSING_SLUG": "Destination slug was not provided.",
+      "LOAD_FAILED": "Error loading destination details."
+    }
   }
 }

@@ -195,6 +195,76 @@
     "LOGIN": "Prijavi se",
     "ERROR_TERMS": "Morate prihvatiti uslove korišćenja.",
     "ERROR_PASSWORD": "Lozinke se ne poklapaju.",
-    "ERROR_GENERAL": "Registracija nije uspela. Pokušajte ponovo."
+    "ERROR_GENERAL": "Registracija nije uspela. Pokušajte ponovo.",
+    "MODAL_ACCEPT": "Razumem i prihvatam",
+    "VERIFY_TITLE": "Proverite email",
+    "VERIFY_DESC": "Poslali smo vam link za verifikaciju na {{ email }}. Kliknite na link da aktivirate nalog.",
+    "VERIFY_NO_EMAIL": "Niste dobili email?",
+    "LEGAL": {
+      "TERMS_S1_TITLE": "1. Prihvatanje uslova",
+      "TERMS_S1_BODY": "Korišćenjem platforme Explorea prihvatate ove uslove korišćenja. Ako se ne slažete, molimo vas da ne koristite platformu.",
+      "TERMS_S2_TITLE": "2. Korisnički nalog",
+      "TERMS_S2_BODY": "Odgovorni ste za tačnost podataka koje unosite prilikom registracije. Nije dozvoljeno kreirati nalog u ime drugog lica bez njihovog pristanka.",
+      "TERMS_S3_TITLE": "3. Ponašanje korisnika",
+      "TERMS_S3_BODY": "Zabranjeno je objavljivanje uvredljivih, lažnih ili štetnih sadržaja. Explorea zadržava pravo uklanjanja sadržaja koji krši ova pravila.",
+      "TERMS_S4_TITLE": "4. Intelektualna svojina",
+      "TERMS_S4_BODY": "Svi sadržaji na platformi (logotipi, opisi, fotografije) zaštićeni su autorskim pravima. Nije dozvoljeno njihovo kopiranje bez pisane dozvole.",
+      "TERMS_S5_TITLE": "5. Izmene uslova",
+      "TERMS_S5_BODY": "Explorea zadržava pravo izmene ovih uslova. O značajnim promenama korisnici će biti obavešteni putem e-maila.",
+      "PRIVACY_S1_TITLE": "1. Koje podatke prikupljamo",
+      "PRIVACY_S1_BODY": "Prikupljamo ime, prezime, e-mail adresu i sliku profila. Opcionalno, beležimo interesovanja i istoriju poseta destinacija.",
+      "PRIVACY_S2_TITLE": "2. Kako koristimo podatke",
+      "PRIVACY_S2_BODY": "Vaši podaci koriste se isključivo za personalizaciju iskustva, slanje relevantnih obaveštenja i poboljšanje platforme. Ne prodajemo vaše podatke trećim stranama.",
+      "PRIVACY_S3_TITLE": "3. Čuvanje podataka",
+      "PRIVACY_S3_BODY": "Podaci se čuvaju na sigurnim serverima i zadržavaju se dok vaš nalog postoji. Po brisanju naloga, podaci se uklanjaju u roku od 30 dana.",
+      "PRIVACY_S4_TITLE": "4. Kolačići",
+      "PRIVACY_S4_BODY": "Koristimo kolačiće za autentifikaciju i analizu poseta. Možete ih onemogućiti u podešavanjima pregledača, ali to može ograničiti funkcionalnost.",
+      "PRIVACY_S5_TITLE": "5. Vaša prava",
+      "PRIVACY_S5_BODY": "Imate pravo na uvid, ispravku i brisanje vaših podataka. Zahtev možete poslati na kontakt@explorea.rs."
+    }
+  },
+  "COMPLETE_PROFILE": {
+    "TITLE": "Završi profil",
+    "SUBTITLE": "Potrebne su nam još neke informacije da bismo personalizovali tvoje iskustvo.",
+    "SUBMIT": "Nastavi"
+  },
+  "DESTINATION_DETAIL": {
+    "LOADING": "Učitavanje detalja destinacije...",
+    "ABOUT": "O destinaciji",
+    "GALLERY": "Galerija fotografija",
+    "VIEW_ALL_IMAGES": "Pogledaj sve slike ({{count}})",
+    "LOCATION_AND_MAP": "Lokacija i mapa",
+    "OPEN_IN_GOOGLE_MAPS": "Otvori u Google Mapama",
+    "DETAILS": "Detalji",
+    "SHOW_ALL": "Prikaži sve",
+    "EMPTY_TAB": "Trenutno nema dostupnih stavki za ovu sekciju.",
+    "EMPTY_REVIEWS": "Još nema recenzija za ovu destinaciju.",
+    "LOCATION_NOT_AVAILABLE": "Lokacija nije dostupna",
+    "META": {
+      "RATING": "Ocena",
+      "EVENT": "Događaj"
+    },
+    "ITEM_TYPES": {
+      "PLACE": "Objekat",
+      "EVENT": "Događaj",
+      "ACTIVITY": "Aktivnost"
+    },
+    "TABS": {
+      "PLACES": "Objekti",
+      "EVENTS": "Događaji",
+      "ACTIVITIES": "Aktivnosti",
+      "REVIEWS": "Recenzije"
+    },
+    "SECTIONS": {
+      "POPULAR_PLACES": "Popularni objekti",
+      "POPULAR_EVENTS": "Popularni događaji",
+      "POPULAR_ACTIVITIES": "Popularne aktivnosti",
+      "TRAVELER_REVIEWS": "Recenzije putnika",
+      "SIMILAR_DESTINATIONS": "Slične destinacije"
+    },
+    "ERRORS": {
+      "MISSING_SLUG": "Slug destinacije nije prosleđen.",
+      "LOAD_FAILED": "Greška pri učitavanju detalja destinacije."
+    }
   }
 }
