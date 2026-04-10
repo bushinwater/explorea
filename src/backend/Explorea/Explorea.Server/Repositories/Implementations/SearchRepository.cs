@@ -524,7 +524,7 @@ namespace Explorea.Server.Repositories.Implementations
           result.Add(new PlaceSearchHitRow
           {
               Id = reader.GetGuid(reader.GetOrdinal("id")),
-              FtsRank = Convert.ToDouble(reader.GetValue(reader.GetOrdinal("fts_"))),
+              FtsRank = Convert.ToDouble(reader.GetValue(reader.GetOrdinal("fts_rank"))),
               NameSimilarity = reader.GetDouble(reader.GetOrdinal("name_similarity")),
               CitySimilarity = GetNullableDouble(reader, "city_similarity"),
               DestinationSimilarity = GetNullableDouble(reader, "destination_similarity"),

@@ -1,3 +1,4 @@
+using Explorea.Server.Repositories.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Explorea.Server.Controllers
@@ -6,6 +7,22 @@ namespace Explorea.Server.Controllers
     [Route("api")]
     public class LookupController : ControllerBase
     {
+        private readonly ILookupRepository _lookup;
+        private readonly IConfiguration _config;
+
+        public LookupController(ILookupRepository lookup, IConfiguration config)
+        {
+            _lookup = lookup;
+            _config = config;
+        }
+
+        [HttpGet("app-info")]
+        public IActionResult GetAppInfo()
+        {
+            var country = _config["AppSettings:MarketCountry"] ?? "Srbija";
+            return Ok(new { countryName = country });
+        }
+
         [HttpGet("cities")]
         public IActionResult GetCities() => Ok();
 
@@ -24,7 +41,11 @@ namespace Explorea.Server.Controllers
         [HttpGet("seasons")]
         public IActionResult GetSeasons() => Ok();
 
-        [HttpGet("interests-tags")]
-        public IActionResult GetInterests() => Ok();
+        [HttpGet("interest-tags")]
+        public async Task<IActionResult> GetInterestTags()
+        {
+            var tags = await _lookup.GetInterestTagsAsync();
+            return Ok(tags.Select(t => new { t.Id, t.Name, t.Icon }));
+        }
     }
 }

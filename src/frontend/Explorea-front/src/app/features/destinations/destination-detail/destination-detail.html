@@ -1,0 +1,310 @@
+<div class="detail-layout">
+  <app-sidebar />
+
+  <main class="detail-main">
+    <div class="state-block" *ngIf="isLoading">
+      {{ 'DESTINATION_DETAIL.LOADING' | translate }}
+    </div>
+
+    <div class="state-block error" *ngIf="!isLoading && error">
+      {{ error }}
+    </div>
+
+    <ng-container *ngIf="!isLoading && destination">
+      <section class="detail-hero">
+        <img class="detail-hero__image" [src]="heroImage" [alt]="destination.name" />
+        <div class="detail-hero__overlay"></div>
+
+        <div class="detail-hero__topbar">
+          <div class="detail-hero__brand mobile-only">
+            <span class="detail-hero__brand-icon">◇</span>
+            <span class="detail-hero__brand-text">Explorea</span>
+          </div>
+
+          <div class="detail-hero__actions">
+            <button class="circle-btn" type="button">
+              <span class="material-icons">share</span>
+            </button>
+            <button class="circle-btn" type="button">
+              <span class="material-icons">favorite_border</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="detail-hero__content">
+          <div class="detail-hero__badges">
+            <span class="detail-badge" *ngIf="destination.country?.name">{{ destination.country?.name }}</span>
+            <span class="detail-badge" *ngIf="destination.city?.name">{{ destination.city?.name }}</span>
+          </div>
+
+          <div class="detail-hero__main">
+            <div class="detail-hero__text">
+              <h1>{{ destination.name }}</h1>
+
+              <div class="detail-hero__meta">
+                <span class="detail-meta-item" *ngIf="locationText">
+                  <span class="material-icons">location_on</span>
+                  {{ locationText }}
+                </span>
+
+                <span class="detail-meta-item">
+                  <span class="material-icons">star</span>
+                  {{ destination.avgRating | number: '1.1-1' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-hero__bottom-gradient"></div>
+      </section>
+
+      <div class="detail-content detail-content--single">
+        <div class="detail-content__main">
+          <section class="detail-section detail-section--plain" *ngIf="destination.description">
+            <div class="detail-section__head detail-section__head--about">
+              <h2>{{ 'DESTINATION_DETAIL.ABOUT' | translate }}</h2>
+            </div>
+
+            <p class="detail-copy detail-copy--about">
+              {{ destination.description }}
+            </p>
+          </section>
+
+          <section class="detail-section detail-section--gallery" *ngIf="galleryImages.length > 0">
+            <div class="detail-section__head">
+              <h2>{{ 'DESTINATION_DETAIL.GALLERY' | translate }}</h2>
+              <a class="section-link section-link--subtle" href="javascript:void(0)">
+                {{ 'DESTINATION_DETAIL.VIEW_ALL_IMAGES' | translate:{ count: galleryImages.length } }}
+              </a>
+            </div>
+
+            <div class="destination-gallery desktop-gallery">
+              <img *ngFor="let image of galleryImages; let i = index" [src]="image"
+                [alt]="destination.name + ' gallery ' + i" (click)="openLightbox(i)" />
+            </div>
+
+            <div class="destination-gallery-mobile mobile-gallery">
+              <img *ngFor="let image of galleryImages; let i = index" [src]="image"
+                [alt]="destination.name + ' gallery mobile ' + i" (click)="openLightbox(i)" />
+            </div>
+          </section>
+
+          <section class="detail-section detail-section--map">
+            <div class="detail-section__head detail-section__head--map">
+              <h2>{{ 'DESTINATION_DETAIL.LOCATION_AND_MAP' | translate }}</h2>
+
+              <a class="ghost-btn map-link-btn map-link-btn--floating" [href]="googleMapsUrl" target="_blank"
+                rel="noopener noreferrer">
+                <span class="material-icons">north_east</span>
+                {{ 'DESTINATION_DETAIL.OPEN_IN_GOOGLE_MAPS' | translate }}
+              </a>
+            </div>
+
+            <div class="map-box-simple map-box-simple--styled">
+              <div class="map-box-simple__overlay"></div>
+
+              <div class="map-pin-card map-pin-card--glass">
+                <div class="map-pin-card__left">
+                  <span class="material-icons">location_on</span>
+
+                  <div class="map-pin-card__content">
+                    <strong>{{ destination.name }}</strong>
+                    <p>{{ mapCoordinatesText }}</p>
+                  </div>
+                </div>
+
+                <button class="map-pin-card__details" type="button">
+                  {{ 'DESTINATION_DETAIL.DETAILS' | translate }}
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="tab-section">
+            <div class="tabs-line">
+              <button type="button" [class.active]="selectedTab === 'places'" (click)="setTab('places')">
+                {{ 'DESTINATION_DETAIL.TABS.PLACES' | translate }}
+              </button>
+
+              <button type="button" [class.active]="selectedTab === 'events'" (click)="setTab('events')">
+                {{ 'DESTINATION_DETAIL.TABS.EVENTS' | translate }}
+              </button>
+
+              <button type="button" [class.active]="selectedTab === 'activities'" (click)="setTab('activities')">
+                {{ 'DESTINATION_DETAIL.TABS.ACTIVITIES' | translate }}
+              </button>
+
+              <button type="button" [class.active]="selectedTab === 'reviews'" (click)="setTab('reviews')">
+                {{ 'DESTINATION_DETAIL.TABS.REVIEWS' | translate }}
+              </button>
+            </div>
+
+            <div class="tab-block" *ngIf="selectedTab !== 'reviews'">
+              <div class="section-head tab-block__head" *ngIf="selectedTab === 'places'">
+                <h2>{{ 'DESTINATION_DETAIL.SECTIONS.POPULAR_PLACES' | translate }}</h2>
+                <a class="section-link" href="javascript:void(0)">
+                  {{ 'DESTINATION_DETAIL.SHOW_ALL' | translate }}
+                </a>
+              </div>
+
+              <div class="section-head tab-block__head" *ngIf="selectedTab === 'events'">
+                <h2>{{ 'DESTINATION_DETAIL.SECTIONS.POPULAR_EVENTS' | translate }}</h2>
+                <a class="section-link" href="javascript:void(0)">
+                  {{ 'DESTINATION_DETAIL.SHOW_ALL' | translate }}
+                </a>
+              </div>
+
+              <div class="section-head tab-block__head" *ngIf="selectedTab === 'activities'">
+                <h2>{{ 'DESTINATION_DETAIL.SECTIONS.POPULAR_ACTIVITIES' | translate }}</h2>
+                <a class="section-link" href="javascript:void(0)">
+                  {{ 'DESTINATION_DETAIL.SHOW_ALL' | translate }}
+                </a>
+              </div>
+
+              <ng-container *ngIf="activeTabItems.length > 0; else emptyTab">
+                <div class="stack-list">
+                  <a class="stack-item" *ngFor="let item of activeTabItems; trackBy: trackById"
+                    [routerLink]="getItemRoute(item)">
+                    <div class="stack-item__image"
+                      [style.background-image]="'linear-gradient(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.08)), url(' + getItemImage(item) + ')'"
+                      [style.background-position]="'center'" [style.background-size]="'cover'"
+                      [style.background-repeat]="'no-repeat'"></div>
+
+                    <div class="stack-item__content">
+                      <div class="stack-item__top">
+                        <div>
+                          <h3>{{ item.name }}</h3>
+                          <span class="stack-item__type">
+                            {{ getItemTypeLabel() }}
+                          </span>
+                        </div>
+
+                        <span class="stack-item__rating" *ngIf="getItemRating(item) !== null">
+                          <span class="material-icons">star</span>
+                          {{ getItemRating(item) | number: '1.1-1' }}
+                        </span>
+
+                        <span class="stack-item__rating" *ngIf="getItemRating(item) === null">
+                          <span class="material-icons">event</span>
+                          {{ getItemMetaLabel(item) }}
+                        </span>
+                      </div>
+
+                      <p>
+                        <span class="material-icons">location_on</span>
+                        {{ getItemLocationText(item) }}
+                      </p>
+                    </div>
+                  </a>
+                </div>
+              </ng-container>
+            </div>
+
+            <div class="tab-block" *ngIf="selectedTab === 'reviews'">
+              <div class="section-head tab-block__head">
+                <h2>{{ 'DESTINATION_DETAIL.SECTIONS.TRAVELER_REVIEWS' | translate }}</h2>
+              </div>
+
+              <ng-container *ngIf="destination.reviews.length > 0; else emptyReviews">
+                <div class="reviews-list">
+                  <div class="review-item" *ngFor="let review of destination.reviews">
+                    <div class="review-item__head">
+                      <div>
+                        <h3>{{ review.user.firstName }} {{ review.user.lastName }}</h3>
+                        <span>{{ review.user.travelerRank }}</span>
+                      </div>
+
+                      <div class="review-item__rating review-item__rating--stars">
+                        <span *ngFor="let star of getStarsArray(); let i = index" class="material-icons"
+                          [class.review-star--filled]="i < review.rating"
+                          [class.review-star--empty]="i >= review.rating">
+                          star
+                        </span>
+                      </div>
+                    </div>
+
+                    <p class="detail-copy" *ngIf="review.comment">{{ review.comment }}</p>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+
+            <ng-template #emptyTab>
+              <p class="empty-text">
+                {{ 'DESTINATION_DETAIL.EMPTY_TAB' | translate }}
+              </p>
+            </ng-template>
+
+            <ng-template #emptyReviews>
+              <p class="empty-text">
+                {{ 'DESTINATION_DETAIL.EMPTY_REVIEWS' | translate }}
+              </p>
+            </ng-template>
+          </section>
+
+          <section *ngIf="destination.similarDestinations.length > 0" class="similar-section">
+            <div class="section-head">
+              <h2>{{ 'DESTINATION_DETAIL.SECTIONS.SIMILAR_DESTINATIONS' | translate }}</h2>
+            </div>
+
+            <div class="similar-grid">
+              <a class="similar-card" *ngFor="let item of destination.similarDestinations"
+                [routerLink]="['/destinations', item.slug]">
+                <img [src]="item.previewImageUrl || item.heroImageUrl || 'https://via.placeholder.com/400x250'"
+                  [alt]="item.name" />
+
+                <div class="similar-card__body">
+                  <div class="similar-card__top">
+                    <h3>{{ item.name }}</h3>
+
+                    <span class="similar-card__rating">
+                      <span class="material-icons">star</span>
+                      {{ item.avgRating | number: '1.1-1' }}
+                    </span>
+                  </div>
+
+                  <p>
+                    {{ item.city?.name }}
+                    <span *ngIf="item.country?.name">, {{ item.country?.name }}</span>
+                  </p>
+                </div>
+              </a>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <footer class="detail-footer">
+        <div class="detail-footer__inner">
+          <div class="detail-footer__brand">
+            <span class="logo-icon">◇</span>
+            <span class="logo-text">Explorea</span>
+          </div>
+          <p class="detail-footer__copy">{{ 'HOME.FOOTER.COPY' | translate }}</p>
+        </div>
+      </footer>
+
+      <div class="lightbox" *ngIf="lightboxOpen" (click)="closeLightbox()">
+        <button class="lightbox__close" type="button" (click)="closeLightbox(); $event.stopPropagation()">
+          <span class="material-icons">close</span>
+        </button>
+
+        <button class="lightbox__nav lightbox__nav--left" type="button" (click)="prevImage(); $event.stopPropagation()">
+          <span class="material-icons">chevron_left</span>
+        </button>
+
+        <div class="lightbox__content" (click)="$event.stopPropagation()">
+          <img [src]="currentLightboxImage" alt="Gallery image" />
+        </div>
+
+        <button class="lightbox__nav lightbox__nav--right" type="button"
+          (click)="nextImage(); $event.stopPropagation()">
+          <span class="material-icons">chevron_right</span>
+        </button>
+      </div>
+    </ng-container>
+  </main>
+
+  <app-bottom-nav />
+</div>

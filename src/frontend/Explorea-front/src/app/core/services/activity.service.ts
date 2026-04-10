@@ -66,7 +66,7 @@ const MOCK_ACTIVITY: ActivityDetail = {
 @Injectable({ providedIn: 'root' })
 export class ActivityService {
   private readonly api = '/api/activities';
-  useMock = true;
+  useMock = false;
 
   constructor(private http: HttpClient) {}
 

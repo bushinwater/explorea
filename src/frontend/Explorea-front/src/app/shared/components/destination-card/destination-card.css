@@ -12,6 +12,9 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   flex-shrink: 0;
   width: 220px;
+  display: block;
+  text-decoration: none;
+  color: inherit;
 }
 
 .dest-card:hover {

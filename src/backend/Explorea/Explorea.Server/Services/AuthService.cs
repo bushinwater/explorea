@@ -1,9 +1,11 @@
 using System.Net;
+using System.Text.Json;
 using Explorea.API.DTOs.Auth;
 using Explorea.API.Models;
 using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Interfaces;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Explorea.Server.Services
 {
@@ -15,6 +17,10 @@ namespace Explorea.Server.Services
         private readonly JwtHelper _jwtHelper;
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
+        private readonly IMemoryCache _cache;
+
+        private static string PendingTokenKey(string tokenHash)  => $"pendingreg:token:{tokenHash}";
+        private static string PendingEmailKey(string email)      => $"pendingreg:email:{email}";
 
         public AuthService(
             IUserRepository userRepository,
@@ -22,7 +28,8 @@ namespace Explorea.Server.Services
             PasswordHelper passwordHelper,
             JwtHelper jwtHelper,
             IConfiguration configuration,
-            IEmailService emailService)
+            IEmailService emailService,
+            IMemoryCache cache)
         {
             _userRepository = userRepository;
             _authRepository = authRepository;
@@ -30,9 +37,10 @@ namespace Explorea.Server.Services
             _jwtHelper = jwtHelper;
             _configuration = configuration;
             _emailService = emailService;
+            _cache = cache;
         }
 
-        public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto, string? ipAddress, string? userAgent)
+        public async Task RegisterAsync(RegisterDto dto)
         {
             if (dto.Password != dto.ConfirmPassword)
                 throw new Exception("Password and confirm password do not match.");
@@ -43,49 +51,33 @@ namespace Explorea.Server.Services
             if (existingUser != null)
                 throw new Exception("User with this email already exists.");
 
-            var userRole = await _authRepository.GetRoleByNameAsync("user");
-            if (userRole == null)
-                throw new Exception("Default role 'user' was not found in database.");
+            // Also reject if there is already a pending (unverified) registration for this email
+            if (_cache.TryGetValue(PendingEmailKey(normalizedEmail), out _))
+                throw new Exception("User with this email already exists.");
 
-            var now = DateTimeOffset.UtcNow;
+            var pending = new PendingRegistrationData(
+                FirstName:    dto.FirstName.Trim(),
+                LastName:     dto.LastName.Trim(),
+                Email:        normalizedEmail,
+                PasswordHash: _passwordHelper.HashPassword(dto.Password),
+                Gender:       string.IsNullOrWhiteSpace(dto.Gender) ? null : dto.Gender.Trim(),
+                DateOfBirth:  dto.DateOfBirth);
 
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                FirstName = dto.FirstName.Trim(),
-                LastName = dto.LastName.Trim(),
-                Email = normalizedEmail,
-                PasswordHash = _passwordHelper.HashPassword(dto.Password),
-                RoleId = userRole.Id,
-                TravelerRank = "explorer",
-                TotalVisits = 0,
-                MemberSince = now,
-                IsActive = true,
-                CreatedAt = now,
-                UpdatedAt = now
-            };
+            var rawToken = _jwtHelper.GenerateRefreshToken();
+            var tokenHash = _jwtHelper.HashToken(rawToken);
+            var expiryHours = int.Parse(_configuration["EmailVerificationSettings:ExpiryHours"]!);
+            var expiry = TimeSpan.FromHours(expiryHours);
 
-            await _userRepository.AddAsync(user);
-            await _userRepository.SaveChangesAsync();
+            _cache.Set(PendingTokenKey(tokenHash), pending, expiry);
+            _cache.Set(PendingEmailKey(normalizedEmail), tokenHash, expiry);
 
-            user.Role = userRole;
+            var frontendBaseUrl = _configuration["FrontendSettings:BaseUrl"]!;
+            var verificationLink = $"{frontendBaseUrl}/verify-email?token={Uri.EscapeDataString(rawToken)}";
 
-            var accessToken = _jwtHelper.GenerateAccessToken(user);
-            var refreshToken = _jwtHelper.GenerateRefreshToken();
-            var refreshTokenHash = _jwtHelper.HashToken(refreshToken);
-
-            var refreshTokenEntity = BuildRefreshTokenEntity(
-                user.Id,
-                refreshTokenHash,
-                ipAddress,
-                userAgent,
-                now);
-
-            await _authRepository.CreateRefreshTokenAsync(refreshTokenEntity);
-
-            await CreateAndSendEmailVerificationAsync(user);
-
-            return BuildAuthResponse(user, accessToken, refreshToken, true);
+            await _emailService.SendVerificationEmailAsync(
+                normalizedEmail,
+                pending.FirstName,
+                verificationLink);
         }
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto dto, string? ipAddress, string? userAgent)
@@ -102,6 +94,9 @@ namespace Explorea.Server.Services
             var isPasswordValid = _passwordHelper.VerifyPassword(dto.Password, user.PasswordHash);
             if (!isPasswordValid)
                 throw new Exception("Invalid email or password.");
+
+            if (user.EmailVerifiedAt == null)
+                throw new Exception("EMAIL_NOT_VERIFIED");
 
             var now = DateTimeOffset.UtcNow;
 
@@ -123,7 +118,7 @@ namespace Explorea.Server.Services
 
             await _authRepository.CreateRefreshTokenAsync(refreshTokenEntity);
 
-            return BuildAuthResponse(user, accessToken, refreshToken, false);
+            return BuildAuthResponse(accessToken, refreshToken, false);
         }
 
         public async Task<AuthResponseDto> RefreshAsync(string refreshToken, string? ipAddress, string? userAgent)
@@ -152,7 +147,7 @@ namespace Explorea.Server.Services
 
             await _authRepository.CreateRefreshTokenAsync(refreshTokenEntity);
 
-            return BuildAuthResponse(user, newAccessToken, newRefreshToken, false);
+            return BuildAuthResponse(newAccessToken, newRefreshToken, false);
         }
 
         public async Task LogoutAsync(string refreshToken)
@@ -161,47 +156,104 @@ namespace Explorea.Server.Services
             await _authRepository.RevokeRefreshTokenAsync(tokenHash);
         }
 
-        public async Task VerifyEmailAsync(string token)
+        public async Task<AuthResponseDto> VerifyEmailAsync(string token, string? ipAddress, string? userAgent)
         {
-            var decodedToken = WebUtility.UrlDecode(token);
+            var tokenHash = _jwtHelper.HashToken(token);
 
-            var tokenHash = _jwtHelper.HashToken(decodedToken);
-            var verification = await _authRepository.GetEmailVerificationAsync(tokenHash);
+            if (!_cache.TryGetValue(PendingTokenKey(tokenHash), out PendingRegistrationData? pending) || pending == null)
+                throw new Exception("Invalid or expired verification token.");
 
-            if (verification == null)
-                throw new Exception("Invalid verification token.");
+            // Guard against race condition (e.g. double-click on the link)
+            var existingUser = await _userRepository.GetByEmailAsync(pending.Email);
+            if (existingUser != null)
+                throw new Exception("User with this email already exists.");
 
-            if (verification.ExpiresAt <= DateTimeOffset.UtcNow)
-                throw new Exception("Verification token has expired.");
+            var userRole = await _authRepository.GetRoleByNameAsync("user");
+            if (userRole == null)
+                throw new Exception("Default role 'user' was not found in database.");
 
-            var user = await _userRepository.GetByIdAsync(verification.UserId);
-            if (user == null)
-                throw new Exception("User not found.");
+            var now = DateTimeOffset.UtcNow;
 
-            if (user.EmailVerifiedAt != null)
-                return;
+            var user = new User
+            {
+                Id            = Guid.NewGuid(),
+                FirstName     = pending.FirstName,
+                LastName      = pending.LastName,
+                Email         = pending.Email,
+                PasswordHash  = pending.PasswordHash,
+                RoleId        = userRole.Id,
+                Role          = userRole,
+                TravelerRank  = "explorer",
+                TotalVisits   = 0,
+                MemberSince   = now,
+                EmailVerifiedAt = now,
+                IsActive      = true,
+                Gender        = pending.Gender,
+                DateOfBirth   = pending.DateOfBirth,
+                CreatedAt     = now,
+                UpdatedAt     = now,
+            };
 
-            user.EmailVerifiedAt = DateTimeOffset.UtcNow;
-            user.UpdatedAt = DateTimeOffset.UtcNow;
-
-            _userRepository.Update(user);
+            await _userRepository.AddAsync(user);
             await _userRepository.SaveChangesAsync();
 
-            await _authRepository.MarkEmailVerifiedAsync(tokenHash);
+            // Clean up cache
+            _cache.Remove(PendingTokenKey(tokenHash));
+            _cache.Remove(PendingEmailKey(pending.Email));
+
+            var accessToken = _jwtHelper.GenerateAccessToken(user);
+            var refreshToken = _jwtHelper.GenerateRefreshToken();
+            var refreshTokenHash = _jwtHelper.HashToken(refreshToken);
+
+            var refreshTokenEntity = BuildRefreshTokenEntity(
+                user.Id,
+                refreshTokenHash,
+                ipAddress,
+                userAgent,
+                now);
+
+            await _authRepository.CreateRefreshTokenAsync(refreshTokenEntity);
+
+            return BuildAuthResponse(accessToken, refreshToken, true);
         }
 
         public async Task ResendVerificationEmailAsync(string email)
         {
             var normalizedEmail = email.Trim().ToLower();
+
+            if (!_cache.TryGetValue(PendingEmailKey(normalizedEmail), out string? oldTokenHash) || oldTokenHash == null)
+                throw new Exception("No pending registration found for this email. The link may have expired.");
+
+            if (!_cache.TryGetValue(PendingTokenKey(oldTokenHash), out PendingRegistrationData? pending) || pending == null)
+                throw new Exception("No pending registration found for this email. The link may have expired.");
+
+            // Remove old cache entries
+            _cache.Remove(PendingTokenKey(oldTokenHash));
+            _cache.Remove(PendingEmailKey(normalizedEmail));
+
+            // Generate new token and store new entries
+            var rawToken = _jwtHelper.GenerateRefreshToken();
+            var newTokenHash = _jwtHelper.HashToken(rawToken);
+            var expiryHours = int.Parse(_configuration["EmailVerificationSettings:ExpiryHours"]!);
+            var expiry = TimeSpan.FromHours(expiryHours);
+
+            _cache.Set(PendingTokenKey(newTokenHash), pending, expiry);
+            _cache.Set(PendingEmailKey(normalizedEmail), newTokenHash, expiry);
+
+            var frontendBaseUrl = _configuration["FrontendSettings:BaseUrl"]!;
+            var verificationLink = $"{frontendBaseUrl}/verify-email?token={Uri.EscapeDataString(rawToken)}";
+
+            await _emailService.SendVerificationEmailAsync(
+                normalizedEmail,
+                pending.FirstName,
+                verificationLink);
+        }
+
+        public async Task<bool> CheckEmailExistsAsync(string email)
+        {
+            var normalizedEmail = email.Trim().ToLower();
             var user = await _userRepository.GetByEmailAsync(normalizedEmail);
-
-            if (user == null)
-                throw new Exception("User with this email does not exist.");
-
-            if (user.EmailVerifiedAt != null)
-                throw new Exception("Email is already verified.");
-
-            await CreateAndSendEmailVerificationAsync(user);
+            return user != null;
         }
 
         public async Task ForgotPasswordAsync(string email)
@@ -241,8 +293,7 @@ namespace Explorea.Server.Services
 
         public async Task ResetPasswordAsync(string token, string newPassword)
         {
-            var decodedToken = WebUtility.UrlDecode(token);
-            var tokenHash = _jwtHelper.HashToken(decodedToken);
+            var tokenHash = _jwtHelper.HashToken(token);
 
             var resetToken = await _authRepository.GetPasswordResetTokenAsync(tokenHash);
 
@@ -256,6 +307,9 @@ namespace Explorea.Server.Services
             if (user == null)
                 throw new Exception("User not found.");
 
+            if (_passwordHelper.VerifyPassword(newPassword, user.PasswordHash))
+                throw new Exception("New password must be different from the current password.");
+
             user.PasswordHash = _passwordHelper.HashPassword(newPassword);
             user.UpdatedAt = DateTimeOffset.UtcNow;
 
@@ -263,37 +317,6 @@ namespace Explorea.Server.Services
             await _userRepository.SaveChangesAsync();
 
             await _authRepository.MarkPasswordResetTokenUsedAsync(tokenHash);
-        }
-
-        private async Task CreateAndSendEmailVerificationAsync(User user)
-        {
-            var rawToken = _jwtHelper.GenerateRefreshToken();
-            var tokenHash = _jwtHelper.HashToken(rawToken);
-            var now = DateTimeOffset.UtcNow;
-            var expiryHours = int.Parse(_configuration["EmailVerificationSettings:ExpiryHours"]!);
-
-            var verification = new EmailVerification
-            {
-                Id = Guid.NewGuid(),
-                UserId = user.Id,
-                Email = user.Email,
-                TokenHash = tokenHash,
-                ExpiresAt = now.AddHours(expiryHours),
-                CreatedAt = now,
-                UpdatedAt = now,
-                CreatedBy = user.Id,
-                UpdatedBy = user.Id
-            };
-
-            await _authRepository.CreateEmailVerificationAsync(verification);
-
-            var frontendBaseUrl = _configuration["FrontendSettings:BaseUrl"]!;
-            var verificationLink = $"{frontendBaseUrl}/verify-email?token={Uri.EscapeDataString(rawToken)}";
-
-            await _emailService.SendVerificationEmailAsync(
-                user.Email,
-                user.FirstName,
-                verificationLink);
         }
 
         private RefreshToken BuildRefreshTokenEntity(
@@ -320,6 +343,180 @@ namespace Explorea.Server.Services
             };
         }
 
+        public async Task<AuthResponseDto> SocialLoginAsync(SocialLoginDto dto, string? ipAddress, string? userAgent)
+        {
+            var provider = dto.Provider.ToLower();
+            string providerUserId, email, firstName, lastName;
+
+            if (provider == "google")
+            {
+                var googleUser = await VerifyGoogleTokenAsync(dto.Token ?? throw new Exception("Google access token is missing."));
+                providerUserId = googleUser.Id;
+                email = googleUser.Email.Trim().ToLower();
+                firstName = googleUser.GivenName ?? email.Split('@')[0];
+                lastName = googleUser.FamilyName ?? "";
+            }
+            else if (provider == "facebook")
+            {
+                var fbUser = await VerifyFacebookCodeAsync(dto.Code, dto.RedirectUri);
+                providerUserId = fbUser.Id;
+                email = (fbUser.Email ?? "").Trim().ToLower();
+                firstName = fbUser.FirstName ?? fbUser.Name?.Split(' ')[0] ?? "";
+                lastName = fbUser.LastName ?? (fbUser.Name?.Contains(' ') == true ? fbUser.Name.Substring(fbUser.Name.IndexOf(' ') + 1) : "");
+            }
+            else
+            {
+                throw new Exception("Unsupported provider.");
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            var isNewUser = false;
+
+            // Check if we already have a linked account for this provider + providerUserId
+            var authAccount = await _authRepository.GetAuthAccountAsync(provider, providerUserId);
+            User user;
+
+            if (authAccount != null)
+            {
+                user = authAccount.User;
+            }
+            else
+            {
+                // No linked account — look up by email
+                user = await _userRepository.GetByEmailAsync(email)
+                    ?? await CreateSocialUserAsync(email, firstName, lastName, now);
+
+                isNewUser = user.CreatedAt == now; // true if we just created them
+
+                // Link the provider account
+                await _authRepository.CreateAuthAccountAsync(new UserAuthAccount
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    Provider = provider,
+                    ProviderUserId = providerUserId,
+                    EmailAtProvider = email,
+                    IsPrimary = false,
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                    CreatedBy = user.Id,
+                    UpdatedBy = user.Id
+                });
+            }
+
+            if (!user.IsActive)
+                throw new Exception("User account is inactive.");
+
+            user.LastLoginAt = now;
+            user.UpdatedAt = now;
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
+
+            var accessToken = _jwtHelper.GenerateAccessToken(user);
+            var refreshToken = _jwtHelper.GenerateRefreshToken();
+            var refreshTokenHash = _jwtHelper.HashToken(refreshToken);
+
+            await _authRepository.CreateRefreshTokenAsync(BuildRefreshTokenEntity(
+                user.Id, refreshTokenHash, ipAddress, userAgent, now));
+
+            return BuildAuthResponse(accessToken, refreshToken, isNewUser);
+        }
+
+        private async Task<User> CreateSocialUserAsync(string email, string firstName, string lastName, DateTimeOffset now)
+        {
+            var userRole = await _authRepository.GetRoleByNameAsync("user")
+                ?? throw new Exception("Default role 'user' was not found in database.");
+
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                FirstName = firstName,
+                LastName = lastName.Length > 0 ? lastName : "-",
+                Email = email,
+                PasswordHash = null,
+                RoleId = userRole.Id,
+                Role = userRole,
+                TravelerRank = "explorer",
+                TotalVisits = 0,
+                MemberSince = now,
+                EmailVerifiedAt = now,
+                IsActive = true,
+                CreatedAt = now,
+                UpdatedAt = now
+            };
+
+            await _userRepository.AddAsync(user);
+            await _userRepository.SaveChangesAsync();
+
+            return user;
+        }
+
+        private async Task<GoogleUserInfo> VerifyGoogleTokenAsync(string accessToken)
+        {
+            using var http = new HttpClient();
+            var url = $"https://www.googleapis.com/oauth2/v1/userinfo?access_token={Uri.EscapeDataString(accessToken)}";
+            var response = await http.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+                throw new Exception("Invalid Google token.");
+
+            var json = await response.Content.ReadAsStringAsync();
+            var user = JsonSerializer.Deserialize<GoogleUserInfo>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (user == null || string.IsNullOrWhiteSpace(user.Id) || string.IsNullOrWhiteSpace(user.Email))
+                throw new Exception("Could not read Google user info.");
+
+            return user;
+        }
+
+        private record GoogleUserInfo(string Id, string Email, string? GivenName, string? FamilyName);
+
+        private async Task<FacebookUserInfo> VerifyFacebookCodeAsync(string? code, string? redirectUri)
+        {
+            if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(redirectUri))
+                throw new Exception("Facebook authorization code or redirect URI is missing.");
+
+            var appId     = _configuration["SocialAuth:Facebook:AppId"]!;
+            var appSecret = _configuration["SocialAuth:Facebook:AppSecret"]!;
+
+            using var http = new HttpClient();
+
+            // Exchange authorization code for access token
+            var tokenUrl = $"https://graph.facebook.com/v19.0/oauth/access_token" +
+                           $"?client_id={Uri.EscapeDataString(appId)}" +
+                           $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
+                           $"&client_secret={Uri.EscapeDataString(appSecret)}" +
+                           $"&code={Uri.EscapeDataString(code)}";
+
+            var tokenResponse = await http.GetAsync(tokenUrl);
+            if (!tokenResponse.IsSuccessStatusCode)
+                throw new Exception("Failed to exchange Facebook code for access token.");
+
+            var tokenJson = await tokenResponse.Content.ReadAsStringAsync();
+            using var tokenDoc = JsonDocument.Parse(tokenJson);
+            var accessToken = tokenDoc.RootElement.GetProperty("access_token").GetString();
+
+            if (string.IsNullOrWhiteSpace(accessToken))
+                throw new Exception("Facebook access token was empty.");
+
+            // Fetch user info
+            var userUrl = $"https://graph.facebook.com/me?fields=id,name,email,first_name,last_name&access_token={Uri.EscapeDataString(accessToken)}";
+            var userResponse = await http.GetAsync(userUrl);
+
+            if (!userResponse.IsSuccessStatusCode)
+                throw new Exception("Failed to fetch Facebook user info.");
+
+            var userJson = await userResponse.Content.ReadAsStringAsync();
+            var user = JsonSerializer.Deserialize<FacebookUserInfo>(userJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (user == null || string.IsNullOrWhiteSpace(user.Id))
+                throw new Exception("Could not read Facebook user info.");
+
+            return user;
+        }
+
+        private record FacebookUserInfo(string Id, string? Name, string? Email, string? FirstName, string? LastName);
+
         private static IPAddress? ParseIpAddress(string? ipAddress)
         {
             if (string.IsNullOrWhiteSpace(ipAddress))
@@ -329,7 +526,6 @@ namespace Explorea.Server.Services
         }
 
         private static AuthResponseDto BuildAuthResponse(
-            User user,
             string accessToken,
             string refreshToken,
             bool needsInterests)
@@ -338,16 +534,7 @@ namespace Explorea.Server.Services
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                NeedsInterests = needsInterests,
-                User = new AuthUserDto
-                {
-                    Id = user.Id,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Email = user.Email,
-                    Role = user.Role?.Name ?? "user",
-                    TravelerRank = user.TravelerRank
-                }
+                NeedsInterests = needsInterests
             };
         }
     }
