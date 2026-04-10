@@ -157,6 +157,26 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
     return this.galleryImages[this.selectedImageIndex] || '';
   }
 
+  get mapCoordinatesText(): string {
+    const lat = this.destination?.location?.lat;
+    const lng = this.destination?.location?.lng;
+
+    if (lat == null || lng == null) return 'Lokacija nije dostupna';
+
+    return `${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E`;
+  }
+
+  get googleMapsUrl(): string {
+    const lat = this.destination?.location?.lat;
+    const lng = this.destination?.location?.lng;
+
+    if (lat == null || lng == null) {
+      return 'https://maps.google.com';
+    }
+
+    return `https://www.google.com/maps?q=${lat},${lng}`;
+  }
+
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.lightboxOpen) this.closeLightbox();

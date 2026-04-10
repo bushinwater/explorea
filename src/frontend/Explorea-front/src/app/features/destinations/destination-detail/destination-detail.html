@@ -48,32 +48,33 @@
                 </span>
               </div>
             </div>
-
-            <div class="detail-hero__cta">
-              <button class="btn btn-primary detail-plan-btn" type="button">Planiraj put</button>
-            </div>
           </div>
         </div>
 
         <div class="detail-hero__bottom-gradient"></div>
       </section>
 
-      <div class="detail-content">
+      <div class="detail-content detail-content--single">
         <div class="detail-content__main">
-          <section class="detail-card" *ngIf="destination.description">
-            <div class="section-head">
+          <section class="detail-section detail-section--plain" *ngIf="destination.description">
+            <div class="detail-section__head detail-section__head--about">
               <h2>O destinaciji</h2>
             </div>
-            <p class="detail-copy">{{ destination.description }}</p>
+
+            <p class="detail-copy detail-copy--about">
+              {{ destination.description }}
+            </p>
           </section>
 
-          <section class="detail-card" *ngIf="galleryImages.length > 0">
-            <div class="section-head">
-              <h2>Galerija</h2>
-              <a class="section-link" href="javascript:void(0)">Prikaži sve</a>
+          <section class="detail-section detail-section--gallery" *ngIf="galleryImages.length > 0">
+            <div class="detail-section__head">
+              <h2>Galerija fotografija</h2>
+              <a class="section-link section-link--subtle" href="javascript:void(0)">
+                Pogledaj sve slike ({{ galleryImages.length }})
+              </a>
             </div>
 
-            <div class="gallery-grid">
+            <div class="destination-gallery desktop-gallery">
               <img
                 *ngFor="let image of galleryImages; let i = index"
                 [src]="image"
@@ -81,25 +82,48 @@
                 (click)="openLightbox(i)"
               />
             </div>
+
+            <div class="destination-gallery-mobile mobile-gallery">
+              <img
+                *ngFor="let image of galleryImages; let i = index"
+                [src]="image"
+                [alt]="destination.name + ' gallery mobile ' + i"
+                (click)="openLightbox(i)"
+              />
+            </div>
           </section>
 
-          <section class="detail-card">
-            <div class="section-head">
+          <section class="detail-section detail-section--map">
+            <div class="detail-section__head detail-section__head--map">
               <h2>Lokacija i mapa</h2>
-              <button class="ghost-btn" type="button">Otvori u Google mapama</button>
+
+              <a
+                class="ghost-btn map-link-btn map-link-btn--floating"
+                [href]="googleMapsUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span class="material-icons">north_east</span>
+                Otvori u Google Mapama
+              </a>
             </div>
 
-            <div class="map-box">
-              <div class="map-box__overlay">
-                <div class="map-box__info">
+            <div class="map-box-simple map-box-simple--styled">
+              <div class="map-box-simple__overlay"></div>
+
+              <div class="map-pin-card map-pin-card--glass">
+                <div class="map-pin-card__left">
                   <span class="material-icons">location_on</span>
-                  <div>
+
+                  <div class="map-pin-card__content">
                     <strong>{{ destination.name }}</strong>
-                    <p>{{ destination.location?.lat ?? 'N/A' }}, {{ destination.location?.lng ?? 'N/A' }}</p>
+                    <p>{{ mapCoordinatesText }}</p>
                   </div>
                 </div>
 
-                <button class="mini-btn" type="button">Detalji</button>
+                <button class="map-pin-card__details" type="button">
+                  Detalji
+                </button>
               </div>
             </div>
           </section>
@@ -261,46 +285,6 @@
             </div>
           </section>
         </div>
-
-        <aside class="detail-content__side">
-          <section class="detail-card planner-card">
-            <h3>Planer putovanja</h3>
-
-            <div class="planner-field">
-              <label>Datum polaska</label>
-              <button class="field-btn" type="button">Odaberi datum...</button>
-            </div>
-
-            <div class="planner-field">
-              <label>Broj dana</label>
-              <div class="counter-box">
-                <button type="button">-</button>
-                <span>2</span>
-                <button type="button">+</button>
-              </div>
-            </div>
-
-            <button class="btn btn-primary full-width" type="button">Dodaj u planer</button>
-          </section>
-
-          <section class="detail-card">
-            <h3>Dobro je znati</h3>
-            <ul class="tips-list">
-              <li>Ponesite udobnu obuću.</li>
-              <li>Proverite vremenske uslove pre puta.</li>
-              <li>Planirajte obilazak unapred.</li>
-            </ul>
-          </section>
-
-          <section class="detail-card recommendation-card">
-            <h3>Preporuka za tebe</h3>
-            <p class="detail-copy">
-              Na osnovu tvojih interesovanja, ova destinacija može biti odličan izbor za
-              vikend obilazak i aktivan odmor.
-            </p>
-            <a href="javascript:void(0)">Saznaj više</a>
-          </section>
-        </aside>
       </div>
 
       <footer class="detail-footer">
