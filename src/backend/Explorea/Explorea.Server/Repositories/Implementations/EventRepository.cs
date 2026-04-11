@@ -27,6 +27,7 @@ namespace Explorea.Server.Repositories.Implementations
             var query = _set
                 .Include(e => e.City)
                 .Include(e => e.Type)
+                .Include(e => e.Country)
                 .Include(e => e.Images)
                 .AsQueryable();
 
