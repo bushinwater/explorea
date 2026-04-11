@@ -38,6 +38,7 @@ export interface ReviewUser {
   firstName: string;
   lastName: string;
   travelerRank: string;
+  profileImageUrl?: string | null;
 }
 
 export interface Review {

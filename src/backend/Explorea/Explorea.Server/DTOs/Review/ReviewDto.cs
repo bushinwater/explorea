@@ -15,5 +15,6 @@ namespace Explorea.API.DTOs.Review
         public string FirstName { get; set; } = null!;
         public string LastName { get; set; } = null!;
         public string TravelerRank { get; set; } = null!;
+        public string? ProfileImageUrl { get; set; }
     }
 }

@@ -85,13 +85,47 @@ namespace Explorea.Server.Services
             if (destination == null)
                 return null;
 
-            var similarDestinations = await _context.Destinations
+            // Step 1: get current destination's interest tag IDs
+            var currentTagIds = await _context.DestinationInterestTags
+                .Where(dit => dit.DestinationId == destination.Id)
+                .Select(dit => dit.InterestTagId)
+                .ToListAsync();
+
+            // Step 2: get all candidate destinations
+            var candidates = await _context.Destinations
                 .Include(d => d.City)
                 .Include(d => d.Country)
-                .Where(d => d.Id != destination.Id)
-                .OrderByDescending(d => d.Popularity)
-                .Take(4)
+                .Where(d => d.Id != destination.Id && !d.IsDeleted)
                 .ToListAsync();
+
+            // Step 3: get tag mappings for all candidates in one query
+            var candidateIds = candidates.Select(d => d.Id).ToList();
+            var tagMappings = await _context.DestinationInterestTags
+                .Where(dit => candidateIds.Contains(dit.DestinationId))
+                .Select(dit => new { dit.DestinationId, dit.InterestTagId })
+                .ToListAsync();
+
+            var tagsByDestination = tagMappings
+                .GroupBy(m => m.DestinationId)
+                .ToDictionary(g => g.Key, g => g.Select(m => m.InterestTagId).ToHashSet());
+
+            // Step 4: score each candidate and take top 4
+            var similarDestinations = candidates
+                .Select(d => new
+                {
+                    Destination = d,
+                    Score =
+                        (tagsByDestination.TryGetValue(d.Id, out var tags)
+                            ? tags.Count(tagId => currentTagIds.Contains(tagId)) * 3
+                            : 0) +
+                        (d.CountryId.HasValue && d.CountryId == destination.CountryId ? 2 : 0) +
+                        (d.CityId.HasValue && d.CityId == destination.CityId ? 1 : 0)
+                })
+                .OrderByDescending(c => c.Score)
+                .ThenByDescending(c => c.Destination.Popularity)
+                .Take(6)
+                .Select(c => c.Destination)
+                .ToList();
 
             var reviews = await _context.Reviews
                 .Include(r => r.User)
@@ -108,7 +142,8 @@ namespace Explorea.Server.Services
                         Id = r.User.Id,
                         FirstName = r.User.FirstName,
                         LastName = r.User.LastName,
-                        TravelerRank = r.User.TravelerRank
+                        TravelerRank = r.User.TravelerRank,
+                        ProfileImageUrl = r.User.ProfileImageUrl
                     }
                 })
                 .ToListAsync();

@@ -14,22 +14,51 @@
   "SETTINGS_PAGE": {
     "TITLE": "Profile & Settings",
     "SUBTITLE": "Manage your account, preferences and privacy on the Explorea platform.",
+    "SETTINGS_LABEL": "Settings",
     "STATS": {
       "ADVENTURES": "ADVENTURES",
       "REVIEWS": "REVIEWS",
       "SAVED": "SAVED"
     },
     "MEMBER_SINCE": "Member since",
+    "TABS": {
+      "SAVED": "Saved",
+      "SAVED_DESC": "View your saved destinations and activities.",
+      "REVIEWS": "My reviews",
+      "REVIEWS_DESC": "View and manage your reviews."
+    },
+    "ACTIVITIES": {
+      "TITLE": "Recommended for you",
+      "VIEW_ALL": "View all activities"
+    },
+    "PROFILE_SETTINGS": {
+      "TITLE": "Profile settings",
+      "SUBTITLE": "Update your name, photo and password."
+    },
+    "APP_SETTINGS": {
+      "TITLE": "App settings",
+      "SUBTITLE": "Theme, language and other preferences."
+    },
     "ACCOUNT": {
       "TITLE": "Account information",
       "SUBTITLE": "Update your personal data and security settings.",
+      "PROFILE_PICTURE": "Profile photo",
+      "PROFILE_PICTURE_DESC": "Shown on your reviews and profile.",
+      "UPLOAD_PHOTO": "Upload photo",
+      "FIRST_NAME": "First name",
+      "LAST_NAME": "Last name",
       "USERNAME": "Username",
       "USERNAME_DESC": "This name will be visible on your reviews and posts.",
       "EMAIL": "Email address",
       "EMAIL_DESC": "Primary address for notifications and booking confirmations.",
+      "NEWSLETTER": "Newsletter",
+      "NEWSLETTER_DESC": "Receive the latest news about destinations and events.",
       "PASSWORD": "Password",
       "PASSWORD_DESC": "Last changed 3 months ago. We recommend changing it regularly.",
-      "CHANGE_PASSWORD": "Change password"
+      "CHANGE_PASSWORD": "Change password",
+      "PASSWORD_EMAIL_SENT": "We sent a password reset link to your email.",
+      "INTERESTS": "Interests",
+      "EDIT_INTERESTS": "Edit interests"
     },
     "NOTIFICATIONS": {
       "TITLE": "Notifications",
@@ -174,17 +203,33 @@
     "NO_ACCOUNT": "Don't have an account?",
     "REGISTER": "Register",
     "GUEST": "Continue without account",
-    "ERROR": "Invalid email or password."
+    "ERROR": "Invalid email or password.",
+    "ERROR_EMAIL_EMPTY": "Email address is required.",
+    "ERROR_EMAIL_INVALID": "Please enter a valid email address.",
+    "ERROR_NOT_VERIFIED": "Please verify your email before logging in.",
+    "RESEND": "Resend email",
+    "RESEND_SENT": "Email sent!"
   },
   "REGISTER": {
     "TITLE": "Create account",
     "SUBTITLE": "Join and explore the best destinations, events and activities.",
     "FULL_NAME": "Full name",
     "NAME_PLACEHOLDER": "Enter your name",
+    "FIRST_NAME": "First name",
+    "FIRST_NAME_PLACEHOLDER": "Enter your first name",
+    "LAST_NAME": "Last name",
+    "LAST_NAME_PLACEHOLDER": "Enter your last name",
     "EMAIL": "Email address",
     "EMAIL_PLACEHOLDER": "you@email.com",
     "PASSWORD": "Password",
     "CONFIRM_PASSWORD": "Confirm password",
+    "GENDER": "Gender",
+    "GENDER_PLACEHOLDER": "Select gender",
+    "GENDER_MALE": "Male",
+    "GENDER_FEMALE": "Female",
+    "GENDER_OTHER": "Other",
+    "GENDER_PREFER_NOT": "Prefer not to say",
+    "DATE_OF_BIRTH": "Date of birth",
     "TERMS": "I accept",
     "TERMS_LINK": "Terms of service",
     "AND": "and",
@@ -196,6 +241,13 @@
     "ERROR_TERMS": "You must accept the terms of service.",
     "ERROR_PASSWORD": "Passwords do not match.",
     "ERROR_GENERAL": "Registration failed. Please try again.",
+    "ERROR_NAME_EMPTY": "Name is required.",
+    "ERROR_NAME_INVALID": "Only letters are allowed.",
+    "ERROR_NAME_BLACKLIST": "This name is not allowed.",
+    "ERROR_GENDER_EMPTY": "Please select a gender.",
+    "ERROR_DOB_EMPTY": "Date of birth is required.",
+    "ERROR_DOB_INVALID": "Please enter a valid date of birth.",
+    "ERROR_EMAIL_TAKEN": "An account with this email already exists.",
     "MODAL_ACCEPT": "I understand and accept",
     "VERIFY_TITLE": "Check your email",
     "VERIFY_DESC": "We sent a verification link to {{ email }}. Click the link to activate your account.",
@@ -228,6 +280,47 @@
     "SUBTITLE": "We need a few more details to personalize your experience.",
     "SUBMIT": "Continue"
   },
+  "FORGOT_PASSWORD": {
+    "TITLE": "Forgot your password?",
+    "SUBTITLE": "Enter your email address and we'll send you a link to reset your password.",
+    "SUBMIT": "Send reset link",
+    "BACK_TO_LOGIN": "Back to login",
+    "SENT_TITLE": "Check your email",
+    "SENT_DESC": "We sent a password reset link to {{ email }}. The link expires in 1 hour."
+  },
+  "RESET_PASSWORD": {
+    "TITLE": "Set new password",
+    "SUBTITLE": "Enter your new password below.",
+    "NEW_PASSWORD": "New password",
+    "CONFIRM_PASSWORD": "Confirm new password",
+    "SUBMIT": "Save new password",
+    "BACK_TO_LOGIN": "Back to login",
+    "SUCCESS_TITLE": "Password changed",
+    "SUCCESS_DESC": "Your password has been successfully changed.",
+    "SUCCESS_REDIRECT": "You will be redirected to the login page shortly.",
+    "ERROR_MISMATCH": "Passwords do not match.",
+    "ERROR_TOKEN": "The reset link is invalid or has expired.",
+    "ERROR_EMPTY": "Password is required.",
+    "ERROR_TOO_SHORT": "Password must be at least 8 characters.",
+    "ERROR_SAME_PASSWORD": "New password must differ from the current one.",
+    "ERROR_EXPIRED": "The reset link has expired. Please request a new one.",
+    "ERROR_INVALID_LINK": "The reset link is invalid.",
+    "ERROR_GENERAL": "Something went wrong. Please try again.",
+    "STRENGTH": {
+      "WEAK": "Weak",
+      "FAIR": "Fair",
+      "STRONG": "Strong"
+    }
+  },
+  "VERIFY_EMAIL": {
+    "LOADING_TITLE": "Verifying your email...",
+    "LOADING_DESC": "Please wait a moment.",
+    "SUCCESS_TITLE": "Email verified",
+    "SUCCESS_DESC": "Your account is active. You can now log in.",
+    "ERROR_TITLE": "Verification failed",
+    "ERROR_DESC": "The link is invalid or has already been used.",
+    "GO_BACK": "Go to login"
+  },
   "DESTINATION_DETAIL": {
     "LOADING": "Loading destination details...",
     "ABOUT": "About the destination",
@@ -237,6 +330,28 @@
     "OPEN_IN_GOOGLE_MAPS": "Open in Google Maps",
     "DETAILS": "Details",
     "SHOW_ALL": "Show all",
+    "SHOW_ALL_COUNT": "Show all ({{count}})",
+    "ALL_PANEL": {
+      "PLACES": "All places",
+      "EVENTS": "All events",
+      "ACTIVITIES": "All activities",
+      "REVIEWS": "All reviews"
+    },
+    "REVIEWS_COUNT": "reviews",
+    "WRITE_REVIEW": "Write a review",
+    "REVIEW_FORM": {
+      "TITLE": "Write a review",
+      "RATING_LABEL": "Your rating",
+      "COMMENT_LABEL": "Your experience",
+      "COMMENT_PLACEHOLDER": "Share what you liked or didn't like about this destination...",
+      "CANCEL": "Cancel",
+      "SUBMIT": "Submit review",
+      "STARS_1": "Poor",
+      "STARS_2": "Fair",
+      "STARS_3": "Good",
+      "STARS_4": "Very good",
+      "STARS_5": "Excellent"
+    },
     "EMPTY_TAB": "There are currently no available items for this section.",
     "EMPTY_REVIEWS": "There are no reviews for this destination yet.",
     "LOCATION_NOT_AVAILABLE": "Location is not available",
