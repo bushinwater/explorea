@@ -2,9 +2,92 @@
   <app-sidebar />
 
   <main class="detail-main">
-    <div class="state-block" *ngIf="isLoading">
-      {{ 'DESTINATION_DETAIL.LOADING' | translate }}
+
+    <!-- STICKY BAR (background + save button) -->
+    <div class="sticky-bar" [class.sticky-bar--visible]="stickyBarVisible">
+      <button class="circle-btn circle-btn--sm"
+        [class.circle-btn--saved]="isSaved"
+        [disabled]="isSavedLoading"
+        (click)="toggleSave()">
+        <span class="material-icons">{{ isSaved ? 'favorite' : 'favorite_border' }}</span>
+      </button>
     </div>
+
+    <!-- FLOATING TITLE (tracks from hero to sticky bar) -->
+    <div class="floating-title"
+      *ngIf="destination && !isLoading"
+      [class.floating-title--arrived]="scrollProgress > 0.88"
+      [ngStyle]="floatingTitleStyle">
+      {{ destination.name }}
+    </div>
+
+    <!-- SKELETON -->
+    <ng-container *ngIf="isLoading">
+      <div class="skel-hero">
+        <div class="skel-hero__topbar">
+          <div class="skel skel-circle"></div>
+          <div class="skel skel-circle"></div>
+        </div>
+        <div class="skel-hero__content">
+          <div class="skel skel-badge-row">
+            <div class="skel skel-badge"></div>
+            <div class="skel skel-badge skel-badge--sm"></div>
+          </div>
+          <div class="skel skel-title"></div>
+          <div class="skel skel-subtitle"></div>
+        </div>
+      </div>
+
+      <div class="skel-content">
+        <!-- About -->
+        <div class="skel-section">
+          <div class="skel skel-section-title"></div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line skel-line--short"></div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line skel-line--med"></div>
+        </div>
+
+        <!-- Gallery -->
+        <div class="skel-section">
+          <div class="skel skel-section-title"></div>
+          <div class="skel-gallery">
+            <div class="skel skel-img-main"></div>
+            <div class="skel-gallery-col">
+              <div class="skel skel-img-sm"></div>
+              <div class="skel skel-img-sm"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div class="skel-section">
+          <div class="skel skel-section-title"></div>
+          <div class="skel skel-map"></div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="skel-section">
+          <div class="skel-tabs-line">
+            <div class="skel skel-tab"></div>
+            <div class="skel skel-tab"></div>
+            <div class="skel skel-tab"></div>
+            <div class="skel skel-tab"></div>
+          </div>
+          <div class="skel-stack">
+            <div class="skel skel-stack-item" *ngFor="let i of [1,2,3]"></div>
+          </div>
+        </div>
+
+        <!-- Similar -->
+        <div class="skel-section">
+          <div class="skel skel-section-title"></div>
+          <div class="skel-similar-grid">
+            <div class="skel skel-similar-card" *ngFor="let i of [1,2,3,4,5,6]"></div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
 
     <div class="state-block error" *ngIf="!isLoading && error">
       {{ error }}
@@ -16,32 +99,27 @@
         <div class="detail-hero__overlay"></div>
 
         <div class="detail-hero__topbar">
-          <div class="detail-hero__brand mobile-only">
-            <span class="detail-hero__brand-icon">◇</span>
-            <span class="detail-hero__brand-text">Explorea</span>
-          </div>
-
-          <div class="detail-hero__actions">
-            <button class="circle-btn" type="button">
-              <span class="material-icons">share</span>
-            </button>
-            <button class="circle-btn" type="button">
-              <span class="material-icons">favorite_border</span>
+<div class="detail-hero__actions">
+            <button class="circle-btn" type="button"
+              [class.circle-btn--saved]="isSaved"
+              [disabled]="isSavedLoading"
+              (click)="toggleSave()">
+              <span class="material-icons">{{ isSaved ? 'favorite' : 'favorite_border' }}</span>
             </button>
           </div>
         </div>
 
         <div class="detail-hero__content">
-          <div class="detail-hero__badges">
+          <div class="detail-hero__badges" [style.opacity]="heroBadgesOpacity">
             <span class="detail-badge" *ngIf="destination.country?.name">{{ destination.country?.name }}</span>
             <span class="detail-badge" *ngIf="destination.city?.name">{{ destination.city?.name }}</span>
           </div>
 
           <div class="detail-hero__main">
             <div class="detail-hero__text">
-              <h1>{{ destination.name }}</h1>
+              <h1 #heroTitleEl [style.opacity]="heroTitleOpacity">{{ destination.name }}</h1>
 
-              <div class="detail-hero__meta">
+              <div class="detail-hero__meta" [style.opacity]="heroBadgesOpacity">
                 <span class="detail-meta-item" *ngIf="locationText">
                   <span class="material-icons">location_on</span>
                   {{ locationText }}
@@ -74,7 +152,7 @@
           <section class="detail-section detail-section--gallery" *ngIf="galleryImages.length > 0">
             <div class="detail-section__head">
               <h2>{{ 'DESTINATION_DETAIL.GALLERY' | translate }}</h2>
-              <a class="section-link section-link--subtle" href="javascript:void(0)">
+              <a class="section-link section-link--subtle" href="javascript:void(0)" (click)="openAllImages()">
                 {{ 'DESTINATION_DETAIL.VIEW_ALL_IMAGES' | translate:{ count: galleryImages.length } }}
               </a>
             </div>
@@ -143,41 +221,37 @@
             <div class="tab-block" *ngIf="selectedTab !== 'reviews'">
               <div class="section-head tab-block__head" *ngIf="selectedTab === 'places'">
                 <h2>{{ 'DESTINATION_DETAIL.SECTIONS.POPULAR_PLACES' | translate }}</h2>
-                <a class="section-link" href="javascript:void(0)">
-                  {{ 'DESTINATION_DETAIL.SHOW_ALL' | translate }}
+                <a class="section-link" href="javascript:void(0)" (click)="openShowAll()">
+                  {{ 'DESTINATION_DETAIL.SHOW_ALL_COUNT' | translate:{ count: activeTabItems.length } }}
                 </a>
               </div>
 
               <div class="section-head tab-block__head" *ngIf="selectedTab === 'events'">
                 <h2>{{ 'DESTINATION_DETAIL.SECTIONS.POPULAR_EVENTS' | translate }}</h2>
-                <a class="section-link" href="javascript:void(0)">
-                  {{ 'DESTINATION_DETAIL.SHOW_ALL' | translate }}
+                <a class="section-link" href="javascript:void(0)" (click)="openShowAll()">
+                  {{ 'DESTINATION_DETAIL.SHOW_ALL_COUNT' | translate:{ count: activeTabItems.length } }}
                 </a>
               </div>
 
               <div class="section-head tab-block__head" *ngIf="selectedTab === 'activities'">
                 <h2>{{ 'DESTINATION_DETAIL.SECTIONS.POPULAR_ACTIVITIES' | translate }}</h2>
-                <a class="section-link" href="javascript:void(0)">
-                  {{ 'DESTINATION_DETAIL.SHOW_ALL' | translate }}
+                <a class="section-link" href="javascript:void(0)" (click)="openShowAll()">
+                  {{ 'DESTINATION_DETAIL.SHOW_ALL_COUNT' | translate:{ count: activeTabItems.length } }}
                 </a>
               </div>
 
               <ng-container *ngIf="activeTabItems.length > 0; else emptyTab">
                 <div class="stack-list">
-                  <a class="stack-item" *ngFor="let item of activeTabItems; trackBy: trackById"
+                  <a class="stack-item" *ngFor="let item of previewTabItems; trackBy: trackById"
                     [routerLink]="getItemRoute(item)">
                     <div class="stack-item__image"
-                      [style.background-image]="'linear-gradient(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.08)), url(' + getItemImage(item) + ')'"
-                      [style.background-position]="'center'" [style.background-size]="'cover'"
-                      [style.background-repeat]="'no-repeat'"></div>
+                      [style.background-image]="'url(' + getItemImage(item) + ')'"></div>
 
                     <div class="stack-item__content">
                       <div class="stack-item__top">
                         <div>
                           <h3>{{ item.name }}</h3>
-                          <span class="stack-item__type">
-                            {{ getItemTypeLabel() }}
-                          </span>
+                          <span class="stack-item__type">{{ getItemTypeLabel() }}</span>
                         </div>
 
                         <span class="stack-item__rating" *ngIf="getItemRating(item) !== null">
@@ -204,42 +278,53 @@
             <div class="tab-block" *ngIf="selectedTab === 'reviews'">
               <div class="section-head tab-block__head">
                 <h2>{{ 'DESTINATION_DETAIL.SECTIONS.TRAVELER_REVIEWS' | translate }}</h2>
+                <div class="tab-block__actions">
+                  <button class="ghost-btn ghost-btn--sm" type="button" (click)="openReviewForm()">
+                    <span class="material-icons">rate_review</span>
+                    {{ 'DESTINATION_DETAIL.WRITE_REVIEW' | translate }}
+                  </button>
+                  <a class="section-link" href="javascript:void(0)" (click)="openShowAll()">
+                    {{ 'DESTINATION_DETAIL.SHOW_ALL_COUNT' | translate:{ count: destination.reviews.length } }}
+                  </a>
+                </div>
               </div>
 
               <ng-container *ngIf="destination.reviews.length > 0; else emptyReviews">
-                <div class="reviews-list">
-                  <div class="review-item" *ngFor="let review of destination.reviews">
-                    <div class="review-item__head">
-                      <div>
-                        <h3>{{ review.user.firstName }} {{ review.user.lastName }}</h3>
-                        <span>{{ review.user.travelerRank }}</span>
-                      </div>
+                <div class="review-scroll-row">
+                  <app-review-card *ngFor="let review of destination.reviews.slice(0, 6)" [review]="$any(review)" />
+                </div>
 
-                      <div class="review-item__rating review-item__rating--stars">
-                        <span *ngFor="let star of getStarsArray(); let i = index" class="material-icons"
-                          [class.review-star--filled]="i < review.rating"
-                          [class.review-star--empty]="i >= review.rating">
-                          star
-                        </span>
-                      </div>
+                <div class="rating-stats">
+                  <div class="rating-stats__avg">
+                    <span class="rating-stats__number">{{ destination.avgRating | number:'1.1-1' }}</span>
+                    <div class="rating-stats__stars">
+                      <span *ngFor="let star of getStarsArray(); let i = index" class="material-icons"
+                        [class.review-star--filled]="i < destination.avgRating"
+                        [class.review-star--empty]="i >= destination.avgRating">star</span>
                     </div>
+                    <span class="rating-stats__total">{{ destination.reviews.length }} {{ 'DESTINATION_DETAIL.REVIEWS_COUNT' | translate }}</span>
+                  </div>
 
-                    <p class="detail-copy" *ngIf="review.comment">{{ review.comment }}</p>
+                  <div class="rating-stats__bars">
+                    <div class="rating-stats__row" *ngFor="let row of ratingBreakdown">
+                      <span class="rating-stats__label">{{ row.stars }}</span>
+                      <span class="material-icons rating-stats__star">star</span>
+                      <div class="rating-stats__bar">
+                        <div class="rating-stats__fill" [style.width.%]="row.pct"></div>
+                      </div>
+                      <span class="rating-stats__count">{{ row.count }}</span>
+                    </div>
                   </div>
                 </div>
               </ng-container>
             </div>
 
             <ng-template #emptyTab>
-              <p class="empty-text">
-                {{ 'DESTINATION_DETAIL.EMPTY_TAB' | translate }}
-              </p>
+              <p class="empty-text">{{ 'DESTINATION_DETAIL.EMPTY_TAB' | translate }}</p>
             </ng-template>
 
             <ng-template #emptyReviews>
-              <p class="empty-text">
-                {{ 'DESTINATION_DETAIL.EMPTY_REVIEWS' | translate }}
-              </p>
+              <p class="empty-text">{{ 'DESTINATION_DETAIL.EMPTY_REVIEWS' | translate }}</p>
             </ng-template>
           </section>
 
@@ -251,23 +336,21 @@
             <div class="similar-grid">
               <a class="similar-card" *ngFor="let item of destination.similarDestinations"
                 [routerLink]="['/destinations', item.slug]">
-                <img [src]="item.previewImageUrl || item.heroImageUrl || 'https://via.placeholder.com/400x250'"
-                  [alt]="item.name" />
+                <div class="similar-card__image-wrap">
+                  <img [src]="item.previewImageUrl || item.heroImageUrl || 'https://via.placeholder.com/400x250'"
+                    [alt]="item.name" />
+                  <span class="similar-card__rating">
+                    <span class="material-icons">star</span>
+                    {{ item.avgRating | number: '1.1-1' }}
+                  </span>
+                </div>
 
                 <div class="similar-card__body">
-                  <div class="similar-card__top">
-                    <h3>{{ item.name }}</h3>
-
-                    <span class="similar-card__rating">
-                      <span class="material-icons">star</span>
-                      {{ item.avgRating | number: '1.1-1' }}
-                    </span>
-                  </div>
-
-                  <p>
-                    {{ item.city?.name }}
-                    <span *ngIf="item.country?.name">, {{ item.country?.name }}</span>
-                  </p>
+                  <h3 class="similar-card__name">{{ item.name }}</h3>
+                  <span class="similar-card__city">
+                    <span class="material-icons">location_on</span>
+                    {{ item.city?.name }}<ng-container *ngIf="item.country?.name">, {{ item.country?.name }}</ng-container>
+                  </span>
                 </div>
               </a>
             </div>
@@ -284,6 +367,136 @@
           <p class="detail-footer__copy">{{ 'HOME.FOOTER.COPY' | translate }}</p>
         </div>
       </footer>
+
+      <!-- SHOW ALL PANEL -->
+      <div class="show-all-overlay" *ngIf="showAllOpen" (click)="closeShowAll()">
+        <div class="show-all-panel" (click)="$event.stopPropagation()">
+          <div class="show-all-panel__header">
+            <div class="show-all-panel__title-wrap">
+              <h2>{{ showAllTitle }}</h2>
+              <span class="show-all-panel__subtitle">{{ destination.city?.name || destination.name }}</span>
+            </div>
+            <button class="circle-btn circle-btn--sm" type="button" (click)="closeShowAll()">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+
+          <div class="show-all-panel__body">
+            <!-- Places / Events / Activities -->
+            <ng-container *ngIf="selectedTab !== 'reviews'">
+              <div class="stack-list">
+                <a class="stack-item" *ngFor="let item of activeTabItems; trackBy: trackById"
+                  [routerLink]="getItemRoute(item)" (click)="closeShowAll()">
+                  <div class="stack-item__image" [style.background-image]="'url(' + getItemImage(item) + ')'"></div>
+                  <div class="stack-item__content">
+                    <div class="stack-item__top">
+                      <div>
+                        <h3>{{ item.name }}</h3>
+                        <span class="stack-item__type">{{ getItemTypeLabel() }}</span>
+                      </div>
+                      <span class="stack-item__rating" *ngIf="getItemRating(item) !== null">
+                        <span class="material-icons">star</span>
+                        {{ getItemRating(item) | number: '1.1-1' }}
+                      </span>
+                      <span class="stack-item__rating" *ngIf="getItemRating(item) === null">
+                        <span class="material-icons">event</span>
+                        {{ getItemMetaLabel(item) }}
+                      </span>
+                    </div>
+                    <p>
+                      <span class="material-icons">location_on</span>
+                      {{ getItemLocationText(item) }}
+                    </p>
+                  </div>
+                </a>
+              </div>
+            </ng-container>
+
+            <!-- Reviews -->
+            <ng-container *ngIf="selectedTab === 'reviews'">
+              <div class="reviews-list">
+                <div class="review-item" *ngFor="let review of destination.reviews">
+                  <div class="review-item__head">
+                    <div class="review-item__avatar">
+                      <img *ngIf="review.user.profileImageUrl" [src]="review.user.profileImageUrl" [alt]="review.user.firstName" />
+                      <span *ngIf="!review.user.profileImageUrl">{{ review.user.firstName[0] }}{{ review.user.lastName[0] }}</span>
+                    </div>
+                    <div class="review-item__user">
+                      <h3>{{ review.user.firstName }} {{ review.user.lastName }}</h3>
+                      <span>{{ review.user.travelerRank }}</span>
+                    </div>
+                    <div class="review-item__rating review-item__rating--stars">
+                      <span *ngFor="let star of getStarsArray(); let i = index" class="material-icons"
+                        [class.review-star--filled]="i < review.rating"
+                        [class.review-star--empty]="i >= review.rating">star</span>
+                    </div>
+                  </div>
+                  <p class="detail-copy" *ngIf="review.comment">{{ review.comment }}</p>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+
+      <!-- REVIEW FORM -->
+      <div class="review-form-overlay" *ngIf="reviewFormOpen" (click)="closeReviewForm()">
+        <div class="review-form-panel" (click)="$event.stopPropagation()">
+          <div class="review-form-panel__header">
+            <div>
+              <h2>{{ 'DESTINATION_DETAIL.REVIEW_FORM.TITLE' | translate }}</h2>
+              <span class="review-form-panel__dest">{{ destination.name }}</span>
+            </div>
+            <button class="circle-btn circle-btn--sm" type="button" (click)="closeReviewForm()">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+
+          <div class="review-form-panel__body">
+            <div class="review-form__stars">
+              <span class="review-form__stars-label">{{ 'DESTINATION_DETAIL.REVIEW_FORM.RATING_LABEL' | translate }}</span>
+              <div class="review-form__star-row">
+                <button
+                  *ngFor="let s of getStarsArray(); let i = index"
+                  type="button"
+                  class="review-form__star"
+                  [class.review-form__star--active]="i < (reviewHoverRating || reviewRating)"
+                  (mouseenter)="reviewHoverRating = i + 1"
+                  (mouseleave)="reviewHoverRating = 0"
+                  (click)="reviewRating = i + 1">
+                  <span class="material-icons">star</span>
+                </button>
+              </div>
+              <span class="review-form__rating-text" *ngIf="reviewHoverRating || reviewRating">
+                {{ 'DESTINATION_DETAIL.REVIEW_FORM.STARS_' + (reviewHoverRating || reviewRating) | translate }}
+              </span>
+            </div>
+
+            <div class="review-form__field">
+              <label class="review-form__label">{{ 'DESTINATION_DETAIL.REVIEW_FORM.COMMENT_LABEL' | translate }}</label>
+              <textarea
+                class="review-form__textarea"
+                [(ngModel)]="reviewComment"
+                [placeholder]="'DESTINATION_DETAIL.REVIEW_FORM.COMMENT_PLACEHOLDER' | translate"
+                rows="4"
+                maxlength="1000">
+              </textarea>
+              <span class="review-form__char-count">{{ reviewComment.length }} / 1000</span>
+            </div>
+          </div>
+
+          <div class="review-form-panel__footer">
+            <button class="ghost-btn" type="button" (click)="closeReviewForm()">
+              {{ 'DESTINATION_DETAIL.REVIEW_FORM.CANCEL' | translate }}
+            </button>
+            <button class="primary-btn" type="button"
+              [disabled]="reviewRating === 0"
+              (click)="submitReview()">
+              {{ 'DESTINATION_DETAIL.REVIEW_FORM.SUBMIT' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div class="lightbox" *ngIf="lightboxOpen" (click)="closeLightbox()">
         <button class="lightbox__close" type="button" (click)="closeLightbox(); $event.stopPropagation()">

@@ -1,10 +1,13 @@
-import { Component, OnInit, inject, ChangeDetectorRef, HostListener, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { Component, OnInit, AfterViewInit, inject, ChangeDetectorRef, HostListener, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { CommonModule, NgStyle } from '@angular/common';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
 
 import { DestinationService } from '../../../core/services/destination.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { SavedService } from '../../../core/services/saved.service';
 import {
   ActivityCard,
   DestinationDetail,
@@ -13,6 +16,7 @@ import {
 } from '../../../core/models/destination.model';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
+import { ReviewCard } from '../../../shared/components/review-card/review-card';
 
 type DetailTab = 'places' | 'events' | 'activities' | 'reviews';
 type TabItem = PlaceCard | EventCard | ActivityCard;
@@ -20,13 +24,17 @@ type TabItem = PlaceCard | EventCard | ActivityCard;
 @Component({
   selector: 'app-destination-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslateModule, Sidebar, BottomNav],
+  imports: [CommonModule, NgStyle, RouterModule, FormsModule, TranslateModule, Sidebar, BottomNav, ReviewCard],
   templateUrl: './destination-detail.html',
   styleUrls: ['./destination-detail.css']
 })
-export class DestinationDetailComponent implements OnInit, OnDestroy {
+export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('heroTitleEl') heroTitleEl!: ElementRef<HTMLElement>;
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private destinationService = inject(DestinationService);
+  private authService = inject(AuthService);
+  private savedService = inject(SavedService);
   private cdr = inject(ChangeDetectorRef);
   private translate = inject(TranslateService);
 
@@ -40,6 +48,23 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
 
   lightboxOpen = false;
   selectedImageIndex = 0;
+
+  isSaved = false;
+  isSavedLoading = false;
+
+  showAllOpen = false;
+  private savedScrollY = 0;
+
+  reviewFormOpen = false;
+  reviewRating = 0;
+  reviewHoverRating = 0;
+  reviewComment = '';
+
+  scrollProgress = 0;
+  titleCaptured = false;
+  private titleAbsTop = 0;
+  private titleAbsLeft = 0;
+  private scrollThreshold = 300;
 
   ngOnInit(): void {
     this.routeSub = this.route.paramMap.subscribe(params => {
@@ -57,10 +82,27 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  ngAfterViewInit(): void {}
+
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
     this.requestSub?.unsubscribe();
     document.body.style.overflow = '';
+  }
+
+  private captureTitle(): void {
+    // Wait one tick for the DOM to render the h1
+    setTimeout(() => {
+      const el = this.heroTitleEl?.nativeElement;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      this.titleAbsTop  = rect.top + window.scrollY;
+      this.titleAbsLeft = rect.left;
+      // Scroll threshold = distance from title to target (top: 16px)
+      this.scrollThreshold = Math.max(this.titleAbsTop - 16, 80);
+      this.titleCaptured = true;
+      this.cdr.detectChanges();
+    }, 0);
   }
 
   private loadDestination(slug: string): void {
@@ -72,13 +114,25 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
     this.selectedTab = 'places';
     this.lightboxOpen = false;
     this.selectedImageIndex = 0;
+    this.showAllOpen = false;
+    this.reviewFormOpen = false;
+    this.titleCaptured = false;
+    this.scrollProgress = 0;
+    this.cdr.detectChanges();
 
     this.requestSub = this.destinationService.getDestinationBySlug(slug).subscribe({
       next: (data) => {
         this.destination = data;
         this.isLoading = false;
+        this.isSaved = false;
         window.scrollTo({ top: 0, behavior: 'auto' });
         this.cdr.detectChanges();
+        this.captureTitle();
+        if (this.authService.isLoggedIn()) {
+          this.savedService.check('destination', data.id).subscribe({
+            next: (res) => { this.isSaved = res.isSaved; this.cdr.detectChanges(); },
+          });
+        }
       },
       error: () => {
         this.error = this.translate.instant('DESTINATION_DETAIL.ERRORS.LOAD_FAILED');
@@ -90,6 +144,170 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
 
   setTab(tab: DetailTab): void {
     this.selectedTab = tab;
+  }
+
+  toggleSave(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+    if (!this.destination || this.isSavedLoading) return;
+
+    this.isSavedLoading = true;
+    const id = this.destination.id;
+    const action = this.isSaved
+      ? this.savedService.unsave('destination', id)
+      : this.savedService.save('destination', id);
+
+    action.subscribe({
+      next: () => {
+        this.isSaved = !this.isSaved;
+        this.isSavedLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isSavedLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  openAllImages(): void {
+    if (this.galleryImages.length > 0) this.openLightbox(0);
+  }
+
+  openShowAll(): void {
+    this.showAllOpen = true;
+    this.savedScrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.savedScrollY}px`;
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeShowAll(): void {
+    this.showAllOpen = false;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo({ top: this.savedScrollY, behavior: 'instant' as ScrollBehavior });
+  }
+
+  get previewTabItems(): TabItem[] {
+    return this.activeTabItems.slice(0, 3);
+  }
+
+  get hasMoreTabItems(): boolean {
+    return this.activeTabItems.length > 3;
+  }
+
+  get hasMoreReviews(): boolean {
+    return (this.destination?.reviews.length ?? 0) > 3;
+  }
+
+  get showAllTitle(): string {
+    switch (this.selectedTab) {
+      case 'places':     return this.translate.instant('DESTINATION_DETAIL.ALL_PANEL.PLACES');
+      case 'events':     return this.translate.instant('DESTINATION_DETAIL.ALL_PANEL.EVENTS');
+      case 'activities': return this.translate.instant('DESTINATION_DETAIL.ALL_PANEL.ACTIVITIES');
+      case 'reviews':    return this.translate.instant('DESTINATION_DETAIL.ALL_PANEL.REVIEWS');
+      default: return '';
+    }
+  }
+
+  openReviewForm(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+    this.reviewRating = 0;
+    this.reviewHoverRating = 0;
+    this.reviewComment = '';
+    this.reviewFormOpen = true;
+    this.savedScrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.savedScrollY}px`;
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeReviewForm(): void {
+    this.reviewFormOpen = false;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo({ top: this.savedScrollY, behavior: 'instant' as ScrollBehavior });
+  }
+
+  submitReview(): void {
+    if (this.reviewRating === 0) return;
+    // TODO: wire up backend
+    this.closeReviewForm();
+  }
+
+  get ratingBreakdown(): { stars: number; count: number; pct: number }[] {
+    const reviews = this.destination?.reviews ?? [];
+    const total = reviews.length;
+    return [5, 4, 3, 2, 1].map(stars => {
+      const count = reviews.filter(r => r.rating === stars).length;
+      return { stars, count, pct: total > 0 ? (count / total) * 100 : 0 };
+    });
+  }
+
+  get showAllCount(): number {
+    if (this.selectedTab === 'reviews') return this.destination?.reviews.length ?? 0;
+    return this.activeTabItems.length;
+  }
+
+  @HostListener('window:scroll')
+  onScroll(): void {
+    this.scrollProgress = Math.min(window.scrollY / this.scrollThreshold, 1);
+    this.cdr.detectChanges();
+  }
+
+  private ease(t: number): number {
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  }
+
+  get floatingTitleStyle(): Record<string, string> {
+    if (!this.destination || !this.titleCaptured) return { opacity: '0' };
+    const p = this.ease(this.scrollProgress);
+
+    const isMobile = window.innerWidth <= 768;
+    const endX = isMobile ? 16 : 88;
+    const endY = 16;
+
+    // Start: exact current viewport position of the original h1
+    const startViewportTop  = this.titleAbsTop - window.scrollY;
+    const startViewportLeft = this.titleAbsLeft;
+
+    const tx = startViewportLeft + (endX - startViewportLeft) * p;
+    const ty = startViewportTop  + (endY - startViewportTop)  * p;
+
+    // Target ~17px regardless of base font size (52px desktop, 34px mobile)
+    const baseSize = isMobile ? 34 : 52;
+    const endScale = 17 / baseSize;
+    const scale = 1 + (endScale - 1) * p;
+
+    return {
+      transform: `translate(${tx}px, ${ty}px) scale(${scale})`,
+      opacity: '1',
+    };
+  }
+
+  // h1 je odmah sakriven čim floating title preuzme
+  get heroTitleOpacity(): number {
+    return this.titleCaptured ? 0 : 1;
+  }
+
+  get heroBadgesOpacity(): number {
+    return Math.max(1 - this.scrollProgress * 2, 0);
+  }
+
+  get stickyBarVisible(): boolean {
+    return this.scrollProgress > 0.88 && !this.isLoading && !!this.destination;
   }
 
   get locationText(): string {
@@ -269,6 +487,8 @@ export class DestinationDetailComponent implements OnInit, OnDestroy {
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.lightboxOpen) this.closeLightbox();
+    else if (this.showAllOpen) this.closeShowAll();
+    else if (this.reviewFormOpen) this.closeReviewForm();
   }
 
   @HostListener('document:keydown.arrowLeft')

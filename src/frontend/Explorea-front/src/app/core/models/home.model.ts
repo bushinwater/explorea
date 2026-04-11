@@ -59,6 +59,7 @@ export interface ReviewDto {
     firstName: string;
     lastName: string;
     travelerRank: string;
+    profileImageUrl?: string | null;
   };
 }
 

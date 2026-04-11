@@ -14,22 +14,51 @@
   "SETTINGS_PAGE": {
     "TITLE": "Profil & Podešavanja",
     "SUBTITLE": "Upravljaj svojim nalogom, preferencijama i privatnošću na Explorea platformi.",
+    "SETTINGS_LABEL": "Podešavanja",
     "STATS": {
       "ADVENTURES": "AVANTURE",
       "REVIEWS": "RECENZIJE",
       "SAVED": "SAČUVANO"
     },
     "MEMBER_SINCE": "Član od",
+    "TABS": {
+      "SAVED": "Sačuvano",
+      "SAVED_DESC": "Pregledaj sačuvane destinacije i aktivnosti.",
+      "REVIEWS": "Moje recenzije",
+      "REVIEWS_DESC": "Pregledaj i upravljaj svojim recenzijama."
+    },
+    "ACTIVITIES": {
+      "TITLE": "Preporučeno za tebe",
+      "VIEW_ALL": "Sve aktivnosti"
+    },
+    "PROFILE_SETTINGS": {
+      "TITLE": "Podešavanja profila",
+      "SUBTITLE": "Ažuriraj ime, fotografiju i lozinku."
+    },
+    "APP_SETTINGS": {
+      "TITLE": "Podešavanja aplikacije",
+      "SUBTITLE": "Tema, jezik i ostale preferencije."
+    },
     "ACCOUNT": {
       "TITLE": "Informacije o nalogu",
       "SUBTITLE": "Ažuriraj svoje lične podatke i sigurnosna podešavanja.",
+      "PROFILE_PICTURE": "Profilna fotografija",
+      "PROFILE_PICTURE_DESC": "Prikazuje se na tvojim recenzijama i profilu.",
+      "UPLOAD_PHOTO": "Dodaj fotografiju",
+      "FIRST_NAME": "Ime",
+      "LAST_NAME": "Prezime",
       "USERNAME": "Korisničko ime",
       "USERNAME_DESC": "Ovo ime će biti vidljivo na tvojim recenzijama i postovima.",
       "EMAIL": "Email adresa",
       "EMAIL_DESC": "Primarna adresa za obaveštenja i potvrde rezervacija.",
+      "NEWSLETTER": "Newsletter",
+      "NEWSLETTER_DESC": "Primaj najnovije vesti o destinacijama i događajima.",
       "PASSWORD": "Lozinka",
       "PASSWORD_DESC": "Poslednja promena pre 3 meseca. Preporučujemo redovnu promenu.",
-      "CHANGE_PASSWORD": "Promeni lozinku"
+      "CHANGE_PASSWORD": "Promeni lozinku",
+      "PASSWORD_EMAIL_SENT": "Poslali smo ti link za promenu lozinke na email.",
+      "INTERESTS": "Interesovanja",
+      "EDIT_INTERESTS": "Izmeni interesovanja"
     },
     "NOTIFICATIONS": {
       "TITLE": "Obaveštenja",
@@ -174,17 +203,33 @@
     "NO_ACCOUNT": "Nemate nalog?",
     "REGISTER": "Registrujte se",
     "GUEST": "Nastavi bez naloga",
-    "ERROR": "Pogrešan email ili lozinka."
+    "ERROR": "Pogrešan email ili lozinka.",
+    "ERROR_EMAIL_EMPTY": "Email adresa je obavezna.",
+    "ERROR_EMAIL_INVALID": "Unesite ispravnu email adresu.",
+    "ERROR_NOT_VERIFIED": "Molimo vas da verifikujete email pre prijave.",
+    "RESEND": "Ponovo pošalji email",
+    "RESEND_SENT": "Email je poslat!"
   },
   "REGISTER": {
     "TITLE": "Kreiraj nalog",
     "SUBTITLE": "Pridruži se i istraži najbolje destinacije, događaje i aktivnosti.",
     "FULL_NAME": "Ime i prezime",
     "NAME_PLACEHOLDER": "Unesite vaše ime",
+    "FIRST_NAME": "Ime",
+    "FIRST_NAME_PLACEHOLDER": "Unesite vaše ime",
+    "LAST_NAME": "Prezime",
+    "LAST_NAME_PLACEHOLDER": "Unesite vaše prezime",
     "EMAIL": "Email adresa",
     "EMAIL_PLACEHOLDER": "vas@email.com",
     "PASSWORD": "Lozinka",
     "CONFIRM_PASSWORD": "Potvrdi lozinku",
+    "GENDER": "Pol",
+    "GENDER_PLACEHOLDER": "Izaberi pol",
+    "GENDER_MALE": "Muški",
+    "GENDER_FEMALE": "Ženski",
+    "GENDER_OTHER": "Ostalo",
+    "GENDER_PREFER_NOT": "Ne želim da navedem",
+    "DATE_OF_BIRTH": "Datum rođenja",
     "TERMS": "Prihvatam",
     "TERMS_LINK": "Uslove korišćenja",
     "AND": "i",
@@ -196,6 +241,13 @@
     "ERROR_TERMS": "Morate prihvatiti uslove korišćenja.",
     "ERROR_PASSWORD": "Lozinke se ne poklapaju.",
     "ERROR_GENERAL": "Registracija nije uspela. Pokušajte ponovo.",
+    "ERROR_NAME_EMPTY": "Ime je obavezno.",
+    "ERROR_NAME_INVALID": "Dozvoljena su samo slova.",
+    "ERROR_NAME_BLACKLIST": "Ovo ime nije dozvoljeno.",
+    "ERROR_GENDER_EMPTY": "Molimo izaberite pol.",
+    "ERROR_DOB_EMPTY": "Datum rođenja je obavezan.",
+    "ERROR_DOB_INVALID": "Unesite ispravan datum rođenja.",
+    "ERROR_EMAIL_TAKEN": "Nalog sa ovim emailom već postoji.",
     "MODAL_ACCEPT": "Razumem i prihvatam",
     "VERIFY_TITLE": "Proverite email",
     "VERIFY_DESC": "Poslali smo vam link za verifikaciju na {{ email }}. Kliknite na link da aktivirate nalog.",
@@ -228,6 +280,47 @@
     "SUBTITLE": "Potrebne su nam još neke informacije da bismo personalizovali tvoje iskustvo.",
     "SUBMIT": "Nastavi"
   },
+  "FORGOT_PASSWORD": {
+    "TITLE": "Zaboravili ste lozinku?",
+    "SUBTITLE": "Unesite vašu email adresu i poslaćemo vam link za resetovanje lozinke.",
+    "SUBMIT": "Pošalji link",
+    "BACK_TO_LOGIN": "Nazad na prijavu",
+    "SENT_TITLE": "Proverite email",
+    "SENT_DESC": "Poslali smo link za resetovanje lozinke na {{ email }}. Link ističe za 1 sat."
+  },
+  "RESET_PASSWORD": {
+    "TITLE": "Postavi novu lozinku",
+    "SUBTITLE": "Unesite vašu novu lozinku ispod.",
+    "NEW_PASSWORD": "Nova lozinka",
+    "CONFIRM_PASSWORD": "Potvrdi novu lozinku",
+    "SUBMIT": "Sačuvaj novu lozinku",
+    "BACK_TO_LOGIN": "Nazad na prijavu",
+    "SUCCESS_TITLE": "Lozinka promenjena",
+    "SUCCESS_DESC": "Vaša lozinka je uspešno promenjena.",
+    "SUCCESS_REDIRECT": "Uskoro ćete biti preusmereni na stranicu za prijavu.",
+    "ERROR_MISMATCH": "Lozinke se ne poklapaju.",
+    "ERROR_TOKEN": "Link za resetovanje je nevažeći ili je istekao.",
+    "ERROR_EMPTY": "Lozinka je obavezna.",
+    "ERROR_TOO_SHORT": "Lozinka mora imati najmanje 8 karaktera.",
+    "ERROR_SAME_PASSWORD": "Nova lozinka mora biti različita od trenutne.",
+    "ERROR_EXPIRED": "Link za resetovanje je istekao. Zatražite novi.",
+    "ERROR_INVALID_LINK": "Link za resetovanje je nevažeći.",
+    "ERROR_GENERAL": "Nešto nije uredu. Pokušajte ponovo.",
+    "STRENGTH": {
+      "WEAK": "Slaba",
+      "FAIR": "Srednja",
+      "STRONG": "Jaka"
+    }
+  },
+  "VERIFY_EMAIL": {
+    "LOADING_TITLE": "Verifikacija emaila...",
+    "LOADING_DESC": "Molimo pričekajte trenutak.",
+    "SUCCESS_TITLE": "Email verifikovan",
+    "SUCCESS_DESC": "Vaš nalog je aktivan. Možete se prijaviti.",
+    "ERROR_TITLE": "Verifikacija neuspešna",
+    "ERROR_DESC": "Link je nevažeći ili je već iskorišćen.",
+    "GO_BACK": "Idi na prijavu"
+  },
   "DESTINATION_DETAIL": {
     "LOADING": "Učitavanje detalja destinacije...",
     "ABOUT": "O destinaciji",
@@ -237,6 +330,28 @@
     "OPEN_IN_GOOGLE_MAPS": "Otvori u Google Mapama",
     "DETAILS": "Detalji",
     "SHOW_ALL": "Prikaži sve",
+    "SHOW_ALL_COUNT": "Prikaži sve ({{count}})",
+    "ALL_PANEL": {
+      "PLACES": "Svi objekti",
+      "EVENTS": "Svi događaji",
+      "ACTIVITIES": "Sve aktivnosti",
+      "REVIEWS": "Sve recenzije"
+    },
+    "REVIEWS_COUNT": "recenzija",
+    "WRITE_REVIEW": "Napiši recenziju",
+    "REVIEW_FORM": {
+      "TITLE": "Napiši recenziju",
+      "RATING_LABEL": "Vaša ocena",
+      "COMMENT_LABEL": "Vaše iskustvo",
+      "COMMENT_PLACEHOLDER": "Podelite šta vam se svidelo ili nije svidelo na ovoj destinaciji...",
+      "CANCEL": "Otkaži",
+      "SUBMIT": "Objavi recenziju",
+      "STARS_1": "Loše",
+      "STARS_2": "Solidno",
+      "STARS_3": "Dobro",
+      "STARS_4": "Vrlo dobro",
+      "STARS_5": "Odlično"
+    },
     "EMPTY_TAB": "Trenutno nema dostupnih stavki za ovu sekciju.",
     "EMPTY_REVIEWS": "Još nema recenzija za ovu destinaciju.",
     "LOCATION_NOT_AVAILABLE": "Lokacija nije dostupna",
