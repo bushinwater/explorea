@@ -1,0 +1,25 @@
+<a class="place-card" [routerLink]="['/places', place.slug]">
+  <div class="place-card__img-wrap">
+    <img
+      [src]="place.previewImageUrl ?? 'assets/backgorund-activities.png'"
+      [alt]="place.name"
+      class="place-card__img"
+      loading="lazy"
+    />
+    <div class="place-card__rating-badge">
+      <span class="material-icons">star</span>
+      {{ place.avgRating | number: '1.1-1' }}
+    </div>
+  </div>
+  <div class="place-card__body">
+    <p class="place-card__name">{{ place.name }}</p>
+    <p class="place-card__city">{{ place.city?.name }}</p>
+    @if (place.pricePerNight) {
+      <p class="place-card__price">
+        {{ place.pricePerNight }}€ {{ 'PLACE_CARD.PER_NIGHT' | translate }}
+      </p>
+    } @else if (place.priceRange) {
+      <p class="place-card__price">{{ place.priceRange }}</p>
+    }
+  </div>
+</a>
