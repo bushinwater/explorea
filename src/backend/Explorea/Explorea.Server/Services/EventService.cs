@@ -82,9 +82,18 @@ namespace Explorea.Server.Services.Implementations
                 query.TypeId,
                 query.FreeOnly);
 
-            var calendarDays = events
+            var groupedEvents = events
                 .GroupBy(e => DateOnly.FromDateTime(e.StartDatetime.Date))
-                .OrderBy(g => g.Key)
+                .OrderBy(g => g.Key);
+
+            if (query.SelectedDate.HasValue)
+            {
+                groupedEvents = groupedEvents
+                    .Where(g => g.Key == query.SelectedDate.Value)
+                    .OrderBy(g => g.Key);
+            }
+
+            var calendarDays = groupedEvents
                 .Select(g => new CalendarDayDto
                 {
                     Date = g.Key,
