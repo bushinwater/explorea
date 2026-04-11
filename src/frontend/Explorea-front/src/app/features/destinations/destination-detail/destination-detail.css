@@ -1033,7 +1033,7 @@
 .review-form-overlay {
   position: fixed;
   inset: 0;
-  z-index: 500;
+  z-index: 1100;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
@@ -1043,7 +1043,7 @@
 
 .review-form-panel {
   background: var(--color-surface);
-  border-radius: var(--radius-xl);
+  border-radius: 20px;
   width: 100%;
   max-width: 520px;
   display: flex;
@@ -1184,13 +1184,11 @@
 
 @media (max-width: 768px) {
   .review-form-overlay {
-    align-items: flex-end;
-    padding: 0;
+    padding: var(--spacing-md);
   }
 
   .review-form-panel {
     max-width: 100%;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   }
 
   .review-form-panel__header,
@@ -1198,10 +1196,6 @@
   .review-form-panel__footer {
     padding-left: 20px;
     padding-right: 20px;
-  }
-
-  .review-form-panel__footer {
-    padding-bottom: 32px;
   }
 
   .review-form__star .material-icons {
@@ -1355,7 +1349,7 @@
 .show-all-overlay {
   position: fixed;
   inset: 0;
-  z-index: 500;
+  z-index: 1100;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
@@ -1365,10 +1359,10 @@
 
 .show-all-panel {
   background: var(--color-surface);
-  border-radius: var(--radius-xl);
+  border-radius: 20px;
   width: 100%;
   max-width: 600px;
-  max-height: 80vh;
+  max-height: 82vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1419,14 +1413,12 @@
 
 @media (max-width: 768px) {
   .show-all-overlay {
-    align-items: flex-end;
-    padding: 0;
+    padding: var(--spacing-md);
   }
 
   .show-all-panel {
     max-width: 100%;
-    max-height: 90vh;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    max-height: 85vh;
   }
 
   .show-all-panel__header {
@@ -1434,7 +1426,7 @@
   }
 
   .show-all-panel__body {
-    padding: 16px 20px 32px;
+    padding: 16px 20px 24px;
   }
 }
 
