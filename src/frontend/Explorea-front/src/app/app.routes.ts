@@ -12,11 +12,13 @@ import { CompleteProfile } from './features/auth/complete-profile/complete-profi
 import { FacebookCallback } from './features/auth/facebook-callback/facebook-callback';
 import { VerifyEmail } from './features/auth/verify-email/verify-email';
 import { Home } from './features/home/home';
+import { Explore } from './features/explore/explore';
 import { Settings } from './features/profile/settings/settings';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', component: Home },
+  { path: 'explore', component: Explore },
   { path: 'activities/:slug', component: ActivityDetailComponent },
   { path: 'destinations/:slug', component: DestinationDetailComponent },
   { path: 'interests', component: Interests },

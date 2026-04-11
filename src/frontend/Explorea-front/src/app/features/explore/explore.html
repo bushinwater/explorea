@@ -1,0 +1,215 @@
+<div class="explore-layout">
+  <app-sidebar />
+
+  <!-- ===================== DESKTOP ===================== -->
+  <aside class="filter-panel desktop-only">
+    <div class="filter-panel__header">
+      <div class="filter-panel__title-row">
+        <span class="material-icons">tune</span>
+        <h2>Filteri Istraživanja</h2>
+      </div>
+      <span class="filter-badge" *ngIf="activeFilterCount > 0">{{ activeFilterCount }} filtera</span>
+    </div>
+
+    <!-- Radijus -->
+    <div class="filter-group">
+      <div class="filter-group__label-row">
+        <span class="filter-group__label">Radijus pretrage</span>
+        <span class="filter-group__value">{{ radiusKm }} km</span>
+      </div>
+      <input
+        type="range"
+        class="radius-slider"
+        min="5"
+        max="100"
+        step="5"
+        [(ngModel)]="radiusKm"
+        [style]="sliderStyle"
+      />
+      <div class="radius-ticks">
+        <span>5 km</span>
+        <span>100 km</span>
+      </div>
+    </div>
+
+    <!-- Kategorije -->
+    <div class="filter-group">
+      <span class="filter-group__label">Kategorije</span>
+      <div class="category-list">
+        <label
+          *ngFor="let cat of categories.slice(1)"
+          class="category-row"
+          [class.selected]="selectedCategory === cat.key"
+          (click)="selectCategory(cat.key)"
+        >
+          <span class="category-dot"></span>
+          <span class="category-name">{{ cat.label }}</span>
+          <span class="category-count" *ngIf="cat.count !== null">{{ cat.count }}</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Radno vreme -->
+    <div class="filter-group">
+      <span class="filter-group__label">Radno Vreme &amp; Ocene</span>
+      <label class="toggle-row" (click)="openNowOnly = !openNowOnly">
+        <span class="material-icons toggle-icon">schedule</span>
+        <span class="toggle-label">Otvoreno sada</span>
+        <div class="toggle-switch" [class.on]="openNowOnly">
+          <div class="toggle-thumb"></div>
+        </div>
+      </label>
+    </div>
+
+    <!-- Minimalna ocena -->
+    <div class="filter-group">
+      <span class="filter-group__label">Minimalna ocena</span>
+      <div class="rating-chips">
+        <button
+          class="rating-chip"
+          [class.active]="minRating === 3"
+          (click)="setMinRating(3)"
+        >
+          <span class="material-icons">star</span> 3+
+        </button>
+        <button
+          class="rating-chip"
+          [class.active]="minRating === 4"
+          (click)="setMinRating(4)"
+        >
+          <span class="material-icons">star</span> 4+
+        </button>
+        <button
+          class="rating-chip"
+          [class.active]="minRating === 4.5"
+          (click)="setMinRating(4.5)"
+        >
+          <span class="material-icons">star</span> 4.5+
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <button class="ghost-btn ghost-btn--sm" (click)="resetFilters()">Poništi</button>
+      <button class="primary-btn" (click)="applyFilters()">Primeni filtere</button>
+    </div>
+  </aside>
+
+  <!-- ===================== MAP ===================== -->
+  <main class="explore-main">
+    <!-- Search bar (desktop) -->
+    <div class="map-search desktop-only">
+      <span class="material-icons map-search__icon">search</span>
+      <input class="map-search__input" type="text" placeholder="Unesite lokaciju ili naziv destinacije..." />
+    </div>
+
+    <!-- Mobile top bar -->
+    <div class="mobile-topbar mobile-only">
+      <div class="mobile-search">
+        <span class="material-icons">search</span>
+        <input type="text" placeholder="Pretraži kanale, mjesta..." />
+      </div>
+      <div class="mobile-chips">
+        <button
+          *ngFor="let cat of categories"
+          class="mobile-chip"
+          [class.active]="selectedCategory === cat.key"
+          (click)="selectCategory(cat.key)"
+        >
+          {{ cat.label }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Map container -->
+    <div #mapContainer class="map-container"></div>
+
+    <!-- Pin popup (desktop) -->
+    <div class="pin-popup" *ngIf="selectedPin" (click)="$event.stopPropagation()">
+      <button class="pin-popup__close" (click)="closePin()">
+        <span class="material-icons">close</span>
+      </button>
+      <div class="pin-popup__image-wrap">
+        <img [src]="selectedPin.imageUrl" [alt]="selectedPin.name" class="pin-popup__image" />
+        <span class="pin-popup__badge" *ngIf="selectedPin.popular">Popularno</span>
+      </div>
+      <div class="pin-popup__body">
+        <h3 class="pin-popup__name">{{ selectedPin.name }}</h3>
+        <p class="pin-popup__location">
+          <span class="material-icons">location_on</span>
+          {{ selectedPin.location }}
+        </p>
+        <div class="pin-popup__rating">
+          <span class="material-icons star">star</span>
+          <strong>{{ selectedPin.rating }}</strong>
+          <span class="pin-popup__review-count">({{ selectedPin.reviewCount }}+ recenzija)</span>
+        </div>
+        <p class="pin-popup__quote">"{{ selectedPin.reviewQuote }}"</p>
+        <div class="pin-popup__actions">
+          <a [routerLink]="['/destinations', getSlugFromName(selectedPin.name)]" class="ghost-btn ghost-btn--sm">
+            Detalji
+          </a>
+          <button class="primary-btn primary-btn--sm">
+            <span class="material-icons">directions</span>
+            Pogledaj Rutu
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile: results count label -->
+    <div
+      class="mobile-results-bar mobile-only"
+      [class.drawer-open]="drawerExpanded"
+      (click)="toggleDrawer()"
+    >
+      <div class="mobile-results-bar__handle"></div>
+      <ng-container *ngIf="!drawerExpanded">
+        <span class="material-icons">place</span>
+        <span><strong>{{ filteredPins.length }}</strong> rezultata u blizini</span>
+        <span class="material-icons arrow">keyboard_arrow_up</span>
+      </ng-container>
+      <ng-container *ngIf="drawerExpanded">
+        <div class="mobile-results-header">
+          <span class="material-icons arrow-down">keyboard_arrow_down</span>
+          <span class="mobile-results-title">Rezultati</span>
+          <span class="mobile-results-subtitle">Sačuvane popularne lokacije u vašoj blizini</span>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Mobile: expanded drawer -->
+    <div class="mobile-drawer mobile-only" [class.open]="drawerExpanded">
+      <div class="mobile-drawer__scroll">
+        <div
+          class="result-card"
+          *ngFor="let pin of filteredPins"
+          (click)="selectResult(pin)"
+        >
+          <div class="result-card__image-wrap">
+            <img [src]="pin.imageUrl" [alt]="pin.name" class="result-card__image" />
+            <span class="result-card__badge" *ngIf="pin.popular">Preporučeno</span>
+          </div>
+          <div class="result-card__body">
+            <h4 class="result-card__name">{{ pin.name }}</h4>
+            <p class="result-card__location">
+              <span class="material-icons">location_on</span>
+              {{ pin.location }}
+              <span class="result-card__distance">· {{ pin.distance }}</span>
+            </p>
+            <div class="result-card__tags">
+              <span class="result-tag" *ngFor="let tag of pin.tags">{{ tag }}</span>
+            </div>
+            <div class="result-card__footer">
+              <div class="result-card__rating">
+                <span class="material-icons star">star</span>
+                {{ pin.rating }}
+              </div>
+              <span class="result-card__price">{{ pin.price }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
