@@ -1,5 +1,6 @@
 using Explorea.Server.Data;
 using Explorea.Server.Helpers;
+using Explorea.Server.McpTools;
 using Explorea.Server.Repositories.Implementations;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services;
@@ -63,6 +64,15 @@ builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IExploreRepository, ExploreRepository>();
 builder.Services.AddScoped<IExploreService, ExploreService>();
 
+builder.Services.AddScoped<IEventRepository, EventRepository>();
+builder.Services.AddScoped<IPlaceRepository, PlaceRepository>();
+
+builder.Services.AddMcpServer()
+    .WithHttpTransport()
+    .WithTools<SearchTools>()
+    .WithTools<DestinationTools>()
+    .WithTools<DiscoveryTools>();
+
 var jwtSection = builder.Configuration.GetSection("JwtSettings");
 var key = jwtSection["SecretKey"]!;
 
@@ -97,5 +107,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapMcp("/mcp");
 
 app.Run();
