@@ -67,5 +67,34 @@ namespace Explorea.Server.Repositories.Implementations
                 .OrderBy(e => e.StartDatetime)
                 .ToListAsync();
         }
+
+        public async Task<List<Event>> GetByMonthFilteredAsync(
+            int year,
+            int month,
+            int? cityId,
+            int? typeId,
+            bool? free)
+        {
+            var query = _set
+                .Include(e => e.City)
+                .Include(e => e.Type)
+                .Include(e => e.Country)
+                .Include(e => e.Images)
+                .Where(e => e.StartDatetime.Year == year && e.StartDatetime.Month == month)
+                .AsQueryable();
+
+            if (cityId.HasValue)
+                query = query.Where(e => e.CityId == cityId);
+
+            if (typeId.HasValue)
+                query = query.Where(e => e.TypeId == typeId);
+
+            if (free.HasValue && free.Value)
+                query = query.Where(e => e.Price == null || e.Price == 0);
+
+            return await query
+                .OrderBy(e => e.StartDatetime)
+                .ToListAsync();
+        }
     }
 }
