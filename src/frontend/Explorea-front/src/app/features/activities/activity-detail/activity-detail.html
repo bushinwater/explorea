@@ -2,193 +2,331 @@
   <app-sidebar />
 
   <main class="activity-main">
-    @if (activity) {
+
+    <!-- STICKY BAR -->
+    <div class="sticky-bar" [class.sticky-bar--visible]="stickyBarVisible">
+      <button class="circle-btn circle-btn--sm"
+        [class.circle-btn--saved]="isSaved"
+        [disabled]="isSavedLoading"
+        (click)="toggleSave()">
+        <span class="material-icons">{{ isSaved ? 'favorite' : 'favorite_border' }}</span>
+      </button>
+    </div>
+
+    <!-- FLOATING TITLE -->
+    <div class="floating-title"
+      *ngIf="activity && !loading"
+      [class.floating-title--arrived]="scrollProgress > 0.88"
+      [ngStyle]="floatingTitleStyle">
+      {{ activity.name }}
+    </div>
+
+    <!-- LOADING -->
+    <ng-container *ngIf="loading">
+      <div class="skel-hero">
+        <div class="skel-hero__topbar">
+          <div class="skel skel-circle"></div>
+          <div class="skel skel-circle"></div>
+        </div>
+        <div class="skel-hero__content">
+          <div class="skel skel-badge"></div>
+          <div class="skel skel-title"></div>
+          <div class="skel skel-subtitle"></div>
+        </div>
+      </div>
+      <div class="skel-content">
+        <div class="skel-section">
+          <div class="skel skel-section-title"></div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line skel-line--short"></div>
+        </div>
+        <div class="skel-section">
+          <div class="skel skel-map"></div>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="!loading && activity">
 
       <!-- HERO -->
-      <div class="hero">
-        <img src="assets/backgorund-activities.png" [alt]="activity.name" class="hero__img" />
-        <div class="hero__overlay">
-          <div class="hero__inner">
-            <span class="category-badge">{{ activity.category?.name }}</span>
-            <h1 class="hero__title">{{ activity.name }}</h1>
-            <p class="hero__location" *ngIf="activity.startPoint">
-              <span class="material-icons">location_on</span>
-              {{ activity.startPoint }}
-            </p>
-            <div class="hero__stats">
-              <div class="hero__stat">
-                <span class="material-icons">schedule</span>
-                <div>
-                  <span class="hero__stat-label">{{ 'ACTIVITY_DETAIL.STATS.DURATION' | translate }}</span>
-                  <span class="hero__stat-value">{{ formatDuration(activity.durationMinutes) }}</span>
-                </div>
-              </div>
-              <div class="hero__stat">
-                <span class="material-icons">straighten</span>
-                <div>
-                  <span class="hero__stat-label">{{ 'ACTIVITY_DETAIL.STATS.DISTANCE' | translate }}</span>
-                  <span class="hero__stat-value">{{ activity.distanceKm }} km</span>
-                </div>
-              </div>
-              @if (getElevation()) {
-                <div class="hero__stat">
-                  <span class="material-icons">terrain</span>
-                  <div>
-                    <span class="hero__stat-label">{{ 'ACTIVITY_DETAIL.STATS.ELEVATION' | translate }}</span>
-                    <span class="hero__stat-value">{{ getElevation() }}</span>
-                  </div>
-                </div>
-              }
-              @if (getTrailType()) {
-                <div class="hero__stat">
-                  <span class="material-icons">route</span>
-                  <div>
-                    <span class="hero__stat-label">{{ 'ACTIVITY_DETAIL.STATS.TRAIL_TYPE' | translate }}</span>
-                    <span class="hero__stat-value">{{ getTrailType() }}</span>
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-        <!-- Mobile back button -->
-        <div class="hero__topbar">
-          <button class="back-btn" (click)="goBack()">
-            <span class="material-icons">arrow_back_ios</span>
-            <span>{{ 'ACTIVITY_DETAIL.BACK' | translate }}</span>
+      <section class="detail-hero">
+        <img class="detail-hero__image" [src]="heroImage" [alt]="activity.name" />
+        <div class="detail-hero__overlay"></div>
+
+        <div class="detail-hero__topbar">
+          <button class="circle-btn" type="button" (click)="goBack()">
+            <span class="material-icons">arrow_back</span>
           </button>
+          <div class="detail-hero__actions">
+            <button class="circle-btn"
+              [class.circle-btn--saved]="isSaved"
+              [disabled]="isSavedLoading"
+              (click)="toggleSave()">
+              <span class="material-icons">{{ isSaved ? 'favorite' : 'favorite_border' }}</span>
+            </button>
+          </div>
         </div>
-      </div>
 
-      <!-- TWO-COLUMN CONTENT -->
-      <div class="page-content">
-
-        <!-- LEFT COLUMN -->
-        <div class="content-main">
-
-          <!-- Rating (mobile only, desktop shown in hero) -->
-          <div class="rating mobile-rating">
-            <span class="material-icons rating__star">star</span>
-            <span class="rating__value">{{ activity.avgRating }}</span>
-            <span class="rating__count">({{ activity.reviews.length }} {{ 'ACTIVITY_DETAIL.REVIEWS_COUNT' | translate }})</span>
+        <div class="detail-hero__content">
+          <div class="detail-hero__badges" [style.opacity]="heroBadgesOpacity">
+            <span class="detail-badge" *ngIf="activity.category?.name">{{ activity.category?.name }}</span>
+            <span class="detail-badge detail-badge--rating" *ngIf="activity.avgRating">
+              <span class="material-icons">star</span>
+              {{ activity.avgRating | number:'1.1-1' }}
+            </span>
           </div>
 
-          <!-- Description -->
-          @if (activity.description) {
-            <div class="section">
-              <h2 class="section__title">{{ 'ACTIVITY_DETAIL.ABOUT' | translate }}</h2>
-              <p class="section__text">{{ activity.description }}</p>
+          <div class="detail-hero__main">
+            <div class="detail-hero__text">
+              <h1 #heroTitleEl [style.opacity]="heroTitleOpacity">{{ activity.name }}</h1>
+              <p class="detail-hero__location" *ngIf="activity.startPoint" [style.opacity]="heroBadgesOpacity">
+                <span class="material-icons">location_on</span>
+                {{ activity.startPoint }}
+              </p>
             </div>
-          }
+          </div>
+        </div>
 
-          <!-- Map -->
-          @if (activity.location) {
-            <div class="section">
-              <h2 class="section__title">{{ 'ACTIVITY_DETAIL.MAP.TITLE' | translate }}</h2>
-              <div class="map-preview">
-                <img src="https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800" alt="Mapa" class="map-preview__img" />
-                <button class="map-preview__btn">{{ 'ACTIVITY_DETAIL.MAP.OPEN' | translate }}</button>
+        <div class="detail-hero__bottom-gradient"></div>
+      </section>
+
+      <!-- CONTENT -->
+      <div class="detail-content">
+        <div class="detail-content__main">
+
+          <!-- STATS CHIPS -->
+          <div class="stats-chips">
+            <div class="stat-chip" *ngIf="activity.durationMinutes">
+              <span class="material-icons stat-chip__icon">schedule</span>
+              <div class="stat-chip__body">
+                <span class="stat-chip__label">{{ 'ACTIVITY_DETAIL.STATS.DURATION' | translate }}</span>
+                <span class="stat-chip__value">{{ formatDuration(activity.durationMinutes) }}</span>
               </div>
             </div>
-          }
-
-          <!-- What's Included -->
-          @if (activity.inclusions.length) {
-            <div class="section">
-              <h2 class="section__title">{{ 'ACTIVITY_DETAIL.INCLUDED.TITLE' | translate }}</h2>
-              <div class="inclusions-grid">
-                @for (item of activity.inclusions; track item.id) {
-                  <div class="inclusion-item">
-                    <span class="material-icons inclusion-item__icon">check_circle</span>
-                    <span>{{ item.item }}</span>
-                  </div>
-                }
+            <div class="stat-chip" *ngIf="activity.distanceKm">
+              <span class="material-icons stat-chip__icon">straighten</span>
+              <div class="stat-chip__body">
+                <span class="stat-chip__label">{{ 'ACTIVITY_DETAIL.STATS.DISTANCE' | translate }}</span>
+                <span class="stat-chip__value">{{ activity.distanceKm }} km</span>
               </div>
             </div>
-          }
-
-          <!-- Packing List -->
-          <div class="section">
-            <h2 class="section__title">{{ 'ACTIVITY_DETAIL.PACKING.TITLE' | translate }}</h2>
-            <p class="section__subtitle">{{ 'ACTIVITY_DETAIL.PACKING.SUBTITLE' | translate }}</p>
-            <ul class="packing-list">
-              @for (item of packingList; track item.key; let i = $index) {
-                <li (click)="toggleItem(i)" [class.checked]="item.checked">
-                  <span class="checkbox" [class.checkbox--checked]="item.checked">
-                    @if (item.checked) {
-                      <span class="material-icons">check</span>
-                    }
-                  </span>
-                  {{ item.key | translate }}
-                </li>
-              }
-            </ul>
+            <div class="stat-chip" *ngIf="getElevation()">
+              <span class="material-icons stat-chip__icon">terrain</span>
+              <div class="stat-chip__body">
+                <span class="stat-chip__label">{{ 'ACTIVITY_DETAIL.STATS.ELEVATION' | translate }}</span>
+                <span class="stat-chip__value">{{ getElevation() }}</span>
+              </div>
+            </div>
+            <div class="stat-chip" *ngIf="getTrailType()">
+              <span class="material-icons stat-chip__icon">route</span>
+              <div class="stat-chip__body">
+                <span class="stat-chip__label">{{ 'ACTIVITY_DETAIL.STATS.TRAIL_TYPE' | translate }}</span>
+                <span class="stat-chip__value">{{ getTrailType() }}</span>
+              </div>
+            </div>
+            <div class="stat-chip" *ngIf="activity.difficultyLevel">
+              <span class="material-icons stat-chip__icon">fitness_center</span>
+              <div class="stat-chip__body">
+                <span class="stat-chip__label">{{ 'ACTIVITY_DETAIL.STATS.DIFFICULTY' | translate }}</span>
+                <span class="stat-chip__value">{{ activity.difficultyLevel }}</span>
+              </div>
+            </div>
           </div>
 
-          <!-- Similar Activities -->
-          @if (activity.similarActivities.length) {
-            <div class="section">
-              <div class="section__header">
-                <h2 class="section__title">{{ 'ACTIVITY_DETAIL.SIMILAR.TITLE' | translate }}</h2>
-                <a href="#" class="section__link">
-                  {{ 'ACTIVITY_DETAIL.SIMILAR.VIEW_ALL' | translate }}
-                  <span class="material-icons">arrow_forward</span>
+          <!-- DESCRIPTION -->
+          <section class="detail-section" *ngIf="activity.description">
+            <div class="detail-section__head">
+              <h2>{{ 'ACTIVITY_DETAIL.ABOUT' | translate }}</h2>
+            </div>
+            <p class="detail-copy">{{ activity.description }}</p>
+          </section>
+
+          <!-- MAP -->
+          <section class="detail-section" *ngIf="activity.location">
+            <div class="detail-section__head detail-section__head--map">
+              <h2>{{ 'ACTIVITY_DETAIL.MAP.TITLE' | translate }}</h2>
+              <a class="ghost-btn map-link-btn" [href]="googleMapsDirectionsUrl" target="_blank" rel="noopener noreferrer">
+                <span class="material-icons">directions</span>
+                {{ 'DESTINATION_DETAIL.OPEN_IN_GOOGLE_MAPS' | translate }}
+              </a>
+            </div>
+            <div class="map-box" #mapContainer></div>
+          </section>
+
+          <!-- WHAT'S INCLUDED -->
+          <section class="detail-section" *ngIf="activity.inclusions.length">
+            <div class="detail-section__head">
+              <h2>{{ 'ACTIVITY_DETAIL.INCLUDED.TITLE' | translate }}</h2>
+            </div>
+            <div class="inclusions-grid">
+              <div class="inclusion-item" *ngFor="let item of activity.inclusions">
+                <span class="material-icons inclusion-item__icon">check_circle</span>
+                <span>{{ item.item }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- REVIEWS -->
+          <section class="detail-section">
+            <div class="detail-section__head">
+              <h2>{{ 'ACTIVITY_DETAIL.REVIEWS.TITLE' | translate }}</h2>
+              <div class="section-head-actions">
+                <a class="section-link" href="javascript:void(0)"
+                  *ngIf="activity.reviews.length > 3"
+                  (click)="openShowAll('reviews')">
+                  {{ 'ACTIVITY_DETAIL.SIMILAR.VIEW_ALL' | translate }} ({{ activity.reviews.length }})
                 </a>
-              </div>
-              <div class="similar-scroll">
-                @for (act of activity.similarActivities; track act.id) {
-                  <a class="activity-item" [routerLink]="['/activities', act.slug]">
-                    <div class="activity-item__image-wrap">
-                      <img [src]="act.previewImageUrl" [alt]="act.name" class="activity-item__image" loading="lazy" />
-                      @if (act.category) {
-                        <span class="activity-item__category">{{ act.category.name }}</span>
-                      }
-                      <div class="activity-item__overlay">
-                        <span class="activity-item__name">{{ act.name }}</span>
-                        <div class="activity-item__meta">
-                          <span class="activity-item__rating">
-                            <span class="material-icons">star</span>
-                            {{ act.avgRating | number: '1.1-1' }}
-                          </span>
-                          @if (act.price) {
-                            <span class="activity-item__price">{{ act.price | number }} RSD</span>
-                          } @else {
-                            <span class="activity-item__price">{{ 'ACTIVITY_DETAIL.FREE' | translate }}</span>
-                          }
-                        </div>
-                      </div>
-                    </div>
-                  </a>
-                }
+                <button class="ghost-btn ghost-btn--sm" type="button"
+                  *ngIf="!hasReviewed"
+                  (click)="openReviewForm()">
+                  <span class="material-icons">rate_review</span>
+                  {{ 'ACTIVITY_DETAIL.REVIEWS.WRITE' | translate }}
+                </button>
+                <span class="already-reviewed-badge" *ngIf="hasReviewed">
+                  <span class="material-icons">check_circle</span>
+                  {{ 'ACTIVITY_DETAIL.REVIEWS.ALREADY_REVIEWED' | translate }}
+                </span>
               </div>
             </div>
-          }
+
+            <ng-container *ngIf="activity.reviews.length > 0; else noReviews">
+              <div class="review-scroll-row">
+                <app-review-card
+                  *ngFor="let review of activity.reviews.slice(0, 3)"
+                  [review]="$any(review)" />
+              </div>
+            </ng-container>
+
+            <ng-template #noReviews>
+              <p class="empty-text">{{ 'ACTIVITY_DETAIL.REVIEWS.EMPTY' | translate }}</p>
+            </ng-template>
+          </section>
+
+          <!-- SIMILAR ACTIVITIES -->
+          <section class="detail-section similar-section" *ngIf="activity.similarActivities.length">
+            <div class="detail-section__head">
+              <h2>{{ 'ACTIVITY_DETAIL.SIMILAR.TITLE' | translate }}</h2>
+              <a class="section-link" href="javascript:void(0)"
+                *ngIf="hasMoreSimilar"
+                (click)="openShowAll('similar')">
+                {{ 'ACTIVITY_DETAIL.SIMILAR.VIEW_ALL' | translate }}
+              </a>
+            </div>
+            <div class="similar-grid">
+              <a class="activity-item" *ngFor="let act of visibleSimilar"
+                [routerLink]="['/activities', act.slug]">
+                <div class="activity-item__image-wrap">
+                  <img [src]="act.previewImageUrl || ''" [alt]="act.name" class="activity-item__image" loading="lazy" />
+                  <span class="activity-item__category" *ngIf="act.category">{{ act.category.name }}</span>
+                  <div class="activity-item__overlay">
+                    <span class="activity-item__name">{{ act.name }}</span>
+                    <div class="activity-item__meta">
+                      <span class="activity-item__rating">
+                        <span class="material-icons">star</span>
+                        {{ act.avgRating | number:'1.1-1' }}
+                      </span>
+                      <span class="activity-item__price" *ngIf="act.price">{{ act.price | number }} RSD</span>
+                      <span class="activity-item__price" *ngIf="!act.price">{{ 'ACTIVITY_DETAIL.FREE' | translate }}</span>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </section>
 
         </div>
-
-        <app-booking-card [activity]="activity" />
-
       </div>
 
-      <!-- Mobile Sticky Bottom Bar -->
-      <div class="bottom-bar">
-        <div class="bottom-bar__price">
-          <span class="bottom-bar__label">{{ 'ACTIVITY_DETAIL.BOOK.LABEL' | translate }}</span>
-          <span class="bottom-bar__amount">
-            @if (activity.price) {
-              {{ activity.price | number }} RSD
-            } @else {
-              {{ 'ACTIVITY_DETAIL.FREE' | translate }}
-            }
-          </span>
+      <!-- ORGANIZER BUTTON (mobile sticky) -->
+      <div class="bottom-bar" *ngIf="activity.organizerWebsite">
+        <a class="btn btn-primary bottom-bar__cta"
+          [href]="activity.organizerWebsite" target="_blank" rel="noopener noreferrer">
+          <span class="material-icons">open_in_new</span>
+          {{ 'ACTIVITY_DETAIL.ORGANIZER_LINK' | translate }}
+        </a>
+      </div>
+
+
+    </ng-container>
+
+  </main>
+
+  <!-- SHOW ALL PANEL (similar activities or all reviews) -->
+  <div class="show-all-overlay" *ngIf="showAllOpen" (click)="closeShowAll()">
+    <div class="show-all-panel" (click)="$event.stopPropagation()">
+      <div class="show-all-panel__header">
+        <div class="show-all-panel__title-wrap">
+          <h2>{{ (showAllMode === 'similar' ? 'ACTIVITY_DETAIL.SIMILAR.ALL_PANEL_TITLE' : 'ACTIVITY_DETAIL.REVIEWS.ALL_PANEL_TITLE') | translate }}</h2>
+          <span class="show-all-panel__subtitle">{{ activity?.name }}</span>
         </div>
-        <button class="btn btn-primary bottom-bar__cta">
-          {{ 'ACTIVITY_DETAIL.BOOK.CTA' | translate }}
+        <button class="circle-btn circle-btn--sm" type="button" (click)="closeShowAll()">
+          <span class="material-icons">close</span>
         </button>
       </div>
 
-    }
-  </main>
+      <div class="show-all-panel__body">
+
+        <!-- Similar activities -->
+        <ng-container *ngIf="showAllMode === 'similar'">
+          <div class="panel-similar-grid">
+            <a class="activity-item" *ngFor="let act of activity?.similarActivities"
+              [routerLink]="['/activities', act.slug]"
+              (click)="closeShowAll()">
+              <div class="activity-item__image-wrap">
+                <img [src]="act.previewImageUrl || ''" [alt]="act.name" class="activity-item__image" loading="lazy" />
+                <span class="activity-item__category" *ngIf="act.category">{{ act.category.name }}</span>
+                <div class="activity-item__overlay">
+                  <span class="activity-item__name">{{ act.name }}</span>
+                  <div class="activity-item__meta">
+                    <span class="activity-item__rating">
+                      <span class="material-icons">star</span>
+                      {{ act.avgRating | number:'1.1-1' }}
+                    </span>
+                    <span class="activity-item__price" *ngIf="act.price">{{ act.price | number }} RSD</span>
+                    <span class="activity-item__price" *ngIf="!act.price">{{ 'ACTIVITY_DETAIL.FREE' | translate }}</span>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+        </ng-container>
+
+        <!-- All reviews -->
+        <ng-container *ngIf="showAllMode === 'reviews'">
+          <div class="reviews-list">
+            <div class="review-item" *ngFor="let review of activity?.reviews">
+              <div class="review-item__head">
+                <div class="review-item__avatar">
+                  <span>{{ review.user.firstName[0] }}{{ review.user.lastName[0] }}</span>
+                </div>
+                <div class="review-item__user">
+                  <h3>{{ review.user.firstName }} {{ review.user.lastName }}</h3>
+                  <span>{{ review.user.travelerRank }}</span>
+                </div>
+                <div class="review-item__rating review-item__rating--stars">
+                  <span *ngFor="let star of getStarsArray(); let i = index" class="material-icons"
+                    [class.review-star--filled]="i < review.rating"
+                    [class.review-star--empty]="i >= review.rating">star</span>
+                </div>
+              </div>
+              <p class="detail-copy" *ngIf="review.comment">{{ review.comment }}</p>
+            </div>
+          </div>
+        </ng-container>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- REVIEW MODAL -->
+  <app-review-modal
+    [isOpen]="reviewFormOpen"
+    [entityType]="'activity'"
+    [entityId]="activity?.id ?? ''"
+    [entityName]="activity?.name ?? ''"
+    (closed)="reviewFormOpen = false"
+    (reviewSubmitted)="onReviewSubmitted($event)">
+  </app-review-modal>
 
   <app-bottom-nav />
 </div>

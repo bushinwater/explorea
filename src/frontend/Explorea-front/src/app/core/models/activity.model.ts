@@ -13,6 +13,7 @@ export interface ActivityCard {
 }
 
 export interface ActivityDetail extends ActivityCard {
+  organizerWebsite: string | null;
   description: string | null;
   season: { id: number; name: string } | null;
   distanceKm: number | null;

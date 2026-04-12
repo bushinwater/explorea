@@ -108,11 +108,25 @@
 
         <!-- LOZINKA -->
         <div class="form-group">
-          <label>{{ 'REGISTER.PASSWORD' | translate }}</label>
-          <div class="input-wrapper">
+          <label class="label-with-hint">
+            {{ 'REGISTER.PASSWORD' | translate }}
+            <span class="pwd-hint-wrap"
+              (mouseenter)="showPasswordHint = true"
+              (mouseleave)="showPasswordHint = false"
+              (click)="showPasswordHint = !showPasswordHint">
+              <span class="material-icons pwd-hint-icon">info</span>
+              <div class="pwd-hint-tooltip" *ngIf="showPasswordHint">
+                <p class="pwd-hint-title">{{ 'REGISTER.PASSWORD_HINT_TITLE' | translate }}</p>
+                <p>✓ {{ 'REGISTER.PASSWORD_HINT_MIN' | translate }}</p>
+                <p>✓ {{ 'REGISTER.PASSWORD_HINT_NUMBER' | translate }}</p>
+              </div>
+            </span>
+          </label>
+          <div class="input-wrapper" [class.input-error]="passwordError">
             <span class="material-icons input-icon">lock</span>
             <input #passwordInput class="input" [type]="showPassword ? 'text' : 'password'"
               [(ngModel)]="password" placeholder="••••••••"
+              (ngModelChange)="passwordError = ''"
               (keydown.enter)="onPasswordEnter()" />
             <button class="input-icon-right" type="button" (click)="togglePassword()" tabindex="-1">
               <span class="material-icons">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
@@ -126,6 +140,7 @@
               {{ ('RESET_PASSWORD.STRENGTH.' + (passwordStrength | uppercase)) | translate }}
             </span>
           </div>
+          <div class="field-error" *ngIf="passwordError">{{ passwordError | translate }}</div>
         </div>
 
         <!-- POTVRDI LOZINKU -->

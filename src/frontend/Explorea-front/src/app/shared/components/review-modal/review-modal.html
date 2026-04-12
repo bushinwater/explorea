@@ -1,0 +1,65 @@
+<ng-container *ngIf="isOpen">
+  <div class="review-modal-overlay" (click)="close()">
+    <div class="review-modal-panel" (click)="$event.stopPropagation()">
+
+      <div class="review-modal__header">
+        <div>
+          <h2>{{ 'REVIEW_MODAL.TITLE' | translate }}</h2>
+          <span class="review-modal__entity">{{ entityName }}</span>
+        </div>
+        <button class="rm-close-btn" type="button" (click)="close()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <div class="review-modal__body">
+
+        <div class="rm-stars">
+          <span class="rm-stars__label">{{ 'REVIEW_MODAL.RATING_LABEL' | translate }}</span>
+          <div class="rm-stars__row">
+            <button
+              *ngFor="let s of getStarsArray(); let i = index"
+              type="button"
+              class="rm-star"
+              [class.rm-star--active]="i < (hoverRating || rating)"
+              (mouseenter)="hoverRating = i + 1"
+              (mouseleave)="hoverRating = 0"
+              (click)="rating = i + 1">
+              <span class="material-icons">star</span>
+            </button>
+          </div>
+          <span class="rm-stars__text" *ngIf="hoverRating || rating">
+            {{ 'REVIEW_MODAL.STARS_' + (hoverRating || rating) | translate }}
+          </span>
+        </div>
+
+        <div class="rm-field">
+          <label class="rm-field__label">{{ 'REVIEW_MODAL.COMMENT_LABEL' | translate }}</label>
+          <textarea
+            class="rm-field__textarea"
+            [(ngModel)]="comment"
+            [placeholder]="'REVIEW_MODAL.COMMENT_PLACEHOLDER' | translate"
+            rows="4"
+            maxlength="1000">
+          </textarea>
+          <span class="rm-field__count">{{ comment.length }} / 1000</span>
+        </div>
+
+        <p class="rm-error" *ngIf="error">{{ error }}</p>
+
+      </div>
+
+      <div class="review-modal__footer">
+        <button class="rm-btn rm-btn--ghost" type="button" (click)="close()">
+          {{ 'REVIEW_MODAL.CANCEL' | translate }}
+        </button>
+        <button class="rm-btn rm-btn--primary" type="button"
+          [disabled]="rating === 0 || submitting"
+          (click)="submit()">
+          {{ 'REVIEW_MODAL.SUBMIT' | translate }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+</ng-container>

@@ -11,5 +11,6 @@ namespace Explorea.Server.Repositories.Interfaces
         Task UpdateInterestsAsync(Guid userId, List<int> interestTagIds);
         Task<(List<User> Items, int Total)> GetPagedAsync(int page, int pageSize);
         Task SetActiveAsync(Guid userId, bool isActive);
+        Task UpdateLocationAsync(Guid userId, double lat, double lng);
     }
 }

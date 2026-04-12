@@ -113,7 +113,7 @@ namespace Explorea.Server.Data
             modelBuilder.Entity<ActivityInterestTag>()
                 .HasKey(x => new { x.ActivityId, x.InterestTagId });
             modelBuilder.Entity<ActivityInterestTag>()
-                .HasOne(x => x.Activity).WithMany().HasForeignKey(x => x.ActivityId);
+                .HasOne(x => x.Activity).WithMany(a => a.InterestTags).HasForeignKey(x => x.ActivityId);
             modelBuilder.Entity<ActivityInterestTag>()
                 .HasOne(x => x.InterestTag).WithMany(t => t.ActivityLinks).HasForeignKey(x => x.InterestTagId);
 

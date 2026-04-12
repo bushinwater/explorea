@@ -233,6 +233,7 @@
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
+
 .detail-hero__meta {
   display: flex;
   flex-wrap: wrap;
@@ -255,22 +256,13 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -1px;
-  height: 300px;
+  bottom: 0;
+  height: 220px;
   z-index: 3;
   pointer-events: none;
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(19, 27, 24, 0) 0%,
-      rgba(19, 27, 24, 0.06) 20%,
-      rgba(19, 27, 24, 0.18) 38%,
-      rgba(19, 27, 24, 0.38) 56%,
-      rgba(19, 27, 24, 0.62) 74%,
-      rgba(19, 27, 24, 0.84) 88%,
-      var(--color-bg) 100%
-    );
+  background: linear-gradient(to bottom, transparent, var(--color-bg));
 }
+
 
 .detail-content {
   max-width: 1280px;
@@ -455,6 +447,15 @@
 .mobile-gallery {
   display: none;
 }
+
+.map-box {
+  width: 100%;
+  height: 320px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
 
 .map-box-simple {
   min-height: 260px;
@@ -1021,6 +1022,12 @@
   cursor: not-allowed;
 }
 
+.review-form__error {
+  font-size: var(--font-size-small);
+  color: #dc3545;
+  margin: 0;
+}
+
 .tab-block__actions {
   display: flex;
   align-items: center;
@@ -1324,11 +1331,9 @@
 }
 
 .detail-footer__brand .logo-icon {
-  background: var(--color-primary);
-  padding: 6px 10px;
-  border-radius: var(--radius-md);
-  color: #fff;
-  font-size: 18px;
+  height: 30px;
+  width: auto;
+  object-fit: contain;
 }
 
 .detail-footer__brand .logo-text {
@@ -1525,10 +1530,17 @@
 .skel-hero__topbar {
   position: absolute;
   top: var(--spacing-lg);
+  left: var(--spacing-lg);
   right: var(--spacing-lg);
   display: flex;
-  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
   z-index: 2;
+}
+
+.skel-hero__topbar-right {
+  display: flex;
+  gap: 10px;
 }
 
 .skel-circle {
@@ -1781,7 +1793,7 @@
   }
 
 .detail-hero__bottom-gradient {
-  height: 240px;
+  height: 220px;
 }
 
 .detail-content {
@@ -1840,6 +1852,10 @@
     align-items: center;
   }
 
+  .map-box {
+    height: 240px;
+  }
+
   .map-box-simple {
     min-height: 240px;
     padding: 14px;
@@ -1864,7 +1880,7 @@
   }
 
   .detail-footer {
-    padding-bottom: 80px;
+    padding-bottom: 120px;
   }
 
   .lightbox__nav--left {

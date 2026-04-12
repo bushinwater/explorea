@@ -43,7 +43,7 @@ namespace Explorea.Server.McpTools
                 return JsonSerializer.Serialize(
                     new { error = $"Invalid type '{type}'. Allowed: all, destination, place, event, activity." }, _json);
 
-            var result = await exploreService.GetMapMarkersAsync(lat, lng, radiusKm, type, limit);
+            var result = await exploreService.GetMapMarkersAsync(lat, lng, radiusKm, type, limit, null, null);
             return JsonSerializer.Serialize(result, _json);
         }
     }

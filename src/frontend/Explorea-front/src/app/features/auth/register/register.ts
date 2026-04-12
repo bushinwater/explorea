@@ -38,6 +38,8 @@ export class Register implements OnInit {
   lastNameError = '';
   genderError = '';
   dateOfBirthError = '';
+  passwordError = '';
+  showPasswordHint = false;
 
   registrationDone = false;
   resendSent = false;
@@ -194,7 +196,7 @@ export class Register implements OnInit {
     return this.activeModal === 'terms' ? this.termsSections : this.privacySections;
   }
 
-  get passwordStrength(): 'weak' | 'medium' | 'strong' | null {
+  get passwordStrength(): 'weak' | 'fair' | 'strong' | null {
     if (!this.password) return null;
     const hasUpper   = /[A-Z]/.test(this.password);
     const hasNumber  = /[0-9]/.test(this.password);
@@ -202,7 +204,7 @@ export class Register implements OnInit {
     const long       = this.password.length >= 8;
     const score = [hasUpper, hasNumber, hasSpecial, long].filter(Boolean).length;
     if (score <= 2) return 'weak';
-    if (score === 3) return 'medium';
+    if (score === 3) return 'fair';
     return 'strong';
   }
 
@@ -309,14 +311,25 @@ export class Register implements OnInit {
     return true;
   }
 
+  validatePassword(): boolean {
+    const hasNumber = /[0-9]/.test(this.password);
+    if (!this.password || this.password.length < 6 || !hasNumber) {
+      this.passwordError = 'REGISTER.ERROR_PASSWORD_WEAK';
+      return false;
+    }
+    this.passwordError = '';
+    return true;
+  }
+
   register() {
     const emailOk     = this.validateEmail();
     const firstNameOk = this.validateFirstName();
     const lastNameOk  = this.validateLastName();
     const genderOk    = this.validateGender();
     const dobOk       = this.validateDateOfBirth();
+    const passwordOk  = this.validatePassword();
 
-    if (!emailOk || !firstNameOk || !lastNameOk || !genderOk || !dobOk || this.emailChecking) {
+    if (!emailOk || !firstNameOk || !lastNameOk || !genderOk || !dobOk || !passwordOk || this.emailChecking) {
       this.cdr.detectChanges();
       return;
     }

@@ -19,6 +19,8 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(a => a.Season)
         .Include(a => a.Inclusions)
         .Include(a => a.Images)
+        .Include(a => a.InterestTags)
+        .Include(a => a.Destination)
         .FirstOrDefaultAsync(a => a.Slug == slug);
     }
 
@@ -79,23 +81,46 @@ namespace Explorea.Server.Repositories.Implementations
 
     public async Task<List<Activity>> GetSimilarActivitiesAsync(Activity activity, int take = 6)
     {
-      return await _db.Activities
+      var activityTagIds = activity.InterestTags.Select(t => t.InterestTagId).ToList();
+      var hasTagIds = activityTagIds.Count > 0;
+
+      // Dohvati kandidate: ista kategorija ILI dijele bar jedan tag ILI ista lokacija
+      var candidates = await _db.Activities
         .AsNoTracking()
         .Include(a => a.Category)
         .Include(a => a.Images)
-        .Where(a => 
-            a.Id != activity.Id && 
-            a.Slug != activity.Slug && 
+        .Include(a => a.InterestTags)
+        .Where(a =>
+            a.Id != activity.Id &&
+            !a.IsDeleted &&
             (
-                a.CategoryId == activity.CategoryId || 
-                (activity.DestinationId != null && a.DestinationId == activity.DestinationId)
+                a.CategoryId == activity.CategoryId ||
+                (hasTagIds && a.InterestTags.Any(t => activityTagIds.Contains(t.InterestTagId))) ||
+                (activity.DestinationId != null && a.DestinationId == activity.DestinationId) ||
+                (activity.CityId != null && a.CityId == activity.CityId) ||
+                (activity.CountryId != null && a.CountryId == activity.CountryId)
             ))
-        .OrderByDescending(a => a.IsFeatured)
-        .ThenByDescending(a => a.Popularity)
-        .ThenByDescending(a => a.AvgRating)
-        .ThenBy(a => a.Name)
-        .Take(take)
         .ToListAsync();
+
+      // Bodovanje: kategorija > zajednički tagovi > lokacija > popularnost
+      return candidates
+        .Select(a => new
+        {
+            Activity = a,
+            Score =
+                (a.CategoryId == activity.CategoryId ? 10 : 0) +
+                a.InterestTags.Count(t => activityTagIds.Contains(t.InterestTagId)) * 3 +
+                (activity.DestinationId != null && a.DestinationId == activity.DestinationId ? 4 : 0) +
+                (activity.CityId != null && a.CityId == activity.CityId ? 2 : 0) +
+                (activity.CountryId != null && a.CountryId == activity.CountryId ? 1 : 0) +
+                (a.IsFeatured ? 2 : 0) +
+                (double)a.Popularity / 100.0 +
+                (double)a.AvgRating / 5.0
+        })
+        .OrderByDescending(x => x.Score)
+        .Take(take)
+        .Select(x => x.Activity)
+        .ToList();
     }
   }
 }

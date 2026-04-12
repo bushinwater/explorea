@@ -603,7 +603,7 @@
 
 .pin-popup {
   position: absolute;
-  bottom: calc(var(--spacing-lg) + 80px);
+  bottom: var(--spacing-lg);
   right: var(--spacing-lg);
   width: 300px;
   background: var(--color-surface);
@@ -613,7 +613,6 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   z-index: 50;
   animation: popup-in 0.2s ease;
-  margin-bottom: 70px;
 }
 
 @keyframes popup-in {
@@ -1251,7 +1250,7 @@
   }
 
   .pin-popup {
-    bottom: calc(86px + 40px);
+    bottom: calc(86px + 40px + 70px);
     right: var(--spacing-md);
     left: var(--spacing-md);
     width: auto;

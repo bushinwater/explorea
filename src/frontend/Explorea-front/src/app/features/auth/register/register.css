@@ -107,7 +107,7 @@ h1 {
 }
 
 .strength-fill.weak   { width: 33%; background: var(--color-danger); }
-.strength-fill.medium { width: 66%; background: #f59e0b; }
+.strength-fill.fair { width: 66%; background: #f59e0b; }
 .strength-fill.strong { width: 100%; background: #22c55e; }
 
 .strength-label {
@@ -117,7 +117,7 @@ h1 {
   text-align: right;
 }
 .strength-label.weak   { color: var(--color-danger); }
-.strength-label.medium { color: #f59e0b; }
+.strength-label.fair { color: #f59e0b; }
 .strength-label.strong { color: #22c55e; }
 
 /* SELECT */
@@ -215,6 +215,55 @@ h1 {
   color: var(--color-danger);
   font-size: 12px;
   margin-top: -2px;
+}
+
+/* PASSWORD HINT */
+.label-with-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pwd-hint-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.pwd-hint-icon {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  line-height: 1;
+}
+
+.pwd-hint-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  width: 220px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  z-index: 100;
+  font-size: 12px;
+  font-weight: normal;
+  color: var(--color-text);
+  white-space: normal;
+  pointer-events: none;
+}
+
+.pwd-hint-tooltip p {
+  margin: 2px 0;
+  line-height: 1.5;
+}
+
+.pwd-hint-title {
+  font-weight: 600;
+  margin-bottom: 4px !important;
 }
 
 /* TERMS */
