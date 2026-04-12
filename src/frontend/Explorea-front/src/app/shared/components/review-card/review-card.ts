@@ -14,10 +14,20 @@ import { ReviewDto } from '../../../core/models/home.model';
 export class ReviewCard {
   @Input() review!: ReviewDto;
 
+  imgError = false;
+
+  get showImage(): boolean {
+    return !!this.review.user.profileImageUrl && !this.imgError;
+  }
+
+  onImgError(): void {
+    this.imgError = true;
+  }
+
   get initials(): string {
-    return (
-      this.review.user.firstName[0] + this.review.user.lastName[0]
-    ).toUpperCase();
+    const f = this.review.user.firstName?.[0] ?? '';
+    const l = this.review.user.lastName?.[0] ?? '';
+    return (f + l).toUpperCase() || '?';
   }
 
   get rankIcon(): string {

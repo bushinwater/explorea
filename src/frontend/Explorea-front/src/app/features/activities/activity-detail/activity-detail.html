@@ -172,7 +172,7 @@
               <h2>{{ 'ACTIVITY_DETAIL.REVIEWS.TITLE' | translate }}</h2>
               <div class="section-head-actions">
                 <a class="section-link" href="javascript:void(0)"
-                  *ngIf="activity.reviews.length > 3"
+                  *ngIf="activity.reviews.length > 0"
                   (click)="openShowAll('reviews')">
                   {{ 'ACTIVITY_DETAIL.SIMILAR.VIEW_ALL' | translate }} ({{ activity.reviews.length }})
                 </a>
@@ -192,9 +192,13 @@
             <ng-container *ngIf="activity.reviews.length > 0; else noReviews">
               <div class="review-scroll-row">
                 <app-review-card
-                  *ngFor="let review of activity.reviews.slice(0, 3)"
+                  *ngFor="let review of activity.reviews.slice(0, 15)"
                   [review]="$any(review)" />
               </div>
+
+              <app-rating-stats
+                [avgRating]="activity.avgRating"
+                [reviews]="activity.reviews" />
             </ng-container>
 
             <ng-template #noReviews>
@@ -247,16 +251,17 @@
       </div>
 
 
+      <app-detail-footer />
     </ng-container>
 
   </main>
 
-  <!-- SHOW ALL PANEL (similar activities or all reviews) -->
+  <!-- SHOW ALL PANEL (similar activities) -->
   <div class="show-all-overlay" *ngIf="showAllOpen" (click)="closeShowAll()">
     <div class="show-all-panel" (click)="$event.stopPropagation()">
       <div class="show-all-panel__header">
         <div class="show-all-panel__title-wrap">
-          <h2>{{ (showAllMode === 'similar' ? 'ACTIVITY_DETAIL.SIMILAR.ALL_PANEL_TITLE' : 'ACTIVITY_DETAIL.REVIEWS.ALL_PANEL_TITLE') | translate }}</h2>
+          <h2>{{ 'ACTIVITY_DETAIL.SIMILAR.ALL_PANEL_TITLE' | translate }}</h2>
           <span class="show-all-panel__subtitle">{{ activity?.name }}</span>
         </div>
         <button class="circle-btn circle-btn--sm" type="button" (click)="closeShowAll()">
@@ -265,58 +270,40 @@
       </div>
 
       <div class="show-all-panel__body">
-
-        <!-- Similar activities -->
-        <ng-container *ngIf="showAllMode === 'similar'">
-          <div class="panel-similar-grid">
-            <a class="activity-item" *ngFor="let act of activity?.similarActivities"
-              [routerLink]="['/activities', act.slug]"
-              (click)="closeShowAll()">
-              <div class="activity-item__image-wrap">
-                <img [src]="act.previewImageUrl || ''" [alt]="act.name" class="activity-item__image" loading="lazy" />
-                <span class="activity-item__category" *ngIf="act.category">{{ act.category.name }}</span>
-                <div class="activity-item__overlay">
-                  <span class="activity-item__name">{{ act.name }}</span>
-                  <div class="activity-item__meta">
-                    <span class="activity-item__rating">
-                      <span class="material-icons">star</span>
-                      {{ act.avgRating | number:'1.1-1' }}
-                    </span>
-                    <span class="activity-item__price" *ngIf="act.price">{{ act.price | number }} RSD</span>
-                    <span class="activity-item__price" *ngIf="!act.price">{{ 'ACTIVITY_DETAIL.FREE' | translate }}</span>
-                  </div>
+        <div class="panel-similar-grid">
+          <a class="activity-item" *ngFor="let act of activity?.similarActivities"
+            [routerLink]="['/activities', act.slug]"
+            (click)="closeShowAll()">
+            <div class="activity-item__image-wrap">
+              <img [src]="act.previewImageUrl || ''" [alt]="act.name" class="activity-item__image" loading="lazy" />
+              <span class="activity-item__category" *ngIf="act.category">{{ act.category.name }}</span>
+              <div class="activity-item__overlay">
+                <span class="activity-item__name">{{ act.name }}</span>
+                <div class="activity-item__meta">
+                  <span class="activity-item__rating">
+                    <span class="material-icons">star</span>
+                    {{ act.avgRating | number:'1.1-1' }}
+                  </span>
+                  <span class="activity-item__price" *ngIf="act.price">{{ act.price | number }} RSD</span>
+                  <span class="activity-item__price" *ngIf="!act.price">{{ 'ACTIVITY_DETAIL.FREE' | translate }}</span>
                 </div>
               </div>
-            </a>
-          </div>
-        </ng-container>
-
-        <!-- All reviews -->
-        <ng-container *ngIf="showAllMode === 'reviews'">
-          <div class="reviews-list">
-            <div class="review-item" *ngFor="let review of activity?.reviews">
-              <div class="review-item__head">
-                <div class="review-item__avatar">
-                  <span>{{ review.user.firstName[0] }}{{ review.user.lastName[0] }}</span>
-                </div>
-                <div class="review-item__user">
-                  <h3>{{ review.user.firstName }} {{ review.user.lastName }}</h3>
-                  <span>{{ review.user.travelerRank }}</span>
-                </div>
-                <div class="review-item__rating review-item__rating--stars">
-                  <span *ngFor="let star of getStarsArray(); let i = index" class="material-icons"
-                    [class.review-star--filled]="i < review.rating"
-                    [class.review-star--empty]="i >= review.rating">star</span>
-                </div>
-              </div>
-              <p class="detail-copy" *ngIf="review.comment">{{ review.comment }}</p>
             </div>
-          </div>
-        </ng-container>
-
+          </a>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- REVIEWS PANEL -->
+  <app-reviews-panel
+    *ngIf="activity"
+    [isOpen]="reviewsPanelOpen"
+    [title]="'ACTIVITY_DETAIL.REVIEWS.ALL_PANEL_TITLE' | translate"
+    [subtitle]="activity.name"
+    [avgRating]="activity.avgRating"
+    [reviews]="activity.reviews"
+    (closed)="closeShowAll()" />
 
   <!-- REVIEW MODAL -->
   <app-review-modal

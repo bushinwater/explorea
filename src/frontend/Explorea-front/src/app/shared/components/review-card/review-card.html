@@ -1,8 +1,8 @@
 <div class="review-card">
   <div class="review-card__header">
     <div class="review-card__avatar">
-      <img *ngIf="review.user.profileImageUrl" [src]="review.user.profileImageUrl" [alt]="review.user.firstName" class="review-card__avatar-img" />
-      <span *ngIf="!review.user.profileImageUrl">{{ initials }}</span>
+      <img *ngIf="showImage" [src]="review.user.profileImageUrl" [alt]="review.user.firstName" class="review-card__avatar-img" (error)="onImgError()" />
+      <span *ngIf="!showImage">{{ initials }}</span>
     </div>
     <div class="review-card__user-info">
       <span class="review-card__name">{{ review.user.firstName }} {{ review.user.lastName }}</span>

@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, switchMap, tap, takeUntil } from 'rxjs/operators';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Sidebar } from '../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../shared/bottom-nav/bottom-nav';
 import { ExploreService, ExploreMarker } from '../../core/services/explore.service';
@@ -69,16 +70,16 @@ const ENTITY_TYPE_BACKEND_MAP: Record<string, string> = {
 };
 
 const ENTITY_TYPES = [
-  { key: 'destinacije', label: 'Destinacije', icon: 'landscape' },
-  { key: 'objekti',     label: 'Objekti',     icon: 'store' },
-  { key: 'aktivnosti',  label: 'Aktivnosti',  icon: 'directions_run' },
-  { key: 'dogadjaji',   label: 'Događaji',    icon: 'event' },
+  { key: 'destinacije', labelKey: 'EXPLORE.ENTITY_TYPES.DESTINATIONS', icon: 'landscape' },
+  { key: 'objekti',     labelKey: 'EXPLORE.ENTITY_TYPES.PLACES',       icon: 'store' },
+  { key: 'aktivnosti',  labelKey: 'EXPLORE.ENTITY_TYPES.ACTIVITIES',   icon: 'directions_run' },
+  { key: 'dogadjaji',   labelKey: 'EXPLORE.ENTITY_TYPES.EVENTS',       icon: 'event' },
 ];
 
 @Component({
   selector: 'app-explore',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, Sidebar, BottomNav],
+  imports: [CommonModule, RouterModule, FormsModule, TranslateModule, Sidebar, BottomNav],
   templateUrl: './explore.html',
   styleUrl: './explore.css',
 })
@@ -90,6 +91,7 @@ export class Explore implements AfterViewInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private exploreService: ExploreService,
     private searchService: SearchService,
+    private translate: TranslateService,
   ) {}
 
   // ── Real-time drag state for mobile bottom sheet ──────────────
@@ -230,7 +232,7 @@ export class Explore implements AfterViewInit, OnDestroy {
 
   private initSearch() {
     this.searchSubject.pipe(
-      debounceTime(180),
+      debounceTime(30),
       distinctUntilChanged(),
       tap(q => {
         if (q.length < 2) {
@@ -640,13 +642,14 @@ export class Explore implements AfterViewInit, OnDestroy {
   }
 
   getEntityTypeLabel(entityType: string): string {
-    const labels: Record<string, string> = {
-      'destination': 'Destinacija',
-      'place':       'Objekat',
-      'activity':    'Aktivnost',
-      'event':       'Događaj',
+    const keys: Record<string, string> = {
+      'destination': 'EXPLORE.ENTITY_LABELS.DESTINATION',
+      'place':       'EXPLORE.ENTITY_LABELS.PLACE',
+      'activity':    'EXPLORE.ENTITY_LABELS.ACTIVITY',
+      'event':       'EXPLORE.ENTITY_LABELS.EVENT',
     };
-    return labels[entityType] ?? entityType;
+    const key = keys[entityType];
+    return key ? this.translate.instant(key) : entityType;
   }
 
   applyFilters() {

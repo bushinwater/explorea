@@ -457,6 +457,60 @@
   "PLACE_CARD": {
     "PER_NIGHT": "/ night"
   },
+  "EXPLORE": {
+    "TITLE": "Explore",
+    "SEARCH": {
+      "PLACEHOLDER": "Enter a location or destination name...",
+      "PLACEHOLDER_MOBILE": "Search locations, destinations...",
+      "SHOW_FILTERS": "Show filters",
+      "HIDE_FILTERS": "Hide filters"
+    },
+    "FILTERS": {
+      "TITLE": "Explore Filters",
+      "BADGE": "{{count}} filters",
+      "ALL": "All",
+      "LOCATION": "Location",
+      "NEARBY_ONLY": "Nearby only",
+      "LOCATION_UNAVAILABLE": "Location unavailable",
+      "RADIUS": "Search radius",
+      "TYPE": "Type",
+      "HOURS_RATINGS": "Working Hours & Ratings",
+      "OPEN_NOW": "Open now",
+      "MIN_RATING": "Minimum rating",
+      "RESET": "Reset filters",
+      "APPLY": "Apply filters",
+      "CLOSE": "Close"
+    },
+    "ENTITY_TYPES": {
+      "DESTINATIONS": "Destinations",
+      "PLACES": "Places",
+      "ACTIVITIES": "Activities",
+      "EVENTS": "Events"
+    },
+    "ENTITY_LABELS": {
+      "DESTINATION": "Destination",
+      "PLACE": "Place",
+      "ACTIVITY": "Activity",
+      "EVENT": "Event"
+    },
+    "SHEET": {
+      "LOADING": "Loading...",
+      "RESULTS": "{{count}} results",
+      "ZOOM_HINT": "Zoom in for more results",
+      "SWIPE_UP": "Swipe up for list",
+      "SWIPE_DOWN": "Swipe down to close"
+    },
+    "PIN": {
+      "DETAILS": "Details",
+      "ROUTE": "Route"
+    },
+    "LOCATION_MODAL": {
+      "TITLE": "Location unavailable",
+      "TEXT": "Your current location is needed to show directions. Allow location access and try again.",
+      "CANCEL": "Cancel",
+      "ENABLE": "Enable location"
+    }
+  },
   "DESTINATION_DETAIL": {
     "LOADING": "Loading destination details...",
     "ABOUT": "About the destination",

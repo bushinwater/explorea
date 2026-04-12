@@ -140,7 +140,8 @@ namespace Explorea.Server.Services
           Id = review.User.Id,
           FirstName = review.User.FirstName,
           LastName = review.User.LastName,
-          TravelerRank = review.User.TravelerRank
+          TravelerRank = review.User.TravelerRank,
+          ProfileImageUrl = review.User.ProfileImageUrl
         }
       };
     }

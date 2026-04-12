@@ -11,6 +11,7 @@ import { AiRecommendations } from './ai-recommendations/ai-recommendations';
 import { TravelReviews } from './travel-reviews/travel-reviews';
 import { HomeService } from '../../core/services/home.service';
 import { LocationService } from '../../core/services/location.service';
+import { DetailFooter } from '../../shared/components/detail-footer/detail-footer';
 import {
   HeroBanner as HeroBannerModel,
   DestinationCard,
@@ -34,6 +35,7 @@ import {
     PopularActivities,
     AiRecommendations,
     TravelReviews,
+    DetailFooter,
   ],
   templateUrl: './home.html',
   styleUrl: './home.css',

@@ -16,6 +16,9 @@ import { ReviewService } from '../../../core/services/review.service';
 import { ReviewDto } from '../../../core/models/home.model';
 import { ReviewCard } from '../../../shared/components/review-card/review-card';
 import { ReviewModal } from '../../../shared/components/review-modal/review-modal';
+import { DetailFooter } from '../../../shared/components/detail-footer/detail-footer';
+import { RatingStats } from '../../../shared/components/rating-stats/rating-stats';
+import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 
@@ -44,7 +47,7 @@ const LIGHT = {
 @Component({
   selector: 'app-activity-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel],
   templateUrl: './activity-detail.html',
   styleUrl: './activity-detail.css',
 })
@@ -70,9 +73,10 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
 
   hasReviewed = false;
 
-  // Show-all panel (similar activities or reviews)
+  // Show-all panel (similar activities)
   showAllOpen = false;
   showAllMode: 'similar' | 'reviews' = 'similar';
+  reviewsPanelOpen = false;
   private savedScrollY = 0;
 
   // Review form
@@ -363,17 +367,22 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
   // Show-all panel
 
   openShowAll(mode: 'similar' | 'reviews'): void {
-    this.showAllMode = mode;
-    this.showAllOpen = true;
     this.savedScrollY = window.scrollY;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${this.savedScrollY}px`;
     document.body.style.width = '100%';
     document.body.style.overflow = 'hidden';
+    if (mode === 'reviews') {
+      this.reviewsPanelOpen = true;
+    } else {
+      this.showAllMode = mode;
+      this.showAllOpen = true;
+    }
   }
 
   closeShowAll(): void {
     this.showAllOpen = false;
+    this.reviewsPanelOpen = false;
     document.body.style.position = '';
     document.body.style.top = '';
     document.body.style.width = '';

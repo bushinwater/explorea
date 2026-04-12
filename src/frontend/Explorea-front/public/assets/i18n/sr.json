@@ -457,6 +457,60 @@
   "PLACE_CARD": {
     "PER_NIGHT": "/ noć"
   },
+  "EXPLORE": {
+    "TITLE": "Istraži",
+    "SEARCH": {
+      "PLACEHOLDER": "Unesite lokaciju ili naziv destinacije...",
+      "PLACEHOLDER_MOBILE": "Pretraži lokacije, destinacije...",
+      "SHOW_FILTERS": "Prikaži filtere",
+      "HIDE_FILTERS": "Sakrij filtere"
+    },
+    "FILTERS": {
+      "TITLE": "Filteri Istraživanja",
+      "BADGE": "{{count}} filtera",
+      "ALL": "Sve",
+      "LOCATION": "Lokacija",
+      "NEARBY_ONLY": "Samo u blizini",
+      "LOCATION_UNAVAILABLE": "Lokacija nije dostupna",
+      "RADIUS": "Radijus pretrage",
+      "TYPE": "Tip",
+      "HOURS_RATINGS": "Radno Vreme i Ocene",
+      "OPEN_NOW": "Otvoreno sada",
+      "MIN_RATING": "Minimalna ocena",
+      "RESET": "Poništi filtere",
+      "APPLY": "Primeni filtere",
+      "CLOSE": "Zatvori"
+    },
+    "ENTITY_TYPES": {
+      "DESTINATIONS": "Destinacije",
+      "PLACES": "Objekti",
+      "ACTIVITIES": "Aktivnosti",
+      "EVENTS": "Događaji"
+    },
+    "ENTITY_LABELS": {
+      "DESTINATION": "Destinacija",
+      "PLACE": "Objekat",
+      "ACTIVITY": "Aktivnost",
+      "EVENT": "Događaj"
+    },
+    "SHEET": {
+      "LOADING": "Učitavanje...",
+      "RESULTS": "{{count}} rezultata",
+      "ZOOM_HINT": "Zumirajte za više rezultata",
+      "SWIPE_UP": "Prevucite na gore za listu",
+      "SWIPE_DOWN": "Prevucite na dole za zatvaranje"
+    },
+    "PIN": {
+      "DETAILS": "Detalji",
+      "ROUTE": "Ruta"
+    },
+    "LOCATION_MODAL": {
+      "TITLE": "Lokacija nije dostupna",
+      "TEXT": "Za prikaz rute potrebna je tvoja trenutna lokacija. Dozvoli pristup lokaciji i pokušaj ponovo.",
+      "CANCEL": "Odustani",
+      "ENABLE": "Uključi lokaciju"
+    }
+  },
   "DESTINATION_DETAIL": {
     "LOADING": "Učitavanje detalja destinacije...",
     "ABOUT": "O destinaciji",

@@ -29,7 +29,7 @@ namespace Explorea.Server.Services
       var destinations = await _homeRepository.GetFeaturedDestinationsAsync(8);
       var events = await _homeRepository.GetUpcomingEventsAsync(now, 8);
       var activities = await _homeRepository.GetPopularActivitiesAsync(8);
-      var reviews = await _homeRepository.GetTravelerReviewsAsync(8);
+      var reviews = await _homeRepository.GetTravelerReviewsAsync(15);
 
       return new HomeDataDto
       {
@@ -83,7 +83,8 @@ namespace Explorea.Server.Services
         Id = d.Review.User.Id,
         FirstName = d.Review.User.FirstName,
         LastName = d.Review.User.LastName,
-        TravelerRank = d.Review.User.TravelerRank
+        TravelerRank = d.Review.User.TravelerRank,
+        ProfileImageUrl = d.Review.User.ProfileImageUrl
       }
     };
 

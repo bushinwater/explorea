@@ -9,28 +9,30 @@
     <div class="filter-panel__header">
       <div class="filter-panel__title-row">
         <span class="material-icons">tune</span>
-        <h2>Filteri Istraživanja</h2>
+        <h2>{{ 'EXPLORE.FILTERS.TITLE' | translate }}</h2>
       </div>
-      <span class="filter-badge" *ngIf="activeFilterCount > 0">{{ activeFilterCount }} filtera</span>
+      <span class="filter-badge" *ngIf="activeFilterCount > 0">
+        {{ 'EXPLORE.FILTERS.BADGE' | translate:{ count: activeFilterCount } }}
+      </span>
     </div>
 
     <!-- Lokacija -->
     <div class="filter-group">
-      <span class="filter-group__label">Lokacija</span>
+      <span class="filter-group__label">{{ 'EXPLORE.FILTERS.LOCATION' | translate }}</span>
       <label class="toggle-row" (click)="toggleNearbyOnly()">
         <span class="material-icons toggle-icon">my_location</span>
-        <span class="toggle-label">Samo u blizini</span>
+        <span class="toggle-label">{{ 'EXPLORE.FILTERS.NEARBY_ONLY' | translate }}</span>
         <div class="toggle-switch" [class.on]="nearbyOnly">
           <div class="toggle-thumb"></div>
         </div>
       </label>
       <p class="filter-group__hint" *ngIf="nearbyOnly && userLat === null">
         <span class="material-icons" style="font-size:13px;vertical-align:middle">info</span>
-        Lokacija nije dostupna
+        {{ 'EXPLORE.FILTERS.LOCATION_UNAVAILABLE' | translate }}
       </p>
       <ng-container *ngIf="nearbyOnly">
         <div class="filter-group__label-row" style="margin-top:10px">
-          <span class="filter-group__label">Radijus pretrage</span>
+          <span class="filter-group__label">{{ 'EXPLORE.FILTERS.RADIUS' | translate }}</span>
           <span class="filter-group__value">{{ radiusKm }} km</span>
         </div>
         <input type="range" class="radius-slider" min="5" max="200" step="5"
@@ -41,7 +43,7 @@
 
     <!-- Tip entiteta -->
     <div class="filter-group">
-      <span class="filter-group__label">Tip</span>
+      <span class="filter-group__label">{{ 'EXPLORE.FILTERS.TYPE' | translate }}</span>
       <div class="entity-type-grid">
         <button
           *ngFor="let et of entityTypes"
@@ -50,17 +52,17 @@
           (click)="toggleEntityType(et.key)"
         >
           <span class="material-icons">{{ et.icon }}</span>
-          <span>{{ et.label }}</span>
+          <span>{{ et.labelKey | translate }}</span>
         </button>
       </div>
     </div>
 
     <!-- Radno vreme -->
     <div class="filter-group">
-      <span class="filter-group__label">Radno Vreme &amp; Ocene</span>
+      <span class="filter-group__label">{{ 'EXPLORE.FILTERS.HOURS_RATINGS' | translate }}</span>
       <label class="toggle-row" (click)="openNowOnly = !openNowOnly">
         <span class="material-icons toggle-icon">schedule</span>
-        <span class="toggle-label">Otvoreno sada</span>
+        <span class="toggle-label">{{ 'EXPLORE.FILTERS.OPEN_NOW' | translate }}</span>
         <div class="toggle-switch" [class.on]="openNowOnly">
           <div class="toggle-thumb"></div>
         </div>
@@ -69,35 +71,23 @@
 
     <!-- Minimalna ocena -->
     <div class="filter-group">
-      <span class="filter-group__label">Minimalna ocena</span>
+      <span class="filter-group__label">{{ 'EXPLORE.FILTERS.MIN_RATING' | translate }}</span>
       <div class="rating-chips">
-        <button
-          class="rating-chip"
-          [class.active]="minRating === 3"
-          (click)="setMinRating(3)"
-        >
+        <button class="rating-chip" [class.active]="minRating === 3" (click)="setMinRating(3)">
           <span class="material-icons">star</span> 3+
         </button>
-        <button
-          class="rating-chip"
-          [class.active]="minRating === 4"
-          (click)="setMinRating(4)"
-        >
+        <button class="rating-chip" [class.active]="minRating === 4" (click)="setMinRating(4)">
           <span class="material-icons">star</span> 4+
         </button>
-        <button
-          class="rating-chip"
-          [class.active]="minRating === 4.5"
-          (click)="setMinRating(4.5)"
-        >
+        <button class="rating-chip" [class.active]="minRating === 4.5" (click)="setMinRating(4.5)">
           <span class="material-icons">star</span> 4.5+
         </button>
       </div>
     </div>
 
     <div class="filter-actions" *ngIf="activeFilterCount > 0">
-      <button class="ghost-btn ghost-btn--sm" (click)="resetFilters()">Poništi filtere</button>
-      <button class="primary-btn" (click)="applyFilters()">Primeni filtere</button>
+      <button class="ghost-btn ghost-btn--sm" (click)="resetFilters()">{{ 'EXPLORE.FILTERS.RESET' | translate }}</button>
+      <button class="primary-btn" (click)="applyFilters()">{{ 'EXPLORE.FILTERS.APPLY' | translate }}</button>
     </div>
   </aside>
 
@@ -106,7 +96,7 @@
     <div class="mobile-filter-modal__header">
       <div class="filter-panel__title-row">
         <span class="material-icons">tune</span>
-        <h2>Filteri Istraživanja</h2>
+        <h2>{{ 'EXPLORE.FILTERS.TITLE' | translate }}</h2>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <span class="filter-badge" *ngIf="activeFilterCount > 0">{{ activeFilterCount }}</span>
@@ -119,19 +109,19 @@
 
       <!-- Lokacija -->
       <div class="filter-group">
-        <span class="filter-group__label">Lokacija</span>
+        <span class="filter-group__label">{{ 'EXPLORE.FILTERS.LOCATION' | translate }}</span>
         <label class="toggle-row" (click)="toggleNearbyOnly()">
           <span class="material-icons toggle-icon">my_location</span>
-          <span class="toggle-label">Samo u blizini</span>
+          <span class="toggle-label">{{ 'EXPLORE.FILTERS.NEARBY_ONLY' | translate }}</span>
           <div class="toggle-switch" [class.on]="nearbyOnly"><div class="toggle-thumb"></div></div>
         </label>
         <p class="filter-group__hint" *ngIf="nearbyOnly && userLat === null">
           <span class="material-icons" style="font-size:13px;vertical-align:middle">info</span>
-          Lokacija nije dostupna
+          {{ 'EXPLORE.FILTERS.LOCATION_UNAVAILABLE' | translate }}
         </p>
         <ng-container *ngIf="nearbyOnly">
           <div class="filter-group__label-row" style="margin-top:10px">
-            <span class="filter-group__label">Radijus pretrage</span>
+            <span class="filter-group__label">{{ 'EXPLORE.FILTERS.RADIUS' | translate }}</span>
             <span class="filter-group__value">{{ radiusKm }} km</span>
           </div>
           <input type="range" class="radius-slider" min="5" max="200" step="5"
@@ -142,29 +132,29 @@
 
       <!-- Tip entiteta -->
       <div class="filter-group">
-        <span class="filter-group__label">Tip</span>
+        <span class="filter-group__label">{{ 'EXPLORE.FILTERS.TYPE' | translate }}</span>
         <div class="entity-type-grid">
           <button *ngFor="let et of entityTypes" class="entity-type-chip"
             [class.active]="isEntityTypeSelected(et.key)" (click)="toggleEntityType(et.key)">
             <span class="material-icons">{{ et.icon }}</span>
-            <span>{{ et.label }}</span>
+            <span>{{ et.labelKey | translate }}</span>
           </button>
         </div>
       </div>
 
       <!-- Radno vreme -->
       <div class="filter-group">
-        <span class="filter-group__label">Radno Vreme</span>
+        <span class="filter-group__label">{{ 'EXPLORE.FILTERS.HOURS_RATINGS' | translate }}</span>
         <label class="toggle-row" (click)="openNowOnly = !openNowOnly">
           <span class="material-icons toggle-icon">schedule</span>
-          <span class="toggle-label">Otvoreno sada</span>
+          <span class="toggle-label">{{ 'EXPLORE.FILTERS.OPEN_NOW' | translate }}</span>
           <div class="toggle-switch" [class.on]="openNowOnly"><div class="toggle-thumb"></div></div>
         </label>
       </div>
 
       <!-- Minimalna ocena -->
       <div class="filter-group">
-        <span class="filter-group__label">Minimalna ocena</span>
+        <span class="filter-group__label">{{ 'EXPLORE.FILTERS.MIN_RATING' | translate }}</span>
         <div class="rating-chips">
           <button class="rating-chip" [class.active]="minRating === 3" (click)="setMinRating(3)">
             <span class="material-icons">star</span> 3+
@@ -180,11 +170,11 @@
 
     </div>
     <div class="mobile-filter-modal__footer" *ngIf="activeFilterCount > 0">
-      <button class="ghost-btn ghost-btn--sm" (click)="resetFilters()">Poništi filtere</button>
-      <button class="primary-btn" (click)="applyFilters(); toggleFilterPanel()">Primeni filtere</button>
+      <button class="ghost-btn ghost-btn--sm" (click)="resetFilters()">{{ 'EXPLORE.FILTERS.RESET' | translate }}</button>
+      <button class="primary-btn" (click)="applyFilters(); toggleFilterPanel()">{{ 'EXPLORE.FILTERS.APPLY' | translate }}</button>
     </div>
     <div class="mobile-filter-modal__footer" *ngIf="activeFilterCount === 0">
-      <button class="primary-btn mobile-filter-modal__close-btn" (click)="toggleFilterPanel()">Zatvori</button>
+      <button class="primary-btn mobile-filter-modal__close-btn" (click)="toggleFilterPanel()">{{ 'EXPLORE.FILTERS.CLOSE' | translate }}</button>
     </div>
   </div>
 
@@ -198,7 +188,7 @@
       <input
         class="map-search__input"
         type="text"
-        placeholder="Unesite lokaciju ili naziv destinacije..."
+        [placeholder]="'EXPLORE.SEARCH.PLACEHOLDER' | translate"
         [(ngModel)]="searchQuery"
         (ngModelChange)="onSearchInput($event)"
         (keydown)="onSearchKeydown($event)"
@@ -210,7 +200,7 @@
         class="map-search__filter-btn"
         [class.active]="activeFilterCount > 0"
         (click)="toggleFilterPanel()"
-        [title]="filterPanelVisible ? 'Sakrij filtere' : 'Prikaži filtere'"
+        [title]="(filterPanelVisible ? 'EXPLORE.SEARCH.HIDE_FILTERS' : 'EXPLORE.SEARCH.SHOW_FILTERS') | translate"
       >
         <span class="material-icons">tune</span>
         <span *ngIf="activeFilterCount > 0" class="map-search__filter-badge">{{ activeFilterCount }}</span>
@@ -236,14 +226,14 @@
     <div class="mobile-topbar mobile-only">
       <div class="mobile-topbar__header">
         <span class="material-icons mobile-topbar__icon">explore</span>
-        <span class="mobile-topbar__title">Istraži</span>
+        <span class="mobile-topbar__title">{{ 'EXPLORE.TITLE' | translate }}</span>
       </div>
       <div class="mobile-search-wrap">
         <div class="mobile-search">
           <span class="material-icons">{{ searchLoading ? 'autorenew' : 'search' }}</span>
           <input
             type="text"
-            placeholder="Pretraži lokacije, destinacije..."
+            [placeholder]="'EXPLORE.SEARCH.PLACEHOLDER_MOBILE' | translate"
             [(ngModel)]="searchQuery"
             (ngModelChange)="onSearchInput($event)"
             (keydown)="onSearchKeydown($event)"
@@ -283,7 +273,7 @@
           (click)="selectedEntityTypes = []"
         >
           <span class="material-icons">apps</span>
-          Sve
+          {{ 'EXPLORE.FILTERS.ALL' | translate }}
         </button>
         <button
           *ngFor="let et of entityTypes"
@@ -292,7 +282,7 @@
           (click)="toggleEntityType(et.key)"
         >
           <span class="material-icons">{{ et.icon }}</span>
-          {{ et.label }}
+          {{ et.labelKey | translate }}
         </button>
       </div>
     </div>
@@ -327,10 +317,10 @@
           {{ selectedPin.price }} RSD
         </p>
         <div class="pin-popup__actions">
-          <a [routerLink]="getPinRoute(selectedPin)" class="ghost-btn ghost-btn--sm">Detalji</a>
+          <a [routerLink]="getPinRoute(selectedPin)" class="ghost-btn ghost-btn--sm">{{ 'EXPLORE.PIN.DETAILS' | translate }}</a>
           <button class="primary-btn primary-btn--sm" (click)="openRoute(selectedPin!)">
             <span class="material-icons">directions</span>
-            Ruta
+            {{ 'EXPLORE.PIN.ROUTE' | translate }}
           </button>
         </div>
       </div>
@@ -349,17 +339,17 @@
         <div class="mobile-sheet__handle"></div>
         <div class="mobile-sheet__peek">
           <div class="mobile-sheet__peek-count">
-            {{ loading ? 'Učitavanje...' : (filteredPins.length + ' rezultata') }}
+            {{ loading ? ('EXPLORE.SHEET.LOADING' | translate) : ('EXPLORE.SHEET.RESULTS' | translate:{ count: filteredPins.length }) }}
           </div>
           <div class="mobile-sheet__peek-hint"
             *ngIf="!drawerExpanded && selectedEntityTypes.length === 0 && currentZoom < 11">
-            Zumirajte za više rezultata
+            {{ 'EXPLORE.SHEET.ZOOM_HINT' | translate }}
           </div>
           <div class="mobile-sheet__peek-hint"
             *ngIf="!drawerExpanded && (selectedEntityTypes.length > 0 || currentZoom >= 11)">
-            Prevucite na gore za listu
+            {{ 'EXPLORE.SHEET.SWIPE_UP' | translate }}
           </div>
-          <div class="mobile-sheet__peek-hint" *ngIf="drawerExpanded">Prevucite na dole za zatvaranje</div>
+          <div class="mobile-sheet__peek-hint" *ngIf="drawerExpanded">{{ 'EXPLORE.SHEET.SWIPE_DOWN' | translate }}</div>
         </div>
       </div>
 
@@ -422,15 +412,13 @@
       <div class="location-modal__icon">
         <span class="material-icons">location_off</span>
       </div>
-      <h3 class="location-modal__title">Lokacija nije dostupna</h3>
-      <p class="location-modal__text">
-        Za prikaz rute potrebna je tvoja trenutna lokacija. Dozvoli pristup lokaciji i pokušaj ponovo.
-      </p>
+      <h3 class="location-modal__title">{{ 'EXPLORE.LOCATION_MODAL.TITLE' | translate }}</h3>
+      <p class="location-modal__text">{{ 'EXPLORE.LOCATION_MODAL.TEXT' | translate }}</p>
       <div class="location-modal__actions">
-        <button class="ghost-btn ghost-btn--sm" (click)="dismissLocationModal()">Odustani</button>
+        <button class="ghost-btn ghost-btn--sm" (click)="dismissLocationModal()">{{ 'EXPLORE.LOCATION_MODAL.CANCEL' | translate }}</button>
         <button class="primary-btn" (click)="retryLocationForRoute()">
           <span class="material-icons">my_location</span>
-          Uključi lokaciju
+          {{ 'EXPLORE.LOCATION_MODAL.ENABLE' | translate }}
         </button>
       </div>
     </div>

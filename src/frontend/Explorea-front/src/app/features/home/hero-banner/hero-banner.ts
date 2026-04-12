@@ -55,7 +55,7 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
 
   ngOnInit() {
     this.searchSubject.pipe(
-      debounceTime(150),
+      debounceTime(50),
       distinctUntilChanged(),
       tap(q => {
         if (q.length < 2) {

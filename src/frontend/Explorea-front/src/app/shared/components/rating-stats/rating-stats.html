@@ -1,0 +1,22 @@
+<div class="rating-stats">
+  <div class="rating-stats__avg">
+    <span class="rating-stats__number">{{ avgRating | number:'1.1-1' }}</span>
+    <div class="rating-stats__stars">
+      <span *ngFor="let star of starsArray; let i = index" class="material-icons"
+        [class.review-star--filled]="i < avgRating"
+        [class.review-star--empty]="i >= avgRating">star</span>
+    </div>
+    <span class="rating-stats__total">{{ reviews.length }} {{ 'DESTINATION_DETAIL.REVIEWS_COUNT' | translate }}</span>
+  </div>
+
+  <div class="rating-stats__bars">
+    <div class="rating-stats__row" *ngFor="let row of breakdown">
+      <span class="rating-stats__label">{{ row.stars }}</span>
+      <span class="material-icons rating-stats__star">star</span>
+      <div class="rating-stats__bar">
+        <div class="rating-stats__fill" [style.width.%]="row.pct"></div>
+      </div>
+      <span class="rating-stats__count">{{ row.count }}</span>
+    </div>
+  </div>
+</div>

@@ -284,28 +284,7 @@
                   <app-review-card *ngFor="let review of destination.reviews.slice(0, 6)" [review]="$any(review)" />
                 </div>
 
-                <div class="rating-stats">
-                  <div class="rating-stats__avg">
-                    <span class="rating-stats__number">{{ destination.avgRating | number:'1.1-1' }}</span>
-                    <div class="rating-stats__stars">
-                      <span *ngFor="let star of getStarsArray(); let i = index" class="material-icons"
-                        [class.review-star--filled]="i < destination.avgRating"
-                        [class.review-star--empty]="i >= destination.avgRating">star</span>
-                    </div>
-                    <span class="rating-stats__total">{{ destination.reviews.length }} {{ 'DESTINATION_DETAIL.REVIEWS_COUNT' | translate }}</span>
-                  </div>
-
-                  <div class="rating-stats__bars">
-                    <div class="rating-stats__row" *ngFor="let row of ratingBreakdown">
-                      <span class="rating-stats__label">{{ row.stars }}</span>
-                      <span class="material-icons rating-stats__star">star</span>
-                      <div class="rating-stats__bar">
-                        <div class="rating-stats__fill" [style.width.%]="row.pct"></div>
-                      </div>
-                      <span class="rating-stats__count">{{ row.count }}</span>
-                    </div>
-                  </div>
-                </div>
+                <app-rating-stats [avgRating]="destination.avgRating" [reviews]="destination.reviews" />
               </ng-container>
             </div>
 
@@ -348,15 +327,7 @@
         </div>
       </div>
 
-      <footer class="detail-footer">
-        <div class="detail-footer__inner">
-          <div class="detail-footer__brand">
-            <img src="/assets/logo.png" class="logo-icon" alt="Explorea" />
-            <span class="logo-text">Explorea</span>
-          </div>
-          <p class="detail-footer__copy">{{ 'HOME.FOOTER.COPY' | translate }}</p>
-        </div>
-      </footer>
+      <app-detail-footer />
 
       <!-- SHOW ALL PANEL -->
       <div class="show-all-overlay" *ngIf="showAllOpen" (click)="closeShowAll()">
@@ -402,32 +373,17 @@
               </div>
             </ng-container>
 
-            <!-- Reviews -->
-            <ng-container *ngIf="selectedTab === 'reviews'">
-              <div class="reviews-list">
-                <div class="review-item" *ngFor="let review of destination.reviews">
-                  <div class="review-item__head">
-                    <div class="review-item__avatar">
-                      <img *ngIf="review.user.profileImageUrl" [src]="review.user.profileImageUrl" [alt]="review.user.firstName" />
-                      <span *ngIf="!review.user.profileImageUrl">{{ review.user.firstName[0] }}{{ review.user.lastName[0] }}</span>
-                    </div>
-                    <div class="review-item__user">
-                      <h3>{{ review.user.firstName }} {{ review.user.lastName }}</h3>
-                      <span>{{ review.user.travelerRank }}</span>
-                    </div>
-                    <div class="review-item__rating review-item__rating--stars">
-                      <span *ngFor="let star of getStarsArray(); let i = index" class="material-icons"
-                        [class.review-star--filled]="i < review.rating"
-                        [class.review-star--empty]="i >= review.rating">star</span>
-                    </div>
-                  </div>
-                  <p class="detail-copy" *ngIf="review.comment">{{ review.comment }}</p>
-                </div>
-              </div>
-            </ng-container>
           </div>
         </div>
       </div>
+
+      <app-reviews-panel
+        [isOpen]="reviewsPanelOpen"
+        [title]="showAllTitle"
+        [subtitle]="destination.city?.name || destination.name"
+        [avgRating]="destination.avgRating"
+        [reviews]="destination.reviews"
+        (closed)="closeShowAll()" />
 
       <!-- REVIEW MODAL -->
       <app-review-modal

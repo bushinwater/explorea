@@ -27,7 +27,7 @@ export interface ActivityDetail extends ActivityCard {
     rating: number;
     comment: string | null;
     createdAt: string;
-    user: { id: string; firstName: string; lastName: string; travelerRank: string };
+    user: { id: string; firstName: string; lastName: string; travelerRank: string; profileImageUrl?: string | null };
   }[];
   similarActivities: ActivityCard[];
 }

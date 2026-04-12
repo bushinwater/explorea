@@ -40,6 +40,9 @@ import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 import { ReviewCard } from '../../../shared/components/review-card/review-card';
 import { ReviewModal } from '../../../shared/components/review-modal/review-modal';
+import { DetailFooter } from '../../../shared/components/detail-footer/detail-footer';
+import { RatingStats } from '../../../shared/components/rating-stats/rating-stats';
+import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { ReviewDto } from '../../../core/models/home.model';
 
 type DetailTab = 'places' | 'events' | 'activities' | 'reviews';
@@ -48,7 +51,7 @@ type TabItem = PlaceCard | EventCard | ActivityCard;
 @Component({
   selector: 'app-destination-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel],
   templateUrl: './destination-detail.html',
   styleUrls: ['./destination-detail.css']
 })
@@ -88,6 +91,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   isSavedLoading = false;
 
   showAllOpen = false;
+  reviewsPanelOpen = false;
   private savedScrollY = 0;
 
   hasReviewed = false;
@@ -222,7 +226,11 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   }
 
   openShowAll(): void {
-    this.showAllOpen = true;
+    if (this.selectedTab === 'reviews') {
+      this.reviewsPanelOpen = true;
+    } else {
+      this.showAllOpen = true;
+    }
     this.savedScrollY = window.scrollY;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${this.savedScrollY}px`;
@@ -232,6 +240,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
 
   closeShowAll(): void {
     this.showAllOpen = false;
+    this.reviewsPanelOpen = false;
     document.body.style.position = '';
     document.body.style.top = '';
     document.body.style.width = '';

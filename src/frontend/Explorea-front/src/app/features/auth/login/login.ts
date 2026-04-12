@@ -6,6 +6,8 @@ import { TranslateModule } from '@ngx-translate/core';
 import { LoginDto } from '../../../core/models/auth.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { LocationService } from '../../../core/services/location.service';
+import { ThemeService } from '../../../core/services/theme.service';
+import { LanguageService } from '../../../core/services/language.service';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 
@@ -38,6 +40,8 @@ export class Login implements OnInit {
   constructor(
     private authService: AuthService,
     private locationService: LocationService,
+    public themeService: ThemeService,
+    public languageService: LanguageService,
     private router: Router,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,

@@ -273,11 +273,9 @@
   }
 
   .hero__mobile-logo-icon {
-    background: var(--color-primary);
-    padding: 5px 8px;
-    border-radius: var(--radius-md);
-    color: #fff;
-    font-size: 14px;
+    height: 24px;
+    width: auto;
+    object-fit: contain;
   }
 
   .hero__mobile-logo-text {
@@ -294,7 +292,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 100px;
+  height: 150px;
   background: linear-gradient(to bottom, transparent 0%, transparent 30%, var(--color-bg) 100%);
   z-index: 3;
   pointer-events: none;
