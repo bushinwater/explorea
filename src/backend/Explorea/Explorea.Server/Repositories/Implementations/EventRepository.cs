@@ -38,33 +38,42 @@ namespace Explorea.Server.Repositories.Implementations
             if (typeId.HasValue)
                 query = query.Where(e => e.TypeId == typeId);
 
-            if (from.HasValue)
-                query = query.Where(e => e.StartDatetime >= from);
+            if (from.HasValue && to.HasValue)
+            {
+                query = query.Where(e => e.StartDatetime < to && e.EndDatetime >= from);
+            }
+            else
+            {
+                if (from.HasValue)
+                    query = query.Where(e => e.EndDatetime >= from);
 
-            if (to.HasValue)
-                query = query.Where(e => e.EndDatetime <= to);
+                if (to.HasValue)
+                    query = query.Where(e => e.StartDatetime < to);
+            }
 
             if (free.HasValue && free.Value)
                 query = query.Where(e => e.Price == null || e.Price == 0);
 
             var total = await query.CountAsync();
-            var items = await query
-                .OrderBy(e => e.StartDatetime)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+
+            // Vraćamo sve filtrirane događaje, a sortiranje i paginacija
+            // se rade u servisu kako bi sortBy radio ispravno nad celim skupom.
+            var items = await query.ToListAsync();
 
             return (items, total);
         }
 
         public async Task<List<Event>> GetByMonthAsync(int year, int month)
         {
+            var monthStartUtc = new DateTimeOffset(new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc));
+            var nextMonthStartUtc = monthStartUtc.AddMonths(1);
+
             return await _set
                 .Include(e => e.City)
                 .Include(e => e.Type)
+                .Include(e => e.Country)
                 .Include(e => e.Images)
-                .Where(e => e.StartDatetime.Year == year && 
-                            e.StartDatetime.Month == month)
+                .Where(e => e.StartDatetime < nextMonthStartUtc && e.EndDatetime >= monthStartUtc)
                 .OrderBy(e => e.StartDatetime)
                 .ToListAsync();
         }
@@ -76,12 +85,15 @@ namespace Explorea.Server.Repositories.Implementations
             int? typeId,
             bool? free)
         {
+            var monthStartUtc = new DateTimeOffset(new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc));
+            var nextMonthStartUtc = monthStartUtc.AddMonths(1);
+
             var query = _set
                 .Include(e => e.City)
                 .Include(e => e.Type)
                 .Include(e => e.Country)
                 .Include(e => e.Images)
-                .Where(e => e.StartDatetime.Year == year && e.StartDatetime.Month == month)
+                .Where(e => e.StartDatetime < nextMonthStartUtc && e.EndDatetime >= monthStartUtc)
                 .AsQueryable();
 
             if (cityId.HasValue)

@@ -28,11 +28,17 @@ namespace Explorea.Server.Services
 
             if (query.Date.HasValue)
             {
-                var selectedDate = query.Date.Value.ToDateTime(TimeOnly.MinValue);
-                var nextDate = query.Date.Value.AddDays(1).ToDateTime(TimeOnly.MinValue);
+                var selectedDateUtc = new DateTime(
+                    query.Date.Value.Year,
+                    query.Date.Value.Month,
+                    query.Date.Value.Day,
+                    0, 0, 0,
+                    DateTimeKind.Utc);
 
-                from = new DateTimeOffset(selectedDate);
-                to = new DateTimeOffset(nextDate);
+                var nextDateUtc = selectedDateUtc.AddDays(1);
+
+                from = new DateTimeOffset(selectedDateUtc);
+                to = new DateTimeOffset(nextDateUtc);
             }
 
             var (events, total) = await _eventRepository.GetPagedAsync(
@@ -45,30 +51,15 @@ namespace Explorea.Server.Services
                 pageSize: pageSize
             );
 
-            var sortedEvents = query.SortBy?.ToLower() switch
-            {
-                EventSortOptions.Popularity => events
-                    .OrderByDescending(e => e.IsFeatured)
-                    .ThenByDescending(e => e.Popularity)
-                    .ThenBy(e => e.StartDatetime),
+            var sortedEvents = SortEvents(events, query.SortBy, query.UserLat, query.UserLng);
 
-                EventSortOptions.Nearest when query.UserLat.HasValue && query.UserLng.HasValue => events
-                    .OrderBy(e => GetDistanceInKm(
-                        query.UserLat.Value,
-                        query.UserLng.Value,
-                        e.Latitude,
-                        e.Longitude))
-                    .ThenBy(e => e.StartDatetime),
-
-                _ => events
-                    .OrderBy(e => e.StartDatetime)
-            };
-
-            var items = sortedEvents
+            var pagedItems = sortedEvents
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(MapToEventCardDto)
                 .ToList();
 
-            return (items, total);
+            return (pagedItems, total);
         }
 
         public async Task<EventDetailDto?> GetBySlugAsync(string slug)
@@ -154,33 +145,88 @@ namespace Explorea.Server.Services
                 query.TypeId,
                 query.FreeOnly);
 
-            var groupedEvents = events
-                .GroupBy(e => DateOnly.FromDateTime(e.StartDatetime.Date))
-                .OrderBy(g => g.Key);
+            var monthStart = new DateOnly(query.Year, query.Month, 1);
+            var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+            var eventsByDay = new Dictionary<DateOnly, List<Event>>();
+
+            foreach (var e in events)
+            {
+                var eventStartDate = DateOnly.FromDateTime(e.StartDatetime.UtcDateTime.Date);
+                var eventEndDate = DateOnly.FromDateTime(e.EndDatetime.UtcDateTime.Date);
+
+                var effectiveStart = eventStartDate < monthStart ? monthStart : eventStartDate;
+                var effectiveEnd = eventEndDate > monthEnd ? monthEnd : eventEndDate;
+
+                for (var day = effectiveStart; day <= effectiveEnd; day = day.AddDays(1))
+                {
+                    if (!eventsByDay.ContainsKey(day))
+                        eventsByDay[day] = new List<Event>();
+
+                    eventsByDay[day].Add(e);
+                }
+            }
+
+            var groupedDays = eventsByDay
+                .OrderBy(x => x.Key);
 
             if (query.SelectedDate.HasValue)
             {
-                groupedEvents = groupedEvents
-                    .Where(g => g.Key == query.SelectedDate.Value)
-                    .OrderBy(g => g.Key);
+                groupedDays = groupedDays
+                    .Where(x => x.Key == query.SelectedDate.Value)
+                    .OrderBy(x => x.Key);
             }
 
-            var calendarDays = groupedEvents
-                .Select(g => new CalendarDayDto
+            var calendarDays = groupedDays
+                .Select(dayGroup =>
                 {
-                    Date = g.Key,
-                    Count = g.Count(),
-                    Events = g
-                        .OrderBy(e => e.StartDatetime)
-                        .Select(MapToEventCardDto)
-                        .ToList()
+                    var sortedEvents = SortEvents(
+                        dayGroup.Value,
+                        query.SortBy,
+                        query.UserLat,
+                        query.UserLng);
+
+                    return new CalendarDayDto
+                    {
+                        Date = dayGroup.Key,
+                        Count = dayGroup.Value.Count,
+                        Events = sortedEvents
+                            .Select(MapToEventCardDto)
+                            .ToList()
+                    };
                 })
                 .ToList();
 
             return calendarDays;
         }
 
-        private static EventCardDto MapToEventCardDto(API.Models.Event e)
+        private static IEnumerable<Event> SortEvents(
+            IEnumerable<Event> events,
+            string? sortBy,
+            double? userLat,
+            double? userLng)
+        {
+            return sortBy?.ToLower() switch
+            {
+                EventSortOptions.Popularity => events
+                    .OrderByDescending(e => e.Popularity)
+                    .ThenByDescending(e => e.IsFeatured)
+                    .ThenBy(e => e.StartDatetime),
+
+                EventSortOptions.Nearest when userLat.HasValue && userLng.HasValue => events
+                    .OrderBy(e => GetDistanceInKm(
+                        userLat.Value,
+                        userLng.Value,
+                        e.Latitude,
+                        e.Longitude))
+                    .ThenBy(e => e.StartDatetime),
+
+                _ => events
+                    .OrderBy(e => e.StartDatetime)
+            };
+        }
+
+        private static EventCardDto MapToEventCardDto(Event e)
         {
             return new EventCardDto
             {
