@@ -1,0 +1,438 @@
+<div class="explore-layout">
+  <app-sidebar />
+
+  <!-- Mobile filter backdrop -->
+  <div class="mobile-filter-backdrop mobile-only" *ngIf="filterPanelVisible" (click)="toggleFilterPanel()"></div>
+
+  <!-- ===================== FILTER PANEL ===================== -->
+  <aside class="filter-panel desktop-only" *ngIf="filterPanelVisible">
+    <div class="filter-panel__header">
+      <div class="filter-panel__title-row">
+        <span class="material-icons">tune</span>
+        <h2>Filteri Istraživanja</h2>
+      </div>
+      <span class="filter-badge" *ngIf="activeFilterCount > 0">{{ activeFilterCount }} filtera</span>
+    </div>
+
+    <!-- Lokacija -->
+    <div class="filter-group">
+      <span class="filter-group__label">Lokacija</span>
+      <label class="toggle-row" (click)="toggleNearbyOnly()">
+        <span class="material-icons toggle-icon">my_location</span>
+        <span class="toggle-label">Samo u blizini</span>
+        <div class="toggle-switch" [class.on]="nearbyOnly">
+          <div class="toggle-thumb"></div>
+        </div>
+      </label>
+      <p class="filter-group__hint" *ngIf="nearbyOnly && userLat === null">
+        <span class="material-icons" style="font-size:13px;vertical-align:middle">info</span>
+        Lokacija nije dostupna
+      </p>
+      <ng-container *ngIf="nearbyOnly">
+        <div class="filter-group__label-row" style="margin-top:10px">
+          <span class="filter-group__label">Radijus pretrage</span>
+          <span class="filter-group__value">{{ radiusKm }} km</span>
+        </div>
+        <input type="range" class="radius-slider" min="5" max="200" step="5"
+          [(ngModel)]="radiusKm" [style]="sliderStyle" />
+        <div class="radius-ticks"><span>5 km</span><span>200 km</span></div>
+      </ng-container>
+    </div>
+
+    <!-- Tip entiteta -->
+    <div class="filter-group">
+      <span class="filter-group__label">Tip</span>
+      <div class="entity-type-grid">
+        <button
+          *ngFor="let et of entityTypes"
+          class="entity-type-chip"
+          [class.active]="isEntityTypeSelected(et.key)"
+          (click)="toggleEntityType(et.key)"
+        >
+          <span class="material-icons">{{ et.icon }}</span>
+          <span>{{ et.label }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Radno vreme -->
+    <div class="filter-group">
+      <span class="filter-group__label">Radno Vreme &amp; Ocene</span>
+      <label class="toggle-row" (click)="openNowOnly = !openNowOnly">
+        <span class="material-icons toggle-icon">schedule</span>
+        <span class="toggle-label">Otvoreno sada</span>
+        <div class="toggle-switch" [class.on]="openNowOnly">
+          <div class="toggle-thumb"></div>
+        </div>
+      </label>
+    </div>
+
+    <!-- Minimalna ocena -->
+    <div class="filter-group">
+      <span class="filter-group__label">Minimalna ocena</span>
+      <div class="rating-chips">
+        <button
+          class="rating-chip"
+          [class.active]="minRating === 3"
+          (click)="setMinRating(3)"
+        >
+          <span class="material-icons">star</span> 3+
+        </button>
+        <button
+          class="rating-chip"
+          [class.active]="minRating === 4"
+          (click)="setMinRating(4)"
+        >
+          <span class="material-icons">star</span> 4+
+        </button>
+        <button
+          class="rating-chip"
+          [class.active]="minRating === 4.5"
+          (click)="setMinRating(4.5)"
+        >
+          <span class="material-icons">star</span> 4.5+
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-actions" *ngIf="activeFilterCount > 0">
+      <button class="ghost-btn ghost-btn--sm" (click)="resetFilters()">Poništi filtere</button>
+      <button class="primary-btn" (click)="applyFilters()">Primeni filtere</button>
+    </div>
+  </aside>
+
+  <!-- Mobile filter modal panel -->
+  <div class="mobile-filter-modal mobile-only" *ngIf="filterPanelVisible" (click)="$event.stopPropagation()">
+    <div class="mobile-filter-modal__header">
+      <div class="filter-panel__title-row">
+        <span class="material-icons">tune</span>
+        <h2>Filteri Istraživanja</h2>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="filter-badge" *ngIf="activeFilterCount > 0">{{ activeFilterCount }}</span>
+        <button class="circle-btn circle-btn--sm" (click)="toggleFilterPanel()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-filter-modal__body">
+
+      <!-- Lokacija -->
+      <div class="filter-group">
+        <span class="filter-group__label">Lokacija</span>
+        <label class="toggle-row" (click)="toggleNearbyOnly()">
+          <span class="material-icons toggle-icon">my_location</span>
+          <span class="toggle-label">Samo u blizini</span>
+          <div class="toggle-switch" [class.on]="nearbyOnly"><div class="toggle-thumb"></div></div>
+        </label>
+        <p class="filter-group__hint" *ngIf="nearbyOnly && userLat === null">
+          <span class="material-icons" style="font-size:13px;vertical-align:middle">info</span>
+          Lokacija nije dostupna
+        </p>
+        <ng-container *ngIf="nearbyOnly">
+          <div class="filter-group__label-row" style="margin-top:10px">
+            <span class="filter-group__label">Radijus pretrage</span>
+            <span class="filter-group__value">{{ radiusKm }} km</span>
+          </div>
+          <input type="range" class="radius-slider" min="5" max="200" step="5"
+            [(ngModel)]="radiusKm" [style]="sliderStyle" />
+          <div class="radius-ticks"><span>5 km</span><span>200 km</span></div>
+        </ng-container>
+      </div>
+
+      <!-- Tip entiteta -->
+      <div class="filter-group">
+        <span class="filter-group__label">Tip</span>
+        <div class="entity-type-grid">
+          <button *ngFor="let et of entityTypes" class="entity-type-chip"
+            [class.active]="isEntityTypeSelected(et.key)" (click)="toggleEntityType(et.key)">
+            <span class="material-icons">{{ et.icon }}</span>
+            <span>{{ et.label }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Radno vreme -->
+      <div class="filter-group">
+        <span class="filter-group__label">Radno Vreme</span>
+        <label class="toggle-row" (click)="openNowOnly = !openNowOnly">
+          <span class="material-icons toggle-icon">schedule</span>
+          <span class="toggle-label">Otvoreno sada</span>
+          <div class="toggle-switch" [class.on]="openNowOnly"><div class="toggle-thumb"></div></div>
+        </label>
+      </div>
+
+      <!-- Minimalna ocena -->
+      <div class="filter-group">
+        <span class="filter-group__label">Minimalna ocena</span>
+        <div class="rating-chips">
+          <button class="rating-chip" [class.active]="minRating === 3" (click)="setMinRating(3)">
+            <span class="material-icons">star</span> 3+
+          </button>
+          <button class="rating-chip" [class.active]="minRating === 4" (click)="setMinRating(4)">
+            <span class="material-icons">star</span> 4+
+          </button>
+          <button class="rating-chip" [class.active]="minRating === 4.5" (click)="setMinRating(4.5)">
+            <span class="material-icons">star</span> 4.5+
+          </button>
+        </div>
+      </div>
+
+    </div>
+    <div class="mobile-filter-modal__footer" *ngIf="activeFilterCount > 0">
+      <button class="ghost-btn ghost-btn--sm" (click)="resetFilters()">Poništi filtere</button>
+      <button class="primary-btn" (click)="applyFilters(); toggleFilterPanel()">Primeni filtere</button>
+    </div>
+    <div class="mobile-filter-modal__footer" *ngIf="activeFilterCount === 0">
+      <button class="primary-btn mobile-filter-modal__close-btn" (click)="toggleFilterPanel()">Zatvori</button>
+    </div>
+  </div>
+
+  <!-- ===================== MAP ===================== -->
+  <main class="explore-main">
+    <!-- Search bar (desktop) -->
+    <div class="map-search desktop-only">
+      <span class="material-icons map-search__icon">
+        {{ searchLoading ? 'autorenew' : 'search' }}
+      </span>
+      <input
+        class="map-search__input"
+        type="text"
+        placeholder="Unesite lokaciju ili naziv destinacije..."
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearchInput($event)"
+        (keydown)="onSearchKeydown($event)"
+        (blur)="onSearchBlur()"
+        autocomplete="off"
+      />
+      <div class="map-search__divider"></div>
+      <button
+        class="map-search__filter-btn"
+        [class.active]="activeFilterCount > 0"
+        (click)="toggleFilterPanel()"
+        [title]="filterPanelVisible ? 'Sakrij filtere' : 'Prikaži filtere'"
+      >
+        <span class="material-icons">tune</span>
+        <span *ngIf="activeFilterCount > 0" class="map-search__filter-badge">{{ activeFilterCount }}</span>
+      </button>
+
+      <!-- Dropdown -->
+      <div class="search-dropdown" *ngIf="showSearchDropdown">
+        <div
+          class="search-dropdown__item"
+          *ngFor="let item of searchResults"
+          (mousedown)="onSelectSearchResult(item)"
+        >
+          <span class="material-icons search-dropdown__icon">{{ getSearchIcon(item.entityType) }}</span>
+          <div class="search-dropdown__text">
+            <span class="search-dropdown__name">{{ item.entity.name }}</span>
+            <span class="search-dropdown__type">{{ getEntityTypeLabel(item.entityType) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile top bar -->
+    <div class="mobile-topbar mobile-only">
+      <div class="mobile-topbar__header">
+        <span class="material-icons mobile-topbar__icon">explore</span>
+        <span class="mobile-topbar__title">Istraži</span>
+      </div>
+      <div class="mobile-search-wrap">
+        <div class="mobile-search">
+          <span class="material-icons">{{ searchLoading ? 'autorenew' : 'search' }}</span>
+          <input
+            type="text"
+            placeholder="Pretraži lokacije, destinacije..."
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchInput($event)"
+            (keydown)="onSearchKeydown($event)"
+            (blur)="onSearchBlur()"
+            autocomplete="off"
+          />
+          <div class="mobile-search__divider"></div>
+          <button
+            class="mobile-search__filter-btn"
+            [class.active]="activeFilterCount > 0"
+            (click)="toggleFilterPanel()"
+          >
+            <span class="material-icons">tune</span>
+            <span *ngIf="activeFilterCount > 0" class="mobile-search__filter-badge">{{ activeFilterCount }}</span>
+          </button>
+        </div>
+
+        <!-- Mobile search dropdown — appears directly below search bar -->
+        <div class="search-dropdown search-dropdown--mobile" *ngIf="showSearchDropdown">
+          <div
+            class="search-dropdown__item"
+            *ngFor="let item of searchResults"
+            (mousedown)="onSelectSearchResult(item)"
+          >
+            <span class="material-icons search-dropdown__icon">{{ getSearchIcon(item.entityType) }}</span>
+            <div class="search-dropdown__text">
+              <span class="search-dropdown__name">{{ item.entity.name }}</span>
+              <span class="search-dropdown__type">{{ getEntityTypeLabel(item.entityType) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mobile-chips">
+        <button
+          class="mobile-chip"
+          [class.active]="selectedEntityTypes.length === 0"
+          (click)="selectedEntityTypes = []"
+        >
+          <span class="material-icons">apps</span>
+          Sve
+        </button>
+        <button
+          *ngFor="let et of entityTypes"
+          class="mobile-chip"
+          [class.active]="isEntityTypeSelected(et.key)"
+          (click)="toggleEntityType(et.key)"
+        >
+          <span class="material-icons">{{ et.icon }}</span>
+          {{ et.label }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Map container -->
+    <div #mapContainer class="map-container"></div>
+
+    <!-- Pin popup -->
+    <div class="pin-popup" *ngIf="selectedPin" (click)="$event.stopPropagation()">
+      <button class="pin-popup__close" (click)="closePin()">
+        <span class="material-icons">close</span>
+      </button>
+      <div class="pin-popup__image-wrap" *ngIf="selectedPin.previewImageUrl">
+        <img [src]="selectedPin.previewImageUrl" [alt]="selectedPin.name" class="pin-popup__image" />
+        <span class="pin-popup__type-badge">{{ getEntityTypeLabel(selectedPin.entityType) }}</span>
+      </div>
+      <div class="pin-popup__body">
+        <h3 class="pin-popup__name">{{ selectedPin.name }}</h3>
+        <p class="pin-popup__location" *ngIf="selectedPin.subtitle">
+          <span class="material-icons">location_on</span>
+          {{ selectedPin.subtitle }}
+        </p>
+        <div class="pin-popup__rating" *ngIf="selectedPin.avgRating">
+          <span class="material-icons star">star</span>
+          <strong>{{ selectedPin.avgRating | number:'1.1-1' }}</strong>
+        </div>
+        <p class="pin-popup__date" *ngIf="selectedPin.startDatetime">
+          <span class="material-icons">event</span>
+          {{ selectedPin.startDatetime | date:'dd.MM.yyyy HH:mm' }}
+        </p>
+        <p class="pin-popup__price" *ngIf="selectedPin.price">
+          {{ selectedPin.price }} RSD
+        </p>
+        <div class="pin-popup__actions">
+          <a [routerLink]="getPinRoute(selectedPin)" class="ghost-btn ghost-btn--sm">Detalji</a>
+          <button class="primary-btn primary-btn--sm" (click)="openRoute(selectedPin!)">
+            <span class="material-icons">directions</span>
+            Ruta
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile: bottom sheet (handle + drawer combined) -->
+    <div class="mobile-bottom-sheet mobile-only" [style]="sheetStyle">
+
+      <!-- Swipeable handle area -->
+      <div
+        class="mobile-sheet__handle-area"
+        (touchstart)="onHandleTouchStart($event)"
+        (touchmove)="onHandleTouchMove($event)"
+        (touchend)="onHandleTouchEnd($event)"
+      >
+        <div class="mobile-sheet__handle"></div>
+        <div class="mobile-sheet__peek">
+          <div class="mobile-sheet__peek-count">
+            {{ loading ? 'Učitavanje...' : (filteredPins.length + ' rezultata') }}
+          </div>
+          <div class="mobile-sheet__peek-hint"
+            *ngIf="!drawerExpanded && selectedEntityTypes.length === 0 && currentZoom < 11">
+            Zumirajte za više rezultata
+          </div>
+          <div class="mobile-sheet__peek-hint"
+            *ngIf="!drawerExpanded && (selectedEntityTypes.length > 0 || currentZoom >= 11)">
+            Prevucite na gore za listu
+          </div>
+          <div class="mobile-sheet__peek-hint" *ngIf="drawerExpanded">Prevucite na dole za zatvaranje</div>
+        </div>
+      </div>
+
+      <!-- Scrollable content — swipe down from top closes drawer -->
+      <div
+        class="mobile-sheet__scroll"
+        #drawerScroll
+        (touchstart)="onContentTouchStart($event)"
+        (touchend)="onContentTouchEnd($event)"
+      >
+        <div class="explore-grid">
+          <div
+            class="explore-card"
+            *ngFor="let pin of filteredPins"
+            (click)="selectResult(pin)"
+          >
+            <div class="explore-card__image-wrap">
+              <img
+                *ngIf="pin.previewImageUrl"
+                [src]="pin.previewImageUrl"
+                [alt]="pin.name"
+                class="explore-card__image"
+              />
+              <div *ngIf="!pin.previewImageUrl" class="explore-card__no-image">
+                <span class="material-icons">{{ getPinIcon(pin.entityType) }}</span>
+              </div>
+              <span class="explore-card__type-badge">{{ getEntityTypeLabel(pin.entityType) }}</span>
+              <span class="explore-card__rating" *ngIf="pin.avgRating">
+                <span class="material-icons">star</span>
+                {{ pin.avgRating | number:'1.1-1' }}
+              </span>
+            </div>
+            <div class="explore-card__body">
+              <h4 class="explore-card__name">{{ pin.name }}</h4>
+              <span class="explore-card__sub" *ngIf="pin.subtitle">
+                <span class="material-icons">location_on</span>
+                {{ pin.subtitle }}
+              </span>
+              <div class="explore-card__meta" *ngIf="pin.startDatetime || pin.price">
+                <span *ngIf="pin.startDatetime" class="explore-card__date">
+                  <span class="material-icons">event</span>
+                  {{ pin.startDatetime | date:'dd.MM.yy' }}
+                </span>
+                <span *ngIf="pin.price" class="explore-card__price">{{ pin.price }} RSD</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /mobile-bottom-sheet -->
+  </main>
+
+  <!-- Bottom nav (mobile) -->
+  <app-bottom-nav />
+
+  <!-- Location permission modal -->
+  <div class="location-modal-backdrop" *ngIf="showLocationModal" (click)="dismissLocationModal()">
+    <div class="location-modal" (click)="$event.stopPropagation()">
+      <div class="location-modal__icon">
+        <span class="material-icons">location_off</span>
+      </div>
+      <h3 class="location-modal__title">Lokacija nije dostupna</h3>
+      <p class="location-modal__text">
+        Za prikaz rute potrebna je tvoja trenutna lokacija. Dozvoli pristup lokaciji i pokušaj ponovo.
+      </p>
+      <div class="location-modal__actions">
+        <button class="ghost-btn ghost-btn--sm" (click)="dismissLocationModal()">Odustani</button>
+        <button class="primary-btn" (click)="retryLocationForRoute()">
+          <span class="material-icons">my_location</span>
+          Uključi lokaciju
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
