@@ -3,7 +3,8 @@ import { authGuard } from './core/guards/auth-guard';
 import { guestGuard } from './core/guards/guest-guard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
 import { PlaceDetailComponent } from './features/places/place-detail/place-detail';
-import { DestinationDetailComponent } from './features/destinations/destination-detail/destination-detail';             
+import { DestinationDetailComponent } from './features/destinations/destination-detail/destination-detail';
+import { ReviewFormComponent } from './features/reviews/review-form/review-form';
 import { ForgotPassword } from './features/auth/forgot-password/forgot-password';
 import { Interests } from './features/auth/interests/interests';
 import { Login } from './features/auth/login/login';
@@ -32,5 +33,6 @@ export const routes: Routes = [
   { path: 'verify-email', component: VerifyEmail },
   { path: 'complete-profile', component: CompleteProfile, canActivate: [authGuard] },
   { path: 'auth/facebook/callback', component: FacebookCallback },
+  { path: 'review/new', component: ReviewFormComponent },
   { path: '**', redirectTo: 'home' },
 ];
