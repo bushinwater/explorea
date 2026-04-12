@@ -4,12 +4,19 @@ import {
   AfterViewInit,
   ElementRef,
   ViewChild,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, filter, switchMap, tap, takeUntil } from 'rxjs/operators';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { Sidebar } from '../../layout/shell/sidebar/sidebar';
+import { BottomNav } from '../../shared/bottom-nav/bottom-nav';
+import { ExploreService, ExploreMarker } from '../../core/services/explore.service';
+import { SearchService } from '../../core/services/search.service';
+import { SearchItem } from '../../core/models/search.model';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
@@ -53,129 +60,59 @@ const LIGHT = {
   icon:             '#28694c',
 };
 
-export interface MapPin {
-  id: number;
-  name: string;
-  lat: number;
-  lng: number;
-  category: string;
-  rating: number;
-  reviewCount: number;
-  reviewQuote: string;
-  location: string;
-  distance: string;
-  imageUrl: string;
-  popular: boolean;
-  price: string;
-  tags: string[];
-  isOpen?: boolean;
-}
+// Frontend display key → backend entity type value
+const ENTITY_TYPE_BACKEND_MAP: Record<string, string> = {
+  'destinacije': 'destination',
+  'objekti':     'place',
+  'aktivnosti':  'activity',
+  'dogadjaji':   'event',
+};
 
-const MOCK_PINS: MapPin[] = [
-  {
-    id: 1,
-    name: 'Planina Tara – Vidikovac',
-    lat: 43.9,
-    lng: 19.42,
-    category: 'Priroda i Avantura',
-    rating: 4.9,
-    reviewCount: 340,
-    reviewQuote: 'Neverovatna pogled na kanjon Drine koji je ostavlja dah. Obavezno poseti pri zalasku sunca.',
-    location: 'Nacionalni Park Tara, Srbija',
-    distance: '2.4 km od vas',
-    imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80',
-    popular: true,
-    price: 'Besplatno',
-    tags: ['Priroda', 'Preporučeno'],
-    isOpen: true,
-  },
-  {
-    id: 2,
-    name: 'Vrelo Krupajsko',
-    lat: 44.12,
-    lng: 21.85,
-    category: 'Priroda i Avantura',
-    rating: 4.7,
-    reviewCount: 215,
-    reviewQuote: 'Kristalno plava voda i bujni zeleni okoliš. Savršeno mesto za odmor.',
-    location: 'Boko Banja, Srbija',
-    distance: '12 km od vas',
-    imageUrl: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&q=80',
-    popular: false,
-    price: 'Besplatno',
-    tags: ['Priroda', 'Voda'],
-    isOpen: true,
-  },
-  {
-    id: 3,
-    name: 'Restoran Kalemegdan',
-    lat: 44.82,
-    lng: 20.45,
-    category: 'Restorani i Hrana',
-    rating: 4.5,
-    reviewCount: 128,
-    reviewQuote: 'Odlična srpska kuhinja uz pogled na tvrđavu. Preporučujem riblje specijalitete.',
-    location: 'Kalemegdan, Beograd',
-    distance: '0.8 km od vas',
-    imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80',
-    popular: false,
-    price: '1200 RSD',
-    tags: ['Hrana', 'Pogled'],
-    isOpen: true,
-  },
-  {
-    id: 4,
-    name: 'Manastir Studenica',
-    lat: 43.48,
-    lng: 20.53,
-    category: 'Kultura i Istorija',
-    rating: 4.8,
-    reviewCount: 422,
-    reviewQuote: 'Jedan od najlepših srpskih manastira. UNESCO svetska baština koja ostavlja bez daha.',
-    location: 'Ušće, Srbija',
-    distance: '18 km od vas',
-    imageUrl: 'https://images.unsplash.com/photo-1548407260-da850faa41e3?w=600&q=80',
-    popular: true,
-    price: 'Besplatno',
-    tags: ['Kultura', 'Istorija', 'UNESCO'],
-    isOpen: true,
-  },
-  {
-    id: 5,
-    name: 'Letnji Džez Festival',
-    lat: 44.8,
-    lng: 20.47,
-    category: 'Lokalni Događaji',
-    rating: 4.6,
-    reviewCount: 89,
-    reviewQuote: 'Prelepa muzika pod zvezdama. Atmosfera je magična svakog leta.',
-    location: 'Botanička bašta, Beograd',
-    distance: '1.2 km od vas',
-    imageUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&q=80',
-    popular: true,
-    price: '500 RSD',
-    tags: ['Muzika', 'Događaj'],
-    isOpen: false,
-  },
-];
-
-const CATEGORIES = [
-  { key: 'sve', label: 'Sve', count: null },
-  { key: 'Priroda i Avantura', label: 'Priroda i Avantura', count: 12 },
-  { key: 'Restorani i Hrana', label: 'Restorani i Hrana', count: 9 },
-  { key: 'Kultura i Istorija', label: 'Kultura i Istorija', count: 6 },
-  { key: 'Lokalni Događaji', label: 'Lokalni Događaji', count: 4 },
+const ENTITY_TYPES = [
+  { key: 'destinacije', label: 'Destinacije', icon: 'landscape' },
+  { key: 'objekti',     label: 'Objekti',     icon: 'store' },
+  { key: 'aktivnosti',  label: 'Aktivnosti',  icon: 'directions_run' },
+  { key: 'dogadjaji',   label: 'Događaji',    icon: 'event' },
 ];
 
 @Component({
   selector: 'app-explore',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, Sidebar],
+  imports: [CommonModule, RouterModule, FormsModule, Sidebar, BottomNav],
   templateUrl: './explore.html',
   styleUrl: './explore.css',
 })
 export class Explore implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef;
+  @ViewChild('drawerScroll') drawerScrollRef!: ElementRef;
+
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private exploreService: ExploreService,
+    private searchService: SearchService,
+  ) {}
+
+  // ── Real-time drag state for mobile bottom sheet ──────────────
+  drawerTranslateY = 9999;
+  isDraggingSheet = false;
+  private sheetReady = false;
+  private sheetTouchStartY = 0;
+  private sheetStartTranslate = 0;
+  private contentTouchStartY = 0;
+
+  private get collapsedTranslate(): number {
+    const bottomNavHeight = window.innerWidth <= 768 ? 64 : 0;
+    const sheetHeight = window.innerHeight * 0.8; // mora da se poklapa sa height: 80vh u CSS-u
+    const peekHeight = 110; // samo handle bar + "N rezultata" tekst
+    return Math.max(0, sheetHeight - bottomNavHeight - peekHeight);
+  }
+
+  get sheetStyle(): { [key: string]: string } {
+    return {
+      transform: `translateY(${this.drawerTranslateY}px)`,
+      transition: (this.isDraggingSheet || !this.sheetReady) ? 'none' : 'transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)',
+    };
+  }
 
   map!: MapLibreMap;
   markers: Marker[] = [];
@@ -184,42 +121,96 @@ export class Explore implements AfterViewInit, OnDestroy {
   private darkStyle: any = null;
 
   // State
-  selectedPin: MapPin | null = null;
+  selectedPin: ExploreMarker | null = null;
   drawerExpanded = false;
-  filterCount = 0;
+  filterPanelVisible = window.innerWidth > 768;
+  loading = false;
+  currentZoom = 7;
 
   // Filters
+  nearbyOnly = true;
   radiusKm = 25;
-  selectedCategory = 'sve';
+  selectedEntityTypes: string[] = [];
   openNowOnly = false;
   minRating: number | null = null;
-  categories = CATEGORIES;
+  entityTypes = ENTITY_TYPES;
 
-  pins = MOCK_PINS;
+  // User location (fetched when nearbyOnly = true)
+  userLat: number | null = null;
+  userLng: number | null = null;
+
+  // API data
+  pins: ExploreMarker[] = [];
+
+  // Route navigation
+  showLocationModal = false;
+  private pendingRoutePin: ExploreMarker | null = null;
+
+  // Search
+  searchQuery = '';
+  searchResults: SearchItem[] = [];
+  showSearchDropdown = false;
+  searchLoading = false;
+  private searchSubject = new Subject<string>();
+  private destroy$ = new Subject<void>();
 
   get sliderStyle(): { [key: string]: string } {
-    const pct = ((this.radiusKm - 5) / 95) * 100;
+    const pct = ((this.radiusKm - 5) / 195) * 100;
     return {
       background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${pct}%, var(--color-border) ${pct}%, var(--color-border) 100%)`,
     };
   }
 
-  get filteredPins(): MapPin[] {
-    return this.pins.filter(p => {
-      if (this.selectedCategory !== 'sve' && p.category !== this.selectedCategory) return false;
-      if (this.openNowOnly && !p.isOpen) return false;
-      if (this.minRating !== null && p.rating < this.minRating) return false;
-      return true;
-    });
+  private get zoomVisibleTypes(): string[] {
+    if (this.currentZoom < 8)  return ['destination'];
+    if (this.currentZoom < 11) return ['destination', 'event', 'activity'];
+    return ['destination', 'event', 'activity', 'place'];
+  }
+
+  get filteredPins(): ExploreMarker[] {
+    // If user explicitly picked types, respect their selection (skip zoom filter)
+    if (this.selectedEntityTypes.length > 0) {
+      const backendTypes = this.selectedEntityTypes.map(k => ENTITY_TYPE_BACKEND_MAP[k]);
+      return this.pins.filter(p => backendTypes.includes(p.entityType));
+    }
+    // Otherwise show only what makes sense at this zoom level
+    const visible = this.zoomVisibleTypes;
+    return this.pins.filter(p => visible.includes(p.entityType));
   }
 
   get activeFilterCount(): number {
     let count = 0;
-    if (this.selectedCategory !== 'sve') count++;
+    if (this.selectedEntityTypes.length > 0) count++;
     if (this.openNowOnly) count++;
     if (this.minRating !== null) count++;
-    if (this.radiusKm !== 25) count++;
+    if (this.nearbyOnly && this.radiusKm !== 25) count++;
     return count;
+  }
+
+  isEntityTypeSelected(key: string): boolean {
+    return this.selectedEntityTypes.includes(key);
+  }
+
+  toggleEntityType(key: string) {
+    const idx = this.selectedEntityTypes.indexOf(key);
+    if (idx >= 0) {
+      this.selectedEntityTypes.splice(idx, 1);
+    } else {
+      this.selectedEntityTypes.push(key);
+    }
+    this.addMarkers();
+  }
+
+  toggleFilterPanel() {
+    this.filterPanelVisible = !this.filterPanelVisible;
+  }
+
+  async toggleNearbyOnly() {
+    this.nearbyOnly = !this.nearbyOnly;
+    if (this.nearbyOnly && this.userLat === null) {
+      await this.requestGeolocation();
+    }
+    this.fetchMarkers();
   }
 
   private get isDark(): boolean {
@@ -227,8 +218,170 @@ export class Explore implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
+    this.drawerTranslateY = this.collapsedTranslate;
+    this.cdr.detectChanges();
+    setTimeout(() => { this.sheetReady = true; this.cdr.detectChanges(); }, 50);
     this.initMap();
     this.watchTheme();
+    this.attachContentTouchListeners();
+    this.loadMarkers();
+    this.initSearch();
+  }
+
+  private initSearch() {
+    this.searchSubject.pipe(
+      debounceTime(180),
+      distinctUntilChanged(),
+      tap(q => {
+        if (q.length < 2) {
+          this.searchResults = [];
+          this.showSearchDropdown = false;
+          this.searchLoading = false;
+          this.cdr.detectChanges();
+        } else {
+          this.searchLoading = true;
+          this.cdr.detectChanges();
+        }
+      }),
+      filter(q => q.length >= 2),
+      switchMap(q => this.searchService.search(q, 8)),
+      takeUntil(this.destroy$),
+    ).subscribe({
+      next: result => {
+        this.searchResults = result.results;
+        this.showSearchDropdown = result.results.length > 0;
+        this.searchLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.searchLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  onSearchInput(value: string) {
+    this.searchSubject.next(value);
+  }
+
+  onSearchKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      this.showSearchDropdown = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  onSearchBlur() {
+    setTimeout(() => {
+      this.showSearchDropdown = false;
+      this.cdr.detectChanges();
+    }, 200);
+  }
+
+  onSelectSearchResult(item: SearchItem) {
+    this.showSearchDropdown = false;
+    this.searchQuery = item.entity.name;
+    this.cdr.detectChanges();
+
+    // Prvo traži u već učitanim pinovima
+    const existing = this.pins.find(
+      p => p.entityType === item.entityType && p.slug === item.entity.slug,
+    );
+
+    if (existing) {
+      this.flyToPin(existing);
+      return;
+    }
+
+    // Nije u učitanim pinovima — fetch koordinata
+    this.exploreService.getMarkerBySlug(item.entityType, item.entity.slug).subscribe({
+      next: marker => {
+        // Dodaj u listu ako već nije tu
+        if (!this.pins.find(p => p.entityType === marker.entityType && p.slug === marker.slug)) {
+          this.pins = [...this.pins, marker];
+        }
+        this.flyToPin(marker);
+      },
+      error: () => { /* tiho ignorisi */ },
+    });
+  }
+
+  private flyToPin(pin: ExploreMarker) {
+    this.selectedPin = pin;
+    this.map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(this.map.getZoom(), 12), duration: 900 });
+    this.cdr.detectChanges();
+  }
+
+  getSearchIcon(type: string): string {
+    const icons: Record<string, string> = {
+      destination: 'landscape',
+      place: 'store',
+      event: 'event',
+      activity: 'directions_run',
+    };
+    return icons[type] ?? 'search';
+  }
+
+  private async loadMarkers() {
+    if (this.nearbyOnly) {
+      await this.requestGeolocation();
+    }
+    this.fetchMarkers();
+  }
+
+  private requestGeolocation(): Promise<void> {
+    return new Promise(resolve => {
+      if (!navigator.geolocation) {
+        this.nearbyOnly = false;
+        resolve();
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          this.userLat = pos.coords.latitude;
+          this.userLng = pos.coords.longitude;
+          resolve();
+        },
+        () => {
+          this.nearbyOnly = false;
+          this.cdr.detectChanges();
+          resolve();
+        },
+        { timeout: 6000 },
+      );
+    });
+  }
+
+  fetchMarkers() {
+    this.loading = true;
+    this.cdr.detectChanges();
+
+    const params: any = { radius: this.radiusKm, limit: 500 };
+    if (this.nearbyOnly && this.userLat !== null && this.userLng !== null) {
+      params.lat = this.userLat;
+      params.lng = this.userLng;
+    }
+    if (this.minRating !== null) params.minRating = this.minRating;
+    if (this.openNowOnly) params.openNow = true;
+
+    this.exploreService.getMapMarkers(params).subscribe({
+      next: result => {
+        this.pins = result.markers;
+        this.loading = false;
+        this.addMarkers();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  private attachContentTouchListeners() {
+    const el = this.drawerScrollRef?.nativeElement;
+    if (!el) return;
+    el.addEventListener('touchmove', (e: TouchEvent) => this.onContentTouchMove(e), { passive: false });
   }
 
   private watchTheme() {
@@ -248,7 +401,6 @@ export class Explore implements AfterViewInit, OnDestroy {
     });
   }
 
-  // Returns perceived luminance 0–255 for a hex color string
   private luminance(hex: string): number {
     if (!hex || !hex.startsWith('#') || hex.length < 7) return 0;
     const r = parseInt(hex.slice(1, 3), 16);
@@ -266,7 +418,6 @@ export class Explore implements AfterViewInit, OnDestroy {
 
       if (!layer.paint) return layer;
 
-      // Remove fill-patterns — they render as hatched white and break any dark theme
       delete layer.paint['fill-pattern'];
 
       switch (type) {
@@ -275,7 +426,6 @@ export class Explore implements AfterViewInit, OnDestroy {
           break;
 
         case 'fill': {
-          // Hide 2D building fills — 3D extrusion layer handles the visuals
           if (/building/.test(id)) {
             layer.paint['fill-opacity'] = 0;
             break;
@@ -298,8 +448,6 @@ export class Explore implements AfterViewInit, OnDestroy {
           } else if (/bridge/.test(id)) {
             fillColor = p.bridge;
           } else {
-            // Heuristic: if the original color was light (luminance > 128),
-            // treat it as a surface area (road, plaza, etc.) rather than raw land
             const orig = typeof layer.paint['fill-color'] === 'string'
               ? layer.paint['fill-color'] : '';
             fillColor = this.luminance(orig) > 128 ? p.surface : p.land;
@@ -335,7 +483,6 @@ export class Explore implements AfterViewInit, OnDestroy {
         }
 
         case 'fill-extrusion':
-          // Theme any existing 3D building layers already in the base style
           layer.paint['fill-extrusion-color'] = p.extrusion;
           layer.paint['fill-extrusion-opacity'] = 1;
           break;
@@ -378,10 +525,24 @@ export class Explore implements AfterViewInit, OnDestroy {
       this.addMarkers();
     });
 
+    this.map.on('zoomend', () => {
+      const newZoom = this.map.getZoom();
+      // Only re-render if crossing a threshold (avoids pointless marker rebuilds)
+      const tier = (z: number) => z < 8 ? 0 : z < 11 ? 1 : 2;
+      if (tier(newZoom) !== tier(this.currentZoom)) {
+        this.currentZoom = newZoom;
+        this.addMarkers();
+        this.cdr.detectChanges();
+      } else {
+        this.currentZoom = newZoom;
+      }
+    });
+
     this.map.on('click', e => {
       const target = e.originalEvent.target as HTMLElement;
       if (!target.closest('.map-pin-btn')) {
         this.selectedPin = null;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -437,16 +598,17 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.filteredPins.forEach(pin => {
       const el = document.createElement('div');
       el.className = 'map-pin-btn';
+      const icon = this.getPinIcon(pin.entityType);
       el.innerHTML = `
-        <div class="pin-bubble${pin.popular ? ' pin-bubble--popular' : ''}">
-          <span class="material-icons">location_on</span>
+        <div class="pin-bubble">
+          <span class="material-icons">${icon}</span>
         </div>
         <div class="pin-label">${pin.name}</div>
       `;
       el.addEventListener('click', e => {
         e.stopPropagation();
-        this.selectedPin = pin;
-        this.map.flyTo({ center: [pin.lng, pin.lat], zoom: 10, duration: 800 });
+        this.flyToPin(pin);
+        this.map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(this.map.getZoom(), 10), duration: 800 });
       });
 
       const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
@@ -457,20 +619,47 @@ export class Explore implements AfterViewInit, OnDestroy {
     });
   }
 
+  getPinIcon(entityType: string): string {
+    switch (entityType) {
+      case 'destination': return 'landscape';
+      case 'place':       return 'store';
+      case 'activity':    return 'directions_run';
+      case 'event':       return 'event';
+      default:            return 'location_on';
+    }
+  }
+
+  getPinRoute(pin: ExploreMarker): string[] {
+    switch (pin.entityType) {
+      case 'destination': return ['/destinations', pin.slug];
+      case 'place':       return ['/places', pin.slug];
+      case 'activity':    return ['/activities', pin.slug];
+      case 'event':       return ['/events', pin.slug];
+      default:            return ['/'];
+    }
+  }
+
+  getEntityTypeLabel(entityType: string): string {
+    const labels: Record<string, string> = {
+      'destination': 'Destinacija',
+      'place':       'Objekat',
+      'activity':    'Aktivnost',
+      'event':       'Događaj',
+    };
+    return labels[entityType] ?? entityType;
+  }
+
   applyFilters() {
-    this.addMarkers();
+    this.fetchMarkers();
   }
 
   resetFilters() {
+    this.nearbyOnly = true;
     this.radiusKm = 25;
-    this.selectedCategory = 'sve';
+    this.selectedEntityTypes = [];
     this.openNowOnly = false;
     this.minRating = null;
-    this.addMarkers();
-  }
-
-  selectCategory(key: string) {
-    this.selectedCategory = key;
+    this.fetchMarkers();
   }
 
   setMinRating(val: number | null) {
@@ -479,29 +668,123 @@ export class Explore implements AfterViewInit, OnDestroy {
 
   toggleDrawer() {
     this.drawerExpanded = !this.drawerExpanded;
+    this.drawerTranslateY = this.drawerExpanded ? 0 : this.collapsedTranslate;
   }
 
-  selectResult(pin: MapPin) {
+  // ── Handle drag ──────────────────────────────────────────────
+  onHandleTouchStart(e: TouchEvent) {
+    this.isDraggingSheet = true;
+    this.sheetTouchStartY = e.touches[0].clientY;
+    this.sheetStartTranslate = this.drawerTranslateY;
+    this.cdr.detectChanges();
+  }
+
+  onHandleTouchMove(e: TouchEvent) {
+    if (!this.isDraggingSheet) return;
+    const deltaY = e.touches[0].clientY - this.sheetTouchStartY;
+    this.drawerTranslateY = Math.max(0, Math.min(this.collapsedTranslate, this.sheetStartTranslate + deltaY));
+    this.cdr.detectChanges();
+  }
+
+  onHandleTouchEnd(e: TouchEvent) {
+    if (!this.isDraggingSheet) return;
+    this.isDraggingSheet = false;
+    const mid = this.collapsedTranslate / 2;
+    if (this.drawerTranslateY <= mid) {
+      this.drawerExpanded = true;
+      this.drawerTranslateY = 0;
+    } else {
+      this.drawerExpanded = false;
+      this.drawerTranslateY = this.collapsedTranslate;
+    }
+    this.cdr.detectChanges();
+  }
+
+  // ── Content drag (close from scroll-top) ─────────────────────
+  onContentTouchStart(e: TouchEvent) {
+    this.contentTouchStartY = e.touches[0].clientY;
+    this.sheetStartTranslate = this.drawerTranslateY;
+  }
+
+  onContentTouchMove(e: TouchEvent) {
+    const scrollTop = this.drawerScrollRef?.nativeElement?.scrollTop ?? 0;
+    if (scrollTop > 0) return;
+    const deltaY = e.touches[0].clientY - this.contentTouchStartY;
+    if (deltaY <= 0) return;
+    e.preventDefault();
+    this.isDraggingSheet = true;
+    this.drawerTranslateY = Math.min(this.collapsedTranslate, deltaY);
+    this.cdr.detectChanges();
+  }
+
+  onContentTouchEnd(e: TouchEvent) {
+    if (!this.isDraggingSheet) return;
+    this.isDraggingSheet = false;
+    const mid = this.collapsedTranslate / 2;
+    if (this.drawerTranslateY <= mid) {
+      this.drawerExpanded = true;
+      this.drawerTranslateY = 0;
+    } else {
+      this.drawerExpanded = false;
+      this.drawerTranslateY = this.collapsedTranslate;
+    }
+    this.cdr.detectChanges();
+  }
+
+  selectResult(pin: ExploreMarker) {
     this.selectedPin = pin;
     this.drawerExpanded = false;
-    this.map.flyTo({ center: [pin.lng, pin.lat], zoom: 12, duration: 800 });
+    this.drawerTranslateY = this.collapsedTranslate;
+    this.map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(this.map.getZoom(), 12), duration: 800 });
   }
 
   closePin() {
     this.selectedPin = null;
   }
 
-  getStars(rating: number): boolean[] {
-    return [1, 2, 3, 4, 5].map(i => i <= Math.round(rating));
+  openRoute(pin: ExploreMarker) {
+    if (this.userLat !== null && this.userLng !== null) {
+      this.navigateToRoute(pin);
+    } else {
+      this.pendingRoutePin = pin;
+      this.showLocationModal = true;
+      this.cdr.detectChanges();
+    }
   }
 
-  getSlugFromName(name: string): string {
-    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  private navigateToRoute(pin: ExploreMarker) {
+    const origin = `${this.userLat},${this.userLng}`;
+    const destination = `${pin.lat},${pin.lng}`;
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`;
+    window.open(url, '_blank');
+  }
+
+  async retryLocationForRoute() {
+    this.showLocationModal = false;
+    this.cdr.detectChanges();
+    await this.requestGeolocation();
+    if (this.userLat !== null && this.pendingRoutePin !== null) {
+      this.navigateToRoute(this.pendingRoutePin);
+    }
+    this.pendingRoutePin = null;
+    this.cdr.detectChanges();
+  }
+
+  dismissLocationModal() {
+    this.showLocationModal = false;
+    this.pendingRoutePin = null;
+    this.cdr.detectChanges();
+  }
+
+  getStars(rating: number): boolean[] {
+    return [1, 2, 3, 4, 5].map(i => i <= Math.round(rating));
   }
 
   ngOnDestroy() {
     this.markers.forEach(m => m.remove());
     if (this.map) this.map.remove();
     if (this.themeObserver) this.themeObserver.disconnect();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

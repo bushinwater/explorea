@@ -16,7 +16,8 @@ namespace Explorea.Server.Services
         }
 
         public async Task<ExploreMapResultDto> GetMapMarkersAsync(
-            double lat, double lng, double radiusKm, string type, int limit)
+            double? lat, double? lng, double radiusKm, string type, int limit,
+            decimal? minRating, bool? openNow)
         {
             radiusKm = Math.Clamp(radiusKm, 1, 200);
             limit = Math.Clamp(limit, 1, 500);
@@ -28,7 +29,7 @@ namespace Explorea.Server.Services
             if (type == "all" || type == "destination")
             {
                 var destinations = await _exploreRepository
-                    .GetNearbyDestinationsAsync(lat, lng, radiusKm, perTypeLimit);
+                    .GetNearbyDestinationsAsync(lat, lng, radiusKm, perTypeLimit, minRating);
 
                 markers.AddRange(destinations.Select(MapDestination));
             }
@@ -36,7 +37,7 @@ namespace Explorea.Server.Services
             if (type == "all" || type == "place")
             {
                 var places = await _exploreRepository
-                    .GetNearbyPlacesAsync(lat, lng, radiusKm, perTypeLimit);
+                    .GetNearbyPlacesAsync(lat, lng, radiusKm, perTypeLimit, minRating, openNow);
 
                 markers.AddRange(places.Select(MapPlace));
             }
@@ -52,7 +53,7 @@ namespace Explorea.Server.Services
             if (type == "all" || type == "activity")
             {
                 var activities = await _exploreRepository
-                    .GetNearbyActivitiesAsync(lat, lng, radiusKm, perTypeLimit);
+                    .GetNearbyActivitiesAsync(lat, lng, radiusKm, perTypeLimit, minRating);
 
                 markers.AddRange(activities.Select(MapActivity));
             }
@@ -61,6 +62,18 @@ namespace Explorea.Server.Services
             {
                 Total = markers.Count,
                 Markers = markers
+            };
+        }
+
+        public async Task<ExploreMarkerDto?> GetMarkerBySlugAsync(string entityType, string slug)
+        {
+            return entityType switch
+            {
+                "destination" => (await _exploreRepository.GetDestinationBySlugAsync(slug)) is { } d ? MapDestination(d) : null,
+                "place"       => (await _exploreRepository.GetPlaceBySlugAsync(slug))       is { } p ? MapPlace(p)       : null,
+                "event"       => (await _exploreRepository.GetEventBySlugAsync(slug))       is { } e ? MapEvent(e)       : null,
+                "activity"    => (await _exploreRepository.GetActivityBySlugAsync(slug))    is { } a ? MapActivity(a)    : null,
+                _             => null,
             };
         }
 
