@@ -26,7 +26,9 @@
       <div class="skel-hero">
         <div class="skel-hero__topbar">
           <div class="skel skel-circle"></div>
-          <div class="skel skel-circle"></div>
+          <div class="skel-hero__topbar-right">
+            <div class="skel skel-circle"></div>
+          </div>
         </div>
         <div class="skel-hero__content">
           <div class="skel skel-badge-row">
@@ -99,7 +101,10 @@
         <div class="detail-hero__overlay"></div>
 
         <div class="detail-hero__topbar">
-<div class="detail-hero__actions">
+          <button class="circle-btn" type="button" (click)="goBack()">
+            <span class="material-icons">arrow_back</span>
+          </button>
+          <div class="detail-hero__actions">
             <button class="circle-btn" type="button"
               [class.circle-btn--saved]="isSaved"
               [disabled]="isSavedLoading"
@@ -172,31 +177,14 @@
             <div class="detail-section__head detail-section__head--map">
               <h2>{{ 'DESTINATION_DETAIL.LOCATION_AND_MAP' | translate }}</h2>
 
-              <a class="ghost-btn map-link-btn map-link-btn--floating" [href]="googleMapsUrl" target="_blank"
+              <a class="ghost-btn map-link-btn map-link-btn--floating" [href]="googleMapsDirectionsUrl" target="_blank"
                 rel="noopener noreferrer">
-                <span class="material-icons">north_east</span>
-                {{ 'DESTINATION_DETAIL.OPEN_IN_GOOGLE_MAPS' | translate }}
+                <span class="material-icons">directions</span>
+                {{ 'DESTINATION_DETAIL.ROUTE' | translate }}
               </a>
             </div>
 
-            <div class="map-box-simple map-box-simple--styled">
-              <div class="map-box-simple__overlay"></div>
-
-              <div class="map-pin-card map-pin-card--glass">
-                <div class="map-pin-card__left">
-                  <span class="material-icons">location_on</span>
-
-                  <div class="map-pin-card__content">
-                    <strong>{{ destination.name }}</strong>
-                    <p>{{ mapCoordinatesText }}</p>
-                  </div>
-                </div>
-
-                <button class="map-pin-card__details" type="button">
-                  {{ 'DESTINATION_DETAIL.DETAILS' | translate }}
-                </button>
-              </div>
-            </div>
+            <div class="map-box" #mapContainer></div>
           </section>
 
           <section class="tab-section">
@@ -279,7 +267,9 @@
               <div class="section-head tab-block__head">
                 <h2>{{ 'DESTINATION_DETAIL.SECTIONS.TRAVELER_REVIEWS' | translate }}</h2>
                 <div class="tab-block__actions">
-                  <button class="ghost-btn ghost-btn--sm" type="button" (click)="openReviewForm()">
+                  <button class="ghost-btn ghost-btn--sm" type="button"
+                    *ngIf="!hasReviewed"
+                    (click)="openReviewForm()">
                     <span class="material-icons">rate_review</span>
                     {{ 'DESTINATION_DETAIL.WRITE_REVIEW' | translate }}
                   </button>
@@ -361,7 +351,7 @@
       <footer class="detail-footer">
         <div class="detail-footer__inner">
           <div class="detail-footer__brand">
-            <span class="logo-icon">◇</span>
+            <img src="/assets/logo.png" class="logo-icon" alt="Explorea" />
             <span class="logo-text">Explorea</span>
           </div>
           <p class="detail-footer__copy">{{ 'HOME.FOOTER.COPY' | translate }}</p>
@@ -439,64 +429,15 @@
         </div>
       </div>
 
-      <!-- REVIEW FORM -->
-      <div class="review-form-overlay" *ngIf="reviewFormOpen" (click)="closeReviewForm()">
-        <div class="review-form-panel" (click)="$event.stopPropagation()">
-          <div class="review-form-panel__header">
-            <div>
-              <h2>{{ 'DESTINATION_DETAIL.REVIEW_FORM.TITLE' | translate }}</h2>
-              <span class="review-form-panel__dest">{{ destination.name }}</span>
-            </div>
-            <button class="circle-btn circle-btn--sm" type="button" (click)="closeReviewForm()">
-              <span class="material-icons">close</span>
-            </button>
-          </div>
-
-          <div class="review-form-panel__body">
-            <div class="review-form__stars">
-              <span class="review-form__stars-label">{{ 'DESTINATION_DETAIL.REVIEW_FORM.RATING_LABEL' | translate }}</span>
-              <div class="review-form__star-row">
-                <button
-                  *ngFor="let s of getStarsArray(); let i = index"
-                  type="button"
-                  class="review-form__star"
-                  [class.review-form__star--active]="i < (reviewHoverRating || reviewRating)"
-                  (mouseenter)="reviewHoverRating = i + 1"
-                  (mouseleave)="reviewHoverRating = 0"
-                  (click)="reviewRating = i + 1">
-                  <span class="material-icons">star</span>
-                </button>
-              </div>
-              <span class="review-form__rating-text" *ngIf="reviewHoverRating || reviewRating">
-                {{ 'DESTINATION_DETAIL.REVIEW_FORM.STARS_' + (reviewHoverRating || reviewRating) | translate }}
-              </span>
-            </div>
-
-            <div class="review-form__field">
-              <label class="review-form__label">{{ 'DESTINATION_DETAIL.REVIEW_FORM.COMMENT_LABEL' | translate }}</label>
-              <textarea
-                class="review-form__textarea"
-                [(ngModel)]="reviewComment"
-                [placeholder]="'DESTINATION_DETAIL.REVIEW_FORM.COMMENT_PLACEHOLDER' | translate"
-                rows="4"
-                maxlength="1000">
-              </textarea>
-              <span class="review-form__char-count">{{ reviewComment.length }} / 1000</span>
-            </div>
-          </div>
-
-          <div class="review-form-panel__footer">
-            <button class="ghost-btn" type="button" (click)="closeReviewForm()">
-              {{ 'DESTINATION_DETAIL.REVIEW_FORM.CANCEL' | translate }}
-            </button>
-            <button class="primary-btn" type="button"
-              [disabled]="reviewRating === 0"
-              (click)="submitReview()">
-              {{ 'DESTINATION_DETAIL.REVIEW_FORM.SUBMIT' | translate }}
-            </button>
-          </div>
-        </div>
-      </div>
+      <!-- REVIEW MODAL -->
+      <app-review-modal
+        [isOpen]="reviewFormOpen"
+        [entityType]="'destination'"
+        [entityId]="destination.id"
+        [entityName]="destination.name"
+        (closed)="reviewFormOpen = false"
+        (reviewSubmitted)="onReviewSubmitted($event)">
+      </app-review-modal>
 
       <div class="lightbox" *ngIf="lightboxOpen" (click)="closeLightbox()">
         <button class="lightbox__close" type="button" (click)="closeLightbox(); $event.stopPropagation()">

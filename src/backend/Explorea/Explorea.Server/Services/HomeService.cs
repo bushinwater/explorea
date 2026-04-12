@@ -6,6 +6,7 @@ using Explorea.API.DTOs.Home;
 using Explorea.API.DTOs.Place;
 using Explorea.API.DTOs.Review;
 using Explorea.API.Models;
+using Explorea.Server.Repositories.Implementations;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Interfaces;
 
@@ -68,18 +69,21 @@ namespace Explorea.Server.Services
       }
     };
 
-    private static ReviewDto MapReview(Review r) => new()
+    private static ReviewDto MapReview(ReviewWithEntityDto d) => new()
     {
-      Id = r.Id,
-      Rating = r.Rating, 
-      Comment = r.Comment,
-      CreatedAt = r.CreatedAt,
+      Id = d.Review.Id,
+      Rating = d.Review.Rating,
+      Comment = d.Review.Comment,
+      CreatedAt = d.Review.CreatedAt,
+      EntityType = d.Review.EntityType,
+      EntityName = d.EntityName,
+      EntitySlug = d.EntitySlug,
       User = new ReviewUserDto
       {
-        Id = r.User.Id,
-        FirstName = r.User.FirstName,
-        LastName = r.User.LastName,
-        TravelerRank = r.User.TravelerRank
+        Id = d.Review.User.Id,
+        FirstName = d.Review.User.FirstName,
+        LastName = d.Review.User.LastName,
+        TravelerRank = d.Review.User.TravelerRank
       }
     };
 

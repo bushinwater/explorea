@@ -1,5 +1,86 @@
 /* GLOBAL DESIGN SYSTEM */
 
+/* ===== HERO TEXT — light theme override (must be global to bypass Angular encapsulation) ===== */
+
+[data-theme="light"] .floating-title,
+[data-theme="light"] .detail-hero__main h1,
+[data-theme="light"] .detail-hero__text h1,
+[data-theme="light"] .detail-badge,
+[data-theme="light"] .detail-meta-item,
+[data-theme="light"] .detail-hero__location {
+  color: var(--color-text-primary);
+  text-shadow: none;
+}
+
+[data-theme="light"] .detail-badge {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+/* ===== GLOBAL MAP BOX (MapLibre canvas rounding — must be global to bypass Angular encapsulation) ===== */
+
+.map-box {
+  clip-path: inset(0 round var(--radius-xl));
+}
+
+.map-box .maplibregl-map,
+.map-box .maplibregl-canvas-container,
+.map-box .maplibregl-canvas {
+  border-radius: var(--radius-xl);
+}
+
+.map-box .maplibregl-ctrl-attrib-inner { display: none; }
+.map-box .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner { display: block; }
+
+/* ===== GLOBAL MAP PINS (used by explore + activity-detail maps) ===== */
+
+.map-pin-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+.pin-bubble {
+  width: 36px;
+  height: 36px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.pin-bubble .material-icons {
+  transform: rotate(45deg);
+  font-size: 18px;
+  color: #fff;
+}
+
+.pin-label {
+  margin-top: 4px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--color-border);
+}
+
+.map-pin-btn:hover .pin-bubble {
+  transform: rotate(-45deg) scale(1.15);
+}
+
 /* RESET */
 * {
   box-sizing: border-box;

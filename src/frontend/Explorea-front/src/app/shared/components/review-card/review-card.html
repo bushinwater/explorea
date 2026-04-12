@@ -13,5 +13,9 @@
     </div>
     <app-star-rating [rating]="review.rating" [showValue]="false" class="review-card__stars" />
   </div>
+  <a *ngIf="entityRoute" class="review-card__entity" [routerLink]="entityRoute">
+    <span class="material-icons">place</span>
+    {{ review.entityName }}
+  </a>
   <p class="review-card__comment">{{ review.comment }}</p>
 </div>

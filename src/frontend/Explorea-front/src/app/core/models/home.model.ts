@@ -54,6 +54,9 @@ export interface ReviewDto {
   rating: number;
   comment: string;
   createdAt: string;
+  entityType?: string;
+  entityName?: string;
+  entitySlug?: string;
   user: {
     id: string;
     firstName: string;

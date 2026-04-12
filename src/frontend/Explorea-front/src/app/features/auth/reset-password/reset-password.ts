@@ -24,6 +24,8 @@ export class ResetPassword implements OnInit {
   isLoading = false;
   isSuccess = false;
   error = '';
+  passwordError = '';
+  showPasswordHint = false;
 
   constructor(
     private authService: AuthService,
@@ -38,7 +40,7 @@ export class ResetPassword implements OnInit {
     }
   }
 
-  get passwordStrength(): 'weak' | 'medium' | 'strong' | null {
+  get passwordStrength(): 'weak' | 'fair' | 'strong' | null {
     if (!this.newPassword) return null;
     const hasUpper = /[A-Z]/.test(this.newPassword);
     const hasNumber = /[0-9]/.test(this.newPassword);
@@ -46,7 +48,7 @@ export class ResetPassword implements OnInit {
     const long = this.newPassword.length >= 8;
     const score = [hasUpper, hasNumber, hasSpecial, long].filter(Boolean).length;
     if (score <= 2) return 'weak';
-    if (score === 3) return 'medium';
+    if (score === 3) return 'fair';
     return 'strong';
   }
 
@@ -54,17 +56,21 @@ export class ResetPassword implements OnInit {
     this.router.navigate([this.authService.isLoggedIn() ? '/profile' : '/login']);
   }
 
+  validatePassword(): boolean {
+    const hasNumber = /[0-9]/.test(this.newPassword);
+    if (!this.newPassword || this.newPassword.length < 6 || !hasNumber) {
+      this.passwordError = 'RESET_PASSWORD.ERROR_PASSWORD_WEAK';
+      return false;
+    }
+    this.passwordError = '';
+    return true;
+  }
+
   submit() {
     this.error = '';
 
-    if (!this.newPassword) {
-      this.error = 'RESET_PASSWORD.ERROR_EMPTY';
-      return;
-    }
-    if (this.newPassword.length < 6) {
-      this.error = 'RESET_PASSWORD.ERROR_TOO_SHORT';
-      return;
-    }
+    if (!this.validatePassword()) return;
+
     if (this.newPassword !== this.confirmPassword) {
       this.error = 'RESET_PASSWORD.ERROR_MISMATCH';
       return;

@@ -24,7 +24,7 @@ namespace Explorea.Server.Services
       if (activity is null) return null;
 
       var reviews = await _activityRepository.GetActivityReviewsAsync(activity.Id);
-      var similarActivities = await _activityRepository.GetSimilarActivitiesAsync(activity);
+      var similarActivities = await _activityRepository.GetSimilarActivitiesAsync(activity, 12);
 
       return new ActivityDetailDto
       {
@@ -49,6 +49,7 @@ namespace Explorea.Server.Services
           Popularity = activity.Popularity,
           Country = null,
       
+          OrganizerWebsite = activity.OrganizerWebsite,
           Description = activity.Description,
           Season = activity.Season == null
               ? null
@@ -61,12 +62,10 @@ namespace Explorea.Server.Services
           StartPoint = activity.StartPoint,
           ExtraData = ParseExtraData(activity.ExtraData),
           Location = activity.Latitude.HasValue && activity.Longitude.HasValue
-              ? new LocationDto
-              {
-                  Lat = activity.Latitude.Value,
-                  Lng = activity.Longitude.Value
-              }
-              : null,
+              ? new LocationDto { Lat = activity.Latitude.Value, Lng = activity.Longitude.Value }
+              : activity.Destination != null
+                  ? new LocationDto { Lat = activity.Destination.Latitude, Lng = activity.Destination.Longitude }
+                  : null,
           Inclusions = activity.Inclusions
               .Select(i => new InclusionDto
               {
