@@ -1,10 +1,13 @@
 using Explorea.API.Models;
 using Explorea.API.DTOs.Common;
 using Explorea.API.DTOs.Event;
+using Explorea.API.DTOs.Destination;
+using Explorea.API.DTOs.Place;
+using Explorea.API.DTOs.Review;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Interfaces;
 
-namespace Explorea.Server.Services.Implementations
+namespace Explorea.Server.Services
 {
     public class EventService : IEventService
     {
@@ -70,7 +73,76 @@ namespace Explorea.Server.Services.Implementations
 
         public async Task<EventDetailDto?> GetBySlugAsync(string slug)
         {
-            return null;
+            var entity = await _eventRepository.GetBySlugAsync(slug);
+
+            if (entity == null)
+                return null;
+
+            var detail = new EventDetailDto
+            {
+                Id = entity.Id,
+                Name = entity.Name,
+                Slug = entity.Slug,
+                Description = entity.Description,
+                StartDatetime = entity.StartDatetime,
+                EndDatetime = entity.EndDatetime,
+                Price = entity.Price,
+                Address = entity.Address,
+                TicketUrl = entity.TicketUrl,
+                IsFeatured = entity.IsFeatured,
+                Popularity = entity.Popularity,
+                PreviewImageUrl = entity.Images
+                    .OrderBy(i => i.SortOrder)
+                    .Select(i => i.ImageUrl)
+                    .FirstOrDefault(),
+
+                Type = entity.Type == null
+                    ? null
+                    : new TypeRefDto
+                    {
+                        Id = entity.Type.Id,
+                        Name = entity.Type.Name
+                    },
+
+                City = entity.City == null
+                    ? null
+                    : new CityRefDto
+                    {
+                        Id = entity.City.Id,
+                        Name = entity.City.Name
+                    },
+
+                Country = entity.Country == null
+                    ? null
+                    : new CountryRefDto
+                    {
+                        Id = entity.Country.Id,
+                        Name = entity.Country.Name
+                    },
+
+                Location = (entity.Latitude.HasValue && entity.Longitude.HasValue)
+                    ? new LocationDto
+                    {
+                        Lat = entity.Latitude.Value,
+                        Lng = entity.Longitude.Value
+                    }
+                    : null,
+
+                Images = entity.Images
+                    .OrderBy(i => i.SortOrder)
+                    .Select(i => new EventImageDto
+                    {
+                        ImageUrl = i.ImageUrl,
+                        Caption = i.Caption,
+                        SortOrder = i.SortOrder
+                    })
+                    .ToList(),
+
+                Reviews = new List<ReviewDto>(),
+                SimilarEvents = new List<EventCardDto>()
+            };
+
+            return detail;
         }
 
         public async Task<List<CalendarDayDto>> GetCalendarAsync(GetEventCalendarQueryDto query)

@@ -16,6 +16,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(e => e.Destination)
                 .Include(e => e.Place)
                 .Include(e => e.Type)
+                .Include(e => e.Country)
                 .Include(e => e.Images)
                 .FirstOrDefaultAsync(e => e.Slug == slug);
         }
