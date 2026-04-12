@@ -1,4 +1,21 @@
 {
+  "COMMON": {
+    "ERROR_GENERIC": "Nešto nije u redu. Molimo pokušajte ponovo."
+  },
+  "REVIEW_MODAL": {
+    "TITLE": "Napiši recenziju",
+    "RATING_LABEL": "Vaša ocena",
+    "COMMENT_LABEL": "Vaša recenzija (opcionalno)",
+    "COMMENT_PLACEHOLDER": "Podelite svoje iskustvo...",
+    "CANCEL": "Otkaži",
+    "SUBMIT": "Pošalji",
+    "ERROR_ALREADY": "Već ste poslali recenziju za ovo.",
+    "STARS_1": "Loše",
+    "STARS_2": "Solidno",
+    "STARS_3": "Dobro",
+    "STARS_4": "Vrlo dobro",
+    "STARS_5": "Odlično"
+  },
   "SIDEBAR": {
     "HOME": "Početna",
     "EXPLORE": "Istraži mapu",
@@ -142,7 +159,8 @@
       "DURATION": "TRAJANJE",
       "DISTANCE": "DUŽINA",
       "ELEVATION": "USPON",
-      "TRAIL_TYPE": "TIP STAZE"
+      "TRAIL_TYPE": "TIP STAZE",
+      "DIFFICULTY": "TEŽINA"
     },
     "ABOUT": "O aktivnosti",
     "INCLUDED": {
@@ -162,9 +180,32 @@
       "TITLE": "Mapa rute",
       "OPEN": "Otvori interaktivnu mapu"
     },
+    "ORGANIZER_LINK": "Poseti sajt organizatora",
+    "REVIEWS": {
+      "TITLE": "Recenzije",
+      "EMPTY": "Još nema recenzija. Budite prvi koji će podeliti iskustvo!",
+      "WRITE": "Napiši recenziju",
+      "ALREADY_REVIEWED": "Već ste recenzirali ovu aktivnost",
+      "ALL_PANEL_TITLE": "Sve recenzije",
+      "FORM": {
+        "TITLE": "Napiši recenziju",
+        "RATING_LABEL": "Vaša ocena",
+        "COMMENT_LABEL": "Vaša recenzija (opcionalno)",
+        "COMMENT_PLACEHOLDER": "Podelite svoje iskustvo...",
+        "CANCEL": "Otkaži",
+        "SUBMIT": "Pošalji",
+        "ERROR_ALREADY": "Već ste poslali recenziju za ovu aktivnost.",
+        "STARS_1": "Loše",
+        "STARS_2": "Može",
+        "STARS_3": "Dobro",
+        "STARS_4": "Vrlo dobro",
+        "STARS_5": "Odlično"
+      }
+    },
     "SIMILAR": {
       "TITLE": "Slične aktivnosti",
       "VIEW_ALL": "Pogledaj sve",
+      "ALL_PANEL_TITLE": "Slične aktivnosti",
       "FROM": "Od"
     },
     "BOOK": {
@@ -240,6 +281,10 @@
     "LOGIN": "Prijavi se",
     "ERROR_TERMS": "Morate prihvatiti uslove korišćenja.",
     "ERROR_PASSWORD": "Lozinke se ne poklapaju.",
+    "ERROR_PASSWORD_WEAK": "Lozinka mora imati najmanje 6 karaktera i sadržati najmanje jedan broj.",
+    "PASSWORD_HINT_TITLE": "Zahtevi za lozinku:",
+    "PASSWORD_HINT_MIN": "Najmanje 6 karaktera",
+    "PASSWORD_HINT_NUMBER": "Najmanje jedan broj (0–9)",
     "ERROR_GENERAL": "Registracija nije uspela. Pokušajte ponovo.",
     "ERROR_NAME_EMPTY": "Ime je obavezno.",
     "ERROR_NAME_INVALID": "Dozvoljena su samo slova.",
@@ -298,6 +343,10 @@
     "SUCCESS_TITLE": "Lozinka promenjena",
     "SUCCESS_DESC": "Vaša lozinka je uspešno promenjena.",
     "SUCCESS_REDIRECT": "Uskoro ćete biti preusmereni na stranicu za prijavu.",
+    "ERROR_PASSWORD_WEAK": "Lozinka mora imati najmanje 6 karaktera i sadržati najmanje jedan broj.",
+    "PASSWORD_HINT_TITLE": "Zahtevi za lozinku:",
+    "PASSWORD_HINT_MIN": "Najmanje 6 karaktera",
+    "PASSWORD_HINT_NUMBER": "Najmanje jedan broj (0–9)",
     "ERROR_MISMATCH": "Lozinke se ne poklapaju.",
     "ERROR_TOKEN": "Link za resetovanje je nevažeći ili je istekao.",
     "ERROR_EMPTY": "Lozinka je obavezna.",
@@ -321,6 +370,147 @@
     "ERROR_DESC": "Link je nevažeći ili je već iskorišćen.",
     "GO_BACK": "Idi na prijavu"
   },
+  "PLACE_DETAIL": {
+    "PAGE_TITLE": "Detalji objekta",
+    "SHARE": "Deli",
+    "SAVE": "Sačuvaj",
+    "OPEN_NOW": "Otvoreno sada",
+    "CLOSED": "Zatvoreno",
+    "ABOUT": "O ovom objektu",
+    "HOST_PREFIX": "Smeštaj kod domaćina",
+    "SHOW_MORE": "Prikaži više",
+    "SHOW_LESS": "Prikaži manje",
+    "WHAT_OFFERS": "Šta ovaj smeštaj nudi",
+    "HOUSE_RULES": "Pravila kuće",
+    "LOCATION": "Lokacija",
+    "OPEN_MAPS": "Otvori u Google Mapama",
+    "SIMILAR": "Možda će vam se svideti i ovo",
+    "PLAN_VISIT": "Planirate posetu?",
+    "DATE": "DATUM",
+    "TODAY": "Danas",
+    "PERSONS": "OSOBE",
+    "ADULTS": "Odrasle",
+    "CHECK_AVAILABILITY": "Proveri raspoloživost",
+    "NO_EVENTS": "Nema događaja u blizini.",
+    "NO_REVIEWS": "Još nema recenzija za ovaj objekat.",
+    "BREADCRUMB": {
+      "HOME": "Početna"
+    },
+    "GALLERY": {
+      "MORE": "slika"
+    },
+    "TABS": {
+      "DETAILS": "Detaljne informacije",
+      "EVENTS": "Događaji u blizini",
+      "REVIEWS": "Recenzije",
+      "ABOUT": "O objektu",
+      "EVENTS_MOBILE": "Događaji"
+    },
+    "RULES": {
+      "CHECK_IN": "Prijava",
+      "CHECK_OUT": "Odjava",
+      "PETS": "Ljubimci",
+      "PETS_VALUE": "Dozvoljeni na zahtev",
+      "SMOKING": "Pušenje",
+      "SMOKING_VALUE": "Samo na terasi"
+    },
+    "AMENITIES": {
+      "WIFI": "Besplatan Wi-Fi",
+      "PARKING": "Parking",
+      "POOL": "Bazen",
+      "BREAKFAST": "Doručak",
+      "SECURITY": "Sigurnost 24/7",
+      "RESTAURANT": "Restoran"
+    },
+    "OFFERS": {
+      "BALCONY": "Privatni balkon sa pogledom",
+      "AC": "Klima uređaj u svakoj sobi",
+      "TV": "Smart TV sa kablovskim kanalima",
+      "COFFEE": "Aparat za kafu (Nespresso)",
+      "MINIBAR": "Mini-bar sa lokalnim vinima"
+    },
+    "BOOK": {
+      "PER_NIGHT": "noć",
+      "SELECT_DATES": "Izaberite datum i broj gostiju",
+      "ARRIVAL": "PRIJAVA",
+      "DEPARTURE": "ODJAVA",
+      "GUESTS": "GOSTI",
+      "NIGHTS": "noćenja",
+      "SERVICE_FEE": "Taksa za usluge",
+      "TOTAL": "Ukupno",
+      "CTA": "Rezerviši odmah",
+      "NO_CHARGE": "Još uvek vam nećemo naplatiti",
+      "SAFE_TITLE": "Sigurna rezervacija",
+      "SAFE_CANCEL": "Besplatno otkazivanje do 48h pre prijave.",
+      "SAFE_NO_FEES": "Bez skrivenih troškova i dodatnih taksi.",
+      "SAFE_SSL": "Vaši podaci su zaštićeni SSL enkripcijom.",
+      "VIEWS_PREFIX": "Ovaj objekat je pregledan",
+      "VIEWS_SUFFIX": "puta u poslednjih 24 sata"
+    },
+    "FOOTER": {
+      "RIGHTS": "Sva prava zadržana.",
+      "TERMS": "Uslovi korišćenja",
+      "PRIVACY": "Privatnost",
+      "HELP": "Pomoć"
+    }
+  },
+  "PLACE_CARD": {
+    "PER_NIGHT": "/ noć"
+  },
+  "EXPLORE": {
+    "TITLE": "Istraži",
+    "SEARCH": {
+      "PLACEHOLDER": "Unesite lokaciju ili naziv destinacije...",
+      "PLACEHOLDER_MOBILE": "Pretraži lokacije, destinacije...",
+      "SHOW_FILTERS": "Prikaži filtere",
+      "HIDE_FILTERS": "Sakrij filtere"
+    },
+    "FILTERS": {
+      "TITLE": "Filteri Istraživanja",
+      "BADGE": "{{count}} filtera",
+      "ALL": "Sve",
+      "LOCATION": "Lokacija",
+      "NEARBY_ONLY": "Samo u blizini",
+      "LOCATION_UNAVAILABLE": "Lokacija nije dostupna",
+      "RADIUS": "Radijus pretrage",
+      "TYPE": "Tip",
+      "HOURS_RATINGS": "Radno Vreme i Ocene",
+      "OPEN_NOW": "Otvoreno sada",
+      "MIN_RATING": "Minimalna ocena",
+      "RESET": "Poništi filtere",
+      "APPLY": "Primeni filtere",
+      "CLOSE": "Zatvori"
+    },
+    "ENTITY_TYPES": {
+      "DESTINATIONS": "Destinacije",
+      "PLACES": "Objekti",
+      "ACTIVITIES": "Aktivnosti",
+      "EVENTS": "Događaji"
+    },
+    "ENTITY_LABELS": {
+      "DESTINATION": "Destinacija",
+      "PLACE": "Objekat",
+      "ACTIVITY": "Aktivnost",
+      "EVENT": "Događaj"
+    },
+    "SHEET": {
+      "LOADING": "Učitavanje...",
+      "RESULTS": "{{count}} rezultata",
+      "ZOOM_HINT": "Zumirajte za više rezultata",
+      "SWIPE_UP": "Prevucite na gore za listu",
+      "SWIPE_DOWN": "Prevucite na dole za zatvaranje"
+    },
+    "PIN": {
+      "DETAILS": "Detalji",
+      "ROUTE": "Ruta"
+    },
+    "LOCATION_MODAL": {
+      "TITLE": "Lokacija nije dostupna",
+      "TEXT": "Za prikaz rute potrebna je tvoja trenutna lokacija. Dozvoli pristup lokaciji i pokušaj ponovo.",
+      "CANCEL": "Odustani",
+      "ENABLE": "Uključi lokaciju"
+    }
+  },
   "DESTINATION_DETAIL": {
     "LOADING": "Učitavanje detalja destinacije...",
     "ABOUT": "O destinaciji",
@@ -328,6 +518,7 @@
     "VIEW_ALL_IMAGES": "Pogledaj sve slike ({{count}})",
     "LOCATION_AND_MAP": "Lokacija i mapa",
     "OPEN_IN_GOOGLE_MAPS": "Otvori u Google Mapama",
+    "ROUTE": "Ruta",
     "DETAILS": "Detalji",
     "SHOW_ALL": "Prikaži sve",
     "SHOW_ALL_COUNT": "Prikaži sve ({{count}})",
@@ -350,7 +541,8 @@
       "STARS_2": "Solidno",
       "STARS_3": "Dobro",
       "STARS_4": "Vrlo dobro",
-      "STARS_5": "Odlično"
+      "STARS_5": "Odlično",
+      "ALREADY_REVIEWED": "Već ste poslali recenziju za ovu destinaciju."
     },
     "EMPTY_TAB": "Trenutno nema dostupnih stavki za ovu sekciju.",
     "EMPTY_REVIEWS": "Još nema recenzija za ovu destinaciju.",

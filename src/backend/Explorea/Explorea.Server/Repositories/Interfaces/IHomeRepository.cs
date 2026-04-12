@@ -1,4 +1,5 @@
 using Explorea.API.Models;
+using Explorea.Server.Repositories.Implementations;
 
 namespace Explorea.Server.Repositories.Interfaces
 {
@@ -8,6 +9,6 @@ namespace Explorea.Server.Repositories.Interfaces
     Task<List<Destination>> GetFeaturedDestinationsAsync(int take);
     Task<List<Event>> GetUpcomingEventsAsync(DateTimeOffset now, int take);
     Task<List<Activity>> GetPopularActivitiesAsync(int take);
-    Task<List<Review>> GetTravelerReviewsAsync(int take);
+    Task<List<ReviewWithEntityDto>> GetTravelerReviewsAsync(int take);
   }
 }

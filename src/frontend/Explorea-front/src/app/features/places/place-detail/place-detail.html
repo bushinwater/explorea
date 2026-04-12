@@ -1,0 +1,469 @@
+<div class="place-layout">
+  <app-sidebar />
+
+  <main class="place-main">
+    @if (loading) {
+      <div class="place-loading">
+        <span class="material-icons spin">refresh</span>
+      </div>
+    }
+
+    @if (place && !loading) {
+      <!-- Mobile header -->
+      <div class="mobile-header">
+        <button class="mobile-back-btn" (click)="goBack()">
+          <span class="material-icons">arrow_back_ios</span>
+        </button>
+        <span class="mobile-header__title">{{ 'PLACE_DETAIL.PAGE_TITLE' | translate }}</span>
+        <button class="mobile-action-btn">
+          <span class="material-icons">share</span>
+        </button>
+      </div>
+
+      <!-- Desktop topbar: breadcrumb + actions -->
+      <div class="desktop-topbar">
+        <nav class="breadcrumb">
+          <a routerLink="/home" class="breadcrumb__link">{{
+            'PLACE_DETAIL.BREADCRUMB.HOME' | translate
+          }}</a>
+          <span class="material-icons breadcrumb__sep">chevron_right</span>
+          @if (place.country) {
+            <span class="breadcrumb__link">{{ place.country.name }}</span>
+            <span class="material-icons breadcrumb__sep">chevron_right</span>
+          }
+          @if (place.destination) {
+            <a [routerLink]="['/destinations', place.destination.slug]" class="breadcrumb__link">{{
+              place.destination.name
+            }}</a>
+            <span class="material-icons breadcrumb__sep">chevron_right</span>
+          }
+          <span class="breadcrumb__current">{{ place.name }}</span>
+        </nav>
+        <div class="desktop-actions">
+          <button class="action-btn">
+            <span class="material-icons">share</span>
+            {{ 'PLACE_DETAIL.SHARE' | translate }}
+          </button>
+          <button class="action-btn action-btn--save">
+            <span class="material-icons">favorite_border</span>
+            {{ 'PLACE_DETAIL.SAVE' | translate }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Desktop title + meta -->
+      <div class="place-header desktop-only">
+        <h1 class="place-header__title">{{ place.name }}</h1>
+        <div class="place-header__meta">
+          <div class="place-header__rating">
+            <span class="material-icons rating-star">star</span>
+            <span class="rating-value">{{ place.avgRating }}</span>
+          </div>
+          @if (place.address) {
+            <a [href]="getMapUrl()" target="_blank" class="place-header__address">
+              <span class="material-icons">location_on</span>
+              {{ place.address }}
+            </a>
+          }
+          @if (place.type) {
+            <span class="type-badge">{{ place.type.name }}</span>
+          }
+        </div>
+      </div>
+
+      <!-- Gallery -->
+      <div class="gallery desktop-only">
+        <div class="gallery__grid">
+          <div class="gallery__main">
+            <img
+              [src]="place.images[0]?.imageUrl ?? place.previewImageUrl"
+              [alt]="place.name"
+              class="gallery__img"
+            />
+          </div>
+          <div class="gallery__side">
+            @for (img of place.images.slice(1, 5); track img.sortOrder; let i = $index) {
+              <div class="gallery__thumb" [class.gallery__thumb--last]="i === 3">
+                <img [src]="img.imageUrl" [alt]="place.name" class="gallery__img" />
+                @if (i === 3 && place.images.length > 5) {
+                  <div class="gallery__more">
+                    +{{ place.images.length - 5 }} {{ 'PLACE_DETAIL.GALLERY.MORE' | translate }}
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile carousel -->
+      <div class="carousel mobile-only">
+        <img
+          [src]="place.images[activeImageIndex]?.imageUrl ?? place.previewImageUrl"
+          [alt]="place.name"
+          class="carousel__img"
+        />
+        <div class="carousel__counter">{{ activeImageIndex + 1 }} / {{ place.images.length }}</div>
+        @if (place.images.length > 1) {
+          <button class="carousel__btn carousel__btn--prev" (click)="prevImage()">
+            <span class="material-icons">chevron_left</span>
+          </button>
+          <button class="carousel__btn carousel__btn--next" (click)="nextImage()">
+            <span class="material-icons">chevron_right</span>
+          </button>
+        }
+      </div>
+
+      <!-- Mobile info below carousel -->
+      <div class="mobile-info mobile-only">
+        <div class="mobile-info__top">
+          <div class="mobile-info__badges">
+            @if (place.type) {
+              <span class="type-badge">{{ place.type.name }}</span>
+            }
+            <div class="mobile-rating">
+              <span class="material-icons rating-star">star</span>
+              <span class="rating-value">{{ place.avgRating }}</span>
+              <span class="rating-count">({{ place.totalReviews }})</span>
+            </div>
+          </div>
+        </div>
+        <h1 class="mobile-info__title">{{ place.name }}</h1>
+        @if (place.address) {
+          <div class="mobile-info__address">
+            <span class="material-icons">location_on</span>
+            <span>{{ place.address }}</span>
+          </div>
+        }
+        @if (place.openingHours) {
+          <div class="mobile-info__hours">
+            <span class="material-icons">schedule</span>
+            <span class="hours-text">{{ place.openingHours }}</span>
+            <span class="open-badge" [class.open-badge--closed]="!place.isOpen">
+              {{ (place.isOpen ? 'PLACE_DETAIL.OPEN_NOW' : 'PLACE_DETAIL.CLOSED') | translate }}
+            </span>
+          </div>
+        }
+      </div>
+
+      <!-- Amenities chips (mobile) -->
+      <div class="amenities-chips mobile-only">
+        @for (amenity of place.amenities; track amenity.id) {
+          <span class="amenity-chip">
+            <span class="material-icons">{{ amenity.icon }}</span>
+            {{ amenity.name | translate }}
+          </span>
+        }
+      </div>
+
+      <!-- Main two-column content -->
+      <div class="place-content">
+        <!-- Left column -->
+        <div class="content-main">
+          <!-- About section -->
+          <div class="section">
+            <div class="about-header">
+              <div class="about-header__text">
+                <h2 class="section__title">{{ 'PLACE_DETAIL.ABOUT' | translate }}</h2>
+                @if (place.hostName) {
+                  <p class="host-label">
+                    {{ 'PLACE_DETAIL.HOST_PREFIX' | translate }} {{ place.hostName }}
+                  </p>
+                }
+              </div>
+              @if (place.hostAvatarUrl) {
+                <img [src]="place.hostAvatarUrl" [alt]="place.hostName ?? ''" class="host-avatar" />
+              }
+            </div>
+            <p class="section__text">
+              {{ descriptionExpanded ? place.description : shortDescription }}
+            </p>
+            @if ((place.description?.length ?? 0) > 220) {
+              <button class="show-more-btn" (click)="toggleDescription()">
+                {{
+                  (descriptionExpanded ? 'PLACE_DETAIL.SHOW_LESS' : 'PLACE_DETAIL.SHOW_MORE')
+                    | translate
+                }}
+              </button>
+            }
+          </div>
+
+          <!-- Amenities grid (desktop) -->
+          <div class="amenities-grid desktop-only">
+            @for (amenity of place.amenities; track amenity.id) {
+              <div class="amenity-item">
+                <span class="material-icons amenity-item__icon">{{ amenity.icon }}</span>
+                <span class="amenity-item__name">{{ amenity.name | translate }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Tabs -->
+          <div class="tabs">
+            <button
+              class="tab-btn"
+              [class.tab-btn--active]="activeTab === 'details'"
+              (click)="setTab('details')"
+            >
+              <span class="material-icons tab-btn__icon">info</span>
+              <span class="tab-label-desktop">{{ 'PLACE_DETAIL.TABS.DETAILS' | translate }}</span>
+              <span class="tab-label-mobile">{{ 'PLACE_DETAIL.TABS.ABOUT' | translate }}</span>
+            </button>
+            <button
+              class="tab-btn"
+              [class.tab-btn--active]="activeTab === 'events'"
+              (click)="setTab('events')"
+            >
+              <span class="material-icons tab-btn__icon">event</span>
+              <span class="tab-label-desktop">{{ 'PLACE_DETAIL.TABS.EVENTS' | translate }}</span>
+              <span class="tab-label-mobile">{{
+                'PLACE_DETAIL.TABS.EVENTS_MOBILE' | translate
+              }}</span>
+            </button>
+            <button
+              class="tab-btn"
+              [class.tab-btn--active]="activeTab === 'reviews'"
+              (click)="setTab('reviews')"
+            >
+              <span class="material-icons tab-btn__icon">star_border</span>
+              <span>{{ 'PLACE_DETAIL.TABS.REVIEWS' | translate }} ({{ place.totalReviews }})</span>
+            </button>
+          </div>
+
+          <!-- Tab content: Details -->
+          @if (activeTab === 'details') {
+            <div class="tab-content">
+              <div class="details-grid">
+                <div>
+                  <h3 class="subsection__title">{{ 'PLACE_DETAIL.WHAT_OFFERS' | translate }}</h3>
+                  <ul class="offers-list">
+                    @for (offer of place.whatOffers; track offer) {
+                      <li class="offers-list__item">
+                        <span class="material-icons">check_circle</span>
+                        {{ offer | translate }}
+                      </li>
+                    }
+                  </ul>
+                </div>
+                @if (place.houseRules.length) {
+                  <div>
+                    <h3 class="subsection__title">{{ 'PLACE_DETAIL.HOUSE_RULES' | translate }}</h3>
+                    <ul class="rules-list">
+                      @for (rule of place.houseRules; track rule.label) {
+                        <li class="rules-list__item">
+                          <span class="rules-list__label">{{ rule.label | translate }}:</span>
+                          <span class="rules-list__value">{{ rule.value | translate }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Tab content: Events -->
+          @if (activeTab === 'events') {
+            <div class="tab-content tab-content--empty">
+              <span class="material-icons">event_busy</span>
+              <p>{{ 'PLACE_DETAIL.NO_EVENTS' | translate }}</p>
+            </div>
+          }
+
+          <!-- Tab content: Reviews -->
+          @if (activeTab === 'reviews') {
+            <div class="tab-content">
+              @if (place.reviews.length === 0) {
+                <div class="tab-content--empty">
+                  <span class="material-icons">rate_review</span>
+                  <p>{{ 'PLACE_DETAIL.NO_REVIEWS' | translate }}</p>
+                </div>
+              }
+              @for (review of place.reviews; track review.id) {
+                <div class="review-item">
+                  <div class="review-item__header">
+                    <div class="review-item__user">
+                      <span class="review-item__name"
+                        >{{ review.user.firstName }} {{ review.user.lastName }}</span
+                      >
+                      <span class="review-item__rank">{{ review.user.travelerRank }}</span>
+                    </div>
+                    <div class="review-item__rating">
+                      <span class="material-icons">star</span>
+                      {{ review.rating }}
+                    </div>
+                  </div>
+                  @if (review.comment) {
+                    <p class="review-item__comment">{{ review.comment }}</p>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Mobile: Plan visit card -->
+          <div class="plan-visit mobile-only">
+            <h3 class="plan-visit__title">
+              <span class="material-icons">calendar_today</span>
+              {{ 'PLACE_DETAIL.PLAN_VISIT' | translate }}
+            </h3>
+            <div class="plan-visit__fields">
+              <div class="plan-visit__field">
+                <span class="plan-visit__label">{{ 'PLACE_DETAIL.DATE' | translate }}</span>
+                <span class="plan-visit__value">{{ 'PLACE_DETAIL.TODAY' | translate }}</span>
+              </div>
+              <div class="plan-visit__divider"></div>
+              <div class="plan-visit__field">
+                <span class="plan-visit__label">{{ 'PLACE_DETAIL.PERSONS' | translate }}</span>
+                <span class="plan-visit__value"
+                  >{{ guests }} {{ 'PLACE_DETAIL.ADULTS' | translate }}</span
+                >
+              </div>
+            </div>
+            <button class="btn btn-primary plan-visit__btn">
+              {{ 'PLACE_DETAIL.CHECK_AVAILABILITY' | translate }}
+            </button>
+          </div>
+
+          <!-- Location -->
+          <div class="section">
+            <h2 class="section__title">{{ 'PLACE_DETAIL.LOCATION' | translate }}</h2>
+            <div class="map-container">
+              <img
+                src="https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800&q=80"
+                alt="Mapa"
+                class="map-img"
+              />
+              <a [href]="getMapUrl()" target="_blank" class="map-open-btn">
+                {{ 'PLACE_DETAIL.OPEN_MAPS' | translate }}
+                <span class="material-icons">arrow_forward</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Similar places -->
+          @if (place.similarPlaces.length) {
+            <div class="section">
+              <h2 class="section__title">{{ 'PLACE_DETAIL.SIMILAR' | translate }}</h2>
+              <div class="similar-grid">
+                @for (p of place.similarPlaces; track p.id) {
+                  <app-place-card [place]="p" />
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Right column: Desktop booking card -->
+        <aside class="booking-aside desktop-only">
+          <div class="booking-card">
+            <div class="booking-card__price-row">
+              @if (place.pricePerNight) {
+                <span class="booking-card__price">{{ place.pricePerNight }}€</span>
+                <span class="booking-card__per"
+                  >/ {{ 'PLACE_DETAIL.BOOK.PER_NIGHT' | translate }}</span
+                >
+              }
+              <div class="booking-card__rating">
+                <span class="material-icons">star</span>
+                {{ place.avgRating }} ({{ place.totalReviews }})
+              </div>
+            </div>
+
+            <p class="booking-card__hint">{{ 'PLACE_DETAIL.BOOK.SELECT_DATES' | translate }}</p>
+
+            <div class="booking-card__dates">
+              <div class="booking-card__date-field">
+                <span class="booking-card__date-label">{{
+                  'PLACE_DETAIL.BOOK.ARRIVAL' | translate
+                }}</span>
+                <span class="booking-card__date-value">{{ checkIn }}</span>
+              </div>
+              <div class="booking-card__date-sep"></div>
+              <div class="booking-card__date-field">
+                <span class="booking-card__date-label">{{
+                  'PLACE_DETAIL.BOOK.DEPARTURE' | translate
+                }}</span>
+                <span class="booking-card__date-value">{{ checkOut }}</span>
+              </div>
+            </div>
+
+            <div class="booking-card__guests">
+              <span class="booking-card__date-label">{{
+                'PLACE_DETAIL.BOOK.GUESTS' | translate
+              }}</span>
+              <div class="guests-row">
+                <span class="material-icons">person</span>
+                <span>{{ guests }}</span>
+              </div>
+            </div>
+
+            @if (place.pricePerNight) {
+              <div class="booking-card__breakdown">
+                <div class="breakdown-row">
+                  <span
+                    >{{ place.pricePerNight }}€ x {{ nights }}
+                    {{ 'PLACE_DETAIL.BOOK.NIGHTS' | translate }}</span
+                  >
+                  <span>{{ subtotal }}€</span>
+                </div>
+                <div class="breakdown-row">
+                  <span>{{ 'PLACE_DETAIL.BOOK.SERVICE_FEE' | translate }}</span>
+                  <span>{{ serviceFee }}€</span>
+                </div>
+                <div class="breakdown-row breakdown-row--total">
+                  <span>{{ 'PLACE_DETAIL.BOOK.TOTAL' | translate }}</span>
+                  <span>{{ total }}€</span>
+                </div>
+              </div>
+            }
+
+            <button class="btn btn-primary booking-card__cta">
+              {{ 'PLACE_DETAIL.BOOK.CTA' | translate }}
+            </button>
+
+            <p class="booking-card__no-charge">{{ 'PLACE_DETAIL.BOOK.NO_CHARGE' | translate }}</p>
+
+            <div class="booking-card__safe">
+              <div class="safe-title">
+                <span class="material-icons">verified_user</span>
+                {{ 'PLACE_DETAIL.BOOK.SAFE_TITLE' | translate }}
+              </div>
+              <ul class="safe-list">
+                <li>
+                  <span class="material-icons">check</span>
+                  {{ 'PLACE_DETAIL.BOOK.SAFE_CANCEL' | translate }}
+                </li>
+                <li>
+                  <span class="material-icons">check</span>
+                  {{ 'PLACE_DETAIL.BOOK.SAFE_NO_FEES' | translate }}
+                </li>
+                <li>
+                  <span class="material-icons">check</span>
+                  {{ 'PLACE_DETAIL.BOOK.SAFE_SSL' | translate }}
+                </li>
+              </ul>
+            </div>
+
+            <p class="booking-card__views">
+              {{ 'PLACE_DETAIL.BOOK.VIEWS_PREFIX' | translate }} {{ place.viewsLast24h }}
+              {{ 'PLACE_DETAIL.BOOK.VIEWS_SUFFIX' | translate }}
+            </p>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Mobile sticky bottom bar -->
+      <div class="mobile-bottom-bar mobile-only">
+        <button class="mobile-bottom-bar__heart">
+          <span class="material-icons">favorite_border</span>
+        </button>
+        <button class="btn btn-primary mobile-bottom-bar__cta">
+          {{ 'PLACE_DETAIL.BOOK.CTA' | translate }}
+        </button>
+      </div>
+    }
+  </main>
+
+  <app-bottom-nav />
+</div>

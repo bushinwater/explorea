@@ -5,6 +5,9 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { LoginDto } from '../../../core/models/auth.model';
 import { AuthService } from '../../../core/services/auth.service';
+import { LocationService } from '../../../core/services/location.service';
+import { ThemeService } from '../../../core/services/theme.service';
+import { LanguageService } from '../../../core/services/language.service';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 
@@ -36,6 +39,9 @@ export class Login implements OnInit {
 
   constructor(
     private authService: AuthService,
+    private locationService: LocationService,
+    public themeService: ThemeService,
+    public languageService: LanguageService,
     private router: Router,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
@@ -126,6 +132,7 @@ export class Login implements OnInit {
       this.authService.socialLogin({ provider: 'facebook', code: event.data.code, redirectUri }).subscribe({
         next: (response) => {
           this.authService.saveTokens(response);
+          this.locationService.flushCachedLocation();
           if (response.needsProfileCompletion) {
             this.router.navigate(['/complete-profile']);
           } else if (response.needsInterests) {
@@ -159,6 +166,7 @@ export class Login implements OnInit {
     this.authService.socialLogin({ provider, token }).subscribe({
       next: (response) => {
         this.authService.saveTokens(response);
+        this.locationService.flushCachedLocation();
         if (response.needsProfileCompletion) {
           this.router.navigate(['/complete-profile']);
         } else if (response.needsInterests) {
@@ -194,6 +202,7 @@ export class Login implements OnInit {
     this.authService.login(dto).subscribe({
       next: (response) => {
         this.authService.saveTokens(response);
+        this.locationService.flushCachedLocation();
         if (response.needsInterests) {
           this.router.navigate(['/interests']);
         } else {

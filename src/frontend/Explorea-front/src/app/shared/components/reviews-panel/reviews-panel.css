@@ -1,0 +1,206 @@
+.rp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+}
+
+.rp-panel {
+  background: var(--color-surface);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Header ── */
+
+.rp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.rp-title-wrap h2 {
+  margin: 0 0 2px;
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.rp-subtitle {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+}
+
+.rp-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.rp-close:hover {
+  background: var(--color-border);
+}
+
+.rp-close .material-icons {
+  font-size: 20px;
+}
+
+/* ── Body ── */
+
+.rp-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 24px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Reviews list ── */
+
+.rp-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.rp-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rp-item:first-child {
+  padding-top: 0;
+}
+
+.rp-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.rp-item__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.rp-item__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: var(--font-weight-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.rp-item__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rp-item__avatar span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+}
+
+.rp-item__user {
+  flex: 1;
+  min-width: 0;
+}
+
+.rp-item__user h3 {
+  margin: 0 0 2px;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.rp-item__user span {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.rp-item__stars {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.rp-item__stars .material-icons {
+  font-size: 16px;
+}
+
+.rp-star--filled {
+  color: var(--color-accent);
+}
+
+.rp-star--empty {
+  color: var(--color-border);
+}
+
+.rp-comment {
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ── Mobile ── */
+
+@media (max-width: 768px) {
+  .rp-overlay {
+    padding: var(--spacing-md);
+  }
+
+  .rp-panel {
+    max-width: 100%;
+    max-height: 85vh;
+  }
+
+  .rp-header {
+    padding: 16px 20px;
+  }
+
+  .rp-body {
+    padding: 16px 20px 24px;
+  }
+}

@@ -1,4 +1,21 @@
 {
+  "COMMON": {
+    "ERROR_GENERIC": "Something went wrong. Please try again."
+  },
+  "REVIEW_MODAL": {
+    "TITLE": "Write a review",
+    "RATING_LABEL": "Your rating",
+    "COMMENT_LABEL": "Your review (optional)",
+    "COMMENT_PLACEHOLDER": "Share your experience...",
+    "CANCEL": "Cancel",
+    "SUBMIT": "Submit",
+    "ERROR_ALREADY": "You have already submitted a review for this.",
+    "STARS_1": "Poor",
+    "STARS_2": "Fair",
+    "STARS_3": "Good",
+    "STARS_4": "Very good",
+    "STARS_5": "Excellent"
+  },
   "SIDEBAR": {
     "HOME": "Home",
     "EXPLORE": "Explore map",
@@ -142,7 +159,8 @@
       "DURATION": "DURATION",
       "DISTANCE": "DISTANCE",
       "ELEVATION": "ELEVATION",
-      "TRAIL_TYPE": "TRAIL TYPE"
+      "TRAIL_TYPE": "TRAIL TYPE",
+      "DIFFICULTY": "DIFFICULTY"
     },
     "ABOUT": "About the activity",
     "INCLUDED": {
@@ -162,9 +180,32 @@
       "TITLE": "Route map",
       "OPEN": "Open interactive map"
     },
+    "ORGANIZER_LINK": "Visit organizer website",
+    "REVIEWS": {
+      "TITLE": "Reviews",
+      "EMPTY": "No reviews yet. Be the first to share your experience!",
+      "WRITE": "Write a review",
+      "ALREADY_REVIEWED": "You have already reviewed this activity",
+      "ALL_PANEL_TITLE": "All reviews",
+      "FORM": {
+        "TITLE": "Write a review",
+        "RATING_LABEL": "Your rating",
+        "COMMENT_LABEL": "Your review (optional)",
+        "COMMENT_PLACEHOLDER": "Share your experience...",
+        "CANCEL": "Cancel",
+        "SUBMIT": "Submit",
+        "ERROR_ALREADY": "You have already submitted a review for this activity.",
+        "STARS_1": "Poor",
+        "STARS_2": "Fair",
+        "STARS_3": "Good",
+        "STARS_4": "Very good",
+        "STARS_5": "Excellent"
+      }
+    },
     "SIMILAR": {
       "TITLE": "Similar activities",
       "VIEW_ALL": "View all",
+      "ALL_PANEL_TITLE": "Similar activities",
       "FROM": "From"
     },
     "BOOK": {
@@ -240,6 +281,10 @@
     "LOGIN": "Sign in",
     "ERROR_TERMS": "You must accept the terms of service.",
     "ERROR_PASSWORD": "Passwords do not match.",
+    "ERROR_PASSWORD_WEAK": "Password must be at least 6 characters and contain at least one number.",
+    "PASSWORD_HINT_TITLE": "Password requirements:",
+    "PASSWORD_HINT_MIN": "At least 6 characters",
+    "PASSWORD_HINT_NUMBER": "At least one number (0–9)",
     "ERROR_GENERAL": "Registration failed. Please try again.",
     "ERROR_NAME_EMPTY": "Name is required.",
     "ERROR_NAME_INVALID": "Only letters are allowed.",
@@ -298,6 +343,10 @@
     "SUCCESS_TITLE": "Password changed",
     "SUCCESS_DESC": "Your password has been successfully changed.",
     "SUCCESS_REDIRECT": "You will be redirected to the login page shortly.",
+    "ERROR_PASSWORD_WEAK": "Password must be at least 6 characters and contain at least one number.",
+    "PASSWORD_HINT_TITLE": "Password requirements:",
+    "PASSWORD_HINT_MIN": "At least 6 characters",
+    "PASSWORD_HINT_NUMBER": "At least one number (0–9)",
     "ERROR_MISMATCH": "Passwords do not match.",
     "ERROR_TOKEN": "The reset link is invalid or has expired.",
     "ERROR_EMPTY": "Password is required.",
@@ -321,6 +370,147 @@
     "ERROR_DESC": "The link is invalid or has already been used.",
     "GO_BACK": "Go to login"
   },
+  "PLACE_DETAIL": {
+    "PAGE_TITLE": "Place details",
+    "SHARE": "Share",
+    "SAVE": "Save",
+    "OPEN_NOW": "Open now",
+    "CLOSED": "Closed",
+    "ABOUT": "About this place",
+    "HOST_PREFIX": "Hosted by",
+    "SHOW_MORE": "Show more",
+    "SHOW_LESS": "Show less",
+    "WHAT_OFFERS": "What this place offers",
+    "HOUSE_RULES": "House rules",
+    "LOCATION": "Location",
+    "OPEN_MAPS": "Open in Google Maps",
+    "SIMILAR": "You might also like",
+    "PLAN_VISIT": "Planning a visit?",
+    "DATE": "DATE",
+    "TODAY": "Today",
+    "PERSONS": "PERSONS",
+    "ADULTS": "Adults",
+    "CHECK_AVAILABILITY": "Check availability",
+    "NO_EVENTS": "No nearby events.",
+    "NO_REVIEWS": "No reviews yet for this place.",
+    "BREADCRUMB": {
+      "HOME": "Home"
+    },
+    "GALLERY": {
+      "MORE": "photos"
+    },
+    "TABS": {
+      "DETAILS": "Detailed info",
+      "EVENTS": "Nearby events",
+      "REVIEWS": "Reviews",
+      "ABOUT": "About",
+      "EVENTS_MOBILE": "Events"
+    },
+    "RULES": {
+      "CHECK_IN": "Check-in",
+      "CHECK_OUT": "Check-out",
+      "PETS": "Pets",
+      "PETS_VALUE": "Allowed on request",
+      "SMOKING": "Smoking",
+      "SMOKING_VALUE": "Terrace only"
+    },
+    "AMENITIES": {
+      "WIFI": "Free Wi-Fi",
+      "PARKING": "Parking",
+      "POOL": "Pool",
+      "BREAKFAST": "Breakfast",
+      "SECURITY": "24/7 Security",
+      "RESTAURANT": "Restaurant"
+    },
+    "OFFERS": {
+      "BALCONY": "Private balcony with view",
+      "AC": "Air conditioning in every room",
+      "TV": "Smart TV with cable channels",
+      "COFFEE": "Coffee machine (Nespresso)",
+      "MINIBAR": "Mini-bar with local wines"
+    },
+    "BOOK": {
+      "PER_NIGHT": "night",
+      "SELECT_DATES": "Select dates and number of guests",
+      "ARRIVAL": "CHECK-IN",
+      "DEPARTURE": "CHECK-OUT",
+      "GUESTS": "GUESTS",
+      "NIGHTS": "nights",
+      "SERVICE_FEE": "Service fee",
+      "TOTAL": "Total",
+      "CTA": "Book now",
+      "NO_CHARGE": "You won't be charged yet",
+      "SAFE_TITLE": "Secure booking",
+      "SAFE_CANCEL": "Free cancellation up to 48h before check-in.",
+      "SAFE_NO_FEES": "No hidden costs or additional charges.",
+      "SAFE_SSL": "Your data is protected with SSL encryption.",
+      "VIEWS_PREFIX": "This place was viewed",
+      "VIEWS_SUFFIX": "times in the last 24 hours"
+    },
+    "FOOTER": {
+      "RIGHTS": "All rights reserved.",
+      "TERMS": "Terms of use",
+      "PRIVACY": "Privacy",
+      "HELP": "Help"
+    }
+  },
+  "PLACE_CARD": {
+    "PER_NIGHT": "/ night"
+  },
+  "EXPLORE": {
+    "TITLE": "Explore",
+    "SEARCH": {
+      "PLACEHOLDER": "Enter a location or destination name...",
+      "PLACEHOLDER_MOBILE": "Search locations, destinations...",
+      "SHOW_FILTERS": "Show filters",
+      "HIDE_FILTERS": "Hide filters"
+    },
+    "FILTERS": {
+      "TITLE": "Explore Filters",
+      "BADGE": "{{count}} filters",
+      "ALL": "All",
+      "LOCATION": "Location",
+      "NEARBY_ONLY": "Nearby only",
+      "LOCATION_UNAVAILABLE": "Location unavailable",
+      "RADIUS": "Search radius",
+      "TYPE": "Type",
+      "HOURS_RATINGS": "Working Hours & Ratings",
+      "OPEN_NOW": "Open now",
+      "MIN_RATING": "Minimum rating",
+      "RESET": "Reset filters",
+      "APPLY": "Apply filters",
+      "CLOSE": "Close"
+    },
+    "ENTITY_TYPES": {
+      "DESTINATIONS": "Destinations",
+      "PLACES": "Places",
+      "ACTIVITIES": "Activities",
+      "EVENTS": "Events"
+    },
+    "ENTITY_LABELS": {
+      "DESTINATION": "Destination",
+      "PLACE": "Place",
+      "ACTIVITY": "Activity",
+      "EVENT": "Event"
+    },
+    "SHEET": {
+      "LOADING": "Loading...",
+      "RESULTS": "{{count}} results",
+      "ZOOM_HINT": "Zoom in for more results",
+      "SWIPE_UP": "Swipe up for list",
+      "SWIPE_DOWN": "Swipe down to close"
+    },
+    "PIN": {
+      "DETAILS": "Details",
+      "ROUTE": "Route"
+    },
+    "LOCATION_MODAL": {
+      "TITLE": "Location unavailable",
+      "TEXT": "Your current location is needed to show directions. Allow location access and try again.",
+      "CANCEL": "Cancel",
+      "ENABLE": "Enable location"
+    }
+  },
   "DESTINATION_DETAIL": {
     "LOADING": "Loading destination details...",
     "ABOUT": "About the destination",
@@ -328,6 +518,7 @@
     "VIEW_ALL_IMAGES": "View all images ({{count}})",
     "LOCATION_AND_MAP": "Location and map",
     "OPEN_IN_GOOGLE_MAPS": "Open in Google Maps",
+    "ROUTE": "Route",
     "DETAILS": "Details",
     "SHOW_ALL": "Show all",
     "SHOW_ALL_COUNT": "Show all ({{count}})",
@@ -350,7 +541,8 @@
       "STARS_2": "Fair",
       "STARS_3": "Good",
       "STARS_4": "Very good",
-      "STARS_5": "Excellent"
+      "STARS_5": "Excellent",
+      "ALREADY_REVIEWED": "You have already submitted a review for this destination."
     },
     "EMPTY_TAB": "There are currently no available items for this section.",
     "EMPTY_REVIEWS": "There are no reviews for this destination yet.",

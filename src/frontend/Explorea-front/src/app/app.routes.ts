@@ -2,7 +2,8 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
 import { guestGuard } from './core/guards/guest-guard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
-import { DestinationDetailComponent } from './features/destinations/destination-detail/destination-detail';             
+import { PlaceDetailComponent } from './features/places/place-detail/place-detail';
+import { DestinationDetailComponent } from './features/destinations/destination-detail/destination-detail';
 import { ForgotPassword } from './features/auth/forgot-password/forgot-password';
 import { Interests } from './features/auth/interests/interests';
 import { Login } from './features/auth/login/login';
@@ -12,12 +13,15 @@ import { CompleteProfile } from './features/auth/complete-profile/complete-profi
 import { FacebookCallback } from './features/auth/facebook-callback/facebook-callback';
 import { VerifyEmail } from './features/auth/verify-email/verify-email';
 import { Home } from './features/home/home';
+import { Explore } from './features/explore/explore';
 import { Settings } from './features/profile/settings/settings';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', component: Home },
+  { path: 'explore', component: Explore },
   { path: 'activities/:slug', component: ActivityDetailComponent },
+  { path: 'places/:slug', component: PlaceDetailComponent },
   { path: 'destinations/:slug', component: DestinationDetailComponent },
   { path: 'interests', component: Interests },
   { path: 'profile', component: Settings, canActivate: [authGuard] },
@@ -28,4 +32,5 @@ export const routes: Routes = [
   { path: 'verify-email', component: VerifyEmail },
   { path: 'complete-profile', component: CompleteProfile, canActivate: [authGuard] },
   { path: 'auth/facebook/callback', component: FacebookCallback },
+  { path: '**', redirectTo: 'home' },
 ];

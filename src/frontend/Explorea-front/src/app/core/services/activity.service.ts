@@ -22,6 +22,7 @@ const MOCK_ACTIVITY: ActivityDetail = {
   distanceKm: 14.5,
   startPoint: 'Beograd',
   extraData: { elevation: '1100 m', trailType: 'Kružna' },
+  organizerWebsite: null,
   location: { lat: 43.396, lng: 22.677 },
   inclusions: [
     { id: '1', item: 'Licencirani planinski vodič' },

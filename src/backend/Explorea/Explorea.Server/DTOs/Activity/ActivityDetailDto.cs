@@ -5,6 +5,7 @@ namespace Explorea.API.DTOs.Activity
 {
     public class ActivityDetailDto : ActivityCardDto
     {
+        public string? OrganizerWebsite { get; set; }
         public string? Description { get; set; }
         public SeasonRefDto? Season { get; set; }
         public decimal? DistanceKm { get; set; }

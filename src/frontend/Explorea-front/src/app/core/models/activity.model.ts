@@ -13,6 +13,7 @@ export interface ActivityCard {
 }
 
 export interface ActivityDetail extends ActivityCard {
+  organizerWebsite: string | null;
   description: string | null;
   season: { id: number; name: string } | null;
   distanceKm: number | null;
@@ -26,7 +27,7 @@ export interface ActivityDetail extends ActivityCard {
     rating: number;
     comment: string | null;
     createdAt: string;
-    user: { id: string; firstName: string; lastName: string; travelerRank: string };
+    user: { id: string; firstName: string; lastName: string; travelerRank: string; profileImageUrl?: string | null };
   }[];
   similarActivities: ActivityCard[];
 }

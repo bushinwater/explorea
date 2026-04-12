@@ -93,6 +93,21 @@
           <a href="#">{{ 'LOGIN.GUEST' | translate }}</a>
         </div>
       </div>
+
+      <div class="login-prefs">
+        <button class="pref-btn" (mousedown)="$event.preventDefault()" (click)="themeService.toggle()">
+          <span class="material-icons">{{ themeService.isDark ? 'light_mode' : 'dark_mode' }}</span>
+          <span>{{ themeService.isDark ? ('SIDEBAR.LIGHT_MODE' | translate) : ('SIDEBAR.DARK_MODE' | translate) }}</span>
+        </button>
+
+        <div class="pref-lang">
+          <span class="material-icons">language</span>
+          <button class="lang-btn" [class.lang-btn--active]="languageService.current === 'sr'" (click)="languageService.set('sr')">SR</button>
+          <span class="lang-sep">|</span>
+          <button class="lang-btn" [class.lang-btn--active]="languageService.current === 'en'" (click)="languageService.set('en')">EN</button>
+        </div>
+      </div>
+
     </div>
   </main>
 </div>

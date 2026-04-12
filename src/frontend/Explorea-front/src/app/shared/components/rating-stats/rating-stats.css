@@ -1,0 +1,114 @@
+.rating-stats {
+  display: flex;
+  gap: var(--spacing-xl);
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg) var(--spacing-xl);
+}
+
+.rating-stats__avg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 80px;
+}
+
+.rating-stats__number {
+  font-size: 42px;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  color: var(--color-text-primary);
+}
+
+.rating-stats__stars {
+  display: flex;
+  gap: 2px;
+}
+
+.rating-stats__stars .material-icons {
+  font-size: 16px;
+}
+
+.review-star--filled {
+  color: var(--color-accent);
+}
+
+.review-star--empty {
+  color: var(--color-border);
+}
+
+.rating-stats__total {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.rating-stats__bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rating-stats__row {
+  display: grid;
+  grid-template-columns: 14px 16px 1fr 24px;
+  align-items: center;
+  gap: 6px;
+}
+
+.rating-stats__label {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  text-align: right;
+  line-height: 1;
+}
+
+.rating-stats__star {
+  font-size: 14px;
+  color: var(--color-accent);
+}
+
+.rating-stats__bar {
+  height: 6px;
+  background: var(--color-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.rating-stats__fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.rating-stats__count {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  text-align: right;
+  line-height: 1;
+}
+
+@media (max-width: 768px) {
+  .rating-stats {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-md);
+  }
+
+  .rating-stats__avg {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing-md);
+    min-width: unset;
+  }
+
+  .rating-stats__number {
+    font-size: 36px;
+  }
+}

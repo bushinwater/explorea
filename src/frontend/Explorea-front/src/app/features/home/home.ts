@@ -10,6 +10,8 @@ import { PopularActivities } from './popular-activities/popular-activities';
 import { AiRecommendations } from './ai-recommendations/ai-recommendations';
 import { TravelReviews } from './travel-reviews/travel-reviews';
 import { HomeService } from '../../core/services/home.service';
+import { LocationService } from '../../core/services/location.service';
+import { DetailFooter } from '../../shared/components/detail-footer/detail-footer';
 import {
   HeroBanner as HeroBannerModel,
   DestinationCard,
@@ -33,6 +35,7 @@ import {
     PopularActivities,
     AiRecommendations,
     TravelReviews,
+    DetailFooter,
   ],
   templateUrl: './home.html',
   styleUrl: './home.css',
@@ -47,9 +50,14 @@ export class Home implements OnInit {
   cityFilters: CityFilter[] = [];
   loading = true;
 
-  constructor(private homeService: HomeService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private homeService: HomeService,
+    private locationService: LocationService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit() {
+    this.locationService.requestAndStore();
     this.cityFilters = this.homeService.getCityFilters();
 
     this.homeService.getHomeData().subscribe((data) => {

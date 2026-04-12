@@ -89,5 +89,16 @@ namespace Explorea.Server.Repositories.Implementations
                 await _db.SaveChangesAsync();
             }
         }
+
+        public async Task UpdateLocationAsync(Guid userId, double lat, double lng)
+        {
+            var user = await _set.FindAsync(userId);
+            if (user == null) return;
+
+            user.CurrentLatitude = lat;
+            user.CurrentLongitude = lng;
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+            await _db.SaveChangesAsync();
+        }
     }
 }

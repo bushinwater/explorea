@@ -1,13 +1,35 @@
 import { Component, OnInit, AfterViewInit, inject, ChangeDetectorRef, HostListener, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule, NgStyle } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { Location } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
+import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
+
+const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+
+const DARK = {
+  land: '#1e2e24', water: '#102840', park: '#1e3228',
+  road_major: '#486858', road_minor: '#364e40', road_path: '#2c4436',
+  building: '#253828', building_outline: '#30503c', extrusion: '#5a9e78',
+  boundary: '#335244', text: '#c8d8cc', text_halo: '#182818',
+  sand: '#262614', pedestrian: '#283e30', surface: '#243a2c',
+  bridge: '#2e4c3a', icon: '#8aab96',
+};
+
+const LIGHT = {
+  land: '#eef1ec', water: '#6bb0d4', park: '#96c89c',
+  road_major: '#ffffff', road_minor: '#f5f8f4', road_path: '#deeadc',
+  building: '#ccd8c8', building_outline: '#b0c4ac', extrusion: '#a2dcad',
+  boundary: '#6b826b', text: '#1a3828', text_halo: '#eef1ec',
+  sand: '#e0d8b0', pedestrian: '#dce8d8', surface: '#e4eee0',
+  bridge: '#d8e4d4', icon: '#28694c',
+};
 
 import { DestinationService } from '../../../core/services/destination.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { SavedService } from '../../../core/services/saved.service';
+import { ReviewService } from '../../../core/services/review.service';
 import {
   ActivityCard,
   DestinationDetail,
@@ -17,6 +39,11 @@ import {
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 import { ReviewCard } from '../../../shared/components/review-card/review-card';
+import { ReviewModal } from '../../../shared/components/review-modal/review-modal';
+import { DetailFooter } from '../../../shared/components/detail-footer/detail-footer';
+import { RatingStats } from '../../../shared/components/rating-stats/rating-stats';
+import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
+import { ReviewDto } from '../../../core/models/home.model';
 
 type DetailTab = 'places' | 'events' | 'activities' | 'reviews';
 type TabItem = PlaceCard | EventCard | ActivityCard;
@@ -24,22 +51,33 @@ type TabItem = PlaceCard | EventCard | ActivityCard;
 @Component({
   selector: 'app-destination-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, FormsModule, TranslateModule, Sidebar, BottomNav, ReviewCard],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel],
   templateUrl: './destination-detail.html',
   styleUrls: ['./destination-detail.css']
 })
 export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('heroTitleEl') heroTitleEl!: ElementRef<HTMLElement>;
+  @ViewChild('mapContainer') mapContainer?: ElementRef;
+
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private location = inject(Location);
   private destinationService = inject(DestinationService);
   private authService = inject(AuthService);
   private savedService = inject(SavedService);
+  private reviewService = inject(ReviewService);
   private cdr = inject(ChangeDetectorRef);
   private translate = inject(TranslateService);
 
   private routeSub?: Subscription;
   private requestSub?: Subscription;
+
+  private map?: MapLibreMap;
+  private marker?: Marker;
+  private mapInitialized = false;
+  private lightStyle: any = null;
+  private darkStyle: any = null;
+  private themeObserver?: MutationObserver;
 
   destination: DestinationDetail | null = null;
   isLoading = true;
@@ -53,12 +91,11 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   isSavedLoading = false;
 
   showAllOpen = false;
+  reviewsPanelOpen = false;
   private savedScrollY = 0;
 
+  hasReviewed = false;
   reviewFormOpen = false;
-  reviewRating = 0;
-  reviewHoverRating = 0;
-  reviewComment = '';
 
   scrollProgress = 0;
   titleCaptured = false;
@@ -87,6 +124,9 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
     this.requestSub?.unsubscribe();
+    this.marker?.remove();
+    this.map?.remove();
+    this.themeObserver?.disconnect();
     document.body.style.overflow = '';
   }
 
@@ -118,6 +158,10 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     this.reviewFormOpen = false;
     this.titleCaptured = false;
     this.scrollProgress = 0;
+    this.mapInitialized = false;
+    this.marker?.remove();
+    this.map?.remove();
+    this.map = undefined;
     this.cdr.detectChanges();
 
     this.requestSub = this.destinationService.getDestinationBySlug(slug).subscribe({
@@ -125,12 +169,17 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
         this.destination = data;
         this.isLoading = false;
         this.isSaved = false;
+        this.hasReviewed = false;
         window.scrollTo({ top: 0, behavior: 'auto' });
         this.cdr.detectChanges();
         this.captureTitle();
+        setTimeout(() => this.initMap(), 100);
         if (this.authService.isLoggedIn()) {
           this.savedService.check('destination', data.id).subscribe({
             next: (res) => { this.isSaved = res.isSaved; this.cdr.detectChanges(); },
+          });
+          this.reviewService.check('destination', data.id).subscribe({
+            next: (res) => { this.hasReviewed = res.hasReviewed; this.cdr.detectChanges(); },
           });
         }
       },
@@ -177,7 +226,11 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   }
 
   openShowAll(): void {
-    this.showAllOpen = true;
+    if (this.selectedTab === 'reviews') {
+      this.reviewsPanelOpen = true;
+    } else {
+      this.showAllOpen = true;
+    }
     this.savedScrollY = window.scrollY;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${this.savedScrollY}px`;
@@ -187,6 +240,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
 
   closeShowAll(): void {
     this.showAllOpen = false;
+    this.reviewsPanelOpen = false;
     document.body.style.position = '';
     document.body.style.top = '';
     document.body.style.width = '';
@@ -221,30 +275,25 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
       this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
       return;
     }
-    this.reviewRating = 0;
-    this.reviewHoverRating = 0;
-    this.reviewComment = '';
     this.reviewFormOpen = true;
-    this.savedScrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${this.savedScrollY}px`;
-    document.body.style.width = '100%';
-    document.body.style.overflow = 'hidden';
   }
 
-  closeReviewForm(): void {
-    this.reviewFormOpen = false;
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    document.body.style.overflow = '';
-    window.scrollTo({ top: this.savedScrollY, behavior: 'instant' as ScrollBehavior });
-  }
-
-  submitReview(): void {
-    if (this.reviewRating === 0) return;
-    // TODO: wire up backend
-    this.closeReviewForm();
+  onReviewSubmitted(review: ReviewDto): void {
+    if (!this.destination) return;
+    this.destination.reviews.unshift({
+      id: review.id,
+      rating: review.rating,
+      comment: review.comment ?? '',
+      createdAt: review.createdAt,
+      user: {
+        id: review.user.id,
+        firstName: review.user.firstName,
+        lastName: review.user.lastName,
+        travelerRank: review.user.travelerRank,
+      },
+    });
+    this.hasReviewed = true;
+    this.cdr.detectChanges();
   }
 
   get ratingBreakdown(): { stars: number; count: number; pct: number }[] {
@@ -472,6 +521,148 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     return `https://www.google.com/maps?q=${lat},${lng}`;
   }
 
+  get googleMapsDirectionsUrl(): string {
+    const lat = this.destination?.location?.lat;
+    const lng = this.destination?.location?.lng;
+    if (lat == null || lng == null) return 'https://maps.google.com';
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  }
+
+  private get isDark(): boolean {
+    return document.documentElement.getAttribute('data-theme') !== 'light';
+  }
+
+  private luminance(hex: string): number {
+    if (!hex || !hex.startsWith('#') || hex.length < 7) return 0;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return r * 0.299 + g * 0.587 + b * 0.114;
+  }
+
+  private buildThemedStyle(base: any, p: typeof DARK & typeof LIGHT): any {
+    const themed = JSON.parse(JSON.stringify(base));
+    themed.layers = themed.layers.map((layer: any) => {
+      const id: string = layer.id ?? '';
+      const type: string = layer.type ?? '';
+      if (!layer.paint) return layer;
+      delete layer.paint['fill-pattern'];
+      switch (type) {
+        case 'background':
+          layer.paint['background-color'] = p.land; break;
+        case 'fill': {
+          if (/building/.test(id)) { layer.paint['fill-opacity'] = 0; break; }
+          let fillColor: string;
+          if (/water|ocean|sea|bay|lake|river|pond|reservoir/.test(id)) {
+            fillColor = p.water; layer.paint['fill-outline-color'] = p.water;
+          } else if (/forest|wood|orchard|scrub|grass|meadow|park|nature|garden|vegetation|landcover/.test(id)) {
+            fillColor = p.park; if (layer.paint['fill-outline-color']) layer.paint['fill-outline-color'] = p.park;
+          } else if (/landuse/.test(id)) { fillColor = p.park;
+          } else if (/sand|beach|desert|bare/.test(id)) { fillColor = p.sand;
+          } else if (/pedestrian|plaza|square|footway|paved|civic|commercial|retail|amenity|transit/.test(id)) {
+            fillColor = p.pedestrian; if (layer.paint['fill-outline-color']) layer.paint['fill-outline-color'] = p.pedestrian;
+          } else if (/bridge/.test(id)) { fillColor = p.bridge;
+          } else {
+            const orig = typeof layer.paint['fill-color'] === 'string' ? layer.paint['fill-color'] : '';
+            fillColor = this.luminance(orig) > 128 ? p.surface : p.land;
+          }
+          layer.paint['fill-color'] = fillColor; break;
+        }
+        case 'line': {
+          let lineColor: string;
+          if (/water|river|stream|canal|lake/.test(id)) { lineColor = p.water;
+          } else if (/motorway|trunk/.test(id)) { lineColor = p.road_major;
+          } else if (/primary|secondary|tertiary|road|street|residential|service/.test(id)) { lineColor = p.road_minor;
+          } else if (/path|track|foot|cycle|pedestrian/.test(id)) { lineColor = p.road_path;
+          } else if (/boundary|admin|border/.test(id)) { lineColor = p.boundary;
+          } else if (/bridge/.test(id)) { lineColor = p.bridge;
+          } else if (/casing|outline/.test(id)) { lineColor = p.land;
+          } else {
+            const orig = typeof layer.paint['line-color'] === 'string' ? layer.paint['line-color'] : '';
+            lineColor = this.luminance(orig) > 128 ? p.road_minor : p.land;
+          }
+          layer.paint['line-color'] = lineColor; break;
+        }
+        case 'fill-extrusion':
+          layer.paint['fill-extrusion-color'] = p.extrusion;
+          layer.paint['fill-extrusion-opacity'] = 1; break;
+        case 'symbol':
+          layer.paint['text-color'] = p.text;
+          if (layer.paint['text-halo-color']) layer.paint['text-halo-color'] = p.text_halo;
+          if (layer.paint['icon-color']) layer.paint['icon-color'] = p.icon; break;
+      }
+      return layer;
+    });
+    return themed;
+  }
+
+  private createPinElement(): HTMLElement {
+    const el = document.createElement('div');
+    el.className = 'map-pin-btn';
+    el.innerHTML = `<div class="pin-bubble"><span class="material-icons">location_on</span></div>`;
+    return el;
+  }
+
+  private watchTheme(): void {
+    this.themeObserver = new MutationObserver(() => {
+      if (!this.map) return;
+      const style = this.isDark ? this.darkStyle : this.lightStyle;
+      if (!style) return;
+      this.map.setStyle(style);
+      this.map.once('style.load', () => {
+        if (this.destination?.location) {
+          const { lat, lng } = this.destination.location;
+          this.marker?.remove();
+          this.marker = new maplibregl.Marker({ element: this.createPinElement(), anchor: 'bottom' })
+            .setLngLat([lng, lat])
+            .addTo(this.map!);
+        }
+      });
+    });
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+  }
+
+  private async initMap(): Promise<void> {
+    if (this.mapInitialized || !this.mapContainer || !this.destination?.location) return;
+    const { lat, lng } = this.destination.location;
+    this.mapInitialized = true;
+
+    const res = await fetch(MAP_STYLE_URL);
+    const base = await res.json();
+    this.lightStyle = this.buildThemedStyle(base, LIGHT);
+    this.darkStyle = this.buildThemedStyle(base, DARK);
+
+    this.map = new maplibregl.Map({
+      container: this.mapContainer.nativeElement,
+      style: this.isDark ? this.darkStyle : this.lightStyle,
+      center: [lng, lat],
+      zoom: 12,
+      attributionControl: false,
+    });
+
+    this.map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+    this.map.addControl(
+      new maplibregl.AttributionControl({ compact: true }),
+      'bottom-right',
+    );
+
+    this.map.on('load', () => {
+      this.marker = new maplibregl.Marker({ element: this.createPinElement(), anchor: 'bottom' })
+        .setLngLat([lng, lat])
+        .addTo(this.map!);
+
+      const attrib = this.mapContainer?.nativeElement.querySelector('.maplibregl-ctrl-attrib');
+      attrib?.classList.remove('maplibregl-compact-show');
+
+      this.cdr.detectChanges();
+    });
+
+    this.watchTheme();
+  }
+
   private isPlace(item: TabItem): item is PlaceCard {
     return this.selectedTab === 'places';
   }
@@ -484,11 +675,14 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     return this.selectedTab === 'activities';
   }
 
+  goBack(): void {
+    this.location.back();
+  }
+
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.lightboxOpen) this.closeLightbox();
     else if (this.showAllOpen) this.closeShowAll();
-    else if (this.reviewFormOpen) this.closeReviewForm();
   }
 
   @HostListener('document:keydown.arrowLeft')
