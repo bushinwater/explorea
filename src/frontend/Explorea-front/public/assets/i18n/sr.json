@@ -573,5 +573,34 @@
       "MISSING_SLUG": "Slug destinacije nije prosleđen.",
       "LOAD_FAILED": "Greška pri učitavanju detalja destinacije."
     }
+  },
+  "EVENTS": {
+    "TITLE": "Dogadjaji",
+    "DESKTOP_TITLE": "Dogadjaji & Manifestacije",
+    "DESKTOP_SUBTITLE": "Otkrij najbolje dogadjaje u tvojoj blizini.",
+    "SEARCH_PLACEHOLDER": "Pretrazi dogadjaje...",
+    "VIEW_LIST": "Lista",
+    "VIEW_CALENDAR": "Kalendar",
+    "FILTER_ALL": "Svi",
+    "THIS_MONTH": "Dogadjaji ovog meseca",
+    "NO_EVENTS": "Nema pronadjenih dogadjaja.",
+    "EVENTS_FOR_DATE": "Dogadjaji za",
+    "DESKTOP_RESULTS_TITLE": "Predstojeći dogadjaji",
+    "FOUND": "Pronadjeno {{count}} rezultata",
+    "DETAILS": "Detalji",
+    "SHOW_CALENDAR": "Prikaži kalendar",
+    "HIDE_CALENDAR": "Sakrij kalendar",
+    "QUICK_FILTERS": "BRZI FILTERI",
+    "QUICK_TODAY": "Danas",
+    "QUICK_WEEKEND": "Ovaj vikend",
+    "QUICK_FREE": "Besplatni ulaz",
+    "AI_BANNER_TITLE": "Predlog za vikend?",
+    "AI_BANNER_SUBTITLE": "Preporučujemo ti dogadjaje na osnovu tvojih interesovanja.",
+    "AI_BOX_TITLE": "Preporuka za tebe",
+    "AI_BOX_TEXT": "Na osnovu tvojih interesovanja za putovanje i kulturu, preporučujemo ti događaje u blizini.",
+    "AI_BOX_CTA": "Saznaj više",
+    "SORT_DATE": "Po datumu",
+    "SORT_POPULARITY": "Po popularnosti",
+    "SORT_LOCATION": "Po lokaciji"
   }
 }

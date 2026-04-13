@@ -573,5 +573,34 @@
       "MISSING_SLUG": "Destination slug was not provided.",
       "LOAD_FAILED": "Error loading destination details."
     }
+  },
+  "EVENTS": {
+    "TITLE": "Events",
+    "DESKTOP_TITLE": "Events & Festivals",
+    "DESKTOP_SUBTITLE": "Discover the best events happening near you.",
+    "SEARCH_PLACEHOLDER": "Search events...",
+    "VIEW_LIST": "List",
+    "VIEW_CALENDAR": "Calendar",
+    "FILTER_ALL": "All",
+    "THIS_MONTH": "Events this month",
+    "NO_EVENTS": "No events found.",
+    "EVENTS_FOR_DATE": "Events for",
+    "DESKTOP_RESULTS_TITLE": "Upcoming events",
+    "FOUND": "Found {{count}} results",
+    "DETAILS": "Details",
+    "SHOW_CALENDAR": "Show calendar",
+    "HIDE_CALENDAR": "Hide calendar",
+    "QUICK_FILTERS": "QUICK FILTERS",
+    "QUICK_TODAY": "Today",
+    "QUICK_WEEKEND": "This weekend",
+    "QUICK_FREE": "Free admission",
+    "AI_BANNER_TITLE": "Suggestions for you?",
+    "AI_BANNER_SUBTITLE": "Let us recommend events based on your interests.",
+    "AI_BOX_TITLE": "Suggestions for you",
+    "AI_BOX_TEXT": "Based on your interests in travel and culture, we recommend the best events in your area.",
+    "AI_BOX_CTA": "Learn more",
+    "SORT_DATE": "By date",
+    "SORT_POPULARITY": "By popularity",
+    "SORT_LOCATION": "Nearest first"
   }
 }

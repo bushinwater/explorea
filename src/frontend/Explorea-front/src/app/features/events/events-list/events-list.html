@@ -1,0 +1,395 @@
+<div class="events-layout">
+  <app-sidebar />
+
+  <main class="events-main">
+
+    <!-- ══════════════════════════════════════════
+         MOBILE
+         ══════════════════════════════════════════ -->
+    <div class="mobile-only">
+
+      <!-- Top bar -->
+      <div class="mobile-topbar">
+        <h1 class="mobile-topbar__title">{{ 'EVENTS.TITLE' | translate }}</h1>
+      </div>
+
+      <!-- Search -->
+      <div class="mobile-search">
+        <span class="material-icons mobile-search__icon">search</span>
+        <input
+          type="text"
+          class="mobile-search__input"
+          [placeholder]="'EVENTS.SEARCH_PLACEHOLDER' | translate"
+          [ngModel]="searchQuery"
+          (ngModelChange)="onQueryChange($event)"
+        />
+        <button *ngIf="searchQuery" class="mobile-search__clear" (click)="clearSearch()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <!-- View toggle (Lista / Kalendar) -->
+      <div class="view-toggle">
+        <button
+          class="view-toggle__btn"
+          [class.active]="mobileView === 'list'"
+          (click)="setMobileView('list')"
+        >
+          <span class="material-icons">format_list_bulleted</span>
+          {{ 'EVENTS.VIEW_LIST' | translate }}
+        </button>
+        <button
+          class="view-toggle__btn"
+          [class.active]="mobileView === 'calendar'"
+          (click)="setMobileView('calendar')"
+        >
+          <span class="material-icons">calendar_month</span>
+          {{ 'EVENTS.VIEW_CALENDAR' | translate }}
+        </button>
+      </div>
+
+      <!-- Type chips -->
+      <div class="chips-row">
+        <button class="chip" [class.active]="selectedTypeId === null" (click)="selectType(null)">
+          {{ 'EVENTS.FILTER_ALL' | translate }}
+        </button>
+        <button
+          *ngFor="let t of types"
+          class="chip"
+          [class.active]="selectedTypeId === t.id"
+          (click)="selectType(t.id)"
+        >{{ t.name }}</button>
+      </div>
+
+      <!-- ─── LIST VIEW ─── -->
+      <ng-container *ngIf="mobileView === 'list'">
+        <div class="section-header">
+          <h2 class="section-heading">{{ 'EVENTS.THIS_MONTH' | translate }}</h2>
+          <span class="section-count">{{ total }}</span>
+        </div>
+
+        <!-- Sort -->
+        <div class="sort-row">
+          <button class="sort-btn" [class.active]="sortMode === 'date'"
+            (mousedown)="$event.preventDefault()" (click)="setSortMode('date')">
+            <span class="material-icons">calendar_today</span>
+            {{ 'EVENTS.SORT_DATE' | translate }}
+            <span class="material-icons sort-dir-icon" *ngIf="sortMode === 'date'">{{ sortIcon('date') }}</span>
+          </button>
+          <button class="sort-btn" [class.active]="sortMode === 'popularity'"
+            (mousedown)="$event.preventDefault()" (click)="setSortMode('popularity')">
+            <span class="material-icons">trending_up</span>
+            {{ 'EVENTS.SORT_POPULARITY' | translate }}
+            <span class="material-icons sort-dir-icon" *ngIf="sortMode === 'popularity'">{{ sortIcon('popularity') }}</span>
+          </button>
+          <button class="sort-btn" [class.active]="sortMode === 'location'"
+            [disabled]="!locationAvailable"
+            (mousedown)="$event.preventDefault()" (click)="setSortMode('location')">
+            <span class="material-icons">near_me</span>
+            {{ 'EVENTS.SORT_LOCATION' | translate }}
+            <span class="material-icons sort-dir-icon" *ngIf="sortMode === 'location'">{{ sortIcon('location') }}</span>
+          </button>
+        </div>
+
+        <div *ngIf="loading" class="loading-state">
+          <span class="material-icons spin">sync</span>
+        </div>
+
+        <div class="mobile-events-scroll" *ngIf="!loading">
+          <app-event-card
+            *ngFor="let e of events; trackBy: trackByEvent"
+            [event]="e"
+            [fullWidth]="true"
+          />
+          <div *ngIf="events.length === 0" class="empty-state">
+            <span class="material-icons">event_busy</span>
+            <p>{{ 'EVENTS.NO_EVENTS' | translate }}</p>
+          </div>
+        </div>
+
+        <!-- Load more indicator -->
+        <div *ngIf="loadingMore" class="loading-more">
+          <span class="material-icons spin">sync</span>
+        </div>
+
+        <!-- AI banner -->
+        <div class="ai-banner" *ngIf="!hasMore && !loadingMore && !loading">
+          <span class="material-icons ai-banner__icon">auto_awesome</span>
+          <div class="ai-banner__text">
+            <strong>{{ 'EVENTS.AI_BANNER_TITLE' | translate }}</strong>
+            <span>{{ 'EVENTS.AI_BANNER_SUBTITLE' | translate }}</span>
+          </div>
+          <span class="material-icons ai-banner__arrow">arrow_forward</span>
+        </div>
+      </ng-container>
+
+      <!-- ─── CALENDAR VIEW ─── -->
+      <ng-container *ngIf="mobileView === 'calendar'">
+        <div class="calendar-card">
+          <div class="calendar-header">
+            <button class="calendar-nav" (click)="prevMonth()">
+              <span class="material-icons">chevron_left</span>
+            </button>
+            <span class="calendar-month">{{ monthLabel }}</span>
+            <button class="calendar-nav" (click)="nextMonth()">
+              <span class="material-icons">chevron_right</span>
+            </button>
+          </div>
+          <div class="calendar-grid">
+            <div class="calendar-day-label" *ngFor="let d of DAY_LABELS">{{ d }}</div>
+            <button
+              *ngFor="let cell of calendarGrid; trackBy: trackByCell"
+              class="calendar-cell"
+              [class.other-month]="!cell.isCurrentMonth"
+              [class.today]="isToday(cell.date)"
+              [class.selected]="isSelected(cell.date)"
+              [class.has-events]="cell.count > 0"
+              (click)="selectDate(cell)"
+            >
+              {{ cell.date.getDate() }}
+              <span class="cell-dot" *ngIf="cell.isCurrentMonth && cell.count > 0"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick filters -->
+        <div class="chips-row">
+          <button class="chip" [class.active]="quickFilter === 'today'" (click)="setQuickFilter('today')">{{ 'EVENTS.QUICK_TODAY' | translate }}</button>
+          <button class="chip" [class.active]="quickFilter === 'weekend'" (click)="setQuickFilter('weekend')">{{ 'EVENTS.QUICK_WEEKEND' | translate }}</button>
+          <button class="chip" [class.active]="quickFilter === 'free'" (click)="setQuickFilter('free')">{{ 'EVENTS.QUICK_FREE' | translate }}</button>
+        </div>
+
+        <div class="section-header">
+          <h2 class="section-heading">
+            <ng-container *ngIf="selectedDate; else noDateLabel">
+              {{ 'EVENTS.EVENTS_FOR_DATE' | translate }} {{ selectedDateLabel }}
+            </ng-container>
+            <ng-template #noDateLabel>{{ 'EVENTS.THIS_MONTH' | translate }}</ng-template>
+          </h2>
+          <span class="section-count">{{ total }}</span>
+        </div>
+
+        <div *ngIf="loading" class="loading-state">
+          <span class="material-icons spin">sync</span>
+        </div>
+
+        <div class="mobile-events-scroll" *ngIf="!loading">
+          <app-event-card
+            *ngFor="let e of events; trackBy: trackByEvent"
+            [event]="e"
+            [fullWidth]="true"
+          />
+          <div *ngIf="events.length === 0" class="empty-state">
+            <span class="material-icons">event_busy</span>
+            <p>{{ 'EVENTS.NO_EVENTS' | translate }}</p>
+          </div>
+        </div>
+
+        <div *ngIf="loadingMore" class="loading-more">
+          <span class="material-icons spin">sync</span>
+        </div>
+
+        <div class="ai-banner" *ngIf="!hasMore && !loadingMore && !loading">
+          <span class="material-icons ai-banner__icon">auto_awesome</span>
+          <div class="ai-banner__text">
+            <strong>{{ 'EVENTS.AI_BANNER_TITLE' | translate }}</strong>
+            <span>{{ 'EVENTS.AI_BANNER_SUBTITLE' | translate }}</span>
+          </div>
+          <span class="material-icons ai-banner__arrow">arrow_forward</span>
+        </div>
+      </ng-container>
+
+      <div style="height: 80px;"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         DESKTOP
+         ══════════════════════════════════════════ -->
+    <div class="desktop-only">
+      <div class="desktop-inner">
+
+        <!-- Page header -->
+        <div class="desktop-header">
+          <div class="desktop-header__text">
+            <h1 class="desktop-title">{{ 'EVENTS.DESKTOP_TITLE' | translate }}</h1>
+            <p class="desktop-subtitle">{{ 'EVENTS.DESKTOP_SUBTITLE' | translate }}</p>
+          </div>
+          <div class="desktop-search">
+            <span class="material-icons desktop-search__icon">search</span>
+            <input
+              type="text"
+              class="desktop-search__input"
+              [placeholder]="'EVENTS.SEARCH_PLACEHOLDER' | translate"
+              [ngModel]="searchQuery"
+              (ngModelChange)="onQueryChange($event)"
+            />
+            <button *ngIf="searchQuery" class="desktop-search__clear" (click)="clearSearch()">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Type chips -->
+        <div class="chips-row desktop-chips">
+          <button class="chip" [class.active]="selectedTypeId === null" (click)="selectType(null)">
+            <span class="material-icons chip__icon">apps</span>
+            {{ 'EVENTS.FILTER_ALL' | translate }}
+          </button>
+          <button
+            *ngFor="let t of types"
+            class="chip"
+            [class.active]="selectedTypeId === t.id"
+            (click)="selectType(t.id)"
+          >{{ t.name }}</button>
+        </div>
+
+        <!-- Two-column content -->
+        <div class="desktop-content">
+
+          <!-- LEFT: Calendar panel -->
+          <aside class="calendar-panel">
+
+            <div class="calendar-card">
+              <div class="calendar-header">
+                <button class="calendar-nav" (click)="prevMonth()">
+                  <span class="material-icons">chevron_left</span>
+                </button>
+                <span class="calendar-month">{{ monthLabel }}</span>
+                <button class="calendar-nav" (click)="nextMonth()">
+                  <span class="material-icons">chevron_right</span>
+                </button>
+              </div>
+              <div class="calendar-grid">
+                <div class="calendar-day-label" *ngFor="let d of DAY_LABELS">{{ d }}</div>
+                <button
+                  *ngFor="let cell of calendarGrid; trackBy: trackByCell"
+                  class="calendar-cell"
+                  [class.other-month]="!cell.isCurrentMonth"
+                  [class.today]="isToday(cell.date)"
+                  [class.selected]="isSelected(cell.date)"
+                  [class.has-events]="cell.count > 0"
+                  (click)="selectDate(cell)"
+                >
+                  {{ cell.date.getDate() }}
+                  <span class="cell-dot" *ngIf="cell.isCurrentMonth && cell.count > 0"></span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Quick filters -->
+            <div class="quick-filters">
+              <p class="quick-filters__label">{{ 'EVENTS.QUICK_FILTERS' | translate }}</p>
+              <div class="quick-filters__chips">
+                <button class="chip chip--outline" [class.active]="quickFilter === 'today'" (click)="setQuickFilter('today')">{{ 'EVENTS.QUICK_TODAY' | translate }}</button>
+                <button class="chip chip--outline" [class.active]="quickFilter === 'weekend'" (click)="setQuickFilter('weekend')">{{ 'EVENTS.QUICK_WEEKEND' | translate }}</button>
+                <button class="chip chip--outline" [class.active]="quickFilter === 'free'" (click)="setQuickFilter('free')">{{ 'EVENTS.QUICK_FREE' | translate }}</button>
+              </div>
+            </div>
+
+            <!-- AI box -->
+            <div class="ai-box">
+              <div class="ai-box__head">
+                <span class="material-icons">auto_awesome</span>
+                <span>{{ 'EVENTS.AI_BOX_TITLE' | translate }}</span>
+              </div>
+              <p class="ai-box__body">{{ 'EVENTS.AI_BOX_TEXT' | translate }}</p>
+              <a class="ai-box__link">{{ 'EVENTS.AI_BOX_CTA' | translate }} →</a>
+            </div>
+          </aside>
+
+          <!-- RIGHT: Event list -->
+          <section class="events-results">
+            <div class="results-header">
+              <div>
+                <h2 class="results-title">
+                  <ng-container *ngIf="selectedDate; else allEventsTitle">
+                    {{ 'EVENTS.EVENTS_FOR_DATE' | translate }} {{ selectedDateLabel }}
+                  </ng-container>
+                  <ng-template #allEventsTitle>{{ 'EVENTS.DESKTOP_RESULTS_TITLE' | translate }}</ng-template>
+                </h2>
+                <span class="results-count">{{ 'EVENTS.FOUND' | translate: { count: total } }}</span>
+              </div>
+              <!-- Sort buttons -->
+              <div class="sort-row sort-row--desktop">
+                <button class="sort-btn" [class.active]="sortMode === 'date'"
+                  (mousedown)="$event.preventDefault()" (click)="setSortMode('date')">
+                  <span class="material-icons">calendar_today</span>
+                  {{ 'EVENTS.SORT_DATE' | translate }}
+                  <span class="material-icons sort-dir-icon" *ngIf="sortMode === 'date'">{{ sortIcon('date') }}</span>
+                </button>
+                <button class="sort-btn" [class.active]="sortMode === 'popularity'"
+                  (mousedown)="$event.preventDefault()" (click)="setSortMode('popularity')">
+                  <span class="material-icons">trending_up</span>
+                  {{ 'EVENTS.SORT_POPULARITY' | translate }}
+                  <span class="material-icons sort-dir-icon" *ngIf="sortMode === 'popularity'">{{ sortIcon('popularity') }}</span>
+                </button>
+                <button class="sort-btn" [class.active]="sortMode === 'location'"
+                  [disabled]="!locationAvailable"
+                  (mousedown)="$event.preventDefault()" (click)="setSortMode('location')">
+                  <span class="material-icons">near_me</span>
+                  {{ 'EVENTS.SORT_LOCATION' | translate }}
+                  <span class="material-icons sort-dir-icon" *ngIf="sortMode === 'location'">{{ sortIcon('location') }}</span>
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="loading" class="loading-state">
+              <span class="material-icons spin">sync</span>
+            </div>
+
+            <div class="events-list-stack" *ngIf="!loading">
+              <a
+                *ngFor="let e of events; trackBy: trackByEvent"
+                class="desktop-event-row"
+                [routerLink]="['/events', e.slug]"
+              >
+                <div class="desktop-event-row__image-wrap">
+                  <img [src]="e.previewImageUrl" [alt]="e.name" loading="lazy" />
+                  <span class="event-card__type-badge">{{ e.type.name }}</span>
+                </div>
+                <div class="desktop-event-row__body">
+                  <h3 class="desktop-event-row__name">{{ e.name }}</h3>
+                  <div class="desktop-event-row__meta">
+                    <span>
+                      <span class="material-icons">calendar_today</span>
+                      {{ formatDate(e.startDatetime) }}
+                    </span>
+                    <span>
+                      <span class="material-icons">schedule</span>
+                      {{ formatTime(e.startDatetime) }} – {{ formatTime(e.endDatetime) }}
+                    </span>
+                    <span>
+                      <span class="material-icons">location_on</span>
+                      {{ e.address || e.city.name }}
+                    </span>
+                  </div>
+                </div>
+                <div class="desktop-event-row__right">
+                  <span class="desktop-event-row__price" *ngIf="e.price">{{ e.price | number }} RSD</span>
+                  <span class="desktop-event-row__price free" *ngIf="!e.price">Besplatno</span>
+                  <span class="details-btn">{{ 'EVENTS.DETAILS' | translate }}</span>
+                </div>
+              </a>
+
+              <div *ngIf="events.length === 0" class="empty-state">
+                <span class="material-icons">event_busy</span>
+                <p>{{ 'EVENTS.NO_EVENTS' | translate }}</p>
+              </div>
+            </div>
+
+            <!-- Load more indicator -->
+            <div *ngIf="loadingMore" class="loading-more">
+              <span class="material-icons spin">sync</span>
+            </div>
+          </section>
+        </div>
+
+      </div>
+
+      <app-detail-footer />
+    </div>
+
+  </main>
+
+  <app-bottom-nav />
+</div>

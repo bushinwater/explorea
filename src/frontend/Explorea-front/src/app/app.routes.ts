@@ -15,11 +15,13 @@ import { VerifyEmail } from './features/auth/verify-email/verify-email';
 import { Home } from './features/home/home';
 import { Explore } from './features/explore/explore';
 import { Settings } from './features/profile/settings/settings';
+import { EventsListPage } from './features/events/events-list/events-list';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', component: Home },
   { path: 'explore', component: Explore },
+  { path: 'events', component: EventsListPage },
   { path: 'activities/:slug', component: ActivityDetailComponent },
   { path: 'places/:slug', component: PlaceDetailComponent },
   { path: 'destinations/:slug', component: DestinationDetailComponent },

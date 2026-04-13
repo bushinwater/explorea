@@ -35,6 +35,9 @@ export interface EventCard {
   city: City;
   previewImageUrl: string;
   isFeatured: boolean;
+  popularity?: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface ActivityCard {
