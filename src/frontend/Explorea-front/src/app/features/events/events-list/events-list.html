@@ -83,7 +83,6 @@
             <span class="material-icons sort-dir-icon" *ngIf="sortMode === 'popularity'">{{ sortIcon('popularity') }}</span>
           </button>
           <button class="sort-btn" [class.active]="sortMode === 'location'"
-            [disabled]="!locationAvailable"
             (mousedown)="$event.preventDefault()" (click)="setSortMode('location')">
             <span class="material-icons">near_me</span>
             {{ 'EVENTS.SORT_LOCATION' | translate }}
@@ -392,4 +391,24 @@
   </main>
 
   <app-bottom-nav />
+
+  <!-- Location permission modal -->
+  <div class="location-modal-backdrop" *ngIf="showLocationModal" (click)="dismissLocationModal()">
+    <div class="location-modal" (click)="$event.stopPropagation()">
+      <div class="location-modal__icon">
+        <span class="material-icons">location_off</span>
+      </div>
+      <h3 class="location-modal__title">{{ 'EVENTS.LOCATION_MODAL_TITLE' | translate }}</h3>
+      <p class="location-modal__text">{{ 'EVENTS.LOCATION_MODAL_TEXT' | translate }}</p>
+      <div class="location-modal__actions">
+        <button class="location-modal__cancel" (click)="dismissLocationModal()">
+          {{ 'EVENTS.LOCATION_MODAL_CANCEL' | translate }}
+        </button>
+        <button class="location-modal__enable" (click)="enableLocationFromModal()">
+          <span class="material-icons">my_location</span>
+          {{ 'EVENTS.LOCATION_MODAL_ENABLE' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

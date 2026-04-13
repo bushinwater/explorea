@@ -74,6 +74,8 @@
       "PASSWORD_DESC": "Last changed 3 months ago. We recommend changing it regularly.",
       "CHANGE_PASSWORD": "Change password",
       "PASSWORD_EMAIL_SENT": "We sent a password reset link to your email.",
+      "LOCATION": "Share location",
+      "LOCATION_DESC": "Used for sorting events and personalized recommendations. Last known position stays saved.",
       "INTERESTS": "Interests",
       "EDIT_INTERESTS": "Edit interests"
     },
@@ -601,6 +603,10 @@
     "AI_BOX_CTA": "Learn more",
     "SORT_DATE": "By date",
     "SORT_POPULARITY": "By popularity",
-    "SORT_LOCATION": "Nearest first"
+    "SORT_LOCATION": "Nearest first",
+    "LOCATION_MODAL_TITLE": "Location unavailable",
+    "LOCATION_MODAL_TEXT": "Enable location sharing to sort events by distance from your current position.",
+    "LOCATION_MODAL_CANCEL": "Cancel",
+    "LOCATION_MODAL_ENABLE": "Enable location"
   }
 }

@@ -11,6 +11,7 @@ import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 import { EventCard } from '../../../shared/components/event-card/event-card';
 import { DetailFooter } from '../../../shared/components/detail-footer/detail-footer';
 import { EventService } from '../../../core/services/event.service';
+import { LocationService } from '../../../core/services/location.service';
 import {
   EventCard as EventCardModel,
   EventType,
@@ -22,7 +23,6 @@ type QuickFilter = 'all' | 'today' | 'weekend' | 'free';
 type MobileView  = 'list' | 'calendar';
 type SortMode    = 'date' | 'location' | 'popularity';
 
-const LOCATION_KEY = 'user_location';
 const PAGE_SIZE = 15;
 
 @Component({
@@ -56,6 +56,7 @@ export class EventsListPage implements OnInit, OnDestroy {
   private userLat: number | null = null;
   private userLng: number | null = null;
   locationAvailable = false;
+  showLocationModal = false;
 
   viewDate: Date = new Date(2026, 6, 1);
   selectedDate: Date | null = null;
@@ -69,6 +70,7 @@ export class EventsListPage implements OnInit, OnDestroy {
 
   constructor(
     private eventService: EventService,
+    private locationService: LocationService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -105,20 +107,17 @@ export class EventsListPage implements OnInit, OnDestroy {
   // ─── Data ─────────────────────────────────────────────────────
 
   private loadUserLocation(): void {
-    // Try localStorage first (set for guests by LocationService)
-    try {
-      const raw = localStorage.getItem(LOCATION_KEY);
-      if (raw) {
-        const { lat, lng } = JSON.parse(raw) as { lat: number; lng: number };
-        this.userLat = lat;
-        this.userLng = lng;
-        this.locationAvailable = true;
-        return;
-      }
-    } catch { /* ignore */ }
+    if (!this.locationService.isEnabled()) return;
 
-    // Fallback: logged-in users have location sent to backend, not stored locally.
-    // Ask the browser directly (no prompt if already granted).
+    const cached = this.locationService.getCached();
+    if (cached) {
+      this.userLat = cached.lat;
+      this.userLng = cached.lng;
+      this.locationAvailable = true;
+      return;
+    }
+
+    // Cache miss — ask browser (no new prompt if permission already granted)
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -127,12 +126,10 @@ export class EventsListPage implements OnInit, OnDestroy {
           this.locationAvailable = true;
           if (this.sortMode === 'location') {
             this.applyFilters();
-            this.cdr.detectChanges();
-          } else {
-            this.cdr.detectChanges();
           }
+          this.cdr.detectChanges();
         },
-        () => { /* denied or unavailable */ },
+        () => { /* denied */ },
         { timeout: 5000, maximumAge: 60_000 },
       );
     }
@@ -288,6 +285,11 @@ export class EventsListPage implements OnInit, OnDestroy {
   }
 
   setSortMode(mode: SortMode): void {
+    if (mode === 'location' && !this.locationAvailable) {
+      this.showLocationModal = true;
+      this.cdr.detectChanges();
+      return;
+    }
     if (this.sortMode === mode) {
       this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
     } else {
@@ -295,6 +297,30 @@ export class EventsListPage implements OnInit, OnDestroy {
       this.sortDir = 'asc';
     }
     this.applyFilters();
+    this.cdr.detectChanges();
+  }
+
+  enableLocationFromModal(): void {
+    this.showLocationModal = false;
+    this.locationService.enable();
+    if (!navigator.geolocation) { this.cdr.detectChanges(); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        this.userLat = pos.coords.latitude;
+        this.userLng = pos.coords.longitude;
+        this.locationAvailable = true;
+        this.sortMode = 'location';
+        this.sortDir = 'asc';
+        this.applyFilters();
+        this.cdr.detectChanges();
+      },
+      () => { this.cdr.detectChanges(); },
+      { timeout: 8000 },
+    );
+  }
+
+  dismissLocationModal(): void {
+    this.showLocationModal = false;
     this.cdr.detectChanges();
   }
 

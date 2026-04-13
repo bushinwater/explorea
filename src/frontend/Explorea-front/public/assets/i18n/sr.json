@@ -74,6 +74,8 @@
       "PASSWORD_DESC": "Poslednja promena pre 3 meseca. Preporučujemo redovnu promenu.",
       "CHANGE_PASSWORD": "Promeni lozinku",
       "PASSWORD_EMAIL_SENT": "Poslali smo ti link za promenu lozinke na email.",
+      "LOCATION": "Deli lokaciju",
+      "LOCATION_DESC": "Koristi se za sortiranje događaja i personalizovane preporuke. Poslednja poznata pozicija ostaje sačuvana.",
       "INTERESTS": "Interesovanja",
       "EDIT_INTERESTS": "Izmeni interesovanja"
     },
@@ -601,6 +603,10 @@
     "AI_BOX_CTA": "Saznaj više",
     "SORT_DATE": "Po datumu",
     "SORT_POPULARITY": "Po popularnosti",
-    "SORT_LOCATION": "Po lokaciji"
+    "SORT_LOCATION": "Po lokaciji",
+    "LOCATION_MODAL_TITLE": "Lokacija nije dostupna",
+    "LOCATION_MODAL_TEXT": "Uključi deljenje lokacije kako bi eventi bili sortirani po udaljenosti od tvoje trenutne pozicije.",
+    "LOCATION_MODAL_CANCEL": "Odustani",
+    "LOCATION_MODAL_ENABLE": "Uključi lokaciju"
   }
 }

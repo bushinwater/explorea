@@ -819,3 +819,106 @@
 }
 
 .details-btn:hover { opacity: 0.85; }
+
+/* ══════════════════════════════════════
+   LOCATION MODAL
+   ══════════════════════════════════════ */
+
+.location-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+}
+
+.location-modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl) var(--spacing-lg);
+  max-width: 360px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+}
+
+.location-modal__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.location-modal__icon .material-icons {
+  font-size: 28px;
+  color: var(--color-primary);
+}
+
+.location-modal__title {
+  font-size: 1.05rem;
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-heading);
+  color: var(--color-text-primary);
+  text-align: center;
+  margin: 0;
+}
+
+.location-modal__text {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  text-align: center;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.location-modal__actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: var(--spacing-xs);
+}
+
+.location-modal__cancel {
+  padding: 9px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-small);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.location-modal__cancel:hover { background: var(--color-border); }
+
+.location-modal__enable {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.location-modal__enable:hover { opacity: 0.88; }
+
+.location-modal__enable .material-icons { font-size: 18px; }

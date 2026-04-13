@@ -11,6 +11,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { AvatarService } from '../../../core/services/avatar.service';
 import { InterestsService } from '../../../core/services/interests.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { LocationService } from '../../../core/services/location.service';
 import { ProfileService } from '../../../core/services/profile.service';
 import { ThemeService } from '../../../core/services/theme.service';
 import { UserService } from '../../../core/services/user.service';
@@ -81,6 +82,7 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
     private router: Router,
     public themeService: ThemeService,
     public languageService: LanguageService,
+    public locationService: LocationService,
     private interestsService: InterestsService,
     private avatarService: AvatarService,
     private cdr: ChangeDetectorRef,
@@ -309,6 +311,15 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  toggleLocation(): void {
+    if (this.locationService.isEnabled()) {
+      this.locationService.disable();
+    } else {
+      this.locationService.enable();
+    }
+    this.cdr.detectChanges();
   }
 
   toggleNewsletter() {
