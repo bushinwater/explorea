@@ -1,4 +1,21 @@
 {
+  "COMMON": {
+    "ERROR_GENERIC": "Nešto nije u redu. Molimo pokušajte ponovo."
+  },
+  "REVIEW_MODAL": {
+    "TITLE": "Napiši recenziju",
+    "RATING_LABEL": "Vaša ocena",
+    "COMMENT_LABEL": "Vaša recenzija (opcionalno)",
+    "COMMENT_PLACEHOLDER": "Podelite svoje iskustvo...",
+    "CANCEL": "Otkaži",
+    "SUBMIT": "Pošalji",
+    "ERROR_ALREADY": "Već ste poslali recenziju za ovo.",
+    "STARS_1": "Loše",
+    "STARS_2": "Solidno",
+    "STARS_3": "Dobro",
+    "STARS_4": "Vrlo dobro",
+    "STARS_5": "Odlično"
+  },
   "SIDEBAR": {
     "HOME": "Početna",
     "EXPLORE": "Istraži mapu",
@@ -14,22 +31,53 @@
   "SETTINGS_PAGE": {
     "TITLE": "Profil & Podešavanja",
     "SUBTITLE": "Upravljaj svojim nalogom, preferencijama i privatnošću na Explorea platformi.",
+    "SETTINGS_LABEL": "Podešavanja",
     "STATS": {
       "ADVENTURES": "AVANTURE",
       "REVIEWS": "RECENZIJE",
       "SAVED": "SAČUVANO"
     },
     "MEMBER_SINCE": "Član od",
+    "TABS": {
+      "SAVED": "Sačuvano",
+      "SAVED_DESC": "Pregledaj sačuvane destinacije i aktivnosti.",
+      "REVIEWS": "Moje recenzije",
+      "REVIEWS_DESC": "Pregledaj i upravljaj svojim recenzijama."
+    },
+    "ACTIVITIES": {
+      "TITLE": "Preporučeno za tebe",
+      "VIEW_ALL": "Sve aktivnosti"
+    },
+    "PROFILE_SETTINGS": {
+      "TITLE": "Podešavanja profila",
+      "SUBTITLE": "Ažuriraj ime, fotografiju i lozinku."
+    },
+    "APP_SETTINGS": {
+      "TITLE": "Podešavanja aplikacije",
+      "SUBTITLE": "Tema, jezik i ostale preferencije."
+    },
     "ACCOUNT": {
       "TITLE": "Informacije o nalogu",
       "SUBTITLE": "Ažuriraj svoje lične podatke i sigurnosna podešavanja.",
+      "PROFILE_PICTURE": "Profilna fotografija",
+      "PROFILE_PICTURE_DESC": "Prikazuje se na tvojim recenzijama i profilu.",
+      "UPLOAD_PHOTO": "Dodaj fotografiju",
+      "FIRST_NAME": "Ime",
+      "LAST_NAME": "Prezime",
       "USERNAME": "Korisničko ime",
       "USERNAME_DESC": "Ovo ime će biti vidljivo na tvojim recenzijama i postovima.",
       "EMAIL": "Email adresa",
       "EMAIL_DESC": "Primarna adresa za obaveštenja i potvrde rezervacija.",
+      "NEWSLETTER": "Newsletter",
+      "NEWSLETTER_DESC": "Primaj najnovije vesti o destinacijama i događajima.",
       "PASSWORD": "Lozinka",
       "PASSWORD_DESC": "Poslednja promena pre 3 meseca. Preporučujemo redovnu promenu.",
-      "CHANGE_PASSWORD": "Promeni lozinku"
+      "CHANGE_PASSWORD": "Promeni lozinku",
+      "PASSWORD_EMAIL_SENT": "Poslali smo ti link za promenu lozinke na email.",
+      "LOCATION": "Deli lokaciju",
+      "LOCATION_DESC": "Koristi se za sortiranje događaja i personalizovane preporuke. Poslednja poznata pozicija ostaje sačuvana.",
+      "INTERESTS": "Interesovanja",
+      "EDIT_INTERESTS": "Izmeni interesovanja"
     },
     "NOTIFICATIONS": {
       "TITLE": "Obaveštenja",
@@ -105,11 +153,460 @@
       "COPY": "© 2025 Explorea · Turistički vodič Srbije"
     }
   },
+  "ACTIVITY_DETAIL": {
+    "BACK": "Aktivnost",
+    "REVIEWS_COUNT": "recenzija",
+    "FREE": "Besplatno",
+    "STATS": {
+      "DURATION": "TRAJANJE",
+      "DISTANCE": "DUŽINA",
+      "ELEVATION": "USPON",
+      "TRAIL_TYPE": "TIP STAZE",
+      "DIFFICULTY": "TEŽINA"
+    },
+    "ABOUT": "O aktivnosti",
+    "INCLUDED": {
+      "TITLE": "Šta je uključeno"
+    },
+    "PACKING": {
+      "TITLE": "Šta poneti",
+      "SUBTITLE": "Označite stavke koje ste već spakovali",
+      "ITEMS": {
+        "BOOTS": "Planinske cipele (Gore-Tex)",
+        "SNACKS": "Energetske barove/užinu",
+        "WATER": "Voda (minimum 2.5L)",
+        "POLES": "Planinarske štapove"
+      }
+    },
+    "MAP": {
+      "TITLE": "Mapa rute",
+      "OPEN": "Otvori interaktivnu mapu"
+    },
+    "ORGANIZER_LINK": "Poseti sajt organizatora",
+    "REVIEWS": {
+      "TITLE": "Recenzije",
+      "EMPTY": "Još nema recenzija. Budite prvi koji će podeliti iskustvo!",
+      "WRITE": "Napiši recenziju",
+      "ALREADY_REVIEWED": "Već ste recenzirali ovu aktivnost",
+      "ALL_PANEL_TITLE": "Sve recenzije",
+      "FORM": {
+        "TITLE": "Napiši recenziju",
+        "RATING_LABEL": "Vaša ocena",
+        "COMMENT_LABEL": "Vaša recenzija (opcionalno)",
+        "COMMENT_PLACEHOLDER": "Podelite svoje iskustvo...",
+        "CANCEL": "Otkaži",
+        "SUBMIT": "Pošalji",
+        "ERROR_ALREADY": "Već ste poslali recenziju za ovu aktivnost.",
+        "STARS_1": "Loše",
+        "STARS_2": "Može",
+        "STARS_3": "Dobro",
+        "STARS_4": "Vrlo dobro",
+        "STARS_5": "Odlično"
+      }
+    },
+    "SIMILAR": {
+      "TITLE": "Slične aktivnosti",
+      "VIEW_ALL": "Pogledaj sve",
+      "ALL_PANEL_TITLE": "Slične aktivnosti",
+      "FROM": "Od"
+    },
+    "BOOK": {
+      "LABEL": "CENA PO OSOBI",
+      "PRICE_LABEL": "Cena po osobi",
+      "FIXED": "fiksno",
+      "DATE_LABEL": "DATUM POLASKA",
+      "DATE_PLACEHOLDER": "Izaberi datum",
+      "PERSONS_LABEL": "BROJ OSOBA",
+      "TOUR_LABEL": "Obilazak",
+      "EQUIPMENT": "Oprema (iznajmljivanje)",
+      "INCLUDED": "Uključeno",
+      "TOTAL": "Ukupno",
+      "CTA": "Rezerviši odmah",
+      "DISCLAIMER": "Klikom na dugme potvrđujete da se slažete sa našim uslovima korišćenja i politikom otkazivanja."
+    }
+  },
   "BOTTOM_NAV": {
     "HOME": "Početna",
     "EXPLORE": "Istraži",
     "SEARCH": "Pretraži",
     "EVENTS": "Događaji",
     "PROFILE": "Profil"
+  },
+  "LOGIN": {
+    "TITLE": "Dobrodošli nazad",
+    "SUBTITLE": "Prijavite se kako biste nastavili sa planiranjem svog sledećeg putovanja.",
+    "NOTICE": "Morate biti prijavljeni da biste pristupili ovoj stranici.",
+    "EMAIL": "Email adresa",
+    "PASSWORD": "Lozinka",
+    "FORGOT_PASSWORD": "Zaboravljena lozinka?",
+    "SUBMIT": "Prijavi se",
+    "OR": "ILI NASTAVITE PUTEM",
+    "GOOGLE": "Google",
+    "FACEBOOK": "Facebook",
+    "NO_ACCOUNT": "Nemate nalog?",
+    "REGISTER": "Registrujte se",
+    "GUEST": "Nastavi bez naloga",
+    "ERROR": "Pogrešan email ili lozinka.",
+    "ERROR_EMAIL_EMPTY": "Email adresa je obavezna.",
+    "ERROR_EMAIL_INVALID": "Unesite ispravnu email adresu.",
+    "ERROR_NOT_VERIFIED": "Molimo vas da verifikujete email pre prijave.",
+    "RESEND": "Ponovo pošalji email",
+    "RESEND_SENT": "Email je poslat!"
+  },
+  "REGISTER": {
+    "TITLE": "Kreiraj nalog",
+    "SUBTITLE": "Pridruži se i istraži najbolje destinacije, događaje i aktivnosti.",
+    "FULL_NAME": "Ime i prezime",
+    "NAME_PLACEHOLDER": "Unesite vaše ime",
+    "FIRST_NAME": "Ime",
+    "FIRST_NAME_PLACEHOLDER": "Unesite vaše ime",
+    "LAST_NAME": "Prezime",
+    "LAST_NAME_PLACEHOLDER": "Unesite vaše prezime",
+    "EMAIL": "Email adresa",
+    "EMAIL_PLACEHOLDER": "vas@email.com",
+    "PASSWORD": "Lozinka",
+    "CONFIRM_PASSWORD": "Potvrdi lozinku",
+    "GENDER": "Pol",
+    "GENDER_PLACEHOLDER": "Izaberi pol",
+    "GENDER_MALE": "Muški",
+    "GENDER_FEMALE": "Ženski",
+    "GENDER_OTHER": "Ostalo",
+    "GENDER_PREFER_NOT": "Ne želim da navedem",
+    "DATE_OF_BIRTH": "Datum rođenja",
+    "TERMS": "Prihvatam",
+    "TERMS_LINK": "Uslove korišćenja",
+    "AND": "i",
+    "PRIVACY_LINK": "Politiku privatnosti",
+    "SUBMIT": "Registruj se",
+    "OR": "ILI SE REGISTRUJ PREKO",
+    "HAVE_ACCOUNT": "Već imaš nalog?",
+    "LOGIN": "Prijavi se",
+    "ERROR_TERMS": "Morate prihvatiti uslove korišćenja.",
+    "ERROR_PASSWORD": "Lozinke se ne poklapaju.",
+    "ERROR_PASSWORD_WEAK": "Lozinka mora imati najmanje 6 karaktera i sadržati najmanje jedan broj.",
+    "PASSWORD_HINT_TITLE": "Zahtevi za lozinku:",
+    "PASSWORD_HINT_MIN": "Najmanje 6 karaktera",
+    "PASSWORD_HINT_NUMBER": "Najmanje jedan broj (0–9)",
+    "ERROR_GENERAL": "Registracija nije uspela. Pokušajte ponovo.",
+    "ERROR_NAME_EMPTY": "Ime je obavezno.",
+    "ERROR_NAME_INVALID": "Dozvoljena su samo slova.",
+    "ERROR_NAME_BLACKLIST": "Ovo ime nije dozvoljeno.",
+    "ERROR_GENDER_EMPTY": "Molimo izaberite pol.",
+    "ERROR_DOB_EMPTY": "Datum rođenja je obavezan.",
+    "ERROR_DOB_INVALID": "Unesite ispravan datum rođenja.",
+    "ERROR_EMAIL_TAKEN": "Nalog sa ovim emailom već postoji.",
+    "MODAL_ACCEPT": "Razumem i prihvatam",
+    "VERIFY_TITLE": "Proverite email",
+    "VERIFY_DESC": "Poslali smo vam link za verifikaciju na {{ email }}. Kliknite na link da aktivirate nalog.",
+    "VERIFY_NO_EMAIL": "Niste dobili email?",
+    "LEGAL": {
+      "TERMS_S1_TITLE": "1. Prihvatanje uslova",
+      "TERMS_S1_BODY": "Korišćenjem platforme Explorea prihvatate ove uslove korišćenja. Ako se ne slažete, molimo vas da ne koristite platformu.",
+      "TERMS_S2_TITLE": "2. Korisnički nalog",
+      "TERMS_S2_BODY": "Odgovorni ste za tačnost podataka koje unosite prilikom registracije. Nije dozvoljeno kreirati nalog u ime drugog lica bez njihovog pristanka.",
+      "TERMS_S3_TITLE": "3. Ponašanje korisnika",
+      "TERMS_S3_BODY": "Zabranjeno je objavljivanje uvredljivih, lažnih ili štetnih sadržaja. Explorea zadržava pravo uklanjanja sadržaja koji krši ova pravila.",
+      "TERMS_S4_TITLE": "4. Intelektualna svojina",
+      "TERMS_S4_BODY": "Svi sadržaji na platformi (logotipi, opisi, fotografije) zaštićeni su autorskim pravima. Nije dozvoljeno njihovo kopiranje bez pisane dozvole.",
+      "TERMS_S5_TITLE": "5. Izmene uslova",
+      "TERMS_S5_BODY": "Explorea zadržava pravo izmene ovih uslova. O značajnim promenama korisnici će biti obavešteni putem e-maila.",
+      "PRIVACY_S1_TITLE": "1. Koje podatke prikupljamo",
+      "PRIVACY_S1_BODY": "Prikupljamo ime, prezime, e-mail adresu i sliku profila. Opcionalno, beležimo interesovanja i istoriju poseta destinacija.",
+      "PRIVACY_S2_TITLE": "2. Kako koristimo podatke",
+      "PRIVACY_S2_BODY": "Vaši podaci koriste se isključivo za personalizaciju iskustva, slanje relevantnih obaveštenja i poboljšanje platforme. Ne prodajemo vaše podatke trećim stranama.",
+      "PRIVACY_S3_TITLE": "3. Čuvanje podataka",
+      "PRIVACY_S3_BODY": "Podaci se čuvaju na sigurnim serverima i zadržavaju se dok vaš nalog postoji. Po brisanju naloga, podaci se uklanjaju u roku od 30 dana.",
+      "PRIVACY_S4_TITLE": "4. Kolačići",
+      "PRIVACY_S4_BODY": "Koristimo kolačiće za autentifikaciju i analizu poseta. Možete ih onemogućiti u podešavanjima pregledača, ali to može ograničiti funkcionalnost.",
+      "PRIVACY_S5_TITLE": "5. Vaša prava",
+      "PRIVACY_S5_BODY": "Imate pravo na uvid, ispravku i brisanje vaših podataka. Zahtev možete poslati na kontakt@explorea.rs."
+    }
+  },
+  "COMPLETE_PROFILE": {
+    "TITLE": "Završi profil",
+    "SUBTITLE": "Potrebne su nam još neke informacije da bismo personalizovali tvoje iskustvo.",
+    "SUBMIT": "Nastavi"
+  },
+  "FORGOT_PASSWORD": {
+    "TITLE": "Zaboravili ste lozinku?",
+    "SUBTITLE": "Unesite vašu email adresu i poslaćemo vam link za resetovanje lozinke.",
+    "SUBMIT": "Pošalji link",
+    "BACK_TO_LOGIN": "Nazad na prijavu",
+    "SENT_TITLE": "Proverite email",
+    "SENT_DESC": "Poslali smo link za resetovanje lozinke na {{ email }}. Link ističe za 1 sat."
+  },
+  "RESET_PASSWORD": {
+    "TITLE": "Postavi novu lozinku",
+    "SUBTITLE": "Unesite vašu novu lozinku ispod.",
+    "NEW_PASSWORD": "Nova lozinka",
+    "CONFIRM_PASSWORD": "Potvrdi novu lozinku",
+    "SUBMIT": "Sačuvaj novu lozinku",
+    "BACK_TO_LOGIN": "Nazad na prijavu",
+    "SUCCESS_TITLE": "Lozinka promenjena",
+    "SUCCESS_DESC": "Vaša lozinka je uspešno promenjena.",
+    "SUCCESS_REDIRECT": "Uskoro ćete biti preusmereni na stranicu za prijavu.",
+    "ERROR_PASSWORD_WEAK": "Lozinka mora imati najmanje 6 karaktera i sadržati najmanje jedan broj.",
+    "PASSWORD_HINT_TITLE": "Zahtevi za lozinku:",
+    "PASSWORD_HINT_MIN": "Najmanje 6 karaktera",
+    "PASSWORD_HINT_NUMBER": "Najmanje jedan broj (0–9)",
+    "ERROR_MISMATCH": "Lozinke se ne poklapaju.",
+    "ERROR_TOKEN": "Link za resetovanje je nevažeći ili je istekao.",
+    "ERROR_EMPTY": "Lozinka je obavezna.",
+    "ERROR_TOO_SHORT": "Lozinka mora imati najmanje 8 karaktera.",
+    "ERROR_SAME_PASSWORD": "Nova lozinka mora biti različita od trenutne.",
+    "ERROR_EXPIRED": "Link za resetovanje je istekao. Zatražite novi.",
+    "ERROR_INVALID_LINK": "Link za resetovanje je nevažeći.",
+    "ERROR_GENERAL": "Nešto nije uredu. Pokušajte ponovo.",
+    "STRENGTH": {
+      "WEAK": "Slaba",
+      "FAIR": "Srednja",
+      "STRONG": "Jaka"
+    }
+  },
+  "VERIFY_EMAIL": {
+    "LOADING_TITLE": "Verifikacija emaila...",
+    "LOADING_DESC": "Molimo pričekajte trenutak.",
+    "SUCCESS_TITLE": "Email verifikovan",
+    "SUCCESS_DESC": "Vaš nalog je aktivan. Možete se prijaviti.",
+    "ERROR_TITLE": "Verifikacija neuspešna",
+    "ERROR_DESC": "Link je nevažeći ili je već iskorišćen.",
+    "GO_BACK": "Idi na prijavu"
+  },
+  "PLACE_DETAIL": {
+    "PAGE_TITLE": "Detalji objekta",
+    "SHARE": "Deli",
+    "SAVE": "Sačuvaj",
+    "OPEN_NOW": "Otvoreno sada",
+    "CLOSED": "Zatvoreno",
+    "ABOUT": "O ovom objektu",
+    "HOST_PREFIX": "Smeštaj kod domaćina",
+    "SHOW_MORE": "Prikaži više",
+    "SHOW_LESS": "Prikaži manje",
+    "WHAT_OFFERS": "Šta ovaj smeštaj nudi",
+    "HOUSE_RULES": "Pravila kuće",
+    "LOCATION": "Lokacija",
+    "OPEN_MAPS": "Otvori u Google Mapama",
+    "SIMILAR": "Možda će vam se svideti i ovo",
+    "PLAN_VISIT": "Planirate posetu?",
+    "DATE": "DATUM",
+    "TODAY": "Danas",
+    "PERSONS": "OSOBE",
+    "ADULTS": "Odrasle",
+    "CHECK_AVAILABILITY": "Proveri raspoloživost",
+    "NO_EVENTS": "Nema događaja u blizini.",
+    "NO_REVIEWS": "Još nema recenzija za ovaj objekat.",
+    "BREADCRUMB": {
+      "HOME": "Početna"
+    },
+    "GALLERY": {
+      "MORE": "slika"
+    },
+    "TABS": {
+      "DETAILS": "Detaljne informacije",
+      "EVENTS": "Događaji u blizini",
+      "REVIEWS": "Recenzije",
+      "ABOUT": "O objektu",
+      "EVENTS_MOBILE": "Događaji"
+    },
+    "RULES": {
+      "CHECK_IN": "Prijava",
+      "CHECK_OUT": "Odjava",
+      "PETS": "Ljubimci",
+      "PETS_VALUE": "Dozvoljeni na zahtev",
+      "SMOKING": "Pušenje",
+      "SMOKING_VALUE": "Samo na terasi"
+    },
+    "AMENITIES": {
+      "WIFI": "Besplatan Wi-Fi",
+      "PARKING": "Parking",
+      "POOL": "Bazen",
+      "BREAKFAST": "Doručak",
+      "SECURITY": "Sigurnost 24/7",
+      "RESTAURANT": "Restoran"
+    },
+    "OFFERS": {
+      "BALCONY": "Privatni balkon sa pogledom",
+      "AC": "Klima uređaj u svakoj sobi",
+      "TV": "Smart TV sa kablovskim kanalima",
+      "COFFEE": "Aparat za kafu (Nespresso)",
+      "MINIBAR": "Mini-bar sa lokalnim vinima"
+    },
+    "BOOK": {
+      "PER_NIGHT": "noć",
+      "SELECT_DATES": "Izaberite datum i broj gostiju",
+      "ARRIVAL": "PRIJAVA",
+      "DEPARTURE": "ODJAVA",
+      "GUESTS": "GOSTI",
+      "NIGHTS": "noćenja",
+      "SERVICE_FEE": "Taksa za usluge",
+      "TOTAL": "Ukupno",
+      "CTA": "Rezerviši odmah",
+      "NO_CHARGE": "Još uvek vam nećemo naplatiti",
+      "SAFE_TITLE": "Sigurna rezervacija",
+      "SAFE_CANCEL": "Besplatno otkazivanje do 48h pre prijave.",
+      "SAFE_NO_FEES": "Bez skrivenih troškova i dodatnih taksi.",
+      "SAFE_SSL": "Vaši podaci su zaštićeni SSL enkripcijom.",
+      "VIEWS_PREFIX": "Ovaj objekat je pregledan",
+      "VIEWS_SUFFIX": "puta u poslednjih 24 sata"
+    },
+    "FOOTER": {
+      "RIGHTS": "Sva prava zadržana.",
+      "TERMS": "Uslovi korišćenja",
+      "PRIVACY": "Privatnost",
+      "HELP": "Pomoć"
+    }
+  },
+  "PLACE_CARD": {
+    "PER_NIGHT": "/ noć"
+  },
+  "EXPLORE": {
+    "TITLE": "Istraži",
+    "SEARCH": {
+      "PLACEHOLDER": "Unesite lokaciju ili naziv destinacije...",
+      "PLACEHOLDER_MOBILE": "Pretraži lokacije, destinacije...",
+      "SHOW_FILTERS": "Prikaži filtere",
+      "HIDE_FILTERS": "Sakrij filtere"
+    },
+    "FILTERS": {
+      "TITLE": "Filteri Istraživanja",
+      "BADGE": "{{count}} filtera",
+      "ALL": "Sve",
+      "LOCATION": "Lokacija",
+      "NEARBY_ONLY": "Samo u blizini",
+      "LOCATION_UNAVAILABLE": "Lokacija nije dostupna",
+      "RADIUS": "Radijus pretrage",
+      "TYPE": "Tip",
+      "HOURS_RATINGS": "Radno Vreme i Ocene",
+      "OPEN_NOW": "Otvoreno sada",
+      "MIN_RATING": "Minimalna ocena",
+      "RESET": "Poništi filtere",
+      "APPLY": "Primeni filtere",
+      "CLOSE": "Zatvori"
+    },
+    "ENTITY_TYPES": {
+      "DESTINATIONS": "Destinacije",
+      "PLACES": "Objekti",
+      "ACTIVITIES": "Aktivnosti",
+      "EVENTS": "Događaji"
+    },
+    "ENTITY_LABELS": {
+      "DESTINATION": "Destinacija",
+      "PLACE": "Objekat",
+      "ACTIVITY": "Aktivnost",
+      "EVENT": "Događaj"
+    },
+    "SHEET": {
+      "LOADING": "Učitavanje...",
+      "RESULTS": "{{count}} rezultata",
+      "ZOOM_HINT": "Zumirajte za više rezultata",
+      "SWIPE_UP": "Prevucite na gore za listu",
+      "SWIPE_DOWN": "Prevucite na dole za zatvaranje"
+    },
+    "PIN": {
+      "DETAILS": "Detalji",
+      "ROUTE": "Ruta"
+    },
+    "LOCATION_MODAL": {
+      "TITLE": "Lokacija nije dostupna",
+      "TEXT": "Za prikaz rute potrebna je tvoja trenutna lokacija. Dozvoli pristup lokaciji i pokušaj ponovo.",
+      "CANCEL": "Odustani",
+      "ENABLE": "Uključi lokaciju"
+    }
+  },
+  "DESTINATION_DETAIL": {
+    "LOADING": "Učitavanje detalja destinacije...",
+    "ABOUT": "O destinaciji",
+    "GALLERY": "Galerija fotografija",
+    "VIEW_ALL_IMAGES": "Pogledaj sve slike ({{count}})",
+    "LOCATION_AND_MAP": "Lokacija i mapa",
+    "OPEN_IN_GOOGLE_MAPS": "Otvori u Google Mapama",
+    "ROUTE": "Ruta",
+    "DETAILS": "Detalji",
+    "SHOW_ALL": "Prikaži sve",
+    "SHOW_ALL_COUNT": "Prikaži sve ({{count}})",
+    "ALL_PANEL": {
+      "PLACES": "Svi objekti",
+      "EVENTS": "Svi događaji",
+      "ACTIVITIES": "Sve aktivnosti",
+      "REVIEWS": "Sve recenzije"
+    },
+    "REVIEWS_COUNT": "recenzija",
+    "WRITE_REVIEW": "Napiši recenziju",
+    "REVIEW_FORM": {
+      "TITLE": "Napiši recenziju",
+      "RATING_LABEL": "Vaša ocena",
+      "COMMENT_LABEL": "Vaše iskustvo",
+      "COMMENT_PLACEHOLDER": "Podelite šta vam se svidelo ili nije svidelo na ovoj destinaciji...",
+      "CANCEL": "Otkaži",
+      "SUBMIT": "Objavi recenziju",
+      "STARS_1": "Loše",
+      "STARS_2": "Solidno",
+      "STARS_3": "Dobro",
+      "STARS_4": "Vrlo dobro",
+      "STARS_5": "Odlično",
+      "ALREADY_REVIEWED": "Već ste poslali recenziju za ovu destinaciju."
+    },
+    "EMPTY_TAB": "Trenutno nema dostupnih stavki za ovu sekciju.",
+    "EMPTY_REVIEWS": "Još nema recenzija za ovu destinaciju.",
+    "LOCATION_NOT_AVAILABLE": "Lokacija nije dostupna",
+    "META": {
+      "RATING": "Ocena",
+      "EVENT": "Događaj"
+    },
+    "ITEM_TYPES": {
+      "PLACE": "Objekat",
+      "EVENT": "Događaj",
+      "ACTIVITY": "Aktivnost"
+    },
+    "TABS": {
+      "PLACES": "Objekti",
+      "EVENTS": "Događaji",
+      "ACTIVITIES": "Aktivnosti",
+      "REVIEWS": "Recenzije"
+    },
+    "SECTIONS": {
+      "POPULAR_PLACES": "Popularni objekti",
+      "POPULAR_EVENTS": "Popularni događaji",
+      "POPULAR_ACTIVITIES": "Popularne aktivnosti",
+      "TRAVELER_REVIEWS": "Recenzije putnika",
+      "SIMILAR_DESTINATIONS": "Slične destinacije"
+    },
+    "ERRORS": {
+      "MISSING_SLUG": "Slug destinacije nije prosleđen.",
+      "LOAD_FAILED": "Greška pri učitavanju detalja destinacije."
+    }
+  },
+  "EVENTS": {
+    "TITLE": "Dogadjaji",
+    "DESKTOP_TITLE": "Dogadjaji & Manifestacije",
+    "DESKTOP_SUBTITLE": "Otkrij najbolje dogadjaje u tvojoj blizini.",
+    "SEARCH_PLACEHOLDER": "Pretrazi dogadjaje...",
+    "VIEW_LIST": "Lista",
+    "VIEW_CALENDAR": "Kalendar",
+    "FILTER_ALL": "Svi",
+    "THIS_MONTH": "Dogadjaji ovog meseca",
+    "NO_EVENTS": "Nema pronadjenih dogadjaja.",
+    "EVENTS_FOR_DATE": "Dogadjaji za",
+    "DESKTOP_RESULTS_TITLE": "Predstojeći dogadjaji",
+    "FOUND": "Pronadjeno {{count}} rezultata",
+    "DETAILS": "Detalji",
+    "SHOW_CALENDAR": "Prikaži kalendar",
+    "HIDE_CALENDAR": "Sakrij kalendar",
+    "QUICK_FILTERS": "BRZI FILTERI",
+    "QUICK_TODAY": "Danas",
+    "QUICK_WEEKEND": "Ovaj vikend",
+    "QUICK_FREE": "Besplatni ulaz",
+    "AI_BANNER_TITLE": "Predlog za vikend?",
+    "AI_BANNER_SUBTITLE": "Preporučujemo ti dogadjaje na osnovu tvojih interesovanja.",
+    "AI_BOX_TITLE": "Preporuka za tebe",
+    "AI_BOX_TEXT": "Na osnovu tvojih interesovanja za putovanje i kulturu, preporučujemo ti događaje u blizini.",
+    "AI_BOX_CTA": "Saznaj više",
+    "SORT_DATE": "Po datumu",
+    "SORT_POPULARITY": "Po popularnosti",
+    "SORT_LOCATION": "Po lokaciji",
+    "LOCATION_MODAL_TITLE": "Lokacija nije dostupna",
+    "LOCATION_MODAL_TEXT": "Uključi deljenje lokacije kako bi eventi bili sortirani po udaljenosti od tvoje trenutne pozicije.",
+    "LOCATION_MODAL_CANCEL": "Odustani",
+    "LOCATION_MODAL_ENABLE": "Uključi lokaciju"
   }
 }

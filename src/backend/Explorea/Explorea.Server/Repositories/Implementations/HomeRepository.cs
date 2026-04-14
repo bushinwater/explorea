@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Explorea.Server.Repositories.Implementations
 {
+  public record ReviewWithEntityDto(Review Review, string? EntityName, string? EntitySlug);
+
   public class HomeRepository : IHomeRepository
   {
     private readonly AppDbContext _db;
@@ -73,9 +75,9 @@ namespace Explorea.Server.Repositories.Implementations
           .ToListAsync();
     }
 
-    public async Task<List<Review>> GetTravelerReviewsAsync(int take)
+    public async Task<List<ReviewWithEntityDto>> GetTravelerReviewsAsync(int take)
     {
-      return await _db.Reviews
+      var reviews = await _db.Reviews
           .AsNoTracking()
           .Include(r => r.User)
           .Where(r => r.Comment != null && r.Comment != "")
@@ -83,6 +85,38 @@ namespace Explorea.Server.Repositories.Implementations
           .Take(take)
           .ToListAsync();
 
+      var result = new List<ReviewWithEntityDto>();
+
+      foreach (var r in reviews)
+      {
+        string? name = null;
+        string? slug = null;
+
+        if (r.EntityType == "activity")
+        {
+          var a = await _db.Activities.AsNoTracking().FirstOrDefaultAsync(x => x.Id == r.EntityId);
+          name = a?.Name; slug = a?.Slug;
+        }
+        else if (r.EntityType == "destination")
+        {
+          var d = await _db.Destinations.AsNoTracking().FirstOrDefaultAsync(x => x.Id == r.EntityId);
+          name = d?.Name; slug = d?.Slug;
+        }
+        else if (r.EntityType == "place")
+        {
+          var p = await _db.Places.AsNoTracking().FirstOrDefaultAsync(x => x.Id == r.EntityId);
+          name = p?.Name; slug = p?.Slug;
+        }
+        else if (r.EntityType == "event")
+        {
+          var e = await _db.Events.AsNoTracking().FirstOrDefaultAsync(x => x.Id == r.EntityId);
+          name = e?.Name; slug = e?.Slug;
+        }
+
+        result.Add(new ReviewWithEntityDto(r, name, slug));
+      }
+
+      return result;
     }
 
     public async Task<List<Event>> GetUpcomingEventsAsync(DateTimeOffset now, int take)

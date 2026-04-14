@@ -17,5 +17,8 @@ namespace Explorea.Server.Repositories.Interfaces
         Task<EmailVerification> CreateEmailVerificationAsync(EmailVerification verification);
         Task<EmailVerification?> GetEmailVerificationAsync(string tokenHash);
         Task MarkEmailVerifiedAsync(string tokenHash);
+
+        Task<UserAuthAccount?> GetAuthAccountAsync(string provider, string providerUserId);
+        Task CreateAuthAccountAsync(UserAuthAccount account);
     }
 }

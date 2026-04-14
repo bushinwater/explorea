@@ -1,0 +1,43 @@
+<div class="rp-overlay" *ngIf="isOpen" (click)="closed.emit()">
+  <div class="rp-panel" (click)="$event.stopPropagation()">
+
+    <div class="rp-header">
+      <div class="rp-title-wrap">
+        <h2>{{ title }}</h2>
+        <span class="rp-subtitle">{{ subtitle }}</span>
+      </div>
+      <button class="rp-close" type="button" (click)="closed.emit()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <div class="rp-body">
+      <div class="rp-list">
+        <div class="rp-item" *ngFor="let review of reviews">
+          <div class="rp-item__head">
+            <div class="rp-item__avatar">
+              <img *ngIf="review.user.profileImageUrl"
+                [src]="review.user.profileImageUrl"
+                [alt]="review.user.firstName"
+                (error)="$any($event.target).style.display='none'; $any($event.target).nextElementSibling.style.display='flex'" />
+              <span [style.display]="review.user.profileImageUrl ? 'none' : 'flex'">
+                {{ (review.user.firstName[0] + review.user.lastName[0]) | uppercase }}
+              </span>
+            </div>
+            <div class="rp-item__user">
+              <h3>{{ review.user.firstName }} {{ review.user.lastName }}</h3>
+              <span>{{ review.user.travelerRank }}</span>
+            </div>
+            <div class="rp-item__stars">
+              <span *ngFor="let star of starsArray; let i = index" class="material-icons"
+                [class.rp-star--filled]="i < review.rating"
+                [class.rp-star--empty]="i >= review.rating">star</span>
+            </div>
+          </div>
+          <p class="rp-comment" *ngIf="review.comment">{{ review.comment }}</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

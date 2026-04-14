@@ -5,22 +5,30 @@
   </div>
 
   <h2>Molim Vas, selektujte Vaše interese:</h2>
+  <p class="hint">Izaberi između {{ MIN }} i {{ MAX }} interesovanja.</p>
 
-  <div class="grid">
+  <div class="grid" *ngIf="!loading">
     <div
       class="card interest-card"
       *ngFor="let interest of interests"
       [class.selected]="interest.selected"
+      [class.disabled]="!interest.selected && selectedCount >= MAX"
       (click)="toggle(interest)"
     >
       <div class="icon-box">
-        <div class="icon-box">
-          <img src="assets/icons/mountain.png" alt="Avanture" width="24" height="24" />
-        </div>
+        <span class="material-icons">{{ interest.icon || 'star' }}</span>
       </div>
-      <span>{{ interest.label }}</span>
+      <span>{{ interest.name }}</span>
     </div>
   </div>
 
-  <button class="btn btn-primary nastavi" (click)="nastavi()">Nastavi</button>
+  <div class="loading-grid" *ngIf="loading">
+    <div class="skeleton-card" *ngFor="let i of skeletonItems"></div>
+  </div>
+
+  <p class="validation-error" *ngIf="validationError">{{ validationError }}</p>
+
+  <button class="btn btn-primary nastavi" (click)="nastavi()" [disabled]="loading">
+    {{ fromProfile ? 'Sačuvaj interese' : 'Nastavi' }}
+  </button>
 </div>

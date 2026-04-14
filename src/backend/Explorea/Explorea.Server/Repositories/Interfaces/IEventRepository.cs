@@ -9,5 +9,12 @@ namespace Explorea.Server.Repositories.Interfaces
             int? cityId, int? typeId, DateTimeOffset? from,
             DateTimeOffset? to, bool? free, int page, int pageSize);
         Task<List<Event>> GetByMonthAsync(int year, int month);
+
+        Task<List<Event>> GetByMonthFilteredAsync(
+            int year,
+            int month,
+            int? cityId,
+            int? typeId,
+            bool? free);
     }
 }

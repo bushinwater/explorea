@@ -38,6 +38,9 @@ desktop.ini
 .idea/
 *.swp
 
+# ===== CLAUDE =====
+.claude/
+
 # === Fitlogger (Demo app) ===
 sandbox/Stefan Mirkovic/fitlogger/backend/FitLogger/appsettings.json
 # app settings (secrets)

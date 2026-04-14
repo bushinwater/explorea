@@ -1,0 +1,113 @@
+<div class="page">
+  <app-sidebar></app-sidebar>
+  <app-bottom-nav></app-bottom-nav>
+
+  <main class="main">
+    <div class="login-card">
+      <div class="logo">
+        <img src="assets/logo.png" alt="Explorea" class="logo-img" />
+        <span class="logo-text">Explorea</span>
+      </div>
+
+      <div class="notice" *ngIf="returnUrl !== '/home'">
+        <span class="material-icons">info</span>
+        {{ 'LOGIN.NOTICE' | translate }}
+      </div>
+
+      <h1>{{ 'LOGIN.TITLE' | translate }}</h1>
+      <p class="subtitle">{{ 'LOGIN.SUBTITLE' | translate }}</p>
+
+      <div class="form">
+        <div class="input-wrapper" [class.input-error]="emailError">
+          <span class="material-icons input-icon">email</span>
+          <input
+            class="input no-right-icon"
+            type="email"
+            [(ngModel)]="email"
+            [placeholder]="'LOGIN.EMAIL' | translate"
+            (ngModelChange)="emailError = ''"
+            (keydown.enter)="onEmailEnter()"
+            (blur)="validateEmail()"
+          />
+        </div>
+        <div class="field-error" *ngIf="emailError">{{ emailError | translate }}</div>
+
+        <div class="input-wrapper">
+          <span class="material-icons input-icon">lock</span>
+          <input
+            #passwordInput
+            class="input"
+            [type]="showPassword ? 'text' : 'password'"
+            [(ngModel)]="password"
+            [placeholder]="'LOGIN.PASSWORD' | translate"
+            (keydown.enter)="onPasswordEnter()"
+          />
+          <button class="input-icon-right" type="button" (click)="showPassword = !showPassword" tabindex="-1">
+            <span class="material-icons">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+          </button>
+        </div>
+
+        <div class="forgot">
+          <a routerLink="/forgot-password">{{ 'LOGIN.FORGOT_PASSWORD' | translate }}</a>
+        </div>
+
+        <div class="error" *ngIf="error">{{ error | translate }}</div>
+
+        <div class="unverified-notice" *ngIf="emailNotVerified">
+          <span class="material-icons">mark_email_unread</span>
+          <div class="unverified-body">
+            <span>{{ 'LOGIN.ERROR_NOT_VERIFIED' | translate }}</span>
+            <button class="resend-btn" (click)="resendVerification()" [disabled]="resendSent">
+              {{ (resendSent ? 'LOGIN.RESEND_SENT' : 'LOGIN.RESEND') | translate }}
+            </button>
+          </div>
+        </div>
+
+        <button #loginBtn class="btn btn-primary login-btn" (click)="login()" [disabled]="loading">
+          <span class="btn-spinner" *ngIf="loading"></span>
+          <span *ngIf="!loading">{{ 'LOGIN.SUBMIT' | translate }}</span>
+        </button>
+
+        <div class="divider">
+          <span>{{ 'LOGIN.OR' | translate }}</span>
+        </div>
+
+        <button class="social-btn google" (click)="loginWithGoogle()" [disabled]="socialLoading !== null">
+          <span class="btn-spinner" *ngIf="socialLoading === 'google'"></span>
+          <span class="material-icons" *ngIf="socialLoading !== 'google'">language</span>
+          <span *ngIf="socialLoading !== 'google'">{{ 'LOGIN.GOOGLE' | translate }}</span>
+        </button>
+
+        <button class="social-btn facebook" (click)="loginWithFacebook()" [disabled]="socialLoading !== null">
+          <span class="btn-spinner" *ngIf="socialLoading === 'facebook'"></span>
+          <span class="material-icons" *ngIf="socialLoading !== 'facebook'">facebook</span>
+          <span *ngIf="socialLoading !== 'facebook'">{{ 'LOGIN.FACEBOOK' | translate }}</span>
+        </button>
+
+        <div class="register-link">
+          {{ 'LOGIN.NO_ACCOUNT' | translate }}
+          <a routerLink="/register">{{ 'LOGIN.REGISTER' | translate }} →</a>
+        </div>
+
+        <div class="guest-link">
+          <a href="#">{{ 'LOGIN.GUEST' | translate }}</a>
+        </div>
+      </div>
+
+      <div class="login-prefs">
+        <button class="pref-btn" (mousedown)="$event.preventDefault()" (click)="themeService.toggle()">
+          <span class="material-icons">{{ themeService.isDark ? 'light_mode' : 'dark_mode' }}</span>
+          <span>{{ themeService.isDark ? ('SIDEBAR.LIGHT_MODE' | translate) : ('SIDEBAR.DARK_MODE' | translate) }}</span>
+        </button>
+
+        <div class="pref-lang">
+          <span class="material-icons">language</span>
+          <button class="lang-btn" [class.lang-btn--active]="languageService.current === 'sr'" (click)="languageService.set('sr')">SR</button>
+          <span class="lang-sep">|</span>
+          <button class="lang-btn" [class.lang-btn--active]="languageService.current === 'en'" (click)="languageService.set('en')">EN</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>

@@ -46,6 +46,10 @@ namespace Explorea.Server.Data
         public DbSet<TripPlanItem> TripPlanItems { get; set; }
         public DbSet<InterestTag> InterestTags { get; set; }
         public DbSet<UserInterestTag> UserInterestTags { get; set; }
+        public DbSet<DestinationInterestTag> DestinationInterestTags { get; set; }
+        public DbSet<PlaceInterestTag> PlaceInterestTags { get; set; }
+        public DbSet<EventInterestTag> EventInterestTags { get; set; }
+        public DbSet<ActivityInterestTag> ActivityInterestTags { get; set; }
         public DbSet<Country> Countries { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -80,6 +84,38 @@ namespace Explorea.Server.Data
                 .HasOne(x => x.InterestTag)
                 .WithMany(t => t.UserLinks)
                 .HasForeignKey(x => x.InterestTagId);
+
+            // ---- DestinationInterestTag ----
+            modelBuilder.Entity<DestinationInterestTag>()
+                .HasKey(x => new { x.DestinationId, x.InterestTagId });
+            modelBuilder.Entity<DestinationInterestTag>()
+                .HasOne(x => x.Destination).WithMany().HasForeignKey(x => x.DestinationId);
+            modelBuilder.Entity<DestinationInterestTag>()
+                .HasOne(x => x.InterestTag).WithMany(t => t.DestinationLinks).HasForeignKey(x => x.InterestTagId);
+
+            // ---- PlaceInterestTag ----
+            modelBuilder.Entity<PlaceInterestTag>()
+                .HasKey(x => new { x.PlaceId, x.InterestTagId });
+            modelBuilder.Entity<PlaceInterestTag>()
+                .HasOne(x => x.Place).WithMany().HasForeignKey(x => x.PlaceId);
+            modelBuilder.Entity<PlaceInterestTag>()
+                .HasOne(x => x.InterestTag).WithMany(t => t.PlaceLinks).HasForeignKey(x => x.InterestTagId);
+
+            // ---- EventInterestTag ----
+            modelBuilder.Entity<EventInterestTag>()
+                .HasKey(x => new { x.EventId, x.InterestTagId });
+            modelBuilder.Entity<EventInterestTag>()
+                .HasOne(x => x.Event).WithMany().HasForeignKey(x => x.EventId);
+            modelBuilder.Entity<EventInterestTag>()
+                .HasOne(x => x.InterestTag).WithMany(t => t.EventLinks).HasForeignKey(x => x.InterestTagId);
+
+            // ---- ActivityInterestTag ----
+            modelBuilder.Entity<ActivityInterestTag>()
+                .HasKey(x => new { x.ActivityId, x.InterestTagId });
+            modelBuilder.Entity<ActivityInterestTag>()
+                .HasOne(x => x.Activity).WithMany(a => a.InterestTags).HasForeignKey(x => x.ActivityId);
+            modelBuilder.Entity<ActivityInterestTag>()
+                .HasOne(x => x.InterestTag).WithMany(t => t.ActivityLinks).HasForeignKey(x => x.InterestTagId);
 
             // ---- Activity.ExtraData kao JSONB ----
             modelBuilder.Entity<Activity>()

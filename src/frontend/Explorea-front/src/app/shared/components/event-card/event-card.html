@@ -1,4 +1,32 @@
-<div class="event-card">
+<!-- List mode (horizontal) -->
+<div *ngIf="listMode" class="event-card event-card--list" [routerLink]="['/events', event.slug]">
+  <div class="event-card__image-wrap event-card__image-wrap--list">
+    <img [src]="event.previewImageUrl" [alt]="event.name" class="event-card__image" loading="lazy" />
+    <span class="event-card__type-badge">{{ event.type.name }}</span>
+    <span *ngIf="!event.price" class="event-card__free-badge">Besplatno</span>
+  </div>
+  <div class="event-card__body event-card__body--list">
+    <h3 class="event-card__name">{{ event.name }}</h3>
+    <div class="event-card__info">
+      <span class="event-card__date">
+        <span class="material-icons">calendar_today</span>
+        {{ formatDate(event.startDatetime) }}
+        <span class="event-card__time">{{ formatTime(event.startDatetime) }} – {{ formatTime(event.endDatetime) }}</span>
+      </span>
+      <span class="event-card__location">
+        <span class="material-icons">location_on</span>
+        {{ event.address || event.city.name }}
+      </span>
+    </div>
+    <div class="event-card__footer">
+      <span *ngIf="event.price" class="event-card__price">{{ event.price | number }} RSD</span>
+      <span *ngIf="!event.price" class="event-card__price free">Besplatno</span>
+    </div>
+  </div>
+</div>
+
+<!-- Default mode (vertical card) -->
+<div *ngIf="!listMode" class="event-card" [class.event-card--full-width]="fullWidth" [routerLink]="['/events', event.slug]">
   <div class="event-card__image-wrap">
     <img [src]="event.previewImageUrl" [alt]="event.name" class="event-card__image" loading="lazy" />
     <span class="event-card__type-badge">{{ event.type.name }}</span>

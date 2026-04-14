@@ -89,5 +89,18 @@ namespace Explorea.Server.Repositories.Implementations
         {
             return await _db.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
         }
+
+        public async Task<UserAuthAccount?> GetAuthAccountAsync(string provider, string providerUserId)
+        {
+            return await _db.UserAuthAccounts
+                .Include(a => a.User)
+                .FirstOrDefaultAsync(a => a.Provider == provider && a.ProviderUserId == providerUserId);
+        }
+
+        public async Task CreateAuthAccountAsync(UserAuthAccount account)
+        {
+            await _db.UserAuthAccounts.AddAsync(account);
+            await _db.SaveChangesAsync();
+        }
     }
 }

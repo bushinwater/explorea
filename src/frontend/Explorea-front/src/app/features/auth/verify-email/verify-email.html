@@ -1,0 +1,38 @@
+<div class="page">
+  <main class="main">
+    <div class="card">
+      <img src="assets/logo.png" alt="Explorea" class="logo-img" />
+
+      <!-- LOADING -->
+      <ng-container *ngIf="state === 'loading'">
+        <div class="spinner-ring"></div>
+        <h2>{{ 'VERIFY_EMAIL.LOADING_TITLE' | translate }}</h2>
+        <p>{{ 'VERIFY_EMAIL.LOADING_DESC' | translate }}</p>
+      </ng-container>
+
+      <!-- SUCCESS -->
+      <ng-container *ngIf="state === 'success'">
+        <div class="status-icon success">
+          <span class="material-icons">mark_email_read</span>
+        </div>
+        <h2>{{ 'VERIFY_EMAIL.SUCCESS_TITLE' | translate }}</h2>
+        <p>{{ 'VERIFY_EMAIL.SUCCESS_DESC' | translate }}</p>
+        <button class="btn btn-primary action-btn" (click)="goHome()">
+          {{ 'VERIFY_EMAIL.GO_BACK' | translate }}
+        </button>
+      </ng-container>
+
+      <!-- ERROR -->
+      <ng-container *ngIf="state === 'error'">
+        <div class="status-icon error">
+          <span class="material-icons">error_outline</span>
+        </div>
+        <h2>{{ 'VERIFY_EMAIL.ERROR_TITLE' | translate }}</h2>
+        <p>{{ 'VERIFY_EMAIL.ERROR_DESC' | translate }}</p>
+        <button class="btn btn-primary action-btn" (click)="goHome()">
+          {{ 'VERIFY_EMAIL.GO_BACK' | translate }}
+        </button>
+      </ng-container>
+    </div>
+  </main>
+</div>

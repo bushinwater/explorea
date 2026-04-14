@@ -1,4 +1,21 @@
 {
+  "COMMON": {
+    "ERROR_GENERIC": "Something went wrong. Please try again."
+  },
+  "REVIEW_MODAL": {
+    "TITLE": "Write a review",
+    "RATING_LABEL": "Your rating",
+    "COMMENT_LABEL": "Your review (optional)",
+    "COMMENT_PLACEHOLDER": "Share your experience...",
+    "CANCEL": "Cancel",
+    "SUBMIT": "Submit",
+    "ERROR_ALREADY": "You have already submitted a review for this.",
+    "STARS_1": "Poor",
+    "STARS_2": "Fair",
+    "STARS_3": "Good",
+    "STARS_4": "Very good",
+    "STARS_5": "Excellent"
+  },
   "SIDEBAR": {
     "HOME": "Home",
     "EXPLORE": "Explore map",
@@ -14,22 +31,53 @@
   "SETTINGS_PAGE": {
     "TITLE": "Profile & Settings",
     "SUBTITLE": "Manage your account, preferences and privacy on the Explorea platform.",
+    "SETTINGS_LABEL": "Settings",
     "STATS": {
       "ADVENTURES": "ADVENTURES",
       "REVIEWS": "REVIEWS",
       "SAVED": "SAVED"
     },
     "MEMBER_SINCE": "Member since",
+    "TABS": {
+      "SAVED": "Saved",
+      "SAVED_DESC": "View your saved destinations and activities.",
+      "REVIEWS": "My reviews",
+      "REVIEWS_DESC": "View and manage your reviews."
+    },
+    "ACTIVITIES": {
+      "TITLE": "Recommended for you",
+      "VIEW_ALL": "View all activities"
+    },
+    "PROFILE_SETTINGS": {
+      "TITLE": "Profile settings",
+      "SUBTITLE": "Update your name, photo and password."
+    },
+    "APP_SETTINGS": {
+      "TITLE": "App settings",
+      "SUBTITLE": "Theme, language and other preferences."
+    },
     "ACCOUNT": {
       "TITLE": "Account information",
       "SUBTITLE": "Update your personal data and security settings.",
+      "PROFILE_PICTURE": "Profile photo",
+      "PROFILE_PICTURE_DESC": "Shown on your reviews and profile.",
+      "UPLOAD_PHOTO": "Upload photo",
+      "FIRST_NAME": "First name",
+      "LAST_NAME": "Last name",
       "USERNAME": "Username",
       "USERNAME_DESC": "This name will be visible on your reviews and posts.",
       "EMAIL": "Email address",
       "EMAIL_DESC": "Primary address for notifications and booking confirmations.",
+      "NEWSLETTER": "Newsletter",
+      "NEWSLETTER_DESC": "Receive the latest news about destinations and events.",
       "PASSWORD": "Password",
       "PASSWORD_DESC": "Last changed 3 months ago. We recommend changing it regularly.",
-      "CHANGE_PASSWORD": "Change password"
+      "CHANGE_PASSWORD": "Change password",
+      "PASSWORD_EMAIL_SENT": "We sent a password reset link to your email.",
+      "LOCATION": "Share location",
+      "LOCATION_DESC": "Used for sorting events and personalized recommendations. Last known position stays saved.",
+      "INTERESTS": "Interests",
+      "EDIT_INTERESTS": "Edit interests"
     },
     "NOTIFICATIONS": {
       "TITLE": "Notifications",
@@ -105,11 +153,460 @@
       "COPY": "© 2025 Explorea · Tourism guide of Serbia"
     }
   },
+  "ACTIVITY_DETAIL": {
+    "BACK": "Activity",
+    "REVIEWS_COUNT": "reviews",
+    "FREE": "Free",
+    "STATS": {
+      "DURATION": "DURATION",
+      "DISTANCE": "DISTANCE",
+      "ELEVATION": "ELEVATION",
+      "TRAIL_TYPE": "TRAIL TYPE",
+      "DIFFICULTY": "DIFFICULTY"
+    },
+    "ABOUT": "About the activity",
+    "INCLUDED": {
+      "TITLE": "What's included"
+    },
+    "PACKING": {
+      "TITLE": "What to bring",
+      "SUBTITLE": "Check items you've already packed",
+      "ITEMS": {
+        "BOOTS": "Hiking boots (Gore-Tex)",
+        "SNACKS": "Energy bars/snacks",
+        "WATER": "Water (minimum 2.5L)",
+        "POLES": "Trekking poles"
+      }
+    },
+    "MAP": {
+      "TITLE": "Route map",
+      "OPEN": "Open interactive map"
+    },
+    "ORGANIZER_LINK": "Visit organizer website",
+    "REVIEWS": {
+      "TITLE": "Reviews",
+      "EMPTY": "No reviews yet. Be the first to share your experience!",
+      "WRITE": "Write a review",
+      "ALREADY_REVIEWED": "You have already reviewed this activity",
+      "ALL_PANEL_TITLE": "All reviews",
+      "FORM": {
+        "TITLE": "Write a review",
+        "RATING_LABEL": "Your rating",
+        "COMMENT_LABEL": "Your review (optional)",
+        "COMMENT_PLACEHOLDER": "Share your experience...",
+        "CANCEL": "Cancel",
+        "SUBMIT": "Submit",
+        "ERROR_ALREADY": "You have already submitted a review for this activity.",
+        "STARS_1": "Poor",
+        "STARS_2": "Fair",
+        "STARS_3": "Good",
+        "STARS_4": "Very good",
+        "STARS_5": "Excellent"
+      }
+    },
+    "SIMILAR": {
+      "TITLE": "Similar activities",
+      "VIEW_ALL": "View all",
+      "ALL_PANEL_TITLE": "Similar activities",
+      "FROM": "From"
+    },
+    "BOOK": {
+      "LABEL": "PRICE PER PERSON",
+      "PRICE_LABEL": "Price per person",
+      "FIXED": "fixed",
+      "DATE_LABEL": "DEPARTURE DATE",
+      "DATE_PLACEHOLDER": "Select date",
+      "PERSONS_LABEL": "NUMBER OF PERSONS",
+      "TOUR_LABEL": "Tour",
+      "EQUIPMENT": "Equipment (rental)",
+      "INCLUDED": "Included",
+      "TOTAL": "Total",
+      "CTA": "Book now",
+      "DISCLAIMER": "By clicking the button you agree to our terms of use and cancellation policy."
+    }
+  },
   "BOTTOM_NAV": {
     "HOME": "Home",
     "EXPLORE": "Explore",
     "SEARCH": "Search",
     "EVENTS": "Events",
     "PROFILE": "Profile"
+  },
+  "LOGIN": {
+    "TITLE": "Welcome back",
+    "SUBTITLE": "Sign in to continue planning your next adventure.",
+    "NOTICE": "You need to be logged in to access this page.",
+    "EMAIL": "Email address",
+    "PASSWORD": "Password",
+    "FORGOT_PASSWORD": "Forgot password?",
+    "SUBMIT": "Sign in",
+    "OR": "OR CONTINUE WITH",
+    "GOOGLE": "Google",
+    "FACEBOOK": "Facebook",
+    "NO_ACCOUNT": "Don't have an account?",
+    "REGISTER": "Register",
+    "GUEST": "Continue without account",
+    "ERROR": "Invalid email or password.",
+    "ERROR_EMAIL_EMPTY": "Email address is required.",
+    "ERROR_EMAIL_INVALID": "Please enter a valid email address.",
+    "ERROR_NOT_VERIFIED": "Please verify your email before logging in.",
+    "RESEND": "Resend email",
+    "RESEND_SENT": "Email sent!"
+  },
+  "REGISTER": {
+    "TITLE": "Create account",
+    "SUBTITLE": "Join and explore the best destinations, events and activities.",
+    "FULL_NAME": "Full name",
+    "NAME_PLACEHOLDER": "Enter your name",
+    "FIRST_NAME": "First name",
+    "FIRST_NAME_PLACEHOLDER": "Enter your first name",
+    "LAST_NAME": "Last name",
+    "LAST_NAME_PLACEHOLDER": "Enter your last name",
+    "EMAIL": "Email address",
+    "EMAIL_PLACEHOLDER": "you@email.com",
+    "PASSWORD": "Password",
+    "CONFIRM_PASSWORD": "Confirm password",
+    "GENDER": "Gender",
+    "GENDER_PLACEHOLDER": "Select gender",
+    "GENDER_MALE": "Male",
+    "GENDER_FEMALE": "Female",
+    "GENDER_OTHER": "Other",
+    "GENDER_PREFER_NOT": "Prefer not to say",
+    "DATE_OF_BIRTH": "Date of birth",
+    "TERMS": "I accept",
+    "TERMS_LINK": "Terms of service",
+    "AND": "and",
+    "PRIVACY_LINK": "Privacy policy",
+    "SUBMIT": "Register",
+    "OR": "OR REGISTER WITH",
+    "HAVE_ACCOUNT": "Already have an account?",
+    "LOGIN": "Sign in",
+    "ERROR_TERMS": "You must accept the terms of service.",
+    "ERROR_PASSWORD": "Passwords do not match.",
+    "ERROR_PASSWORD_WEAK": "Password must be at least 6 characters and contain at least one number.",
+    "PASSWORD_HINT_TITLE": "Password requirements:",
+    "PASSWORD_HINT_MIN": "At least 6 characters",
+    "PASSWORD_HINT_NUMBER": "At least one number (0–9)",
+    "ERROR_GENERAL": "Registration failed. Please try again.",
+    "ERROR_NAME_EMPTY": "Name is required.",
+    "ERROR_NAME_INVALID": "Only letters are allowed.",
+    "ERROR_NAME_BLACKLIST": "This name is not allowed.",
+    "ERROR_GENDER_EMPTY": "Please select a gender.",
+    "ERROR_DOB_EMPTY": "Date of birth is required.",
+    "ERROR_DOB_INVALID": "Please enter a valid date of birth.",
+    "ERROR_EMAIL_TAKEN": "An account with this email already exists.",
+    "MODAL_ACCEPT": "I understand and accept",
+    "VERIFY_TITLE": "Check your email",
+    "VERIFY_DESC": "We sent a verification link to {{ email }}. Click the link to activate your account.",
+    "VERIFY_NO_EMAIL": "Didn't receive the email?",
+    "LEGAL": {
+      "TERMS_S1_TITLE": "1. Acceptance of terms",
+      "TERMS_S1_BODY": "By using the Explorea platform you accept these terms of service. If you disagree, please do not use the platform.",
+      "TERMS_S2_TITLE": "2. User account",
+      "TERMS_S2_BODY": "You are responsible for the accuracy of the data you provide during registration. Creating an account on behalf of another person without their consent is not allowed.",
+      "TERMS_S3_TITLE": "3. User conduct",
+      "TERMS_S3_BODY": "Publishing offensive, false or harmful content is prohibited. Explorea reserves the right to remove content that violates these rules.",
+      "TERMS_S4_TITLE": "4. Intellectual property",
+      "TERMS_S4_BODY": "All content on the platform (logos, descriptions, photos) is protected by copyright. Copying without written permission is not allowed.",
+      "TERMS_S5_TITLE": "5. Changes to terms",
+      "TERMS_S5_BODY": "Explorea reserves the right to modify these terms. Users will be notified of significant changes by email.",
+      "PRIVACY_S1_TITLE": "1. What data we collect",
+      "PRIVACY_S1_BODY": "We collect first name, last name, email address and profile picture. Optionally, we record interests and destination visit history.",
+      "PRIVACY_S2_TITLE": "2. How we use your data",
+      "PRIVACY_S2_BODY": "Your data is used solely to personalize your experience, send relevant notifications and improve the platform. We do not sell your data to third parties.",
+      "PRIVACY_S3_TITLE": "3. Data retention",
+      "PRIVACY_S3_BODY": "Data is stored on secure servers and retained while your account exists. Upon account deletion, data is removed within 30 days.",
+      "PRIVACY_S4_TITLE": "4. Cookies",
+      "PRIVACY_S4_BODY": "We use cookies for authentication and visit analytics. You can disable them in your browser settings, but this may limit functionality.",
+      "PRIVACY_S5_TITLE": "5. Your rights",
+      "PRIVACY_S5_BODY": "You have the right to access, correct and delete your data. Requests can be sent to contact@explorea.rs."
+    }
+  },
+  "COMPLETE_PROFILE": {
+    "TITLE": "Complete your profile",
+    "SUBTITLE": "We need a few more details to personalize your experience.",
+    "SUBMIT": "Continue"
+  },
+  "FORGOT_PASSWORD": {
+    "TITLE": "Forgot your password?",
+    "SUBTITLE": "Enter your email address and we'll send you a link to reset your password.",
+    "SUBMIT": "Send reset link",
+    "BACK_TO_LOGIN": "Back to login",
+    "SENT_TITLE": "Check your email",
+    "SENT_DESC": "We sent a password reset link to {{ email }}. The link expires in 1 hour."
+  },
+  "RESET_PASSWORD": {
+    "TITLE": "Set new password",
+    "SUBTITLE": "Enter your new password below.",
+    "NEW_PASSWORD": "New password",
+    "CONFIRM_PASSWORD": "Confirm new password",
+    "SUBMIT": "Save new password",
+    "BACK_TO_LOGIN": "Back to login",
+    "SUCCESS_TITLE": "Password changed",
+    "SUCCESS_DESC": "Your password has been successfully changed.",
+    "SUCCESS_REDIRECT": "You will be redirected to the login page shortly.",
+    "ERROR_PASSWORD_WEAK": "Password must be at least 6 characters and contain at least one number.",
+    "PASSWORD_HINT_TITLE": "Password requirements:",
+    "PASSWORD_HINT_MIN": "At least 6 characters",
+    "PASSWORD_HINT_NUMBER": "At least one number (0–9)",
+    "ERROR_MISMATCH": "Passwords do not match.",
+    "ERROR_TOKEN": "The reset link is invalid or has expired.",
+    "ERROR_EMPTY": "Password is required.",
+    "ERROR_TOO_SHORT": "Password must be at least 8 characters.",
+    "ERROR_SAME_PASSWORD": "New password must differ from the current one.",
+    "ERROR_EXPIRED": "The reset link has expired. Please request a new one.",
+    "ERROR_INVALID_LINK": "The reset link is invalid.",
+    "ERROR_GENERAL": "Something went wrong. Please try again.",
+    "STRENGTH": {
+      "WEAK": "Weak",
+      "FAIR": "Fair",
+      "STRONG": "Strong"
+    }
+  },
+  "VERIFY_EMAIL": {
+    "LOADING_TITLE": "Verifying your email...",
+    "LOADING_DESC": "Please wait a moment.",
+    "SUCCESS_TITLE": "Email verified",
+    "SUCCESS_DESC": "Your account is active. You can now log in.",
+    "ERROR_TITLE": "Verification failed",
+    "ERROR_DESC": "The link is invalid or has already been used.",
+    "GO_BACK": "Go to login"
+  },
+  "PLACE_DETAIL": {
+    "PAGE_TITLE": "Place details",
+    "SHARE": "Share",
+    "SAVE": "Save",
+    "OPEN_NOW": "Open now",
+    "CLOSED": "Closed",
+    "ABOUT": "About this place",
+    "HOST_PREFIX": "Hosted by",
+    "SHOW_MORE": "Show more",
+    "SHOW_LESS": "Show less",
+    "WHAT_OFFERS": "What this place offers",
+    "HOUSE_RULES": "House rules",
+    "LOCATION": "Location",
+    "OPEN_MAPS": "Open in Google Maps",
+    "SIMILAR": "You might also like",
+    "PLAN_VISIT": "Planning a visit?",
+    "DATE": "DATE",
+    "TODAY": "Today",
+    "PERSONS": "PERSONS",
+    "ADULTS": "Adults",
+    "CHECK_AVAILABILITY": "Check availability",
+    "NO_EVENTS": "No nearby events.",
+    "NO_REVIEWS": "No reviews yet for this place.",
+    "BREADCRUMB": {
+      "HOME": "Home"
+    },
+    "GALLERY": {
+      "MORE": "photos"
+    },
+    "TABS": {
+      "DETAILS": "Detailed info",
+      "EVENTS": "Nearby events",
+      "REVIEWS": "Reviews",
+      "ABOUT": "About",
+      "EVENTS_MOBILE": "Events"
+    },
+    "RULES": {
+      "CHECK_IN": "Check-in",
+      "CHECK_OUT": "Check-out",
+      "PETS": "Pets",
+      "PETS_VALUE": "Allowed on request",
+      "SMOKING": "Smoking",
+      "SMOKING_VALUE": "Terrace only"
+    },
+    "AMENITIES": {
+      "WIFI": "Free Wi-Fi",
+      "PARKING": "Parking",
+      "POOL": "Pool",
+      "BREAKFAST": "Breakfast",
+      "SECURITY": "24/7 Security",
+      "RESTAURANT": "Restaurant"
+    },
+    "OFFERS": {
+      "BALCONY": "Private balcony with view",
+      "AC": "Air conditioning in every room",
+      "TV": "Smart TV with cable channels",
+      "COFFEE": "Coffee machine (Nespresso)",
+      "MINIBAR": "Mini-bar with local wines"
+    },
+    "BOOK": {
+      "PER_NIGHT": "night",
+      "SELECT_DATES": "Select dates and number of guests",
+      "ARRIVAL": "CHECK-IN",
+      "DEPARTURE": "CHECK-OUT",
+      "GUESTS": "GUESTS",
+      "NIGHTS": "nights",
+      "SERVICE_FEE": "Service fee",
+      "TOTAL": "Total",
+      "CTA": "Book now",
+      "NO_CHARGE": "You won't be charged yet",
+      "SAFE_TITLE": "Secure booking",
+      "SAFE_CANCEL": "Free cancellation up to 48h before check-in.",
+      "SAFE_NO_FEES": "No hidden costs or additional charges.",
+      "SAFE_SSL": "Your data is protected with SSL encryption.",
+      "VIEWS_PREFIX": "This place was viewed",
+      "VIEWS_SUFFIX": "times in the last 24 hours"
+    },
+    "FOOTER": {
+      "RIGHTS": "All rights reserved.",
+      "TERMS": "Terms of use",
+      "PRIVACY": "Privacy",
+      "HELP": "Help"
+    }
+  },
+  "PLACE_CARD": {
+    "PER_NIGHT": "/ night"
+  },
+  "EXPLORE": {
+    "TITLE": "Explore",
+    "SEARCH": {
+      "PLACEHOLDER": "Enter a location or destination name...",
+      "PLACEHOLDER_MOBILE": "Search locations, destinations...",
+      "SHOW_FILTERS": "Show filters",
+      "HIDE_FILTERS": "Hide filters"
+    },
+    "FILTERS": {
+      "TITLE": "Explore Filters",
+      "BADGE": "{{count}} filters",
+      "ALL": "All",
+      "LOCATION": "Location",
+      "NEARBY_ONLY": "Nearby only",
+      "LOCATION_UNAVAILABLE": "Location unavailable",
+      "RADIUS": "Search radius",
+      "TYPE": "Type",
+      "HOURS_RATINGS": "Working Hours & Ratings",
+      "OPEN_NOW": "Open now",
+      "MIN_RATING": "Minimum rating",
+      "RESET": "Reset filters",
+      "APPLY": "Apply filters",
+      "CLOSE": "Close"
+    },
+    "ENTITY_TYPES": {
+      "DESTINATIONS": "Destinations",
+      "PLACES": "Places",
+      "ACTIVITIES": "Activities",
+      "EVENTS": "Events"
+    },
+    "ENTITY_LABELS": {
+      "DESTINATION": "Destination",
+      "PLACE": "Place",
+      "ACTIVITY": "Activity",
+      "EVENT": "Event"
+    },
+    "SHEET": {
+      "LOADING": "Loading...",
+      "RESULTS": "{{count}} results",
+      "ZOOM_HINT": "Zoom in for more results",
+      "SWIPE_UP": "Swipe up for list",
+      "SWIPE_DOWN": "Swipe down to close"
+    },
+    "PIN": {
+      "DETAILS": "Details",
+      "ROUTE": "Route"
+    },
+    "LOCATION_MODAL": {
+      "TITLE": "Location unavailable",
+      "TEXT": "Your current location is needed to show directions. Allow location access and try again.",
+      "CANCEL": "Cancel",
+      "ENABLE": "Enable location"
+    }
+  },
+  "DESTINATION_DETAIL": {
+    "LOADING": "Loading destination details...",
+    "ABOUT": "About the destination",
+    "GALLERY": "Photo gallery",
+    "VIEW_ALL_IMAGES": "View all images ({{count}})",
+    "LOCATION_AND_MAP": "Location and map",
+    "OPEN_IN_GOOGLE_MAPS": "Open in Google Maps",
+    "ROUTE": "Route",
+    "DETAILS": "Details",
+    "SHOW_ALL": "Show all",
+    "SHOW_ALL_COUNT": "Show all ({{count}})",
+    "ALL_PANEL": {
+      "PLACES": "All places",
+      "EVENTS": "All events",
+      "ACTIVITIES": "All activities",
+      "REVIEWS": "All reviews"
+    },
+    "REVIEWS_COUNT": "reviews",
+    "WRITE_REVIEW": "Write a review",
+    "REVIEW_FORM": {
+      "TITLE": "Write a review",
+      "RATING_LABEL": "Your rating",
+      "COMMENT_LABEL": "Your experience",
+      "COMMENT_PLACEHOLDER": "Share what you liked or didn't like about this destination...",
+      "CANCEL": "Cancel",
+      "SUBMIT": "Submit review",
+      "STARS_1": "Poor",
+      "STARS_2": "Fair",
+      "STARS_3": "Good",
+      "STARS_4": "Very good",
+      "STARS_5": "Excellent",
+      "ALREADY_REVIEWED": "You have already submitted a review for this destination."
+    },
+    "EMPTY_TAB": "There are currently no available items for this section.",
+    "EMPTY_REVIEWS": "There are no reviews for this destination yet.",
+    "LOCATION_NOT_AVAILABLE": "Location is not available",
+    "META": {
+      "RATING": "Rating",
+      "EVENT": "Event"
+    },
+    "ITEM_TYPES": {
+      "PLACE": "Place",
+      "EVENT": "Event",
+      "ACTIVITY": "Activity"
+    },
+    "TABS": {
+      "PLACES": "Places",
+      "EVENTS": "Events",
+      "ACTIVITIES": "Activities",
+      "REVIEWS": "Reviews"
+    },
+    "SECTIONS": {
+      "POPULAR_PLACES": "Popular places",
+      "POPULAR_EVENTS": "Popular events",
+      "POPULAR_ACTIVITIES": "Popular activities",
+      "TRAVELER_REVIEWS": "Traveler reviews",
+      "SIMILAR_DESTINATIONS": "Similar destinations"
+    },
+    "ERRORS": {
+      "MISSING_SLUG": "Destination slug was not provided.",
+      "LOAD_FAILED": "Error loading destination details."
+    }
+  },
+  "EVENTS": {
+    "TITLE": "Events",
+    "DESKTOP_TITLE": "Events & Festivals",
+    "DESKTOP_SUBTITLE": "Discover the best events happening near you.",
+    "SEARCH_PLACEHOLDER": "Search events...",
+    "VIEW_LIST": "List",
+    "VIEW_CALENDAR": "Calendar",
+    "FILTER_ALL": "All",
+    "THIS_MONTH": "Events this month",
+    "NO_EVENTS": "No events found.",
+    "EVENTS_FOR_DATE": "Events for",
+    "DESKTOP_RESULTS_TITLE": "Upcoming events",
+    "FOUND": "Found {{count}} results",
+    "DETAILS": "Details",
+    "SHOW_CALENDAR": "Show calendar",
+    "HIDE_CALENDAR": "Hide calendar",
+    "QUICK_FILTERS": "QUICK FILTERS",
+    "QUICK_TODAY": "Today",
+    "QUICK_WEEKEND": "This weekend",
+    "QUICK_FREE": "Free admission",
+    "AI_BANNER_TITLE": "Suggestions for you?",
+    "AI_BANNER_SUBTITLE": "Let us recommend events based on your interests.",
+    "AI_BOX_TITLE": "Suggestions for you",
+    "AI_BOX_TEXT": "Based on your interests in travel and culture, we recommend the best events in your area.",
+    "AI_BOX_CTA": "Learn more",
+    "SORT_DATE": "By date",
+    "SORT_POPULARITY": "By popularity",
+    "SORT_LOCATION": "Nearest first",
+    "LOCATION_MODAL_TITLE": "Location unavailable",
+    "LOCATION_MODAL_TEXT": "Enable location sharing to sort events by distance from your current position.",
+    "LOCATION_MODAL_CANCEL": "Cancel",
+    "LOCATION_MODAL_ENABLE": "Enable location"
   }
 }

@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
+import { AuthService } from '../../../core/services/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { ThemeService } from '../../../core/services/theme.service';
 
@@ -21,7 +22,9 @@ export class Sidebar {
 
   constructor(
     public themeService: ThemeService,
-    public languageService: LanguageService
+    public languageService: LanguageService,
+    private authService: AuthService,
+    private router: Router,
   ) {}
 
   toggle() {
@@ -55,5 +58,24 @@ export class Sidebar {
   setLang(lang: 'sr' | 'en') {
     this.languageService.set(lang);
     this.langPopupOpen = false;
+  }
+
+  logout() {
+    const refreshToken = this.authService.getRefreshToken();
+    if (refreshToken) {
+      this.authService.logout({ refreshToken }).subscribe({
+        complete: () => {
+          this.authService.clearTokens();
+          this.router.navigate(['/login']);
+        },
+        error: () => {
+          this.authService.clearTokens();
+          this.router.navigate(['/login']);
+        },
+      });
+    } else {
+      this.authService.clearTokens();
+      this.router.navigate(['/login']);
+    }
   }
 }

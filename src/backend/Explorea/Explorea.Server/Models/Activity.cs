@@ -50,6 +50,9 @@ namespace Explorea.API.Models
         [Column("country_id")] public int? CountryId { get; set; }
         [Column("popularity")] public int Popularity { get; set; } = 0;
 
+        [MaxLength(500), Column("organizer_website")]
+        public string? OrganizerWebsite { get; set; }
+
         [Column("is_featured")] public bool IsFeatured { get; set; } = false;
         [Column("is_deleted")]  public bool IsDeleted  { get; set; } = false;
         [Column("deleted_at")]  public DateTimeOffset? DeletedAt { get; set; }
@@ -66,8 +69,9 @@ namespace Explorea.API.Models
         [ForeignKey("SeasonId")]      public Season?           Season      { get; set; }
         [ForeignKey("CountryId")]     public Country?          Country     { get; set; }
 
-        public ICollection<ActivityInclusion> Inclusions { get; set; } = new List<ActivityInclusion>();
-        public ICollection<ActivityImage>     Images     { get; set; } = new List<ActivityImage>();
+        public ICollection<ActivityInclusion>  Inclusions   { get; set; } = new List<ActivityInclusion>();
+        public ICollection<ActivityImage>      Images       { get; set; } = new List<ActivityImage>();
+        public ICollection<ActivityInterestTag> InterestTags { get; set; } = new List<ActivityInterestTag>();
         
         [MaxLength(500), Column("preview_image_url")]
         public string? PreviewImageUrl { get; set; }

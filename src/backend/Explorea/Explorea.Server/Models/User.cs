@@ -43,6 +43,15 @@ namespace Explorea.API.Models
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
 
+        [Column("newsletter")]
+        public bool Newsletter { get; set; } = false;
+
+        [MaxLength(20), Column("gender")]
+        public string? Gender { get; set; }
+
+        [Column("date_of_birth")]
+        public DateOnly? DateOfBirth { get; set; }
+
         [Column("current_latitude")]
         public double? CurrentLatitude { get; set; }
 
@@ -73,5 +82,8 @@ namespace Explorea.API.Models
         public ICollection<Visit>           Visits       { get; set; } = new List<Visit>();
         public ICollection<TripPlan>        TripPlans    { get; set; } = new List<TripPlan>();
         public ICollection<UserInterestTag> InterestTags { get; set; } = new List<UserInterestTag>();
+
+        [MaxLength(500), Column("profile_image_url")]
+        public string? ProfileImageUrl { get; set; }
     }
 }
