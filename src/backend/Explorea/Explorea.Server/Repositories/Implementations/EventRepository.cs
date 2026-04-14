@@ -21,6 +21,79 @@ namespace Explorea.Server.Repositories.Implementations
                 .FirstOrDefaultAsync(e => e.Slug == slug);
         }
 
+        public async Task<Event?> GetEventDetailsBySlugAsync(string slug)
+        {
+            return await _db.Events
+                .AsNoTracking()
+                .Include(e => e.Type)
+                .Include(e => e.City)
+                .Include(e => e.Destination)
+                .Include(e => e.Place)
+                .Include(e => e.Country)
+                .Include(e => e.Images)
+                .Include(e => e.InterestTags)
+                    .ThenInclude(link => link.InterestTag)
+                .FirstOrDefaultAsync(e => e.Slug == slug);
+        }
+
+        public async Task<List<Review>> GetEventReviewsAsync(Guid eventId, int take = 15)
+        {
+            return await _db.Reviews
+                .AsNoTracking()
+                .Include(r => r.User)
+                .Where(r => r.EntityType == "event" && r.EntityId == eventId)
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(take)
+                .ToListAsync();
+        }
+
+        public async Task<List<Event>> GetSimilarEventsAsync(Event eventEntity, int take = 12)
+        {
+            var eventTagIds = eventEntity.InterestTags
+                .Select(t => t.InterestTagId)
+                .ToList();
+
+            var hasTagIds = eventTagIds.Count > 0;
+
+            var candidates = await _db.Events
+                .AsNoTracking()
+                .Include(e => e.Type)
+                .Include(e => e.City)
+                .Include(e => e.Country)
+                .Include(e => e.Images)
+                .Include(e => e.InterestTags)
+                .Where(e =>
+                    e.Id != eventEntity.Id &&
+                    !e.IsDeleted &&
+                    (
+                        e.TypeId == eventEntity.TypeId ||
+                        (hasTagIds && e.InterestTags.Any(t => eventTagIds.Contains(t.InterestTagId))) ||
+                        (eventEntity.DestinationId != null && e.DestinationId == eventEntity.DestinationId) ||
+                        (eventEntity.CityId != null && e.CityId == eventEntity.CityId) ||
+                        (eventEntity.CountryId != null && e.CountryId == eventEntity.CountryId)
+                    ))
+                .ToListAsync();
+
+            return candidates
+                .Select(e => new
+                {
+                    Event = e,
+                    Score =
+                        (e.TypeId == eventEntity.TypeId ? 10 : 0) +
+                        e.InterestTags.Count(t => eventTagIds.Contains(t.InterestTagId)) * 3 +
+                        (eventEntity.DestinationId != null && e.DestinationId == eventEntity.DestinationId ? 4 : 0) +
+                        (eventEntity.CityId != null && e.CityId == eventEntity.CityId ? 2 : 0) +
+                        (eventEntity.CountryId != null && e.CountryId == eventEntity.CountryId ? 1 : 0) +
+                        (e.IsFeatured ? 2 : 0) +
+                        (double)e.Popularity / 100.0 +
+                        (double)e.AvgRating / 5.0
+                })
+                .OrderByDescending(x => x.Score)
+                .Take(take)
+                .Select(x => x.Event)
+                .ToList();
+        }
+
         public async Task<(List<Event> Items, int Total)> GetPagedAsync(
             int? cityId, int? typeId, DateTimeOffset? from,
             DateTimeOffset? to, bool? free, int page, int pageSize)
@@ -56,8 +129,6 @@ namespace Explorea.Server.Repositories.Implementations
 
             var total = await query.CountAsync();
 
-            // Vraćamo sve filtrirane događaje, a sortiranje i paginacija
-            // se rade u servisu kako bi sortBy radio ispravno nad celim skupom.
             var items = await query.ToListAsync();
 
             return (items, total);
