@@ -7,7 +7,7 @@ namespace Explorea.API.DTOs.Activity
     {
         public string? Description { get; set; }
         public SeasonRefDto? Season { get; set; }
-        public decimal? DistanceKm { get; set; }
+        public new decimal? DistanceKm { get; set; }
         public string? StartPoint { get; set; }
         public object? ExtraData { get; set; }
         public LocationDto? Location { get; set; }

@@ -63,8 +63,8 @@ namespace Explorea.Server.Services
       },
       Location = new LocationDto
       {
-        Lat = d.Latitude,
-        Lng = d.Longitude
+        Lat = d.Latitude!.Value,
+        Lng = d.Longitude!.Value
       }
     };
 
