@@ -14,4 +14,3 @@ namespace Explorea.API.DTOs.Event
         public List<EventCardDto> SimilarEvents { get; set; } = new();
     }
 }
-}
