@@ -1,0 +1,214 @@
+<app-sidebar />
+
+<div class="event-page" *ngIf="!loading && event">
+
+  <!-- Desktop topbar -->
+  <div class="desktop-topbar desktop-only">
+    <button class="back-btn" (click)="goBack()">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <span>{{ event.name }}</span>
+  </div>
+
+  <!-- Hero image -->
+  <div class="hero">
+    <img class="hero__img" [src]="heroImage" [alt]="event.name" />
+    <div class="hero__gradient"></div>
+    <div class="hero__content">
+      <span class="hero__badge" *ngIf="event.type">{{ event.type.name }}</span>
+      <h1 class="hero__title">{{ event.name }}</h1>
+    </div>
+  </div>
+
+  <!-- Info -->
+  <div class="title-block">
+    <div class="info-chips">
+
+      <div class="chip">
+        <span class="material-icons">calendar_today</span>
+        <div class="chip__text">
+          <span class="chip__primary">{{ formattedDateRange }}</span>
+          <span class="chip__secondary">{{ formattedDayNames }}</span>
+        </div>
+      </div>
+
+      <div class="chip">
+        <span class="material-icons">schedule</span>
+        <div class="chip__text">
+          <span class="chip__primary">{{ formattedTimeRange }}</span>
+        </div>
+      </div>
+
+      <div class="chip" *ngIf="event.address || event.city">
+        <span class="material-icons">location_on</span>
+        <div class="chip__text">
+          <span class="chip__primary">{{ event.address }}</span>
+          <span class="chip__secondary" *ngIf="event.city">{{ event.city.name }}</span>
+          <a class="chip__map-link" [href]="googleMapsUrl" target="_blank" rel="noopener">
+            {{ 'EVENT_DETAIL.OPEN_MAPS' | translate }}
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TWO-COLUMN: description + map | booking card -->
+  <div class="page-layout">
+    <main class="main-content">
+
+      <!-- O dogadjaju -->
+      <section class="section" *ngIf="event.description">
+        <h2 class="section-title">{{ 'EVENT_DETAIL.ABOUT' | translate }}</h2>
+        <p class="description-text">
+          {{ descriptionExpanded ? event.description : shortDescription }}
+        </p>
+        <button
+          class="read-more-btn"
+          *ngIf="event.description.length > 200"
+          (click)="descriptionExpanded = !descriptionExpanded"
+          type="button"
+        >
+          {{ (descriptionExpanded ? 'EVENT_DETAIL.READ_LESS' : 'EVENT_DETAIL.READ_MORE') | translate }}
+        </button>
+      </section>
+
+      <!-- Lokacija -->
+      <section class="section" *ngIf="event.location">
+        <h2 class="section-title">{{ 'EVENT_DETAIL.LOCATION' | translate }}</h2>
+        <div class="map-container" #mapContainer></div>
+        <a class="map-link" [href]="googleMapsUrl" target="_blank" rel="noopener">
+          <span class="material-icons">open_in_new</span>
+          {{ 'EVENT_DETAIL.OPEN_MAPS' | translate }}
+        </a>
+      </section>
+
+    </main>
+
+    <!-- Desktop booking aside -->
+    <aside class="booking-aside desktop-only">
+      <div class="booking-card">
+
+        <!-- Price -->
+        <div class="booking-card__price">
+          <span class="price-value" *ngIf="event.price">{{ event.price | number }} RSD</span>
+          <span class="price-value free" *ngIf="!event.price">{{ 'EVENT_DETAIL.FREE' | translate }}</span>
+          <span class="price-label" *ngIf="event.price">{{ 'EVENT_DETAIL.FROM' | translate }}</span>
+        </div>
+
+        <div class="booking-card__divider"></div>
+
+        <!-- Info rows -->
+        <div class="booking-card__info">
+          <div class="booking-info-row">
+            <span class="material-icons">calendar_today</span>
+            <div class="booking-info-row__text">
+              <span class="booking-info-row__label">{{ 'EVENT_DETAIL.DATE' | translate }}</span>
+              <span class="booking-info-row__value">{{ formattedDateRange }}</span>
+            </div>
+          </div>
+          <div class="booking-info-row">
+            <span class="material-icons">schedule</span>
+            <div class="booking-info-row__text">
+              <span class="booking-info-row__label">{{ 'EVENT_DETAIL.TIME' | translate }}</span>
+              <span class="booking-info-row__value">{{ formattedTimeRange }}</span>
+            </div>
+          </div>
+          <div class="booking-info-row" *ngIf="locationText">
+            <span class="material-icons">location_on</span>
+            <div class="booking-info-row__text">
+              <span class="booking-info-row__label">{{ 'EVENT_DETAIL.VENUE' | translate }}</span>
+              <span class="booking-info-row__value">{{ locationText }}</span>
+            </div>
+          </div>
+          <div class="booking-info-row" *ngIf="event.type">
+            <span class="material-icons">category</span>
+            <div class="booking-info-row__text">
+              <span class="booking-info-row__label">{{ 'EVENT_DETAIL.TYPE' | translate }}</span>
+              <span class="booking-info-row__value">{{ event.type.name }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="booking-card__divider"></div>
+
+        <!-- Persons counter -->
+        <div class="booking-card__row" *ngIf="event.price">
+          <span class="booking-row__label">{{ 'EVENT_DETAIL.PERSONS' | translate }}</span>
+          <div class="counter">
+            <button class="counter__btn" (click)="decrementPersons()" type="button">−</button>
+            <span class="counter__value">{{ persons }}</span>
+            <button class="counter__btn" (click)="incrementPersons()" type="button">+</button>
+          </div>
+        </div>
+
+        <!-- Total -->
+        <div class="booking-card__row booking-card__total" *ngIf="event.price">
+          <span class="booking-row__label">{{ 'EVENT_DETAIL.TOTAL' | translate }}</span>
+          <span class="booking-total__value">{{ event.price * persons | number }} RSD</span>
+        </div>
+
+        <button class="cta-btn" (click)="buyTickets()" type="button">
+          {{ 'EVENT_DETAIL.BUY_TICKET' | translate }}
+        </button>
+
+        <p class="booking-card__note">
+          <span class="material-icons">check_circle_outline</span>
+          {{ 'EVENT_DETAIL.FREE_CANCEL' | translate }}
+        </p>
+
+      </div>
+    </aside>
+  </div>
+
+  <!-- FULL-WIDTH sections -->
+  <div class="full-width-sections">
+
+    <!-- Galerija -->
+    <section class="fw-section" *ngIf="event.images.length > 1">
+      <h2 class="section-title">{{ 'EVENT_DETAIL.GALLERY' | translate }}</h2>
+      <app-image-gallery
+        [images]="event.images"
+        [viewAllLabel]="'EVENT_DETAIL.VIEW_ALL' | translate"
+      />
+    </section>
+
+    <!-- Slicni dogadjaji -->
+    <section class="fw-section" *ngIf="event.similarEvents.length">
+      <div class="section-head">
+        <h2 class="section-title">{{ 'EVENT_DETAIL.SIMILAR' | translate }}</h2>
+        <a class="ghost-link" (click)="navigateToEvents()" style="cursor: pointer">
+          {{ 'EVENT_DETAIL.VIEW_ALL_EVENTS' | translate }}
+        </a>
+      </div>
+      <div class="cards-scroll">
+        <app-event-card *ngFor="let e of event.similarEvents" [event]="$any(e)" />
+      </div>
+    </section>
+
+  </div>
+
+  <app-detail-footer />
+
+</div>
+
+<!-- Loading -->
+<div class="loading-state" *ngIf="loading">
+  <span class="material-icons spinning">refresh</span>
+</div>
+
+<!-- Mobile sticky CTA -->
+<div class="mobile-cta mobile-only" *ngIf="!loading && event">
+  <div class="mobile-cta__price" *ngIf="event.price">
+    <span>{{ 'EVENT_DETAIL.FROM' | translate }}</span>
+    <strong>{{ event.price | number }} RSD</strong>
+  </div>
+  <div class="mobile-cta__price" *ngIf="!event.price">
+    <strong>{{ 'EVENT_DETAIL.FREE' | translate }}</strong>
+  </div>
+  <button class="cta-btn" (click)="buyTickets()" type="button">
+    {{ 'EVENT_DETAIL.BUY_TICKET' | translate }}
+  </button>
+</div>
+
+<app-bottom-nav />

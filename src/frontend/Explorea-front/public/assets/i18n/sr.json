@@ -532,20 +532,6 @@
     },
     "REVIEWS_COUNT": "recenzija",
     "WRITE_REVIEW": "Napiši recenziju",
-    "REVIEW_FORM": {
-      "TITLE": "Napiši recenziju",
-      "RATING_LABEL": "Vaša ocena",
-      "COMMENT_LABEL": "Vaše iskustvo",
-      "COMMENT_PLACEHOLDER": "Podelite šta vam se svidelo ili nije svidelo na ovoj destinaciji...",
-      "CANCEL": "Otkaži",
-      "SUBMIT": "Objavi recenziju",
-      "STARS_1": "Loše",
-      "STARS_2": "Solidno",
-      "STARS_3": "Dobro",
-      "STARS_4": "Vrlo dobro",
-      "STARS_5": "Odlično",
-      "ALREADY_REVIEWED": "Već ste poslali recenziju za ovu destinaciju."
-    },
     "EMPTY_TAB": "Trenutno nema dostupnih stavki za ovu sekciju.",
     "EMPTY_REVIEWS": "Još nema recenzija za ovu destinaciju.",
     "LOCATION_NOT_AVAILABLE": "Lokacija nije dostupna",
@@ -575,6 +561,45 @@
       "MISSING_SLUG": "Slug destinacije nije prosleđen.",
       "LOAD_FAILED": "Greška pri učitavanju detalja destinacije."
     }
+  },
+  "EVENT_DETAIL": {
+    "BREADCRUMB": {
+      "HOME": "Početna",
+      "EVENTS": "Događaji"
+    },
+    "ABOUT": "O događaju",
+    "READ_MORE": "Pročitaj više",
+    "READ_LESS": "Prikaži manje",
+    "LOCATION": "Lokacija",
+    "OPEN_MAPS": "Otvori u Google Mapama",
+    "GALLERY": "Galerija prethodnih izdanja",
+    "VIEW_ALL": "Vidi sve",
+    "SIMILAR": "Slični događaji",
+    "VIEW_ALL_EVENTS": "Pogledajte sve",
+    "FROM": "od",
+    "FREE": "Besplatno",
+    "BUY_TICKET": "Kupi kartu",
+    "DATE": "Datum",
+    "TIME": "Vreme",
+    "VENUE": "Lokacija",
+    "TYPE": "Tip događaja",
+    "PERSONS": "Broj osoba",
+    "TOTAL": "Ukupno",
+    "FREE_CANCEL": "Besplatno otkazivanje"
+  },
+  "REVIEW_FORM": {
+    "TITLE": "Napiši recenziju",
+    "RATING_LABEL": "Vaša ocena",
+    "COMMENT_LABEL": "Vaše iskustvo",
+    "COMMENT_PLACEHOLDER": "Podelite šta vam se svidelo ili nije svidelo na ovoj destinaciji...",
+    "CANCEL": "Otkaži",
+    "SUBMIT": "Objavi recenziju",
+    "STARS_1": "Loše",
+    "STARS_2": "Solidno",
+    "STARS_3": "Dobro",
+    "STARS_4": "Vrlo dobro",
+    "STARS_5": "Odlično",
+    "ALREADY_REVIEWED": "Već ste poslali recenziju za ovu destinaciju."
   },
   "EVENTS": {
     "TITLE": "Dogadjaji",
