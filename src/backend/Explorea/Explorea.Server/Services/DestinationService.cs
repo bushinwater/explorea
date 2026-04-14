@@ -50,8 +50,8 @@ namespace Explorea.Server.Services
                 },
                 Location = new LocationDto
                 {
-                    Lat = d.Latitude,
-                    Lng = d.Longitude
+                    Lat = d.Latitude.Value,
+                    Lng = d.Longitude.Value
                 }
             });
         }
@@ -85,20 +85,17 @@ namespace Explorea.Server.Services
             if (destination == null)
                 return null;
 
-            // Step 1: get current destination's interest tag IDs
             var currentTagIds = await _context.DestinationInterestTags
                 .Where(dit => dit.DestinationId == destination.Id)
                 .Select(dit => dit.InterestTagId)
                 .ToListAsync();
 
-            // Step 2: get all candidate destinations
             var candidates = await _context.Destinations
                 .Include(d => d.City)
                 .Include(d => d.Country)
                 .Where(d => d.Id != destination.Id && !d.IsDeleted)
                 .ToListAsync();
 
-            // Step 3: get tag mappings for all candidates in one query
             var candidateIds = candidates.Select(d => d.Id).ToList();
             var tagMappings = await _context.DestinationInterestTags
                 .Where(dit => candidateIds.Contains(dit.DestinationId))
@@ -109,7 +106,6 @@ namespace Explorea.Server.Services
                 .GroupBy(m => m.DestinationId)
                 .ToDictionary(g => g.Key, g => g.Select(m => m.InterestTagId).ToHashSet());
 
-            // Step 4: score each candidate and take top 4
             var similarDestinations = candidates
                 .Select(d => new
                 {
@@ -175,8 +171,8 @@ namespace Explorea.Server.Services
 
                 Location = new LocationDto
                 {
-                    Lat = destination.Latitude,
-                    Lng = destination.Longitude
+                    Lat = destination.Latitude.Value,
+                    Lng = destination.Longitude.Value
                 },
 
                 Images = destination.Images
@@ -294,8 +290,8 @@ namespace Explorea.Server.Services
                     },
                     Location = new LocationDto
                     {
-                        Lat = d.Latitude,
-                        Lng = d.Longitude
+                        Lat = d.Latitude.Value,
+                        Lng = d.Longitude.Value
                     }
                 }).ToList()
             };

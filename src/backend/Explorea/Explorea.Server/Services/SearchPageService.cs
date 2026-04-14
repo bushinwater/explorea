@@ -42,28 +42,28 @@ namespace Explorea.Server.Services
             Key = "popular_destinations",
             Title = "Popularne destinacije",
             EntityType = "destination",
-            Items = popularDestinations.Cast<object>().ToList()
+            Items = WrapItems(popularDestinations, "destination")
           },
           new SearchPageSectionDto
           {
             Key = "top_rated_places",
             Title = "Najbolje ocenjeni objekti",
             EntityType = "place",
-            Items = topRatedPlaces.Cast<object>().ToList()
+            Items = WrapItems(topRatedPlaces, "place")
           },
           new SearchPageSectionDto
           {
             Key = "nearby_events",
             Title = "Uskoro u vašoj blizini",
             EntityType = "event",
-            Items = nearbyEvents.Cast<object>().ToList()
+            Items = WrapItems(nearbyEvents, "event")
           },
           new SearchPageSectionDto
           {
             Key = "popular_activities",
             Title = "Popularne aktivnosti",
             EntityType = "activity",
-            Items = popularActivities.Cast<object>().ToList()
+            Items = WrapItems(popularActivities, "activity")
           },
         }
       };
@@ -99,7 +99,7 @@ namespace Explorea.Server.Services
               Query = query.Query,
               TotalMatched = total
           },
-          Items = items.Cast<object>().ToList(),
+          Items = WrapItems(items, "event"),
           Pagination = BuildPagination(query.Page, query.PageSize, total),
           Sort = new SearchPageSortDto
           {
@@ -123,7 +123,7 @@ namespace Explorea.Server.Services
               Query = query.Query,
               TotalMatched = total
           },
-          Items = items.Cast<object>().ToList(),
+          Items = WrapItems(items, "activity"),
           Pagination = BuildPagination(query.Page, query.PageSize, total),
           Sort = new SearchPageSortDto
           {
@@ -147,7 +147,7 @@ namespace Explorea.Server.Services
           Query = query.Query,
           TotalMatched = total
         },
-        Items = items.Cast<object>().ToList(),
+        Items = WrapItems(items, "place"),
         Pagination = BuildPagination(query.Page, query.PageSize, total),
         Sort = new SearchPageSortDto
         {
@@ -171,7 +171,7 @@ namespace Explorea.Server.Services
           Query = query.Query,
           TotalMatched = total
         },
-        Items = items.Cast<object>().ToList(),
+        Items = WrapItems(items, "destination"),
         Pagination = BuildPagination(query.Page, query.PageSize, total),
         Sort = new SearchPageSortDto
         {
@@ -408,6 +408,17 @@ namespace Explorea.Server.Services
         Total = total,
         TotalPages = totalPages
       };
+    }
+
+    private static List<SearchItemDto> WrapItems<T>(IEnumerable<T> items, string entityType)
+    {
+      return items 
+       .Select(item => new SearchItemDto
+       {
+         EntityType = entityType,
+         Entity = item!
+       })
+       .ToList();
     }
 
     private SearchPageAppliedFilterDto MapAppliedFilters(SearchPageListQueryDto query)
