@@ -66,7 +66,6 @@ builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IExploreRepository, ExploreRepository>();
 builder.Services.AddScoped<IExploreService, ExploreService>();
 
-builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<IPlaceRepository, PlaceRepository>();
 
 builder.Services.AddMcpServer()

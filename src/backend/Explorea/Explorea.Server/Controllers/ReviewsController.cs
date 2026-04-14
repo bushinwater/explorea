@@ -117,6 +117,11 @@ namespace Explorea.Server.Controllers
                 var entity = await _db.Destinations.FindAsync(entityId);
                 if (entity != null) entity.AvgRating = rounded;
             }
+            else if (entityType == "event")
+            {
+                var entity = await _db.Events.FindAsync(entityId);
+                if (entity != null) entity.AvgRating = rounded;
+            }
 
             await _db.SaveChangesAsync();
         }
