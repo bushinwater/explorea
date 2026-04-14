@@ -5,6 +5,7 @@ import {
   ElementRef,
   ViewChild,
   ChangeDetectorRef,
+  HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -101,10 +102,16 @@ export class Explore implements AfterViewInit, OnDestroy {
   private sheetTouchStartY = 0;
   private sheetStartTranslate = 0;
   private contentTouchStartY = 0;
+  @HostListener('window:resize')
+  onResize(): void {
+    this.drawerTranslateY = this.collapsedTranslate;
+    this.cdr.detectChanges();
+  }
 
   private get collapsedTranslate(): number {
     const bottomNavHeight = window.innerWidth <= 768 ? 64 : 0;
-    const sheetHeight = window.innerHeight * 0.8; // mora da se poklapa sa height: 80vh u CSS-u
+    // 80dvh u CSS-u = window.innerHeight * 0.8 (dvh prati window.innerHeight)
+    const sheetHeight = window.innerHeight * 0.8;
     const peekHeight = 110; // samo handle bar + "N rezultata" tekst
     return Math.max(0, sheetHeight - bottomNavHeight - peekHeight);
   }
@@ -114,6 +121,13 @@ export class Explore implements AfterViewInit, OnDestroy {
       transform: `translateY(${this.drawerTranslateY}px)`,
       transition: (this.isDraggingSheet || !this.sheetReady) ? 'none' : 'transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)',
     };
+  }
+
+  get pinPopupBottom(): number {
+    if (window.innerWidth > 768) return 24; // desktop: ~var(--spacing-lg)
+    // Sheet: position absolute bottom:0, height 80dvh, translateY(drawerTranslateY)
+    // Popup bottom = visible sheet height from explore-main bottom + 20px gap
+    return window.innerHeight * 0.8 - this.drawerTranslateY + 20;
   }
 
   map!: MapLibreMap;
@@ -220,6 +234,8 @@ export class Explore implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
+    document.documentElement.classList.add('no-scroll');
+    document.body.classList.add('no-scroll');
     this.drawerTranslateY = this.collapsedTranslate;
     this.cdr.detectChanges();
     setTimeout(() => { this.sheetReady = true; this.cdr.detectChanges(); }, 50);
@@ -310,6 +326,9 @@ export class Explore implements AfterViewInit, OnDestroy {
 
   private flyToPin(pin: ExploreMarker) {
     this.selectedPin = pin;
+    // Collapse the bottom sheet so the pin popup is fully visible.
+    this.drawerExpanded = false;
+    this.drawerTranslateY = this.collapsedTranslate;
     this.map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(this.map.getZoom(), 12), duration: 900 });
     this.cdr.detectChanges();
   }
@@ -333,8 +352,10 @@ export class Explore implements AfterViewInit, OnDestroy {
 
   private requestGeolocation(): Promise<void> {
     return new Promise(resolve => {
-      if (!navigator.geolocation) {
-        this.nearbyOnly = false;
+      if (!navigator.geolocation || !window.isSecureContext) {
+        // Keep nearbyOnly = true so the hint "location unavailable" is shown,
+        // but markers will be fetched without location filter (userLat stays null).
+        this.cdr.detectChanges();
         resolve();
         return;
       }
@@ -345,11 +366,11 @@ export class Explore implements AfterViewInit, OnDestroy {
           resolve();
         },
         () => {
-          this.nearbyOnly = false;
+          // Denied or unavailable — keep nearbyOnly true so the hint shows.
           this.cdr.detectChanges();
           resolve();
         },
-        { timeout: 6000 },
+        { timeout: 10000 },
       );
     });
   }
@@ -672,6 +693,9 @@ export class Explore implements AfterViewInit, OnDestroy {
   toggleDrawer() {
     this.drawerExpanded = !this.drawerExpanded;
     this.drawerTranslateY = this.drawerExpanded ? 0 : this.collapsedTranslate;
+    if (this.drawerExpanded && this.selectedPin) {
+      this.selectedPin = null;
+    }
   }
 
   // ── Handle drag ──────────────────────────────────────────────
@@ -679,6 +703,9 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.isDraggingSheet = true;
     this.sheetTouchStartY = e.touches[0].clientY;
     this.sheetStartTranslate = this.drawerTranslateY;
+    if (this.selectedPin) {
+      this.selectedPin = null;
+    }
     this.cdr.detectChanges();
   }
 
@@ -784,6 +811,8 @@ export class Explore implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    document.documentElement.classList.remove('no-scroll');
+    document.body.classList.remove('no-scroll');
     this.markers.forEach(m => m.remove());
     if (this.map) this.map.remove();
     if (this.themeObserver) this.themeObserver.disconnect();

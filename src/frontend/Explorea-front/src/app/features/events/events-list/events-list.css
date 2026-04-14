@@ -860,9 +860,21 @@
   justify-content: center;
 }
 
+.location-modal__icon--error {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+}
+
+.location-modal__icon--error .material-icons {
+  color: var(--color-danger);
+}
+
 .location-modal__icon .material-icons {
   font-size: 28px;
   color: var(--color-primary);
+}
+
+.location-modal__icon .material-icons.spin {
+  animation: spin 1s linear infinite;
 }
 
 .location-modal__title {
