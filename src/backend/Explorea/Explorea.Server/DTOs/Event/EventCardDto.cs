@@ -12,6 +12,7 @@ namespace Explorea.API.DTOs.Event
         public TypeRefDto? Type { get; set; }
         public DateTimeOffset StartDatetime { get; set; }
         public DateTimeOffset EndDatetime { get; set; }
+        public decimal AvgRating { get; set; }
         public decimal? Price { get; set; }
         public string? Address { get; set; }
         public CityRefDto? City { get; set; }
