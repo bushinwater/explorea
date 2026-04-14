@@ -57,7 +57,7 @@ export class Home implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.locationService.requestAndStore();
+    this.locationService.requestIfFirstTime();
     this.cityFilters = this.homeService.getCityFilters();
 
     this.homeService.getHomeData().subscribe((data) => {

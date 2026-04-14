@@ -607,6 +607,9 @@
     "LOCATION_MODAL_TITLE": "Lokacija nije dostupna",
     "LOCATION_MODAL_TEXT": "Uključi deljenje lokacije kako bi eventi bili sortirani po udaljenosti od tvoje trenutne pozicije.",
     "LOCATION_MODAL_CANCEL": "Odustani",
-    "LOCATION_MODAL_ENABLE": "Uključi lokaciju"
+    "LOCATION_MODAL_ENABLE": "Uključi lokaciju",
+    "LOCATION_MODAL_WAITING": "Čekam dozvolu...",
+    "LOCATION_BLOCKED_TITLE": "Lokacija blokirana",
+    "LOCATION_BLOCKED_TEXT": "Lokacija je blokirana u podešavanjima browsera. Klikni na ikonu katanca pored adrese sajta, dozvoli lokaciju, pa pokušaj ponovo."
   }
 }

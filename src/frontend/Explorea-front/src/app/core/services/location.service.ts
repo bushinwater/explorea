@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 
 const LOCATION_KEY         = 'user_location';
 const LOCATION_ENABLED_KEY = 'location_enabled';
+const LOCATION_ASKED_KEY   = 'location_asked';
 const INTERVAL_MS          = 15 * 60 * 1000; // 15 minutes
 const MOVE_THRESHOLD_KM    = 0.3;             // 300 metres — below this, skip update
 
@@ -71,8 +72,30 @@ export class LocationService {
     this.fetchAndStore();
   }
 
-  private fetchAndStore(): void {
+  /**
+   * Called on home page load: triggers the browser's native location prompt
+   * the first time the user visits. If granted, tracking is enabled automatically.
+   * Requires a secure context (HTTPS or localhost) — silently skipped otherwise.
+   */
+  requestIfFirstTime(): void {
+    if (this.isEnabled()) {
+      this.fetchAndStore();
+      return;
+    }
     if (!navigator.geolocation) return;
+    if (!window.isSecureContext) return;
+    if (localStorage.getItem(LOCATION_ASKED_KEY) === 'true') return;
+
+    localStorage.setItem(LOCATION_ASKED_KEY, 'true');
+    navigator.geolocation.getCurrentPosition(
+      () => { this.enable(); },
+      () => { /* denied or unavailable — don't enable */ },
+      { timeout: 10000, maximumAge: 60_000 },
+    );
+  }
+
+  private fetchAndStore(): void {
+    if (!navigator.geolocation || !window.isSecureContext) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;

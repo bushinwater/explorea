@@ -291,7 +291,7 @@
     <div #mapContainer class="map-container"></div>
 
     <!-- Pin popup -->
-    <div class="pin-popup" *ngIf="selectedPin" (click)="$event.stopPropagation()">
+    <div class="pin-popup" *ngIf="selectedPin" [style.bottom.px]="pinPopupBottom" (click)="$event.stopPropagation()">
       <button class="pin-popup__close" (click)="closePin()">
         <span class="material-icons">close</span>
       </button>

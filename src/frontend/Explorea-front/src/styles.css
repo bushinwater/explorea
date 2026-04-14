@@ -94,6 +94,12 @@ body {
   overflow-x: hidden;
 }
 
+html.no-scroll,
+body.no-scroll {
+  overflow: hidden;
+  height: 100%;
+}
+
 /* DESIGN TOKENS */
 :root {
   /* COLORS */
