@@ -168,9 +168,9 @@ namespace Explorea.Server.Services
             if (existingUser != null)
                 throw new Exception("User with this email already exists.");
 
-            var userRole = await _authRepository.GetRoleByNameAsync("user");
+            var userRole = await _authRepository.GetRoleByNameAsync(RoleNames.Traveler);
             if (userRole == null)
-                throw new Exception("Default role 'user' was not found in database.");
+                throw new Exception($"Default role '{RoleNames.Traveler}' was not found in database.");
 
             var now = DateTimeOffset.UtcNow;
 
@@ -424,8 +424,8 @@ namespace Explorea.Server.Services
 
         private async Task<User> CreateSocialUserAsync(string email, string firstName, string lastName, DateTimeOffset now)
         {
-            var userRole = await _authRepository.GetRoleByNameAsync("user")
-                ?? throw new Exception("Default role 'user' was not found in database.");
+            var userRole = await _authRepository.GetRoleByNameAsync(RoleNames.Traveler)
+                ?? throw new Exception($"Default role '{RoleNames.Traveler}' was not found in database.");
 
             var user = new User
             {

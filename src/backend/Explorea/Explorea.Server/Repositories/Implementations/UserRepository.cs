@@ -16,6 +16,13 @@ namespace Explorea.Server.Repositories.Implementations
                 .FirstOrDefaultAsync(u => u.Email == email);
         }
 
+        public async Task<User?> GetByIdWithRoleAsync(Guid id)
+        {
+            return await _set
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == id);
+        }
+
         public async Task<UserPreferences?> GetPreferencesAsync(Guid userId)
         {
             return await _db.UserPreferences
