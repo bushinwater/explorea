@@ -222,6 +222,7 @@ namespace Explorea.Server.Services
                         Slug = e.Slug,
                         StartDatetime = e.StartDatetime,
                         EndDatetime = e.EndDatetime,
+                        AvgRating = e.AvgRating,
                         Price = e.Price,
                         Address = e.Address,
                         IsFeatured = e.IsFeatured,

@@ -64,10 +64,13 @@ namespace Explorea.Server.Services
 
         public async Task<EventDetailDto?> GetBySlugAsync(string slug)
         {
-            var entity = await _eventRepository.GetBySlugAsync(slug);
+            var entity = await _eventRepository.GetEventDetailsBySlugAsync(slug);
 
             if (entity == null)
                 return null;
+
+            var reviews = await _eventRepository.GetEventReviewsAsync(entity.Id, 15);
+            var similarEvents = await _eventRepository.GetSimilarEventsAsync(entity, 12);
 
             var detail = new EventDetailDto
             {
@@ -77,8 +80,10 @@ namespace Explorea.Server.Services
                 Description = entity.Description,
                 StartDatetime = entity.StartDatetime,
                 EndDatetime = entity.EndDatetime,
+                AvgRating = entity.AvgRating,
                 Price = entity.Price,
                 Address = entity.Address,
+                LocationName = entity.Place?.Name ?? entity.Address,
                 TicketUrl = entity.TicketUrl,
                 IsFeatured = entity.IsFeatured,
                 Popularity = entity.Popularity,
@@ -111,13 +116,26 @@ namespace Explorea.Server.Services
                         Name = entity.Country.Name
                     },
 
-                Location = (entity.Latitude.HasValue && entity.Longitude.HasValue)
-                    ? new LocationDto
-                    {
-                        Lat = entity.Latitude.Value,
-                        Lng = entity.Longitude.Value
-                    }
-                    : null,
+                Location =
+                    (entity.Latitude.HasValue && entity.Longitude.HasValue)
+                        ? new LocationDto
+                        {
+                            Lat = entity.Latitude.Value,
+                            Lng = entity.Longitude.Value
+                        }
+                        : entity.Place != null
+                            ? new LocationDto
+                            {
+                                Lat = entity.Place.Latitude,
+                                Lng = entity.Place.Longitude
+                            }
+                            : entity.Destination != null
+                                ? new LocationDto
+                                {
+                                    Lat = entity.Destination.Latitude,
+                                    Lng = entity.Destination.Longitude
+                                }
+                                : null,
 
                 Images = entity.Images
                     .OrderBy(i => i.SortOrder)
@@ -129,8 +147,28 @@ namespace Explorea.Server.Services
                     })
                     .ToList(),
 
-                Reviews = new List<ReviewDto>(),
-                SimilarEvents = new List<EventCardDto>()
+                Reviews = reviews
+                    .Select(r => new ReviewDto
+                    {
+                        Id = r.Id,
+                        Rating = r.Rating,
+                        Comment = r.Comment,
+                        CreatedAt = r.CreatedAt,
+                        User = new ReviewUserDto
+                        {
+                            Id = r.User.Id,
+                            FirstName = r.User.FirstName,
+                            LastName = r.User.LastName,
+                            TravelerRank = r.User.TravelerRank,
+                            ProfileImageUrl = r.User.ProfileImageUrl
+                        }
+                    })
+                    .ToList(),
+
+                SimilarEvents = similarEvents
+                    .Where(e => e.Id != entity.Id)
+                    .Select(MapToEventCardDto)
+                    .ToList()
             };
 
             return detail;
@@ -235,6 +273,7 @@ namespace Explorea.Server.Services
                 Slug = e.Slug,
                 StartDatetime = e.StartDatetime,
                 EndDatetime = e.EndDatetime,
+                AvgRating = e.AvgRating,
                 Price = e.Price,
                 Address = e.Address,
                 IsFeatured = e.IsFeatured,
