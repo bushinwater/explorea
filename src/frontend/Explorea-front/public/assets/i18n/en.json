@@ -532,20 +532,6 @@
     },
     "REVIEWS_COUNT": "reviews",
     "WRITE_REVIEW": "Write a review",
-    "REVIEW_FORM": {
-      "TITLE": "Write a review",
-      "RATING_LABEL": "Your rating",
-      "COMMENT_LABEL": "Your experience",
-      "COMMENT_PLACEHOLDER": "Share what you liked or didn't like about this destination...",
-      "CANCEL": "Cancel",
-      "SUBMIT": "Submit review",
-      "STARS_1": "Poor",
-      "STARS_2": "Fair",
-      "STARS_3": "Good",
-      "STARS_4": "Very good",
-      "STARS_5": "Excellent",
-      "ALREADY_REVIEWED": "You have already submitted a review for this destination."
-    },
     "EMPTY_TAB": "There are currently no available items for this section.",
     "EMPTY_REVIEWS": "There are no reviews for this destination yet.",
     "LOCATION_NOT_AVAILABLE": "Location is not available",
@@ -575,6 +561,45 @@
       "MISSING_SLUG": "Destination slug was not provided.",
       "LOAD_FAILED": "Error loading destination details."
     }
+  },
+  "EVENT_DETAIL": {
+    "BREADCRUMB": {
+      "HOME": "Home",
+      "EVENTS": "Events"
+    },
+    "ABOUT": "About the event",
+    "READ_MORE": "Read more",
+    "READ_LESS": "Show less",
+    "LOCATION": "Location",
+    "OPEN_MAPS": "Open in Google Maps",
+    "GALLERY": "Gallery of previous editions",
+    "VIEW_ALL": "View all",
+    "SIMILAR": "Similar events",
+    "VIEW_ALL_EVENTS": "View all events",
+    "FROM": "from",
+    "FREE": "Free",
+    "BUY_TICKET": "Buy ticket",
+    "DATE": "Date",
+    "TIME": "Time",
+    "VENUE": "Location",
+    "TYPE": "Event type",
+    "PERSONS": "Number of persons",
+    "TOTAL": "Total",
+    "FREE_CANCEL": "Free cancellation"
+  },
+  "REVIEW_FORM": {
+    "TITLE": "Write a review",
+    "RATING_LABEL": "Your rating",
+    "COMMENT_LABEL": "Your experience",
+    "COMMENT_PLACEHOLDER": "Share what you liked or didn't like about this destination...",
+    "CANCEL": "Cancel",
+    "SUBMIT": "Submit review",
+    "STARS_1": "Poor",
+    "STARS_2": "Fair",
+    "STARS_3": "Good",
+    "STARS_4": "Very good",
+    "STARS_5": "Excellent",
+    "ALREADY_REVIEWED": "You have already submitted a review for this destination."
   },
   "EVENTS": {
     "TITLE": "Events",

@@ -1,0 +1,27 @@
+<div class="gallery-header">
+  <button class="ghost-link" (click)="showAll = !showAll" type="button">{{ viewAllLabel }}</button>
+</div>
+
+<div class="gallery-scroll" [class.gallery-scroll--expanded]="showAll">
+  <img
+    *ngFor="let img of images; let i = index"
+    class="gallery-thumb"
+    [src]="img.imageUrl"
+    [alt]="img.caption || ''"
+    (click)="openLightbox(i)"
+  />
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" *ngIf="lightboxOpen" (click)="closeLightbox()">
+  <button class="lightbox__close" (click)="closeLightbox()" type="button">
+    <span class="material-icons">close</span>
+  </button>
+  <button class="lightbox__prev" (click)="$event.stopPropagation(); prev()" type="button">
+    <span class="material-icons">chevron_left</span>
+  </button>
+  <img class="lightbox__img" [src]="currentImage.imageUrl" [alt]="currentImage.caption || ''" (click)="$event.stopPropagation()" />
+  <button class="lightbox__next" (click)="$event.stopPropagation(); next()" type="button">
+    <span class="material-icons">chevron_right</span>
+  </button>
+</div>
