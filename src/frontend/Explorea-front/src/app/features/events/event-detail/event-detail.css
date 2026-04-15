@@ -1,3 +1,5 @@
+/* sticky-bar, floating-title — defined in global styles.css */
+
 .desktop-only {
   display: none;
 }
@@ -28,135 +30,7 @@
   }
 }
 
-/* ── Desktop topbar ── */
-.desktop-topbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 32px;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.back-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-text);
-  display: flex;
-  align-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  transition: background 0.2s;
-  flex-shrink: 0;
-}
-.back-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-.breadcrumb a {
-  color: var(--color-text-muted);
-  text-decoration: none;
-}
-.breadcrumb a:hover {
-  color: var(--color-primary);
-}
-.breadcrumb span.material-icons {
-  font-size: 16px;
-}
-.breadcrumb span:last-child {
-  color: var(--color-text);
-  font-weight: 500;
-}
-
-/* ── Hero ── */
-.hero {
-  position: relative;
-  width: 100%;
-  height: 280px;
-  overflow: hidden;
-}
-
-@media (min-width: 769px) {
-  .hero {
-    height: 440px;
-  }
-}
-
-.hero__img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.hero__gradient {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    transparent 30%,
-    var(--color-bg) 100%
-  );
-}
-
-.hero__content {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 2;
-  padding: 20px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-@media (min-width: 769px) {
-  .hero__content {
-    padding: 28px 32px;
-  }
-}
-
-.hero__badge {
-  display: inline-block;
-  width: fit-content;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 20px;
-  letter-spacing: 0.02em;
-}
-
-.hero__title {
-  font-family: var(--font-heading);
-  font-size: 24px;
-  font-weight: 700;
-  color: #fff;
-  margin: 0;
-  line-height: 1.25;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-
-@media (min-width: 769px) {
-  .hero__title {
-    font-size: 36px;
-  }
-}
+/* ── Hero — defined in global styles.css ── */
 
 /* ── Title block (chips only) ── */
 .title-block {
@@ -166,6 +40,10 @@
 @media (min-width: 769px) {
   .title-block {
     padding: 20px 32px 0;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 }
 
@@ -322,28 +200,57 @@
   margin: 0;
 }
 
-.read-more-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-primary);
-  font-size: 14px;
-  font-weight: 500;
-  padding: 0;
+
+/* ── Map pin ── */
+:host ::ng-deep .map-pin-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: default;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+:host ::ng-deep .pin-bubble {
+  width: 36px;
+  height: 36px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+}
+
+:host ::ng-deep .pin-bubble .material-icons {
+  transform: rotate(45deg);
+  font-size: 18px;
+  color: #fff;
 }
 
 /* ── Map ── */
-.map-container {
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.map-route-btn {
+  flex-shrink: 0;
+}
+
+.map-box {
   width: 100%;
-  height: 200px;
-  border-radius: 12px;
+  height: 240px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
   border: 1px solid var(--color-border);
 }
 
 @media (min-width: 769px) {
-  .map-container {
-    height: 260px;
+  .map-box {
+    height: 320px;
   }
 }
 
@@ -482,6 +389,9 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* section-head-row, section-head-actions, section-link, already-reviewed-badge,
+   ghost-btn, ghost-btn--sm, review-scroll-row, empty-text — defined in global styles.css */
 
 /* ── Full-width sections (gallery + similar) ── */
 .full-width-sections {
@@ -736,24 +646,295 @@
   padding: 12px;
 }
 
-/* ── Loading ── */
-.loading-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 60vh;
-}
-
-.spinning {
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 @media (min-width: 769px) {
   .mobile-cta {
     display: none !important;
+  }
+}
+
+/* ══════════════════════════════════════
+   SKELETON
+══════════════════════════════════════ */
+
+@keyframes skel-shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.skel {
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 0%,
+    var(--color-border) 40%,
+    var(--color-surface) 80%
+  );
+  background-size: 1200px 100%;
+  animation: skel-shimmer 1.6s infinite linear;
+}
+
+/* ── Skeleton page wrapper ── */
+.skel-event-page {
+  background: var(--color-bg);
+}
+@media (min-width: 769px) {
+  .skel-event-page {
+    margin-left: 72px;
+  }
+}
+
+/* ── Hero ── */
+.skel-hero {
+  position: relative;
+  width: 100%;
+  height: 440px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.skel-hero__topbar {
+  position: absolute;
+  top: var(--spacing-lg);
+  left: var(--spacing-lg);
+  right: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 2;
+}
+
+.skel-hero__topbar-right {
+  display: flex;
+  gap: 10px;
+}
+
+.skel-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+}
+
+.skel-hero__content {
+  position: absolute;
+  bottom: calc(var(--spacing-xl) + 16px);
+  left: var(--spacing-lg);
+  right: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skel-badge-row {
+  display: flex;
+  gap: 8px;
+  background: none !important;
+  animation: none !important;
+}
+
+.skel-badge {
+  height: 28px;
+  width: 90px;
+  border-radius: 999px;
+}
+
+.skel-title {
+  height: 42px;
+  width: min(400px, 70%);
+  border-radius: 10px;
+}
+
+/* ── Content area ── */
+.skel-event-content {
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  padding-top: 24px;
+  padding-bottom: 60px;
+}
+
+@media (min-width: 769px) {
+  .skel-event-content {
+    padding: 28px 32px 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* ── Info chips ── */
+.skel-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: none !important;
+  animation: none !important;
+}
+
+.skel-chip {
+  height: 56px;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.skel-chip:last-child {
+  border-bottom: none;
+}
+
+@media (min-width: 769px) {
+  .skel-chips {
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .skel-chip {
+    height: 36px;
+    width: 160px;
+    border-radius: var(--radius-md);
+    border-bottom: none;
+  }
+}
+
+/* ── Two-column layout ── */
+.skel-event-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+@media (min-width: 769px) {
+  .skel-event-layout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 32px;
+  }
+}
+
+.skel-event-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* ── Section ── */
+.skel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: none !important;
+  animation: none !important;
+}
+
+.skel-section-title {
+  height: 24px;
+  width: 160px;
+  border-radius: 6px;
+}
+
+.skel-line {
+  height: 15px;
+  width: 100%;
+  border-radius: 4px;
+}
+
+.skel-line--short { width: 50%; }
+.skel-line--med   { width: 75%; }
+
+/* ── Map ── */
+.skel-map {
+  height: 240px;
+  border-radius: var(--radius-xl);
+}
+
+@media (min-width: 769px) {
+  .skel-map { height: 320px; }
+}
+
+/* ── Booking card (desktop aside) ── */
+.skel-booking-card {
+  width: 320px;
+  height: 420px;
+  flex-shrink: 0;
+  border-radius: 16px;
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .skel-booking-card {
+    display: block;
+    position: sticky;
+    top: 16px;
+    margin-top: -60px;
+  }
+}
+
+/* ── Gallery ── */
+.skel-gallery {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 12px;
+  height: 472px;
+  background: none !important;
+  animation: none !important;
+}
+
+.skel-img-main {
+  height: 100%;
+  border-radius: 14px;
+}
+
+.skel-gallery-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  background: none !important;
+  animation: none !important;
+}
+
+.skel-img-sm {
+  flex: 1;
+  border-radius: 14px;
+}
+
+/* ── Similar events (cards scroll) ── */
+.skel-cards-row {
+  display: flex;
+  gap: 24px;
+  overflow: hidden;
+  background: none !important;
+  animation: none !important;
+}
+
+.skel-event-card {
+  flex: 0 0 260px;
+  height: 300px;
+  border-radius: var(--radius-lg);
+}
+
+/* ── Mobile responsive ── */
+@media (max-width: 768px) {
+  .skel-hero { height: 320px; }
+
+  .skel-gallery {
+    display: flex;
+    height: 160px;
+    overflow: hidden;
+  }
+
+  .skel-img-main {
+    flex: 0 0 260px;
+    width: 260px;
+    height: 160px;
+  }
+
+  .skel-gallery-col { display: none; }
+
+  .skel-event-card {
+    flex: 0 0 220px;
+    height: 260px;
   }
 }

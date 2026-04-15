@@ -178,12 +178,9 @@
             <p class="section__text">
               {{ descriptionExpanded ? place.description : shortDescription }}
             </p>
-            @if ((place.description?.length ?? 0) > 220) {
-              <button class="show-more-btn" (click)="toggleDescription()">
-                {{
-                  (descriptionExpanded ? 'PLACE_DETAIL.SHOW_LESS' : 'PLACE_DETAIL.SHOW_MORE')
-                    | translate
-                }}
+            @if ((place.description?.length ?? 0) > 300) {
+              <button class="read-more-btn" type="button" (click)="toggleDescription()">
+                {{ (descriptionExpanded ? 'COMMON.READ_LESS' : 'COMMON.READ_MORE') | translate }}
               </button>
             }
           </div>

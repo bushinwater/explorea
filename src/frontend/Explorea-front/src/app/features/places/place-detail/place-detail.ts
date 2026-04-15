@@ -58,7 +58,7 @@ export class PlaceDetailComponent implements OnInit {
 
   get shortDescription(): string {
     const full = this.place?.description ?? '';
-    return full.length > 220 ? full.slice(0, 220) + '...' : full;
+    return full.length > 300 ? full.slice(0, 300) + '…' : full;
   }
 
   get heroImage(): string {

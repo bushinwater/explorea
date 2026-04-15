@@ -1,6 +1,8 @@
 {
   "COMMON": {
-    "ERROR_GENERIC": "Nešto nije u redu. Molimo pokušajte ponovo."
+    "ERROR_GENERIC": "Nešto nije u redu. Molimo pokušajte ponovo.",
+    "READ_MORE": "Pročitaj više",
+    "READ_LESS": "Prikaži manje"
   },
   "REVIEW_MODAL": {
     "TITLE": "Napiši recenziju",
@@ -183,6 +185,8 @@
       "OPEN": "Otvori interaktivnu mapu"
     },
     "ORGANIZER_LINK": "Poseti sajt organizatora",
+    "READ_MORE": "Pročitaj više",
+    "READ_LESS": "Prikaži manje",
     "REVIEWS": {
       "TITLE": "Recenzije",
       "EMPTY": "Još nema recenzija. Budite prvi koji će podeliti iskustvo!",
@@ -557,6 +561,8 @@
       "TRAVELER_REVIEWS": "Recenzije putnika",
       "SIMILAR_DESTINATIONS": "Slične destinacije"
     },
+    "READ_MORE": "Pročitaj više",
+    "READ_LESS": "Prikaži manje",
     "ERRORS": {
       "MISSING_SLUG": "Slug destinacije nije prosleđen.",
       "LOAD_FAILED": "Greška pri učitavanju detalja destinacije."
@@ -571,6 +577,7 @@
     "READ_MORE": "Pročitaj više",
     "READ_LESS": "Prikaži manje",
     "LOCATION": "Lokacija",
+    "ROUTE": "Ruta",
     "OPEN_MAPS": "Otvori u Google Mapama",
     "GALLERY": "Galerija prethodnih izdanja",
     "VIEW_ALL": "Vidi sve",
@@ -585,7 +592,13 @@
     "TYPE": "Tip događaja",
     "PERSONS": "Broj osoba",
     "TOTAL": "Ukupno",
-    "FREE_CANCEL": "Besplatno otkazivanje"
+    "FREE_CANCEL": "Besplatno otkazivanje",
+    "REVIEWS": {
+      "TITLE": "Recenzije",
+      "WRITE": "Napiši recenziju",
+      "ALREADY_REVIEWED": "Već ste recenzirali ovaj događaj",
+      "EMPTY": "Još nema recenzija. Budite prvi koji će podeliti iskustvo!"
+    }
   },
   "REVIEW_FORM": {
     "TITLE": "Napiši recenziju",

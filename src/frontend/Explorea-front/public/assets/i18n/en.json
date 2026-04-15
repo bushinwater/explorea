@@ -1,6 +1,8 @@
 {
   "COMMON": {
-    "ERROR_GENERIC": "Something went wrong. Please try again."
+    "ERROR_GENERIC": "Something went wrong. Please try again.",
+    "READ_MORE": "Read more",
+    "READ_LESS": "Show less"
   },
   "REVIEW_MODAL": {
     "TITLE": "Write a review",
@@ -183,6 +185,8 @@
       "OPEN": "Open interactive map"
     },
     "ORGANIZER_LINK": "Visit organizer website",
+    "READ_MORE": "Read more",
+    "READ_LESS": "Show less",
     "REVIEWS": {
       "TITLE": "Reviews",
       "EMPTY": "No reviews yet. Be the first to share your experience!",
@@ -557,6 +561,8 @@
       "TRAVELER_REVIEWS": "Traveler reviews",
       "SIMILAR_DESTINATIONS": "Similar destinations"
     },
+    "READ_MORE": "Read more",
+    "READ_LESS": "Show less",
     "ERRORS": {
       "MISSING_SLUG": "Destination slug was not provided.",
       "LOAD_FAILED": "Error loading destination details."
@@ -571,6 +577,7 @@
     "READ_MORE": "Read more",
     "READ_LESS": "Show less",
     "LOCATION": "Location",
+    "ROUTE": "Route",
     "OPEN_MAPS": "Open in Google Maps",
     "GALLERY": "Gallery of previous editions",
     "VIEW_ALL": "View all",
@@ -585,7 +592,13 @@
     "TYPE": "Event type",
     "PERSONS": "Number of persons",
     "TOTAL": "Total",
-    "FREE_CANCEL": "Free cancellation"
+    "FREE_CANCEL": "Free cancellation",
+    "REVIEWS": {
+      "TITLE": "Reviews",
+      "WRITE": "Write a review",
+      "ALREADY_REVIEWED": "You have already reviewed this event",
+      "EMPTY": "No reviews yet. Be the first to share your experience!"
+    }
   },
   "REVIEW_FORM": {
     "TITLE": "Write a review",

@@ -1,23 +1,325 @@
 /* GLOBAL DESIGN SYSTEM */
 
+/* ===== SHARED DETAIL HERO (destination, activity, event detail pages) ===== */
+
+.detail-hero {
+  position: relative;
+  width: 100%;
+  height: 440px;
+  overflow: hidden;
+}
+
+.detail-hero__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  transform: scale(1.12);
+}
+
+.detail-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.18) 0%,
+    rgba(0,0,0,0.42) 36%,
+    rgba(0,0,0,0.70) 72%,
+    rgba(19,27,24,0.95) 100%
+  );
+}
+
+.detail-hero__topbar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+}
+
+.detail-hero__actions {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.circle-btn {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(24,31,38,0.62);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.circle-btn:hover           { background: rgba(24,31,38,0.82); }
+.circle-btn--saved          { background: rgba(220,53,69,0.72); color: #fff; }
+.circle-btn--saved:hover    { background: rgba(220,53,69,0.9); }
+.circle-btn--sm             { width: 34px; height: 34px; }
+.circle-btn .material-icons { font-size: 22px; }
+.circle-btn--sm .material-icons { font-size: 18px; }
+
+.detail-hero__content {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg) calc(var(--spacing-xl) + 16px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+  left: 0;
+  right: 0;
+}
+
+.detail-hero__badges {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-md);
+}
+
+.detail-badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: #fff;
+  font-size: var(--font-size-small);
+}
+
+.detail-badge--rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.detail-badge--rating .material-icons {
+  font-size: 14px;
+  color: #facc15;
+}
+
+.detail-hero__main h1,
+.detail-hero__text h1 {
+  font-family: var(--font-heading);
+  font-size: 52px;
+  font-weight: var(--font-weight-regular);
+  line-height: 1.05;
+  color: #fff;
+  margin: 0 0 var(--spacing-sm);
+  text-shadow: 0 2px 12px rgba(0,0,0,0.45);
+}
+
+.detail-hero__bottom-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 220px;
+  background: linear-gradient(to bottom, transparent, var(--color-bg));
+  z-index: 3;
+}
+
+@media (max-width: 768px) {
+  .detail-hero { height: 320px; }
+  .detail-hero__main h1,
+  .detail-hero__text h1 {
+    font-size: clamp(20px, 5.5vw, 28px);
+    line-height: 1.15;
+  }
+}
+
 /* ===== HERO TEXT — light theme override (must be global to bypass Angular encapsulation) ===== */
 
 [data-theme="light"] .floating-title,
 [data-theme="light"] .detail-hero__main h1,
 [data-theme="light"] .detail-hero__text h1,
-[data-theme="light"] .detail-badge,
 [data-theme="light"] .detail-meta-item,
 [data-theme="light"] .detail-hero__location {
   color: var(--color-text-primary);
   text-shadow: none;
 }
 
-[data-theme="light"] .detail-badge {
-  background: rgba(0, 0, 0, 0.08);
-  border-color: rgba(0, 0, 0, 0.12);
+/* ===== SHARED STICKY BAR + FLOATING TITLE ===== */
+
+.sticky-bar {
+  position: fixed;
+  top: 0;
+  left: 72px;
+  right: 0;
+  z-index: 100;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 var(--spacing-lg);
+  background: linear-gradient(to bottom, var(--color-bg) 0%, transparent 100%);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  pointer-events: none;
+}
+
+.sticky-bar--visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: all;
+}
+
+.floating-title {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 101;
+  pointer-events: none;
+  font-family: var(--font-heading);
+  font-size: 52px;
+  font-weight: var(--font-weight-regular);
+  line-height: 1.05;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+  transform-origin: top left;
+  will-change: transform;
+  transition: color 0.25s ease, text-shadow 0.25s ease;
+}
+
+.floating-title--arrived {
+  color: var(--color-text-primary);
+  text-shadow: none;
+}
+
+@media (max-width: 768px) {
+  .sticky-bar { left: 0; }
+  .floating-title {
+    font-size: clamp(20px, 5.5vw, 28px);
+    white-space: normal;
+    max-width: calc(100vw - 40px);
+    line-height: 1.15;
+  }
+}
+
+/* ===== SHARED GHOST BUTTON ===== */
+
+.ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-small);
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.ghost-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.ghost-btn .material-icons { font-size: 16px; }
+
+.ghost-btn--sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.ghost-btn--sm .material-icons { font-size: 14px; }
+
+/* ===== SHARED REVIEW SECTION ===== */
+
+.section-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.section-head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.section-link {
+  font-size: var(--font-size-small);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.section-link:hover { text-decoration: underline; }
+
+.section-link--subtle {
+  opacity: 0.75;
+}
+
+.section-link--subtle:hover {
+  opacity: 0.9;
+}
+
+.already-reviewed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-small);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.already-reviewed-badge .material-icons { font-size: 16px; }
+
+.review-scroll-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.empty-text {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+  padding: var(--spacing-lg) 0;
+  margin: 0;
 }
 
 /* ===== GLOBAL MAP BOX (MapLibre canvas rounding — must be global to bypass Angular encapsulation) ===== */
+
+/* ===== SHARED READ MORE BUTTON ===== */
+
+.read-more-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0;
+  margin-top: 4px;
+  align-self: flex-start;
+}
+
+/* ===== GLOBAL MAP BOX ===== */
 
 .map-box {
   clip-path: inset(0 round var(--radius-xl));

@@ -83,6 +83,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   isLoading = true;
   error: string | null = null;
   selectedTab: DetailTab = 'places';
+  descriptionExpanded = false;
 
   lightboxOpen = false;
   selectedImageIndex = 0;
@@ -159,6 +160,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     this.titleCaptured = false;
     this.scrollProgress = 0;
     this.mapInitialized = false;
+    this.descriptionExpanded = false;
     this.marker?.remove();
     this.map?.remove();
     this.map = undefined;
@@ -364,6 +366,12 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     const city = this.destination.city?.name;
     const country = this.destination.country?.name;
     return [city, country].filter(Boolean).join(', ');
+  }
+
+  get shortDescription(): string {
+    const desc = this.destination?.description ?? '';
+    if (desc.length <= 300) return desc;
+    return desc.slice(0, 300) + '…';
   }
 
   get heroImage(): string {

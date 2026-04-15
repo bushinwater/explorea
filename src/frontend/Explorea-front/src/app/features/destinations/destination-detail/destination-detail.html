@@ -150,8 +150,15 @@
             </div>
 
             <p class="detail-copy detail-copy--about">
-              {{ destination.description }}
+              {{ descriptionExpanded ? destination.description : shortDescription }}
             </p>
+            <button
+              class="read-more-btn"
+              *ngIf="destination.description.length > 300"
+              (click)="descriptionExpanded = !descriptionExpanded"
+              type="button">
+              {{ (descriptionExpanded ? 'COMMON.READ_LESS' : 'COMMON.READ_MORE') | translate }}
+            </button>
           </section>
 
           <section class="detail-section detail-section--gallery" *ngIf="galleryImages.length > 0">
