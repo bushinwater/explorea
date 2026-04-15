@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
 import { guestGuard } from './core/guards/guest-guard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
+import { EventDetailComponent } from './features/events/event-detail/event-detail';
 import { PlaceDetailComponent } from './features/places/place-detail/place-detail';
 import { DestinationDetailComponent } from './features/destinations/destination-detail/destination-detail';
 import { ForgotPassword } from './features/auth/forgot-password/forgot-password';
@@ -23,6 +24,7 @@ export const routes: Routes = [
   { path: 'explore', component: Explore },
   { path: 'events', component: EventsListPage },
   { path: 'activities/:slug', component: ActivityDetailComponent },
+  { path: 'events/:slug', component: EventDetailComponent },
   { path: 'places/:slug', component: PlaceDetailComponent },
   { path: 'destinations/:slug', component: DestinationDetailComponent },
   { path: 'interests', component: Interests },

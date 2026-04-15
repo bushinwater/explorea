@@ -1,0 +1,48 @@
+<div class="gallery-header" *ngIf="showViewAll">
+  <button class="ghost-link" (click)="onViewAll()" type="button">{{ viewAllLabel }}</button>
+</div>
+
+<!-- Desktop grid (shown on desktop when gridLayout=true) -->
+<div class="gallery-grid" *ngIf="gridLayout">
+  <div class="gallery-grid__item"
+    *ngFor="let img of gridImages; let i = index"
+    (click)="openLightbox(i)">
+    <img [src]="img.imageUrl" [alt]="img.caption || ''" />
+    <div class="gallery-thumb__more" *ngIf="hasHiddenGrid && i === gridImages.length - 1">
+      +{{ images.length - 3 }}
+    </div>
+  </div>
+</div>
+
+<!-- Scroll (default layout, and mobile fallback for gridLayout) -->
+<div class="gallery-scroll"
+  [class.gallery-scroll--expanded]="showAll"
+  [class.gallery-scroll--grid-mobile]="gridLayout">
+  <div class="gallery-thumb-wrap"
+    *ngFor="let img of visibleImages; let i = index"
+    (click)="openLightbox(i)">
+    <img
+      class="gallery-thumb"
+      [src]="img.imageUrl"
+      [alt]="img.caption || ''"
+    />
+    <div class="gallery-thumb__more"
+      *ngIf="hasHidden && i === visibleImages.length - 1">
+      +{{ images.length - maxPreview }}
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" *ngIf="lightboxOpen" (click)="closeLightbox()">
+  <button class="lightbox__close" (click)="closeLightbox()" type="button">
+    <span class="material-icons">close</span>
+  </button>
+  <button class="lightbox__prev" (click)="$event.stopPropagation(); prev()" type="button">
+    <span class="material-icons">chevron_left</span>
+  </button>
+  <img class="lightbox__img" [src]="currentImage.imageUrl" [alt]="currentImage.caption || ''" (click)="$event.stopPropagation()" />
+  <button class="lightbox__next" (click)="$event.stopPropagation(); next()" type="button">
+    <span class="material-icons">chevron_right</span>
+  </button>
+</div>

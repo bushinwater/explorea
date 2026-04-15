@@ -1,0 +1,7 @@
+<div class="map-wrapper" *ngIf="lat && lng">
+  <div class="map-el" #mapEl></div>
+  <a class="map-link" *ngIf="googleMapsUrl" [href]="googleMapsUrl" target="_blank" rel="noopener">
+    <span class="material-icons">open_in_new</span>
+    {{ linkLabel }}
+  </a>
+</div>

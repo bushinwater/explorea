@@ -138,7 +138,16 @@
             <div class="detail-section__head">
               <h2>{{ 'ACTIVITY_DETAIL.ABOUT' | translate }}</h2>
             </div>
-            <p class="detail-copy">{{ activity.description }}</p>
+            <p class="detail-copy">
+              {{ descriptionExpanded ? activity.description : shortDescription }}
+            </p>
+            <button
+              class="read-more-btn"
+              *ngIf="activity.description.length > 300"
+              (click)="descriptionExpanded = !descriptionExpanded"
+              type="button">
+              {{ (descriptionExpanded ? 'COMMON.READ_LESS' : 'COMMON.READ_MORE') | translate }}
+            </button>
           </section>
 
           <!-- MAP -->

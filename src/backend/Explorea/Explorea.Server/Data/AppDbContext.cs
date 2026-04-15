@@ -105,7 +105,7 @@ namespace Explorea.Server.Data
             modelBuilder.Entity<EventInterestTag>()
                 .HasKey(x => new { x.EventId, x.InterestTagId });
             modelBuilder.Entity<EventInterestTag>()
-                .HasOne(x => x.Event).WithMany().HasForeignKey(x => x.EventId);
+                .HasOne(x => x.Event).WithMany(e => e.InterestTags).HasForeignKey(x => x.EventId);  
             modelBuilder.Entity<EventInterestTag>()
                 .HasOne(x => x.InterestTag).WithMany(t => t.EventLinks).HasForeignKey(x => x.InterestTagId);
 

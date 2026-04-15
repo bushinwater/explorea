@@ -1,6 +1,8 @@
 {
   "COMMON": {
-    "ERROR_GENERIC": "Nešto nije u redu. Molimo pokušajte ponovo."
+    "ERROR_GENERIC": "Nešto nije u redu. Molimo pokušajte ponovo.",
+    "READ_MORE": "Pročitaj više",
+    "READ_LESS": "Prikaži manje"
   },
   "REVIEW_MODAL": {
     "TITLE": "Napiši recenziju",
@@ -183,6 +185,8 @@
       "OPEN": "Otvori interaktivnu mapu"
     },
     "ORGANIZER_LINK": "Poseti sajt organizatora",
+    "READ_MORE": "Pročitaj više",
+    "READ_LESS": "Prikaži manje",
     "REVIEWS": {
       "TITLE": "Recenzije",
       "EMPTY": "Još nema recenzija. Budite prvi koji će podeliti iskustvo!",
@@ -532,20 +536,6 @@
     },
     "REVIEWS_COUNT": "recenzija",
     "WRITE_REVIEW": "Napiši recenziju",
-    "REVIEW_FORM": {
-      "TITLE": "Napiši recenziju",
-      "RATING_LABEL": "Vaša ocena",
-      "COMMENT_LABEL": "Vaše iskustvo",
-      "COMMENT_PLACEHOLDER": "Podelite šta vam se svidelo ili nije svidelo na ovoj destinaciji...",
-      "CANCEL": "Otkaži",
-      "SUBMIT": "Objavi recenziju",
-      "STARS_1": "Loše",
-      "STARS_2": "Solidno",
-      "STARS_3": "Dobro",
-      "STARS_4": "Vrlo dobro",
-      "STARS_5": "Odlično",
-      "ALREADY_REVIEWED": "Već ste poslali recenziju za ovu destinaciju."
-    },
     "EMPTY_TAB": "Trenutno nema dostupnih stavki za ovu sekciju.",
     "EMPTY_REVIEWS": "Još nema recenzija za ovu destinaciju.",
     "LOCATION_NOT_AVAILABLE": "Lokacija nije dostupna",
@@ -571,10 +561,58 @@
       "TRAVELER_REVIEWS": "Recenzije putnika",
       "SIMILAR_DESTINATIONS": "Slične destinacije"
     },
+    "READ_MORE": "Pročitaj više",
+    "READ_LESS": "Prikaži manje",
     "ERRORS": {
       "MISSING_SLUG": "Slug destinacije nije prosleđen.",
       "LOAD_FAILED": "Greška pri učitavanju detalja destinacije."
     }
+  },
+  "EVENT_DETAIL": {
+    "BREADCRUMB": {
+      "HOME": "Početna",
+      "EVENTS": "Događaji"
+    },
+    "ABOUT": "O događaju",
+    "READ_MORE": "Pročitaj više",
+    "READ_LESS": "Prikaži manje",
+    "LOCATION": "Lokacija",
+    "ROUTE": "Ruta",
+    "OPEN_MAPS": "Otvori u Google Mapama",
+    "GALLERY": "Galerija prethodnih izdanja",
+    "VIEW_ALL": "Vidi sve",
+    "SIMILAR": "Slični događaji",
+    "VIEW_ALL_EVENTS": "Pogledajte sve",
+    "FROM": "od",
+    "FREE": "Besplatno",
+    "BUY_TICKET": "Kupi kartu",
+    "DATE": "Datum",
+    "TIME": "Vreme",
+    "VENUE": "Lokacija",
+    "TYPE": "Tip događaja",
+    "PERSONS": "Broj osoba",
+    "TOTAL": "Ukupno",
+    "FREE_CANCEL": "Besplatno otkazivanje",
+    "REVIEWS": {
+      "TITLE": "Recenzije",
+      "WRITE": "Napiši recenziju",
+      "ALREADY_REVIEWED": "Već ste recenzirali ovaj događaj",
+      "EMPTY": "Još nema recenzija. Budite prvi koji će podeliti iskustvo!"
+    }
+  },
+  "REVIEW_FORM": {
+    "TITLE": "Napiši recenziju",
+    "RATING_LABEL": "Vaša ocena",
+    "COMMENT_LABEL": "Vaše iskustvo",
+    "COMMENT_PLACEHOLDER": "Podelite šta vam se svidelo ili nije svidelo na ovoj destinaciji...",
+    "CANCEL": "Otkaži",
+    "SUBMIT": "Objavi recenziju",
+    "STARS_1": "Loše",
+    "STARS_2": "Solidno",
+    "STARS_3": "Dobro",
+    "STARS_4": "Vrlo dobro",
+    "STARS_5": "Odlično",
+    "ALREADY_REVIEWED": "Već ste poslali recenziju za ovu destinaciju."
   },
   "EVENTS": {
     "TITLE": "Dogadjaji",
@@ -607,6 +645,9 @@
     "LOCATION_MODAL_TITLE": "Lokacija nije dostupna",
     "LOCATION_MODAL_TEXT": "Uključi deljenje lokacije kako bi eventi bili sortirani po udaljenosti od tvoje trenutne pozicije.",
     "LOCATION_MODAL_CANCEL": "Odustani",
-    "LOCATION_MODAL_ENABLE": "Uključi lokaciju"
+    "LOCATION_MODAL_ENABLE": "Uključi lokaciju",
+    "LOCATION_MODAL_WAITING": "Čekam dozvolu...",
+    "LOCATION_BLOCKED_TITLE": "Lokacija blokirana",
+    "LOCATION_BLOCKED_TEXT": "Lokacija je blokirana u podešavanjima browsera. Klikni na ikonu katanca pored adrese sajta, dozvoli lokaciju, pa pokušaj ponovo."
   }
 }

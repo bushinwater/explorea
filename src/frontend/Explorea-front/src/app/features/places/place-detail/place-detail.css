@@ -477,17 +477,6 @@
   flex-shrink: 0;
 }
 
-.show-more-btn {
-  background: none;
-  border: none;
-  color: var(--color-primary);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  padding: 0;
-  margin-top: var(--spacing-xs);
-  text-decoration: underline;
-}
 
 /* Amenities grid (desktop) */
 .amenities-grid {

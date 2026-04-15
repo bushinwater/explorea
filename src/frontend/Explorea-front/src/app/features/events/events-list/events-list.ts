@@ -57,6 +57,8 @@ export class EventsListPage implements OnInit, OnDestroy {
   private userLng: number | null = null;
   locationAvailable = false;
   showLocationModal = false;
+  locationModalLoading = false;
+  locationModalBlocked = false;
 
   viewDate: Date = new Date(2026, 6, 1);
   selectedDate: Date | null = null;
@@ -301,9 +303,19 @@ export class EventsListPage implements OnInit, OnDestroy {
   }
 
   enableLocationFromModal(): void {
-    this.showLocationModal = false;
+    this.locationModalBlocked = false;
+    this.locationModalLoading = true;
+    this.cdr.detectChanges();
+
     this.locationService.enable();
-    if (!navigator.geolocation) { this.cdr.detectChanges(); return; }
+
+    if (!navigator.geolocation) {
+      this.locationModalLoading = false;
+      this.locationModalBlocked = true;
+      this.cdr.detectChanges();
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         this.userLat = pos.coords.latitude;
@@ -311,16 +323,29 @@ export class EventsListPage implements OnInit, OnDestroy {
         this.locationAvailable = true;
         this.sortMode = 'location';
         this.sortDir = 'asc';
+        this.locationModalLoading = false;
+        this.showLocationModal = false;
         this.applyFilters();
         this.cdr.detectChanges();
       },
-      () => { this.cdr.detectChanges(); },
-      { timeout: 8000 },
+      (err) => {
+        this.locationModalLoading = false;
+        // code 1 = PERMISSION_DENIED (blocked in browser settings)
+        if (err.code === 1) {
+          this.locationModalBlocked = true;
+        } else {
+          this.showLocationModal = false;
+        }
+        this.cdr.detectChanges();
+      },
+      { timeout: 10000 },
     );
   }
 
   dismissLocationModal(): void {
     this.showLocationModal = false;
+    this.locationModalLoading = false;
+    this.locationModalBlocked = false;
     this.cdr.detectChanges();
   }
 

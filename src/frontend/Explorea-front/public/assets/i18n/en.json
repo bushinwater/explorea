@@ -1,6 +1,8 @@
 {
   "COMMON": {
-    "ERROR_GENERIC": "Something went wrong. Please try again."
+    "ERROR_GENERIC": "Something went wrong. Please try again.",
+    "READ_MORE": "Read more",
+    "READ_LESS": "Show less"
   },
   "REVIEW_MODAL": {
     "TITLE": "Write a review",
@@ -183,6 +185,8 @@
       "OPEN": "Open interactive map"
     },
     "ORGANIZER_LINK": "Visit organizer website",
+    "READ_MORE": "Read more",
+    "READ_LESS": "Show less",
     "REVIEWS": {
       "TITLE": "Reviews",
       "EMPTY": "No reviews yet. Be the first to share your experience!",
@@ -532,20 +536,6 @@
     },
     "REVIEWS_COUNT": "reviews",
     "WRITE_REVIEW": "Write a review",
-    "REVIEW_FORM": {
-      "TITLE": "Write a review",
-      "RATING_LABEL": "Your rating",
-      "COMMENT_LABEL": "Your experience",
-      "COMMENT_PLACEHOLDER": "Share what you liked or didn't like about this destination...",
-      "CANCEL": "Cancel",
-      "SUBMIT": "Submit review",
-      "STARS_1": "Poor",
-      "STARS_2": "Fair",
-      "STARS_3": "Good",
-      "STARS_4": "Very good",
-      "STARS_5": "Excellent",
-      "ALREADY_REVIEWED": "You have already submitted a review for this destination."
-    },
     "EMPTY_TAB": "There are currently no available items for this section.",
     "EMPTY_REVIEWS": "There are no reviews for this destination yet.",
     "LOCATION_NOT_AVAILABLE": "Location is not available",
@@ -571,10 +561,58 @@
       "TRAVELER_REVIEWS": "Traveler reviews",
       "SIMILAR_DESTINATIONS": "Similar destinations"
     },
+    "READ_MORE": "Read more",
+    "READ_LESS": "Show less",
     "ERRORS": {
       "MISSING_SLUG": "Destination slug was not provided.",
       "LOAD_FAILED": "Error loading destination details."
     }
+  },
+  "EVENT_DETAIL": {
+    "BREADCRUMB": {
+      "HOME": "Home",
+      "EVENTS": "Events"
+    },
+    "ABOUT": "About the event",
+    "READ_MORE": "Read more",
+    "READ_LESS": "Show less",
+    "LOCATION": "Location",
+    "ROUTE": "Route",
+    "OPEN_MAPS": "Open in Google Maps",
+    "GALLERY": "Gallery of previous editions",
+    "VIEW_ALL": "View all",
+    "SIMILAR": "Similar events",
+    "VIEW_ALL_EVENTS": "View all events",
+    "FROM": "from",
+    "FREE": "Free",
+    "BUY_TICKET": "Buy ticket",
+    "DATE": "Date",
+    "TIME": "Time",
+    "VENUE": "Location",
+    "TYPE": "Event type",
+    "PERSONS": "Number of persons",
+    "TOTAL": "Total",
+    "FREE_CANCEL": "Free cancellation",
+    "REVIEWS": {
+      "TITLE": "Reviews",
+      "WRITE": "Write a review",
+      "ALREADY_REVIEWED": "You have already reviewed this event",
+      "EMPTY": "No reviews yet. Be the first to share your experience!"
+    }
+  },
+  "REVIEW_FORM": {
+    "TITLE": "Write a review",
+    "RATING_LABEL": "Your rating",
+    "COMMENT_LABEL": "Your experience",
+    "COMMENT_PLACEHOLDER": "Share what you liked or didn't like about this destination...",
+    "CANCEL": "Cancel",
+    "SUBMIT": "Submit review",
+    "STARS_1": "Poor",
+    "STARS_2": "Fair",
+    "STARS_3": "Good",
+    "STARS_4": "Very good",
+    "STARS_5": "Excellent",
+    "ALREADY_REVIEWED": "You have already submitted a review for this destination."
   },
   "EVENTS": {
     "TITLE": "Events",
@@ -607,6 +645,9 @@
     "LOCATION_MODAL_TITLE": "Location unavailable",
     "LOCATION_MODAL_TEXT": "Enable location sharing to sort events by distance from your current position.",
     "LOCATION_MODAL_CANCEL": "Cancel",
-    "LOCATION_MODAL_ENABLE": "Enable location"
+    "LOCATION_MODAL_ENABLE": "Enable location",
+    "LOCATION_MODAL_WAITING": "Waiting for permission...",
+    "LOCATION_BLOCKED_TITLE": "Location blocked",
+    "LOCATION_BLOCKED_TEXT": "Location is blocked in your browser settings. Click the lock icon next to the site address, allow location, then try again."
   }
 }
