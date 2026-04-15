@@ -13,7 +13,7 @@ namespace Explorea.API.Models
         [Column("city_id")]        public int?  CityId        { get; set; }
         [Column("destination_id")] public Guid? DestinationId { get; set; }
         [Column("place_id")]       public Guid? PlaceId       { get; set; }
-        [Column("type_id")]        public int?   TypeId        { get; set; }
+        [Column("type_id")]        public int   TypeId        { get; set; }
 
         [Required, MaxLength(200), Column("name")]
         public string Name { get; set; } = null!;
@@ -59,6 +59,7 @@ namespace Explorea.API.Models
         [ForeignKey("CountryId")]     public Country?     Country     { get; set; }
 
         public ICollection<EventImage> Images { get; set; } = new List<EventImage>();
+        public ICollection<EventInterestTag> InterestTags { get; set; } = new List<EventInterestTag>();
 
         [MaxLength(500), Column("preview_image_url")]
         public string? PreviewImageUrl { get; set; }

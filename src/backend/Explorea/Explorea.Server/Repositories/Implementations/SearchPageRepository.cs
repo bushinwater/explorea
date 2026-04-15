@@ -537,7 +537,7 @@ namespace Explorea.Server.Repositories.Implementations
 
       if (query.EventTypeIds?.Count > 0)
       {
-        eventsQuery = eventsQuery.Where(e => e.TypeId.HasValue && query.EventTypeIds.Contains(e.TypeId.Value));
+        eventsQuery = eventsQuery.Where(e => query.EventTypeIds.Contains(e.TypeId));
       }
 
       if (query.MinPrice.HasValue)
