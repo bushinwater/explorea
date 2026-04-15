@@ -1,15 +1,36 @@
-<div class="gallery-header">
-  <button class="ghost-link" (click)="showAll = !showAll" type="button">{{ viewAllLabel }}</button>
+<div class="gallery-header" *ngIf="showViewAll">
+  <button class="ghost-link" (click)="onViewAll()" type="button">{{ viewAllLabel }}</button>
 </div>
 
-<div class="gallery-scroll" [class.gallery-scroll--expanded]="showAll">
-  <img
-    *ngFor="let img of images; let i = index"
-    class="gallery-thumb"
-    [src]="img.imageUrl"
-    [alt]="img.caption || ''"
-    (click)="openLightbox(i)"
-  />
+<!-- Desktop grid (shown on desktop when gridLayout=true) -->
+<div class="gallery-grid" *ngIf="gridLayout">
+  <div class="gallery-grid__item"
+    *ngFor="let img of gridImages; let i = index"
+    (click)="openLightbox(i)">
+    <img [src]="img.imageUrl" [alt]="img.caption || ''" />
+    <div class="gallery-thumb__more" *ngIf="hasHiddenGrid && i === gridImages.length - 1">
+      +{{ images.length - 3 }}
+    </div>
+  </div>
+</div>
+
+<!-- Scroll (default layout, and mobile fallback for gridLayout) -->
+<div class="gallery-scroll"
+  [class.gallery-scroll--expanded]="showAll"
+  [class.gallery-scroll--grid-mobile]="gridLayout">
+  <div class="gallery-thumb-wrap"
+    *ngFor="let img of visibleImages; let i = index"
+    (click)="openLightbox(i)">
+    <img
+      class="gallery-thumb"
+      [src]="img.imageUrl"
+      [alt]="img.caption || ''"
+    />
+    <div class="gallery-thumb__more"
+      *ngIf="hasHidden && i === visibleImages.length - 1">
+      +{{ images.length - maxPreview }}
+    </div>
+  </div>
 </div>
 
 <!-- Lightbox -->
