@@ -51,10 +51,21 @@ namespace Explorea.Server.Data
         public DbSet<EventInterestTag> EventInterestTags { get; set; }
         public DbSet<ActivityInterestTag> ActivityInterestTags { get; set; }
         public DbSet<Country> Countries { get; set; }
+        public DbSet<Newsletter> Newsletters { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Newsletter>(entity =>
+            {
+                entity.ToTable("newsletter");
+                entity.HasKey(x => x.Email);
+                entity.Property(x => x.Email)
+                      .HasColumnName("email")
+                      .HasMaxLength(255)
+                      .IsRequired();
+            });
 
             // ---- Composite primary keys ----
             modelBuilder.Entity<PlaceAmenityLink>()
