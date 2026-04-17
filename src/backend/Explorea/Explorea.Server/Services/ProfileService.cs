@@ -19,6 +19,7 @@ namespace Explorea.Server.Services
         private readonly IUserRepository _userRepository;
         private readonly IAiBotService _aiBotService;
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly INewsletterService _newsletterService;
 
         public ProfileService(
             IUserRepository userRepository,
@@ -26,6 +27,7 @@ namespace Explorea.Server.Services
             IReviewRepository reviewRepository,
             IAiBotService aiBotService,
             ICloudinaryService cloudinaryService,
+            INewsletterService newsletterService,
             AppDbContext db)
         {
             _userRepository = userRepository;
@@ -33,6 +35,7 @@ namespace Explorea.Server.Services
             _reviewRepository = reviewRepository;
             _aiBotService = aiBotService;
             _cloudinaryService = cloudinaryService;
+            _newsletterService = newsletterService;
             _db = db;
         }
 
@@ -485,17 +488,7 @@ namespace Explorea.Server.Services
 
         public async Task<bool> UpdateNewsletterAsync(Guid userId, bool newsletter)
         {
-            var user = await _userRepository.GetByIdAsync(userId)
-                ?? throw new Exception("User not found.");
-
-            user.Newsletter = newsletter;
-            user.UpdatedAt = DateTimeOffset.UtcNow;
-            user.UpdatedBy = userId;
-
-            _userRepository.Update(user);
-            await _userRepository.SaveChangesAsync();
-
-            return user.Newsletter;
+            return await _newsletterService.UpdateUserSubscriptionAsync(userId, newsletter);
         }
 
         private static string NormalizeEntityType(string entityType)
