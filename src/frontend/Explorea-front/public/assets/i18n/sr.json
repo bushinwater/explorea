@@ -649,5 +649,21 @@
     "LOCATION_MODAL_WAITING": "Čekam dozvolu...",
     "LOCATION_BLOCKED_TITLE": "Lokacija blokirana",
     "LOCATION_BLOCKED_TEXT": "Lokacija je blokirana u podešavanjima browsera. Klikni na ikonu katanca pored adrese sajta, dozvoli lokaciju, pa pokušaj ponovo."
+  },
+  "SAVED_ITEMS": {
+    "TITLE": "Sačuvano",
+    "SUBTITLE": "Tvoje omiljene destinacije, aktivnosti i događaji na jednom mestu.",
+    "EMPTY": "Još ništa nije sačuvano.",
+    "EMPTY_SUB": "Istraži sadržaj i dodaj omiljene stavke klikom na srce.",
+    "REMOVE": "Ukloni",
+    "REMOVED": "Uklonjeno",
+    "TYPE_destination": "Destinacija",
+    "TYPE_activity": "Aktivnost",
+    "TYPE_event": "Događaj",
+    "TYPE_place": "Mesto"
+  },
+  "MY_REVIEWS": {
+    "EMPTY": "Još niste napisali nijednu recenziju.",
+    "EMPTY_SUB": "Posjetite destinaciju ili aktivnost i podelite utiske."
   }
 }

@@ -16,6 +16,7 @@ import { VerifyEmail } from './features/auth/verify-email/verify-email';
 import { Home } from './features/home/home';
 import { Explore } from './features/explore/explore';
 import { Settings } from './features/profile/settings/settings';
+import { SavedItemsPage } from './features/profile/saved-items/saved-items';
 import { EventsListPage } from './features/events/events-list/events-list';
 
 export const routes: Routes = [
@@ -29,6 +30,7 @@ export const routes: Routes = [
   { path: 'destinations/:slug', component: DestinationDetailComponent },
   { path: 'interests', component: Interests },
   { path: 'profile', component: Settings, canActivate: [authGuard] },
+  { path: 'saved', component: SavedItemsPage, canActivate: [authGuard] },
   { path: 'login', component: Login, canActivate: [guestGuard] },
   { path: 'register', component: Register, canActivate: [guestGuard] },
   { path: 'forgot-password', component: ForgotPassword },

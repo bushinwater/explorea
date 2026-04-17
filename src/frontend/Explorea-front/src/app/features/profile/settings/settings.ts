@@ -6,7 +6,8 @@ import { TranslateModule } from '@ngx-translate/core';
 import { ImageCropperComponent, ImageCroppedEvent } from 'ngx-image-cropper';
 import { forkJoin } from 'rxjs';
 import { finalize } from 'rxjs/operators';
-import { ForYouItemDto, ProfileStatsDto, UpdateUserDto, UserProfile } from '../../../core/models/user.model';
+import { ForYouItemDto, ProfileReviewDto, ProfileStatsDto, UpdateUserDto, UserProfile } from '../../../core/models/user.model';
+import { ReviewDto } from '../../../core/models/home.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { AvatarService } from '../../../core/services/avatar.service';
 import { InterestsService } from '../../../core/services/interests.service';
@@ -17,6 +18,7 @@ import { ThemeService } from '../../../core/services/theme.service';
 import { UserService } from '../../../core/services/user.service';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
+import { ReviewCard } from '../../../shared/components/review-card/review-card';
 
 const SCROLL_KEY = 'profile_scroll_y';
 const SECTION_KEY = 'profile_open_section';
@@ -24,7 +26,7 @@ const SECTION_KEY = 'profile_open_section';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, Sidebar, BottomNav, TranslateModule, ImageCropperComponent],
+  imports: [CommonModule, FormsModule, RouterModule, Sidebar, BottomNav, TranslateModule, ImageCropperComponent, ReviewCard],
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })
@@ -62,7 +64,9 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
   imageChangedEvent: Event | null = null;
   private lastCropEvent: ImageCroppedEvent | null = null;
 
-  openSection: 'profile' | 'app' | null = null;
+  openSection: 'profile' | 'app' | 'reviews' | null = null;
+  myReviews: ProfileReviewDto[] | null = null;
+  reviewsLoading = false;
 
   get isDirty(): boolean {
     return this.firstName !== this.originalFirstName || this.lastName !== this.originalLastName;
@@ -186,11 +190,51 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
     return ['/'];
   }
 
-  toggleSection(section: 'profile' | 'app') {
+  toggleSection(section: 'profile' | 'app' | 'reviews') {
     this.openSection = this.openSection === section ? null : section;
     if (section === 'profile') {
       this.passwordChangeRequested = false;
     }
+    if (section === 'reviews' && this.openSection === 'reviews' && this.myReviews === null) {
+      this.loadMyReviews();
+    }
+  }
+
+  private loadMyReviews(): void {
+    this.reviewsLoading = true;
+    this.cdr.detectChanges();
+    this.profileService.getMyReviews().subscribe({
+      next: (reviews) => {
+        this.myReviews = reviews;
+        this.reviewsLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.myReviews = [];
+        this.reviewsLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  get myReviewsAsDto(): ReviewDto[] {
+    if (!this.myReviews || !this.user) return [];
+    return this.myReviews.map(r => ({
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment ?? '',
+      createdAt: r.createdAt,
+      entityType: r.entityType,
+      entityName: r.entityName,
+      entitySlug: r.entitySlug,
+      user: {
+        id: this.user!.id,
+        firstName: this.user!.firstName,
+        lastName: this.user!.lastName,
+        travelerRank: this.user!.travelerRank,
+        profileImageUrl: this.user!.profileImageUrl ?? null,
+      },
+    }));
   }
 
   izmeniInterese() {
