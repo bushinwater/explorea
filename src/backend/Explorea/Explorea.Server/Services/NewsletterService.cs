@@ -24,10 +24,23 @@ namespace Explorea.Server.Services
         public async Task<(bool Created, string Email)> SubscribeGuestAsync(string email)
         {
             var normalizedEmail = NormalizeEmail(email);
+            var existingUser = await _userRepository.GetByEmailAsync(normalizedEmail);
             var existingSubscription = await _newsletterRepository.GetByEmailAsync(normalizedEmail);
 
             if (existingSubscription != null)
+            {
+                if (existingUser != null && !existingUser.Newsletter)
+                {
+                    existingUser.Newsletter = true;
+                    existingUser.UpdatedAt = DateTimeOffset.UtcNow;
+                    existingUser.UpdatedBy = existingUser.Id;
+
+                    _userRepository.Update(existingUser);
+                    await _userRepository.SaveChangesAsync();
+                }
+
                 return (Created: false, Email: normalizedEmail);
+            }
 
             await _newsletterRepository.AddAsync(new Newsletter
             {
@@ -35,6 +48,16 @@ namespace Explorea.Server.Services
             });
 
             await _newsletterRepository.SaveChangesAsync();
+
+            if (existingUser != null && !existingUser.Newsletter)
+            {
+                existingUser.Newsletter = true;
+                existingUser.UpdatedAt = DateTimeOffset.UtcNow;
+                existingUser.UpdatedBy = existingUser.Id;
+
+                _userRepository.Update(existingUser);
+                await _userRepository.SaveChangesAsync();
+            }
 
             return (Created: true, Email: normalizedEmail);
         }
@@ -94,6 +117,24 @@ namespace Explorea.Server.Services
                 htmlBody.Trim());
 
             return recipients.Count;
+        }
+
+        public async Task<bool> SyncUserSubscriptionAsync(User user)
+        {
+            var normalizedEmail = NormalizeEmail(user.Email);
+            var isSubscribed = await _newsletterRepository.ExistsAsync(normalizedEmail);
+
+            if (user.Newsletter == isSubscribed)
+                return user.Newsletter;
+
+            user.Newsletter = isSubscribed;
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+            user.UpdatedBy = user.Id;
+
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
+
+            return user.Newsletter;
         }
 
         private static string NormalizeEmail(string email)
