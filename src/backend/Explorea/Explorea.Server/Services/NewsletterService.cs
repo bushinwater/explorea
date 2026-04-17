@@ -9,13 +9,16 @@ namespace Explorea.Server.Services
     {
         private readonly INewsletterRepository _newsletterRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IEmailService _emailService;
 
         public NewsletterService(
             INewsletterRepository newsletterRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IEmailService emailService)
         {
             _newsletterRepository = newsletterRepository;
             _userRepository = userRepository;
+            _emailService = emailService;
         }
 
         public async Task<(bool Created, string Email)> SubscribeGuestAsync(string email)
@@ -70,6 +73,27 @@ namespace Explorea.Server.Services
             await _userRepository.SaveChangesAsync();
 
             return user.Newsletter;
+        }
+
+        public async Task<int> SendNewsletterAsync(string subject, string htmlBody)
+        {
+            if (string.IsNullOrWhiteSpace(subject))
+                throw new Exception("Newsletter subject is required.");
+
+            if (string.IsNullOrWhiteSpace(htmlBody))
+                throw new Exception("Newsletter body is required.");
+
+            var recipients = await _newsletterRepository.GetAllEmailsAsync();
+
+            if (recipients.Count == 0)
+                throw new Exception("There are no newsletter subscribers.");
+
+            await _emailService.SendNewsletterEmailAsync(
+                recipients,
+                subject.Trim(),
+                htmlBody.Trim());
+
+            return recipients.Count;
         }
 
         private static string NormalizeEmail(string email)

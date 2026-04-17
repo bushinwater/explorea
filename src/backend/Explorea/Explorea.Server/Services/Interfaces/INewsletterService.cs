@@ -4,5 +4,6 @@ namespace Explorea.Server.Services.Interfaces
     {
         Task<(bool Created, string Email)> SubscribeGuestAsync(string email);
         Task<bool> UpdateUserSubscriptionAsync(Guid userId, bool newsletter);
+        Task<int> SendNewsletterAsync(string subject, string htmlBody);
     }
 }
