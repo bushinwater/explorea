@@ -50,8 +50,8 @@ namespace Explorea.Server.Services
                 },
                 Location = new LocationDto
                 {
-                    Lat = d.Latitude,
-                    Lng = d.Longitude
+                    Lat = d.Latitude.Value,
+                    Lng = d.Longitude.Value
                 }
             });
         }
@@ -175,8 +175,8 @@ namespace Explorea.Server.Services
 
                 Location = new LocationDto
                 {
-                    Lat = destination.Latitude,
-                    Lng = destination.Longitude
+                    Lat = destination.Latitude.Value,
+                    Lng = destination.Longitude.Value
                 },
 
                 Images = destination.Images
@@ -295,8 +295,8 @@ namespace Explorea.Server.Services
                     },
                     Location = new LocationDto
                     {
-                        Lat = d.Latitude,
-                        Lng = d.Longitude
+                        Lat = d.Latitude.Value,
+                        Lng = d.Longitude.Value
                     }
                 }).ToList()
             };

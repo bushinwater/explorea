@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Explorea.API.DTOs.Home;
 using Explorea.Server.Data;
 using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -18,10 +19,17 @@ namespace Explorea.Server.Controllers
         }
         
         [HttpGet]
-        public async Task<IActionResult> GetHome()
+        public async Task<IActionResult> GetHome([FromQuery] HomeQueryDto query)
         {
-            var result = await _homeService.GetHomeDataAsync();
-            return Ok(result);
+            try
+            {
+                var result = await _homeService.GetHomeDataAsync(query);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet("recommendations")]

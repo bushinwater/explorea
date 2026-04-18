@@ -132,8 +132,8 @@ namespace Explorea.Server.Services
                             : entity.Destination != null
                                 ? new LocationDto
                                 {
-                                    Lat = entity.Destination.Latitude,
-                                    Lng = entity.Destination.Longitude
+                                    Lat = entity.Destination.Latitude.Value,
+                                    Lng = entity.Destination.Longitude.Value
                                 }
                                 : null,
 

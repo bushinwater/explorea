@@ -21,14 +21,14 @@ namespace Explorea.Server.Services
       _homeRepository = homeRepository;
     }
 
-    public async Task<HomeDataDto> GetHomeDataAsync()
+    public async Task<HomeDataDto> GetHomeDataAsync(HomeQueryDto query)
     {
       var now = DateTimeOffset.UtcNow;
 
-      var hero = await _homeRepository.GetHeroBannerDestinationAsync(5);
-      var destinations = await _homeRepository.GetFeaturedDestinationsAsync(8);
-      var events = await _homeRepository.GetUpcomingEventsAsync(now, 8);
-      var activities = await _homeRepository.GetPopularActivitiesAsync(8);
+      var hero = await _homeRepository.GetHeroBannerDestinationAsync(5, query.UserLat, query.UserLng);
+      var destinations = await _homeRepository.GetFeaturedDestinationsAsync(8, query.UserLat, query.UserLng);
+      var events = await _homeRepository.GetUpcomingEventsAsync(now, 8, query.UserLat, query.UserLng);
+      var activities = await _homeRepository.GetPopularActivitiesAsync(8, query.UserLat, query.UserLng);
       var reviews = await _homeRepository.GetTravelerReviewsAsync(15);
 
       return new HomeDataDto
@@ -64,10 +64,25 @@ namespace Explorea.Server.Services
       },
       Location = new LocationDto
       {
-        Lat = d.Latitude,
-        Lng = d.Longitude
+        Lat = d.Latitude.Value,
+        Lng = d.Longitude.Value
       }
     };
+
+    private static void ValidateHomeQuery(HomeQueryDto query)
+    {
+      var hasLat = query.UserLat.HasValue;
+      var hasLng = query.UserLng.HasValue;
+
+      if (hasLat != hasLng)
+          throw new ArgumentException("UserLat and UserLng must be provided together.");
+
+      if (query.UserLat is < -90 or > 90)
+          throw new ArgumentException("UserLat must be between -90 and 90.");
+
+      if (query.UserLng is < -180 or > 180)
+          throw new ArgumentException("UserLng must be between -180 and 180.");
+    }
 
     private static ReviewDto MapReview(ReviewWithEntityDto d) => new()
     {

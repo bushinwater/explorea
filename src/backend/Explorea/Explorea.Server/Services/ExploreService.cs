@@ -83,8 +83,8 @@ namespace Explorea.Server.Services
             Id = d.Id,
             Slug = d.Slug,
             Name = d.Name,
-            Lat = d.Latitude,
-            Lng = d.Longitude,
+            Lat = d.Latitude.Value,
+            Lng = d.Longitude.Value,
             PreviewImageUrl = d.PreviewImageUrl,
             AvgRating = d.AvgRating,
             Subtitle = d.City?.Name

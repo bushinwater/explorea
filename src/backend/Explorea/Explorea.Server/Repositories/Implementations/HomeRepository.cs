@@ -2,6 +2,7 @@ using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 
 namespace Explorea.Server.Repositories.Implementations
 {
@@ -16,44 +17,74 @@ namespace Explorea.Server.Repositories.Implementations
       _db = db;
     }
     
-    public async Task<List<Destination>> GetFeaturedDestinationsAsync(int take)
+    public async Task<List<Destination>> GetFeaturedDestinationsAsync(int take, double? userLat, double? userLng)
     {
-      return await _db.Destinations
+      var userPoint = BuildUserPoint(userLat, userLng);
+
+      var query = _db.Destinations
           .AsNoTracking()
           .Include(d => d.City)
           .Include(d => d.Country)
-          .OrderByDescending(d => d.Popularity)
-          .ThenByDescending(d => d.IsFeatured)
-          .ThenByDescending(d => d.AvgRating)
-          .Take(take)
-          .ToListAsync();
+          .AsQueryable();
+      
+      query = userPoint != null 
+          ? query.OrderBy(d => d.Location.Distance(userPoint))
+                 .ThenByDescending(d => d.Popularity)
+                 .ThenByDescending(d => d.IsFeatured)
+                 .ThenByDescending(d => d.AvgRating)
+          : query.OrderByDescending(d => d.Popularity)
+                 .ThenByDescending(d => d.IsFeatured)
+                 .ThenByDescending(d => d.AvgRating);
+          
+      return await query.Take(take).ToListAsync();
     }
 
-    public async Task<List<Destination>> GetHeroBannerDestinationAsync(int take)
+    public async Task<List<Destination>> GetHeroBannerDestinationAsync(int take, double? userLat, double? userLng)
     {
-      var featured = await _db.Destinations
+      var userPoint = BuildUserPoint(userLat, userLng);
+
+      var featuredQuery = _db.Destinations
           .AsNoTracking()
           .Include(d => d.City)
           .Include(d => d.Country)
           .Where(d => d.HeroImageUrl != null && d.HeroImageUrl != "")
-          .OrderByDescending(d => d.IsFeatured)
-          .ThenByDescending(d => d.Popularity)
-          .ThenByDescending(d => d.AvgRating)
+          .AsQueryable();
+
+      featuredQuery = userPoint != null
+          ? featuredQuery.OrderBy(d => d.Location.Distance(userPoint))
+                         .ThenByDescending(d => d.IsFeatured)
+                         .ThenByDescending(d => d.Popularity)
+                         .ThenByDescending(d => d.AvgRating)
+          : featuredQuery.OrderByDescending(d => d.IsFeatured)
+                         .ThenByDescending(d => d.Popularity)
+                         .ThenByDescending(d => d.AvgRating);
+
+      var featured = await featuredQuery
           .Take(take)
           .ToListAsync();
 
-      if(featured.Count >= take) return featured;
+      if (featured.Count >= take)
+          return featured;
 
       var existingIds = featured.Select(x => x.Id).ToHashSet();
 
-      var fallback = await _db.Destinations
+      var fallbackQuery = _db.Destinations
           .AsNoTracking()
           .Include(d => d.City)
           .Include(d => d.Country)
           .Where(d => !existingIds.Contains(d.Id))
-          .OrderByDescending(d => d.IsFeatured)
-          .ThenByDescending(d => d.Popularity)
-          .ThenByDescending(d => d.AvgRating)
+          .AsQueryable();
+
+      fallbackQuery = userPoint != null
+          ? fallbackQuery.OrderBy(d => d.Location.Distance(userPoint))
+                         .ThenByDescending(d => d.IsFeatured)
+                         .ThenByDescending(d => d.Popularity)
+                         .ThenByDescending(d => d.AvgRating)
+          : fallbackQuery.OrderByDescending(d => d.IsFeatured)
+                         .ThenByDescending(d => d.Popularity)
+                         .ThenByDescending(d => d.AvgRating);
+
+      var fallback = await fallbackQuery
           .Take(take - featured.Count)
           .ToListAsync();
 
@@ -61,20 +92,28 @@ namespace Explorea.Server.Repositories.Implementations
       return featured;
     }
 
-    public async Task<List<Activity>> GetPopularActivitiesAsync(int take)
-    {
-      return await _db.Activities
-          .AsNoTracking()
-          .Include(a => a.Category)
-          .Include(a => a.Country)
-          .Include(a => a.Images)
-          .OrderByDescending(a => a.IsFeatured)
-          .ThenByDescending(a => a.Popularity)
-          .ThenByDescending(a => a.AvgRating)
-          .Take(take)
-          .ToListAsync();
-    }
+  public async Task<List<Activity>> GetPopularActivitiesAsync(int take, double? userLat, double? userLng)
+  {
+    var userPoint = BuildUserPoint(userLat, userLng);
 
+    var query = _db.Activities
+        .AsNoTracking()
+        .Include(a => a.Category)
+        .Include(a => a.Country)
+        .Include(a => a.Images)
+        .AsQueryable();
+
+    query = userPoint != null
+        ? query.OrderBy(a => a.Location != null ? a.Location.Distance(userPoint) : double.MaxValue)
+               .ThenByDescending(a => a.IsFeatured)
+               .ThenByDescending(a => a.Popularity)
+               .ThenByDescending(a => a.AvgRating)
+        : query.OrderByDescending(a => a.IsFeatured)
+               .ThenByDescending(a => a.Popularity)
+               .ThenByDescending(a => a.AvgRating);
+
+    return await query.Take(take).ToListAsync();
+  }
     public async Task<List<ReviewWithEntityDto>> GetTravelerReviewsAsync(int take)
     {
       var reviews = await _db.Reviews
@@ -119,20 +158,35 @@ namespace Explorea.Server.Repositories.Implementations
       return result;
     }
 
-    public async Task<List<Event>> GetUpcomingEventsAsync(DateTimeOffset now, int take)
+  public async Task<List<Event>> GetUpcomingEventsAsync(DateTimeOffset now, int take, double? userLat, double? userLng)
+  {
+    var userPoint = BuildUserPoint(userLat, userLng);
+
+    var query = _db.Events
+        .AsNoTracking()
+        .Include(e => e.Type)
+        .Include(e => e.City)
+        .Include(e => e.Country)
+        .Include(e => e.Images)
+        .Where(e => e.EndDatetime >= now)
+        .AsQueryable();
+
+    query = userPoint != null
+        ? query.OrderBy(e => e.Location != null ? e.Location.Distance(userPoint) : double.MaxValue)
+               .ThenByDescending(e => e.IsFeatured)
+               .ThenByDescending(e => e.Popularity)
+               .ThenBy(e => e.StartDatetime)
+        : query.OrderByDescending(e => e.IsFeatured)
+               .ThenByDescending(e => e.Popularity)
+               .ThenBy(e => e.StartDatetime);
+
+    return await query.Take(take).ToListAsync();
+  }
+    private static Point? BuildUserPoint(double? lat, double? lng)
     {
-      return await _db.Events
-          .AsNoTracking()
-          .Include(e => e.Type)
-          .Include(e => e.City)
-          .Include(e => e.Country)
-          .Include(e => e.Images)
-          .Where(e => e.EndDatetime >= now)
-          .OrderByDescending(e => e.IsFeatured)
-          .ThenByDescending(e => e.Popularity)
-          .ThenBy(e => e.StartDatetime)
-          .Take(take)
-          .ToListAsync();
+      if(!lat.HasValue || !lng.HasValue) return null;
+
+      return new Point(lng.Value, lat.Value) { SRID = 4326 };
     }
   }
 }
