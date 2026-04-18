@@ -1,0 +1,73 @@
+<div class="saved-page">
+  <app-sidebar />
+
+  <main class="saved-main">
+
+    <div class="saved-header">
+      <button class="circle-btn circle-btn--sm" type="button" (click)="goBack()">
+        <span class="material-icons">arrow_back</span>
+      </button>
+      <h1 class="saved-header__title">{{ 'SAVED_ITEMS.TITLE' | translate }}</h1>
+    </div>
+
+    <!-- Skeleton -->
+    @if (loading) {
+      <div class="saved-grid">
+        @for (i of [1,2,3,4,5,6]; track i) {
+          <div class="skel-card">
+            <div class="skel skel-img"></div>
+            <div class="skel-body">
+              <div class="skel skel-line"></div>
+              <div class="skel skel-line skel-line--short"></div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Empty state -->
+    @if (!loading && items.length === 0) {
+      <div class="empty-state">
+        <span class="material-icons empty-state__icon">favorite_border</span>
+        <p class="empty-state__title">{{ 'SAVED_ITEMS.EMPTY' | translate }}</p>
+        <p class="empty-state__sub">{{ 'SAVED_ITEMS.EMPTY_SUB' | translate }}</p>
+      </div>
+    }
+
+    <!-- Grid -->
+    @if (!loading && items.length > 0) {
+      <div class="saved-grid">
+        @for (item of items; track item.id) {
+          <div class="saved-card">
+            <a class="saved-card__link" [routerLink]="getEntityRoute(item)">
+              <div class="saved-card__image-wrap">
+                <img
+                  [src]="item.previewImageUrl || 'assets/images/placeholder.jpg'"
+                  [alt]="item.name"
+                  class="saved-card__image"
+                  loading="lazy" />
+                <span class="saved-card__type">{{ getTypeLabel(item.entityType) | translate }}</span>
+                <button
+                  class="saved-card__remove"
+                  type="button"
+                  [class.saved-card__remove--unsaved]="!isSaved(item.id)"
+                  (click)="toggleSaved(item, $event)">
+                  <span class="material-icons">{{ isSaved(item.id) ? 'favorite' : 'favorite_border' }}</span>
+                </button>
+              </div>
+              <div class="saved-card__body">
+                <span class="saved-card__name">{{ item.name }}</span>
+                @if (item.subtitle) {
+                  <span class="saved-card__sub">{{ item.subtitle }}</span>
+                }
+              </div>
+            </a>
+          </div>
+        }
+      </div>
+    }
+
+  </main>
+
+  <app-bottom-nav />
+</div>

@@ -62,7 +62,7 @@
 
       <!-- NAV CARDS: Sačuvano / Moje recenzije -->
       <div class="nav-cards">
-        <div class="nav-card">
+        <a class="nav-card" routerLink="/saved">
           <div class="accordion-icon">
             <span class="material-icons">bookmark</span>
           </div>
@@ -71,9 +71,9 @@
             <span>{{ 'SETTINGS_PAGE.TABS.SAVED_DESC' | translate }}</span>
           </div>
           <span class="material-icons nav-arrow">chevron_right</span>
-        </div>
+        </a>
 
-        <div class="nav-card">
+        <div class="nav-card" [class.open-below]="openSection === 'reviews'" (click)="toggleSection('reviews')">
           <div class="accordion-icon">
             <span class="material-icons">rate_review</span>
           </div>
@@ -81,7 +81,27 @@
             <strong>{{ 'SETTINGS_PAGE.TABS.REVIEWS' | translate }}</strong>
             <span>{{ 'SETTINGS_PAGE.TABS.REVIEWS_DESC' | translate }}</span>
           </div>
-          <span class="material-icons nav-arrow">chevron_right</span>
+          <span class="material-icons nav-arrow" [class.rotated]="openSection === 'reviews'">expand_more</span>
+        </div>
+
+        <!-- Reviews dropdown body -->
+        <div class="reviews-dropdown" *ngIf="openSection === 'reviews'">
+          <div class="reviews-loading" *ngIf="reviewsLoading">
+            <div class="skel-reviews-row">
+              <div class="skel skel-review-card" *ngFor="let i of [1,2,3]"></div>
+            </div>
+          </div>
+
+          <ng-container *ngIf="!reviewsLoading">
+            <div class="reviews-scroll" *ngIf="myReviewsAsDto.length > 0">
+              <app-review-card *ngFor="let r of myReviewsAsDto" [review]="r" />
+            </div>
+            <div class="reviews-empty" *ngIf="myReviewsAsDto.length === 0">
+              <span class="material-icons">rate_review</span>
+              <p>{{ 'MY_REVIEWS.EMPTY' | translate }}</p>
+              <span class="reviews-empty__sub">{{ 'MY_REVIEWS.EMPTY_SUB' | translate }}</span>
+            </div>
+          </ng-container>
         </div>
       </div>
 
