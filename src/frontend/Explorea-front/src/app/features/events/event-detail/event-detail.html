@@ -1,0 +1,368 @@
+<app-sidebar />
+
+<!-- STICKY BAR -->
+<div class="sticky-bar" [class.sticky-bar--visible]="stickyBarVisible">
+  <button class="circle-btn circle-btn--sm"
+    [class.circle-btn--saved]="isSaved"
+    [disabled]="isSavedLoading"
+    (click)="toggleSave()">
+    <span class="material-icons">{{ isSaved ? 'favorite' : 'favorite_border' }}</span>
+  </button>
+</div>
+
+<!-- FLOATING TITLE -->
+<div class="floating-title"
+  *ngIf="event && !loading"
+  [class.floating-title--arrived]="scrollProgress > 0.88"
+  [ngStyle]="floatingTitleStyle">
+  {{ event.name }}
+</div>
+
+<div class="event-page" *ngIf="!loading && event">
+
+  <!-- Hero -->
+  <section class="detail-hero">
+    <img class="detail-hero__image" [src]="heroImage" [alt]="event.name" />
+    <div class="detail-hero__overlay"></div>
+
+    <div class="detail-hero__topbar">
+      <button class="circle-btn" type="button" (click)="goBack()">
+        <span class="material-icons">arrow_back</span>
+      </button>
+      <div class="detail-hero__actions">
+        <button class="circle-btn"
+          [class.circle-btn--saved]="isSaved"
+          [disabled]="isSavedLoading"
+          type="button"
+          (click)="toggleSave()">
+          <span class="material-icons">{{ isSaved ? 'favorite' : 'favorite_border' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="detail-hero__content">
+      <div class="detail-hero__badges" [style.opacity]="heroBadgesOpacity">
+        <span class="detail-badge" *ngIf="event.type">{{ event.type.name }}</span>
+      </div>
+      <div class="detail-hero__main">
+        <h1 #heroTitleEl [style.opacity]="heroTitleOpacity">{{ event.name }}</h1>
+      </div>
+    </div>
+
+    <div class="detail-hero__bottom-gradient"></div>
+  </section>
+
+  <!-- Info -->
+  <div class="title-block">
+    <div class="info-chips">
+
+      <div class="chip">
+        <span class="material-icons">calendar_today</span>
+        <div class="chip__text">
+          <span class="chip__primary">{{ formattedDateRange }}</span>
+          <span class="chip__secondary">{{ formattedDayNames }}</span>
+        </div>
+      </div>
+
+      <div class="chip">
+        <span class="material-icons">schedule</span>
+        <div class="chip__text">
+          <span class="chip__primary">{{ formattedTimeRange }}</span>
+        </div>
+      </div>
+
+      <div class="chip" *ngIf="event.address || event.city">
+        <span class="material-icons">location_on</span>
+        <div class="chip__text">
+          <span class="chip__primary">{{ event.address }}</span>
+          <span class="chip__secondary" *ngIf="event.city">{{ event.city.name }}</span>
+          <a class="chip__map-link" [href]="googleMapsUrl" target="_blank" rel="noopener">
+            {{ 'EVENT_DETAIL.OPEN_MAPS' | translate }}
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TWO-COLUMN: description + map | booking card -->
+  <div class="page-layout">
+    <main class="main-content">
+
+      <!-- O dogadjaju -->
+      <section class="section" *ngIf="event.description">
+        <h2 class="section-title">{{ 'EVENT_DETAIL.ABOUT' | translate }}</h2>
+        <p class="description-text">
+          {{ descriptionExpanded ? event.description : shortDescription }}
+        </p>
+        <button
+          class="read-more-btn"
+          *ngIf="event.description.length > 200"
+          (click)="descriptionExpanded = !descriptionExpanded"
+          type="button"
+        >
+          {{ (descriptionExpanded ? 'COMMON.READ_LESS' : 'COMMON.READ_MORE') | translate }}
+        </button>
+      </section>
+
+      <!-- Lokacija -->
+      <section class="section" *ngIf="event.location">
+        <div class="section-title-row">
+          <h2 class="section-title">{{ 'EVENT_DETAIL.LOCATION' | translate }}</h2>
+          <a class="ghost-btn ghost-btn--sm map-route-btn"
+            [href]="googleMapsDirectionsUrl"
+            target="_blank"
+            rel="noopener noreferrer">
+            <span class="material-icons">directions</span>
+            {{ 'EVENT_DETAIL.ROUTE' | translate }}
+          </a>
+        </div>
+        <div class="map-box" #mapContainer></div>
+      </section>
+
+      <!-- Recenzije -->
+      <section class="section">
+        <div class="section-head-row">
+          <h2 class="section-title">{{ 'EVENT_DETAIL.REVIEWS.TITLE' | translate }}</h2>
+          <div class="section-head-actions">
+            <a class="section-link" href="javascript:void(0)"
+              *ngIf="event.reviews.length > 0"
+              (click)="openReviewsPanel()">
+              {{ 'EVENT_DETAIL.VIEW_ALL' | translate }} ({{ event.reviews.length }})
+            </a>
+            <button class="ghost-btn ghost-btn--sm" type="button"
+              *ngIf="!hasReviewed"
+              (click)="openReviewForm()">
+              <span class="material-icons">rate_review</span>
+              {{ 'EVENT_DETAIL.REVIEWS.WRITE' | translate }}
+            </button>
+            <span class="already-reviewed-badge" *ngIf="hasReviewed">
+              <span class="material-icons">check_circle</span>
+              {{ 'EVENT_DETAIL.REVIEWS.ALREADY_REVIEWED' | translate }}
+            </span>
+          </div>
+        </div>
+
+        <ng-container *ngIf="event.reviews.length > 0; else noReviews">
+          <div class="review-scroll-row">
+            <app-review-card
+              *ngFor="let r of reviewsAsDto.slice(0, 5)"
+              [review]="r" />
+          </div>
+          <app-rating-stats [avgRating]="avgRating" [reviews]="event.reviews" />
+        </ng-container>
+
+        <ng-template #noReviews>
+          <p class="empty-text">{{ 'EVENT_DETAIL.REVIEWS.EMPTY' | translate }}</p>
+        </ng-template>
+      </section>
+
+    </main>
+
+    <!-- Desktop booking aside -->
+    <aside class="booking-aside desktop-only">
+      <div class="booking-card">
+
+        <!-- Price -->
+        <div class="booking-card__price">
+          <span class="price-value" *ngIf="event.price">{{ event.price | number }} RSD</span>
+          <span class="price-value free" *ngIf="!event.price">{{ 'EVENT_DETAIL.FREE' | translate }}</span>
+          <span class="price-label" *ngIf="event.price">{{ 'EVENT_DETAIL.FROM' | translate }}</span>
+        </div>
+
+        <div class="booking-card__divider"></div>
+
+        <!-- Info rows -->
+        <div class="booking-card__info">
+          <div class="booking-info-row">
+            <span class="material-icons">calendar_today</span>
+            <div class="booking-info-row__text">
+              <span class="booking-info-row__label">{{ 'EVENT_DETAIL.DATE' | translate }}</span>
+              <span class="booking-info-row__value">{{ formattedDateRange }}</span>
+            </div>
+          </div>
+          <div class="booking-info-row">
+            <span class="material-icons">schedule</span>
+            <div class="booking-info-row__text">
+              <span class="booking-info-row__label">{{ 'EVENT_DETAIL.TIME' | translate }}</span>
+              <span class="booking-info-row__value">{{ formattedTimeRange }}</span>
+            </div>
+          </div>
+          <div class="booking-info-row" *ngIf="locationText">
+            <span class="material-icons">location_on</span>
+            <div class="booking-info-row__text">
+              <span class="booking-info-row__label">{{ 'EVENT_DETAIL.VENUE' | translate }}</span>
+              <span class="booking-info-row__value">{{ locationText }}</span>
+            </div>
+          </div>
+          <div class="booking-info-row" *ngIf="event.type">
+            <span class="material-icons">category</span>
+            <div class="booking-info-row__text">
+              <span class="booking-info-row__label">{{ 'EVENT_DETAIL.TYPE' | translate }}</span>
+              <span class="booking-info-row__value">{{ event.type.name }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="booking-card__divider"></div>
+
+        <!-- Persons counter -->
+        <div class="booking-card__row" *ngIf="event.price">
+          <span class="booking-row__label">{{ 'EVENT_DETAIL.PERSONS' | translate }}</span>
+          <div class="counter">
+            <button class="counter__btn" (click)="decrementPersons()" type="button">−</button>
+            <span class="counter__value">{{ persons }}</span>
+            <button class="counter__btn" (click)="incrementPersons()" type="button">+</button>
+          </div>
+        </div>
+
+        <!-- Total -->
+        <div class="booking-card__row booking-card__total" *ngIf="event.price">
+          <span class="booking-row__label">{{ 'EVENT_DETAIL.TOTAL' | translate }}</span>
+          <span class="booking-total__value">{{ event.price * persons | number }} RSD</span>
+        </div>
+
+        <button class="cta-btn" (click)="buyTickets()" type="button">
+          {{ 'EVENT_DETAIL.BUY_TICKET' | translate }}
+        </button>
+
+        <p class="booking-card__note">
+          <span class="material-icons">check_circle_outline</span>
+          {{ 'EVENT_DETAIL.FREE_CANCEL' | translate }}
+        </p>
+
+      </div>
+    </aside>
+  </div>
+
+  <!-- FULL-WIDTH sections -->
+  <div class="full-width-sections">
+
+    <!-- Galerija -->
+    <section class="fw-section" *ngIf="event.images.length > 1">
+      <h2 class="section-title">{{ 'EVENT_DETAIL.GALLERY' | translate }}</h2>
+      <app-image-gallery
+        [images]="event.images"
+        [maxPreview]="5"
+        [gridLayout]="true"
+        [viewAllLabel]="'EVENT_DETAIL.VIEW_ALL' | translate"
+      />
+    </section>
+
+    <!-- Slicni dogadjaji -->
+    <section class="fw-section" *ngIf="event.similarEvents.length">
+      <div class="section-head">
+        <h2 class="section-title">{{ 'EVENT_DETAIL.SIMILAR' | translate }}</h2>
+        <a class="ghost-link" (click)="navigateToEvents()" style="cursor: pointer">
+          {{ 'EVENT_DETAIL.VIEW_ALL_EVENTS' | translate }}
+        </a>
+      </div>
+      <div class="cards-scroll">
+        <app-event-card *ngFor="let e of event.similarEvents" [event]="$any(e)" />
+      </div>
+    </section>
+
+  </div>
+
+  <app-detail-footer />
+
+</div>
+
+<!-- Skeleton loading -->
+<div class="skel-event-page" *ngIf="loading">
+
+  <div class="skel-hero">
+    <div class="skel-hero__topbar">
+      <div class="skel skel-circle"></div>
+      <div class="skel-hero__topbar-right">
+        <div class="skel skel-circle"></div>
+      </div>
+    </div>
+    <div class="skel-hero__content">
+      <div class="skel-badge-row">
+        <div class="skel skel-badge"></div>
+      </div>
+      <div class="skel skel-title"></div>
+    </div>
+  </div>
+
+  <div class="skel-event-content">
+
+    <!-- Info chips -->
+    <div class="skel-chips">
+      <div class="skel skel-chip"></div>
+      <div class="skel skel-chip"></div>
+      <div class="skel skel-chip"></div>
+    </div>
+
+    <!-- Two-column: description + map | booking card -->
+    <div class="skel-event-layout">
+      <div class="skel-event-main">
+        <div class="skel-section">
+          <div class="skel skel-section-title"></div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line skel-line--med"></div>
+          <div class="skel skel-line skel-line--short"></div>
+        </div>
+        <div class="skel-section">
+          <div class="skel skel-section-title"></div>
+          <div class="skel skel-map"></div>
+        </div>
+      </div>
+      <div class="skel skel-booking-card"></div>
+    </div>
+
+    <!-- Gallery -->
+    <div class="skel-section">
+      <div class="skel skel-section-title"></div>
+      <div class="skel-gallery">
+        <div class="skel skel-img-main"></div>
+        <div class="skel-gallery-col">
+          <div class="skel skel-img-sm"></div>
+          <div class="skel skel-img-sm"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Similar events -->
+    <div class="skel-section">
+      <div class="skel skel-section-title"></div>
+      <div class="skel-cards-row">
+        <div class="skel skel-event-card" *ngFor="let i of [1,2,3,4]"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Mobile sticky CTA -->
+<div class="mobile-cta mobile-only" *ngIf="!loading && event">
+  <div class="mobile-cta__price" *ngIf="event.price">
+    <span>{{ 'EVENT_DETAIL.FROM' | translate }}</span>
+    <strong>{{ event.price | number }} RSD</strong>
+  </div>
+  <div class="mobile-cta__price" *ngIf="!event.price">
+    <strong>{{ 'EVENT_DETAIL.FREE' | translate }}</strong>
+  </div>
+  <button class="cta-btn" (click)="buyTickets()" type="button">
+    {{ 'EVENT_DETAIL.BUY_TICKET' | translate }}
+  </button>
+</div>
+
+<app-review-modal
+  [isOpen]="reviewFormOpen"
+  [entityType]="'event'"
+  [entityId]="event?.id ?? ''"
+  [entityName]="event?.name ?? ''"
+  (closed)="reviewFormOpen = false"
+  (reviewSubmitted)="onReviewSubmitted($event)" />
+
+<app-reviews-panel
+  [isOpen]="reviewsPanelOpen"
+  [title]="'EVENT_DETAIL.REVIEWS.TITLE' | translate"
+  [subtitle]="event?.name ?? ''"
+  [avgRating]="avgRating"
+  [reviews]="reviewsAsDto"
+  (closed)="closeReviewsPanel()" />
+
+<app-bottom-nav />

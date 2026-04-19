@@ -3,6 +3,8 @@ import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import {
   EventCard,
+  EventDetail,
+  EventVenueItem,
   EventListResponse,
   CalendarDay,
   EventFilterParams,
@@ -87,7 +89,7 @@ const MOCK_TYPES: EventType[] = [
 @Injectable({ providedIn: 'root' })
 export class EventService {
   private readonly api = '/api/events';
-  useMock = true;
+  useMock = false;
 
   constructor(private http: HttpClient) {}
 
@@ -122,6 +124,39 @@ export class EventService {
     return this.http.get<CalendarDay[]>(`${this.api}/calendar`, {
       params: { year: year.toString(), month: month.toString() },
     });
+  }
+
+  getBySlug(slug: string): Observable<EventDetail> {
+    if (this.useMock) {
+      const found = MOCK_EVENTS.find(e => e.slug === slug) ?? MOCK_EVENTS[0];
+      const detail: EventDetail = {
+        ...found,
+        type: { id: 1, name: 'Muzički festival' },
+        description: 'EXIT Festival je jedan od najvećih muzičkih festivala u jugoistočnoj Evropi. Svake godine privlači stotine hiljada posetilaca sa svih strana sveta. Na više od 20 bina nastupaju svetski poznati izvođači elektronske, rok, hip-hop i pop muzike. Festival se održava u Petrovaradinskoj tvrđavi u Novom Sadu, jednom od najlepših prirodnih ambijenata u regionu.',
+        ticketUrl: 'https://exitfest.org/tickets',
+        location: { lat: 45.2519, lng: 19.8635 },
+        images: [
+          { imageUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800', caption: 'Glavna bina', sortOrder: 0 },
+          { imageUrl: 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?w=800', caption: 'Publika', sortOrder: 1 },
+          { imageUrl: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=800', caption: 'Nastup', sortOrder: 2 },
+          { imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800', caption: 'Noćni program', sortOrder: 3 },
+          { imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800', caption: 'Atmosfera', sortOrder: 4 },
+        ],
+        reviews: [
+          { id: '1', rating: 5, comment: 'Neverovatno iskustvo! Organizacija na najvišem nivou, nezaboravne noći.', authorName: 'Marko P.', authorAvatarUrl: null, createdAt: '2025-07-20T10:00:00Z' },
+          { id: '2', rating: 4, comment: 'Odlična atmosfera i sjajan izbor izvođača. Preporučujem svima!', authorName: 'Ana L.', authorAvatarUrl: null, createdAt: '2025-07-21T14:30:00Z' },
+          { id: '3', rating: 5, comment: 'Bili smo ove godine po četvrti put i svaki put je bolje i bolje.', authorName: 'Stefan M.', authorAvatarUrl: null, createdAt: '2025-07-22T09:15:00Z' },
+        ],
+        similarEvents: MOCK_EVENTS.filter(e => e.slug !== slug).slice(0, 4),
+        venueItems: [
+          { id: '1', name: 'Petrovaradinska tvrđava', description: 'Istorijska tvrđava iz 18. veka sa pogledom na Dunav.', imageUrl: 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=400', slug: 'petrovaradinska-tvrdjava' },
+          { id: '2', name: 'Exit Kafana', description: 'Tradicionalna kafana u srcu festivalskog kampusa.', imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400', slug: 'exit-kafana' },
+          { id: '3', name: 'Camp Novi Sad', description: 'Zvanični kamp festival sa svim sadržajima.', imageUrl: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=400', slug: 'camp-novi-sad' },
+        ] as EventVenueItem[],
+      };
+      return of(detail);
+    }
+    return this.http.get<EventDetail>(`${this.api}/${slug}`);
   }
 
   getTypes(): EventType[] {

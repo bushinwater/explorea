@@ -19,6 +19,7 @@ namespace Explorea.Server.Services
         private readonly IUserRepository _userRepository;
         private readonly IAiBotService _aiBotService;
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly INewsletterService _newsletterService;
 
         public ProfileService(
             IUserRepository userRepository,
@@ -26,6 +27,7 @@ namespace Explorea.Server.Services
             IReviewRepository reviewRepository,
             IAiBotService aiBotService,
             ICloudinaryService cloudinaryService,
+            INewsletterService newsletterService,
             AppDbContext db)
         {
             _userRepository = userRepository;
@@ -33,6 +35,7 @@ namespace Explorea.Server.Services
             _reviewRepository = reviewRepository;
             _aiBotService = aiBotService;
             _cloudinaryService = cloudinaryService;
+            _newsletterService = newsletterService;
             _db = db;
         }
 
@@ -317,17 +320,27 @@ namespace Explorea.Server.Services
                     var eventIds = eventMatches.Select(x => x.Id).ToList();
                     var events = await _db.Events
                         .Where(e => eventIds.Contains(e.Id))
-                        .Select(e => new { e.Id, e.Name, e.Slug, e.Address, e.Popularity,
-                            PreviewImageUrl = e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault() })
+                        .Select(e => new {
+                            e.Id,
+                            e.Name,
+                            e.Slug,
+                            e.Address,
+                            e.Popularity,
+                            e.AvgRating,
+                            PreviewImageUrl = e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault()
+                        })
                         .ToListAsync();
 
                     items.AddRange(eventMatches.Join(events, m => m.Id, e => e.Id, (m, e) => new ForYouItemDto
                     {
-                        Id = e.Id, EntityType = "event",
-                        Name = e.Name, Slug = e.Slug,
+                        Id = e.Id,
+                        EntityType = "event",
+                        Name = e.Name,
+                        Slug = e.Slug,
                         PreviewImageUrl = e.PreviewImageUrl,
                         Subtitle = e.Address,
-                        AvgRating = e.Popularity, MatchedTagsCount = m.Count
+                        AvgRating = (double)e.AvgRating,
+                        MatchedTagsCount = m.Count
                     }));
                 }
 
@@ -387,17 +400,20 @@ namespace Explorea.Server.Services
                     .ToListAsync();
 
                 var topEvents = await _db.Events
-                    .OrderByDescending(e => e.Popularity)
-                    .Take(3)
-                    .Select(e => new ForYouItemDto
-                    {
-                        Id = e.Id, EntityType = "event",
-                        Name = e.Name, Slug = e.Slug,
-                        PreviewImageUrl = e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
-                        Subtitle = e.Address,
-                        AvgRating = e.Popularity, MatchedTagsCount = 0
-                    })
-                    .ToListAsync();
+                     .OrderByDescending(e => e.Popularity).ThenByDescending(e => e.AvgRating)
+                     .Take(3)
+                     .Select(e => new ForYouItemDto
+                     {
+                         Id = e.Id,
+                         EntityType = "event",
+                         Name = e.Name,
+                         Slug = e.Slug,
+                         PreviewImageUrl = e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
+                         Subtitle = e.Address,
+                         AvgRating = (double)e.AvgRating,
+                         MatchedTagsCount = 0
+                     })
+                     .ToListAsync();
 
                 items.AddRange(topDests);
                 items.AddRange(topActs);
@@ -472,17 +488,7 @@ namespace Explorea.Server.Services
 
         public async Task<bool> UpdateNewsletterAsync(Guid userId, bool newsletter)
         {
-            var user = await _userRepository.GetByIdAsync(userId)
-                ?? throw new Exception("User not found.");
-
-            user.Newsletter = newsletter;
-            user.UpdatedAt = DateTimeOffset.UtcNow;
-            user.UpdatedBy = userId;
-
-            _userRepository.Update(user);
-            await _userRepository.SaveChangesAsync();
-
-            return user.Newsletter;
+            return await _newsletterService.UpdateUserSubscriptionAsync(userId, newsletter);
         }
 
         private static string NormalizeEntityType(string entityType)

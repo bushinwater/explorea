@@ -72,5 +72,8 @@ namespace Explorea.API.Models
         public ICollection<ActivityInclusion>  Inclusions   { get; set; } = new List<ActivityInclusion>();
         public ICollection<ActivityImage>      Images       { get; set; } = new List<ActivityImage>();
         public ICollection<ActivityInterestTag> InterestTags { get; set; } = new List<ActivityInterestTag>();
-    }
+        
+        [MaxLength(500), Column("preview_image_url")]
+        public string? PreviewImageUrl { get; set; }
+  }
 }

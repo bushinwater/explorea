@@ -17,6 +17,7 @@ namespace Explorea.Server.Services
         private readonly JwtHelper _jwtHelper;
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
+        private readonly INewsletterService _newsletterService;
         private readonly IMemoryCache _cache;
 
         private static string PendingTokenKey(string tokenHash)  => $"pendingreg:token:{tokenHash}";
@@ -29,6 +30,7 @@ namespace Explorea.Server.Services
             JwtHelper jwtHelper,
             IConfiguration configuration,
             IEmailService emailService,
+            INewsletterService newsletterService,
             IMemoryCache cache)
         {
             _userRepository = userRepository;
@@ -37,6 +39,7 @@ namespace Explorea.Server.Services
             _jwtHelper = jwtHelper;
             _configuration = configuration;
             _emailService = emailService;
+            _newsletterService = newsletterService;
             _cache = cache;
         }
 
@@ -196,6 +199,7 @@ namespace Explorea.Server.Services
 
             await _userRepository.AddAsync(user);
             await _userRepository.SaveChangesAsync();
+            await _newsletterService.SyncUserSubscriptionAsync(user);
 
             // Clean up cache
             _cache.Remove(PendingTokenKey(tokenHash));
@@ -447,6 +451,7 @@ namespace Explorea.Server.Services
 
             await _userRepository.AddAsync(user);
             await _userRepository.SaveChangesAsync();
+            await _newsletterService.SyncUserSubscriptionAsync(user);
 
             return user;
         }

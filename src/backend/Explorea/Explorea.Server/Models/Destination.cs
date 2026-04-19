@@ -22,8 +22,8 @@ namespace Explorea.API.Models
         [Column("description")]
         public string? Description { get; set; }
 
-        [Column("latitude")]  public double Latitude  { get; set; }
-        [Column("longitude")] public double Longitude { get; set; }
+        [Column("latitude")]  public double? Latitude  { get; set; }
+        [Column("longitude")] public double? Longitude { get; set; }
 
         [Column("location", TypeName = "geography(Point, 4326)")]
         public Point Location { get; set; } = null!;

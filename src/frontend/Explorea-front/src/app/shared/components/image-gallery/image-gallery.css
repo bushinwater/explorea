@@ -1,0 +1,156 @@
+.gallery-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.ghost-link {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+}
+
+.gallery-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.gallery-scroll::-webkit-scrollbar { display: none; }
+
+.gallery-scroll--expanded {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+.gallery-thumb-wrap {
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.gallery-thumb-wrap:hover .gallery-thumb { transform: scale(1.03); }
+
+.gallery-thumb {
+  width: 140px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+  transition: transform 0.2s;
+}
+
+.gallery-thumb__more {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.52);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* ── Desktop grid layout ── */
+.gallery-grid {
+  display: none; /* hidden on mobile; shown on desktop via media query */
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  grid-template-rows: 230px 230px;
+  gap: 12px;
+  height: 472px;
+}
+
+.gallery-grid__item {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.gallery-grid__item:first-child {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.gallery-grid__item:nth-child(2) {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.gallery-grid__item:nth-child(3) {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.gallery-grid__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.22s ease, filter 0.22s ease;
+}
+
+.gallery-grid__item:hover img {
+  transform: scale(1.015);
+  filter: brightness(1.03);
+}
+
+/* On desktop, show grid and hide the scroll when gridLayout mode */
+@media (min-width: 769px) {
+  .gallery-grid {
+    display: grid;
+  }
+
+  /* Hide the scroll row when it's only there as a mobile fallback */
+  .gallery-scroll--grid-mobile {
+    display: none;
+  }
+}
+
+/* Lightbox */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0,0,0,0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox__img {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.lightbox__close,
+.lightbox__prev,
+.lightbox__next {
+  position: absolute;
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: #fff;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.lightbox__close:hover,
+.lightbox__prev:hover,
+.lightbox__next:hover { background: rgba(255,255,255,0.25); }
+.lightbox__close { top: 16px; right: 16px; }
+.lightbox__prev  { left: 16px; }
+.lightbox__next  { right: 16px; }

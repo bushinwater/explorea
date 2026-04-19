@@ -425,8 +425,8 @@ namespace Explorea.Server.Services
         
         Location = new LocationDto
         {
-          Lat = destination.Latitude,
-          Lng = destination.Longitude
+          Lat = destination.Latitude!.Value,
+          Lng = destination.Longitude!.Value
         }
       };
 
@@ -473,34 +473,35 @@ namespace Explorea.Server.Services
           .OrderBy(i => i.SortOrder)
           .Select(i => i.ImageUrl)
           .FirstOrDefault();
-      
-      var dto = new EventCardDto
-      {
-          Id = ev.Id,
-          Name = ev.Name,
-          Slug = ev.Slug,
-          
-          Type = new TypeRefDto
-          {
-            Id = ev.Type.Id,
-            Name = ev.Type.Name
-          },
 
-          City = ev.City == null ? null : new CityRefDto
-                                          {
-                                            Id = ev.City.Id,
-                                            Name = ev.City.Name  
-                                          },
-          
-          StartDatetime = ev.StartDatetime,
-          EndDatetime = ev.EndDatetime,
-          Price = ev.Price,
-          Address = ev.Address,
-          PreviewImageUrl = previewImageUrl, 
-          IsFeatured = ev.IsFeatured
-      };
-      
-      return new SearchItemDto
+            var dto = new EventCardDto
+            {
+                Id = ev.Id,
+                Name = ev.Name,
+                Slug = ev.Slug,
+
+                Type = ev.Type == null ? null : new TypeRefDto
+                {
+                    Id = ev.Type.Id,
+                    Name = ev.Type.Name
+                },
+
+                City = ev.City == null ? null : new CityRefDto
+                {
+                    Id = ev.City.Id,
+                    Name = ev.City.Name
+                },
+
+                StartDatetime = ev.StartDatetime,
+                EndDatetime = ev.EndDatetime,
+                AvgRating = ev.AvgRating,
+                Price = ev.Price,
+                Address = ev.Address,
+                PreviewImageUrl = previewImageUrl,
+                IsFeatured = ev.IsFeatured
+            };
+
+            return new SearchItemDto
       {
         EntityType = "event",
         Entity = dto

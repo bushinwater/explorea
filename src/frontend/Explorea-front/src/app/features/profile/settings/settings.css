@@ -161,9 +161,103 @@
   border-color: var(--color-primary);
 }
 
+.nav-card.nav-card--link,
+a.nav-card {
+  text-decoration: none;
+  color: inherit;
+}
+
+.nav-card.open-below {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-bottom-color: transparent;
+}
+
 .nav-arrow {
   color: var(--color-text-secondary);
   flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.nav-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+/* ========================
+   REVIEWS DROPDOWN
+   ======================== */
+.reviews-dropdown {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  margin-top: calc(-1 * var(--spacing-sm));
+  padding: var(--spacing-md) var(--spacing-lg);
+  overflow: hidden;
+}
+
+.reviews-scroll {
+  display: flex;
+  gap: var(--spacing-md);
+  overflow-x: auto;
+  padding-bottom: var(--spacing-sm);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.reviews-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.reviews-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+.reviews-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xl) 0;
+  text-align: center;
+}
+
+.reviews-empty .material-icons {
+  font-size: 40px;
+  color: var(--color-text-secondary);
+  opacity: 0.4;
+}
+
+.reviews-empty p {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.reviews-empty__sub {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+}
+
+.skel-reviews-row {
+  display: flex;
+  gap: var(--spacing-md);
+  overflow: hidden;
+}
+
+.skel-review-card {
+  flex-shrink: 0;
+  width: 280px;
+  height: 140px;
+  border-radius: var(--radius-lg);
+  background: var(--color-border);
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 
 /* ========================

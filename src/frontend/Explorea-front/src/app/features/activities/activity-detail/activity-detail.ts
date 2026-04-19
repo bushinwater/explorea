@@ -67,6 +67,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
 
   activity: ActivityDetail | null = null;
   loading = true;
+  descriptionExpanded = false;
 
   isSaved = false;
   isSavedLoading = false;
@@ -103,6 +104,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
       this.slug = params.get('slug') ?? '';
       this.loading = true;
       this.activity = null;
+      this.descriptionExpanded = false;
       this.titleCaptured = false;
       this.scrollProgress = 0;
       this.mapInitialized = false;
@@ -341,6 +343,12 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
   get heroImage(): string {
     const first = this.activity?.images?.[0]?.imageUrl;
     return first ?? this.activity?.previewImageUrl ?? '';
+  }
+
+  get shortDescription(): string {
+    const desc = this.activity?.description ?? '';
+    if (desc.length <= 300) return desc;
+    return desc.slice(0, 300) + '…';
   }
 
   get googleMapsDirectionsUrl(): string {

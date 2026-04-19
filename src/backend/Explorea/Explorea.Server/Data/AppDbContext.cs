@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
@@ -53,10 +53,21 @@ namespace Explorea.Server.Data
         public DbSet<Country> Countries { get; set; }
         public DbSet<OrganizationAssignment> OrganizationAssignments { get; set; }
         public DbSet<SubmissionQueue> SubmissionQueue { get; set; }
+        public DbSet<Newsletter> Newsletters { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Newsletter>(entity =>
+            {
+                entity.ToTable("newsletter");
+                entity.HasKey(x => x.Email);
+                entity.Property(x => x.Email)
+                      .HasColumnName("email")
+                      .HasMaxLength(255)
+                      .IsRequired();
+            });
 
             // ---- Composite primary keys ----
             modelBuilder.Entity<PlaceAmenityLink>()
@@ -107,7 +118,7 @@ namespace Explorea.Server.Data
             modelBuilder.Entity<EventInterestTag>()
                 .HasKey(x => new { x.EventId, x.InterestTagId });
             modelBuilder.Entity<EventInterestTag>()
-                .HasOne(x => x.Event).WithMany().HasForeignKey(x => x.EventId);
+                .HasOne(x => x.Event).WithMany(e => e.InterestTags).HasForeignKey(x => x.EventId);  
             modelBuilder.Entity<EventInterestTag>()
                 .HasOne(x => x.InterestTag).WithMany(t => t.EventLinks).HasForeignKey(x => x.InterestTagId);
 
