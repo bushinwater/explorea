@@ -425,8 +425,8 @@ namespace Explorea.Server.Services
         
         Location = new LocationDto
         {
-          Lat = destination.Latitude,
-          Lng = destination.Longitude
+          Lat = destination.Latitude!.Value,
+          Lng = destination.Longitude!.Value
         }
       };
 
