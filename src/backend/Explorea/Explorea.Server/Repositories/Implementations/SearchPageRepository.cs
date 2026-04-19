@@ -70,7 +70,7 @@ namespace Explorea.Server.Repositories.Implementations
               DurationMinutes = a.DurationMinutes,
               Price = a.Price,
               DifficultyLevel = a.DifficultyLevel,
-              PreviewImageUrl = a.PreviewImageUrl,
+              PreviewImageUrl = a.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
               Popularity = a.Popularity,
               DistanceKm = userPoint != null && a.Location != null
                 ? Math.Round(a.Location.Distance(userPoint) / 1000.0, 2)
@@ -115,7 +115,7 @@ namespace Explorea.Server.Repositories.Implementations
             Id = d.Id,
             Name = d.Name,
             Slug = d.Slug,
-            PreviewImageUrl = d.PreviewImageUrl,
+            PreviewImageUrl = d.HeroImageUrl,
             AvgRating = d.AvgRating,
             City = d.City == null ? null : new CityRefDto
             {
@@ -201,7 +201,7 @@ namespace Explorea.Server.Repositories.Implementations
                     Id = e.City.Id,
                     Name = e.City.Name
                   },
-              PreviewImageUrl = e.PreviewImageUrl,
+              PreviewImageUrl = e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
               IsFeatured = e.IsFeatured,
               Popularity = e.Popularity,
               DistanceKm = userPoint != null && e.Location != null
@@ -266,10 +266,10 @@ namespace Explorea.Server.Repositories.Implementations
           },
           AvgRating = p.AvgRating,
           Address = p.Address,
-          DistanceKm = userPoint != null
+          DistanceKm = userPoint != null && p.Location != null
           ? Math.Round(p.Location.Distance(userPoint) / 1000.0, 2)
-          : null, 
-          PreviewImageUrl = p.PreviewImageUrl,
+          : null,
+          PreviewImageUrl = p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
           IsOpen = p.WorkingDays.Any(wd =>
             wd.DayOfWeek == currentDay &&
             !wd.IsClosed &&
@@ -343,6 +343,12 @@ namespace Explorea.Server.Repositories.Implementations
           activitiesQuery = activitiesQuery.Where(a => a.Price == null || a.Price <= query.MaxPrice.Value);
       }
 
+      if (query.RadiusKm.HasValue && userPoint != null)
+      {
+          var radiusMeters = query.RadiusKm.Value * 1000;
+          activitiesQuery = activitiesQuery.Where(a => a.Location != null && a.Location.IsWithinDistance(userPoint, radiusMeters));
+      }
+
       activitiesQuery = query.SortBy?.ToLowerInvariant() switch
       {
           "rating" => activitiesQuery
@@ -392,7 +398,7 @@ namespace Explorea.Server.Repositories.Implementations
               DurationMinutes = a.DurationMinutes,
               Price = a.Price,
               DifficultyLevel = a.DifficultyLevel,
-              PreviewImageUrl = a.PreviewImageUrl,
+              PreviewImageUrl = a.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
               Popularity = a.Popularity,
               DistanceKm = userPoint != null && a.Location != null
               ? Math.Round(a.Location.Distance(userPoint) / 1000.0, 2)
@@ -442,6 +448,12 @@ namespace Explorea.Server.Repositories.Implementations
 
       var userPoint = BuildUserPoint(query.UserLat, query.UserLng);
 
+      if (query.RadiusKm.HasValue && userPoint != null)
+      {
+          var radiusMeters = query.RadiusKm.Value * 1000;
+          destinationsQuery = destinationsQuery.Where(d => d.Location != null && d.Location.IsWithinDistance(userPoint, radiusMeters));
+      }
+
       destinationsQuery = query.SortBy?.ToLowerInvariant() switch
       {
         "rating" => destinationsQuery
@@ -469,7 +481,7 @@ namespace Explorea.Server.Repositories.Implementations
             Id = d.Id,
             Name = d.Name,
             Slug = d.Slug,
-            PreviewImageUrl = d.PreviewImageUrl,
+            PreviewImageUrl = d.HeroImageUrl,
             HeroImageUrl = d.HeroImageUrl,
             AvgRating = d.AvgRating,
             Popularity = d.Popularity,
@@ -555,6 +567,12 @@ namespace Explorea.Server.Repositories.Implementations
         eventsQuery = eventsQuery.Where(e => e.AvgRating >= query.MinRating.Value);
       }
 
+      if (query.RadiusKm.HasValue && userPoint != null)
+      {
+          var radiusMeters = query.RadiusKm.Value * 1000;
+          eventsQuery = eventsQuery.Where(e => e.Location != null && e.Location.IsWithinDistance(userPoint, radiusMeters));
+      }
+
       eventsQuery = query.SortBy?.ToLowerInvariant() switch
       {
         "soonest" => eventsQuery
@@ -601,7 +619,7 @@ namespace Explorea.Server.Repositories.Implementations
                 Id = e.City.Id,
                 Name = e.City.Name
             },
-            PreviewImageUrl = e.PreviewImageUrl,
+            PreviewImageUrl = e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
             IsFeatured = e.IsFeatured,
             Popularity = e.Popularity,
             DistanceKm = userPoint != null && e.Location != null
@@ -681,6 +699,12 @@ namespace Explorea.Server.Repositories.Implementations
                 wd.Intervals.Any(i => i.OpensAt <= currentTime && i.ClosesAt >= currentTime)));
       }
 
+      if (query.RadiusKm.HasValue && userPoint != null)
+      {
+          var radiusMeters = query.RadiusKm.Value * 1000;
+          placesQuery = placesQuery.Where(p => p.Location != null && p.Location.IsWithinDistance(userPoint, radiusMeters));
+      }
+
       placesQuery = query.SortBy?.ToLowerInvariant() switch
       {
           "rating" => placesQuery
@@ -688,7 +712,15 @@ namespace Explorea.Server.Repositories.Implementations
               .ThenByDescending(p => p.Popularity),
 
           "nearest" when userPoint != null => placesQuery
-              .OrderBy(p => p.Location.Distance(userPoint))
+              .OrderBy(p => p.Location != null ? p.Location.Distance(userPoint) : double.MaxValue)
+              .ThenByDescending(p => p.Popularity),
+
+          "price_asc" => placesQuery
+              .OrderBy(p => p.PriceRange == null ? 999 : p.PriceRange.Length)
+              .ThenByDescending(p => p.Popularity),
+
+          "price_desc" => placesQuery
+              .OrderByDescending(p => p.PriceRange == null ? 0 : p.PriceRange.Length)
               .ThenByDescending(p => p.Popularity),
 
           _ => placesQuery
@@ -712,9 +744,9 @@ namespace Explorea.Server.Repositories.Implementations
             },
             AvgRating = p.AvgRating,
             Address = p.Address,
-            PreviewImageUrl = p.PreviewImageUrl,
+            PreviewImageUrl = p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
             PriceRange = p.PriceRange,
-            DistanceKm = userPoint != null
+            DistanceKm = userPoint != null && p.Location != null
             ? Math.Round(p.Location.Distance(userPoint) / 1000.0, 2)
             : null,
             IsOpen = p.WorkingDays.Any(wd => 

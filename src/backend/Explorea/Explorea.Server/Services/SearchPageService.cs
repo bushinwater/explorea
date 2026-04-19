@@ -258,7 +258,8 @@ namespace Explorea.Server.Services
         CityIds = NormalizeIntList(query.CityIds),
         MinRating = query.MinRating,
         UserLat = query.UserLat,
-        UserLng = query.UserLng
+        UserLng = query.UserLng,
+        RadiusKm = query.RadiusKm
       };
     }
 
@@ -293,19 +294,20 @@ namespace Explorea.Server.Services
         PageSize = query.PageSize,
 
         UserLat = query.UserLat,
-        UserLng = query.UserLng
+        UserLng = query.UserLng,
+        RadiusKm = query.RadiusKm
       };
     }
-    
+
     private static List<string> GetAvaliableSorts(string tab)
     {
       return tab switch
       {
-        "destination" => new List<string> {"popularity", "rating", "nearest", "alphabetical"},
-        "places" => new List<string> {"popularity", "rating", "nearest", "price_asc", "price_desc"},
-        "activities" => new List<string> {"popularity", "rating", "nearest", "duration_asc", "duration_desc", "price_asc", "price_desc"},
-        "events" => new List<string> {"soonest", "popularity", "nearest", "price_asc", "price_desc"},
-        _ => new List<string>()
+        "destinations" => new List<string> {"popularity", "rating", "nearest", "alphabetical"},
+        "places"       => new List<string> {"popularity", "rating", "nearest", "price_asc", "price_desc"},
+        "activities"   => new List<string> {"popularity", "rating", "nearest", "duration_asc", "duration_desc", "price_asc", "price_desc"},
+        "events"       => new List<string> {"soonest", "popularity", "nearest", "price_asc", "price_desc"},
+        _              => new List<string>()
       };
     }
 
@@ -313,11 +315,11 @@ namespace Explorea.Server.Services
     {
       return tab switch
       {
-        "destination" => "popularity",
-        "places" => "popularity",
-        "activities" => "popularity",
-        "events" => "soonest",
-        _ => "popularity"
+        "destinations" => "popularity",
+        "places"       => "popularity",
+        "activities"   => "popularity",
+        "events"       => "soonest",
+        _              => "popularity"
       };
     }
 

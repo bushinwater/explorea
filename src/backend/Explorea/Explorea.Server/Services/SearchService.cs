@@ -414,7 +414,7 @@ namespace Explorea.Server.Services
         Id = destination.Id,
         Name = destination.Name,
         Slug = destination.Slug,
-        PreviewImageUrl = destination.PreviewImageUrl,
+        PreviewImageUrl = destination.HeroImageUrl,
         AvgRating = destination.AvgRating,
         
         City = destination.City == null ? null : new CityRefDto

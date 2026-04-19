@@ -14,6 +14,8 @@ export interface SearchItemEntity {
   difficultyLevel?: string;
   durationMinutes?: number;
   location?: { lat: number; lng: number };
+  popularity?: number;
+  distanceKm?: number;
 }
 
 export interface SearchItem {

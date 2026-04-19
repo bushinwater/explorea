@@ -46,7 +46,7 @@ namespace Explorea.Server.Services
       Id = d.Id,
       Name = d.Name,
       Slug = d.Slug,
-      PreviewImageUrl = d.PreviewImageUrl,
+      PreviewImageUrl = d.HeroImageUrl,
       AvgRating = d.AvgRating,
       HeroImageUrl = d.HeroImageUrl,
       Popularity = d.Popularity,
@@ -152,7 +152,7 @@ namespace Explorea.Server.Services
     {
       Id = d.Id,
       Title = d.Name,
-      ImageUrl = d.HeroImageUrl ?? d.PreviewImageUrl ?? "",
+      ImageUrl = d.HeroImageUrl ?? "",
       LinkType = "destination",
       LinkSlug = d.Slug
     };

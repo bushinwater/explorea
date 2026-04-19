@@ -29,10 +29,15 @@
         </div>
 
         <div class="control-btns">
-          <!-- FILTER button -->
-          <button class="control-btn" type="button">
+          <button
+            class="control-btn"
+            [class.active]="hasActiveFilters"
+            type="button"
+            (click)="openFilterPanel()"
+          >
             <span class="material-icons">tune</span>
             <span class="control-btn__label">{{ 'SEARCH.FILTER' | translate }}</span>
+            <span class="filter-dot" *ngIf="hasActiveFilters"></span>
           </button>
         </div>
       </div>
@@ -40,17 +45,17 @@
 
     <div class="page-content">
 
-      <!-- CATEGORY CHIPS (always visible) -->
+      <!-- CATEGORY CHIPS -->
       <div class="chips-row">
         <button
           *ngFor="let chip of categoryChips"
           class="chip"
-          [class.active]="activeChip === chip.query"
-          (click)="searchCategory(chip.query)"
+          [class.active]="activeChip === chip.key"
+          (click)="searchCategory(chip.key)"
           type="button"
         >
           <span class="material-icons">{{ chip.icon }}</span>
-          {{ chip.label }}
+          {{ tabLabelKeys[chip.key] | translate }}
         </button>
       </div>
 
@@ -71,87 +76,72 @@
       </div>
 
       <!-- ══════════════════════════════════════════
-           HOME CONTENT (Sve chip active)
+           HOME CONTENT
       ══════════════════════════════════════════ -->
       <ng-container *ngIf="showHomeContent">
 
-        <!-- SKELETON -->
-        <ng-container *ngIf="homeLoading">
-          <div class="section">
+        <ng-container *ngIf="allLoading">
+          <div class="section" *ngFor="let s of [1,2,3]">
             <div class="skel skel-section-title"></div>
             <div class="scroll-row">
-              <div class="skel skel-dest-card" *ngFor="let s of [1,2,3,4,5]"></div>
-            </div>
-          </div>
-          <div class="section">
-            <div class="skel skel-section-title"></div>
-            <div class="scroll-row">
-              <div class="skel skel-activity-card" *ngFor="let s of [1,2,3,4,5]"></div>
-            </div>
-          </div>
-          <div class="section">
-            <div class="skel skel-section-title"></div>
-            <div class="scroll-row">
-              <div class="skel skel-event-card" *ngFor="let s of [1,2,3,4]"></div>
+              <div class="skel skel-section-card" *ngFor="let i of idleSkeletons"></div>
             </div>
           </div>
         </ng-container>
 
-        <!-- POPULARNE DESTINACIJE -->
-        <div class="section" *ngIf="!homeLoading && homeData?.featuredDestinations?.length">
-          <div class="section-header">
-            <h2 class="section-title">{{ 'SEARCH.POPULAR_DESTINATIONS' | translate }}</h2>
+        <ng-container *ngIf="!allLoading && !allData">
+          <div class="idle-error">
+            <span class="material-icons idle-error__icon">cloud_off</span>
+            <p>{{ 'SEARCH.IDLE_ERROR' | translate }}</p>
+            <button class="ghost-btn ghost-btn--sm" (click)="loadIdleContentPublic()" type="button">{{ 'SEARCH.IDLE_RETRY' | translate }}</button>
           </div>
-          <div class="scroll-row">
-            <app-destination-card
-              *ngFor="let dest of homeData!.featuredDestinations | slice:0:8"
-              [destination]="dest"
-            />
-          </div>
-        </div>
+        </ng-container>
 
-        <!-- POPULARNE AKTIVNOSTI -->
-        <div class="section" *ngIf="!homeLoading && homeData?.popularActivities?.length">
-          <div class="section-header">
-            <h2 class="section-title">{{ 'SEARCH.POPULAR_ACTIVITIES' | translate }}</h2>
-          </div>
-          <div class="scroll-row">
-            <a
-              *ngFor="let act of homeData!.popularActivities | slice:0:8"
-              [routerLink]="['/activities', act.slug]"
-              class="activity-item"
-            >
-              <div class="activity-item__image-wrap">
-                <img [src]="act.previewImageUrl" [alt]="act.name" class="activity-item__image" loading="lazy" />
-                <span class="activity-item__category">{{ act.category.name }}</span>
-                <div class="activity-item__overlay">
-                  <span class="activity-item__name">{{ act.name }}</span>
-                  <div class="activity-item__meta">
-                    <span class="activity-item__rating">
+        <ng-container *ngIf="!allLoading && allData">
+          <div class="section" *ngFor="let section of allData.sections">
+            <div class="section-header">
+              <h2 class="section-title">{{ section.title }}</h2>
+            </div>
+            <div class="scroll-row">
+              <a
+                *ngFor="let item of section.items | slice:0:10; trackBy: trackByItem"
+                [routerLink]="getEntityRoute(item)"
+                class="section-card"
+              >
+                <div class="section-card__img-wrap">
+                  <img
+                    *ngIf="item.entity.previewImageUrl"
+                    [src]="item.entity.previewImageUrl"
+                    [alt]="item.entity.name"
+                    class="section-card__img"
+                    loading="lazy"
+                  />
+                  <div class="section-card__img-placeholder" *ngIf="!item.entity.previewImageUrl">
+                    <span class="material-icons">{{ item.entityType === 'destination' ? 'landscape' : item.entityType === 'event' ? 'event' : item.entityType === 'place' ? 'store' : 'directions_run' }}</span>
+                  </div>
+                  <span class="entity-badge" [ngClass]="'badge-' + item.entityType">
+                    {{ 'SEARCH.BADGE_' + item.entityType.toUpperCase() | translate }}
+                  </span>
+                </div>
+                <div class="section-card__body">
+                  <p class="section-card__name">{{ item.entity.name }}</p>
+                  <p class="section-card__sub" *ngIf="getSubtitle(item)">
+                    <span class="material-icons">location_on</span>{{ getSubtitle(item) }}
+                  </p>
+                  <div class="section-card__footer">
+                    <span class="section-card__rating" *ngIf="item.entity.avgRating">
                       <span class="material-icons">star</span>
-                      {{ act.avgRating | number:'1.1-1' }}
+                      {{ item.entity.avgRating | number:'1.1-1' }}
                     </span>
-                    <span class="activity-item__price" *ngIf="act.price">{{ act.price | number }} RSD</span>
-                    <span class="activity-item__price" *ngIf="!act.price">{{ 'SEARCH.FREE' | translate }}</span>
+                    <span class="section-card__price" *ngIf="item.entity.price != null && item.entityType !== 'destination'">
+                      {{ item.entity.price === 0 ? ('SEARCH.FREE' | translate) : (item.entity.price | number) + ' RSD' }}
+                    </span>
                   </div>
                 </div>
-              </div>
-            </a>
+              </a>
+            </div>
           </div>
-        </div>
-
-        <!-- USKORO U BLIZINI -->
-        <div class="section" *ngIf="!homeLoading && homeData?.upcomingEvents?.length">
-          <div class="section-header">
-            <h2 class="section-title">{{ 'SEARCH.UPCOMING_EVENTS' | translate }}</h2>
-          </div>
-          <div class="scroll-row">
-            <app-event-card
-              *ngFor="let ev of homeData!.upcomingEvents | slice:0:6"
-              [event]="ev"
-            />
-          </div>
-        </div>
+        </ng-container>
 
       </ng-container>
 
@@ -160,22 +150,22 @@
       ══════════════════════════════════════════ -->
       <ng-container *ngIf="showResults">
 
-        <!-- ENTITY TYPE TABS -->
+        <!-- ENTITY TABS -->
         <div class="tabs-row">
           <button
             *ngFor="let tab of entityTabs"
             class="tab-btn"
             [class.active]="activeTab === tab.key"
-            (click)="activeTab = tab.key"
+            (click)="setActiveTab(tab.key)"
             type="button"
           >
             <span class="material-icons tab-icon">{{ tab.icon }}</span>
-            <span class="tab-label">{{ tab.label }}</span>
+            <span class="tab-label">{{ tabLabelKeys[tab.key] | translate }}</span>
             <span class="tab-count" *ngIf="!loading && hasSearched">{{ countForTab(tab.key) }}</span>
           </button>
         </div>
 
-        <!-- LOADING SKELETONS -->
+        <!-- SKELETON -->
         <div class="results-grid" *ngIf="loading">
           <div class="result-card skel-card" *ngFor="let s of skeletons">
             <div class="skel skel-card-img"></div>
@@ -189,35 +179,29 @@
         <!-- RESULTS -->
         <ng-container *ngIf="!loading && hasSearched">
           <p class="results-count" *ngIf="filteredResults.length > 0">
-            <strong>{{ filteredResults.length }}</strong> {{ 'SEARCH.RESULTS_FOR' | translate }}
-            <em>"{{ query }}"</em>
+            <strong>{{ pagination.total }}</strong> {{ 'SEARCH.RESULTS_FOR' | translate }}
+            <em *ngIf="query">"{{ query }}"</em>
           </p>
 
           <div class="results-grid" *ngIf="filteredResults.length > 0">
             <a
-              *ngFor="let item of filteredResults"
+              *ngFor="let item of filteredResults; trackBy: trackByItem"
               [routerLink]="getEntityRoute(item)"
               class="result-card"
             >
               <div class="result-card__img-wrap">
-                <img
-                  *ngIf="item.entity.previewImageUrl"
-                  [src]="item.entity.previewImageUrl"
-                  [alt]="item.entity.name"
-                  class="result-card__img"
-                />
+                <img *ngIf="item.entity.previewImageUrl" [src]="item.entity.previewImageUrl" [alt]="item.entity.name" class="result-card__img" />
                 <div class="result-card__img-placeholder" *ngIf="!item.entity.previewImageUrl">
                   <span class="material-icons">{{ item.entityType === 'destination' ? 'landscape' : item.entityType === 'place' ? 'store' : item.entityType === 'event' ? 'event' : 'directions_run' }}</span>
                 </div>
                 <span class="entity-badge" [ngClass]="'badge-' + item.entityType">
-                  {{ getTypeLabel(item.entityType) }}
+                  {{ 'SEARCH.BADGE_' + item.entityType.toUpperCase() | translate }}
                 </span>
               </div>
               <div class="result-card__info">
                 <h3 class="result-card__name">{{ item.entity.name }}</h3>
                 <p class="result-card__sub" *ngIf="getSubtitle(item)">
-                  <span class="material-icons">location_on</span>
-                  {{ getSubtitle(item) }}
+                  <span class="material-icons">location_on</span>{{ getSubtitle(item) }}
                 </p>
                 <div class="result-card__footer">
                   <span class="result-card__rating" *ngIf="item.entity.avgRating">
@@ -236,7 +220,10 @@
             </a>
           </div>
 
-          <!-- EMPTY STATE -->
+          <div class="load-more-wrap" *ngIf="loadingMore">
+            <span class="material-icons spin">sync</span>
+          </div>
+
           <div class="empty-state" *ngIf="filteredResults.length === 0">
             <span class="material-icons empty-icon">search_off</span>
             <p class="empty-title">{{ 'SEARCH.NO_RESULTS_TITLE' | translate }}</p>
@@ -245,8 +232,180 @@
         </ng-container>
 
       </ng-container>
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════
+       FILTER PANEL
+  ══════════════════════════════════════════ -->
+  <div class="filter-backdrop" *ngIf="showFilterPanel" (click)="closeFilterPanel()"></div>
+  <aside class="filter-panel" [class.open]="showFilterPanel">
+
+    <div class="filter-panel__header">
+      <h2 class="filter-panel__title">{{ 'SEARCH.FILTER_TITLE' | translate }}</h2>
+      <button class="filter-panel__close" (click)="closeFilterPanel()" type="button">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <div class="filter-panel__body">
+
+      <!-- ── 1. ENTITY TYPE SELECTOR ─────────────────────────── -->
+      <div class="filter-group">
+        <p class="filter-label">{{ 'SEARCH.FILTER_ENTITY_TYPE' | translate }}</p>
+        <div class="filter-entity-grid">
+          <button
+            *ngFor="let et of filterEntityTypes"
+            class="filter-entity-btn"
+            [class.active]="filterEntityType === et.key"
+            (click)="setFilterEntityType(et.key)"
+            type="button"
+          >
+            <span class="material-icons">{{ et.icon }}</span>
+            <span>{{ et.labelKey | translate }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── 2. RADIUS (only when location available) ─────────── -->
+      <div class="filter-group" *ngIf="locationAvailable">
+        <div class="filter-label-row">
+          <p class="filter-label" style="margin:0">{{ 'SEARCH.FILTER_RADIUS' | translate }}</p>
+          <span class="filter-value-badge">{{ draftFilters.radiusKm ?? 50 }} km</span>
+        </div>
+        <input
+          type="range"
+          class="radius-slider"
+          min="5"
+          max="200"
+          step="5"
+          [value]="draftFilters.radiusKm ?? 50"
+          (input)="draftFilters.radiusKm = +$any($event.target).value"
+          [style.background]="'linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ' + (((draftFilters.radiusKm ?? 50) - 5) / 195 * 100) + '%, var(--color-border) ' + (((draftFilters.radiusKm ?? 50) - 5) / 195 * 100) + '%, var(--color-border) 100%)'"
+        />
+        <div class="radius-ticks"><span>5 km</span><span>200 km</span></div>
+      </div>
+
+      <!-- ── 2b. RADIUS HINT (when location not available) ─────── -->
+      <div class="filter-group" *ngIf="!locationAvailable">
+        <p class="filter-label">{{ 'SEARCH.FILTER_RADIUS' | translate }}</p>
+        <button class="filter-location-hint" (click)="showLocationModal = true; showFilterPanel = false" type="button">
+          <span class="material-icons">my_location</span>
+          {{ 'SEARCH.FILTER_RADIUS_HINT' | translate }}
+        </button>
+      </div>
+
+      <!-- ── 3. CATEGORIES / TYPES (only when entity type selected, and not destination) ── -->
+      <div class="filter-group" *ngIf="filterEntityType && filterEntityType !== 'destination' && getCategoriesForType().length > 0">
+        <p class="filter-label">{{ 'SEARCH.FILTER_CATEGORIES' | translate }}</p>
+        <div class="filter-chips">
+          <button
+            *ngFor="let cat of getCategoriesForType()"
+            class="filter-chip"
+            [class.active]="isCategorySelected(cat.id)"
+            (click)="toggleCategory(cat.id)"
+            type="button"
+          >{{ cat.name }}</button>
+        </div>
+      </div>
+
+      <!-- ── 3. MIN RATING ───────────────────────────────────── -->
+      <div class="filter-group">
+        <p class="filter-label">{{ 'SEARCH.FILTER_RATING' | translate }}</p>
+        <div class="filter-stars">
+          <button
+            *ngFor="let star of ratingStars"
+            class="star-btn"
+            [class.active]="(draftFilters.minRating ?? 0) >= star"
+            (click)="draftFilters.minRating = draftFilters.minRating === star ? undefined : star"
+            type="button"
+          >
+            <span class="material-icons">star</span>
+          </button>
+          <button class="filter-clear-btn" *ngIf="draftFilters.minRating" (click)="draftFilters.minRating = undefined" type="button">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── 4. OPEN NOW (only for place/activity) ──────────── -->
+      <div class="filter-group" *ngIf="filterEntityType === 'place' || filterEntityType === 'activity' || filterEntityType === null">
+        <div class="filter-toggle-row">
+          <p class="filter-label" style="margin:0">{{ 'SEARCH.FILTER_OPEN_NOW' | translate }}</p>
+          <button
+            class="toggle-btn"
+            [class.on]="draftFilters.openNow"
+            (click)="draftFilters.openNow = draftFilters.openNow ? undefined : true"
+            type="button"
+          >
+            <span class="toggle-btn__track">
+              <span class="toggle-btn__thumb"></span>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── 5. PRICE RANGE (not for destination) ───────────── -->
+      <div class="filter-group" *ngIf="filterEntityType !== 'destination'">
+        <p class="filter-label">{{ 'SEARCH.FILTER_PRICE' | translate }}</p>
+        <div class="filter-price-row">
+          <div class="filter-price-input">
+            <label class="filter-price-label">{{ 'SEARCH.FILTER_PRICE_MIN' | translate }}</label>
+            <input type="number" class="filter-input" placeholder="0" [(ngModel)]="draftFilters.minPrice" min="0" />
+          </div>
+          <span class="filter-price-sep">—</span>
+          <div class="filter-price-input">
+            <label class="filter-price-label">{{ 'SEARCH.FILTER_PRICE_MAX' | translate }}</label>
+            <input type="number" class="filter-input" [placeholder]="'SEARCH.FILTER_PRICE_MAX_HINT' | translate" [(ngModel)]="draftFilters.maxPrice" min="0" />
+          </div>
+        </div>
+      </div>
 
     </div>
 
-  </main>
+    <div class="filter-panel__footer">
+      <button class="filter-reset-btn" (click)="resetFilters()" type="button">
+        {{ 'SEARCH.FILTER_RESET' | translate }}
+      </button>
+      <button class="filter-apply-btn" (click)="applyFilters()" type="button">
+        {{ 'SEARCH.FILTER_APPLY' | translate }}
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════════
+       LOCATION MODAL
+  ══════════════════════════════════════════ -->
+  <div class="location-modal-backdrop" *ngIf="showLocationModal" (click)="dismissLocationModal()">
+    <div class="location-modal" (click)="$event.stopPropagation()">
+
+      <ng-container *ngIf="locationModalBlocked; else normalModal">
+        <div class="location-modal__icon location-modal__icon--error">
+          <span class="material-icons">location_disabled</span>
+        </div>
+        <h3 class="location-modal__title">{{ 'SEARCH.LOCATION_BLOCKED_TITLE' | translate }}</h3>
+        <p class="location-modal__text">{{ 'SEARCH.LOCATION_BLOCKED_TEXT' | translate }}</p>
+        <div class="location-modal__actions">
+          <button class="location-modal__cancel" (click)="dismissLocationModal()">{{ 'SEARCH.LOCATION_MODAL_CANCEL' | translate }}</button>
+        </div>
+      </ng-container>
+
+      <ng-template #normalModal>
+        <div class="location-modal__icon">
+          <span class="material-icons">{{ locationModalLoading ? 'sync' : 'location_off' }}</span>
+        </div>
+        <h3 class="location-modal__title">{{ 'SEARCH.LOCATION_MODAL_TITLE' | translate }}</h3>
+        <p class="location-modal__text">{{ 'SEARCH.LOCATION_MODAL_TEXT' | translate }}</p>
+        <div class="location-modal__actions">
+          <button class="location-modal__cancel" [disabled]="locationModalLoading" (click)="dismissLocationModal()">{{ 'SEARCH.LOCATION_MODAL_CANCEL' | translate }}</button>
+          <button class="location-modal__enable" [disabled]="locationModalLoading" (click)="enableLocationFromModal()">
+            <span class="material-icons" [class.spin]="locationModalLoading">{{ locationModalLoading ? 'sync' : 'my_location' }}</span>
+            {{ locationModalLoading ? ('SEARCH.LOCATION_MODAL_WAITING' | translate) : ('SEARCH.LOCATION_MODAL_ENABLE' | translate) }}
+          </button>
+        </div>
+      </ng-template>
+
+    </div>
+  </div>
+
 </div>

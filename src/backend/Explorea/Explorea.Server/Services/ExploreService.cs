@@ -83,9 +83,9 @@ namespace Explorea.Server.Services
             Id = d.Id,
             Slug = d.Slug,
             Name = d.Name,
-            Lat = d.Latitude.Value,
-            Lng = d.Longitude.Value,
-            PreviewImageUrl = d.PreviewImageUrl,
+            Lat = d.Latitude ?? 0,
+            Lng = d.Longitude ?? 0,
+            PreviewImageUrl = d.HeroImageUrl,
             AvgRating = d.AvgRating,
             Subtitle = d.City?.Name
         };
@@ -96,8 +96,8 @@ namespace Explorea.Server.Services
             Id = p.Id,
             Slug = p.Slug,
             Name = p.Name,
-            Lat = p.Latitude.Value,
-            Lng = p.Longitude.Value,
+            Lat = p.Latitude ?? 0,
+            Lng = p.Longitude ?? 0,
             PreviewImageUrl = p.Images
                 .OrderBy(i => i.SortOrder)
                 .Select(i => i.ImageUrl)
@@ -118,7 +118,7 @@ namespace Explorea.Server.Services
                 .OrderBy(i => i.SortOrder)
                 .Select(i => i.ImageUrl)
                 .FirstOrDefault(),
-            Subtitle = e.Type.Name,
+            Subtitle = e.Type?.Name,
             Price = e.Price,
             StartDatetime = e.StartDatetime
         };
@@ -136,7 +136,7 @@ namespace Explorea.Server.Services
                 .Select(i => i.ImageUrl)
                 .FirstOrDefault(),
             AvgRating = a.AvgRating,
-            Subtitle = a.Category.Name,
+            Subtitle = a.Category?.Name,
             Price = a.Price
         };
     }

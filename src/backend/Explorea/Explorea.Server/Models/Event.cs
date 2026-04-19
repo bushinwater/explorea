@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
 namespace Explorea.API.Models
@@ -63,7 +64,8 @@ namespace Explorea.API.Models
         public ICollection<EventImage> Images { get; set; } = new List<EventImage>();
         public ICollection<EventInterestTag> InterestTags { get; set; } = new List<EventInterestTag>();
 
-        [MaxLength(500), Column("preview_image_url")]
+        // events table has no preview_image_url column — images live in event_images.
+        [NotMapped]
         public string? PreviewImageUrl { get; set; }
   }
 }
