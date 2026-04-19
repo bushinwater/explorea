@@ -123,5 +123,53 @@ namespace Explorea.Server.Services
 
             await client.SendMailAsync(message);
         }
+
+        public async Task SendNewsletterEmailAsync(IEnumerable<string> toEmails, string subject, string htmlBody)
+        {
+            var smtpSection = _configuration.GetSection("SmtpSettings");
+
+            var host = smtpSection["Host"];
+            var port = int.Parse(smtpSection["Port"]!);
+            var username = smtpSection["Username"];
+            var password = smtpSection["Password"];
+            var fromEmail = smtpSection["FromEmail"];
+            var fromName = smtpSection["FromName"];
+            var enableSsl = bool.Parse(smtpSection["EnableSsl"]!);
+
+            if (string.IsNullOrWhiteSpace(host) ||
+                string.IsNullOrWhiteSpace(username) ||
+                string.IsNullOrWhiteSpace(password) ||
+                string.IsNullOrWhiteSpace(fromEmail))
+            {
+                throw new Exception("SMTP settings are not configured properly.");
+            }
+
+            var recipients = toEmails
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim().ToLowerInvariant())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (recipients.Count == 0)
+                throw new Exception("There are no valid newsletter recipients.");
+
+            using var client = new SmtpClient(host, port)
+            {
+                Credentials = new NetworkCredential(username, password),
+                EnableSsl = enableSsl
+            };
+
+            foreach (var email in recipients)
+            {
+                using var message = new MailMessage();
+                message.From = new MailAddress(fromEmail, fromName);
+                message.To.Add(email);
+                message.Subject = subject;
+                message.IsBodyHtml = true;
+                message.Body = htmlBody;
+
+                await client.SendMailAsync(message);
+            }
+        }
     }
 }
