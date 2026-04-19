@@ -14,10 +14,18 @@ export interface RegisterDto {
 }
 
 export interface AuthResponseDto {
-  accessToken: string;
-  refreshToken: string;
+  accessToken?: string;
+  refreshToken?: string;
   needsInterests: boolean;
   needsProfileCompletion: boolean;
+  socialPendingToken?: string;
+  profileImageUrl?: string;
+}
+
+export interface SocialCompleteDto {
+  pendingToken: string;
+  gender: string;
+  dateOfBirth: string;
 }
 
 export interface CompleteProfileDto {

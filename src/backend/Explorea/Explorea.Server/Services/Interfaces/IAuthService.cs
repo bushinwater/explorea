@@ -17,5 +17,6 @@ namespace Explorea.Server.Services.Interfaces
         Task ResetPasswordAsync(string token, string newPassword);
 
         Task<AuthResponseDto> SocialLoginAsync(SocialLoginDto dto, string? ipAddress, string? userAgent);
+        Task<AuthResponseDto> CompleteSocialAsync(SocialCompleteDto dto, string? ipAddress, string? userAgent);
     }
 }

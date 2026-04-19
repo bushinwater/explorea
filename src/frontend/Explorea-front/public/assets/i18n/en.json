@@ -665,5 +665,34 @@
   "MY_REVIEWS": {
     "EMPTY": "You haven't written any reviews yet.",
     "EMPTY_SUB": "Visit a destination or activity and share your experience."
+  },
+  "SEARCH": {
+    "TITLE": "Search",
+    "PLACEHOLDER": "Search destinations, places, activities...",
+    "FILTER": "Filter",
+    "SORT": "Sort",
+    "POPULAR_DESTINATIONS": "Popular destinations",
+    "POPULAR_ACTIVITIES": "Popular activities",
+    "UPCOMING_EVENTS": "Coming up near you",
+    "CATEGORY_ALL": "All",
+    "CATEGORY_DESTINATIONS": "Destinations",
+    "CATEGORY_PLACES": "Places",
+    "CATEGORY_ACTIVITIES": "Activities",
+    "CATEGORY_EVENTS": "Events",
+    "RESULTS_FOR": "results for",
+    "NO_RESULTS_TITLE": "No results",
+    "NO_RESULTS_SUB": "Try a different term or category",
+    "TAB_ALL": "All",
+    "TAB_DESTINATIONS": "Destinations",
+    "TAB_PLACES": "Places",
+    "TAB_ACTIVITIES": "Activities",
+    "TAB_EVENTS": "Events",
+    "BADGE_DESTINATION": "Destination",
+    "BADGE_PLACE": "Place",
+    "BADGE_EVENT": "Event",
+    "BADGE_ACTIVITY": "Activity",
+    "FREE": "Free",
+    "SORT_POPULARITY": "By popularity",
+    "SORT_LOCATION": "By location"
   }
 }

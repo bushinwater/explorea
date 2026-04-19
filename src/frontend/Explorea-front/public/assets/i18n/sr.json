@@ -665,5 +665,34 @@
   "MY_REVIEWS": {
     "EMPTY": "Još niste napisali nijednu recenziju.",
     "EMPTY_SUB": "Posjetite destinaciju ili aktivnost i podelite utiske."
+  },
+  "SEARCH": {
+    "TITLE": "Pretraži",
+    "PLACEHOLDER": "Pretraži destinacije, mesta, aktivnosti...",
+    "FILTER": "Filtriraj",
+    "SORT": "Sortiraj",
+    "POPULAR_DESTINATIONS": "Popularne destinacije",
+    "POPULAR_ACTIVITIES": "Popularne aktivnosti",
+    "UPCOMING_EVENTS": "Uskoro u blizini",
+    "CATEGORY_ALL": "Sve",
+    "CATEGORY_DESTINATIONS": "Destinacije",
+    "CATEGORY_PLACES": "Mesta",
+    "CATEGORY_ACTIVITIES": "Aktivnosti",
+    "CATEGORY_EVENTS": "Događaji",
+    "RESULTS_FOR": "rezultata za",
+    "NO_RESULTS_TITLE": "Nema rezultata",
+    "NO_RESULTS_SUB": "Probaj drugačiji pojam ili kategoriju",
+    "TAB_ALL": "Sve",
+    "TAB_DESTINATIONS": "Destinacije",
+    "TAB_PLACES": "Mesta",
+    "TAB_ACTIVITIES": "Aktivnosti",
+    "TAB_EVENTS": "Događaji",
+    "BADGE_DESTINATION": "Destinacija",
+    "BADGE_PLACE": "Mesto",
+    "BADGE_EVENT": "Događaj",
+    "BADGE_ACTIVITY": "Aktivnost",
+    "FREE": "Besplatno",
+    "SORT_POPULARITY": "Po popularnosti",
+    "SORT_LOCATION": "Po lokaciji"
   }
 }

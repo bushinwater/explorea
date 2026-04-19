@@ -163,16 +163,20 @@ export class Register implements OnInit {
   private handleSocialLogin(provider: 'google' | 'facebook', token: string) {
     this.authService.socialLogin({ provider, token }).subscribe({
       next: (response) => {
-        this.authService.saveTokens(response);
-        if (response.needsProfileCompletion) {
+        if (response.socialPendingToken) {
+          sessionStorage.setItem('socialPendingToken', response.socialPendingToken);
           this.router.navigate(['/complete-profile']);
-        } else if (response.needsInterests) {
+          return;
+        }
+        this.authService.saveTokens(response);
+        if (response.needsInterests) {
           this.router.navigate(['/interests']);
         } else {
           this.router.navigate(['/profile']);
         }
       },
-      error: () => {
+      error: (err) => {
+        console.error('[Social login error]', err?.error?.message ?? err);
         this.socialLoading = null;
         this.error = 'LOGIN.ERROR';
         this.cdr.detectChanges();

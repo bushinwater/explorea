@@ -1,0 +1,252 @@
+<div class="search-layout">
+  <app-sidebar />
+  <app-bottom-nav />
+
+  <main class="search-main">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <h1 class="page-header__title">{{ 'SEARCH.TITLE' | translate }}</h1>
+    </div>
+
+    <!-- SEARCH BAR + CONTROLS -->
+    <div class="search-bar-wrap">
+      <div class="search-controls">
+        <div class="search-bar">
+          <span class="material-icons search-icon">search</span>
+          <input
+            #searchInput
+            class="search-input"
+            type="text"
+            [placeholder]="'SEARCH.PLACEHOLDER' | translate"
+            [(ngModel)]="query"
+            (ngModelChange)="onQueryChange()"
+            autocomplete="off"
+          />
+          <button class="clear-btn" *ngIf="query" (click)="clearQuery()" type="button">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="control-btns">
+          <!-- FILTER button -->
+          <button class="control-btn" type="button">
+            <span class="material-icons">tune</span>
+            <span class="control-btn__label">{{ 'SEARCH.FILTER' | translate }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- CATEGORY CHIPS (always visible) -->
+      <div class="chips-row">
+        <button
+          *ngFor="let chip of categoryChips"
+          class="chip"
+          [class.active]="activeChip === chip.query"
+          (click)="searchCategory(chip.query)"
+          type="button"
+        >
+          <span class="material-icons">{{ chip.icon }}</span>
+          {{ chip.label }}
+        </button>
+      </div>
+
+      <!-- SORT ROW -->
+      <div class="sort-row">
+        <button class="sort-btn" [class.active]="sortBy === 'popularity'"
+          (mousedown)="$event.preventDefault()" (click)="setSortMode('popularity')" type="button">
+          <span class="material-icons">trending_up</span>
+          {{ 'SEARCH.SORT_POPULARITY' | translate }}
+          <span class="material-icons sort-dir-icon" *ngIf="sortBy === 'popularity'">{{ sortIcon('popularity') }}</span>
+        </button>
+        <button class="sort-btn" [class.active]="sortBy === 'location'"
+          (mousedown)="$event.preventDefault()" (click)="setSortMode('location')" type="button">
+          <span class="material-icons">near_me</span>
+          {{ 'SEARCH.SORT_LOCATION' | translate }}
+          <span class="material-icons sort-dir-icon" *ngIf="sortBy === 'location'">{{ sortIcon('location') }}</span>
+        </button>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           HOME CONTENT (Sve chip active)
+      ══════════════════════════════════════════ -->
+      <ng-container *ngIf="showHomeContent">
+
+        <!-- SKELETON -->
+        <ng-container *ngIf="homeLoading">
+          <div class="section">
+            <div class="skel skel-section-title"></div>
+            <div class="scroll-row">
+              <div class="skel skel-dest-card" *ngFor="let s of [1,2,3,4,5]"></div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="skel skel-section-title"></div>
+            <div class="scroll-row">
+              <div class="skel skel-activity-card" *ngFor="let s of [1,2,3,4,5]"></div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="skel skel-section-title"></div>
+            <div class="scroll-row">
+              <div class="skel skel-event-card" *ngFor="let s of [1,2,3,4]"></div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- POPULARNE DESTINACIJE -->
+        <div class="section" *ngIf="!homeLoading && homeData?.featuredDestinations?.length">
+          <div class="section-header">
+            <h2 class="section-title">{{ 'SEARCH.POPULAR_DESTINATIONS' | translate }}</h2>
+          </div>
+          <div class="scroll-row">
+            <app-destination-card
+              *ngFor="let dest of homeData!.featuredDestinations | slice:0:8"
+              [destination]="dest"
+            />
+          </div>
+        </div>
+
+        <!-- POPULARNE AKTIVNOSTI -->
+        <div class="section" *ngIf="!homeLoading && homeData?.popularActivities?.length">
+          <div class="section-header">
+            <h2 class="section-title">{{ 'SEARCH.POPULAR_ACTIVITIES' | translate }}</h2>
+          </div>
+          <div class="scroll-row">
+            <a
+              *ngFor="let act of homeData!.popularActivities | slice:0:8"
+              [routerLink]="['/activities', act.slug]"
+              class="activity-item"
+            >
+              <div class="activity-item__image-wrap">
+                <img [src]="act.previewImageUrl" [alt]="act.name" class="activity-item__image" loading="lazy" />
+                <span class="activity-item__category">{{ act.category.name }}</span>
+                <div class="activity-item__overlay">
+                  <span class="activity-item__name">{{ act.name }}</span>
+                  <div class="activity-item__meta">
+                    <span class="activity-item__rating">
+                      <span class="material-icons">star</span>
+                      {{ act.avgRating | number:'1.1-1' }}
+                    </span>
+                    <span class="activity-item__price" *ngIf="act.price">{{ act.price | number }} RSD</span>
+                    <span class="activity-item__price" *ngIf="!act.price">{{ 'SEARCH.FREE' | translate }}</span>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- USKORO U BLIZINI -->
+        <div class="section" *ngIf="!homeLoading && homeData?.upcomingEvents?.length">
+          <div class="section-header">
+            <h2 class="section-title">{{ 'SEARCH.UPCOMING_EVENTS' | translate }}</h2>
+          </div>
+          <div class="scroll-row">
+            <app-event-card
+              *ngFor="let ev of homeData!.upcomingEvents | slice:0:6"
+              [event]="ev"
+            />
+          </div>
+        </div>
+
+      </ng-container>
+
+      <!-- ══════════════════════════════════════════
+           SEARCH RESULTS
+      ══════════════════════════════════════════ -->
+      <ng-container *ngIf="showResults">
+
+        <!-- ENTITY TYPE TABS -->
+        <div class="tabs-row">
+          <button
+            *ngFor="let tab of entityTabs"
+            class="tab-btn"
+            [class.active]="activeTab === tab.key"
+            (click)="activeTab = tab.key"
+            type="button"
+          >
+            <span class="material-icons tab-icon">{{ tab.icon }}</span>
+            <span class="tab-label">{{ tab.label }}</span>
+            <span class="tab-count" *ngIf="!loading && hasSearched">{{ countForTab(tab.key) }}</span>
+          </button>
+        </div>
+
+        <!-- LOADING SKELETONS -->
+        <div class="results-grid" *ngIf="loading">
+          <div class="result-card skel-card" *ngFor="let s of skeletons">
+            <div class="skel skel-card-img"></div>
+            <div class="skel-card-body">
+              <div class="skel skel-card-name"></div>
+              <div class="skel skel-card-sub"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RESULTS -->
+        <ng-container *ngIf="!loading && hasSearched">
+          <p class="results-count" *ngIf="filteredResults.length > 0">
+            <strong>{{ filteredResults.length }}</strong> {{ 'SEARCH.RESULTS_FOR' | translate }}
+            <em>"{{ query }}"</em>
+          </p>
+
+          <div class="results-grid" *ngIf="filteredResults.length > 0">
+            <a
+              *ngFor="let item of filteredResults"
+              [routerLink]="getEntityRoute(item)"
+              class="result-card"
+            >
+              <div class="result-card__img-wrap">
+                <img
+                  *ngIf="item.entity.previewImageUrl"
+                  [src]="item.entity.previewImageUrl"
+                  [alt]="item.entity.name"
+                  class="result-card__img"
+                />
+                <div class="result-card__img-placeholder" *ngIf="!item.entity.previewImageUrl">
+                  <span class="material-icons">{{ item.entityType === 'destination' ? 'landscape' : item.entityType === 'place' ? 'store' : item.entityType === 'event' ? 'event' : 'directions_run' }}</span>
+                </div>
+                <span class="entity-badge" [ngClass]="'badge-' + item.entityType">
+                  {{ getTypeLabel(item.entityType) }}
+                </span>
+              </div>
+              <div class="result-card__info">
+                <h3 class="result-card__name">{{ item.entity.name }}</h3>
+                <p class="result-card__sub" *ngIf="getSubtitle(item)">
+                  <span class="material-icons">location_on</span>
+                  {{ getSubtitle(item) }}
+                </p>
+                <div class="result-card__footer">
+                  <span class="result-card__rating" *ngIf="item.entity.avgRating">
+                    <span class="material-icons star-icon">star</span>
+                    {{ item.entity.avgRating | number:'1.1-1' }}
+                  </span>
+                  <span class="result-card__date" *ngIf="item.entityType === 'event' && item.entity.startDatetime">
+                    <span class="material-icons">calendar_today</span>
+                    {{ item.entity.startDatetime | date:'d MMM' }}
+                  </span>
+                  <span class="result-card__price" *ngIf="item.entity.price != null && item.entityType !== 'destination'">
+                    {{ item.entity.price === 0 ? ('SEARCH.FREE' | translate) : (item.entity.price | number) + ' RSD' }}
+                  </span>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <!-- EMPTY STATE -->
+          <div class="empty-state" *ngIf="filteredResults.length === 0">
+            <span class="material-icons empty-icon">search_off</span>
+            <p class="empty-title">{{ 'SEARCH.NO_RESULTS_TITLE' | translate }}</p>
+            <p class="empty-sub">{{ 'SEARCH.NO_RESULTS_SUB' | translate }}</p>
+          </div>
+        </ng-container>
+
+      </ng-container>
+
+    </div>
+
+  </main>
+</div>

@@ -28,7 +28,7 @@ namespace Explorea.Server.Services
 
       if(query.Length < 2) return Empty();
 
-      limit = Math.Clamp(limit, 1, 10);
+      limit = Math.Clamp(limit, 1, 50);
 
       switch (query)
       {
