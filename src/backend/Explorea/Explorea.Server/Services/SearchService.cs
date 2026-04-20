@@ -28,7 +28,7 @@ namespace Explorea.Server.Services
 
       if(query.Length < 2) return Empty();
 
-      limit = Math.Clamp(limit, 1, 10);
+      limit = Math.Clamp(limit, 1, 50);
 
       switch (query)
       {
@@ -414,7 +414,7 @@ namespace Explorea.Server.Services
         Id = destination.Id,
         Name = destination.Name,
         Slug = destination.Slug,
-        PreviewImageUrl = destination.PreviewImageUrl,
+        PreviewImageUrl = destination.HeroImageUrl,
         AvgRating = destination.AvgRating,
         
         City = destination.City == null ? null : new CityRefDto

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
 namespace Explorea.API.Models
@@ -28,7 +29,8 @@ namespace Explorea.API.Models
         [Column("location", TypeName = "geography(Point, 4326)")]
         public Point Location { get; set; } = null!;
 
-        [MaxLength(500), Column("preview_image_url")]
+        // destinations table has no preview_image_url column — use HeroImageUrl instead.
+        [NotMapped]
         public string? PreviewImageUrl { get; set; }
 
         [Column("avg_rating")]  public decimal AvgRating  { get; set; } = 0;

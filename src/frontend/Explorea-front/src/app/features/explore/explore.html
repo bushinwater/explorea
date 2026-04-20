@@ -11,9 +11,14 @@
         <span class="material-icons">tune</span>
         <h2>{{ 'EXPLORE.FILTERS.TITLE' | translate }}</h2>
       </div>
-      <span class="filter-badge" *ngIf="activeFilterCount > 0">
-        {{ 'EXPLORE.FILTERS.BADGE' | translate:{ count: activeFilterCount } }}
-      </span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="filter-badge" *ngIf="activeFilterCount > 0">
+          {{ 'EXPLORE.FILTERS.BADGE' | translate:{ count: activeFilterCount } }}
+        </span>
+        <button class="circle-btn circle-btn--sm" (click)="toggleFilterPanel()" title="Zatvori">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
     </div>
 
     <!-- Lokacija -->
@@ -54,6 +59,19 @@
           <span class="material-icons">{{ et.icon }}</span>
           <span>{{ et.labelKey | translate }}</span>
         </button>
+      </div>
+    </div>
+
+    <!-- Podkategorije (samo kada je tačno jedan tip sa podkategorijama selektovan) -->
+    <div class="filter-group" *ngIf="subcatEntityType && subcatsToShow.length > 0">
+      <span class="filter-group__label">{{ 'EXPLORE.FILTERS.SUBCATEGORY' | translate }}</span>
+      <div class="filter-chips">
+        <button
+          *ngFor="let cat of subcatsToShow"
+          class="filter-chip"
+          [class.active]="isSubcatSelected(cat.id)"
+          (click)="toggleSubcat(cat.id)"
+        >{{ cat.name }}</button>
       </div>
     </div>
 
@@ -139,6 +157,19 @@
             <span class="material-icons">{{ et.icon }}</span>
             <span>{{ et.labelKey | translate }}</span>
           </button>
+        </div>
+      </div>
+
+      <!-- Podkategorije -->
+      <div class="filter-group" *ngIf="subcatEntityType && subcatsToShow.length > 0">
+        <span class="filter-group__label">{{ 'EXPLORE.FILTERS.SUBCATEGORY' | translate }}</span>
+        <div class="filter-chips">
+          <button
+            *ngFor="let cat of subcatsToShow"
+            class="filter-chip"
+            [class.active]="isSubcatSelected(cat.id)"
+            (click)="toggleSubcat(cat.id)"
+          >{{ cat.name }}</button>
         </div>
       </div>
 
@@ -339,7 +370,7 @@
         <div class="mobile-sheet__handle"></div>
         <div class="mobile-sheet__peek">
           <div class="mobile-sheet__peek-count">
-            {{ loading ? ('EXPLORE.SHEET.LOADING' | translate) : ('EXPLORE.SHEET.RESULTS' | translate:{ count: filteredPins.length }) }}
+            {{ loading ? ('EXPLORE.SHEET.LOADING' | translate) : ('EXPLORE.SHEET.RESULTS' | translate:{ count: visiblePinsCount }) }}
           </div>
           <div class="mobile-sheet__peek-hint"
             *ngIf="!drawerExpanded && selectedEntityTypes.length === 0 && currentZoom < 11">
@@ -363,7 +394,7 @@
         <div class="explore-grid">
           <div
             class="explore-card"
-            *ngFor="let pin of filteredPins"
+            *ngFor="let pin of visiblePins"
             (click)="selectResult(pin)"
           >
             <div class="explore-card__image-wrap">

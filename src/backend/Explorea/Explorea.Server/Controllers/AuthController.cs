@@ -137,5 +137,23 @@ namespace Explorea.Server.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost("social/complete")]
+        public async Task<IActionResult> CompleteSocial([FromBody] SocialCompleteDto dto)
+        {
+            try
+            {
+                var result = await _authService.CompleteSocialAsync(
+                    dto,
+                    HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    Request.Headers.UserAgent.ToString());
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

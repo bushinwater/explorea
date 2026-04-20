@@ -14,6 +14,9 @@ namespace Explorea.API.DTOs.Explore
         // Podnaslov: grad za destinacije, tip za mesta, kategorija za aktivnosti, tip za dogadjaje
         public string? Subtitle { get; set; }
 
+        // ID tipa/kategorije: TypeId za mesta i dogadjaje, CategoryId za aktivnosti
+        public int? CategoryId { get; set; }
+
         // Samo za dogadjaje i aktivnosti
         public decimal? Price { get; set; }
 

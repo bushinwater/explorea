@@ -10,7 +10,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { Subject, forkJoin } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, switchMap, tap, takeUntil } from 'rxjs/operators';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -18,6 +18,7 @@ import { Sidebar } from '../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../shared/bottom-nav/bottom-nav';
 import { ExploreService, ExploreMarker } from '../../core/services/explore.service';
 import { SearchService } from '../../core/services/search.service';
+import { LookupService, LookupItem } from '../../core/services/lookup.service';
 import { SearchItem } from '../../core/models/search.model';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
@@ -92,6 +93,7 @@ export class Explore implements AfterViewInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private exploreService: ExploreService,
     private searchService: SearchService,
+    private lookupService: LookupService,
     private translate: TranslateService,
   ) {}
 
@@ -151,12 +153,20 @@ export class Explore implements AfterViewInit, OnDestroy {
   minRating: number | null = null;
   entityTypes = ENTITY_TYPES;
 
+  // Subcategory filters (client-side filtering of loaded pins)
+  selectedSubcatIds: number[] = [];
+  placeTypes: LookupItem[] = [];
+  activityCategories: LookupItem[] = [];
+  eventTypes: LookupItem[] = [];
+
   // User location (fetched when nearbyOnly = true)
   userLat: number | null = null;
   userLng: number | null = null;
 
   // API data
   pins: ExploreMarker[] = [];
+  visiblePins: ExploreMarker[] = [];
+  visiblePinsCount = 0;
 
   // Route navigation
   showLocationModal = false;
@@ -184,14 +194,24 @@ export class Explore implements AfterViewInit, OnDestroy {
   }
 
   get filteredPins(): ExploreMarker[] {
+    let result: ExploreMarker[];
+
     // If user explicitly picked types, respect their selection (skip zoom filter)
     if (this.selectedEntityTypes.length > 0) {
       const backendTypes = this.selectedEntityTypes.map(k => ENTITY_TYPE_BACKEND_MAP[k]);
-      return this.pins.filter(p => backendTypes.includes(p.entityType));
+      result = this.pins.filter(p => backendTypes.includes(p.entityType));
+    } else {
+      // Otherwise show only what makes sense at this zoom level
+      const visible = this.zoomVisibleTypes;
+      result = this.pins.filter(p => visible.includes(p.entityType));
     }
-    // Otherwise show only what makes sense at this zoom level
-    const visible = this.zoomVisibleTypes;
-    return this.pins.filter(p => visible.includes(p.entityType));
+
+    // Subcategory filter — only active when exactly one type-with-subcats is selected
+    if (this.subcatEntityType && this.selectedSubcatIds.length > 0) {
+      result = result.filter(p => p.categoryId != null && this.selectedSubcatIds.includes(p.categoryId));
+    }
+
+    return result;
   }
 
   get activeFilterCount(): number {
@@ -200,6 +220,7 @@ export class Explore implements AfterViewInit, OnDestroy {
     if (this.openNowOnly) count++;
     if (this.minRating !== null) count++;
     if (this.nearbyOnly && this.radiusKm !== 25) count++;
+    if (this.selectedSubcatIds.length > 0) count++;
     return count;
   }
 
@@ -214,6 +235,8 @@ export class Explore implements AfterViewInit, OnDestroy {
     } else {
       this.selectedEntityTypes.push(key);
     }
+    // Clear subcategory selection whenever the entity type mix changes
+    this.selectedSubcatIds = [];
     this.addMarkers();
   }
 
@@ -244,6 +267,7 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.attachContentTouchListeners();
     this.loadMarkers();
     this.initSearch();
+    this.loadLookups();
   }
 
   private initSearch() {
@@ -276,6 +300,57 @@ export class Explore implements AfterViewInit, OnDestroy {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  private loadLookups(): void {
+    forkJoin({
+      placeTypes:         this.lookupService.getPlaceTypes(),
+      activityCategories: this.lookupService.getActivityCategories(),
+      eventTypes:         this.lookupService.getEventTypes(),
+    }).subscribe({
+      next: res => {
+        this.placeTypes         = res.placeTypes;
+        this.activityCategories = res.activityCategories;
+        this.eventTypes         = res.eventTypes;
+        this.cdr.detectChanges();
+      },
+      error: () => {},
+    });
+  }
+
+  /**
+   * Returns the single entity-type key that has subcategories available,
+   * only when exactly one of (objekti / aktivnosti / dogadjaji) is in the selection.
+   * Returns null when 0 or 2+ of those types are selected.
+   */
+  get subcatEntityType(): string | null {
+    const withSubcats = this.selectedEntityTypes.filter(
+      k => k === 'objekti' || k === 'aktivnosti' || k === 'dogadjaji',
+    );
+    return withSubcats.length === 1 ? withSubcats[0] : null;
+  }
+
+  get subcatsToShow(): LookupItem[] {
+    switch (this.subcatEntityType) {
+      case 'objekti':    return this.placeTypes;
+      case 'aktivnosti': return this.activityCategories;
+      case 'dogadjaji':  return this.eventTypes;
+      default:           return [];
+    }
+  }
+
+  isSubcatSelected(id: number): boolean {
+    return this.selectedSubcatIds.includes(id);
+  }
+
+  toggleSubcat(id: number): void {
+    const idx = this.selectedSubcatIds.indexOf(id);
+    if (idx >= 0) {
+      this.selectedSubcatIds.splice(idx, 1);
+    } else {
+      this.selectedSubcatIds.push(id);
+    }
+    this.addMarkers();
   }
 
   onSearchInput(value: string) {
@@ -561,6 +636,10 @@ export class Explore implements AfterViewInit, OnDestroy {
       }
     });
 
+    this.map.on('moveend', () => {
+      this.updateVisibleCount();
+    });
+
     this.map.on('click', e => {
       const target = e.originalEvent.target as HTMLElement;
       if (!target.closest('.map-pin-btn')) {
@@ -614,6 +693,24 @@ export class Explore implements AfterViewInit, OnDestroy {
     );
   }
 
+  private updateVisibleCount(): void {
+    if (!this.map) {
+      this.visiblePins      = this.filteredPins;
+      this.visiblePinsCount = this.filteredPins.length;
+      this.cdr.detectChanges();
+      return;
+    }
+    try {
+      const bounds          = this.map.getBounds();
+      this.visiblePins      = this.filteredPins.filter(p => bounds.contains([p.lng, p.lat]));
+      this.visiblePinsCount = this.visiblePins.length;
+    } catch {
+      this.visiblePins      = this.filteredPins;
+      this.visiblePinsCount = this.filteredPins.length;
+    }
+    this.cdr.detectChanges();
+  }
+
   private addMarkers() {
     this.markers.forEach(m => m.remove());
     this.markers = [];
@@ -640,6 +737,8 @@ export class Explore implements AfterViewInit, OnDestroy {
 
       this.markers.push(marker);
     });
+
+    this.updateVisibleCount();
   }
 
   getPinIcon(entityType: string): string {
@@ -683,6 +782,7 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.selectedEntityTypes = [];
     this.openNowOnly = false;
     this.minRating = null;
+    this.selectedSubcatIds = [];
     this.fetchMarkers();
   }
 

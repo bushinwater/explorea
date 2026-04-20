@@ -24,22 +24,46 @@ namespace Explorea.Server.Controllers
         }
 
         [HttpGet("cities")]
-        public IActionResult GetCities() => Ok();
+        public async Task<IActionResult> GetCities([FromQuery] int? regionId = null)
+        {
+            var items = await _lookup.GetCitiesAsync(regionId);
+            return Ok(items.Select(c => new { c.Id, c.Name }));
+        }
 
         [HttpGet("regions")]
-        public IActionResult GetRegions() => Ok();
+        public async Task<IActionResult> GetRegions()
+        {
+            var items = await _lookup.GetRegionsAsync();
+            return Ok(items.Select(r => new { r.Id, r.Name }));
+        }
 
         [HttpGet("place-types")]
-        public IActionResult GetPlaceTypes() => Ok();
+        public async Task<IActionResult> GetPlaceTypes()
+        {
+            var items = await _lookup.GetPlaceTypesAsync();
+            return Ok(items.Select(t => new { t.Id, t.Name }));
+        }
 
         [HttpGet("event-types")]
-        public IActionResult GetEventTypes() => Ok();
+        public async Task<IActionResult> GetEventTypes()
+        {
+            var items = await _lookup.GetEventTypesAsync();
+            return Ok(items.Select(t => new { t.Id, t.Name }));
+        }
 
         [HttpGet("activity-categories")]
-        public IActionResult GetActivityCategories() => Ok();
+        public async Task<IActionResult> GetActivityCategories()
+        {
+            var items = await _lookup.GetActivityCategoriesAsync();
+            return Ok(items.Select(c => new { c.Id, c.Name }));
+        }
 
         [HttpGet("seasons")]
-        public IActionResult GetSeasons() => Ok();
+        public async Task<IActionResult> GetSeasons()
+        {
+            var items = await _lookup.GetSeasonsAsync();
+            return Ok(items.Select(s => new { s.Id, s.Name }));
+        }
 
         [HttpGet("interest-tags")]
         public async Task<IActionResult> GetInterestTags()

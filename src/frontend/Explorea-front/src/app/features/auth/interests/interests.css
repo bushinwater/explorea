@@ -18,13 +18,10 @@ h2 {
   margin-bottom: var(--spacing-lg);
 }
 
-.logo-icon {
-  background: var(--color-primary);
-
-  border-radius: var(--radius-md);
-  font-size: 28px;
-  padding: var(--spacing-md);
-  color: var(--color-text-primary);
+.logo-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
 }
 
 .logo-text {

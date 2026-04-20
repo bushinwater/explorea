@@ -12,6 +12,7 @@ export interface ExploreMarker {
   previewImageUrl: string | null;
   avgRating: number | null;
   subtitle: string | null;
+  categoryId: number | null;
   price: number | null;
   startDatetime: string | null;
 }
