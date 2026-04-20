@@ -43,6 +43,9 @@ namespace Explorea.API.Models
 
         [Column("avg_rating")]  public decimal AvgRating  { get; set; } = 0;
         [Column("is_featured")] public bool    IsFeatured { get; set; } = false;
+
+        [Column("extra_filters", TypeName = "jsonb")]
+        public string? ExtraFilters { get; set; }
         [Column("is_deleted")]  public bool    IsDeleted  { get; set; } = false;
         [Column("deleted_at")]  public DateTimeOffset? DeletedAt { get; set; }
 

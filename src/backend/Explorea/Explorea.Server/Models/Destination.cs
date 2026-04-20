@@ -47,6 +47,11 @@ namespace Explorea.API.Models
         [MaxLength(20), Column("visibility")]
         public string Visibility { get; set; } = "published";
 
+        [Column("type_id")] public int? TypeId { get; set; }
+
+        [Column("extra_filters", TypeName = "jsonb")]
+        public string? ExtraFilters { get; set; }
+
         [Column("created_at")] public DateTimeOffset CreatedAt { get; set; }
         [Column("updated_at")] public DateTimeOffset UpdatedAt { get; set; }
         [Column("created_by")] public Guid? CreatedBy { get; set; }
@@ -57,6 +62,9 @@ namespace Explorea.API.Models
 
         [ForeignKey("CountryId")]
         public Country? Country { get; set; }
+
+        [ForeignKey("TypeId")]
+        public DestinationType? Type { get; set; }
 
         public ICollection<DestinationImage> Images     { get; set; } = new List<DestinationImage>();
         public ICollection<Place>            Places     { get; set; } = new List<Place>();
