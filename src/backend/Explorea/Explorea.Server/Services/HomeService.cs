@@ -21,14 +21,14 @@ namespace Explorea.Server.Services
       _homeRepository = homeRepository;
     }
 
-    public async Task<HomeDataDto> GetHomeDataAsync()
+    public async Task<HomeDataDto> GetHomeDataAsync(HomeQueryDto query)
     {
       var now = DateTimeOffset.UtcNow;
 
-      var hero = await _homeRepository.GetHeroBannerDestinationAsync(5);
-      var destinations = await _homeRepository.GetFeaturedDestinationsAsync(8);
-      var events = await _homeRepository.GetUpcomingEventsAsync(now, 8);
-      var activities = await _homeRepository.GetPopularActivitiesAsync(8);
+      var hero = await _homeRepository.GetHeroBannerDestinationAsync(5, query.UserLat, query.UserLng);
+      var destinations = await _homeRepository.GetFeaturedDestinationsAsync(8, query.UserLat, query.UserLng);
+      var events = await _homeRepository.GetUpcomingEventsAsync(now, 8, query.UserLat, query.UserLng);
+      var activities = await _homeRepository.GetPopularActivitiesAsync(8, query.UserLat, query.UserLng);
       var reviews = await _homeRepository.GetTravelerReviewsAsync(15);
 
       return new HomeDataDto
