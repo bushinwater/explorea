@@ -30,6 +30,10 @@ export class Sidebar {
   toggle() {
     if (window.innerWidth >= 769) {
       this.isExpanded = !this.isExpanded;
+      document.documentElement.style.setProperty(
+        '--sidebar-current-width',
+        this.isExpanded ? '280px' : '72px',
+      );
     } else {
       this.isOpen = !this.isOpen;
     }

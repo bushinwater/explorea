@@ -59,6 +59,23 @@
         </button>
       </div>
 
+      <!-- SUBCATEGORY CHIPS (shown when a specific entity chip is active; max 10 inline) -->
+      <div class="subcats-row" *ngIf="activeChip !== 'sve' && activeChip !== '' && getSubcatsForActiveChip().length > 0">
+        <button
+          *ngFor="let cat of subcatsPreview"
+          class="subcat-chip"
+          [class.active]="isSubcatSelected(cat.id)"
+          (click)="quickToggleSubcat(cat.id)"
+          type="button"
+        >{{ cat.name }}</button>
+        <button
+          class="subcat-more-btn"
+          *ngIf="subcatsHiddenCount > 0"
+          (click)="openFilterPanel()"
+          type="button"
+        >{{ 'SEARCH.SUBCATS_MORE' | translate:{ count: subcatsHiddenCount } }}</button>
+      </div>
+
       <!-- SORT ROW -->
       <div class="sort-row">
         <button class="sort-btn" [class.active]="sortBy === 'popularity'"
@@ -150,8 +167,8 @@
       ══════════════════════════════════════════ -->
       <ng-container *ngIf="showResults">
 
-        <!-- ENTITY TABS -->
-        <div class="tabs-row">
+        <!-- ENTITY TABS — only shown when "all" chip is active (free-text search) -->
+        <div class="tabs-row" *ngIf="activeChip === 'sve' || activeChip === ''">
           <button
             *ngFor="let tab of entityTabs"
             class="tab-btn"

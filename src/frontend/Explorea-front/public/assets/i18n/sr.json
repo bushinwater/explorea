@@ -483,6 +483,7 @@
       "HOURS_RATINGS": "Radno Vreme i Ocene",
       "OPEN_NOW": "Otvoreno sada",
       "MIN_RATING": "Minimalna ocena",
+      "SUBCATEGORY": "Podkategorija",
       "RESET": "Poništi filtere",
       "APPLY": "Primeni filtere",
       "CLOSE": "Zatvori"
@@ -715,6 +716,7 @@
     "LOCATION_MODAL_ENABLE": "Uključi lokaciju",
     "LOCATION_MODAL_WAITING": "Čekam dozvolu...",
     "LOCATION_BLOCKED_TITLE": "Lokacija blokirana",
-    "LOCATION_BLOCKED_TEXT": "Lokacija je blokirana u podešavanjima browsera. Klikni na ikonu katanca pored adrese sajta, dozvoli lokaciju, pa pokušaj ponovo."
+    "LOCATION_BLOCKED_TEXT": "Lokacija je blokirana u podešavanjima browsera. Klikni na ikonu katanca pored adrese sajta, dozvoli lokaciju, pa pokušaj ponovo.",
+    "SUBCATS_MORE": "+{{count}} više"
   }
 }

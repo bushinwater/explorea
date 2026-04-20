@@ -412,6 +412,45 @@ export class Search implements OnInit, OnDestroy {
     }
   }
 
+  /** Subcategory chips shown inline below chips-row when a specific chip is active */
+  getSubcatsForActiveChip(): LookupItem[] {
+    switch (this.activeChip) {
+      case 'place':    return this.placeTypes;
+      case 'activity': return this.activityCategories;
+      case 'event':    return this.eventTypes;
+      default:         return [];
+    }
+  }
+
+  isSubcatSelected(id: number): boolean {
+    switch (this.activeChip) {
+      case 'place':    return (this.filters.placeTypeIds        ?? []).includes(id);
+      case 'activity': return (this.filters.activityCategoryIds ?? []).includes(id);
+      case 'event':    return (this.filters.eventTypeIds        ?? []).includes(id);
+      default:         return false;
+    }
+  }
+
+  quickToggleSubcat(id: number): void {
+    const toggle = (arr: number[]) => {
+      const idx = arr.indexOf(id);
+      return idx >= 0 ? arr.filter(x => x !== id) : [...arr, id];
+    };
+    switch (this.activeChip) {
+      case 'place':
+        this.filters = { ...this.filters, placeTypeIds: toggle(this.filters.placeTypeIds ?? []) };
+        break;
+      case 'activity':
+        this.filters = { ...this.filters, activityCategoryIds: toggle(this.filters.activityCategoryIds ?? []) };
+        break;
+      case 'event':
+        this.filters = { ...this.filters, eventTypeIds: toggle(this.filters.eventTypeIds ?? []) };
+        break;
+    }
+    if (this.showResults) this.triggerSearch();
+    this.cdr.detectChanges();
+  }
+
   getSelectedCategoryIds(): number[] {
     switch (this.filterEntityType) {
       case 'place':    return this.draftFilters.placeTypeIds ?? [];
@@ -454,6 +493,17 @@ export class Search implements OnInit, OnDestroy {
       if (type !== 'event')    this.draftFilters = { ...this.draftFilters, eventTypeIds: [] };
     }
     this.cdr.detectChanges();
+  }
+
+  /** How many subcategory chips to show inline before showing the "+N more" button */
+  private readonly SUBCATS_PREVIEW_COUNT = 10;
+
+  get subcatsPreview(): LookupItem[] {
+    return this.getSubcatsForActiveChip().slice(0, this.SUBCATS_PREVIEW_COUNT);
+  }
+
+  get subcatsHiddenCount(): number {
+    return Math.max(0, this.getSubcatsForActiveChip().length - this.SUBCATS_PREVIEW_COUNT);
   }
 
   // ─── User interactions ────────────────────────────────────────────────────
@@ -501,8 +551,14 @@ export class Search implements OnInit, OnDestroy {
       this.cdr.detectChanges();
       return;
     }
-    // Auto-sync filter entity type with the selected chip
+    // Auto-sync filter entity type with the selected chip and clear stale category filters
     this.filterEntityType = key as 'destination' | 'place' | 'activity' | 'event';
+    this.filters = {
+      ...this.filters,
+      placeTypeIds: key === 'place' ? (this.filters.placeTypeIds ?? []) : [],
+      activityCategoryIds: key === 'activity' ? (this.filters.activityCategoryIds ?? []) : [],
+      eventTypeIds: key === 'event' ? (this.filters.eventTypeIds ?? []) : [],
+    };
     this.query            = '';
     this.hasSearched      = true;
     this.triggerSearch();
@@ -521,7 +577,9 @@ export class Search implements OnInit, OnDestroy {
       return;
     }
     if (this.sortBy === key) {
-      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+      // Second click deselects the sort
+      this.sortBy  = null;
+      this.sortDir = 'asc';
     } else {
       this.sortBy  = key;
       this.sortDir = 'asc';

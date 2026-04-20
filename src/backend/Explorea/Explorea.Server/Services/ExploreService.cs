@@ -103,7 +103,8 @@ namespace Explorea.Server.Services
                 .Select(i => i.ImageUrl)
                 .FirstOrDefault(),
             AvgRating = p.AvgRating,
-            Subtitle = p.Type?.Name
+            Subtitle = p.Type?.Name,
+            CategoryId = p.TypeId
         };
 
         private static ExploreMarkerDto MapEvent(Event e) => new()
@@ -119,6 +120,7 @@ namespace Explorea.Server.Services
                 .Select(i => i.ImageUrl)
                 .FirstOrDefault(),
             Subtitle = e.Type?.Name,
+            CategoryId = e.TypeId,
             Price = e.Price,
             StartDatetime = e.StartDatetime
         };
@@ -137,6 +139,7 @@ namespace Explorea.Server.Services
                 .FirstOrDefault(),
             AvgRating = a.AvgRating,
             Subtitle = a.Category?.Name,
+            CategoryId = a.CategoryId,
             Price = a.Price
         };
     }

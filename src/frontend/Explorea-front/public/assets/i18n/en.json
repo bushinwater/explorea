@@ -483,6 +483,7 @@
       "HOURS_RATINGS": "Working Hours & Ratings",
       "OPEN_NOW": "Open now",
       "MIN_RATING": "Minimum rating",
+      "SUBCATEGORY": "Subcategory",
       "RESET": "Reset filters",
       "APPLY": "Apply filters",
       "CLOSE": "Close"
@@ -715,6 +716,7 @@
     "LOCATION_MODAL_ENABLE": "Enable location",
     "LOCATION_MODAL_WAITING": "Waiting for permission...",
     "LOCATION_BLOCKED_TITLE": "Location blocked",
-    "LOCATION_BLOCKED_TEXT": "Location is blocked in your browser settings. Click the lock icon next to the site address, allow location, then try again."
+    "LOCATION_BLOCKED_TEXT": "Location is blocked in your browser settings. Click the lock icon next to the site address, allow location, then try again.",
+    "SUBCATS_MORE": "+{{count}} more"
   }
 }

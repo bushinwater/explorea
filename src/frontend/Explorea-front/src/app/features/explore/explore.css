@@ -31,7 +31,7 @@
 .filter-panel {
   position: fixed;
   top: var(--spacing-lg);
-  left: calc(72px + var(--spacing-md));
+  left: calc(var(--sidebar-current-width, 72px) + var(--spacing-md));
   width: 264px;
   max-height: calc(100vh - 2 * var(--spacing-lg));
   background: var(--color-surface);
@@ -44,6 +44,7 @@
   overflow-y: auto;
   z-index: 110;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  transition: left 0.25s ease;
 }
 
 .filter-panel__header {
@@ -342,6 +343,46 @@
   border-color: var(--color-primary);
   color: var(--color-primary);
   background: var(--color-primary-dark);
+}
+
+/* Subcategory chips */
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 90px;
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.filter-chips::-webkit-scrollbar { width: 3px; }
+.filter-chips::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+
+.filter-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.filter-chip.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-dark);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.filter-chip:not(.active):hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 /* Filter actions */
