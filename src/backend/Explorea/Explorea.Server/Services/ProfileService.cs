@@ -19,6 +19,7 @@ namespace Explorea.Server.Services
         private readonly IUserRepository _userRepository;
         private readonly IAiBotService _aiBotService;
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly INewsletterService _newsletterService;
 
         public ProfileService(
             IUserRepository userRepository,
@@ -26,6 +27,7 @@ namespace Explorea.Server.Services
             IReviewRepository reviewRepository,
             IAiBotService aiBotService,
             ICloudinaryService cloudinaryService,
+            INewsletterService newsletterService,
             AppDbContext db)
         {
             _userRepository = userRepository;
@@ -33,6 +35,7 @@ namespace Explorea.Server.Services
             _reviewRepository = reviewRepository;
             _aiBotService = aiBotService;
             _cloudinaryService = cloudinaryService;
+            _newsletterService = newsletterService;
             _db = db;
         }
 
@@ -267,7 +270,7 @@ namespace Explorea.Server.Services
                     var destIds = destMatches.Select(x => x.Id).ToList();
                     var dests = await _db.Destinations
                         .Where(d => destIds.Contains(d.Id))
-                        .Select(d => new { d.Id, d.Name, d.Slug, d.PreviewImageUrl, d.AvgRating })
+                        .Select(d => new { d.Id, d.Name, d.Slug, PreviewImageUrl = d.HeroImageUrl, d.AvgRating })
                         .ToListAsync();
 
                     items.AddRange(destMatches.Join(dests, m => m.Id, d => d.Id, (m, d) => new ForYouItemDto
@@ -378,7 +381,7 @@ namespace Explorea.Server.Services
                     {
                         Id = d.Id, EntityType = "destination",
                         Name = d.Name, Slug = d.Slug,
-                        PreviewImageUrl = d.PreviewImageUrl,
+                        PreviewImageUrl = d.HeroImageUrl,
                         AvgRating = (double)d.AvgRating, MatchedTagsCount = 0
                     })
                     .ToListAsync();
@@ -485,17 +488,7 @@ namespace Explorea.Server.Services
 
         public async Task<bool> UpdateNewsletterAsync(Guid userId, bool newsletter)
         {
-            var user = await _userRepository.GetByIdAsync(userId)
-                ?? throw new Exception("User not found.");
-
-            user.Newsletter = newsletter;
-            user.UpdatedAt = DateTimeOffset.UtcNow;
-            user.UpdatedBy = userId;
-
-            _userRepository.Update(user);
-            await _userRepository.SaveChangesAsync();
-
-            return user.Newsletter;
+            return await _newsletterService.UpdateUserSubscriptionAsync(userId, newsletter);
         }
 
         private static string NormalizeEntityType(string entityType)
@@ -536,7 +529,7 @@ namespace Explorea.Server.Services
                         EntityId = item.EntityId,
                         Name = x.Name,
                         Slug = x.Slug,
-                        PreviewImageUrl = x.PreviewImageUrl,
+                        PreviewImageUrl = x.HeroImageUrl,
                         Subtitle = x.City != null ? x.City.Name : null,
                         SavedAt = item.SavedAt
                     })
@@ -613,7 +606,7 @@ namespace Explorea.Server.Services
                         EntityId = review.EntityId,
                         EntityName = x.Name,
                         EntitySlug = x.Slug,
-                        PreviewImageUrl = x.PreviewImageUrl,
+                        PreviewImageUrl = x.HeroImageUrl,
                         Rating = review.Rating,
                         Comment = review.Comment,
                         CreatedAt = review.CreatedAt,

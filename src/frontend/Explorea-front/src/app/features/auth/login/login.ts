@@ -165,17 +165,21 @@ export class Login implements OnInit {
   private handleSocialLogin(provider: 'google' | 'facebook', token: string) {
     this.authService.socialLogin({ provider, token }).subscribe({
       next: (response) => {
+        if (response.socialPendingToken) {
+          sessionStorage.setItem('socialPendingToken', response.socialPendingToken);
+          this.router.navigate(['/complete-profile']);
+          return;
+        }
         this.authService.saveTokens(response);
         this.locationService.flushCachedLocation();
-        if (response.needsProfileCompletion) {
-          this.router.navigate(['/complete-profile']);
-        } else if (response.needsInterests) {
+        if (response.needsInterests) {
           this.router.navigate(['/interests']);
         } else {
           this.router.navigateByUrl(this.returnUrl);
         }
       },
-      error: () => {
+      error: (err) => {
+        console.error('[Social login error]', err?.error?.message ?? err);
         this.socialLoading = null;
         this.error = 'LOGIN.ERROR';
         this.cdr.detectChanges();

@@ -33,17 +33,28 @@
         <!-- DATE OF BIRTH -->
         <div class="form-group">
           <label>{{ 'REGISTER.DATE_OF_BIRTH' | translate }}</label>
-          <div class="input-wrapper" [class.input-error]="dateOfBirthError">
+          <div class="dob-row" [class.input-error]="dateOfBirthError">
             <span class="material-icons input-icon">cake</span>
-            <input class="input no-right-icon" type="date" [(ngModel)]="dateOfBirth"
-              [min]="minDate" [max]="maxDate"
-              (ngModelChange)="dateOfBirthError = ''"
-              (blur)="validateDateOfBirth()" />
+            <input class="dob-part" type="text" inputmode="numeric" placeholder="DD" maxlength="2"
+              [(ngModel)]="dobDay" (ngModelChange)="onDobDayChange()" />
+            <span class="dob-sep">/</span>
+            <input #dobMonthInput class="dob-part" type="text" inputmode="numeric" placeholder="MM" maxlength="2"
+              [(ngModel)]="dobMonth" (ngModelChange)="onDobMonthChange()" />
+            <span class="dob-sep">/</span>
+            <input #dobYearInput class="dob-part dob-year" type="text" inputmode="numeric" placeholder="YYYY" maxlength="4"
+              [(ngModel)]="dobYear" (ngModelChange)="onDobYearChange()"
+              (keydown.enter)="onDobYearEnter()" />
+            <div class="dob-picker-wrap" (click)="openPicker()">
+              <span class="material-icons dob-picker-icon">calendar_today</span>
+              <input #dobPicker type="date" class="dob-picker-hidden"
+                [min]="minDate" [max]="maxDate"
+                (change)="onPickerChange($event)" />
+            </div>
           </div>
           <span class="field-error" *ngIf="dateOfBirthError">{{ dateOfBirthError | translate }}</span>
         </div>
 
-        <button class="btn btn-primary submit-btn" (click)="submit()" [disabled]="loading">
+        <button #submitBtn class="btn btn-primary submit-btn" (click)="submit()" [disabled]="loading">
           <span class="btn-spinner" *ngIf="loading"></span>
           <span *ngIf="!loading">{{ 'COMPLETE_PROFILE.SUBMIT' | translate }}</span>
         </button>

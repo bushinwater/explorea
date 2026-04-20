@@ -123,13 +123,13 @@ namespace Explorea.Server.Services
                             Lat = entity.Latitude.Value,
                             Lng = entity.Longitude.Value
                         }
-                        : entity.Place != null
+                        : entity.Place != null && entity.Place.Latitude.HasValue && entity.Place.Longitude.HasValue
                             ? new LocationDto
                             {
-                                Lat = entity.Place.Latitude,
-                                Lng = entity.Place.Longitude
+                                Lat = entity.Place.Latitude.Value,
+                                Lng = entity.Place.Longitude.Value
                             }
-                            : entity.Destination != null
+                            : entity.Destination != null && entity.Destination.Latitude.HasValue && entity.Destination.Longitude.HasValue
                                 ? new LocationDto
                                 {
                                     Lat = entity.Destination.Latitude.Value,

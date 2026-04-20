@@ -37,6 +37,9 @@ builder.Services.AddScoped<IHomeService, HomeService>();
 builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
 builder.Services.AddScoped<IActivityService, ActivityService>();
 
+builder.Services.AddScoped<ISearchPageService, SearchPageService>();
+builder.Services.AddScoped<ISearchPageRepository, SearchPageRepository>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
@@ -48,9 +51,11 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IUserRepository, UserRepository>(); // scoped = 1 objekat po 1 http request-u
+builder.Services.AddScoped<INewsletterRepository, NewsletterRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<INewsletterService, NewsletterService>();
 builder.Services.AddScoped<PasswordHelper>();
 builder.Services.AddScoped<JwtHelper>();
 builder.Services.AddScoped<ILookupRepository, LookupRepository>();
@@ -99,6 +104,26 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
+            if (feature?.Error is not null)
+            {
+                var err = feature.Error;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    error   = err.Message,
+                    type    = err.GetType().FullName,
+                    stack   = err.StackTrace,
+                    inner   = err.InnerException?.Message
+                });
+            }
+        });
+    });
 }
 
 app.UseCors("AllowAngular");
