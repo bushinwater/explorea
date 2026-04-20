@@ -168,8 +168,13 @@ a.nav-card {
 }
 
 .nav-card.open-below {
+  border-color: var(--color-primary);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   border-bottom-color: transparent;
+}
+
+.nav-card.open-below + .reviews-dropdown {
+  border-color: var(--color-primary);
 }
 
 .nav-arrow {

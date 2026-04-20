@@ -10,6 +10,7 @@ import {
   RegisterDto,
   ResendVerificationDto,
   ResetPasswordDto,
+  SocialCompleteDto,
   SocialLoginDto,
   VerifyEmailDto,
 } from '../models/auth.model';
@@ -60,13 +61,17 @@ export class AuthService {
     return this.http.post<AuthResponseDto>(`${this.api}/social`, dto);
   }
 
+  completeSocial(dto: SocialCompleteDto): Observable<AuthResponseDto> {
+    return this.http.post<AuthResponseDto>(`${this.api}/social/complete`, dto);
+  }
+
   completeProfile(dto: CompleteProfileDto): Observable<void> {
     return this.http.patch<void>('/api/profile/complete', dto);
   }
 
   saveTokens(response: AuthResponseDto): void {
-    localStorage.setItem('accessToken', response.accessToken);
-    localStorage.setItem('refreshToken', response.refreshToken);
+    if (response.accessToken)  localStorage.setItem('accessToken',  response.accessToken);
+    if (response.refreshToken) localStorage.setItem('refreshToken', response.refreshToken);
   }
 
   getAccessToken(): string | null {

@@ -15,6 +15,7 @@ import { FacebookCallback } from './features/auth/facebook-callback/facebook-cal
 import { VerifyEmail } from './features/auth/verify-email/verify-email';
 import { Home } from './features/home/home';
 import { Explore } from './features/explore/explore';
+import { Search } from './features/search/search';
 import { Settings } from './features/profile/settings/settings';
 import { SavedItemsPage } from './features/profile/saved-items/saved-items';
 import { EventsListPage } from './features/events/events-list/events-list';
@@ -23,12 +24,13 @@ export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', component: Home },
   { path: 'explore', component: Explore },
+  { path: 'search', component: Search },
   { path: 'events', component: EventsListPage },
   { path: 'activities/:slug', component: ActivityDetailComponent },
   { path: 'events/:slug', component: EventDetailComponent },
   { path: 'places/:slug', component: PlaceDetailComponent },
   { path: 'destinations/:slug', component: DestinationDetailComponent },
-  { path: 'interests', component: Interests },
+  { path: 'interests', component: Interests, canActivate: [authGuard] },
   { path: 'profile', component: Settings, canActivate: [authGuard] },
   { path: 'saved', component: SavedItemsPage, canActivate: [authGuard] },
   { path: 'login', component: Login, canActivate: [guestGuard] },
@@ -36,7 +38,7 @@ export const routes: Routes = [
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'reset-password', component: ResetPassword },
   { path: 'verify-email', component: VerifyEmail },
-  { path: 'complete-profile', component: CompleteProfile, canActivate: [authGuard] },
+  { path: 'complete-profile', component: CompleteProfile },
   { path: 'auth/facebook/callback', component: FacebookCallback },
   { path: '**', redirectTo: 'home' },
 ];

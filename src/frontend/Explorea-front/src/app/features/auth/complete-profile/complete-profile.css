@@ -144,6 +144,88 @@ h1 {
   border-color: var(--color-primary);
 }
 
+/* DATE OF BIRTH ROW */
+.dob-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 0 16px 0 48px;
+  height: 56px;
+  gap: 2px;
+  transition: border-color 0.15s ease;
+}
+
+.dob-row:focus-within {
+  border-color: var(--color-primary);
+}
+
+.dob-row.input-error {
+  border-color: var(--color-danger);
+}
+
+.dob-part {
+  border: none;
+  background: transparent;
+  width: 32px;
+  padding: 0 2px;
+  text-align: center;
+  font-size: var(--font-size-body);
+  font-family: var(--font-primary);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.dob-part::placeholder {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.dob-year {
+  width: 52px;
+}
+
+.dob-sep {
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  user-select: none;
+}
+
+.dob-picker-wrap {
+  position: relative;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dob-picker-icon {
+  font-size: 20px;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  transition: color 0.15s ease;
+}
+
+.dob-picker-wrap:hover .dob-picker-icon {
+  color: var(--color-primary);
+}
+
+.dob-picker-hidden {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* FIELD ERROR */
 .input-error .input,
 .input-error.select-wrapper .input {

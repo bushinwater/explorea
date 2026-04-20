@@ -112,6 +112,26 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
+            if (feature?.Error is not null)
+            {
+                var err = feature.Error;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    error   = err.Message,
+                    type    = err.GetType().FullName,
+                    stack   = err.StackTrace,
+                    inner   = err.InnerException?.Message
+                });
+            }
+        });
+    });
 }
 
 app.UseCors("AllowAngular");

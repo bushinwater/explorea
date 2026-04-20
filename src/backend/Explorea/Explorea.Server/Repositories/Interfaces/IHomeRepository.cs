@@ -5,10 +5,10 @@ namespace Explorea.Server.Repositories.Interfaces
 {
   public interface IHomeRepository
   {
-    Task<List<Destination>> GetHeroBannerDestinationAsync(int take);
-    Task<List<Destination>> GetFeaturedDestinationsAsync(int take);
-    Task<List<Event>> GetUpcomingEventsAsync(DateTimeOffset now, int take);
-    Task<List<Activity>> GetPopularActivitiesAsync(int take);
+    Task<List<Destination>> GetHeroBannerDestinationAsync(int take, double? userLat, double? userLng);
+    Task<List<Destination>> GetFeaturedDestinationsAsync(int take, double? userLat, double? userLng);
+    Task<List<Event>> GetUpcomingEventsAsync(DateTimeOffset now, int take, double? userLat, double? userLng);
+    Task<List<Activity>> GetPopularActivitiesAsync(int take, double? userLat, double? userLng);
     Task<List<ReviewWithEntityDto>> GetTravelerReviewsAsync(int take);
   }
 }

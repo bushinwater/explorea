@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
 namespace Explorea.API.Models
@@ -29,7 +30,8 @@ namespace Explorea.API.Models
         [Column("location", TypeName = "geography(Point, 4326)")]
         public Point Location { get; set; } = null!;
 
-        [MaxLength(500), Column("preview_image_url")]
+        // The places table has no preview_image_url column — images live in place_images.
+        [NotMapped]
         public string? PreviewImageUrl { get; set; }
 
         [MaxLength(50),  Column("price_range")] public string? PriceRange { get; set; }

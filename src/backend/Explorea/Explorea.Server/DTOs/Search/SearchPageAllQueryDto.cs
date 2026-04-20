@@ -22,5 +22,6 @@ namespace Explorea.API.DTOs.Search
     
     public double? UserLat {get; set;}
     public double? UserLng {get; set;}
+    public double? RadiusKm {get; set;}
   }
 }

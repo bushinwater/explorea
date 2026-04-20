@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Explorea.API.DTOs.Auth;
 using Explorea.API.Models;
 using Explorea.Server.Helpers;
@@ -20,8 +21,17 @@ namespace Explorea.Server.Services
         private readonly INewsletterService _newsletterService;
         private readonly IMemoryCache _cache;
 
-        private static string PendingTokenKey(string tokenHash)  => $"pendingreg:token:{tokenHash}";
-        private static string PendingEmailKey(string email)      => $"pendingreg:email:{email}";
+        private static string PendingTokenKey(string tokenHash)        => $"pendingreg:token:{tokenHash}";
+        private static string PendingEmailKey(string email)            => $"pendingreg:email:{email}";
+        private static string PendingSocialTokenKey(string tokenHash)  => $"pendingsocial:token:{tokenHash}";
+
+        private record PendingSocialData(
+            string Provider,
+            string ProviderUserId,
+            string Email,
+            string FirstName,
+            string LastName,
+            string? ProfileImageUrl);
 
         public AuthService(
             IUserRepository userRepository,
@@ -351,6 +361,7 @@ namespace Explorea.Server.Services
         {
             var provider = dto.Provider.ToLower();
             string providerUserId, email, firstName, lastName;
+            string? profileImageUrl = null;
 
             if (provider == "google")
             {
@@ -359,6 +370,7 @@ namespace Explorea.Server.Services
                 email = googleUser.Email.Trim().ToLower();
                 firstName = googleUser.GivenName ?? email.Split('@')[0];
                 lastName = googleUser.FamilyName ?? "";
+                profileImageUrl = googleUser.Picture;
             }
             else if (provider == "facebook")
             {
@@ -378,35 +390,48 @@ namespace Explorea.Server.Services
 
             // Check if we already have a linked account for this provider + providerUserId
             var authAccount = await _authRepository.GetAuthAccountAsync(provider, providerUserId);
-            User user;
 
-            if (authAccount != null)
+            if (authAccount == null)
             {
-                user = authAccount.User;
-            }
-            else
-            {
-                // No linked account — look up by email
-                user = await _userRepository.GetByEmailAsync(email)
-                    ?? await CreateSocialUserAsync(email, firstName, lastName, now);
+                // No linked account — check if email already exists
+                var existingUser = await _userRepository.GetByEmailAsync(email);
 
-                isNewUser = user.CreatedAt == now; // true if we just created them
+                if (existingUser == null)
+                {
+                    // Brand new user — store pending, require profile completion before creating in DB
+                    var rawPendingToken = _jwtHelper.GenerateRefreshToken();
+                    var pendingTokenHash = _jwtHelper.HashToken(rawPendingToken);
+                    _cache.Set(
+                        PendingSocialTokenKey(pendingTokenHash),
+                        new PendingSocialData(provider, providerUserId, email, firstName, lastName, profileImageUrl),
+                        TimeSpan.FromHours(1));
 
-                // Link the provider account
+                    return new AuthResponseDto
+                    {
+                        SocialPendingToken = rawPendingToken,
+                        NeedsProfileCompletion = true
+                    };
+                }
+
+                // Email exists but no linked provider — link it now
                 await _authRepository.CreateAuthAccountAsync(new UserAuthAccount
                 {
                     Id = Guid.NewGuid(),
-                    UserId = user.Id,
+                    UserId = existingUser.Id,
                     Provider = provider,
                     ProviderUserId = providerUserId,
                     EmailAtProvider = email,
                     IsPrimary = false,
                     CreatedAt = now,
                     UpdatedAt = now,
-                    CreatedBy = user.Id,
-                    UpdatedBy = user.Id
+                    CreatedBy = existingUser.Id,
+                    UpdatedBy = existingUser.Id
                 });
+
+                authAccount = await _authRepository.GetAuthAccountAsync(provider, providerUserId);
             }
+
+            var user = authAccount!.User;
 
             if (!user.IsActive)
                 throw new Exception("User account is inactive.");
@@ -423,7 +448,85 @@ namespace Explorea.Server.Services
             await _authRepository.CreateRefreshTokenAsync(BuildRefreshTokenEntity(
                 user.Id, refreshTokenHash, ipAddress, userAgent, now));
 
-            return BuildAuthResponse(accessToken, refreshToken, isNewUser);
+            return new AuthResponseDto
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
+        }
+
+        public async Task<AuthResponseDto> CompleteSocialAsync(SocialCompleteDto dto, string? ipAddress, string? userAgent)
+        {
+            var pendingTokenHash = _jwtHelper.HashToken(dto.PendingToken);
+            if (!_cache.TryGetValue(PendingSocialTokenKey(pendingTokenHash), out PendingSocialData? pending) || pending == null)
+                throw new Exception("Invalid or expired social registration token.");
+
+            var existingUser = await _userRepository.GetByEmailAsync(pending.Email);
+            if (existingUser != null)
+                throw new Exception("User with this email already exists.");
+
+            if (!DateOnly.TryParse(dto.DateOfBirth, out var dob))
+                throw new Exception("Invalid date of birth.");
+
+            var userRole = await _authRepository.GetRoleByNameAsync("traveler")
+                ?? throw new Exception("Default role 'traveler' was not found in database.");
+
+            var now = DateTimeOffset.UtcNow;
+
+            var user = new User
+            {
+                Id            = Guid.NewGuid(),
+                FirstName     = pending.FirstName,
+                LastName      = pending.LastName.Length > 0 ? pending.LastName : "-",
+                Email         = pending.Email,
+                PasswordHash  = null,
+                RoleId        = userRole.Id,
+                Role          = userRole,
+                TravelerRank  = "explorer",
+                TotalVisits   = 0,
+                MemberSince   = now,
+                EmailVerifiedAt = now,
+                IsActive      = true,
+                Gender           = dto.Gender,
+                DateOfBirth      = dob,
+                ProfileImageUrl  = pending.ProfileImageUrl,
+                CreatedAt     = now,
+                UpdatedAt     = now
+            };
+
+            await _userRepository.AddAsync(user);
+            await _userRepository.SaveChangesAsync();
+
+            await _authRepository.CreateAuthAccountAsync(new UserAuthAccount
+            {
+                Id              = Guid.NewGuid(),
+                UserId          = user.Id,
+                Provider        = pending.Provider,
+                ProviderUserId  = pending.ProviderUserId,
+                EmailAtProvider = pending.Email,
+                IsPrimary       = false,
+                CreatedAt       = now,
+                UpdatedAt       = now,
+                CreatedBy       = user.Id,
+                UpdatedBy       = user.Id
+            });
+
+            _cache.Remove(PendingSocialTokenKey(pendingTokenHash));
+
+            var accessToken  = _jwtHelper.GenerateAccessToken(user);
+            var refreshToken = _jwtHelper.GenerateRefreshToken();
+            var refreshTokenHash = _jwtHelper.HashToken(refreshToken);
+
+            await _authRepository.CreateRefreshTokenAsync(BuildRefreshTokenEntity(
+                user.Id, refreshTokenHash, ipAddress, userAgent, now));
+
+            return new AuthResponseDto
+            {
+                AccessToken     = accessToken,
+                RefreshToken    = refreshToken,
+                NeedsInterests  = true,
+                ProfileImageUrl = user.ProfileImageUrl
+            };
         }
 
         private async Task<User> CreateSocialUserAsync(string email, string firstName, string lastName, DateTimeOffset now)
@@ -459,11 +562,15 @@ namespace Explorea.Server.Services
         private async Task<GoogleUserInfo> VerifyGoogleTokenAsync(string accessToken)
         {
             using var http = new HttpClient();
-            var url = $"https://www.googleapis.com/oauth2/v1/userinfo?access_token={Uri.EscapeDataString(accessToken)}";
-            var response = await http.GetAsync(url);
+            http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            var response = await http.GetAsync("https://www.googleapis.com/oauth2/v1/userinfo");
 
             if (!response.IsSuccessStatusCode)
-                throw new Exception("Invalid Google token.");
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Invalid Google token. Status: {response.StatusCode}. Details: {body}");
+            }
 
             var json = await response.Content.ReadAsStringAsync();
             var user = JsonSerializer.Deserialize<GoogleUserInfo>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -474,7 +581,12 @@ namespace Explorea.Server.Services
             return user;
         }
 
-        private record GoogleUserInfo(string Id, string Email, string? GivenName, string? FamilyName);
+        private record GoogleUserInfo(
+            [property: JsonPropertyName("id")]          string  Id,
+            [property: JsonPropertyName("email")]       string  Email,
+            [property: JsonPropertyName("given_name")]  string? GivenName,
+            [property: JsonPropertyName("family_name")] string? FamilyName,
+            [property: JsonPropertyName("picture")]     string? Picture);
 
         private async Task<FacebookUserInfo> VerifyFacebookCodeAsync(string? code, string? redirectUri)
         {
