@@ -11,5 +11,8 @@ namespace Explorea.API.Models
         [MaxLength(255)]
         [Column("email")]
         public string Email { get; set; } = null!;
+
+        [Column("subscribed")]
+        public bool Subscribed { get; set; } = true;
     }
 }

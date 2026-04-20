@@ -8,7 +8,6 @@ namespace Explorea.Server.Repositories.Interfaces
         Task<bool> ExistsAsync(string email);
         Task<List<string>> GetAllEmailsAsync();
         Task AddAsync(Newsletter newsletter);
-        void Remove(Newsletter newsletter);
         Task<int> SaveChangesAsync();
     }
 }

@@ -21,12 +21,13 @@ namespace Explorea.Server.Repositories.Implementations
 
         public async Task<bool> ExistsAsync(string email)
         {
-            return await _db.Newsletters.AnyAsync(x => x.Email == email);
+            return await _db.Newsletters.AnyAsync(x => x.Email == email && x.Subscribed);
         }
 
         public async Task<List<string>> GetAllEmailsAsync()
         {
             return await _db.Newsletters
+                .Where(x => x.Subscribed)
                 .Select(x => x.Email)
                 .ToListAsync();
         }
@@ -34,11 +35,6 @@ namespace Explorea.Server.Repositories.Implementations
         public async Task AddAsync(Newsletter newsletter)
         {
             await _db.Newsletters.AddAsync(newsletter);
-        }
-
-        public void Remove(Newsletter newsletter)
-        {
-            _db.Newsletters.Remove(newsletter);
         }
 
         public async Task<int> SaveChangesAsync()

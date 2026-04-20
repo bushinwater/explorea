@@ -25,16 +25,21 @@ namespace Explorea.Server.Services
         {
             var normalizedEmail = NormalizeEmail(email);
             var existingUser = await _userRepository.GetByEmailAsync(normalizedEmail);
-            var existingSubscription = await _newsletterRepository.GetByEmailAsync(normalizedEmail);
+            var existing = await _newsletterRepository.GetByEmailAsync(normalizedEmail);
 
-            if (existingSubscription != null)
+            if (existing != null)
             {
+                if (!existing.Subscribed)
+                {
+                    existing.Subscribed = true;
+                    await _newsletterRepository.SaveChangesAsync();
+                }
+
                 if (existingUser != null && !existingUser.Newsletter)
                 {
                     existingUser.Newsletter = true;
                     existingUser.UpdatedAt = DateTimeOffset.UtcNow;
                     existingUser.UpdatedBy = existingUser.Id;
-
                     _userRepository.Update(existingUser);
                     await _userRepository.SaveChangesAsync();
                 }
@@ -42,11 +47,7 @@ namespace Explorea.Server.Services
                 return (Created: false, Email: normalizedEmail);
             }
 
-            await _newsletterRepository.AddAsync(new Newsletter
-            {
-                Email = normalizedEmail
-            });
-
+            await _newsletterRepository.AddAsync(new Newsletter { Email = normalizedEmail, Subscribed = true });
             await _newsletterRepository.SaveChangesAsync();
 
             if (existingUser != null && !existingUser.Newsletter)
@@ -54,7 +55,6 @@ namespace Explorea.Server.Services
                 existingUser.Newsletter = true;
                 existingUser.UpdatedAt = DateTimeOffset.UtcNow;
                 existingUser.UpdatedBy = existingUser.Id;
-
                 _userRepository.Update(existingUser);
                 await _userRepository.SaveChangesAsync();
             }
@@ -68,30 +68,22 @@ namespace Explorea.Server.Services
                 ?? throw new Exception("User not found.");
 
             var normalizedEmail = NormalizeEmail(user.Email);
-            var existingSubscription = await _newsletterRepository.GetByEmailAsync(normalizedEmail);
+            var existing = await _newsletterRepository.GetByEmailAsync(normalizedEmail);
 
-            if (newsletter)
+            if (existing != null)
             {
-                if (existingSubscription == null)
-                {
-                    await _newsletterRepository.AddAsync(new Newsletter
-                    {
-                        Email = normalizedEmail
-                    });
-
-                    await _newsletterRepository.SaveChangesAsync();
-                }
+                existing.Subscribed = newsletter;
+                await _newsletterRepository.SaveChangesAsync();
             }
-            else if (existingSubscription != null)
+            else if (newsletter)
             {
-                _newsletterRepository.Remove(existingSubscription);
+                await _newsletterRepository.AddAsync(new Newsletter { Email = normalizedEmail, Subscribed = true });
                 await _newsletterRepository.SaveChangesAsync();
             }
 
             user.Newsletter = newsletter;
             user.UpdatedAt = DateTimeOffset.UtcNow;
             user.UpdatedBy = userId;
-
             _userRepository.Update(user);
             await _userRepository.SaveChangesAsync();
 

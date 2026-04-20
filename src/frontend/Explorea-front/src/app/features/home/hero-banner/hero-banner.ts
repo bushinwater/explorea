@@ -207,7 +207,13 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   onSelectResult(item: SearchItem) {
     this.showDropdown = false;
     this.searchQuery = item.entity.name;
-    this.router.navigate([`/${item.entityType}`, item.entity.slug]);
+    const routeMap: Record<string, string> = {
+      destination: 'destinations',
+      place: 'places',
+      event: 'events',
+      activity: 'activities',
+    };
+    this.router.navigate([`/${routeMap[item.entityType] ?? item.entityType}`, item.entity.slug]);
   }
 
   getEntityIcon(type: string): string {

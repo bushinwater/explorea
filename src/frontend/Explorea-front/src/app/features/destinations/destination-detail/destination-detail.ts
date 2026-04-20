@@ -30,6 +30,7 @@ import { DestinationService } from '../../../core/services/destination.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { SavedService } from '../../../core/services/saved.service';
 import { ReviewService } from '../../../core/services/review.service';
+import { PopularityService } from '../../../core/services/popularity.service';
 import {
   ActivityCard,
   DestinationDetail,
@@ -68,6 +69,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   private reviewService = inject(ReviewService);
   private cdr = inject(ChangeDetectorRef);
   private translate = inject(TranslateService);
+  private popularityService = inject(PopularityService);
 
   private routeSub?: Subscription;
   private requestSub?: Subscription;
@@ -173,6 +175,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
         this.isSaved = false;
         this.hasReviewed = false;
         window.scrollTo({ top: 0, behavior: 'auto' });
+        this.popularityService.track('destination', data.id);
         this.cdr.detectChanges();
         this.captureTitle();
         setTimeout(() => this.initMap(), 100);

@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { PlaceDetail } from '../../../core/models/place.model';
 import { PlaceService } from '../../../core/services/place.service';
+import { PopularityService } from '../../../core/services/popularity.service';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 import { PlaceCardComponent } from '../../../shared/components/place-card/place-card';
@@ -33,6 +34,7 @@ export class PlaceDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private placeService: PlaceService,
     private location: Location,
+    private popularityService: PopularityService,
   ) {}
 
   ngOnInit(): void {
@@ -41,6 +43,7 @@ export class PlaceDetailComponent implements OnInit {
       next: (data) => {
         this.place = data;
         this.loading = false;
+        this.popularityService.track('place', data.id);
       },
       error: () => {
         this.loading = false;

@@ -57,6 +57,7 @@ namespace Explorea.Server.Data
         public DbSet<DestinationType>  DestinationTypes  { get; set; }
         public DbSet<FilterDefinition> FilterDefinitions { get; set; }
         public DbSet<FilterOption>     FilterOptions     { get; set; }
+        public DbSet<PopularityLog> PopularityLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
