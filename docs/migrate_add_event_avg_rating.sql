@@ -1,0 +1,5 @@
+ALTER TABLE events
+ADD COLUMN IF NOT EXISTS avg_rating NUMERIC(3, 2) NOT NULL DEFAULT 0;
+
+ALTER TABLE events
+ADD CONSTRAINT chk_events_avg_rating CHECK (avg_rating BETWEEN 0 AND 5);
