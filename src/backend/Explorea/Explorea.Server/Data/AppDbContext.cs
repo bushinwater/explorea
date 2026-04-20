@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
@@ -51,6 +51,8 @@ namespace Explorea.Server.Data
         public DbSet<EventInterestTag> EventInterestTags { get; set; }
         public DbSet<ActivityInterestTag> ActivityInterestTags { get; set; }
         public DbSet<Country> Countries { get; set; }
+        public DbSet<OrganizationAssignment> OrganizationAssignments { get; set; }
+        public DbSet<SubmissionQueue> SubmissionQueue { get; set; }
         public DbSet<Newsletter> Newsletters { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -132,6 +134,50 @@ namespace Explorea.Server.Data
             modelBuilder.Entity<Activity>()
                 .Property(a => a.ExtraData)
                 .HasColumnType("jsonb");
+
+            // ---- OrganizationAssignment relacije ----
+            modelBuilder.Entity<OrganizationAssignment>()
+                .HasOne(a => a.OrganizationUser)
+                .WithMany()
+                .HasForeignKey(a => a.OrganizationUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrganizationAssignment>()
+                .HasOne(a => a.Destination)
+                .WithMany()
+                .HasForeignKey(a => a.DestinationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<OrganizationAssignment>()
+                .HasOne(a => a.AssignedByUser)
+                .WithMany()
+                .HasForeignKey(a => a.AssignedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ---- SubmissionQueue relacije ----
+            modelBuilder.Entity<SubmissionQueue>()
+                .HasOne(q => q.Destination)
+                .WithMany()
+                .HasForeignKey(q => q.DestinationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SubmissionQueue>()
+                .HasOne(q => q.SubmittedByUser)
+                .WithMany()
+                .HasForeignKey(q => q.SubmittedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SubmissionQueue>()
+                .HasOne(q => q.ReviewedByTOUser)
+                .WithMany()
+                .HasForeignKey(q => q.ReviewedByTOUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SubmissionQueue>()
+                .HasOne(q => q.ReviewedByOwner)
+                .WithMany()
+                .HasForeignKey(q => q.ReviewedByOwnerId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // ---- Soft delete global query filter ----
             // EF Core automatski dodaje WHERE is_deleted = FALSE na sve upite

@@ -5,6 +5,7 @@ namespace Explorea.Server.Repositories.Interfaces
     public interface IUserRepository : IBaseRepository<User>
     {
         Task<User?> GetByEmailAsync(string email);
+        Task<User?> GetByIdWithRoleAsync(Guid id);
         Task<UserPreferences?> GetPreferencesAsync(Guid userId);
         Task UpsertPreferencesAsync(UserPreferences preferences);
         Task<List<InterestTag>> GetInterestsAsync(Guid userId);

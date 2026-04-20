@@ -4,6 +4,8 @@ using Explorea.Server.McpTools;
 using Explorea.Server.Repositories.Implementations;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services;
+using Explorea.Server.Services.Admin;
+using Explorea.Server.Services.Admin.Interfaces;
 using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -72,6 +74,12 @@ builder.Services.AddScoped<IExploreRepository, ExploreRepository>();
 builder.Services.AddScoped<IExploreService, ExploreService>();
 
 builder.Services.AddScoped<IPlaceRepository, PlaceRepository>();
+
+builder.Services.AddScoped<IOrganizationAssignmentRepository, OrganizationAssignmentRepository>();
+builder.Services.AddScoped<ISubmissionQueueRepository, SubmissionQueueRepository>();
+builder.Services.AddScoped<IAdminDestinationService, AdminDestinationService>();
+builder.Services.AddScoped<IAdminQueueService, AdminQueueService>();
+builder.Services.AddScoped<IAdminAssignmentService, AdminAssignmentService>();
 
 builder.Services.AddMcpServer()
     .WithHttpTransport()

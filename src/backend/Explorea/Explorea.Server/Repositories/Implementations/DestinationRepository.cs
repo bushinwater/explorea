@@ -44,5 +44,44 @@ namespace Explorea.Server.Repositories.Implementations
 
             return (items, total);
         }
+
+        public async Task<(List<Destination> Items, int Total)> GetAdminPagedAsync(
+            int? cityId, string? visibility, List<Guid>? restrictToIds, int page, int pageSize)
+        {
+            var query = _db.Destinations
+                .IgnoreQueryFilters() // admin vidi i soft-deleted
+                .Include(d => d.City)
+                .Include(d => d.Country)
+                .Where(d => !d.IsDeleted)
+                .AsQueryable();
+
+            if (cityId.HasValue)
+                query = query.Where(d => d.CityId == cityId.Value);
+
+            if (!string.IsNullOrWhiteSpace(visibility))
+                query = query.Where(d => d.Visibility == visibility);
+
+            if (restrictToIds != null && restrictToIds.Count > 0)
+                query = query.Where(d => restrictToIds.Contains(d.Id));
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderBy(d => d.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, total);
+        }
+
+        public async Task<Destination?> GetAdminByIdAsync(Guid id)
+        {
+            return await _db.Destinations
+                .IgnoreQueryFilters()
+                .Include(d => d.City)
+                .Include(d => d.Country)
+                .Include(d => d.Images)
+                .FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
+        }
     }
 }

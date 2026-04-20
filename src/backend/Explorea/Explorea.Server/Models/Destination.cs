@@ -44,6 +44,9 @@ namespace Explorea.API.Models
 
         [Column("popularity")] public int Popularity { get; set; } = 0;
 
+        [MaxLength(20), Column("visibility")]
+        public string Visibility { get; set; } = "published";
+
         [Column("created_at")] public DateTimeOffset CreatedAt { get; set; }
         [Column("updated_at")] public DateTimeOffset UpdatedAt { get; set; }
         [Column("created_by")] public Guid? CreatedBy { get; set; }
