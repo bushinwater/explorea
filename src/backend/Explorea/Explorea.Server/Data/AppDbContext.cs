@@ -54,6 +54,9 @@ namespace Explorea.Server.Data
         public DbSet<OrganizationAssignment> OrganizationAssignments { get; set; }
         public DbSet<SubmissionQueue> SubmissionQueue { get; set; }
         public DbSet<Newsletter> Newsletters { get; set; }
+        public DbSet<DestinationType>  DestinationTypes  { get; set; }
+        public DbSet<FilterDefinition> FilterDefinitions { get; set; }
+        public DbSet<FilterOption>     FilterOptions     { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -133,6 +136,19 @@ namespace Explorea.Server.Data
             // ---- Activity.ExtraData kao JSONB ----
             modelBuilder.Entity<Activity>()
                 .Property(a => a.ExtraData)
+                .HasColumnType("jsonb");
+
+            // ---- extra_filters JSONB ----
+            modelBuilder.Entity<Place>()
+                .Property(p => p.ExtraFilters)
+                .HasColumnType("jsonb");
+
+            modelBuilder.Entity<Event>()
+                .Property(e => e.ExtraFilters)
+                .HasColumnType("jsonb");
+
+            modelBuilder.Entity<Destination>()
+                .Property(d => d.ExtraFilters)
                 .HasColumnType("jsonb");
 
             // ---- OrganizationAssignment relacije ----
