@@ -42,6 +42,13 @@ builder.Services.AddScoped<IActivityService, ActivityService>();
 builder.Services.AddScoped<ISearchPageService, SearchPageService>();
 builder.Services.AddScoped<ISearchPageRepository, SearchPageRepository>();
 
+builder.Services.AddScoped<IAdminPlaceRepository, AdminPlaceRepository>();
+builder.Services.AddScoped<IAdminPlaceService, AdminPlaceService>();
+
+builder.Services.AddScoped<IOrganizationAssignmentRepository, OrganizationAssignmentRepository>();
+builder.Services.AddScoped<ISubmissionQueueRepository, SubmissionQueueRepository>();
+builder.Services.AddScoped<IAdminQueueService, AdminQueueService>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
