@@ -29,7 +29,7 @@ namespace Explorea.Server.Repositories.Implementations
           .AsNoTracking()
           .Include(a => a.Category)
           .AsQueryable();
-            
+
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
         var q = query.Query.Trim().ToLower();
@@ -38,17 +38,23 @@ namespace Explorea.Server.Repositories.Implementations
             (a.Description != null && a.Description.ToLower().Contains(q)) ||
             (a.StartPoint != null && a.StartPoint.ToLower().Contains(q)));
       }
-      
+
       if (query.CityIds != null && query.CityIds.Count > 0)
       {
         activitiesQuery = activitiesQuery.Where(a => a.CityId != null && query.CityIds.Contains(a.CityId.Value));
       }
-      
+
       if (query.MinRating.HasValue)
       {
         activitiesQuery = activitiesQuery.Where(a => a.AvgRating >= query.MinRating.Value);
       }
-      
+
+      if (query.RadiusKm.HasValue && userPoint != null)
+      {
+        var radiusMeters = query.RadiusKm.Value * 1000;
+        activitiesQuery = activitiesQuery.Where(a => a.Location != null && a.Location.IsWithinDistance(userPoint, radiusMeters));
+      }
+
       var items = await activitiesQuery
           .OrderByDescending(a => a.IsFeatured)
           .ThenByDescending(a => a.Popularity)
@@ -84,6 +90,8 @@ namespace Explorea.Server.Repositories.Implementations
 
     public async Task<List<DestinationCardDto>> GetPopularDestinationsAsync(SearchPageAllQueryDto query, int take)
     {
+      var userPoint = BuildUserPoint(query.UserLat, query.UserLng);
+
       var destinationsQuery = _db.Destinations
         .AsNoTracking()
         .Include(d => d.City)
@@ -99,13 +107,23 @@ namespace Explorea.Server.Repositories.Implementations
         );
       }
 
-        if(query.CityIds != null && query.CityIds.Count > 0){
-          destinationsQuery = destinationsQuery.Where(d => d.CityId != null && query.CityIds.Contains(d.CityId.Value));
-        }
-        if(query.MinRating.HasValue){
-          destinationsQuery = destinationsQuery.Where(d => d.AvgRating >= query.MinRating.Value);
-        }
-        var items = await destinationsQuery
+      if (query.CityIds != null && query.CityIds.Count > 0)
+      {
+        destinationsQuery = destinationsQuery.Where(d => d.CityId != null && query.CityIds.Contains(d.CityId.Value));
+      }
+
+      if (query.MinRating.HasValue)
+      {
+        destinationsQuery = destinationsQuery.Where(d => d.AvgRating >= query.MinRating.Value);
+      }
+
+      if (query.RadiusKm.HasValue && userPoint != null)
+      {
+        var radiusMeters = query.RadiusKm.Value * 1000;
+        destinationsQuery = destinationsQuery.Where(d => d.Location != null && d.Location.IsWithinDistance(userPoint, radiusMeters));
+      }
+
+      var items = await destinationsQuery
           .OrderByDescending(d => d.IsFeatured)
           .ThenByDescending(d => d.Popularity)
           .ThenByDescending(d => d.AvgRating)
@@ -167,6 +185,12 @@ namespace Explorea.Server.Repositories.Implementations
       if (query.MinRating.HasValue)
       {
           eventsQuery = eventsQuery.Where(e => e.AvgRating >= query.MinRating.Value);
+      }
+
+      if (query.RadiusKm.HasValue && userPoint != null)
+      {
+        var radiusMeters = query.RadiusKm.Value * 1000;
+        eventsQuery = eventsQuery.Where(e => e.Location != null && e.Location.IsWithinDistance(userPoint, radiusMeters));
       }
 
       eventsQuery = userPoint != null
@@ -248,7 +272,13 @@ namespace Explorea.Server.Repositories.Implementations
       {
         placesQuery = placesQuery.Where(p => p.AvgRating >= query.MinRating.Value);
       }
-      
+
+      if (query.RadiusKm.HasValue && userPoint != null)
+      {
+        var radiusMeters = query.RadiusKm.Value * 1000;
+        placesQuery = placesQuery.Where(p => p.Location != null && p.Location.IsWithinDistance(userPoint, radiusMeters));
+      }
+
       var items = await placesQuery
         .OrderByDescending(p => p.AvgRating)
         .ThenByDescending(p => p.IsFeatured)

@@ -54,7 +54,7 @@ namespace Explorea.Server.Services
           new SearchPageSectionDto
           {
             Key = "nearby_events",
-            Title = "Uskoro u vašoj blizini",
+            Title = "Događaji",
             EntityType = "event",
             Items = WrapItems(nearbyEvents, "event")
           },

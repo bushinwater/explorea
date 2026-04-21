@@ -122,9 +122,14 @@
         </ng-container>
 
         <ng-container *ngIf="!allLoading && allData">
-          <div class="idle-section" *ngFor="let section of allData.sections">
-            <h2 class="idle-section__title">{{ section.title }}</h2>
-            <div class="idle-grid">
+          <ng-container *ngFor="let section of allData.sections">
+            <div class="idle-section" *ngIf="section.items.length > 0 || nearbyEnabled">
+              <h2 class="idle-section__title">{{ section.title }}</h2>
+              <div class="idle-nearby-empty" *ngIf="section.items.length === 0 && nearbyEnabled">
+                <span class="material-icons">location_off</span>
+                <p>{{ getSectionEmptyKey(section.entityType) | translate }}</p>
+              </div>
+              <div class="idle-grid" *ngIf="section.items.length > 0">
               <a
                 *ngFor="let item of section.items | slice:0:12; trackBy: trackByItem"
                 [routerLink]="getEntityRoute(item)"
@@ -161,8 +166,9 @@
                   </div>
                 </div>
               </a>
-            </div>
-          </div>
+              </div><!-- /idle-grid -->
+            </div><!-- /idle-section -->
+          </ng-container>
         </ng-container>
 
       </ng-container>
@@ -284,30 +290,40 @@
         </div>
       </div>
 
-      <div class="filter-group" *ngIf="locationAvailable">
-        <div class="filter-label-row">
-          <p class="filter-label" style="margin:0">{{ 'SEARCH.FILTER_RADIUS' | translate }}</p>
-          <span class="filter-value-badge">{{ draftFilters.radiusKm ?? 50 }} km</span>
+      <div class="filter-group">
+        <p class="filter-label">{{ 'SEARCH.FILTER_LOCATION' | translate }}</p>
+        <div class="filter-toggle-row">
+          <p class="filter-label" style="margin:0">{{ 'SEARCH.FILTER_NEARBY' | translate }}</p>
+          <button
+            class="toggle-btn"
+            [class.on]="draftNearbyEnabled"
+            (click)="toggleDraftNearby()"
+            type="button"
+          >
+            <span class="toggle-btn__track"><span class="toggle-btn__thumb"></span></span>
+          </button>
         </div>
-        <input
-          type="range"
-          class="radius-slider"
-          min="5"
-          max="200"
-          step="5"
-          [value]="draftFilters.radiusKm ?? 50"
-          (input)="draftFilters.radiusKm = +$any($event.target).value"
-          [style.background]="'linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ' + (((draftFilters.radiusKm ?? 50) - 5) / 195 * 100) + '%, var(--color-border) ' + (((draftFilters.radiusKm ?? 50) - 5) / 195 * 100) + '%, var(--color-border) 100%)'"
-        />
-        <div class="radius-ticks"><span>5 km</span><span>200 km</span></div>
-      </div>
-
-      <div class="filter-group" *ngIf="!locationAvailable">
-        <p class="filter-label">{{ 'SEARCH.FILTER_RADIUS' | translate }}</p>
-        <button class="filter-location-hint" (click)="showLocationModal = true; showFilterPanel = false" type="button">
-          <span class="material-icons">my_location</span>
-          {{ 'SEARCH.FILTER_RADIUS_HINT' | translate }}
-        </button>
+        <p class="filter-nearby-hint" *ngIf="draftNearbyEnabled && !locationAvailable">
+          <span class="material-icons">info</span>
+          {{ 'SEARCH.FILTER_NEARBY_UNAVAILABLE' | translate }}
+        </p>
+        <ng-container *ngIf="draftNearbyEnabled && locationAvailable">
+          <div class="filter-label-row">
+            <p class="filter-label" style="margin:0">{{ 'SEARCH.FILTER_RADIUS' | translate }}</p>
+            <span class="filter-value-badge">{{ draftFilters.radiusKm ?? 50 }} km</span>
+          </div>
+          <input
+            type="range"
+            class="radius-slider"
+            min="5"
+            max="200"
+            step="5"
+            [value]="draftFilters.radiusKm ?? 50"
+            (input)="draftFilters.radiusKm = +$any($event.target).value"
+            [style.background]="'linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ' + (((draftFilters.radiusKm ?? 50) - 5) / 195 * 100) + '%, var(--color-border) ' + (((draftFilters.radiusKm ?? 50) - 5) / 195 * 100) + '%, var(--color-border) 100%)'"
+          />
+          <div class="radius-ticks"><span>5 km</span><span>200 km</span></div>
+        </ng-container>
       </div>
 
       <div class="filter-group" *ngIf="filterEntityType && getCategoriesForType().length > 0">
@@ -369,18 +385,18 @@
 
       <div class="filter-group">
         <p class="filter-label">{{ 'SEARCH.FILTER_RATING' | translate }}</p>
-        <div class="filter-stars">
-          <button
-            *ngFor="let star of ratingStars"
-            class="star-btn"
-            [class.active]="(draftFilters.minRating ?? 0) >= star"
-            (click)="draftFilters.minRating = draftFilters.minRating === star ? undefined : star"
-            type="button"
-          >
-            <span class="material-icons">star</span>
+        <div class="rating-chips">
+          <button class="rating-chip" [class.active]="draftFilters.minRating === 3"
+            (click)="draftFilters.minRating = draftFilters.minRating === 3 ? undefined : 3" type="button">
+            <span class="material-icons">star</span> 3+
           </button>
-          <button class="filter-clear-btn" *ngIf="draftFilters.minRating" (click)="draftFilters.minRating = undefined" type="button">
-            <span class="material-icons">close</span>
+          <button class="rating-chip" [class.active]="draftFilters.minRating === 4"
+            (click)="draftFilters.minRating = draftFilters.minRating === 4 ? undefined : 4" type="button">
+            <span class="material-icons">star</span> 4+
+          </button>
+          <button class="rating-chip" [class.active]="draftFilters.minRating === 4.5"
+            (click)="draftFilters.minRating = draftFilters.minRating === 4.5 ? undefined : 4.5" type="button">
+            <span class="material-icons">star</span> 4.5+
           </button>
         </div>
       </div>
@@ -401,7 +417,7 @@
         </div>
       </div>
 
-      <div class="filter-group" *ngIf="filterEntityType !== 'destination'">
+      <div class="filter-group" *ngIf="filterEntityType === 'event' || filterEntityType === 'place'">
         <p class="filter-label">{{ 'SEARCH.FILTER_PRICE' | translate }}</p>
         <div class="filter-price-row">
           <div class="filter-price-input">

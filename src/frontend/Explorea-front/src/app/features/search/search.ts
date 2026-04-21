@@ -107,6 +107,10 @@ export class Search implements OnInit, OnDestroy {
   locationModalLoading = false;
   locationModalBlocked = false;
 
+  // ─── Nearby toggle ─────────────────────────────────────────────
+  nearbyEnabled      = false;
+  draftNearbyEnabled = false;
+
   // ─── Filters ───────────────────────────────────────────────────
   showFilterPanel = false;
   /** Filter entity type — controls which category selectors are shown */
@@ -205,9 +209,14 @@ export class Search implements OnInit, OnDestroy {
   private loadIdleContent(): void {
     this.allLoading = true;
     const loc = this.locationService.getCached();
+    const useLocation = this.nearbyEnabled && this.locationAvailable;
+    const lat = useLocation ? (this.userLat ?? loc?.lat) : loc?.lat;
+    const lng = useLocation ? (this.userLng ?? loc?.lng) : loc?.lng;
     this.searchPageService.getAll({
-      userLat: loc?.lat,
-      userLng: loc?.lng,
+      userLat: lat,
+      userLng: lng,
+      radiusKm: useLocation ? (this.filters.radiusKm ?? 50) : undefined,
+      minRating: this.filters.minRating,
     }).subscribe({
       next: data => {
         this.allData    = data;
@@ -330,6 +339,34 @@ export class Search implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  toggleDraftNearby(): void {
+    this.draftNearbyEnabled = !this.draftNearbyEnabled;
+    if (this.draftNearbyEnabled) {
+      if (!this.draftFilters.radiusKm) {
+        this.draftFilters = { ...this.draftFilters, radiusKm: 50 };
+      }
+      if (!this.locationAvailable) {
+        this.requestLocationSilent();
+      }
+    }
+    this.cdr.detectChanges();
+  }
+
+  private requestLocationSilent(): void {
+    if (!navigator.geolocation || !window.isSecureContext) return;
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        this.userLat           = pos.coords.latitude;
+        this.userLng           = pos.coords.longitude;
+        this.locationAvailable = true;
+        this.locationService.enable();
+        this.cdr.detectChanges();
+      },
+      () => {},
+      { timeout: 10000 },
+    );
+  }
+
   // ─── Search execution ─────────────────────────────────────────────────────
 
   private triggerSearch(): void {
@@ -347,8 +384,14 @@ export class Search implements OnInit, OnDestroy {
    */
   private executeSearch(page: number, append: boolean): void {
     if (this.activeTab === 'sve') {
-      // Full-text search across all types, no pagination
-      this.searchService.search(this.query.trim(), 40).subscribe({
+      const useLocSve = this.nearbyEnabled && this.locationAvailable;
+      this.searchService.search(
+        this.query.trim(),
+        40,
+        useLocSve ? (this.userLat ?? undefined) : undefined,
+        useLocSve ? (this.userLng ?? undefined) : undefined,
+        useLocSve ? (this.filters.radiusKm ?? 50) : undefined,
+      ).subscribe({
         next: res => {
           this.allResults  = res.results;
           this.hasSearched = true;
@@ -371,14 +414,15 @@ export class Search implements OnInit, OnDestroy {
       ? `${SORT_BASE[this.sortBy]}_${this.sortDir}`
       : undefined;
 
+    const useLocation = this.nearbyEnabled && this.locationAvailable;
     this.searchPageService.getList({
       tab:      TAB_TO_BACKEND[this.activeTab],
       query:    this.query.trim() || undefined,
       page,
       pageSize: PAGE_SIZE,
       sortBy:   backendSortBy,
-      userLat:  this.userLat  ?? undefined,
-      userLng:  this.userLng  ?? undefined,
+      userLat:  useLocation ? (this.userLat  ?? undefined) : undefined,
+      userLng:  useLocation ? (this.userLng  ?? undefined) : undefined,
       ...this.filters,
     }).subscribe({
       next: res => {
@@ -436,6 +480,7 @@ export class Search implements OnInit, OnDestroy {
   get hasActiveFilters(): boolean {
     const f = this.filters;
     return !!(
+      this.nearbyEnabled ||
       f.minRating != null || f.minPrice != null || f.maxPrice != null ||
       f.openNow != null || f.radiusKm != null ||
       (f.placeTypeIds        ?? []).length > 0 ||
@@ -727,7 +772,8 @@ export class Search implements OnInit, OnDestroy {
   // ─── Filter panel ─────────────────────────────────────────────────────────
 
   openFilterPanel(): void {
-    this.draftFilters = { ...this.filters };
+    this.draftFilters      = { ...this.filters };
+    this.draftNearbyEnabled = this.nearbyEnabled;
     // Sync entity type from active chip when opening panel
     if (this.activeChip !== 'sve' && this.activeChip !== '') {
       this.filterEntityType = this.activeChip as 'destination' | 'place' | 'activity' | 'event';
@@ -742,7 +788,15 @@ export class Search implements OnInit, OnDestroy {
   }
 
   applyFilters(): void {
-    this.filters         = { ...this.draftFilters };
+    this.nearbyEnabled   = this.draftNearbyEnabled;
+    // Clear radiusKm from filters when nearby is disabled
+    const f = { ...this.draftFilters };
+    if (!this.nearbyEnabled) {
+      delete f.radiusKm;
+    } else if (!f.radiusKm) {
+      f.radiusKm = 50;
+    }
+    this.filters         = f;
     this.showFilterPanel = false;
     // Sync chip/tab if the entity type was changed inside the filter panel
     if (this.filterEntityType && this.filterEntityType !== this.activeChip) {
@@ -750,18 +804,28 @@ export class Search implements OnInit, OnDestroy {
       this.activeTab   = this.filterEntityType;
       this.hasSearched = true;
     }
-    if (this.showResults) this.triggerSearch();
+    if (this.showResults) {
+      this.triggerSearch();
+    } else if (this.activeChip === 'sve') {
+      this.loadIdleContent();
+    }
     this.cdr.detectChanges();
   }
 
   resetFilters(): void {
-    this.draftFilters     = {};
-    this.filters          = {};
+    this.draftFilters      = {};
+    this.filters           = {};
+    this.nearbyEnabled     = false;
+    this.draftNearbyEnabled = false;
     this.filterEntityType  = null;
     this.filterDefs        = [];
     this.filterDefsTypeId  = null;
     this.showFilterPanel   = false;
-    if (this.showResults) this.triggerSearch();
+    if (this.showResults) {
+      this.triggerSearch();
+    } else if (this.activeChip === 'sve') {
+      this.loadIdleContent();
+    }
     this.cdr.detectChanges();
   }
 
@@ -774,6 +838,16 @@ export class Search implements OnInit, OnDestroy {
       case 'event':       return ['/events',        item.entity.slug];
       case 'activity':    return ['/activities',    item.entity.slug];
       default:            return ['/'];
+    }
+  }
+
+  getSectionEmptyKey(entityType: string): string {
+    switch (entityType) {
+      case 'destination': return 'SEARCH.IDLE_EMPTY_NEARBY_DESTINATION';
+      case 'place':       return 'SEARCH.IDLE_EMPTY_NEARBY_PLACE';
+      case 'activity':    return 'SEARCH.IDLE_EMPTY_NEARBY_ACTIVITY';
+      case 'event':       return 'SEARCH.IDLE_EMPTY_NEARBY_EVENT';
+      default:            return 'SEARCH.IDLE_EMPTY_NEARBY_DESTINATION';
     }
   }
 
