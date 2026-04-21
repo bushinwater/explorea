@@ -287,6 +287,8 @@ namespace Explorea.Server.Services
         PlaceTypeIds = NormalizeIntList(query.PlaceTypeIds),
         ActivityCategoryIds = NormalizeIntList(query.ActivityCategoryIds),
         EventTypeIds = NormalizeIntList(query.EventTypeIds),
+        DestinationTypeIds = NormalizeIntList(query.DestinationTypeIds),
+        ExtraFilters = query.ExtraFilters,
 
         SortBy = normalizedSort,
 

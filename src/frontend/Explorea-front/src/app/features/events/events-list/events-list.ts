@@ -175,7 +175,12 @@ export class EventsListPage implements OnInit, OnDestroy {
 
     if (this.selectedDate) {
       const sel = this.selectedDate;
-      items = items.filter(e => isSameDay(new Date(e.startDatetime), sel));
+      items = items.filter(e => {
+        const start = toDateOnly(new Date(e.startDatetime));
+        const end   = toDateOnly(new Date(e.endDatetime));
+        const selD  = toDateOnly(sel);
+        return selD >= start && selD <= end;
+      });
     }
 
     const q = this.searchQuery.trim().toLowerCase();
@@ -441,6 +446,10 @@ function fuzzyIncludes(query: string, target: string): boolean {
   }
 
   return false;
+}
+
+function toDateOnly(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
 function isSameDay(a: Date, b: Date): boolean {

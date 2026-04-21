@@ -6,19 +6,23 @@ using Explorea.API.DTOs.Home;
 using Explorea.API.DTOs.Place;
 using Explorea.API.DTOs.Review;
 using Explorea.API.Models;
+using Explorea.Server.Data;
 using Explorea.Server.Repositories.Implementations;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Explorea.Server.Services
 {
   public class HomeService : IHomeService
   {
     private readonly IHomeRepository _homeRepository;
+    private readonly AppDbContext _db;
 
-    public HomeService(IHomeRepository homeRepository)
+    public HomeService(IHomeRepository homeRepository, AppDbContext db)
     {
       _homeRepository = homeRepository;
+      _db = db;
     }
 
     public async Task<HomeDataDto> GetHomeDataAsync(HomeQueryDto query)
@@ -26,9 +30,9 @@ namespace Explorea.Server.Services
       var now = DateTimeOffset.UtcNow;
 
       var hero = await _homeRepository.GetHeroBannerDestinationAsync(5, query.UserLat, query.UserLng);
-      var destinations = await _homeRepository.GetFeaturedDestinationsAsync(8, query.UserLat, query.UserLng);
-      var events = await _homeRepository.GetUpcomingEventsAsync(now, 8, query.UserLat, query.UserLng);
-      var activities = await _homeRepository.GetPopularActivitiesAsync(8, query.UserLat, query.UserLng);
+      var destinations = await _homeRepository.GetFeaturedDestinationsAsync(8, query.UserLat, query.UserLng, query.CityId);
+      var events = await _homeRepository.GetUpcomingEventsAsync(now, 8, query.UserLat, query.UserLng, query.CityId);
+      var activities = await _homeRepository.GetPopularActivitiesAsync(8, query.UserLat, query.UserLng, query.CityId);
       var reviews = await _homeRepository.GetTravelerReviewsAsync(15);
 
       return new HomeDataDto
@@ -157,9 +161,126 @@ namespace Explorea.Server.Services
       LinkSlug = d.Slug
     };
 
-    public Task<RecommendationsDto> GetRecommendationsAsync()
+    public async Task<RecommendationsDto> GetRecommendationsAsync(Guid? userId, double? userLat, double? userLng)
     {
-      return Task.FromResult(new RecommendationsDto());
+      if (userId.HasValue)
+      {
+        var userScores = await _db.UserInterestScores
+            .Where(x => x.UserId == userId.Value && x.Score > 0)
+            .ToDictionaryAsync(x => x.InterestTagId, x => x.Score);
+
+        if (userScores.Count > 0)
+        {
+          var tagIds = userScores.Keys.ToList();
+
+          var destIds = await _db.DestinationInterestTags
+              .Where(x => tagIds.Contains(x.InterestTagId))
+              .Select(x => x.DestinationId).Distinct().ToListAsync();
+
+          var eventIds = await _db.EventInterestTags
+              .Where(x => tagIds.Contains(x.InterestTagId))
+              .Select(x => x.EventId).Distinct().ToListAsync();
+
+          var actIds = await _db.ActivityInterestTags
+              .Where(x => tagIds.Contains(x.InterestTagId))
+              .Select(x => x.ActivityId).Distinct().ToListAsync();
+
+          var destinations = await _db.Destinations
+              .Where(d => destIds.Contains(d.Id))
+              .Include(d => d.City).Include(d => d.Country)
+              .Take(20).ToListAsync();
+
+          var destTagMap = await _db.DestinationInterestTags
+              .Where(x => destIds.Contains(x.DestinationId))
+              .GroupBy(x => x.DestinationId)
+              .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.InterestTagId).ToList());
+
+          var events = await _db.Events
+              .Where(e => eventIds.Contains(e.Id))
+              .Include(e => e.Images).Include(e => e.Type)
+              .Include(e => e.City).Include(e => e.Country)
+              .Include(e => e.InterestTags)
+              .Take(20).ToListAsync();
+
+          var activities = await _db.Activities
+              .Where(a => actIds.Contains(a.Id))
+              .Include(a => a.Images).Include(a => a.Category).Include(a => a.Country)
+              .Include(a => a.InterestTags)
+              .Take(20).ToListAsync();
+
+          if (destinations.Count > 0 || events.Count > 0 || activities.Count > 0)
+          {
+            var sortedDests = destinations
+                .OrderByDescending(d => (destTagMap.TryGetValue(d.Id, out var tags) ? tags : new()).Sum(tid => userScores.GetValueOrDefault(tid, 0)))
+                .ThenBy(d => DistanceSq(userLat, userLng, d.Latitude, d.Longitude))
+                .ThenByDescending(d => d.IsFeatured)
+                .ThenByDescending(d => d.Popularity)
+                .Take(6).ToList();
+
+            var sortedEvents = events
+                .OrderByDescending(e => e.InterestTags.Sum(t => userScores.GetValueOrDefault(t.InterestTagId, 0)))
+                .ThenBy(e => DistanceSq(userLat, userLng, e.Latitude, e.Longitude))
+                .ThenByDescending(e => e.IsFeatured)
+                .ThenByDescending(e => e.Popularity)
+                .Take(6).ToList();
+
+            var sortedActs = activities
+                .OrderByDescending(a => a.InterestTags.Sum(t => userScores.GetValueOrDefault(t.InterestTagId, 0)))
+                .ThenBy(a => DistanceSq(userLat, userLng, a.Latitude, a.Longitude))
+                .ThenByDescending(a => a.IsFeatured)
+                .ThenByDescending(a => a.Popularity)
+                .Take(6).ToList();
+
+            return new RecommendationsDto
+            {
+              Destinations = sortedDests.Select(MapDestinationCard).ToList(),
+              Events       = sortedEvents.Select(MapEventCard).ToList(),
+              Activities   = sortedActs.Select(MapActivityCard).ToList()
+            };
+          }
+        }
+      }
+
+      // Fallback — featured + lokacija + popularnost
+      var topDests = await _db.Destinations
+          .Include(d => d.City).Include(d => d.Country)
+          .Take(30).ToListAsync();
+
+      var topEvents = await _db.Events
+          .Include(e => e.Images).Include(e => e.Type).Include(e => e.City).Include(e => e.Country)
+          .Take(30).ToListAsync();
+
+      var topActs = await _db.Activities
+          .Include(a => a.Images).Include(a => a.Category).Include(a => a.Country)
+          .Take(30).ToListAsync();
+
+      return new RecommendationsDto
+      {
+        Destinations = topDests
+            .OrderBy(d => DistanceSq(userLat, userLng, d.Latitude, d.Longitude))
+            .ThenByDescending(d => d.IsFeatured)
+            .ThenByDescending(d => d.Popularity)
+            .Take(6).Select(MapDestinationCard).ToList(),
+        Events = topEvents
+            .OrderBy(e => DistanceSq(userLat, userLng, e.Latitude, e.Longitude))
+            .ThenByDescending(e => e.IsFeatured)
+            .ThenByDescending(e => e.Popularity)
+            .Take(6).Select(MapEventCard).ToList(),
+        Activities = topActs
+            .OrderBy(a => DistanceSq(userLat, userLng, a.Latitude, a.Longitude))
+            .ThenByDescending(a => a.IsFeatured)
+            .ThenByDescending(a => a.Popularity)
+            .Take(6).Select(MapActivityCard).ToList()
+      };
+    }
+
+    private static double DistanceSq(double? lat1, double? lng1, double? lat2, double? lng2)
+    {
+      if (!lat1.HasValue || !lng1.HasValue || !lat2.HasValue || !lng2.HasValue)
+        return double.MaxValue;
+      var dlat = lat1.Value - lat2.Value;
+      var dlng = lng1.Value - lng2.Value;
+      return dlat * dlat + dlng * dlng;
     }
   }
 }

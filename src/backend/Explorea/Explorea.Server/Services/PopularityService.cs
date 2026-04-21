@@ -65,6 +65,9 @@ namespace Explorea.Server.Services
             });
 
             await _db.SaveChangesAsync();
+
+            if (userId.HasValue)
+                await UpdateInterestScoresAsync(userId.Value, type, entityId, 1);
         }
 
         public async Task TrackSaveAsync(string entityType, Guid entityId, Guid userId)
@@ -94,6 +97,33 @@ namespace Explorea.Server.Services
             });
 
             await _db.SaveChangesAsync();
+            await UpdateInterestScoresAsync(userId, type, entityId, 3);
+        }
+
+        private async Task UpdateInterestScoresAsync(Guid userId, string entityType, Guid entityId, int points)
+        {
+            var tagIds = entityType switch
+            {
+                "destination" => await _db.DestinationInterestTags
+                    .Where(x => x.DestinationId == entityId).Select(x => x.InterestTagId).ToListAsync(),
+                "place" => await _db.PlaceInterestTags
+                    .Where(x => x.PlaceId == entityId).Select(x => x.InterestTagId).ToListAsync(),
+                "event" => await _db.EventInterestTags
+                    .Where(x => x.EventId == entityId).Select(x => x.InterestTagId).ToListAsync(),
+                "activity" => await _db.ActivityInterestTags
+                    .Where(x => x.ActivityId == entityId).Select(x => x.InterestTagId).ToListAsync(),
+                _ => new List<int>()
+            };
+
+            foreach (var tagId in tagIds)
+            {
+                await _db.Database.ExecuteSqlRawAsync(@"
+                    INSERT INTO user_interest_scores (user_id, interest_tag_id, score, last_updated)
+                    VALUES ({0}, {1}, {2}, NOW())
+                    ON CONFLICT (user_id, interest_tag_id)
+                    DO UPDATE SET score = user_interest_scores.score + {2}, last_updated = NOW()",
+                    userId, tagId, points);
+            }
         }
 
         private async Task IncrementAsync(string entityType, Guid entityId, int points)

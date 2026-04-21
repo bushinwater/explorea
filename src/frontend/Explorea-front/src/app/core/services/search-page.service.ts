@@ -51,6 +51,13 @@ export class SearchPageService {
     (q.placeTypeIds       ?? []).forEach(id => append('placeTypeIds',        id));
     (q.activityCategoryIds ?? []).forEach(id => append('activityCategoryIds', id));
     (q.eventTypeIds       ?? []).forEach(id => append('eventTypeIds',        id));
+    (q.destinationTypeIds ?? []).forEach(id => append('destinationTypeIds',  id));
+
+    if (q.extraFilters) {
+      Object.entries(q.extraFilters).forEach(([key, val]) => {
+        p = p.append('extraFilters', `${key}:${val}`);
+      });
+    }
 
     return p;
   }

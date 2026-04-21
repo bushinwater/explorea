@@ -133,19 +133,25 @@
       "FREE": "Besplatno"
     },
     "AI": {
-      "TITLE": "Samo za tebe",
+      "TITLE": "Nase preporuke",
       "SUBTITLE": "Personalizovane preporuke zasnovane na tvojim interesovanjima",
-      "BADGE": "AI preporuke",
+      "BADGE": "Preporuke",
       "HEADER": "Odabrano specijalno za tebe",
-      "DESC": "Na osnovu tvojih interesovanja i prethodnih poseta, pronašli smo destinacije koje bi ti se svidele.",
-      "VIEW_ALL": "Prikaži sve preporuke"
+      "DESC": "Na osnovu tvojih interesovanja i prethodnih poseta, pronasli smo sadrzaje koje bi ti se svideli.",
+      "VIEW_ALL": "Prikazi sve preporuke"
+    },
+    "EMPTY": {
+      "DESTINATIONS": "Nema destinacija u ovom gradu.",
+      "EVENTS": "Nema dogadjaja u ovom gradu.",
+      "ACTIVITIES": "Nema aktivnosti u ovom gradu."
     },
     "NEWSLETTER": {
       "TITLE": "Ne propusti nijednu avanturu",
       "DESC": "Prijavi se na naš newsletter i dobijaj najnovije vesti o destinacijama, događajima i ekskluzivne ponude.",
       "PLACEHOLDER": "Unesi svoju email adresu",
       "SUBMIT": "Prijavi se",
-      "SUCCESS": "Uspešno si se prijavio! Dobrodošao u zajednicu istraživača."
+      "SUCCESS": "Uspešno si se prijavio! Dobrodošao u zajednicu istraživača.",
+      "ALREADY": "Ova email adresa je već prijavljena na newsletter."
     },
     "REVIEWS": {
       "TITLE": "Iskustva istraživača",
@@ -656,8 +662,9 @@
     "SUBTITLE": "Tvoje omiljene destinacije, aktivnosti i događaji na jednom mestu.",
     "EMPTY": "Još ništa nije sačuvano.",
     "EMPTY_SUB": "Istraži sadržaj i dodaj omiljene stavke klikom na srce.",
-    "REMOVE": "Ukloni",
+    "REMOVE": "Ukloni iz omiljenih",
     "REMOVED": "Uklonjeno",
+    "EXPIRED": "Isteklo",
     "TYPE_destination": "Destinacija",
     "TYPE_activity": "Aktivnost",
     "TYPE_event": "Događaj",
@@ -669,6 +676,7 @@
   },
   "SEARCH": {
     "TITLE": "Pretraži",
+    "HERO_SUB": "Pronađi destinacije, mesta, aktivnosti i događaje širom Srbije",
     "PLACEHOLDER": "Pretraži destinacije, mesta, aktivnosti...",
     "FILTER": "Filtriraj",
     "SORT": "Sortiraj",
@@ -693,11 +701,13 @@
     "BADGE_EVENT": "Događaj",
     "BADGE_ACTIVITY": "Aktivnost",
     "FREE": "Besplatno",
+    "SORT_DATE": "Po datumu",
     "SORT_POPULARITY": "Po popularnosti",
     "SORT_LOCATION": "Po lokaciji",
     "FILTER_TITLE": "Filteri",
     "FILTER_ENTITY_TYPE": "Kategorija",
     "FILTER_CATEGORIES": "Tipovi",
+    "FILTER_EXTRA": "Dodatni filteri",
     "FILTER_RATING": "Minimalna ocena",
     "FILTER_PRICE": "Raspon cena",
     "FILTER_PRICE_MIN": "Od",

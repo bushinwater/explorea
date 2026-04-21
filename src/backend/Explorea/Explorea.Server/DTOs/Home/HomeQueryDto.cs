@@ -4,5 +4,6 @@ namespace Explorea.API.DTOs.Home
   {
     public double? UserLat {get; set;}
     public double? UserLng {get; set;}
+    public int? CityId    {get; set;}
   }
 }

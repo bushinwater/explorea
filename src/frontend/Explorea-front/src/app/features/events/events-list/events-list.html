@@ -90,8 +90,14 @@
           </button>
         </div>
 
-        <div *ngIf="loading" class="loading-state">
-          <span class="material-icons spin">sync</span>
+        <div *ngIf="loading" class="skeleton-list">
+          <div class="skel-card" *ngFor="let i of [1,2,3,4,5]">
+            <div class="skel skel-card__img"></div>
+            <div class="skel-card__body">
+              <div class="skel skel-card__title"></div>
+              <div class="skel skel-card__sub"></div>
+            </div>
+          </div>
         </div>
 
         <div class="mobile-events-scroll" *ngIf="!loading">
@@ -168,8 +174,14 @@
           <span class="section-count">{{ total }}</span>
         </div>
 
-        <div *ngIf="loading" class="loading-state">
-          <span class="material-icons spin">sync</span>
+        <div *ngIf="loading" class="skeleton-list">
+          <div class="skel-card" *ngFor="let i of [1,2,3,4,5]">
+            <div class="skel skel-card__img"></div>
+            <div class="skel-card__body">
+              <div class="skel skel-card__title"></div>
+              <div class="skel skel-card__sub"></div>
+            </div>
+          </div>
         </div>
 
         <div class="mobile-events-scroll" *ngIf="!loading">
@@ -198,6 +210,7 @@
         </div>
       </ng-container>
 
+      <app-detail-footer />
       <div style="height: 80px;"></div>
     </div>
 
@@ -331,8 +344,18 @@
               </div>
             </div>
 
-            <div *ngIf="loading" class="loading-state">
-              <span class="material-icons spin">sync</span>
+            <div *ngIf="loading" class="skeleton-list skeleton-list--desktop">
+              <div class="skel-row" *ngFor="let i of [1,2,3,4,5,6]">
+                <div class="skel skel-row__img"></div>
+                <div class="skel-row__body">
+                  <div class="skel skel-row__title"></div>
+                  <div class="skel skel-row__meta"></div>
+                </div>
+                <div class="skel-row__right">
+                  <div class="skel skel-row__price"></div>
+                  <div class="skel skel-row__btn"></div>
+                </div>
+              </div>
             </div>
 
             <div class="events-list-stack" *ngIf="!loading">

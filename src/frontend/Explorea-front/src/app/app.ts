@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { LanguageService } from './core/services/language.service';
 import { ThemeService } from './core/services/theme.service';
+import { ScrollRestorationService } from './core/services/scroll-restoration.service';
 
 @Component({
   selector: 'app-root',
@@ -16,6 +17,7 @@ export class App {
   constructor(
     private themeService: ThemeService,
     private languageService: LanguageService,
+    private scrollRestoration: ScrollRestorationService,
     private http: HttpClient
   ) {
     this.http.get<{ countryName: string }>('/api/app-info').subscribe({

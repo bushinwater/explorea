@@ -11,6 +11,7 @@ import { AiRecommendations } from './ai-recommendations/ai-recommendations';
 import { TravelReviews } from './travel-reviews/travel-reviews';
 import { HomeService } from '../../core/services/home.service';
 import { LocationService } from '../../core/services/location.service';
+import { LookupService } from '../../core/services/lookup.service';
 import { DetailFooter } from '../../shared/components/detail-footer/detail-footer';
 import {
   HeroBanner as HeroBannerModel,
@@ -46,21 +47,41 @@ export class Home implements OnInit {
   upcomingEvents: EventCard[] = [];
   popularActivities: ActivityCard[] = [];
   travelerReviews: ReviewDto[] = [];
-  recommendations: DestinationCard[] = [];
+  recommendedDestinations: DestinationCard[] = [];
+  recommendedEvents: EventCard[] = [];
+  recommendedActivities: ActivityCard[] = [];
   cityFilters: CityFilter[] = [];
   loading = true;
+  activeCityId: number | null = null;
 
   constructor(
     private homeService: HomeService,
     private locationService: LocationService,
+    private lookupService: LookupService,
     private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
     this.locationService.requestIfFirstTime();
-    this.cityFilters = this.homeService.getCityFilters();
+    this.cityFilters = [{ id: null, name: 'Popularne' }];
+    this.lookupService.getCities().subscribe(cities => {
+      this.cityFilters = [{ id: null, name: 'Popularne' }, ...cities.slice(0, 6).map(c => ({ id: c.id, name: c.name }))];
+      this.cdr.detectChanges();
+    });
+    this.loadHomeData(null);
 
-    this.homeService.getHomeData().subscribe((data) => {
+    const loc = this.locationService.getCached();
+    this.homeService.getRecommendations(loc?.lat, loc?.lng).subscribe((recs) => {
+      this.recommendedDestinations = recs?.destinations ?? [];
+      this.recommendedEvents = recs?.events ?? [];
+      this.recommendedActivities = recs?.activities ?? [];
+    });
+  }
+
+  private loadHomeData(cityId: number | null): void {
+    this.loading = true;
+    this.cdr.detectChanges();
+    this.homeService.getHomeData(cityId).subscribe((data) => {
       this.heroBanners = data.heroBanners;
       this.featuredDestinations = data.featuredDestinations;
       this.upcomingEvents = data.upcomingEvents;
@@ -69,15 +90,11 @@ export class Home implements OnInit {
       this.loading = false;
       this.cdr.detectChanges();
     });
-
-    this.homeService.getRecommendations().subscribe((recs) => {
-      this.recommendations = recs;
-    });
   }
 
   onCitySelected(cityId: number | null) {
-    // Filter destinations by city when API is connected
-    console.log('City filter:', cityId);
+    this.activeCityId = cityId;
+    this.loadHomeData(cityId);
   }
 
   onSearch(query: string) {

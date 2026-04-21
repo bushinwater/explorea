@@ -133,19 +133,25 @@
       "FREE": "Free"
     },
     "AI": {
-      "TITLE": "Just for you",
+      "TITLE": "Our recommendations",
       "SUBTITLE": "Personalized recommendations based on your interests",
-      "BADGE": "AI recommendations",
+      "BADGE": "Recommendations",
       "HEADER": "Handpicked especially for you",
-      "DESC": "Based on your interests and previous visits, we found destinations you might love.",
+      "DESC": "Based on your interests and previous visits, we found content you might love.",
       "VIEW_ALL": "Show all recommendations"
+    },
+    "EMPTY": {
+      "DESTINATIONS": "No destinations found in this city.",
+      "EVENTS": "No events found in this city.",
+      "ACTIVITIES": "No activities found in this city."
     },
     "NEWSLETTER": {
       "TITLE": "Don't miss any adventure",
       "DESC": "Subscribe to our newsletter and get the latest news about destinations, events and exclusive offers.",
       "PLACEHOLDER": "Enter your email address",
       "SUBMIT": "Subscribe",
-      "SUCCESS": "Successfully subscribed! Welcome to the explorer community."
+      "SUCCESS": "Successfully subscribed! Welcome to the explorer community.",
+      "ALREADY": "This email address is already subscribed to the newsletter."
     },
     "REVIEWS": {
       "TITLE": "Explorer experiences",
@@ -656,8 +662,9 @@
     "SUBTITLE": "Your favorite destinations, activities and events in one place.",
     "EMPTY": "Nothing saved yet.",
     "EMPTY_SUB": "Explore content and add your favorites by tapping the heart icon.",
-    "REMOVE": "Remove",
+    "REMOVE": "Remove from favorites",
     "REMOVED": "Removed",
+    "EXPIRED": "Expired",
     "TYPE_destination": "Destination",
     "TYPE_activity": "Activity",
     "TYPE_event": "Event",
@@ -669,6 +676,7 @@
   },
   "SEARCH": {
     "TITLE": "Search",
+    "HERO_SUB": "Find destinations, places, activities and events across Serbia",
     "PLACEHOLDER": "Search destinations, places, activities...",
     "FILTER": "Filter",
     "SORT": "Sort",
@@ -693,11 +701,13 @@
     "BADGE_EVENT": "Event",
     "BADGE_ACTIVITY": "Activity",
     "FREE": "Free",
+    "SORT_DATE": "By date",
     "SORT_POPULARITY": "By popularity",
     "SORT_LOCATION": "By location",
     "FILTER_TITLE": "Filters",
     "FILTER_ENTITY_TYPE": "Category",
     "FILTER_CATEGORIES": "Types",
+    "FILTER_EXTRA": "Additional filters",
     "FILTER_RATING": "Minimum rating",
     "FILTER_PRICE": "Price range",
     "FILTER_PRICE_MIN": "From",

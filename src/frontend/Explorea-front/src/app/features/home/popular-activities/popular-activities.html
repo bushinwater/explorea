@@ -3,10 +3,11 @@
     <div>
       <h2 class="section__title">{{ 'HOME.ACTIVITIES.TITLE' | translate }}</h2>
     </div>
-    <a href="#" class="section__link">{{ 'HOME.ACTIVITIES.VIEW_ALL' | translate }} <span class="material-icons">arrow_forward</span></a>
+    <a routerLink="/search" [queryParams]="{type: 'activity'}" class="section__link">{{ 'HOME.ACTIVITIES.VIEW_ALL' | translate }} <span class="material-icons">arrow_forward</span></a>
   </div>
 
-  <div class="activities-grid">
+  <p class="section__empty" *ngIf="!activities.length">{{ 'HOME.EMPTY.ACTIVITIES' | translate }}</p>
+  <div class="activities-grid" *ngIf="activities.length">
     <a class="activity-item" *ngFor="let activity of activities" [routerLink]="['/activities', activity.slug]">
       <div class="activity-item__image-wrap">
         <img [src]="activity.previewImageUrl" [alt]="activity.name" class="activity-item__image" loading="lazy" />

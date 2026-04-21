@@ -567,7 +567,8 @@ namespace Explorea.Server.Services
                             .Select(i => i.ImageUrl)
                             .FirstOrDefault(),
                         Subtitle = x.Address,
-                        SavedAt = item.SavedAt
+                        SavedAt = item.SavedAt,
+                        EndDatetime = x.EndDatetime
                     })
                     .FirstOrDefaultAsync(),
 

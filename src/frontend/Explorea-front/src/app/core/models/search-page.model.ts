@@ -12,6 +12,8 @@ export interface SearchFilters {
   placeTypeIds?: number[];
   activityCategoryIds?: number[];
   eventTypeIds?: number[];
+  destinationTypeIds?: number[];
+  extraFilters?: Record<string, string>;
   radiusKm?: number;
 }
 

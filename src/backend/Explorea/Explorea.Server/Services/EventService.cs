@@ -305,7 +305,14 @@ namespace Explorea.Server.Services
                     {
                         Id = e.Country.Id,
                         Name = e.Country.Name
-                    }
+                    },
+
+                Latitude  = e.Latitude
+                    ?? (e.Destination?.Latitude)
+                    ?? (e.Place?.Latitude),
+                Longitude = e.Longitude
+                    ?? (e.Destination?.Longitude)
+                    ?? (e.Place?.Longitude)
             };
         }
 

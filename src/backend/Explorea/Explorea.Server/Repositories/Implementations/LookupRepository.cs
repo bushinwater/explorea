@@ -56,5 +56,19 @@ namespace Explorea.Server.Repositories.Implementations
         {
             return await _db.Countries.OrderBy(c => c.Name).ToListAsync();
         }
+
+        public async Task<List<DestinationType>> GetDestinationTypesAsync()
+        {
+            return await _db.DestinationTypes.OrderBy(t => t.Name).ToListAsync();
+        }
+
+        public async Task<List<FilterDefinition>> GetFilterDefinitionsAsync(string entityType, int typeId)
+        {
+            return await _db.FilterDefinitions
+                .Where(f => f.EntityType == entityType && f.TypeId == typeId)
+                .Include(f => f.Options.OrderBy(o => o.SortOrder))
+                .OrderBy(f => f.SortOrder)
+                .ToListAsync();
+        }
     }
 }

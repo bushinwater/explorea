@@ -19,7 +19,9 @@ namespace Explorea.API.DTOs.Event
         public string? PreviewImageUrl { get; set; }
         public bool IsFeatured { get; set; }
         public int Popularity { get; set; }
-        public double? DistanceKm{get; set;}
+        public double? DistanceKm { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
         public CountryRefDto? Country { get; set; }
     }
 }

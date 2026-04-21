@@ -24,6 +24,7 @@ import { SearchItem } from '../../../core/models/search.model';
 export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   @Input() banners: HeroBannerModel[] = [];
   @Input() cityFilters: CityFilter[] = [];
+  @Input() set activeCityId(id: number | null) { this.selectedCityId = id; }
   @Output() citySelected = new EventEmitter<number | null>();
   @Output() searchSubmitted = new EventEmitter<string>();
 

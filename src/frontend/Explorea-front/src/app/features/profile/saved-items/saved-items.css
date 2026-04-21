@@ -187,6 +187,57 @@
 }
 
 /* ========================
+   EXPIRED EVENT CARD
+   ======================== */
+.saved-card--expired {
+  border-color: var(--color-danger, #e53935);
+}
+
+.saved-card--expired .saved-card__image {
+  filter: grayscale(40%);
+  opacity: 0.8;
+}
+
+.saved-card__expired-badge {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  background: var(--color-danger, #e53935);
+  color: #fff;
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.saved-card__unsave-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px var(--spacing-md);
+  border: none;
+  border-top: 1px solid var(--color-danger, #e53935);
+  background: color-mix(in srgb, var(--color-danger, #e53935) 10%, transparent);
+  color: var(--color-danger, #e53935);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.saved-card__unsave-btn:hover {
+  background: color-mix(in srgb, var(--color-danger, #e53935) 18%, transparent);
+}
+
+.saved-card__unsave-btn .material-icons {
+  font-size: 16px;
+}
+
+/* ========================
    EMPTY STATE
    ======================== */
 .empty-state {

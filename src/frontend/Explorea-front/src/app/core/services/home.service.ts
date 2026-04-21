@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   HomeData,
@@ -23,15 +23,20 @@ export class HomeService {
 
   constructor(private http: HttpClient) {}
 
-  getHomeData(): Observable<HomeData> {
-    return this.http.get<HomeData>(this.api);
+  getHomeData(cityId?: number | null): Observable<HomeData> {
+    let params = new HttpParams();
+    if (cityId != null) params = params.set('cityId', cityId);
+    return this.http.get<HomeData>(this.api, { params });
   }
 
   getCityFilters(): CityFilter[] {
     return CITY_FILTERS;
   }
 
-  getRecommendations(): Observable<DestinationCard[]> {
-    return this.http.get<DestinationCard[]>(`${this.api}/recommendations`);
+  getRecommendations(userLat?: number, userLng?: number): Observable<any> {
+    let params = new HttpParams();
+    if (userLat != null) params = params.set('userLat', userLat);
+    if (userLng != null) params = params.set('userLng', userLng);
+    return this.http.get<any>(`${this.api}/recommendations`, { params });
   }
 }
