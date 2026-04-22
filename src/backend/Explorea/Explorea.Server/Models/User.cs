@@ -82,6 +82,7 @@ namespace Explorea.API.Models
         public ICollection<Visit>           Visits       { get; set; } = new List<Visit>();
         public ICollection<TripPlan>        TripPlans    { get; set; } = new List<TripPlan>();
         public ICollection<UserInterestTag> InterestTags { get; set; } = new List<UserInterestTag>();
+        public ICollection<OrganizationRegionAssignment> OrganizationRegionAssignments { get; set; } = new List<OrganizationRegionAssignment>();
 
         [MaxLength(500), Column("profile_image_url")]
         public string? ProfileImageUrl { get; set; }

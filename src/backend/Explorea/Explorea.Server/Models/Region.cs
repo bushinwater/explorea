@@ -18,5 +18,6 @@ namespace Explorea.API.Models
         [Column("updated_by")] public Guid? UpdatedBy { get; set; }
 
         public ICollection<City> Cities { get; set; } = new List<City>();
+        public ICollection<OrganizationRegionAssignment> OrganizationAssignments { get; set; } = new List<OrganizationRegionAssignment>();
     }
 }
