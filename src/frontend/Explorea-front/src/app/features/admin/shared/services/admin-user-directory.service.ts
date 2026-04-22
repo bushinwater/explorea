@@ -1,3 +1,4 @@
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {
   PagedResponse,
@@ -7,12 +8,18 @@ import {
   UserDirectoryStats,
   UserDirectoryUser,
 } from '@shared/models';
-import { Observable, delay, of, throwError } from 'rxjs';
+import { Observable, delay, map, of, tap, throwError } from 'rxjs';
 import { AdminUiPreferencesService } from '../../core/services/admin-ui-preferences.service';
 
 @Injectable({ providedIn: 'root' })
 export class AdminUserDirectoryService {
-  constructor(private readonly ui: AdminUiPreferencesService) {}
+  private readonly api = '/api/admin/users';
+  private readonly regionIdByName = new Map<string, number>();
+
+  constructor(
+    private readonly http: HttpClient,
+    private readonly ui: AdminUiPreferencesService,
+  ) {}
 
   private readonly users: UserDirectoryUser[] = [
     {
@@ -122,50 +129,50 @@ export class AdminUserDirectoryService {
   ];
 
   getUsers(filters: UserDirectoryFilters): Observable<PagedResponse<UserDirectoryUser>> {
-    const searchTerm = filters.search.trim().toLowerCase();
+    let params = new HttpParams()
+      .set('page', filters.page)
+      .set('pageSize', filters.pageSize);
 
-    const filtered = this.users.filter((user) => {
-      const matchesRole = filters.role === 'all' || user.role === filters.role;
-      const matchesRegion = filters.region === 'all' || user.regionName === filters.region;
-      const matchesGender = filters.gender === 'all' || user.gender === filters.gender;
-      const matchesAge =
-        filters.ageBucket === 'all' ||
-        (filters.ageBucket === 'under_20'
-          ? (user.age ?? Number.POSITIVE_INFINITY) < 20
-          : (user.age ?? -1) >= 20);
-      const matchesSearch =
-        !searchTerm ||
-        `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm) ||
-        user.email.toLowerCase().includes(searchTerm);
+    if (filters.search.trim()) {
+      params = params.set('search', filters.search.trim());
+    }
 
-      return matchesRole && matchesRegion && matchesGender && matchesAge && matchesSearch;
-    });
+    if (filters.role !== 'all') {
+      params = params.set('role', filters.role);
+    }
 
-    const start = (filters.page - 1) * filters.pageSize;
-    const items = filtered.slice(start, start + filters.pageSize);
+    if (filters.region !== 'all') {
+      const regionId = this.regionIdByName.get(filters.region);
+      if (regionId != null) {
+        params = params.set('regionId', regionId);
+      }
+    }
 
-    return of({ items, total: filtered.length }).pipe(delay(250));
+    if (filters.gender !== 'all') {
+      params = params.set('gender', filters.gender);
+    }
+
+    if (filters.ageBucket !== 'all') {
+      params = params.set('ageBucket', filters.ageBucket);
+    }
+
+    return this.http.get<PagedResponse<UserDirectoryUser>>(this.api, { params });
   }
 
   getStats(): Observable<UserDirectoryStats> {
-    const stats: UserDirectoryStats = {
-      totalUsers: this.users.length,
-      maleUsers: this.users.filter((user) => user.gender === 'male').length,
-      femaleUsers: this.users.filter((user) => user.gender === 'female').length,
-      under20Users: this.users.filter((user) => (user.age ?? Number.POSITIVE_INFINITY) < 20).length,
-      over20Users: this.users.filter((user) => (user.age ?? -1) >= 20).length,
-      flaggedAccounts: this.users.filter((user) => user.flagged).length,
-    };
-
-    return of(stats).pipe(delay(150));
+    return this.http.get<UserDirectoryStats>(`${this.api}/stats`);
   }
 
   getRegions(): Observable<string[]> {
-    const regions = Array.from(
-      new Set(this.users.map((user) => user.regionName).filter((region): region is string => Boolean(region))),
-    ).sort((a, b) => a.localeCompare(b));
-
-    return of(regions).pipe(delay(100));
+    return this.http.get<AdminUserDirectoryRegionResponse[]>(`${this.api}/regions`).pipe(
+      tap((regions) => {
+        this.regionIdByName.clear();
+        for (const region of regions) {
+          this.regionIdByName.set(region.name, region.id);
+        }
+      }),
+      map((regions) => regions.map((region) => region.name)),
+    );
   }
 
   createUser(dto: UpsertAdminUserDto): Observable<UserDirectoryUser> {
@@ -238,4 +245,9 @@ export class AdminUserDirectoryService {
 
     return of(void 0).pipe(delay(250));
   }
+}
+
+interface AdminUserDirectoryRegionResponse {
+  id: number;
+  name: string;
 }
