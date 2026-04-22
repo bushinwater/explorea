@@ -35,10 +35,17 @@ namespace Explorea.Server.Services
                     0, 0, 0,
                     DateTimeKind.Utc);
 
-                var nextDateUtc = selectedDateUtc.AddDays(1);
-
                 from = new DateTimeOffset(selectedDateUtc);
-                to = new DateTimeOffset(nextDateUtc);
+                to   = new DateTimeOffset(selectedDateUtc.AddDays(1));
+            }
+            else if (query.Weekend == true)
+            {
+                var today = DateTime.UtcNow.Date;
+                // Nađi sledeću subotu (ili danas ako je subota)
+                var daysUntilSat = ((int)DayOfWeek.Saturday - (int)today.DayOfWeek + 7) % 7;
+                var saturday = today.AddDays(daysUntilSat == 0 ? 0 : daysUntilSat);
+                from = new DateTimeOffset(saturday, TimeSpan.Zero);
+                to   = new DateTimeOffset(saturday.AddDays(2), TimeSpan.Zero); // sub + ned
             }
 
             var (events, total) = await _eventRepository.GetPagedAsync(

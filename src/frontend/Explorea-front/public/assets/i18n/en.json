@@ -490,6 +490,11 @@
       "OPEN_NOW": "Open now",
       "MIN_RATING": "Minimum rating",
       "SUBCATEGORY": "Subcategory",
+      "EXTRA": "Additional features",
+      "PRICE": "Price range",
+      "PRICE_MIN": "Min (RSD)",
+      "PRICE_MAX": "Max (RSD)",
+      "PRICE_MAX_HINT": "No limit",
       "RESET": "Reset filters",
       "APPLY": "Apply filters",
       "CLOSE": "Close"

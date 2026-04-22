@@ -208,11 +208,11 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       comment: r.comment ?? '',
       createdAt: r.createdAt,
       user: {
-        id: '',
-        firstName: r.authorName,
-        lastName: '',
-        travelerRank: 'Putnik',
-        profileImageUrl: r.authorAvatarUrl,
+        id: r.user.id,
+        firstName: r.user.firstName,
+        lastName: r.user.lastName,
+        travelerRank: r.user.travelerRank,
+        profileImageUrl: r.user.profileImageUrl,
       },
     })) ?? [];
   }
@@ -231,9 +231,14 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       id: review.id,
       rating: review.rating,
       comment: review.comment ?? null,
-      authorName: `${review.user.firstName} ${review.user.lastName}`.trim(),
-      authorAvatarUrl: review.user.profileImageUrl ?? null,
       createdAt: review.createdAt,
+      user: {
+        id: review.user.id,
+        firstName: review.user.firstName,
+        lastName: review.user.lastName,
+        travelerRank: review.user.travelerRank,
+        profileImageUrl: review.user.profileImageUrl ?? null,
+      },
     });
     this.hasReviewed = true;
     this.cdr.detectChanges();

@@ -44,7 +44,14 @@ namespace Explorea.Server.Controllers
             [FromQuery] string type = "all",
             [FromQuery] int limit = 200,
             [FromQuery] decimal? minRating = null,
-            [FromQuery] bool? openNow = null)
+            [FromQuery] bool? openNow = null,
+            [FromQuery] int[]? placeTypeIds = null,
+            [FromQuery] int[]? activityCategoryIds = null,
+            [FromQuery] int[]? eventTypeIds = null,
+            [FromQuery] int[]? destinationTypeIds = null,
+            [FromQuery] decimal? minPrice = null,
+            [FromQuery] decimal? maxPrice = null,
+            [FromQuery] string[]? extraFilters = null)
         {
             var validTypes = new[] { "all", "destination", "place", "event", "activity" };
             if (!validTypes.Contains(type))
@@ -53,7 +60,11 @@ namespace Explorea.Server.Controllers
             if (lat.HasValue != lng.HasValue)
                 return BadRequest("Potrebno je proslediti i lat i lng, ili nijedno.");
 
-            var result = await _exploreService.GetMapMarkersAsync(lat, lng, radius, type, limit, minRating, openNow);
+            var result = await _exploreService.GetMapMarkersAsync(
+                lat, lng, radius, type, limit, minRating, openNow,
+                placeTypeIds?.ToList(), activityCategoryIds?.ToList(),
+                eventTypeIds?.ToList(), destinationTypeIds?.ToList(),
+                minPrice, maxPrice, extraFilters?.ToList());
             return Ok(result);
         }
     }
