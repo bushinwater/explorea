@@ -1,0 +1,12 @@
+.confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .confirm-dialog__actions {
+    flex-direction: column-reverse;
+  }
+}

@@ -1,0 +1,14 @@
+<article class="stat-card" [ngClass]="toneClass">
+  <div class="stat-card__accent"></div>
+
+  <div class="stat-card__top">
+    <p class="stat-card__label">{{ label }}</p>
+    <span class="stat-card__trend" [class.stat-card__trend--hidden]="!trend">{{ trend || '\u00A0' }}</span>
+  </div>
+
+  <div class="stat-card__value">{{ value }}</div>
+
+  @if (hint) {
+    <p class="stat-card__hint">{{ hint }}</p>
+  }
+</article>

@@ -1,0 +1,10 @@
+<span class="status-badge" [ngClass]="badgeClass">
+  <span class="material-icons status-badge__icon">
+    @switch (status) {
+      @case ('active') { check_circle }
+      @case ('pending') { schedule }
+      @default { cancel }
+    }
+  </span>
+  {{ text }}
+</span>

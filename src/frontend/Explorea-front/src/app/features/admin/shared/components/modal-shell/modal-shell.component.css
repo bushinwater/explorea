@@ -1,0 +1,64 @@
+.modal-shell__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(5, 8, 6, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.modal-shell {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 201;
+  width: min(720px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: rgba(19, 28, 22, 0.98);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.modal-shell__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 22px 0;
+}
+
+.modal-shell__header h2 {
+  margin: 0 0 8px;
+}
+
+.modal-shell__header p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.modal-shell__close {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: rgba(23, 35, 27, 0.9);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.modal-shell__body {
+  padding: 22px;
+}
+
+:host-context([data-theme='light']) .modal-shell {
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.16);
+}
+
+:host-context([data-theme='light']) .modal-shell__close {
+  background: rgba(248, 250, 252, 0.96);
+}

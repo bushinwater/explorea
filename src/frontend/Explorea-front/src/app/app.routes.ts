@@ -1,6 +1,11 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
 import { guestGuard } from './core/guards/guest-guard';
+import { adminUsersAccessGuard } from './core/guards/admin-users-access.guard';
+import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-shell.component';
+import { AdminHomePageComponent } from './features/admin/home/admin-home-page.component';
+import { UserDirectoryPageComponent } from './features/admin/users/user-directory-page.component';
+import { Dashboard } from './features/admin/dashboard/dashboard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
 import { EventDetailComponent } from './features/events/event-detail/event-detail';
 import { PlaceDetailComponent } from './features/places/place-detail/place-detail';
@@ -40,5 +45,21 @@ export const routes: Routes = [
   { path: 'verify-email', component: VerifyEmail },
   { path: 'complete-profile', component: CompleteProfile },
   { path: 'auth/facebook/callback', component: FacebookCallback },
+  {
+    path: 'admin',
+    component: AdminShellComponent,
+    canActivate: [authGuard],
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      { path: 'dashboard', component: Dashboard },
+      { path: 'map-view', component: AdminHomePageComponent },
+      { path: 'destinations', component: AdminHomePageComponent },
+      { path: 'reviews', component: AdminHomePageComponent },
+      { path: 'reports', component: AdminHomePageComponent },
+      { path: 'settings', component: AdminHomePageComponent },
+      { path: 'users', component: UserDirectoryPageComponent, canActivate: [adminUsersAccessGuard] },
+      { path: '**', redirectTo: 'dashboard' },
+    ],
+  },
   { path: '**', redirectTo: 'home' },
 ];

@@ -1,0 +1,31 @@
+<div class="status-widget">
+  <div class="status-widget__header">
+    <h3 class="status-widget__title">{{ ui.t('dashboard.status.title') }}</h3>
+    <span class="badge badge-success">
+      <span class="material-icons icon-sm">check_circle</span>
+      {{ ui.t('dashboard.status.ok') }}
+    </span>
+  </div>
+
+  <div class="status-widget__list">
+    @for (item of items; track item.label) {
+      <div class="status-item">
+        <div class="status-item__top">
+          <span class="status-item__label">{{ item.label }}</span>
+          <div class="status-item__right">
+            <span class="status-item__detail">{{ item.detail }}</span>
+            <span class="status-dot" [class]="'status-dot--' + levelClass(item.level)"></span>
+          </div>
+        </div>
+        @if (item.percentage !== undefined) {
+          <div class="status-bar">
+            <div class="status-bar__fill"
+              [style.width.%]="item.percentage"
+              [style.background]="barColor(item.level)">
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

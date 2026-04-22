@@ -1,0 +1,75 @@
+<app-modal-shell
+  [title]="ui.t('users.edit.title')"
+  [description]="ui.t('users.edit.description')"
+  (close)="requestClose()"
+>
+  @if (errorMessage) {
+    <app-feedback-banner variant="error" [title]="ui.t('users.form.error')" [description]="errorMessage" />
+  }
+
+  <form class="user-form" [formGroup]="form" (ngSubmit)="save()">
+    <label class="user-form__field">
+      <span>{{ ui.t('users.form.first_name') }}</span>
+      <input type="text" formControlName="firstName" />
+    </label>
+
+    <label class="user-form__field">
+      <span>{{ ui.t('users.form.last_name') }}</span>
+      <input type="text" formControlName="lastName" />
+    </label>
+
+    <label class="user-form__field user-form__field--full">
+      <span>{{ ui.t('users.form.email') }}</span>
+      <input type="email" formControlName="email" />
+    </label>
+
+    <label class="user-form__field">
+      <span>{{ ui.t('users.form.role') }}</span>
+      <select formControlName="role">
+        @for (role of roles; track role) {
+          <option [value]="role">{{ roleLabel(role) }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="user-form__field">
+      <span>{{ ui.t('users.form.region') }}</span>
+      <select formControlName="region">
+        <option value="">{{ ui.t('users.form.region_none') }}</option>
+        @for (region of regions; track region) {
+          <option [value]="region">{{ region }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="user-form__field">
+      <span>{{ ui.t('users.form.gender') }}</span>
+      <select formControlName="gender">
+        @for (gender of genders; track gender) {
+          <option [value]="gender">{{ genderLabel(gender) }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="user-form__field">
+      <span>{{ ui.t('users.form.age') }}</span>
+      <input type="number" min="0" max="120" formControlName="age" />
+    </label>
+
+    <label class="user-form__field user-form__field--full">
+      <span>{{ ui.t('users.form.status') }}</span>
+      <select formControlName="status">
+        @for (status of statuses; track status) {
+          <option [value]="status">{{ statusLabel(status) }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="user-form__actions">
+      <button class="btn btn-secondary" type="button" (click)="requestClose()">{{ ui.t('users.form.cancel') }}</button>
+      <button class="btn btn-primary" type="submit" [disabled]="isSaving">
+        {{ isSaving ? ui.t('users.form.saving') : ui.t('users.form.save_changes') }}
+      </button>
+    </div>
+  </form>
+</app-modal-shell>

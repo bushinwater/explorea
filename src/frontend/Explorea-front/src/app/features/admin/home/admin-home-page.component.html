@@ -1,0 +1,41 @@
+<main class="page">
+  <section class="hero-card">
+    <p class="eyebrow">{{ ui.t('home.eyebrow') }}</p>
+    <h1>{{ ui.t('home.title') }}</h1>
+    <p class="description">{{ ui.t('home.description') }}</p>
+  </section>
+
+  <section class="stats-grid">
+    <app-stat-card [label]="ui.t('home.stats.total')" [value]="stats.totalUsers" [hint]="ui.t('home.stats.total_hint')" />
+    <app-stat-card
+      [label]="ui.t('home.stats.gender')"
+      [value]="stats.maleUsers + '/' + stats.femaleUsers"
+      trend="+2"
+      [hint]="ui.t('home.stats.gender_hint')"
+    />
+    <app-stat-card
+      [label]="ui.t('home.stats.age')"
+      [value]="stats.under20Users + '/' + stats.over20Users"
+      trend="-5%"
+      [hint]="ui.t('home.stats.age_hint')"
+    />
+    <app-stat-card
+      [label]="ui.t('home.stats.flagged')"
+      [value]="stats.flaggedAccounts"
+      tone="danger"
+      [hint]="ui.t('home.stats.flagged_hint')"
+    />
+  </section>
+
+  @if (!authContext.canViewUsersPage()) {
+    <app-admin-readonly-info />
+  }
+
+  <section class="status-preview">
+    <app-status-badge status="active" />
+    <app-status-badge status="pending" />
+    <app-status-badge status="revoked" />
+  </section>
+
+  <app-empty-state [title]="ui.t('home.empty.title')" [description]="ui.t('home.empty.description')" />
+</main>

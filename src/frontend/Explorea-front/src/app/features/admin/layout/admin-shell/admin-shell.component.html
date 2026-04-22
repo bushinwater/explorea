@@ -1,0 +1,16 @@
+@if (layout.sidebarExpanded()) {
+  <div class="overlay desktop-overlay" (click)="layout.toggleDesktopSidebar()"></div>
+}
+
+@if (layout.mobileMenuOpen()) {
+  <div class="overlay mobile-overlay" (click)="layout.closeMobileSidebar()"></div>
+}
+
+<app-admin-sidebar />
+
+<div class="workspace" [class.workspace--expanded]="layout.sidebarExpanded()">
+  <app-admin-header />
+  <main class="workspace__content">
+    <router-outlet />
+  </main>
+</div>

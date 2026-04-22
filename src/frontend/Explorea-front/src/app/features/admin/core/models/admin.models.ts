@@ -1,0 +1,94 @@
+// ===== ROLES =====
+export type AdminRole = 'super_admin' | 'tourist_organization' | 'place_owner';
+
+export const ROLE_LABELS: Record<AdminRole, string> = {
+  super_admin: 'Super Admin',
+  tourist_organization: 'Tourist Organization',
+  place_owner: 'Place Owner',
+};
+
+// ===== WIDGET SYSTEM =====
+export type WidgetId =
+  | 'stat-cards'
+  | 'activity-feed'
+  | 'quick-actions'
+  | 'traffic-chart'
+  | 'system-status'
+  | 'ai-panel';
+
+export interface WidgetConfig {
+  id: WidgetId;
+  label: string;
+  zone: 'main' | 'side';
+  visible: boolean;
+  order: number;
+  /** Which roles can see this widget */
+  roles: AdminRole[];
+}
+
+// ===== STAT CARDS =====
+export interface StatCardData {
+  icon: string;
+  value: string;
+  label: string;
+  sublabel?: string;
+  trend?: { value: string; up: boolean };
+  color?: 'primary' | 'accent' | 'danger' | 'warning' | 'info';
+}
+
+// ===== ACTIVITY FEED =====
+export type ActivityStatus = 'pending' | 'approved' | 'rejected' | 'info' | 'warning';
+
+export interface ActivityItem {
+  id: string;
+  initials: string;
+  avatarColor: string;
+  text: string;
+  timestamp: string;
+  actionLabel: string;
+  status: ActivityStatus;
+}
+
+// ===== QUICK ACTIONS =====
+export interface QuickAction {
+  id: string;
+  icon: string;
+  label: string;
+  route: string;
+  colorClass: 'primary' | 'accent' | 'info' | 'warning' | 'danger' | 'muted';
+}
+
+// ===== TRAFFIC CHART =====
+export interface TrafficPoint {
+  day: string;
+  views: number;
+  reservations: number;
+}
+
+// ===== SYSTEM STATUS =====
+export type StatusLevel = 'ok' | 'warning' | 'critical';
+
+export interface SystemStatusItem {
+  label: string;
+  detail: string;
+  level: StatusLevel;
+  percentage?: number;
+}
+
+// ===== AI PANEL =====
+export interface AiInsight {
+  icon: string;
+  text: string;
+  type: 'positive' | 'warning' | 'neutral';
+}
+
+// ===== DASHBOARD DATA (all combined per role) =====
+export interface DashboardData {
+  pendingCount: number;
+  stats: StatCardData[];
+  activity: ActivityItem[];
+  quickActions: QuickAction[];
+  traffic?: TrafficPoint[];
+  systemStatus?: SystemStatusItem[];
+  aiInsights?: AiInsight[];
+}

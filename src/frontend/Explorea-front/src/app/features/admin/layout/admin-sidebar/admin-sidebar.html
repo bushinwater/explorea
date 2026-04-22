@@ -1,0 +1,62 @@
+<aside class="sidebar" [class.open]="layout.mobileMenuOpen()" [class.expanded]="layout.sidebarExpanded()">
+
+  <button class="logo" type="button" (click)="toggleSidebar()" [attr.aria-label]="ui.t('shell.toggle_navigation')">
+    <img src="assets/logo.png" alt="Explorea" class="logo-icon" />
+    <span class="logo-text">Explorea</span>
+  </button>
+
+  <nav class="nav">
+    @for (item of visibleItems; track item.route) {
+      <a
+        class="nav-item"
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        (click)="closeSidebar()">
+        <span class="material-icons nav-icon">{{ item.icon }}</span>
+        <span class="nav-label">{{ ui.t(item.labelKey) }}</span>
+      </a>
+    }
+  </nav>
+
+  <div class="sidebar-bottom">
+    <a class="nav-item" routerLink="/">
+      <span class="material-icons nav-icon">person</span>
+      <span class="nav-label">{{ ui.t('sidebar.profile') }}</span>
+    </a>
+
+    <div class="lang-wrapper desktop-only">
+      <button class="nav-item" type="button" (click)="toggleLanguagePopup($event)" [class.active]="isLanguagePopupOpen">
+        <span class="material-icons nav-icon">language</span>
+        <span class="nav-label">{{ languageLabel() }}</span>
+      </button>
+    </div>
+
+    @if (isLanguagePopupOpen) {
+      <div class="lang-popup" [style.top.px]="languagePopupTop" [style.left.px]="languagePopupLeft">
+        <button class="lang-option" type="button" [class.selected]="ui.language() === 'sr'" (click)="setLanguage('sr')">
+          {{ ui.t('language.sr') }}
+        </button>
+        <button class="lang-option" type="button" [class.selected]="ui.language() === 'en'" (click)="setLanguage('en')">
+          {{ ui.t('language.en') }}
+        </button>
+      </div>
+    }
+
+    <button class="nav-item mobile-only" type="button" (click)="setLanguage(ui.language() === 'sr' ? 'en' : 'sr')">
+      <span class="material-icons nav-icon">language</span>
+      <span class="nav-label">{{ languageLabel() }}</span>
+    </button>
+
+    <button class="nav-item theme-toggle" type="button" (mousedown)="$event.preventDefault()" (click)="ui.toggleTheme()">
+      <span class="material-icons nav-icon">{{ ui.isDark() ? 'light_mode' : 'dark_mode' }}</span>
+      <span class="nav-label">{{ ui.isDark() ? ui.t('sidebar.light') : ui.t('sidebar.dark') }}</span>
+    </button>
+
+    <button class="nav-item danger" type="button">
+      <span class="material-icons nav-icon">logout</span>
+      <span class="nav-label">{{ ui.t('sidebar.logout') }}</span>
+    </button>
+  </div>
+
+</aside>

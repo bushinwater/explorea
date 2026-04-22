@@ -1,0 +1,29 @@
+:host { display: block; min-height: 100vh; }
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 99;
+}
+
+.workspace {
+  min-height: 100vh;
+  min-width: 0;
+  margin-left: 72px;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace--expanded { margin-left: 280px; }
+
+.workspace__content { flex: 1; padding: 20px; }
+
+@media (max-width: 768px) {
+  .desktop-overlay { display: none; }
+  .workspace, .workspace--expanded { margin-left: 0; }
+}
+
+@media (min-width: 769px) {
+  .mobile-overlay { display: none; }
+}

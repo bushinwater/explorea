@@ -1,0 +1,15 @@
+<div class="qa">
+  <div class="qa__header">
+    <h3 class="qa__title">{{ ui.t('dashboard.qa.title') }}</h3>
+  </div>
+  <div class="qa__grid">
+    @for (action of actions; track action.id) {
+      <button class="qa__btn" [class]="'qa__btn--' + action.colorClass" (click)="navigate(action.route)">
+        <div class="qa__icon-wrap">
+          <span class="material-icons">{{ action.icon }}</span>
+        </div>
+        <span class="qa__label">{{ action.label }}</span>
+      </button>
+    }
+  </div>
+</div>

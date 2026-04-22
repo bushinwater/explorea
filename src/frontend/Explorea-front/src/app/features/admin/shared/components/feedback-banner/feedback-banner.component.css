@@ -1,0 +1,75 @@
+.feedback-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+}
+
+.feedback-banner__icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.feedback-banner__icon .material-icons {
+  font-size: 18px;
+}
+
+.feedback-banner__content {
+  display: grid;
+  gap: 4px;
+}
+
+.feedback-banner__content strong {
+  font-size: 14px;
+}
+
+.feedback-banner__content p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.feedback-banner--info {
+  background: rgba(37, 61, 46, 0.92);
+  border-color: rgba(86, 146, 105, 0.3);
+}
+
+.feedback-banner--info .feedback-banner__icon {
+  background: rgba(79, 131, 96, 0.24);
+  color: #a2d6b1;
+}
+
+.feedback-banner--error {
+  background: rgba(71, 28, 28, 0.92);
+  border-color: rgba(189, 87, 87, 0.36);
+}
+
+.feedback-banner--error .feedback-banner__icon {
+  background: rgba(164, 68, 68, 0.22);
+  color: #ffb0b0;
+}
+
+:host-context([data-theme='light']) .feedback-banner--info {
+  background: rgba(225, 242, 232, 0.95);
+  border-color: rgba(86, 146, 105, 0.22);
+}
+
+:host-context([data-theme='light']) .feedback-banner--info .feedback-banner__icon {
+  background: rgba(79, 131, 96, 0.14);
+  color: #2f7b4a;
+}
+
+:host-context([data-theme='light']) .feedback-banner--error {
+  background: rgba(252, 237, 237, 0.98);
+  border-color: rgba(189, 87, 87, 0.24);
+}
+
+:host-context([data-theme='light']) .feedback-banner--error .feedback-banner__icon {
+  background: rgba(164, 68, 68, 0.12);
+  color: #b03d3d;
+}

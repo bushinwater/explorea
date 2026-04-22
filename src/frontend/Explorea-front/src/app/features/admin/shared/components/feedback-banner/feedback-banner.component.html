@@ -1,0 +1,12 @@
+<section class="feedback-banner" [ngClass]="bannerClass">
+  <div class="feedback-banner__icon">
+    <span class="material-icons">{{ variant === 'error' ? 'error' : 'info' }}</span>
+  </div>
+
+  <div class="feedback-banner__content">
+    <strong>{{ title }}</strong>
+    @if (description) {
+      <p>{{ description }}</p>
+    }
+  </div>
+</section>

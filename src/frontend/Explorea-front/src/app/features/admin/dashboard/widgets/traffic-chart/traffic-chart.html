@@ -1,0 +1,15 @@
+<div class="chart-widget">
+  <div class="chart-widget__header">
+    <div>
+      <h3 class="chart-widget__title">{{ ui.t('dashboard.traffic.title') }}</h3>
+      <p class="chart-widget__sub">{{ ui.t('dashboard.traffic.sub') }}</p>
+    </div>
+    <div class="chart-widget__legend">
+      <span class="legend-dot legend-dot--primary"></span><span>{{ ui.t('dashboard.traffic.views') }}</span>
+      <span class="legend-dot legend-dot--accent"></span><span>{{ ui.t('dashboard.traffic.reservations') }}</span>
+    </div>
+  </div>
+  <div class="chart-widget__body">
+    <canvas #canvas></canvas>
+  </div>
+</div>

@@ -1,0 +1,58 @@
+<div class="ai">
+  <div class="ai__header">
+    <div class="ai__header-left">
+      <div class="ai__logo">
+        <span class="material-icons">auto_awesome</span>
+      </div>
+      <div>
+        <h3 class="ai__title">{{ ui.t('dashboard.ai.title') }}</h3>
+        <p class="ai__sub">{{ ui.t('dashboard.ai.sub') }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insights -->
+  <div class="ai__insights">
+    @for (insight of insights; track $index) {
+      <div class="ai__insight" [class]="'ai__insight--' + insight.type">
+        <span class="material-icons ai__insight-icon" [style.color]="insightIconColor(insight.type)">{{ insight.icon }}</span>
+        <p class="ai__insight-text">{{ insight.text }}</p>
+      </div>
+    }
+  </div>
+
+  <!-- Chat messages -->
+  @if (messages().length > 0) {
+    <div class="ai__messages">
+      @for (msg of messages(); track $index) {
+        <div class="ai__msg" [class.ai__msg--user]="msg.role === 'user'" [class.ai__msg--ai]="msg.role === 'ai'">
+          @if (msg.role === 'ai') {
+            <span class="material-icons ai__msg-icon">auto_awesome</span>
+          }
+          <div class="ai__msg-bubble">{{ msg.text }}</div>
+        </div>
+      }
+      @if (isTyping()) {
+        <div class="ai__msg ai__msg--ai">
+          <span class="material-icons ai__msg-icon">auto_awesome</span>
+          <div class="ai__msg-bubble ai__msg-bubble--typing">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Input -->
+  <div class="ai__input-wrap">
+    <input
+      class="ai__input"
+      type="text"
+      [placeholder]="ui.t('dashboard.ai.placeholder')"
+      [(ngModel)]="inputText"
+      (keydown)="onKeydown($event)" />
+    <button class="ai__send-btn" (click)="sendMessage()" [disabled]="!inputText.trim()">
+      <span class="material-icons">send</span>
+    </button>
+  </div>
+</div>

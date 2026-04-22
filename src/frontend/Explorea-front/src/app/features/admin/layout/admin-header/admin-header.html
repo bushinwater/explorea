@@ -1,0 +1,54 @@
+<header class="header">
+
+  <!-- Left: page title + date -->
+  <div class="header__left">
+    <span class="header__page-title">{{ ui.t('home.title') }}</span>
+    <span class="header__date">{{ today }}</span>
+  </div>
+
+  <!-- Right: actions -->
+  <div class="header__right">
+
+    <!-- Customize widgets button -->
+    <button class="header__btn header__btn--customize" (click)="layout.openCustomize()" title="Prilagodi widgete">
+      <span class="material-icons">dashboard_customize</span>
+      <span class="header__btn-label">Prilagodi</span>
+    </button>
+
+    <!-- Notifications -->
+    <button class="header__icon-btn" title="Obaveštenja">
+      <span class="material-icons">notifications_none</span>
+      <span class="header__notif-dot"></span>
+    </button>
+
+    <!-- Role switcher (demo) -->
+    <div class="header__role-wrap">
+      <button class="header__role-btn" (click)="showRolePicker = !showRolePicker" title="Promeni ulogu (demo)">
+        <span class="material-icons">{{ roleIcon }}</span>
+        <span class="header__role-label">{{ auth.roleLabel }}</span>
+        <span class="material-icons header__role-chevron">expand_more</span>
+      </button>
+
+      @if (showRolePicker) {
+        <div class="header__role-dropdown">
+          <div class="header__role-dropdown-title">Demo — promeni ulogu</div>
+          @for (r of roles; track r.value) {
+            <button
+              class="header__role-option"
+              [class.header__role-option--active]="auth.role() === r.value"
+              (click)="selectRole(r.value)">
+              {{ r.label }}
+            </button>
+          }
+        </div>
+        <div class="header__backdrop" (click)="showRolePicker = false"></div>
+      }
+    </div>
+
+    <!-- User avatar -->
+    <div class="header__avatar" [title]="auth.userName">
+      {{ auth.userInitials }}
+    </div>
+
+  </div>
+</header>

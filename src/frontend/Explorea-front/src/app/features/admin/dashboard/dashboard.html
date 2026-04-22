@@ -1,0 +1,195 @@
+<!-- ===== ALERT BANNER ===== -->
+@if (showAlert) {
+  <div class="alert-banner">
+    <span class="material-icons alert-banner__icon">notifications_active</span>
+    <span class="alert-banner__text">
+      <strong>Akcija potrebna:</strong> {{ data()?.pendingCount }} novih zahteva čeka tvoju potvrdu
+    </span>
+    <button class="alert-banner__cta">Pregledaj zahteve</button>
+    <button class="alert-banner__close" (click)="alertDismissed.set(true)" title="Zatvori">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+}
+
+<!-- ===== DASHBOARD LAYOUT ===== -->
+<div class="dash" [class.dash--no-side]="!hasSideContent()">
+
+  <!-- MAIN COLUMN -->
+  <div class="dash__main">
+
+    @for (widget of mainWidgets(); track widget.id) {
+      @if (isVisible(widget.id)) {
+        @switch (widget.id) {
+          @case ('stat-cards') {
+            <div class="dash__stats-row">
+              @for (card of data()?.stats ?? []; track card.label) {
+                <app-stat-card [data]="card" />
+              }
+            </div>
+          }
+          @case ('traffic-chart') {
+            <app-traffic-chart [data]="data()?.traffic ?? []" />
+          }
+          @case ('activity-feed') {
+            <app-activity-feed [items]="data()?.activity ?? []" />
+          }
+          @case ('quick-actions') {
+            <app-quick-actions [actions]="data()?.quickActions ?? []" />
+          }
+        }
+      }
+    }
+
+  </div>
+
+  <!-- SIDE COLUMN -->
+  @if (hasSideContent()) {
+    <div class="dash__side">
+      @for (widget of sideWidgets(); track widget.id) {
+        @if (isVisible(widget.id)) {
+          @switch (widget.id) {
+            @case ('ai-panel') {
+              <app-ai-panel [insights]="data()?.aiInsights ?? []" />
+            }
+            @case ('system-status') {
+              <app-system-status [items]="data()?.systemStatus ?? []" />
+            }
+          }
+        }
+      }
+    </div>
+  }
+
+</div>
+
+<!-- ===== CUSTOMIZER BACKDROP ===== -->
+@if (layout.customizeOpen()) {
+  <div class="customizer-backdrop" (click)="closeCustomizer()"></div>
+
+  <!-- CUSTOMIZER DRAWER -->
+  <div class="customizer">
+    <div class="customizer__header">
+      <div class="customizer__header-left">
+        <span class="material-icons">dashboard_customize</span>
+        <h3 class="customizer__title">Prilagodi widgete</h3>
+      </div>
+      <button class="customizer__close" (click)="closeCustomizer()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <p class="customizer__hint">Prevuci widgete da promenjiš redosled. Isključi vidljivost klikom na prekidač.</p>
+
+    <!-- Main column widgets -->
+    <div class="customizer__section">
+      <div class="customizer__section-title">
+        <span class="material-icons">view_stream</span>
+        Glavna kolona
+      </div>
+
+      <div
+        cdkDropList
+        [cdkDropListData]="drawerMain()"
+        (cdkDropListDropped)="dropMain($event)"
+        class="customizer__list">
+
+        @for (w of drawerMain(); track w.id) {
+          <div
+            cdkDrag
+            class="customizer__item"
+            [class.customizer__item--unavailable]="!isWidgetAvailableForRole(w)">
+
+            <div cdkDragHandle class="customizer__drag-handle" title="Prevuci za premeštanje">
+              <span class="material-icons">drag_indicator</span>
+            </div>
+
+            <span class="customizer__item-label">{{ w.label }}</span>
+
+            @if (!isWidgetAvailableForRole(w)) {
+              <span class="customizer__unavailable-badge">Nije dostupno za ulogu</span>
+            } @else {
+              <label class="customizer__toggle">
+                <input
+                  type="checkbox"
+                  [checked]="w.visible"
+                  (change)="toggleWidgetVisibility(w.id)" />
+                <span class="customizer__toggle-track">
+                  <span class="customizer__toggle-thumb"></span>
+                </span>
+              </label>
+            }
+
+            <div class="customizer__drag-preview" *cdkDragPlaceholder>
+              <span class="material-icons">drag_indicator</span>
+              {{ w.label }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Side panel widgets -->
+    <div class="customizer__section">
+      <div class="customizer__section-title">
+        <span class="material-icons">view_sidebar</span>
+        Bočni panel
+      </div>
+
+      <div
+        cdkDropList
+        [cdkDropListData]="drawerSide()"
+        (cdkDropListDropped)="dropSide($event)"
+        class="customizer__list">
+
+        @for (w of drawerSide(); track w.id) {
+          <div
+            cdkDrag
+            class="customizer__item"
+            [class.customizer__item--unavailable]="!isWidgetAvailableForRole(w)">
+
+            <div cdkDragHandle class="customizer__drag-handle" title="Prevuci za premeštanje">
+              <span class="material-icons">drag_indicator</span>
+            </div>
+
+            <span class="customizer__item-label">{{ w.label }}</span>
+
+            @if (!isWidgetAvailableForRole(w)) {
+              <span class="customizer__unavailable-badge">Nije dostupno za ulogu</span>
+            } @else {
+              <label class="customizer__toggle">
+                <input
+                  type="checkbox"
+                  [checked]="w.visible"
+                  (change)="toggleWidgetVisibility(w.id)" />
+                <span class="customizer__toggle-track">
+                  <span class="customizer__toggle-thumb"></span>
+                </span>
+              </label>
+            }
+
+            <div class="customizer__drag-preview" *cdkDragPlaceholder>
+              <span class="material-icons">drag_indicator</span>
+              {{ w.label }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Footer actions -->
+    <div class="customizer__footer">
+      <button class="btn btn-ghost btn-sm" (click)="resetCustomizer()">
+        <span class="material-icons">restart_alt</span>
+        Resetuj
+      </button>
+      <div class="customizer__footer-right">
+        <button class="btn btn-ghost btn-sm" (click)="closeCustomizer()">Otkaži</button>
+        <button class="btn btn-primary btn-sm" (click)="saveCustomizer()">
+          <span class="material-icons">check</span>
+          Sačuvaj
+        </button>
+      </div>
+    </div>
+  </div>
+}

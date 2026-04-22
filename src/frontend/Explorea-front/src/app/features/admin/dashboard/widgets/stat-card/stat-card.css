@@ -1,0 +1,89 @@
+:host { display: block; }
+
+.stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  transition: border-color 0.18s, box-shadow 0.18s;
+  cursor: default;
+}
+
+.stat-card:hover {
+  border-color: var(--card-accent);
+  box-shadow: 0 0 0 1px var(--card-accent-muted), var(--shadow-md);
+}
+
+/* Color variants */
+.stat-card--primary { --card-accent: var(--color-primary);  --card-accent-muted: var(--color-primary-muted); --icon-color: var(--color-primary); }
+.stat-card--info    { --card-accent: var(--color-info);     --card-accent-muted: rgba(96,165,250,0.12);      --icon-color: var(--color-info);    }
+.stat-card--warning { --card-accent: var(--color-warning);  --card-accent-muted: rgba(245,158,11,0.12);      --icon-color: var(--color-warning); }
+.stat-card--accent  { --card-accent: var(--color-accent);   --card-accent-muted: var(--color-accent-muted);  --icon-color: var(--color-accent);  }
+.stat-card--danger  { --card-accent: var(--color-danger);   --card-accent-muted: rgba(229,115,115,0.12);     --icon-color: var(--color-danger);  }
+
+.stat-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--sp-1);
+}
+
+.stat-card__icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--card-accent-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-card__icon {
+  font-size: 20px;
+  color: var(--icon-color);
+}
+
+.stat-card__trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: var(--radius-full);
+}
+
+.stat-card__trend .material-icons { font-size: 13px; }
+
+.stat-card__trend--up {
+  background: rgba(74,222,128,0.12);
+  color: var(--color-success);
+}
+
+.stat-card__trend--down {
+  background: rgba(229,115,115,0.12);
+  color: var(--color-danger);
+}
+
+.stat-card__value {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1;
+}
+
+.stat-card__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.stat-card__sublabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}

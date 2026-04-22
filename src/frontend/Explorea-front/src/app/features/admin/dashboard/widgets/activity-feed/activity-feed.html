@@ -1,0 +1,27 @@
+<div class="feed">
+  <div class="feed__header">
+    <h3 class="feed__title">{{ ui.t('dashboard.feed.title') }}</h3>
+    <button class="btn btn-ghost btn-sm">
+      <span class="material-icons">open_in_new</span>
+      {{ ui.t('dashboard.feed.all') }}
+    </button>
+  </div>
+
+  <div class="feed__list">
+    @for (item of items; track item.id) {
+      <div class="feed__item">
+        <div class="feed__avatar" [style.background]="item.avatarColor">
+          {{ item.initials }}
+        </div>
+        <div class="feed__body">
+          <p class="feed__text">{{ item.text }}</p>
+          <span class="feed__time">{{ item.timestamp }}</span>
+        </div>
+        <div class="feed__actions">
+          <span class="badge" [class]="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
+          <button class="btn btn-ghost btn-sm">{{ item.actionLabel }}</button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

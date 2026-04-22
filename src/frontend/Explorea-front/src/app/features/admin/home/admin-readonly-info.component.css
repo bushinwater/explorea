@@ -1,0 +1,27 @@
+.readonly-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid rgba(196, 158, 77, 0.35);
+  border-radius: var(--radius-lg);
+  background: rgba(74, 57, 23, 0.22);
+}
+
+.readonly-card .material-icons {
+  color: #e0bf73;
+}
+
+.readonly-card h3 {
+  margin: 0 0 6px;
+}
+
+.readonly-card p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+[data-theme='light'] .readonly-card {
+  background: rgba(214, 193, 134, 0.14);
+  border-color: rgba(186, 146, 51, 0.28);
+}

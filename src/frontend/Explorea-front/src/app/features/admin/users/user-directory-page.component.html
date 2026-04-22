@@ -1,0 +1,303 @@
+<section class="directory-page">
+  <header class="directory-page__header">
+    <div class="directory-page__hero">
+      <h1>{{ ui.t('users.title') }}</h1>
+      <p>{{ ui.t('users.subtitle') }}</p>
+    </div>
+
+    @if (authContext.canManageUsers()) {
+      <div class="directory-page__actions">
+        <button class="btn btn-secondary" type="button">{{ ui.t('users.export') }}</button>
+        <button class="btn btn-primary" type="button" (click)="openCreateModal()">
+          <span class="material-icons">person_add</span>
+          {{ ui.t('users.invite') }}
+        </button>
+      </div>
+    }
+  </header>
+
+  @if (successMessage()) {
+    <app-feedback-banner variant="info" [title]="ui.t('users.saved_title')" [description]="successMessage()" />
+  }
+
+  <section class="directory-page__stats">
+    <app-stat-card
+      [label]="ui.t('users.stats.total')"
+      [value]="isStatsLoading() ? '...' : stats().totalUsers"
+      trend="+12%"
+    />
+    <app-stat-card
+      [label]="ui.t('users.stats.gender')"
+      [value]="isStatsLoading() ? '...' : stats().maleUsers + '/' + stats().femaleUsers"
+      trend="+2"
+    />
+    <app-stat-card
+      [label]="ui.t('users.stats.age')"
+      [value]="isStatsLoading() ? '...' : stats().under20Users + '/' + stats().over20Users"
+      trend="-5%"
+    />
+    <app-stat-card
+      [label]="ui.t('users.stats.flagged')"
+      [value]="isStatsLoading() ? '...' : stats().flaggedAccounts"
+      tone="danger"
+    />
+  </section>
+
+  <section class="directory-page__toolbar card">
+    <div class="directory-page__toolbar-main">
+      <div class="directory-page__search">
+        <span class="material-icons">search</span>
+        <input #searchInput type="text" [placeholder]="ui.t('users.search')" (input)="updateSearch(searchInput.value)" />
+      </div>
+
+      <div class="directory-page__filters">
+        <button
+          class="filter-chip"
+          [class.filter-chip--active]="filters().role === 'all'"
+          type="button"
+          (click)="setRole('all')"
+        >
+          {{ ui.t('users.role.all') }}
+        </button>
+        <button
+          class="filter-chip"
+          [class.filter-chip--active]="filters().role === 'super_admin'"
+          type="button"
+          (click)="setRole('super_admin')"
+        >
+          {{ ui.t('users.role.super_admin') }}
+        </button>
+        <button
+          class="filter-chip"
+          [class.filter-chip--active]="filters().role === 'tourist_organization'"
+          type="button"
+          (click)="setRole('tourist_organization')"
+        >
+          {{ ui.t('users.role.operator') }}
+        </button>
+        <button
+          class="filter-chip"
+          [class.filter-chip--active]="filters().role === 'place_owner'"
+          type="button"
+          (click)="setRole('place_owner')"
+        >
+          {{ ui.t('users.role.owner') }}
+        </button>
+      </div>
+    </div>
+
+    <div class="directory-page__toolbar-secondary">
+      <label class="filter-field">
+        <span>{{ ui.t('users.filter.region') }}</span>
+        <select #regionSelect [value]="filters().region" (change)="updateRegion(regionSelect.value)">
+          <option value="all">{{ ui.t('users.filter.region_all') }}</option>
+          @for (region of regions(); track region) {
+            <option [value]="region">{{ region }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="filter-field">
+        <span>{{ ui.t('users.filter.gender') }}</span>
+        <select #genderSelect [value]="filters().gender" (change)="updateGender(genderSelect.value)">
+          <option value="all">{{ ui.t('users.filter.gender_all') }}</option>
+          <option value="male">{{ genderLabel('male') }}</option>
+          <option value="female">{{ genderLabel('female') }}</option>
+          <option value="other">{{ genderLabel('other') }}</option>
+          <option value="unknown">{{ genderLabel('unknown') }}</option>
+        </select>
+      </label>
+
+      <label class="filter-field">
+        <span>{{ ui.t('users.filter.age') }}</span>
+        <select #ageSelect [value]="filters().ageBucket" (change)="updateAge(ageSelect.value)">
+          <option value="all">{{ ui.t('users.filter.age_all') }}</option>
+          <option value="under_20">{{ ui.t('users.filter.age_under') }}</option>
+          <option value="over_20">{{ ui.t('users.filter.age_over') }}</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="directory-page__table card">
+    @if (errorMessage()) {
+      <app-feedback-banner variant="error" [title]="ui.t('users.error.title')" [description]="errorMessage()" />
+    }
+
+    <div class="directory-page__table-head">
+      <span class="directory-page__sortable">
+        {{ ui.t('users.table.identity') }}
+        <span class="material-icons">swap_vert</span>
+      </span>
+      <span>{{ ui.t('users.table.role') }}</span>
+      <span>{{ ui.t('users.table.region') }}</span>
+      <span>{{ ui.t('users.table.status') }}</span>
+      <span>{{ ui.t('users.table.activity') }}</span>
+      <span>{{ ui.t('users.table.actions') }}</span>
+    </div>
+
+    @if (isLoading()) {
+      <app-table-skeleton [rows]="filters().pageSize" />
+    } @else if (pagedUsers().length) {
+      <div class="directory-page__rows">
+        @for (user of pagedUsers(); track user.id) {
+          <article class="user-row">
+            <div class="user-row__identity">
+              <div class="user-row__avatar">{{ initials(user) }}</div>
+              <div>
+                <strong>{{ user.firstName }} {{ user.lastName }}</strong>
+                <span>{{ user.email }}</span>
+              </div>
+            </div>
+
+            <div>
+              <span class="role-pill" [class]="roleClass(user.role)">{{ roleLabel(user.role) }}</span>
+            </div>
+
+            <div class="user-row__muted">{{ user.regionName ?? ui.t('users.region.none') }}</div>
+
+            <div>
+              <app-status-badge [status]="user.status" />
+            </div>
+
+            <div class="user-row__muted">{{ activityLabel(user.lastActivityAt) }}</div>
+
+            <div class="user-row__actions">
+              @if (canManageUser(user)) {
+                <button class="icon-btn" type="button" [attr.aria-label]="ui.t('users.action.edit')" (click)="openEditModal(user)">
+                  <span class="material-icons">edit</span>
+                </button>
+                <button
+                  class="icon-btn icon-btn--danger"
+                  type="button"
+                  [attr.aria-label]="ui.t('users.action.delete')"
+                  (click)="openDeleteDialog(user)"
+                >
+                  <span class="material-icons">delete</span>
+                </button>
+              } @else {
+                <span class="user-row__readonly">{{ ui.t('users.read_only') }}</span>
+              }
+            </div>
+          </article>
+        }
+      </div>
+
+      <footer class="directory-page__pagination">
+        <p>{{ visibleRangeText() }}</p>
+
+        <div class="directory-page__pagination-controls">
+          <button
+            class="pagination-btn"
+            type="button"
+            [disabled]="currentPage() === 1 || isLoading()"
+            (click)="goToPreviousPage()"
+          >
+            {{ ui.t('users.pagination.previous') }}
+          </button>
+
+          @for (page of [1, 2, 3]; track page) {
+            @if (page <= totalPages()) {
+              <button
+                class="pagination-page"
+                [class.pagination-page--active]="currentPage() === page"
+                type="button"
+                [disabled]="isLoading()"
+                (click)="goToPage(page)"
+              >
+                {{ page }}
+              </button>
+            }
+          }
+
+          @if (totalPages() > 3) {
+            <span class="pagination-dots">...</span>
+            <button class="pagination-page" type="button" [disabled]="isLoading()" (click)="goToPage(totalPages())">
+              {{ totalPages() }}
+            </button>
+          }
+
+          <button
+            class="pagination-btn"
+            type="button"
+            [disabled]="currentPage() === totalPages() || isLoading()"
+            (click)="goToNextPage()"
+          >
+            {{ ui.t('users.pagination.next') }}
+          </button>
+        </div>
+      </footer>
+    } @else {
+      <app-empty-state [title]="ui.t('users.empty.title')" [description]="ui.t('users.empty.description')" />
+    }
+  </section>
+
+  <section class="directory-page__notes">
+    <article class="directory-note card">
+      <div class="directory-note__icon">
+        <span class="material-icons">verified_user</span>
+      </div>
+      <div class="directory-note__content">
+        <h3>{{ ui.t('users.notes.permissions_title') }}</h3>
+        <p>{{ ui.t('users.notes.permissions_body') }}</p>
+      </div>
+    </article>
+
+    <article class="directory-note card">
+      <div class="directory-note__icon">
+        <span class="material-icons">shield</span>
+      </div>
+      <div class="directory-note__content">
+        <h3>{{ ui.t('users.notes.compliance_title') }}</h3>
+        <p>{{ ui.t('users.notes.compliance_body') }}</p>
+      </div>
+    </article>
+  </section>
+
+  <footer class="directory-page__footer card">
+    <span>{{ ui.t('users.footer.left') }}</span>
+    <div class="directory-page__footer-meta">
+      <span>{{ ui.t('users.footer.status') }}</span>
+      <span>{{ ui.t('users.footer.logs') }}</span>
+      <span>{{ ui.t('users.footer.version') }}</span>
+    </div>
+  </footer>
+
+  @if (isCreateModalOpen()) {
+    <app-user-create-modal
+      [regions]="regions()"
+      [lockedRegion]="lockedRegionForCreate()"
+      [isSaving]="isCreating()"
+      [errorMessage]="createErrorMessage()"
+      [ui]="ui"
+      (cancel)="closeCreateModal()"
+      (submitUser)="createUser($event)"
+    />
+  }
+
+  @if (isEditModalOpen() && selectedUser(); as user) {
+    <app-user-edit-modal
+      [user]="user"
+      [regions]="regions()"
+      [lockedRegion]="lockedRegionForCreate()"
+      [isSaving]="isUpdating()"
+      [errorMessage]="editErrorMessage()"
+      [ui]="ui"
+      (cancel)="closeEditModal()"
+      (submitUser)="updateUser($event)"
+    />
+  }
+
+  @if (isDeleteDialogOpen() && selectedUser(); as user) {
+    <app-confirm-dialog
+      [title]="ui.t('users.delete.title')"
+      [description]="ui.t('users.delete.description_prefix') + user.firstName + ' ' + user.lastName + '?'"
+      [confirmLabel]="ui.t('users.delete.confirm')"
+      [cancelLabel]="ui.t('users.delete.cancel')"
+      [loadingLabel]="ui.t('users.delete.loading')"
+      [isLoading]="isDeleting()"
+      (cancel)="closeDeleteDialog()"
+      (confirm)="deleteUser()"
+    />
+  }
+</section>

@@ -1,0 +1,18 @@
+<div class="stat-card" [class]="'stat-card--' + (data.color || 'primary')">
+  <div class="stat-card__top">
+    <div class="stat-card__icon-wrap">
+      <span class="material-icons stat-card__icon">{{ data.icon }}</span>
+    </div>
+    @if (data.trend) {
+      <span class="stat-card__trend" [class.stat-card__trend--up]="data.trend.up" [class.stat-card__trend--down]="!data.trend.up">
+        <span class="material-icons">{{ data.trend.up ? 'trending_up' : 'trending_down' }}</span>
+        {{ data.trend.value }}
+      </span>
+    }
+  </div>
+  <div class="stat-card__value">{{ data.value }}</div>
+  <div class="stat-card__label">{{ data.label }}</div>
+  @if (data.sublabel) {
+    <div class="stat-card__sublabel">{{ data.sublabel }}</div>
+  }
+</div>
