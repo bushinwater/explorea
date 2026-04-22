@@ -12,5 +12,6 @@ namespace Explorea.Server.Repositories.Interfaces
         Task<(List<Destination> Items, int Total)> GetAdminPagedAsync(
             int? cityId, string? visibility, List<Guid>? restrictToIds, int page, int pageSize);
         Task<Destination?> GetAdminByIdAsync(Guid id);
+        Task<List<int>> GetCityIdsByDestinationsAsync(List<Guid> destinationIds);
     }
 }
