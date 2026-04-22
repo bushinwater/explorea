@@ -62,6 +62,28 @@ namespace Explorea.Server.Repositories.Implementations
             return (items, total);
         }
 
+        public async Task ReplaceWorkingDaysAsync(Guid placeId, List<PlaceWorkingDay> workingDays)
+        {
+            var existingDays = await _db.PlaceWorkingDays
+                .Include(wd => wd.Intervals)
+                .Where(wd => wd.PlaceId == placeId)
+                .ToListAsync();
+        
+            if (existingDays.Count > 0)
+            {
+                var existingIntervals = existingDays
+                    .SelectMany(wd => wd.Intervals)
+                    .ToList();
+        
+                if (existingIntervals.Count > 0)
+                    _db.PlaceWorkingHourIntervals.RemoveRange(existingIntervals);
+        
+                _db.PlaceWorkingDays.RemoveRange(existingDays);
+            }
+        
+            if (workingDays.Count > 0)
+                await _db.PlaceWorkingDays.AddRangeAsync(workingDays);
+        }
         public async Task<Place?> GetAdminByIdAsync(Guid id)
         {
             return await _db.Places

@@ -25,6 +25,9 @@ namespace Explorea.API.Models
         public string Status { get; set; } = "Pending";
         // Pending | ApprovedByTO | RejectedByTO | ApprovedByOwner | RejectedByOwner
 
+        [Column("request_payload", TypeName = "jsonb")]
+        public string? RequestPayload { get; set; }
+
         [Column("submitted_by_user_id")]
         public Guid SubmittedByUserId { get; set; }
 

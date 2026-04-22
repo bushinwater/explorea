@@ -19,6 +19,7 @@ namespace Explorea.Server.Repositories.Interfaces
 
         Task AddAsync(Place place);
         void Update(Place place);
+        Task ReplaceWorkingDaysAsync(Guid placeId, List<PlaceWorkingDay> workingDays);
         void RemoveImages(IEnumerable<PlaceImage> images);
         void RemoveAmenityLinks(IEnumerable<PlaceAmenityLink> links);
         void RemoveWorkingDays(IEnumerable<PlaceWorkingDay> workingDays);

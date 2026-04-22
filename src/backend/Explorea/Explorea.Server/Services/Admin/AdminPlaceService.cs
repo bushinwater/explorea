@@ -281,39 +281,46 @@ namespace Explorea.Server.Services.Admin
         }
   
         if (dto.WorkingDays != null)
-        {
-          _placeRepo.RemoveWorkingDays(place.WorkingDays);
-  
-          var now = DateTimeOffset.UtcNow;
-          place.WorkingDays = dto.WorkingDays.Select(wd =>
-          {
-              var day = new PlaceWorkingDay
-              {
-                  Id = Guid.NewGuid(),
-                  PlaceId = place.Id,
-                  DayOfWeek = wd.DayOfWeek,
-                  IsClosed = wd.IsClosed,
-                  Note = wd.Note,
-                  CreatedAt = now,
-                  UpdatedAt = now,
-                  CreatedBy = place.CreatedBy,
-                  UpdatedBy = updatedBy
-              };
-  
-              day.Intervals = wd.Intervals.Select(i => new PlaceWorkingHourInterval
-              {
-                  Id = Guid.NewGuid(),
-                  WorkingDayId = day.Id,
-                  OpensAt = i.OpensAt,
-                  ClosesAt = i.ClosesAt,
-                  CreatedAt = now,
-                  CreatedBy = place.CreatedBy,
-                  UpdatedBy = updatedBy
-              }).ToList();
-  
-              return day;
-          }).ToList();
-        }
+            {
+                var newWorkingDays = new List<PlaceWorkingDay>();
+                var now = DateTimeOffset.UtcNow;
+            
+                foreach (var wd in dto.WorkingDays)
+                {
+                    var dayId = Guid.NewGuid();
+            
+                    var day = new PlaceWorkingDay
+                    {
+                        Id = dayId,
+                        PlaceId = place.Id,
+                        DayOfWeek = wd.DayOfWeek,
+                        IsClosed = wd.IsClosed,
+                        Note = wd.Note,
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                        CreatedBy = place.CreatedBy,
+                        UpdatedBy = updatedBy
+                    };
+            
+                    foreach (var interval in wd.Intervals)
+                    {
+                        day.Intervals.Add(new PlaceWorkingHourInterval
+                        {
+                            Id = Guid.NewGuid(),
+                            WorkingDayId = dayId,
+                            OpensAt = interval.OpensAt,
+                            ClosesAt = interval.ClosesAt,
+                            CreatedAt = now,
+                            CreatedBy = place.CreatedBy,
+                            UpdatedBy = updatedBy
+                        });
+                    }
+            
+                    newWorkingDays.Add(day);
+                }
+            
+                await _placeRepo.ReplaceWorkingDaysAsync(place.Id, newWorkingDays);
+            }
   
         place.UpdatedAt = DateTimeOffset.UtcNow;
         place.UpdatedBy = updatedBy;
@@ -371,75 +378,41 @@ namespace Explorea.Server.Services.Admin
         }).ToList();
       }
   
-      public async Task SubmitPlaceRequestAsync(SubmitPlaceRequestDto dto, Guid currentUserId)
-      {
+    public async Task SubmitPlaceRequestAsync(SubmitPlaceRequestDto dto, Guid currentUserId)
+    {
         var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
   
         if (user?.Role.Name == RoleNames.SuperAdmin || user?.Role.Name == RoleNames.TouristOrganization)
           throw new UnauthorizedAccessException("Admins should create places directly, not through queue requests.");
-  
-        var now = DateTimeOffset.UtcNow;
-  
-        var place = new Place
+    
+        var payload = new PlaceRequestPayloadDto
         {
-            Id = Guid.NewGuid(),
-            DestinationId = dto.DestinationId,
-            CityId = dto.CityId,
-            CountryId = dto.CountryId,
-            TypeId = dto.TypeId,
             Name = dto.Name,
-            Slug = dto.Slug,
             Description = dto.Description,
             Address = dto.Address,
             Latitude = dto.Latitude,
             Longitude = dto.Longitude,
-            Location = CreatePoint(dto.Latitude, dto.Longitude),
-            CreatedAt = now,
-            UpdatedAt = now,
-            CreatedBy = currentUserId,
-            UpdatedBy = currentUserId,
-  
-            // Ovde smeštamo request metadata i dokumenta jer queue model nema payload kolone,
-            // a Place model već ima JSONB polje ExtraFilters.
-            ExtraFilters = JsonSerializer.Serialize(new
-            {
-                requestType = "place_submission",
-                documents = dto.Documents
-            })
+            Images = dto.Images ?? new List<string>(),
+            Documents = dto.Documents ?? new List<string>(),
+            TypeId = dto.TypeId,
+            CityId = dto.CityId
         };
-    
-        var sortOrder = 0;
-        foreach (var imageUrl in dto.Images)
-        {
-            place.Images.Add(new PlaceImage
-            {
-                Id = Guid.NewGuid(),
-                PlaceId = place.Id,
-                ImageUrl = imageUrl,
-                SortOrder = sortOrder++,
-                CreatedAt = now,
-                CreatedBy = currentUserId,
-                UpdatedBy = currentUserId
-            });
-        }
-    
-        await _placeRepo.AddAsync(place);
-        await _placeRepo.SaveChangesAsync();
-    
+
         var queueItem = new SubmissionQueue
         {
             Id = Guid.NewGuid(),
             EntityType = "place",
-            EntityId = place.Id,
+            EntityId = Guid.NewGuid(),
             DestinationId = dto.DestinationId,
             Status = "Pending",
             SubmittedByUserId = currentUserId,
-            SubmittedAt = now
+            SubmittedAt = DateTimeOffset.UtcNow,
+            RequestPayload = JsonSerializer.Serialize(payload)
         };
-    
-          await _queueRepo.AddAsync(queueItem);
-          await _queueRepo.SaveChangesAsync();
-      }
+
+        await _queueRepo.AddAsync(queueItem);
+        await _queueRepo.SaveChangesAsync();
+    }
   
       private static Point CreatePoint(double? latitude, double? longitude)
       {
