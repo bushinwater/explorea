@@ -235,6 +235,7 @@ h1 {
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.3px;
+  text-align: center;
 }
 
 /* DIVIDER */

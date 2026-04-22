@@ -65,6 +65,7 @@ export class Interests implements OnInit {
     }
     const selectedIds = this.interests.filter((i) => i.selected).map((i) => i.id);
     this.interestsService.saveSelectedIds(selectedIds);
+    this.interestsService.saveToBackend(selectedIds).subscribe();
     this.router.navigate(['/profile']);
   }
 }

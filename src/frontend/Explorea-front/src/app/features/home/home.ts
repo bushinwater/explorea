@@ -81,7 +81,8 @@ export class Home implements OnInit {
   private loadHomeData(cityId: number | null): void {
     this.loading = true;
     this.cdr.detectChanges();
-    this.homeService.getHomeData(cityId).subscribe((data) => {
+    const loc = this.locationService.getCached();
+    this.homeService.getHomeData(cityId, loc?.lat, loc?.lng).subscribe((data) => {
       this.heroBanners = data.heroBanners;
       this.featuredDestinations = data.featuredDestinations;
       this.upcomingEvents = data.upcomingEvents;

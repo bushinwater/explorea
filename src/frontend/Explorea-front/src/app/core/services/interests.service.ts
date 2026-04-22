@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of, tap } from 'rxjs';
+import { Observable, of, tap, catchError, EMPTY } from 'rxjs';
 
 const STORAGE_KEY = 'explorea_selected_interests';
 
@@ -48,5 +48,11 @@ export class InterestsService {
 
   hasSelections(): boolean {
     return this.getSelectedIds().length > 0;
+  }
+
+  saveToBackend(ids: number[]): Observable<void> {
+    return this.http.post<void>(`/api/users/me/interests`, { interestTagIds: ids }).pipe(
+      catchError(() => EMPTY)
+    );
   }
 }

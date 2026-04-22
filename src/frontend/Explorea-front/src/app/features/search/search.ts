@@ -772,11 +772,17 @@ export class Search implements OnInit, OnDestroy {
   // ─── Filter panel ─────────────────────────────────────────────────────────
 
   openFilterPanel(): void {
-    this.draftFilters      = { ...this.filters };
+    this.draftFilters       = { ...this.filters };
     this.draftNearbyEnabled = this.nearbyEnabled;
-    // Sync entity type from active chip when opening panel
     if (this.activeChip !== 'sve' && this.activeChip !== '') {
       this.filterEntityType = this.activeChip as 'destination' | 'place' | 'activity' | 'event';
+    }
+    // Auto-load extra filter defs if exactly one subcat was pre-selected via inline chips
+    if (this.filterEntityType && this.filterEntityType !== 'activity') {
+      const selectedIds = this.getSelectedCategoryIds();
+      if (selectedIds.length === 1 && this.filterDefsTypeId !== selectedIds[0]) {
+        this.loadFilterDefs(selectedIds[0]);
+      }
     }
     this.showFilterPanel = true;
     this.cdr.detectChanges();

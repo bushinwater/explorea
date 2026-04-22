@@ -23,9 +23,11 @@ export class HomeService {
 
   constructor(private http: HttpClient) {}
 
-  getHomeData(cityId?: number | null): Observable<HomeData> {
+  getHomeData(cityId?: number | null, userLat?: number, userLng?: number): Observable<HomeData> {
     let params = new HttpParams();
-    if (cityId != null) params = params.set('cityId', cityId);
+    if (cityId  != null) params = params.set('cityId',  cityId);
+    if (userLat != null) params = params.set('userLat', userLat);
+    if (userLng != null) params = params.set('userLng', userLng);
     return this.http.get<HomeData>(this.api, { params });
   }
 

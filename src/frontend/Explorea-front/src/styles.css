@@ -630,13 +630,14 @@ select.input {
   --font-size-md:   16px;
 }
 
-.btn {
+.admin-area .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--sp-2);
 }
-.btn:active { transform: scale(0.97); }
-.btn .material-icons { font-size: 16px; }
+.admin-area .btn:active { transform: scale(0.97); }
+.admin-area .btn .material-icons { font-size: 16px; }
 
 .btn-ghost {
   background: transparent;
@@ -649,8 +650,8 @@ select.input {
   background: var(--color-primary-muted);
 }
 
-.btn-sm { padding: 5px 10px; font-size: var(--font-size-xs); border-radius: var(--radius-sm); }
-.btn-sm .material-icons { font-size: 14px; }
+.admin-area .btn-sm { padding: 5px 10px; font-size: var(--font-size-xs); border-radius: var(--radius-sm); }
+.admin-area .btn-sm .material-icons { font-size: 14px; }
 
 .badge {
   display: inline-flex;

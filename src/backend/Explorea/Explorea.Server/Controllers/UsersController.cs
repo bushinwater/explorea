@@ -1,6 +1,7 @@
 using Explorea.API.DTOs.User;
 using Explorea.API.Models;
 using Explorea.Server.Data;
+using Explorea.Server.Repositories.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,12 @@ namespace Explorea.Server.Controllers
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _db;
+        private readonly IUserRepository _userRepo;
 
-        public UsersController(AppDbContext db)
+        public UsersController(AppDbContext db, IUserRepository userRepo)
         {
             _db = db;
+            _userRepo = userRepo;
         }
 
         [HttpGet("me")]
@@ -28,11 +31,31 @@ namespace Explorea.Server.Controllers
         [HttpPut("me/preferences")]
         public IActionResult UpdatePreferences() => Ok();
 
+        [Authorize]
         [HttpGet("me/interests")]
-        public IActionResult GetInterests() => Ok();
+        public async Task<IActionResult> GetInterests()
+        {
+            try
+            {
+                var userId = await GetCurrentUserId();
+                var tags = await _userRepo.GetInterestsAsync(userId);
+                return Ok(tags.Select(t => new { t.Id, t.Name, t.Icon }));
+            }
+            catch { return Unauthorized(); }
+        }
 
+        [Authorize]
         [HttpPost("me/interests")]
-        public IActionResult UpdateInterests() => Ok();
+        public async Task<IActionResult> UpdateInterests([FromBody] UpdateInterestsDto dto)
+        {
+            try
+            {
+                var userId = await GetCurrentUserId();
+                await _userRepo.UpdateInterestsAsync(userId, dto.InterestTagIds);
+                return NoContent();
+            }
+            catch { return Unauthorized(); }
+        }
 
         [Authorize]
         [HttpPut("me/location")]
