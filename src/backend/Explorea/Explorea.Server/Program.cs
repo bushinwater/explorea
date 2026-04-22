@@ -1,3 +1,4 @@
+using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Helpers;
 using Explorea.Server.McpTools;
@@ -10,6 +11,7 @@ using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,7 +30,41 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
     });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// builder.Services.AddSwaggerGen();
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Explorea.Server",
+        Version = "v1"
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Unesi: Bearer {token}"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 
 builder.Services.AddScoped<ISearchRepository, SearchRepository>();
 builder.Services.AddScoped<ISearchService, SearchService>();
@@ -41,6 +77,13 @@ builder.Services.AddScoped<IActivityService, ActivityService>();
 
 builder.Services.AddScoped<ISearchPageService, SearchPageService>();
 builder.Services.AddScoped<ISearchPageRepository, SearchPageRepository>();
+
+builder.Services.AddScoped<IAdminPlaceRepository, AdminPlaceRepository>();
+builder.Services.AddScoped<IAdminPlaceService, AdminPlaceService>();
+
+builder.Services.AddScoped<IOrganizationAssignmentRepository, OrganizationAssignmentRepository>();
+builder.Services.AddScoped<ISubmissionQueueRepository, SubmissionQueueRepository>();
+builder.Services.AddScoped<IAdminQueueService, AdminQueueService>();
 
 builder.Services.AddCors(options =>
 {
@@ -142,6 +185,65 @@ if (app.Environment.IsDevelopment())
             }
         });
     });
+}
+
+// TEMP SEED SUPER ADMIN
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var passwordHelper = scope.ServiceProvider.GetRequiredService<PasswordHelper>();
+
+    const string adminRoleName = "place_owner";
+    const string adminEmail = "admin@explorea.local";
+    const string adminPassword = "Admin123!";
+
+    var role = await db.Roles.FirstOrDefaultAsync(r => r.Name == adminRoleName);
+    if (role == null)
+    {
+        role = new Role
+        {
+            Name = adminRoleName,
+            Description = "Temporary seeded super admin",
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+
+        db.Roles.Add(role);
+        await db.SaveChangesAsync();
+    }
+
+    var existingUser = await db.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
+    if (existingUser == null)
+    {
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Admin",
+            LastName = "User",
+            Email = adminEmail,
+            PasswordHash = passwordHelper.HashPassword(adminPassword),
+            RoleId = role.Id,
+            IsActive = true,
+            EmailVerifiedAt = DateTimeOffset.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+
+        db.Users.Add(user);
+
+        db.UserAuthAccounts.Add(new UserAuthAccount
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            Provider = "local",
+            EmailAtProvider = adminEmail,
+            IsPrimary = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        });
+
+        await db.SaveChangesAsync();
+    }
 }
 
 app.UseCors("AllowAngular");
