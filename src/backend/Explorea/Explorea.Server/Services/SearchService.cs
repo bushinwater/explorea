@@ -56,7 +56,7 @@ namespace Explorea.Server.Services
         case "events":
           return await SearchAllEventsAsync(limit);
       }
-      
+
       var now = DateTimeOffset.UtcNow;
 
       var destinations = await _searchRepository.SearchDestinationsAsync(query);
@@ -71,12 +71,17 @@ namespace Explorea.Server.Services
       foreach(var destinationHit in destinations)
       {
         var destination = destinationHit.Entity;
+        var strictScore = ScoreDestination(destination, query);
+        var hybridScore = ScoreDestinationHybrid(destinationHit, query);
 
         candidates.Add(new SearchCandidate
         {
           EntityType = "destination",
           Entity = destination,
-          Score = ScoreDestination(destination, query) + ScoreDestinationHybrid(destinationHit, query),
+          StrictScore = strictScore,
+          NameSimilarity = destinationHit.NameSimilarity,
+          MaxWordSimilarity = CalcMaxWordSimilarity(destination.Name, query),
+          Score = strictScore + hybridScore,
           IsFeatured = destination.IsFeatured,
           AvgRating = destination.AvgRating,
           EventStartDatetime = null,
@@ -87,26 +92,38 @@ namespace Explorea.Server.Services
       foreach (var placeHit in places)
       {
         var place = placeHit.Entity;
+        var strictScore = ScorePlace(place, query);
+        var hybridScore = ScorePlaceHybrid(placeHit, query);
+
         candidates.Add(new SearchCandidate
         {
           EntityType = "place",
           Entity = place,
-          Score = ScorePlace(place, query) + ScorePlaceHybrid(placeHit, query),
+          StrictScore = strictScore,
+          NameSimilarity = placeHit.NameSimilarity,
+          MaxWordSimilarity = CalcMaxWordSimilarity(place.Name, query),
+          Score = strictScore + hybridScore,
           IsFeatured = place.IsFeatured,
           AvgRating = place.AvgRating,
           EventStartDatetime = null,
           Name = place.Name
         });
       }
-      
+
       foreach (var evHit in events)
       {
         var ev = evHit.Entity;
+        var strictScore = ScoreEvent(ev, query);
+        var hybridScore = ScoreEventHybrid(evHit, query);
+
         candidates.Add(new SearchCandidate
         {
           EntityType = "event",
           Entity = ev,
-          Score = ScoreEvent(ev, query) + ScoreEventHybrid(evHit, query),
+          StrictScore = strictScore,
+          NameSimilarity = evHit.NameSimilarity,
+          MaxWordSimilarity = CalcMaxWordSimilarity(ev.Name, query),
+          Score = strictScore + hybridScore,
           IsFeatured = ev.IsFeatured,
           AvgRating = null,
           EventStartDatetime = ev.StartDatetime,
@@ -117,11 +134,17 @@ namespace Explorea.Server.Services
       foreach (var activityHit in activities)
       {
         var activity = activityHit.Entity;
+        var strictScore = ScoreActivity(activity, query);
+        var hybridScore = ScoreActivityHybrid(activityHit, query);
+
         candidates.Add(new SearchCandidate
         {
           EntityType = "activity",
           Entity = activity,
-          Score = ScoreActivity(activity, query) + ScoreActivityHybrid(activityHit, query),
+          StrictScore = strictScore,
+          NameSimilarity = activityHit.NameSimilarity,
+          MaxWordSimilarity = CalcMaxWordSimilarity(activity.Name, query),
+          Score = strictScore + hybridScore,
           IsFeatured = activity.IsFeatured,
           AvgRating = activity.AvgRating,
           EventStartDatetime = null,
@@ -136,24 +159,51 @@ namespace Explorea.Server.Services
           .ToList();
       }
 
-      var rankedCandidates = candidates
-        .Where(c => c.Score > 0)
-        .OrderByDescending(c => c.Score)
-        .ThenByDescending(c => c.IsFeatured)
-        .ThenByDescending(c => c.AvgRating ?? 0m)
-        .ThenBy(c => c.EventStartDatetime ?? DateTimeOffset.MaxValue)
-        .ThenBy(c => c.Name)
-        .ToList();
+      var strictCandidates = candidates
+          .Where(c => c.StrictScore > 0)
+          .OrderByDescending(c => c.Score)
+          .ThenByDescending(c => c.IsFeatured)
+          .ThenByDescending(c => c.AvgRating ?? 0m)
+          .ThenBy(c => c.EventStartDatetime ?? DateTimeOffset.MaxValue)
+          .ThenBy(c => c.Name)
+          .ToList();
 
-      var finalItems = rankedCandidates
-        .Take(limit)
-        .Select(MapCandidateToSearchItem)
-        .ToList();
+      if (strictCandidates.Any())
+      {
+        var strictItems = strictCandidates
+            .Take(limit)
+            .Select(MapCandidateToSearchItem)
+            .ToList();
+
+        return new SearchResultDto
+        {
+          Total = strictCandidates.Count,
+          Results = strictItems
+        };
+      }
+
+      var fuzzyCandidates = candidates
+          .Where(c =>
+              (c.NameSimilarity.HasValue && c.NameSimilarity.Value >= 0.45) ||
+               c.MaxWordSimilarity >= 0.72)
+          .OrderByDescending(c => c.MaxWordSimilarity)
+          .ThenByDescending(c => c.NameSimilarity ?? 0)
+          .ThenByDescending(c => c.Score)
+          .ThenByDescending(c => c.IsFeatured)
+          .ThenByDescending(c => c.AvgRating ?? 0m)
+          .ThenBy(c => c.EventStartDatetime ?? DateTimeOffset.MaxValue)
+          .ThenBy(c => c.Name)
+          .ToList();
+
+      var fuzzyItems = fuzzyCandidates
+          .Take(limit)
+          .Select(MapCandidateToSearchItem)
+          .ToList();
 
       return new SearchResultDto
       {
-        Total = rankedCandidates.Count,
-        Results = finalItems
+        Total = fuzzyCandidates.Count,
+        Results = fuzzyItems
       };
     }
 
@@ -222,7 +272,7 @@ namespace Explorea.Server.Services
           Entity = MapEventToSearchItem(e)
         }).ToList()
       };
-    
+
     }
 
     // SCORING METODE
@@ -248,7 +298,6 @@ namespace Explorea.Server.Services
       score += ScoreDescriptionField(place.Address, query, scoreValue: 20);
 
       return score;
-      
     }
     private int ScoreEvent(Event ev, string query)
     {
@@ -285,9 +334,9 @@ namespace Explorea.Server.Services
 
       if(EqualsInsensitive(name, query)) return 100;
 
-      if(StartsWithInsensitive(name, query)) return 80;
+      if(ContainsWholeWord(name, query)) return 80;
 
-      if(ContainsInsensitive(name, query)) return 60;
+      if(StartsWithWord(name, query)) return 75;
 
       return 0;
     }
@@ -297,7 +346,9 @@ namespace Explorea.Server.Services
 
       if(EqualsInsensitive(value, query)) return exactScore;
 
-      if(ContainsInsensitive(value, query)) return containsScore;
+      if(ContainsWholeWord(value, query)) return containsScore;
+
+      if(StartsWithWord(value, query)) return Math.Max(containsScore - 5, 1);
 
       return 0;
     }
@@ -305,7 +356,9 @@ namespace Explorea.Server.Services
     {
       if(string.IsNullOrWhiteSpace(value)) return 0;
 
-      return ContainsInsensitive(value, query) ? scoreValue : 0;
+      if(query.Length < 4) return 0;
+
+      return ContainsWholeWord(value, query) ? scoreValue : 0;
     }
 
     private static bool isShortQuery(string query)
@@ -321,7 +374,7 @@ namespace Explorea.Server.Services
         score += 25;
         if(hit.NameSimilarity >= 0.45) score += 25;
       }
-      
+
       score += FtsRankToScore(hit.FtsRank, weight: 120);
 
       if(query.Length >= 3) {
@@ -331,19 +384,6 @@ namespace Explorea.Server.Services
       return score;
     }
 
-    // private int ScorePlaceFuzzy(SearchProjection<Place> hit, string query)
-    // {
-    //   if(query.Length < 3) return 0;
-
-    //   var score = 0;
-    //   score += SimilarityToScore(hit.NameSimilarity, weight: 40, threshold: 0.30);
-    //   score += SimilarityToScore(hit.CitySimilarity, weight: 15, threshold: 0.35);
-    //   score += SimilarityToScore(hit.DestinationSimilarity, weight: 20, threshold: 0.35);
-    //   score += SimilarityToScore(hit.TypeSimilarity, weight: 10, threshold: 0.35);
-
-    //   return score;
-    // }
-    
     private int ScorePlaceHybrid(SearchProjection<Place> hit, string query)
     {
       var score = 0;
@@ -379,7 +419,7 @@ namespace Explorea.Server.Services
 
       score += FtsRankToScore(hit.FtsRank, weight: 120);
 
-      if(query.Length >= 3){ 
+      if(query.Length >= 3){
         score += SimilarityToScore(hit.NameSimilarity, weight: 65, threshold: 0.30);
         score += SimilarityToScore(hit.CitySimilarity, weight: 8, threshold: 0.35);
         score += SimilarityToScore(hit.DestinationSimilarity, weight: 10, threshold: 0.35);
@@ -391,8 +431,8 @@ namespace Explorea.Server.Services
 
     private static int SimilarityToScore(double? similarity, int weight, double threshold)
     {
-      if(!similarity.HasValue) return 0;      
-      if(similarity.Value < threshold) return 0;      
+      if(!similarity.HasValue) return 0;
+      if(similarity.Value < threshold) return 0;
 
       return (int)Math.Round(similarity.Value * weight);
     }
@@ -403,7 +443,55 @@ namespace Explorea.Server.Services
       return (int)Math.Round(ftsRank * weight);
     }
 
-    // mapping metode 
+    private static double CalcMaxWordSimilarity(string? value, string query)
+    {
+      if(string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(query)) return 0;
+
+      var tokens = value
+          .ToLowerInvariant()
+          .Split(new[] { ' ', '-', '_', ',', '.', ';', ':', '/', '\\', '(', ')', '[', ']', '{', '}', '!', '?' },
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+      var q = query.ToLowerInvariant();
+
+      double max = 0;
+
+      foreach (var token in tokens)
+      {
+        var sim = DiceSimilarity(token, q);
+        if(sim > max) max = sim;
+      }
+
+      return max;
+    }
+
+    private static double DiceSimilarity(string a, string b)
+    {
+      if(string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b)) return 0;
+
+      if(a == b) return 1.0;
+
+      var aBigrams = GetBigrams(a);
+      var bBigrams = GetBigrams(b);
+
+      if(aBigrams.Count == 0 || bBigrams.Count == 0) return 0;
+
+      var intersection = aBigrams.Intersect(bBigrams).Count();
+      return (2.0 * intersection) / (aBigrams.Count + bBigrams.Count);
+    }
+
+    private static List<string> GetBigrams(string s)
+    {
+      var result = new List<string>();
+
+      if(s.Length < 2) return result;
+
+      for (int i = 0; i < s.Length - 1; i++) result.Add(s.Substring(i, 2));
+
+      return result;
+    }
+
+    // mapping metode
     private SearchItemDto MapCandidateToSearchItem(SearchCandidate candidate)
     {
       return candidate.EntityType switch
@@ -423,13 +511,13 @@ namespace Explorea.Server.Services
         Slug = destination.Slug,
         PreviewImageUrl = destination.HeroImageUrl,
         AvgRating = destination.AvgRating,
-        
+
         City = destination.City == null ? null : new CityRefDto
                                                  {
                                                    Id = destination.City.Id,
-                                                   Name = destination.City.Name   
+                                                   Name = destination.City.Name
                                                  },
-        
+
         Location = new LocationDto
         {
           Lat = destination.Latitude!.Value,
@@ -441,7 +529,7 @@ namespace Explorea.Server.Services
       {
         EntityType = "destination",
         Entity = dto
-      };      
+      };
     }
     private SearchItemDto MapPlaceToSearchItem(Place place){
       var previewImageUrl = place.Images
@@ -454,21 +542,21 @@ namespace Explorea.Server.Services
           Id = place.Id,
           Name = place.Name,
           Slug = place.Slug,
-          
+
           Type = place.Type == null ? null : new TypeRefDto
                                              {
                                                Id = place.Type.Id,
-                                               Name = place.Type.Name  
+                                               Name = place.Type.Name
                                              },
-          
+
           AvgRating = place.AvgRating,
           Address = place.Address,
           DistanceKm = null,
-          PreviewImageUrl = previewImageUrl, 
-          IsOpen = false,         
+          PreviewImageUrl = previewImageUrl,
+          IsOpen = false,
           PriceRange = place.PriceRange
       };
-      
+
       return new SearchItemDto
       {
         EntityType = "place",
@@ -519,13 +607,13 @@ namespace Explorea.Server.Services
           .OrderBy(i => i.SortOrder)
           .Select(i => i.ImageUrl)
           .FirstOrDefault();
-      
+
       var dto = new ActivityCardDto
       {
         Id = activity.Id,
         Name = activity.Name,
         Slug = activity.Slug,
-        
+
         Category = new CategoryRefDto
         {
           Id = activity.Category.Id,
@@ -538,14 +626,14 @@ namespace Explorea.Server.Services
         DifficultyLevel = activity.DifficultyLevel,
         PreviewImageUrl = previewImageUrl
       };
-      
+
       return new SearchItemDto
       {
         EntityType = "activity",
         Entity = dto
       };
     }
-    
+
     // Radius filtering helpers
     private static bool IsWithinRadius(SearchCandidate candidate, double lat, double lng, double radiusKm)
     {
@@ -585,25 +673,49 @@ namespace Explorea.Server.Services
             .Trim()
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
       );
+    }
 
-    }
-    private static bool ContainsInsensitive(string source, string query)
+    private static string[] Tokenize(string? value)
     {
-      return source.Contains(query, StringComparison.OrdinalIgnoreCase);
+      if(string.IsNullOrWhiteSpace(value)) return Array.Empty<string>();
+
+      return value
+          .ToLowerInvariant()
+          .Split(new[] {' ', '-', '_', ',', '.', ':', ';', '/', '\\', '(', ')', '[', ']', '{', '}', '!', '?' },
+              StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+          );
     }
-    private static bool StartsWithInsensitive(string source, string query)
+
+    private static bool ContainsWholeWord(string? source, string query)
     {
-      return source.StartsWith(query, StringComparison.OrdinalIgnoreCase);
+      if(string.IsNullOrWhiteSpace(source)) return false;
+
+      var tokens = Tokenize(source);
+      return tokens.Contains(query.ToLowerInvariant());
     }
+
+    private static bool StartsWithWord(string? source, string query)
+    {
+      if(string.IsNullOrWhiteSpace(source)) return false;
+
+      var q = query.ToLowerInvariant();
+      var tokens = Tokenize(source);
+      return tokens.Any(t => t.StartsWith(q));
+    }
+
     private static bool EqualsInsensitive(string source, string query)
     {
       return string.Equals(source, query, StringComparison.OrdinalIgnoreCase);
     }
+
     private sealed class SearchCandidate
     {
         public string EntityType { get; set; } = null!;
         public object Entity { get; set; } = null!;
         public int Score { get; set; }
+        public int StrictScore { get; set; }
+        public double? NameSimilarity { get; set; }
+        public double MaxWordSimilarity { get; set; }
         public bool IsFeatured { get; set; }
         public decimal? AvgRating { get; set; }
         public DateTimeOffset? EventStartDatetime { get; set; }
