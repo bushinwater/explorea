@@ -83,5 +83,15 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(d => d.Images)
                 .FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
         }
+
+        public async Task<List<int>> GetCityIdsByDestinationsAsync(List<Guid> destinationIds)
+        {
+            return await _db.Destinations
+                .IgnoreQueryFilters()
+                .Where(d => destinationIds.Contains(d.Id) && d.CityId.HasValue)
+                .Select(d => d.CityId!.Value)
+                .Distinct()
+                .ToListAsync();
+        }
     }
 }
