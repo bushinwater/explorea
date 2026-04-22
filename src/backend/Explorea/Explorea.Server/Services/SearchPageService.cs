@@ -54,7 +54,7 @@ namespace Explorea.Server.Services
           new SearchPageSectionDto
           {
             Key = "nearby_events",
-            Title = "Uskoro u vašoj blizini",
+            Title = "Događaji",
             EntityType = "event",
             Items = WrapItems(nearbyEvents, "event")
           },
@@ -287,6 +287,8 @@ namespace Explorea.Server.Services
         PlaceTypeIds = NormalizeIntList(query.PlaceTypeIds),
         ActivityCategoryIds = NormalizeIntList(query.ActivityCategoryIds),
         EventTypeIds = NormalizeIntList(query.EventTypeIds),
+        DestinationTypeIds = NormalizeIntList(query.DestinationTypeIds),
+        ExtraFilters = query.ExtraFilters,
 
         SortBy = normalizedSort,
 

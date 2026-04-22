@@ -1,5 +1,5 @@
 <!-- Recommendations -->
-<section class="section recommendations" *ngIf="recommendations.length">
+<section class="section recommendations" *ngIf="hasAny">
   <div class="section__header">
     <div>
       <h2 class="section__title">{{ 'HOME.AI.TITLE' | translate }}</h2>
@@ -9,19 +9,38 @@
 
   <div class="recommendations__layout">
     <div class="recommendations__info">
+      <h3>{{ 'HOME.AI.HEADER' | translate }}</h3>
+      <p>{{ 'HOME.AI.DESC' | translate }}</p>
       <span class="recommendations__ai-badge">
         <span class="material-icons">auto_awesome</span>
         {{ 'HOME.AI.BADGE' | translate }}
       </span>
-      <h3>{{ 'HOME.AI.HEADER' | translate }}</h3>
-      <p>{{ 'HOME.AI.DESC' | translate }}</p>
-      <a href="#" class="btn btn-primary recommendations__btn">{{ 'HOME.AI.VIEW_ALL' | translate }}</a>
     </div>
     <div class="scroll-row recommendations__cards">
-      <app-destination-card
-        *ngFor="let dest of recommendations"
-        [destination]="dest"
-      />
+      <a
+        *ngFor="let item of items"
+        class="rec-card"
+        [routerLink]="routeFor(item)"
+      >
+        <div class="rec-card__img-wrap">
+          <img
+            *ngIf="item.imageUrl"
+            [src]="item.imageUrl"
+            [alt]="item.name"
+            class="rec-card__img"
+          />
+          <div *ngIf="!item.imageUrl" class="rec-card__img rec-card__img--placeholder"></div>
+          <span class="rec-card__type">{{ labelFor(item.entityType) }}</span>
+          <span *ngIf="item.badge" class="rec-card__badge">{{ item.badge }}</span>
+        </div>
+        <div class="rec-card__body">
+          <span class="rec-card__name">{{ item.name }}</span>
+          <span *ngIf="item.subtitle" class="rec-card__subtitle">{{ item.subtitle }}</span>
+          <span *ngIf="item.rating" class="rec-card__rating">
+            <span class="material-icons">star</span>{{ item.rating | number:'1.1-1' }}
+          </span>
+        </div>
+      </a>
     </div>
   </div>
 </section>
@@ -36,18 +55,25 @@
       <h2>{{ 'HOME.NEWSLETTER.TITLE' | translate }}</h2>
       <p>{{ 'HOME.NEWSLETTER.DESC' | translate }}</p>
     </div>
-    <div class="newsletter__form" *ngIf="!newsletterSent">
+    <div class="newsletter__form" *ngIf="!newsletterSent && !newsletterAlreadySubscribed">
       <input
         type="email"
         class="input newsletter__input"
         [placeholder]="'HOME.NEWSLETTER.PLACEHOLDER' | translate"
         [(ngModel)]="newsletterEmail"
       />
-      <button class="btn btn-primary newsletter__submit" (click)="submitNewsletter()">{{ 'HOME.NEWSLETTER.SUBMIT' | translate }}</button>
+      <button class="btn btn-primary newsletter__submit" (click)="submitNewsletter()" [disabled]="newsletterLoading">
+        <span *ngIf="newsletterLoading" class="material-icons newsletter__spinner">autorenew</span>
+        <span *ngIf="!newsletterLoading">{{ 'HOME.NEWSLETTER.SUBMIT' | translate }}</span>
+      </button>
     </div>
     <div class="newsletter__success" *ngIf="newsletterSent">
       <span class="material-icons">check_circle</span>
       <span>{{ 'HOME.NEWSLETTER.SUCCESS' | translate }}</span>
+    </div>
+    <div class="newsletter__success" *ngIf="newsletterAlreadySubscribed">
+      <span class="material-icons">info</span>
+      <span>{{ 'HOME.NEWSLETTER.ALREADY' | translate }}</span>
     </div>
   </div>
 </section>

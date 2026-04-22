@@ -77,7 +77,10 @@ export class EventsListPage implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.types = this.eventService.getTypes();
+    this.eventService.getTypes().subscribe(types => {
+      this.types = types;
+      this.cdr.detectChanges();
+    });
     this.loadUserLocation();
     this.loadEvents();
     this.loadCalendar();
@@ -139,9 +142,16 @@ export class EventsListPage implements OnInit, OnDestroy {
 
   loadEvents(): void {
     this.loading = true;
-    this.eventService.getEvents({
-      typeId: this.selectedTypeId,
-    }).subscribe(res => {
+    const today = new Date();
+    const params: any = { typeId: this.selectedTypeId };
+    if (this.quickFilter === 'today')
+      params.date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    else if (this.quickFilter === 'weekend')
+      params.weekend = true;
+    else if (this.quickFilter === 'free')
+      params.freeOnly = true;
+
+    this.eventService.getEvents(params).subscribe(res => {
       this.allEvents = res.items;
       this.loading = false;
       this.applyFilters();
@@ -164,18 +174,14 @@ export class EventsListPage implements OnInit, OnDestroy {
   applyFilters(): void {
     let items = [...this.allEvents];
 
-    if (this.quickFilter === 'today') {
-      const today = new Date();
-      items = items.filter(e => isSameDay(new Date(e.startDatetime), today));
-    } else if (this.quickFilter === 'weekend') {
-      items = items.filter(e => isWeekend(new Date(e.startDatetime)));
-    } else if (this.quickFilter === 'free') {
-      items = items.filter(e => !e.price);
-    }
-
     if (this.selectedDate) {
       const sel = this.selectedDate;
-      items = items.filter(e => isSameDay(new Date(e.startDatetime), sel));
+      items = items.filter(e => {
+        const start = toDateOnly(new Date(e.startDatetime));
+        const end   = toDateOnly(new Date(e.endDatetime));
+        const selD  = toDateOnly(sel);
+        return selD >= start && selD <= end;
+      });
     }
 
     const q = this.searchQuery.trim().toLowerCase();
@@ -282,8 +288,7 @@ export class EventsListPage implements OnInit, OnDestroy {
   setQuickFilter(filter: QuickFilter): void {
     this.quickFilter = this.quickFilter === filter ? 'all' : filter;
     this.selectedDate = null;
-    this.applyFilters();
-    this.cdr.detectChanges();
+    this.loadEvents();
   }
 
   setSortMode(mode: SortMode): void {
@@ -443,13 +448,16 @@ function fuzzyIncludes(query: string, target: string): boolean {
   return false;
 }
 
+function toDateOnly(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
 function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() &&
          a.getMonth()    === b.getMonth()    &&
          a.getDate()     === b.getDate();
 }
 
-function isWeekend(d: Date): boolean { return d.getDay() === 0 || d.getDay() === 6; }
 
 /** Haversine distance in km */
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {

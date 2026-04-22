@@ -70,6 +70,105 @@
   border-radius: 2px;
 }
 
+/* Unified recommendation card */
+.rec-card {
+  flex-shrink: 0;
+  width: 200px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s, border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.rec-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--color-primary);
+}
+
+.rec-card__img-wrap {
+  position: relative;
+  width: 100%;
+  height: 130px;
+}
+
+.rec-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.rec-card__img--placeholder {
+  background: var(--color-border);
+}
+
+.rec-card__type {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+
+.rec-card__badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: var(--color-primary-dark);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.rec-card__body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.rec-card__name {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-card__subtitle {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-card__rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  color: var(--color-primary);
+  margin-top: auto;
+}
+
+.rec-card__rating .material-icons {
+  font-size: 14px;
+}
+
 @media (max-width: 768px) {
   .recommendations__cards {
     flex: none;
@@ -159,6 +258,16 @@
 
 .newsletter__success .material-icons {
   font-size: 24px;
+}
+
+.newsletter__spinner {
+  font-size: 18px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 @media (max-width: 768px) {

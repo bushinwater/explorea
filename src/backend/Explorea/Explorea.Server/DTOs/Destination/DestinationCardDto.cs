@@ -14,6 +14,8 @@ namespace Explorea.API.DTOs.Destination
         public LocationDto? Location { get; set; }
         public string? HeroImageUrl { get; set; }
         public int Popularity { get; set; }
+        public double? DistanceKm { get; set; }
         public CountryRefDto? Country { get; set; }
+        public string? TypeName { get; set; }
     }
 }

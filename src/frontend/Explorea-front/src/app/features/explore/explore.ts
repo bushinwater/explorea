@@ -18,7 +18,7 @@ import { Sidebar } from '../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../shared/bottom-nav/bottom-nav';
 import { ExploreService, ExploreMarker } from '../../core/services/explore.service';
 import { SearchService } from '../../core/services/search.service';
-import { LookupService, LookupItem } from '../../core/services/lookup.service';
+import { LookupService, LookupItem, FilterDefinition } from '../../core/services/lookup.service';
 import { SearchItem } from '../../core/models/search.model';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
@@ -153,11 +153,22 @@ export class Explore implements AfterViewInit, OnDestroy {
   minRating: number | null = null;
   entityTypes = ENTITY_TYPES;
 
-  // Subcategory filters (client-side filtering of loaded pins)
+  // Subcategory filters (server-side)
   selectedSubcatIds: number[] = [];
   placeTypes: LookupItem[] = [];
   activityCategories: LookupItem[] = [];
   eventTypes: LookupItem[] = [];
+  destinationTypes: LookupItem[] = [];
+
+  // Price range filter
+  minPrice: number | null = null;
+  maxPrice: number | null = null;
+
+  // Dynamic extra attribute filters (loaded when single place type selected)
+  filterDefs: FilterDefinition[] = [];
+  filterDefsLoading = false;
+  private filterDefsTypeId: number | null = null;
+  extraFilters: Record<string, string> = {};
 
   // User location (fetched when nearbyOnly = true)
   userLat: number | null = null;
@@ -194,24 +205,14 @@ export class Explore implements AfterViewInit, OnDestroy {
   }
 
   get filteredPins(): ExploreMarker[] {
-    let result: ExploreMarker[];
-
     // If user explicitly picked types, respect their selection (skip zoom filter)
     if (this.selectedEntityTypes.length > 0) {
       const backendTypes = this.selectedEntityTypes.map(k => ENTITY_TYPE_BACKEND_MAP[k]);
-      result = this.pins.filter(p => backendTypes.includes(p.entityType));
-    } else {
-      // Otherwise show only what makes sense at this zoom level
-      const visible = this.zoomVisibleTypes;
-      result = this.pins.filter(p => visible.includes(p.entityType));
+      return this.pins.filter(p => backendTypes.includes(p.entityType));
     }
-
-    // Subcategory filter — only active when exactly one type-with-subcats is selected
-    if (this.subcatEntityType && this.selectedSubcatIds.length > 0) {
-      result = result.filter(p => p.categoryId != null && this.selectedSubcatIds.includes(p.categoryId));
-    }
-
-    return result;
+    // Otherwise show only what makes sense at this zoom level
+    const visible = this.zoomVisibleTypes;
+    return this.pins.filter(p => visible.includes(p.entityType));
   }
 
   get activeFilterCount(): number {
@@ -221,7 +222,13 @@ export class Explore implements AfterViewInit, OnDestroy {
     if (this.minRating !== null) count++;
     if (this.nearbyOnly && this.radiusKm !== 25) count++;
     if (this.selectedSubcatIds.length > 0) count++;
+    if (this.minPrice !== null || this.maxPrice !== null) count++;
+    if (Object.keys(this.extraFilters).length > 0) count++;
     return count;
+  }
+
+  get showPriceRange(): boolean {
+    return this.selectedEntityTypes.some(k => k === 'objekti' || k === 'dogadjaji');
   }
 
   isEntityTypeSelected(key: string): boolean {
@@ -235,8 +242,11 @@ export class Explore implements AfterViewInit, OnDestroy {
     } else {
       this.selectedEntityTypes.push(key);
     }
-    // Clear subcategory selection whenever the entity type mix changes
+    // Clear subcategory + extra filters when entity type mix changes
     this.selectedSubcatIds = [];
+    this.extraFilters = {};
+    this.filterDefs = [];
+    this.filterDefsTypeId = null;
     this.addMarkers();
   }
 
@@ -307,15 +317,50 @@ export class Explore implements AfterViewInit, OnDestroy {
       placeTypes:         this.lookupService.getPlaceTypes(),
       activityCategories: this.lookupService.getActivityCategories(),
       eventTypes:         this.lookupService.getEventTypes(),
+      destinationTypes:   this.lookupService.getDestinationTypes(),
     }).subscribe({
       next: res => {
         this.placeTypes         = res.placeTypes;
         this.activityCategories = res.activityCategories;
         this.eventTypes         = res.eventTypes;
+        this.destinationTypes   = res.destinationTypes;
         this.cdr.detectChanges();
       },
       error: () => {},
     });
+  }
+
+  loadFilterDefs(typeId: number): void {
+    if (this.filterDefsTypeId === typeId) return;
+    this.filterDefsLoading = true;
+    this.filterDefsTypeId  = typeId;
+    this.cdr.detectChanges();
+    this.lookupService.getFilterDefinitions('place', typeId).subscribe({
+      next: defs => {
+        this.filterDefs        = defs;
+        this.filterDefsLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.filterDefs        = [];
+        this.filterDefsLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  isExtraFilterActive(key: string, value: string = 'true'): boolean {
+    return this.extraFilters[key] === value;
+  }
+
+  toggleExtraFilter(key: string, value: string = 'true'): void {
+    const current = { ...this.extraFilters };
+    if (current[key] === value) {
+      delete current[key];
+    } else {
+      current[key] = value;
+    }
+    this.extraFilters = current;
   }
 
   /**
@@ -325,18 +370,23 @@ export class Explore implements AfterViewInit, OnDestroy {
    */
   get subcatEntityType(): string | null {
     const withSubcats = this.selectedEntityTypes.filter(
-      k => k === 'objekti' || k === 'aktivnosti' || k === 'dogadjaji',
+      k => k === 'destinacije' || k === 'objekti' || k === 'aktivnosti' || k === 'dogadjaji',
     );
     return withSubcats.length === 1 ? withSubcats[0] : null;
   }
 
   get subcatsToShow(): LookupItem[] {
     switch (this.subcatEntityType) {
-      case 'objekti':    return this.placeTypes;
-      case 'aktivnosti': return this.activityCategories;
-      case 'dogadjaji':  return this.eventTypes;
-      default:           return [];
+      case 'destinacije': return this.destinationTypes;
+      case 'objekti':     return this.placeTypes;
+      case 'aktivnosti':  return this.activityCategories;
+      case 'dogadjaji':   return this.eventTypes;
+      default:            return [];
     }
+  }
+
+  get showExtraFilters(): boolean {
+    return this.subcatEntityType === 'objekti' && this.selectedSubcatIds.length === 1;
   }
 
   isSubcatSelected(id: number): boolean {
@@ -350,7 +400,15 @@ export class Explore implements AfterViewInit, OnDestroy {
     } else {
       this.selectedSubcatIds.push(id);
     }
-    this.addMarkers();
+    // Clear extra filters when subcat changes
+    this.extraFilters = {};
+    this.filterDefs = [];
+    this.filterDefsTypeId = null;
+    // Load extra filter defs when exactly one place type selected
+    if (this.subcatEntityType === 'objekti' && this.selectedSubcatIds.length === 1) {
+      this.loadFilterDefs(this.selectedSubcatIds[0]);
+    }
+    this.fetchMarkers();
   }
 
   onSearchInput(value: string) {
@@ -461,6 +519,18 @@ export class Explore implements AfterViewInit, OnDestroy {
     }
     if (this.minRating !== null) params.minRating = this.minRating;
     if (this.openNowOnly) params.openNow = true;
+    if (this.minPrice !== null) params.minPrice = this.minPrice;
+    if (this.maxPrice !== null) params.maxPrice = this.maxPrice;
+    if (Object.keys(this.extraFilters).length > 0) params.extraFilters = this.extraFilters;
+
+    if (this.subcatEntityType === 'objekti' && this.selectedSubcatIds.length > 0)
+      params.placeTypeIds = this.selectedSubcatIds;
+    else if (this.subcatEntityType === 'aktivnosti' && this.selectedSubcatIds.length > 0)
+      params.activityCategoryIds = this.selectedSubcatIds;
+    else if (this.subcatEntityType === 'dogadjaji' && this.selectedSubcatIds.length > 0)
+      params.eventTypeIds = this.selectedSubcatIds;
+    else if (this.subcatEntityType === 'destinacije' && this.selectedSubcatIds.length > 0)
+      params.destinationTypeIds = this.selectedSubcatIds;
 
     this.exploreService.getMapMarkers(params).subscribe({
       next: result => {
@@ -783,6 +853,11 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.openNowOnly = false;
     this.minRating = null;
     this.selectedSubcatIds = [];
+    this.minPrice = null;
+    this.maxPrice = null;
+    this.extraFilters = {};
+    this.filterDefs = [];
+    this.filterDefsTypeId = null;
     this.fetchMarkers();
   }
 

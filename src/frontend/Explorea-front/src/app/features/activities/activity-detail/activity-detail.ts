@@ -12,6 +12,7 @@ import { ActivityCard, ActivityDetail } from '../../../core/models/activity.mode
 import { ActivityService } from '../../../core/services/activity.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { SavedService } from '../../../core/services/saved.service';
+import { PopularityService } from '../../../core/services/popularity.service';
 import { ReviewService } from '../../../core/services/review.service';
 import { ReviewDto } from '../../../core/models/home.model';
 import { ReviewCard } from '../../../shared/components/review-card/review-card';
@@ -64,6 +65,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
   private location = inject(Location);
   private cdr = inject(ChangeDetectorRef);
   private translate = inject(TranslateService);
+  private popularityService = inject(PopularityService);
 
   activity: ActivityDetail | null = null;
   loading = true;
@@ -119,6 +121,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
           this.activity = data;
           this.loading = false;
           window.scrollTo({ top: 0, behavior: 'auto' });
+          this.popularityService.track('activity', data.id);
           this.cdr.detectChanges();
           this.captureTitle();
           if (this.authService.isLoggedIn()) {

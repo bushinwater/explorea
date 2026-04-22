@@ -6,10 +6,11 @@
     <a routerLink="/events" class="section__link">{{ 'HOME.EVENTS.VIEW_ALL' | translate }} <span class="material-icons">arrow_forward</span></a>
   </div>
 
-  <div class="scroll-row">
+  <div class="scroll-row" *ngIf="events.length">
     <app-event-card
       *ngFor="let event of events"
       [event]="event"
     />
   </div>
+  <p class="section__empty" *ngIf="!events.length">{{ 'HOME.EMPTY.EVENTS' | translate }}</p>
 </section>

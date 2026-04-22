@@ -97,14 +97,16 @@ export class EventService {
     if (this.useMock) {
       let filtered = [...MOCK_EVENTS];
       if (params.typeId) filtered = filtered.filter(e => e.type.id === params.typeId);
-      if (params.free) filtered = filtered.filter(e => !e.price);
+      if (params.freeOnly) filtered = filtered.filter(e => !e.price);
       return of({ items: filtered, total: filtered.length });
     }
 
-    let httpParams = new HttpParams();
-    if (params.typeId != null) httpParams = httpParams.set('typeId', params.typeId.toString());
-    if (params.free) httpParams = httpParams.set('free', 'true');
-    if (params.cityId != null) httpParams = httpParams.set('cityId', params.cityId.toString());
+    let httpParams = new HttpParams().set('pageSize', '500');
+    if (params.typeId != null)  httpParams = httpParams.set('typeId', params.typeId);
+    if (params.cityId != null)  httpParams = httpParams.set('cityId', params.cityId);
+    if (params.freeOnly)        httpParams = httpParams.set('freeOnly', 'true');
+    if (params.date)            httpParams = httpParams.set('date', params.date);
+    if (params.weekend)         httpParams = httpParams.set('weekend', 'true');
 
     return this.http.get<EventListResponse>(this.api, { params: httpParams });
   }
@@ -143,9 +145,9 @@ export class EventService {
           { imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800', caption: 'Atmosfera', sortOrder: 4 },
         ],
         reviews: [
-          { id: '1', rating: 5, comment: 'Neverovatno iskustvo! Organizacija na najvišem nivou, nezaboravne noći.', authorName: 'Marko P.', authorAvatarUrl: null, createdAt: '2025-07-20T10:00:00Z' },
-          { id: '2', rating: 4, comment: 'Odlična atmosfera i sjajan izbor izvođača. Preporučujem svima!', authorName: 'Ana L.', authorAvatarUrl: null, createdAt: '2025-07-21T14:30:00Z' },
-          { id: '3', rating: 5, comment: 'Bili smo ove godine po četvrti put i svaki put je bolje i bolje.', authorName: 'Stefan M.', authorAvatarUrl: null, createdAt: '2025-07-22T09:15:00Z' },
+          { id: '1', rating: 5, comment: 'Neverovatno iskustvo! Organizacija na najvišem nivou, nezaboravne noći.', createdAt: '2025-07-20T10:00:00Z', user: { id: 'u1', firstName: 'Marko', lastName: 'P.', travelerRank: 'Putnik', profileImageUrl: null } },
+          { id: '2', rating: 4, comment: 'Odlična atmosfera i sjajan izbor izvođača. Preporučujem svima!', createdAt: '2025-07-21T14:30:00Z', user: { id: 'u2', firstName: 'Ana', lastName: 'L.', travelerRank: 'Istraživač', profileImageUrl: null } },
+          { id: '3', rating: 5, comment: 'Bili smo ove godine po četvrti put i svaki put je bolje i bolje.', createdAt: '2025-07-22T09:15:00Z', user: { id: 'u3', firstName: 'Stefan', lastName: 'M.', travelerRank: 'Ekspert', profileImageUrl: null } },
         ],
         similarEvents: MOCK_EVENTS.filter(e => e.slug !== slug).slice(0, 4),
         venueItems: [
@@ -159,7 +161,8 @@ export class EventService {
     return this.http.get<EventDetail>(`${this.api}/${slug}`);
   }
 
-  getTypes(): EventType[] {
-    return MOCK_TYPES;
+  getTypes(): Observable<EventType[]> {
+    if (this.useMock) return of(MOCK_TYPES);
+    return this.http.get<EventType[]>('/api/event-types');
   }
 }

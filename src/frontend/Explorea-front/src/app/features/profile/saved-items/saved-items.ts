@@ -64,24 +64,34 @@ export class SavedItemsPage implements OnInit {
 
     const currentlySaved = this.isSaved(item.id);
 
-    this.unsavedMap = { ...this.unsavedMap, [item.id]: currentlySaved };
-    this.cdr.detectChanges();
-
     if (currentlySaved) {
+      // Optimistically remove from list
+      this.items = this.items.filter(i => i.id !== item.id);
+      this.cdr.detectChanges();
+
       this.savedService.unsave(item.entityType, item.entityId).subscribe({
+        error: () => {
+          // Restore on failure
+          this.items = [...this.items, item];
+          this.cdr.detectChanges();
+        },
+      });
+    } else {
+      this.unsavedMap = { ...this.unsavedMap, [item.id]: true };
+      this.cdr.detectChanges();
+
+      this.savedService.save(item.entityType, item.entityId).subscribe({
         error: () => {
           this.unsavedMap = { ...this.unsavedMap, [item.id]: false };
           this.cdr.detectChanges();
         },
       });
-    } else {
-      this.savedService.save(item.entityType, item.entityId).subscribe({
-        error: () => {
-          this.unsavedMap = { ...this.unsavedMap, [item.id]: true };
-          this.cdr.detectChanges();
-        },
-      });
     }
+  }
+
+  isExpired(item: SavedItemDto): boolean {
+    if (item.entityType !== 'event' || !item.endDatetime) return false;
+    return new Date(item.endDatetime) < new Date();
   }
 
   goBack(): void {

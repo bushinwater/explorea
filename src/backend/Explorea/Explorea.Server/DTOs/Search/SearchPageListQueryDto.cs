@@ -18,6 +18,10 @@ namespace Explorea.API.DTOs.Search
     public List<int>? PlaceTypeIds {get; set;}
     public List<int>? ActivityCategoryIds {get; set;}
     public List<int>? EventTypeIds {get; set;}
+    public List<int>? DestinationTypeIds {get; set;}
+
+    // Key-value pairs for JSONB extra_filters encoded as "key:value" strings (e.g. "has_pool:true")
+    public List<string>? ExtraFilters {get; set;}
 
     public string? SortBy {get; set;}
 

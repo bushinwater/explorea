@@ -103,6 +103,58 @@
       </div>
     </div>
 
+    <!-- Extra filter defs (samo kada je selektovan tačno jedan podtip objekta) -->
+    <ng-container *ngIf="filterDefsLoading">
+      <div class="filter-group">
+        <div class="filter-defs-loading">
+          <span class="material-icons spin">sync</span>
+        </div>
+      </div>
+    </ng-container>
+    <ng-container *ngIf="!filterDefsLoading && showExtraFilters && filterDefs.length > 0">
+      <div class="filter-group">
+        <span class="filter-group__label">{{ 'EXPLORE.FILTERS.EXTRA' | translate }}</span>
+        <div class="filter-extra-list">
+          <ng-container *ngFor="let def of filterDefs">
+            <label class="filter-extra-item" *ngIf="def.filterType === 'boolean'">
+              <span class="filter-extra-item__label">{{ def.filterLabel }}</span>
+              <button class="toggle-btn toggle-btn--sm"
+                [class.on]="isExtraFilterActive(def.filterKey)"
+                (click)="toggleExtraFilter(def.filterKey)" type="button">
+                <span class="toggle-btn__track"><span class="toggle-btn__thumb"></span></span>
+              </button>
+            </label>
+            <div class="filter-extra-select" *ngIf="def.filterType === 'select' || def.filterType === 'multi_select'">
+              <p class="filter-extra-select__label">{{ def.filterLabel }}</p>
+              <div class="filter-chips">
+                <button *ngFor="let opt of def.options" class="filter-chip"
+                  [class.active]="isExtraFilterActive(def.filterKey, opt.optionValue)"
+                  (click)="toggleExtraFilter(def.filterKey, opt.optionValue)" type="button">
+                  {{ opt.optionLabel }}
+                </button>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Raspon cene (samo za objekte i dogadjaje) -->
+    <div class="filter-group" *ngIf="showPriceRange">
+      <span class="filter-group__label">{{ 'EXPLORE.FILTERS.PRICE' | translate }}</span>
+      <div class="filter-price-row">
+        <div class="filter-price-input">
+          <label class="filter-price-label">{{ 'EXPLORE.FILTERS.PRICE_MIN' | translate }}</label>
+          <input type="number" class="filter-input" placeholder="0" [(ngModel)]="minPrice" min="0" />
+        </div>
+        <span class="filter-price-sep">—</span>
+        <div class="filter-price-input">
+          <label class="filter-price-label">{{ 'EXPLORE.FILTERS.PRICE_MAX' | translate }}</label>
+          <input type="number" class="filter-input" [placeholder]="'EXPLORE.FILTERS.PRICE_MAX_HINT' | translate" [(ngModel)]="maxPrice" min="0" />
+        </div>
+      </div>
+    </div>
+
     <div class="filter-actions" *ngIf="activeFilterCount > 0">
       <button class="ghost-btn ghost-btn--sm" (click)="resetFilters()">{{ 'EXPLORE.FILTERS.RESET' | translate }}</button>
       <button class="primary-btn" (click)="applyFilters()">{{ 'EXPLORE.FILTERS.APPLY' | translate }}</button>
@@ -196,6 +248,58 @@
           <button class="rating-chip" [class.active]="minRating === 4.5" (click)="setMinRating(4.5)">
             <span class="material-icons">star</span> 4.5+
           </button>
+        </div>
+      </div>
+
+      <!-- Extra filter defs -->
+      <ng-container *ngIf="filterDefsLoading">
+        <div class="filter-group">
+          <div class="filter-defs-loading">
+            <span class="material-icons spin">sync</span>
+          </div>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="!filterDefsLoading && showExtraFilters && filterDefs.length > 0">
+        <div class="filter-group">
+          <span class="filter-group__label">{{ 'EXPLORE.FILTERS.EXTRA' | translate }}</span>
+          <div class="filter-extra-list">
+            <ng-container *ngFor="let def of filterDefs">
+              <label class="filter-extra-item" *ngIf="def.filterType === 'boolean'">
+                <span class="filter-extra-item__label">{{ def.filterLabel }}</span>
+                <button class="toggle-btn toggle-btn--sm"
+                  [class.on]="isExtraFilterActive(def.filterKey)"
+                  (click)="toggleExtraFilter(def.filterKey)" type="button">
+                  <span class="toggle-btn__track"><span class="toggle-btn__thumb"></span></span>
+                </button>
+              </label>
+              <div class="filter-extra-select" *ngIf="def.filterType === 'select' || def.filterType === 'multi_select'">
+                <p class="filter-extra-select__label">{{ def.filterLabel }}</p>
+                <div class="filter-chips">
+                  <button *ngFor="let opt of def.options" class="filter-chip"
+                    [class.active]="isExtraFilterActive(def.filterKey, opt.optionValue)"
+                    (click)="toggleExtraFilter(def.filterKey, opt.optionValue)" type="button">
+                    {{ opt.optionLabel }}
+                  </button>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Raspon cene -->
+      <div class="filter-group" *ngIf="showPriceRange">
+        <span class="filter-group__label">{{ 'EXPLORE.FILTERS.PRICE' | translate }}</span>
+        <div class="filter-price-row">
+          <div class="filter-price-input">
+            <label class="filter-price-label">{{ 'EXPLORE.FILTERS.PRICE_MIN' | translate }}</label>
+            <input type="number" class="filter-input" placeholder="0" [(ngModel)]="minPrice" min="0" />
+          </div>
+          <span class="filter-price-sep">—</span>
+          <div class="filter-price-input">
+            <label class="filter-price-label">{{ 'EXPLORE.FILTERS.PRICE_MAX' | translate }}</label>
+            <input type="number" class="filter-input" [placeholder]="'EXPLORE.FILTERS.PRICE_MAX_HINT' | translate" [(ngModel)]="maxPrice" min="0" />
+          </div>
         </div>
       </div>
 

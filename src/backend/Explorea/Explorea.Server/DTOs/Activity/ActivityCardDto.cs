@@ -9,7 +9,9 @@ namespace Explorea.API.DTOs.Activity
         public string Slug {get; set;} = null!;
         public CategoryRefDto? Category {get; set;}
         public decimal AvgRating {get; set;}
-        public double? DistanceKm {get; set;} // udaljenost od korisnika
+        public double? DistanceKm { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
         public int? DurationMinutes {get; set;}
         public decimal? Price {get; set;}
         public string? DifficultyLevel {get; set;}

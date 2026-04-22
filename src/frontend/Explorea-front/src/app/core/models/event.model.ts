@@ -25,9 +25,14 @@ export interface EventDetail extends EventCard {
     id: string;
     rating: number;
     comment: string | null;
-    authorName: string;
-    authorAvatarUrl: string | null;
     createdAt: string;
+    user: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      travelerRank: string;
+      profileImageUrl: string | null;
+    };
   }[];
   similarEvents: EventCard[];
   venueItems: EventVenueItem[];
@@ -36,7 +41,9 @@ export interface EventDetail extends EventCard {
 export interface EventFilterParams {
   cityId?: number | null;
   typeId?: number | null;
-  free?: boolean | null;
+  freeOnly?: boolean;
+  date?: string;    // ISO date string YYYY-MM-DD
+  weekend?: boolean;
 }
 
 export interface EventListResponse {

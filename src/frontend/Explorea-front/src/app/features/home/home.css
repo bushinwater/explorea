@@ -68,6 +68,12 @@
   font-size: 16px;
 }
 
+:host ::ng-deep .section__empty {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+  padding: var(--spacing-lg) 0;
+}
+
 /* Horizontal scroll row */
 :host ::ng-deep .scroll-row {
   display: flex;

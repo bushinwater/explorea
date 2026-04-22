@@ -59,6 +59,7 @@ export interface SavedItemDto {
   previewImageUrl?: string;
   subtitle?: string;
   savedAt: string;
+  endDatetime?: string;
 }
 
 export interface ProfileReviewDto {

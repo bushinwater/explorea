@@ -9,7 +9,13 @@ export class SearchService {
 
   constructor(private http: HttpClient) {}
 
-  search(q: string, limit = 8): Observable<SearchResult> {
-    return this.http.get<SearchResult>(this.api, { params: { q, limit } });
+  search(q: string, limit = 8, userLat?: number, userLng?: number, radiusKm?: number): Observable<SearchResult> {
+    let params: Record<string, any> = { q, limit };
+    if (userLat != null && userLng != null) {
+      params['userLat'] = userLat;
+      params['userLng'] = userLng;
+      if (radiusKm != null) params['radiusKm'] = radiusKm;
+    }
+    return this.http.get<SearchResult>(this.api, { params });
   }
 }

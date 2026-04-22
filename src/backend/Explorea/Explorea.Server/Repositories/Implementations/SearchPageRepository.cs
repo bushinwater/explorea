@@ -29,7 +29,7 @@ namespace Explorea.Server.Repositories.Implementations
           .AsNoTracking()
           .Include(a => a.Category)
           .AsQueryable();
-            
+
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
         var q = query.Query.Trim().ToLower();
@@ -38,17 +38,23 @@ namespace Explorea.Server.Repositories.Implementations
             (a.Description != null && a.Description.ToLower().Contains(q)) ||
             (a.StartPoint != null && a.StartPoint.ToLower().Contains(q)));
       }
-      
+
       if (query.CityIds != null && query.CityIds.Count > 0)
       {
         activitiesQuery = activitiesQuery.Where(a => a.CityId != null && query.CityIds.Contains(a.CityId.Value));
       }
-      
+
       if (query.MinRating.HasValue)
       {
         activitiesQuery = activitiesQuery.Where(a => a.AvgRating >= query.MinRating.Value);
       }
-      
+
+      if (query.RadiusKm.HasValue && userPoint != null)
+      {
+        var radiusMeters = query.RadiusKm.Value * 1000;
+        activitiesQuery = activitiesQuery.Where(a => a.Location != null && a.Location.IsWithinDistance(userPoint, radiusMeters));
+      }
+
       var items = await activitiesQuery
           .OrderByDescending(a => a.IsFeatured)
           .ThenByDescending(a => a.Popularity)
@@ -84,6 +90,8 @@ namespace Explorea.Server.Repositories.Implementations
 
     public async Task<List<DestinationCardDto>> GetPopularDestinationsAsync(SearchPageAllQueryDto query, int take)
     {
+      var userPoint = BuildUserPoint(query.UserLat, query.UserLng);
+
       var destinationsQuery = _db.Destinations
         .AsNoTracking()
         .Include(d => d.City)
@@ -99,13 +107,23 @@ namespace Explorea.Server.Repositories.Implementations
         );
       }
 
-        if(query.CityIds != null && query.CityIds.Count > 0){
-          destinationsQuery = destinationsQuery.Where(d => d.CityId != null && query.CityIds.Contains(d.CityId.Value));
-        }
-        if(query.MinRating.HasValue){
-          destinationsQuery = destinationsQuery.Where(d => d.AvgRating >= query.MinRating.Value);
-        }
-        var items = await destinationsQuery
+      if (query.CityIds != null && query.CityIds.Count > 0)
+      {
+        destinationsQuery = destinationsQuery.Where(d => d.CityId != null && query.CityIds.Contains(d.CityId.Value));
+      }
+
+      if (query.MinRating.HasValue)
+      {
+        destinationsQuery = destinationsQuery.Where(d => d.AvgRating >= query.MinRating.Value);
+      }
+
+      if (query.RadiusKm.HasValue && userPoint != null)
+      {
+        var radiusMeters = query.RadiusKm.Value * 1000;
+        destinationsQuery = destinationsQuery.Where(d => d.Location != null && d.Location.IsWithinDistance(userPoint, radiusMeters));
+      }
+
+      var items = await destinationsQuery
           .OrderByDescending(d => d.IsFeatured)
           .ThenByDescending(d => d.Popularity)
           .ThenByDescending(d => d.AvgRating)
@@ -167,6 +185,12 @@ namespace Explorea.Server.Repositories.Implementations
       if (query.MinRating.HasValue)
       {
           eventsQuery = eventsQuery.Where(e => e.AvgRating >= query.MinRating.Value);
+      }
+
+      if (query.RadiusKm.HasValue && userPoint != null)
+      {
+        var radiusMeters = query.RadiusKm.Value * 1000;
+        eventsQuery = eventsQuery.Where(e => e.Location != null && e.Location.IsWithinDistance(userPoint, radiusMeters));
       }
 
       eventsQuery = userPoint != null
@@ -248,7 +272,13 @@ namespace Explorea.Server.Repositories.Implementations
       {
         placesQuery = placesQuery.Where(p => p.AvgRating >= query.MinRating.Value);
       }
-      
+
+      if (query.RadiusKm.HasValue && userPoint != null)
+      {
+        var radiusMeters = query.RadiusKm.Value * 1000;
+        placesQuery = placesQuery.Where(p => p.Location != null && p.Location.IsWithinDistance(userPoint, radiusMeters));
+      }
+
       var items = await placesQuery
         .OrderByDescending(p => p.AvgRating)
         .ThenByDescending(p => p.IsFeatured)
@@ -289,6 +319,7 @@ namespace Explorea.Server.Repositories.Implementations
         .AsNoTracking()
         .Include(a => a.Category)
         .Include(a => a.City)
+        .Include(a => a.Destination)
         .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))
@@ -351,12 +382,28 @@ namespace Explorea.Server.Repositories.Implementations
 
       activitiesQuery = query.SortBy?.ToLowerInvariant() switch
       {
-          "rating" => activitiesQuery
+          "popularity_asc" => activitiesQuery
+              .OrderByDescending(a => a.Popularity)
+              .ThenByDescending(a => a.AvgRating),
+
+          "popularity_desc" => activitiesQuery
+              .OrderBy(a => a.Popularity)
+              .ThenBy(a => a.AvgRating),
+
+          "rating_asc" => activitiesQuery
               .OrderByDescending(a => a.AvgRating)
               .ThenByDescending(a => a.Popularity),
 
-          "nearest" when userPoint != null => activitiesQuery
+          "rating_desc" => activitiesQuery
+              .OrderBy(a => a.AvgRating)
+              .ThenByDescending(a => a.Popularity),
+
+          "nearest_asc" when userPoint != null => activitiesQuery
               .OrderBy(a => a.Location != null ? a.Location.Distance(userPoint) : double.MaxValue)
+              .ThenByDescending(a => a.Popularity),
+
+          "nearest_desc" when userPoint != null => activitiesQuery
+              .OrderByDescending(a => a.Location != null ? a.Location.Distance(userPoint) : 0.0)
               .ThenByDescending(a => a.Popularity),
 
           "duration_asc" => activitiesQuery
@@ -400,21 +447,28 @@ namespace Explorea.Server.Repositories.Implementations
               DifficultyLevel = a.DifficultyLevel,
               PreviewImageUrl = a.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
               Popularity = a.Popularity,
-              DistanceKm = userPoint != null && a.Location != null
-              ? Math.Round(a.Location.Distance(userPoint) / 1000.0, 2)
-              : null,
+              Latitude  = a.Latitude  ?? (a.Destination != null ? a.Destination.Latitude  : null),
+              Longitude = a.Longitude ?? (a.Destination != null ? a.Destination.Longitude : null),
+              DistanceKm = userPoint != null
+                ? (a.Location != null
+                    ? Math.Round(a.Location.Distance(userPoint) / 1000.0, 2)
+                    : (a.Destination != null && a.Destination.Location != null
+                        ? Math.Round(a.Destination.Location.Distance(userPoint) / 1000.0, 2)
+                        : null))
+                : null,
               Country = null
           })
           .ToListAsync();
 
       return (items, total);
     }
-    
+
     public async Task<(List<DestinationCardDto> Items, int Total)> SearchDestinationsAsync(SearchPageListQueryDto query)
     {
       var destinationsQuery = _db.Destinations
         .AsNoTracking()
         .Include(d => d.City)
+        .Include(d => d.Type)
         .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))
@@ -441,9 +495,23 @@ namespace Explorea.Server.Repositories.Implementations
             query.CityIds.Contains(d.CityId.Value));
       }
 
+      if (query.DestinationTypeIds?.Count > 0)
+      {
+        destinationsQuery = destinationsQuery.Where(d =>
+            d.TypeId != null && query.DestinationTypeIds.Contains(d.TypeId.Value));
+      }
+
       if (query.MinRating.HasValue)
       {
         destinationsQuery = destinationsQuery.Where(d => d.AvgRating >= query.MinRating.Value);
+      }
+
+      var extraFiltersDict = ParseExtraFilters(query.ExtraFilters);
+      foreach (var (key, value) in extraFiltersDict)
+      {
+        var snippet = $"{{\"{key}\": {value.ToLower()}}}";
+        destinationsQuery = destinationsQuery.Where(d =>
+            d.ExtraFilters != null && EF.Functions.JsonContains(d.ExtraFilters, snippet));
       }
 
       var userPoint = BuildUserPoint(query.UserLat, query.UserLng);
@@ -456,16 +524,35 @@ namespace Explorea.Server.Repositories.Implementations
 
       destinationsQuery = query.SortBy?.ToLowerInvariant() switch
       {
-        "rating" => destinationsQuery
+        "popularity_asc" => destinationsQuery
+            .OrderByDescending(d => d.Popularity)
+            .ThenByDescending(d => d.AvgRating),
+
+        "popularity_desc" => destinationsQuery
+            .OrderBy(d => d.Popularity)
+            .ThenBy(d => d.AvgRating),
+
+        "rating_asc" => destinationsQuery
             .OrderByDescending(d => d.AvgRating)
             .ThenByDescending(d => d.Popularity),
 
-        "nearest" when userPoint != null => destinationsQuery
+        "rating_desc" => destinationsQuery
+            .OrderBy(d => d.AvgRating)
+            .ThenByDescending(d => d.Popularity),
+
+        "nearest_asc" when userPoint != null => destinationsQuery
             .OrderBy(d => d.Location != null ? d.Location.Distance(userPoint) : double.MaxValue)
             .ThenByDescending(d => d.Popularity),
 
-        "alphabetical" => destinationsQuery
+        "nearest_desc" when userPoint != null => destinationsQuery
+            .OrderByDescending(d => d.Location != null ? d.Location.Distance(userPoint) : 0.0)
+            .ThenByDescending(d => d.Popularity),
+
+        "alphabetical_asc" => destinationsQuery
             .OrderBy(d => d.Name),
+
+        "alphabetical_desc" => destinationsQuery
+            .OrderByDescending(d => d.Name),
 
         _ => destinationsQuery
             .OrderByDescending(d => d.IsFeatured)
@@ -497,7 +584,11 @@ namespace Explorea.Server.Repositories.Implementations
                     Lng = d.Longitude.Value
                 }
                 : null,
-            Country = null
+            DistanceKm = userPoint != null && d.Location != null
+                ? Math.Round(d.Location.Distance(userPoint) / 1000.0, 2)
+                : null,
+            Country = null,
+            TypeName = d.Type != null ? d.Type.Name : null
         })
         .ToListAsync();
 
@@ -512,6 +603,7 @@ namespace Explorea.Server.Repositories.Implementations
         .AsNoTracking()
         .Include(e => e.City)
         .Include(e => e.Type)
+        .Include(e => e.Destination)
         .Where(e => e.EndDatetime >= now)
         .AsQueryable();
 
@@ -567,6 +659,14 @@ namespace Explorea.Server.Repositories.Implementations
         eventsQuery = eventsQuery.Where(e => e.AvgRating >= query.MinRating.Value);
       }
 
+      var extraFiltersDict = ParseExtraFilters(query.ExtraFilters);
+      foreach (var (key, value) in extraFiltersDict)
+      {
+        var snippet = $"{{\"{key}\": {value.ToLower()}}}";
+        eventsQuery = eventsQuery.Where(e =>
+            e.ExtraFilters != null && EF.Functions.JsonContains(e.ExtraFilters, snippet));
+      }
+
       if (query.RadiusKm.HasValue && userPoint != null)
       {
           var radiusMeters = query.RadiusKm.Value * 1000;
@@ -575,12 +675,28 @@ namespace Explorea.Server.Repositories.Implementations
 
       eventsQuery = query.SortBy?.ToLowerInvariant() switch
       {
-        "soonest" => eventsQuery
+        "soonest_asc" => eventsQuery
             .OrderBy(e => e.StartDatetime)
             .ThenByDescending(e => e.Popularity),
 
-        "nearest" when userPoint != null => eventsQuery
+        "soonest_desc" => eventsQuery
+            .OrderByDescending(e => e.StartDatetime)
+            .ThenByDescending(e => e.Popularity),
+
+        "popularity_asc" => eventsQuery
+            .OrderByDescending(e => e.Popularity)
+            .ThenBy(e => e.StartDatetime),
+
+        "popularity_desc" => eventsQuery
+            .OrderBy(e => e.Popularity)
+            .ThenBy(e => e.StartDatetime),
+
+        "nearest_asc" when userPoint != null => eventsQuery
             .OrderBy(e => e.Location != null ? e.Location.Distance(userPoint) : double.MaxValue)
+            .ThenBy(e => e.StartDatetime),
+
+        "nearest_desc" when userPoint != null => eventsQuery
+            .OrderByDescending(e => e.Location != null ? e.Location.Distance(userPoint) : 0.0)
             .ThenBy(e => e.StartDatetime),
 
         "price_asc" => eventsQuery
@@ -622,8 +738,14 @@ namespace Explorea.Server.Repositories.Implementations
             PreviewImageUrl = e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
             IsFeatured = e.IsFeatured,
             Popularity = e.Popularity,
-            DistanceKm = userPoint != null && e.Location != null
-              ? Math.Round(e.Location.Distance(userPoint) / 1000.0, 2)
+            Latitude  = e.Latitude  ?? (e.Destination != null ? e.Destination.Latitude  : null),
+            Longitude = e.Longitude ?? (e.Destination != null ? e.Destination.Longitude : null),
+            DistanceKm = userPoint != null
+              ? (e.Location != null
+                  ? Math.Round(e.Location.Distance(userPoint) / 1000.0, 2)
+                  : (e.Destination != null && e.Destination.Location != null
+                      ? Math.Round(e.Destination.Location.Distance(userPoint) / 1000.0, 2)
+                      : null))
               : null,
             Country = null
         })
@@ -699,6 +821,14 @@ namespace Explorea.Server.Repositories.Implementations
                 wd.Intervals.Any(i => i.OpensAt <= currentTime && i.ClosesAt >= currentTime)));
       }
 
+      var extraFiltersDict = ParseExtraFilters(query.ExtraFilters);
+      foreach (var (key, value) in extraFiltersDict)
+      {
+        var snippet = $"{{\"{key}\": {value.ToLower()}}}";
+        placesQuery = placesQuery.Where(p =>
+            p.ExtraFilters != null && EF.Functions.JsonContains(p.ExtraFilters, snippet));
+      }
+
       if (query.RadiusKm.HasValue && userPoint != null)
       {
           var radiusMeters = query.RadiusKm.Value * 1000;
@@ -707,12 +837,28 @@ namespace Explorea.Server.Repositories.Implementations
 
       placesQuery = query.SortBy?.ToLowerInvariant() switch
       {
-          "rating" => placesQuery
+          "popularity_asc" => placesQuery
+              .OrderByDescending(p => p.Popularity)
+              .ThenByDescending(p => p.AvgRating),
+
+          "popularity_desc" => placesQuery
+              .OrderBy(p => p.Popularity)
+              .ThenBy(p => p.AvgRating),
+
+          "rating_asc" => placesQuery
               .OrderByDescending(p => p.AvgRating)
               .ThenByDescending(p => p.Popularity),
 
-          "nearest" when userPoint != null => placesQuery
+          "rating_desc" => placesQuery
+              .OrderBy(p => p.AvgRating)
+              .ThenByDescending(p => p.Popularity),
+
+          "nearest_asc" when userPoint != null => placesQuery
               .OrderBy(p => p.Location != null ? p.Location.Distance(userPoint) : double.MaxValue)
+              .ThenByDescending(p => p.Popularity),
+
+          "nearest_desc" when userPoint != null => placesQuery
+              .OrderByDescending(p => p.Location != null ? p.Location.Distance(userPoint) : 0.0)
               .ThenByDescending(p => p.Popularity),
 
           "price_asc" => placesQuery
@@ -758,6 +904,19 @@ namespace Explorea.Server.Repositories.Implementations
         .ToListAsync();
 
       return (items, total);
+    }
+
+    private static Dictionary<string, string> ParseExtraFilters(List<string>? raw)
+    {
+      if (raw == null || raw.Count == 0) return new Dictionary<string, string>();
+      var dict = new Dictionary<string, string>();
+      foreach (var entry in raw)
+      {
+        var idx = entry.IndexOf(':');
+        if (idx > 0)
+          dict[entry[..idx]] = entry[(idx + 1)..];
+      }
+      return dict;
     }
 
     private static Point? BuildUserPoint(double? lat, double? lng)

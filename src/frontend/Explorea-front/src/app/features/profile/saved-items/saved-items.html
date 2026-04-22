@@ -38,7 +38,7 @@
     @if (!loading && items.length > 0) {
       <div class="saved-grid">
         @for (item of items; track item.id) {
-          <div class="saved-card">
+          <div class="saved-card" [class.saved-card--expired]="isExpired(item)">
             <a class="saved-card__link" [routerLink]="getEntityRoute(item)">
               <div class="saved-card__image-wrap">
                 <img
@@ -47,13 +47,18 @@
                   class="saved-card__image"
                   loading="lazy" />
                 <span class="saved-card__type">{{ getTypeLabel(item.entityType) | translate }}</span>
-                <button
-                  class="saved-card__remove"
-                  type="button"
-                  [class.saved-card__remove--unsaved]="!isSaved(item.id)"
-                  (click)="toggleSaved(item, $event)">
-                  <span class="material-icons">{{ isSaved(item.id) ? 'favorite' : 'favorite_border' }}</span>
-                </button>
+                @if (isExpired(item)) {
+                  <span class="saved-card__expired-badge">{{ 'SAVED_ITEMS.EXPIRED' | translate }}</span>
+                }
+                @if (!isExpired(item)) {
+                  <button
+                    class="saved-card__remove"
+                    type="button"
+                    [class.saved-card__remove--unsaved]="!isSaved(item.id)"
+                    (click)="toggleSaved(item, $event)">
+                    <span class="material-icons">{{ isSaved(item.id) ? 'favorite' : 'favorite_border' }}</span>
+                  </button>
+                }
               </div>
               <div class="saved-card__body">
                 <span class="saved-card__name">{{ item.name }}</span>
@@ -62,6 +67,15 @@
                 }
               </div>
             </a>
+            @if (isExpired(item)) {
+              <button
+                class="saved-card__unsave-btn"
+                type="button"
+                (click)="toggleSaved(item, $event)">
+                <span class="material-icons">favorite_border</span>
+                {{ 'SAVED_ITEMS.REMOVE' | translate }}
+              </button>
+            }
           </div>
         }
       </div>

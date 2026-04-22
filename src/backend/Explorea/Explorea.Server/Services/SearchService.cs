@@ -20,7 +20,7 @@ namespace Explorea.Server.Services
       _searchRepository = searchRepository;
     }
 
-    public async Task<SearchResultDto> SearchAsync(string? query, int limit = 10)
+    public async Task<SearchResultDto> SearchAsync(string? query, int limit = 10, double? userLat = null, double? userLng = null, double? radiusKm = null)
     {
       if(string.IsNullOrWhiteSpace(query)) return Empty();
 
@@ -127,6 +127,13 @@ namespace Explorea.Server.Services
           EventStartDatetime = null,
           Name = activity.Name
         });
+      }
+
+      if (userLat.HasValue && userLng.HasValue && radiusKm.HasValue && radiusKm > 0)
+      {
+        candidates = candidates
+          .Where(c => IsWithinRadius(c, userLat.Value, userLng.Value, radiusKm.Value))
+          .ToList();
       }
 
       var rankedCandidates = candidates
@@ -539,6 +546,37 @@ namespace Explorea.Server.Services
       };
     }
     
+    // Radius filtering helpers
+    private static bool IsWithinRadius(SearchCandidate candidate, double lat, double lng, double radiusKm)
+    {
+      var (cLat, cLng) = candidate.EntityType switch
+      {
+        "destination" => GetCoords((Destination)candidate.Entity),
+        "place"       => GetCoords((Place)candidate.Entity),
+        "event"       => GetCoords((Event)candidate.Entity),
+        "activity"    => GetCoords((Activity)candidate.Entity),
+        _             => ((double?)null, (double?)null)
+      };
+      if (!cLat.HasValue || !cLng.HasValue) return true;
+      return HaversineKm(lat, lng, cLat.Value, cLng.Value) <= radiusKm;
+    }
+
+    private static (double? lat, double? lng) GetCoords(Destination d) => (d.Latitude, d.Longitude);
+    private static (double? lat, double? lng) GetCoords(Place p) => (p.Latitude, p.Longitude);
+    private static (double? lat, double? lng) GetCoords(Event e) => (e.Latitude, e.Longitude);
+    private static (double? lat, double? lng) GetCoords(Activity a) => (a.Latitude, a.Longitude);
+
+    private static double HaversineKm(double lat1, double lng1, double lat2, double lng2)
+    {
+      const double R = 6371.0;
+      var dLat = (lat2 - lat1) * Math.PI / 180;
+      var dLng = (lng2 - lng1) * Math.PI / 180;
+      var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2)
+            + Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180)
+            * Math.Sin(dLng / 2) * Math.Sin(dLng / 2);
+      return R * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+    }
+
     // deljeni helperi
     private static string NormalizeQuery(string query)
     {

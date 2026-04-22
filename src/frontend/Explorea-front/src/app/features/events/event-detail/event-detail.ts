@@ -19,6 +19,7 @@ import { ReviewCard } from '../../../shared/components/review-card/review-card';
 import { ReviewModal } from '../../../shared/components/review-modal/review-modal';
 import { RatingStats } from '../../../shared/components/rating-stats/rating-stats';
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
+import { PopularityService } from '../../../core/services/popularity.service';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
@@ -87,6 +88,7 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     private reviewService: ReviewService,
     private location: Location,
     private cdr: ChangeDetectorRef,
+    private popularityService: PopularityService,
   ) {}
 
   ngOnInit(): void {
@@ -109,6 +111,7 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
           this.event = data;
           this.loading = false;
           window.scrollTo({ top: 0, behavior: 'auto' });
+          this.popularityService.track('event', data.id);
           this.cdr.detectChanges();
           this.captureTitle();
           if (this.authService.isLoggedIn()) {
@@ -205,11 +208,11 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       comment: r.comment ?? '',
       createdAt: r.createdAt,
       user: {
-        id: '',
-        firstName: r.authorName,
-        lastName: '',
-        travelerRank: 'Putnik',
-        profileImageUrl: r.authorAvatarUrl,
+        id: r.user.id,
+        firstName: r.user.firstName,
+        lastName: r.user.lastName,
+        travelerRank: r.user.travelerRank,
+        profileImageUrl: r.user.profileImageUrl,
       },
     })) ?? [];
   }
@@ -228,9 +231,14 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       id: review.id,
       rating: review.rating,
       comment: review.comment ?? null,
-      authorName: `${review.user.firstName} ${review.user.lastName}`.trim(),
-      authorAvatarUrl: review.user.profileImageUrl ?? null,
       createdAt: review.createdAt,
+      user: {
+        id: review.user.id,
+        firstName: review.user.firstName,
+        lastName: review.user.lastName,
+        travelerRank: review.user.travelerRank,
+        profileImageUrl: review.user.profileImageUrl ?? null,
+      },
     });
     this.hasReviewed = true;
     this.cdr.detectChanges();

@@ -71,5 +71,30 @@ namespace Explorea.Server.Controllers
             var tags = await _lookup.GetInterestTagsAsync();
             return Ok(tags.Select(t => new { t.Id, t.Name, t.Icon }));
         }
+
+        [HttpGet("destination-types")]
+        public async Task<IActionResult> GetDestinationTypes()
+        {
+            var items = await _lookup.GetDestinationTypesAsync();
+            return Ok(items.Select(t => new { t.Id, t.Name, t.Icon }));
+        }
+
+        [HttpGet("filter-definitions")]
+        public async Task<IActionResult> GetFilterDefinitions([FromQuery] string entityType, [FromQuery] int typeId)
+        {
+            if (string.IsNullOrWhiteSpace(entityType) || typeId <= 0)
+                return BadRequest("entityType and typeId are required.");
+
+            var defs = await _lookup.GetFilterDefinitionsAsync(entityType.Trim().ToLower(), typeId);
+            return Ok(defs.Select(d => new
+            {
+                d.Id,
+                d.FilterKey,
+                d.FilterLabel,
+                d.FilterType,
+                d.SortOrder,
+                Options = d.Options.Select(o => new { o.OptionValue, o.OptionLabel })
+            }));
+        }
     }
 }

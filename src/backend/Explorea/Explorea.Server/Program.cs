@@ -81,6 +81,7 @@ builder.Services.AddScoped<ISubmissionQueueRepository, SubmissionQueueRepository
 builder.Services.AddScoped<IAdminDestinationService, AdminDestinationService>();
 builder.Services.AddScoped<IAdminQueueService, AdminQueueService>();
 builder.Services.AddScoped<IAdminAssignmentService, AdminAssignmentService>();
+builder.Services.AddScoped<IPopularityService, PopularityService>();
 
 builder.Services.AddMcpServer()
     .WithHttpTransport()

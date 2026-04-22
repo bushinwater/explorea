@@ -1,5 +1,6 @@
 using Explorea.API.Models;
 using Explorea.Server.Data;
+using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,12 @@ namespace Explorea.Server.Controllers
     public class SavedItemsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IPopularityService _popularityService;
 
-        public SavedItemsController(AppDbContext context)
+        public SavedItemsController(AppDbContext context, IPopularityService popularityService)
         {
             _context = context;
+            _popularityService = popularityService;
         }
 
         [HttpGet("check")]
@@ -51,6 +54,9 @@ namespace Explorea.Server.Controllers
 
             _context.SavedItems.Add(item);
             await _context.SaveChangesAsync();
+
+            await _popularityService.TrackSaveAsync(request.EntityType, request.EntityId, userId);
+
             return StatusCode(201);
         }
 

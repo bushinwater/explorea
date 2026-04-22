@@ -57,6 +57,8 @@ namespace Explorea.Server.Data
         public DbSet<DestinationType>  DestinationTypes  { get; set; }
         public DbSet<FilterDefinition> FilterDefinitions { get; set; }
         public DbSet<FilterOption>     FilterOptions     { get; set; }
+        public DbSet<PopularityLog> PopularityLogs { get; set; }
+        public DbSet<UserInterestScore> UserInterestScores { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -73,6 +75,9 @@ namespace Explorea.Server.Data
             });
 
             // ---- Composite primary keys ----
+            modelBuilder.Entity<UserInterestScore>()
+                .HasKey(x => new { x.UserId, x.InterestTagId });
+
             modelBuilder.Entity<PlaceAmenityLink>()
                 .HasKey(x => new { x.PlaceId, x.AmenityId });
 

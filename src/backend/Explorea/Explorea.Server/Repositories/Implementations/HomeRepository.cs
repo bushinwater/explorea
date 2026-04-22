@@ -17,7 +17,7 @@ namespace Explorea.Server.Repositories.Implementations
       _db = db;
     }
     
-    public async Task<List<Destination>> GetFeaturedDestinationsAsync(int take, double? userLat, double? userLng)
+    public async Task<List<Destination>> GetFeaturedDestinationsAsync(int take, double? userLat, double? userLng, int? cityId = null)
     {
       var userPoint = BuildUserPoint(userLat, userLng);
 
@@ -25,6 +25,7 @@ namespace Explorea.Server.Repositories.Implementations
           .AsNoTracking()
           .Include(d => d.City)
           .Include(d => d.Country)
+          .Where(d => cityId == null || d.CityId == cityId)
           .AsQueryable();
       
       query = userPoint != null 
@@ -92,7 +93,7 @@ namespace Explorea.Server.Repositories.Implementations
       return featured;
     }
 
-  public async Task<List<Activity>> GetPopularActivitiesAsync(int take, double? userLat, double? userLng)
+  public async Task<List<Activity>> GetPopularActivitiesAsync(int take, double? userLat, double? userLng, int? cityId = null)
   {
     var userPoint = BuildUserPoint(userLat, userLng);
 
@@ -101,6 +102,7 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(a => a.Category)
         .Include(a => a.Country)
         .Include(a => a.Images)
+        .Where(a => cityId == null || a.CityId == cityId)
         .AsQueryable();
 
     query = userPoint != null
@@ -158,7 +160,7 @@ namespace Explorea.Server.Repositories.Implementations
       return result;
     }
 
-  public async Task<List<Event>> GetUpcomingEventsAsync(DateTimeOffset now, int take, double? userLat, double? userLng)
+  public async Task<List<Event>> GetUpcomingEventsAsync(DateTimeOffset now, int take, double? userLat, double? userLng, int? cityId = null)
   {
     var userPoint = BuildUserPoint(userLat, userLng);
 
@@ -168,7 +170,7 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(e => e.City)
         .Include(e => e.Country)
         .Include(e => e.Images)
-        .Where(e => e.EndDatetime >= now)
+        .Where(e => e.EndDatetime >= now && (cityId == null || e.CityId == cityId))
         .AsQueryable();
 
     query = userPoint != null

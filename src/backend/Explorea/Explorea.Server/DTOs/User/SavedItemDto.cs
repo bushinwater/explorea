@@ -10,5 +10,6 @@ namespace Explorea.API.DTOs.User
         public string? PreviewImageUrl { get; set; }
         public string? Subtitle { get; set; }
         public DateTimeOffset SavedAt { get; set; }
+        public DateTimeOffset? EndDatetime { get; set; }
     }
 }

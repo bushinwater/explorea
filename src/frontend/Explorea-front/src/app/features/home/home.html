@@ -5,39 +5,42 @@
   <!-- Main content -->
   <main class="home-main">
 
-    <!-- Skeleton loader -->
-    <div class="home-skeleton" *ngIf="loading">
-      <div class="skeleton-hero"></div>
-      <div class="home-content">
-        <div class="skeleton-section">
-          <div class="skeleton-title"></div>
-          <div class="skeleton-row">
-            <div class="skeleton-card" *ngFor="let i of [1,2,3,4]"></div>
-          </div>
+    <!-- Hero banner — uvek vidljiv da chip ostane selektovan -->
+    <app-hero-banner
+      [banners]="heroBanners"
+      [cityFilters]="cityFilters"
+      [activeCityId]="activeCityId"
+      (citySelected)="onCitySelected($event)"
+      (searchSubmitted)="onSearch($event)"
+    />
+
+    <!-- Content loading skeleton -->
+    <div class="home-content" *ngIf="loading">
+      <div class="skeleton-section">
+        <div class="skeleton-title"></div>
+        <div class="skeleton-row">
+          <div class="skeleton-card" *ngFor="let i of [1,2,3,4]"></div>
         </div>
-        <div class="skeleton-section">
-          <div class="skeleton-title"></div>
-          <div class="skeleton-row">
-            <div class="skeleton-card skeleton-card--wide" *ngFor="let i of [1,2,3]"></div>
-          </div>
+      </div>
+      <div class="skeleton-section">
+        <div class="skeleton-title"></div>
+        <div class="skeleton-row">
+          <div class="skeleton-card skeleton-card--wide" *ngFor="let i of [1,2,3]"></div>
         </div>
       </div>
     </div>
 
     <!-- Actual content -->
     <ng-container *ngIf="!loading">
-      <app-hero-banner
-        [banners]="heroBanners"
-        [cityFilters]="cityFilters"
-        (citySelected)="onCitySelected($event)"
-        (searchSubmitted)="onSearch($event)"
-      />
-
       <div class="home-content">
         <app-featured-destinations [destinations]="featuredDestinations" />
         <app-upcoming-events [events]="upcomingEvents" />
         <app-popular-activities [activities]="popularActivities" />
-        <app-ai-recommendations [recommendations]="recommendations" />
+        <app-ai-recommendations
+          [destinations]="recommendedDestinations"
+          [events]="recommendedEvents"
+          [activities]="recommendedActivities"
+        />
         <app-travel-reviews [reviews]="travelerReviews" />
       </div>
 

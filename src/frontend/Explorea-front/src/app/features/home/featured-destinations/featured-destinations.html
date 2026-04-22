@@ -3,14 +3,15 @@
     <div>
       <h2 class="section__title">{{ 'HOME.FEATURED.TITLE' | translate }}</h2>
     </div>
-    <a href="#" class="section__link">{{ 'HOME.FEATURED.VIEW_ALL' | translate }} <span class="material-icons">arrow_forward</span></a>
+    <a routerLink="/search" [queryParams]="{type: 'destination'}" class="section__link">{{ 'HOME.FEATURED.VIEW_ALL' | translate }} <span class="material-icons">arrow_forward</span></a>
   </div>
 
-  <div class="scroll-row">
+  <div class="scroll-row" *ngIf="destinations.length">
     <app-destination-card
       *ngFor="let dest of destinations"
       [destination]="dest"
       [featured]="!!dest.isFeatured"
     />
   </div>
+  <p class="section__empty" *ngIf="!destinations.length">{{ 'HOME.EMPTY.DESTINATIONS' | translate }}</p>
 </section>

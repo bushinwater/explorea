@@ -12,5 +12,7 @@ namespace Explorea.Server.Repositories.Interfaces
         Task<List<Season>> GetSeasonsAsync();
         Task<List<InterestTag>> GetInterestTagsAsync();
         Task<List<Country>> GetCountriesAsync();
+        Task<List<DestinationType>> GetDestinationTypesAsync();
+        Task<List<FilterDefinition>> GetFilterDefinitionsAsync(string entityType, int typeId);
     }
 }

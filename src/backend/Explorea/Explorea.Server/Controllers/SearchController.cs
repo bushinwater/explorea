@@ -15,9 +15,14 @@ namespace Explorea.Server.Controllers
             _searchService = searchService;
         }
         [HttpGet]
-        public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int limit = 10) 
+        public async Task<IActionResult> Search(
+            [FromQuery] string? q,
+            [FromQuery] int limit = 10,
+            [FromQuery] double? userLat = null,
+            [FromQuery] double? userLng = null,
+            [FromQuery] double? radiusKm = null)
         {
-            var result = await _searchService.SearchAsync(q, limit);
+            var result = await _searchService.SearchAsync(q, limit, userLat, userLng, radiusKm);
             return Ok(result);
         }
 
