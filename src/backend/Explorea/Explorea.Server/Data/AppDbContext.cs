@@ -195,6 +195,12 @@ namespace Explorea.Server.Data
                 .HasForeignKey(a => a.AssignedBy)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.ManagedRegion)
+                .WithMany(r => r.ManagedUsers)
+                .HasForeignKey(u => u.ManagedRegionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // ---- SubmissionQueue relacije ----
             modelBuilder.Entity<SubmissionQueue>()
                 .HasOne(q => q.Destination)

@@ -24,6 +24,24 @@ namespace Explorea.Server.Repositories.Implementations
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 
+        public async Task<User?> GetByIdWithAdminContextAsync(Guid id)
+        {
+            return await _set
+                .Include(u => u.Role)
+                .Include(u => u.ManagedRegion)
+                .Include(u => u.CurrentCity)
+                    .ThenInclude(c => c!.Region)
+                .FirstOrDefaultAsync(u => u.Id == id);
+        }
+
+        public async Task<Region?> GetRegionByNameAsync(string name)
+        {
+            var normalized = name.Trim().ToLower();
+
+            return await _db.Regions
+                .FirstOrDefaultAsync(r => r.Name.ToLower() == normalized);
+        }
+
         public async Task<UserPreferences?> GetPreferencesAsync(Guid userId)
         {
             return await _db.UserPreferences
@@ -148,11 +166,11 @@ namespace Explorea.Server.Repositories.Implementations
                 excludedRoles);
 
             return await query
-                .Where(u => u.CurrentCity != null && u.CurrentCity.Region != null)
+                .Where(u => u.ManagedRegionId != null || (u.CurrentCity != null && u.CurrentCity.Region != null))
                 .Select(u => new AdminUserDirectoryRegionDto
                 {
-                    Id = u.CurrentCity!.Region!.Id,
-                    Name = u.CurrentCity.Region.Name
+                    Id = u.ManagedRegionId ?? u.CurrentCity!.Region!.Id,
+                    Name = u.ManagedRegion != null ? u.ManagedRegion.Name : u.CurrentCity!.Region!.Name
                 })
                 .Distinct()
                 .OrderBy(r => r.Name)
@@ -188,6 +206,7 @@ namespace Explorea.Server.Repositories.Implementations
             var query = _set
                 .AsNoTracking()
                 .Include(u => u.Role)
+                .Include(u => u.ManagedRegion)
                 .Include(u => u.CurrentCity)
                     .ThenInclude(c => c!.Region)
                 .AsQueryable();
@@ -204,9 +223,11 @@ namespace Explorea.Server.Repositories.Implementations
             if (visibleRegionIds is { Count: > 0 })
             {
                 query = query.Where(u =>
-                    (u.CurrentCity != null
-                     && u.CurrentCity.RegionId != null
-                     && visibleRegionIds.Contains(u.CurrentCity.RegionId.Value))
+                    ((u.ManagedRegionId != null
+                      && visibleRegionIds.Contains(u.ManagedRegionId.Value))
+                     || (u.CurrentCity != null
+                         && u.CurrentCity.RegionId != null
+                         && visibleRegionIds.Contains(u.CurrentCity.RegionId.Value)))
                     || (includeUsersWithoutLocation
                         && u.CurrentLatitude == null
                         && u.CurrentLongitude == null));
@@ -234,7 +255,9 @@ namespace Explorea.Server.Repositories.Implementations
             }
 
             if (filters.RegionId.HasValue)
-                query = query.Where(u => u.CurrentCity != null && u.CurrentCity.RegionId == filters.RegionId.Value);
+                query = query.Where(u =>
+                    u.ManagedRegionId == filters.RegionId.Value
+                    || (u.CurrentCity != null && u.CurrentCity.RegionId == filters.RegionId.Value));
 
             if (!string.IsNullOrWhiteSpace(filters.Status))
             {
@@ -279,8 +302,8 @@ namespace Explorea.Server.Repositories.Implementations
                 LastName = user.LastName,
                 Email = user.Email,
                 Role = user.Role.Name,
-                RegionId = user.CurrentCity?.RegionId,
-                RegionName = user.CurrentCity?.Region?.Name,
+                RegionId = user.ManagedRegionId ?? user.CurrentCity?.RegionId,
+                RegionName = user.ManagedRegion?.Name ?? user.CurrentCity?.Region?.Name,
                 Status = user.IsActive ? "active" : "revoked",
                 Gender = string.IsNullOrWhiteSpace(user.Gender) ? "unknown" : user.Gender.ToLower(),
                 Age = CalculateAge(user.DateOfBirth),

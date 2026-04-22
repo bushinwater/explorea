@@ -7,6 +7,8 @@ namespace Explorea.Server.Repositories.Interfaces
     {
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByIdWithRoleAsync(Guid id);
+        Task<User?> GetByIdWithAdminContextAsync(Guid id);
+        Task<Region?> GetRegionByNameAsync(string name);
         Task<UserPreferences?> GetPreferencesAsync(Guid userId);
         Task UpsertPreferencesAsync(UserPreferences preferences);
         Task<List<InterestTag>> GetInterestsAsync(Guid userId);

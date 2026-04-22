@@ -61,6 +61,9 @@ namespace Explorea.API.Models
         [Column("current_city_id")]
         public int? CurrentCityId { get; set; }
 
+        [Column("managed_region_id")]
+        public int? ManagedRegionId { get; set; }
+
         [Column("current_location", TypeName = "geography(Point, 4326)")]
         public Point? CurrentLocation { get; set; }
 
@@ -73,6 +76,7 @@ namespace Explorea.API.Models
         public Role Role { get; set; } = null!;
 
         [ForeignKey("CurrentCityId")] public City? CurrentCity { get; set; }
+        [ForeignKey("ManagedRegionId")] public Region? ManagedRegion { get; set; }
 
         public UserPreferences?             Preferences  { get; set; }
         public ICollection<UserAuthAccount> AuthAccounts { get; set; } = new List<UserAuthAccount>();

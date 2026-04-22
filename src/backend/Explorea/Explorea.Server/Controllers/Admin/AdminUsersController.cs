@@ -63,6 +63,25 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] AdminCreateUserDto dto)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                var created = await _service.CreateAsync(dto, currentUserId);
+                return StatusCode(201, created);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPut("{id}/status")]
         public IActionResult SetStatus(Guid id) => Ok();
 
