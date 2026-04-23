@@ -85,6 +85,29 @@ namespace Explorea.Server.Controllers.Admin
         [HttpPut("{id}/status")]
         public IActionResult SetStatus(Guid id) => Ok();
 
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(Guid id, [FromBody] AdminUpdateUserDto dto)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                var updated = await _service.UpdateAsync(id, dto, currentUserId);
+                return Ok(updated);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         private Guid GetCurrentUserId()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

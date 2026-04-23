@@ -69,35 +69,8 @@ export class AdminUserDirectoryService {
   }
 
   updateUser(dto: UpdateAdminUserDto): Observable<UserDirectoryUser> {
-    const normalizedEmail = dto.email.trim().toLowerCase();
-    const emailExists = this.users.some(
-      (user) => user.id !== dto.id && user.email.toLowerCase() === normalizedEmail,
-    );
-
-    if (emailExists) {
-      return throwError(() => new Error(this.ui.t('users.error.email_exists_update')));
-    }
-
-    const index = this.users.findIndex((user) => user.id === dto.id);
-    if (index === -1) {
-      return throwError(() => new Error(this.ui.t('users.error.not_found')));
-    }
-
-    const updated: UserDirectoryUser = {
-      ...this.users[index],
-      firstName: dto.firstName.trim(),
-      lastName: dto.lastName.trim(),
-      email: normalizedEmail,
-      role: dto.role,
-      regionName: dto.region,
-      status: dto.status,
-      gender: dto.gender ?? 'unknown',
-      age: dto.age,
-    };
-
-    this.users[index] = updated;
-
-    return of(updated).pipe(delay(250));
+    const { id, ...payload } = dto;
+    return this.http.put<UserDirectoryUser>(`${this.api}/${id}`, payload);
   }
 
   deleteUser(id: string): Observable<void> {

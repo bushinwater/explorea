@@ -144,6 +144,55 @@ namespace Explorea.Server.Services.Admin
             return MapDirectoryItem(created);
         }
 
+        public async Task<AdminUserDirectoryItemDto> UpdateAsync(Guid id, AdminUpdateUserDto dto, Guid currentUserId)
+        {
+            var scope = await ResolveScopeAsync(currentUserId);
+            var actor = scope.Actor;
+
+            var user = await _userRepository.GetByIdWithAdminContextAsync(id);
+            if (user == null)
+                throw new KeyNotFoundException("User was not found.");
+
+            ValidateManageTarget(scope, user);
+
+            var normalizedEmail = dto.Email.Trim().ToLower();
+            var existing = await _userRepository.GetByEmailAsync(normalizedEmail);
+            if (existing != null && existing.Id != id)
+                throw new InvalidOperationException("User with this email already exists.");
+
+            var targetRoleName = dto.Role.Trim().ToLower();
+            ValidateUpdateRole(actor.Role.Name, targetRoleName);
+
+            var targetRole = await _authRepository.GetRoleByNameAsync(targetRoleName);
+            if (targetRole == null)
+                throw new InvalidOperationException("Requested role was not found.");
+
+            var managedRegion = await ResolveManagedRegionAsync(dto.Region, scope, required: targetRoleName != RoleNames.SuperAdmin);
+            var now = DateTimeOffset.UtcNow;
+
+            user.FirstName = dto.FirstName.Trim();
+            user.LastName = dto.LastName.Trim();
+            user.Email = normalizedEmail;
+            user.RoleId = targetRole.Id;
+            user.Role = targetRole;
+            user.IsActive = NormalizeStatus(dto.Status);
+            user.Gender = NormalizeGender(dto.Gender);
+            user.DateOfBirth = CalculateDateOfBirth(dto.Age);
+            user.ManagedRegionId = managedRegion?.Id;
+            user.ManagedRegion = managedRegion;
+            user.UpdatedAt = now;
+            user.UpdatedBy = currentUserId;
+
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
+            await SyncTouristOrganizationRegionAsync(user.Id, targetRoleName, managedRegion, now, currentUserId);
+
+            var updated = await _userRepository.GetByIdWithAdminContextAsync(user.Id)
+                ?? throw new InvalidOperationException("Updated user could not be loaded.");
+
+            return MapDirectoryItem(updated);
+        }
+
         private async Task<AdminUserScope> ResolveScopeAsync(Guid currentUserId)
         {
             var currentUser = await _userRepository.GetByIdWithRoleAsync(currentUserId);
@@ -238,6 +287,65 @@ namespace Explorea.Server.Services.Admin
             {
                 throw new UnauthorizedAccessException("Tourist organization cannot create admin roles.");
             }
+        }
+
+        private static void ValidateUpdateRole(string actorRoleName, string targetRoleName)
+        {
+            if (actorRoleName == RoleNames.TouristOrganization
+                && (targetRoleName == RoleNames.SuperAdmin || targetRoleName == RoleNames.TouristOrganization))
+            {
+                throw new UnauthorizedAccessException("Tourist organization cannot assign admin roles.");
+            }
+        }
+
+        private static void ValidateManageTarget(AdminUserScope scope, User target)
+        {
+            if (scope.Actor.Role.Name == RoleNames.SuperAdmin)
+                return;
+
+            if (target.Role.Name == RoleNames.SuperAdmin || target.Role.Name == RoleNames.TouristOrganization)
+                throw new UnauthorizedAccessException("Tourist organization cannot manage admin users.");
+
+            var hasNoSavedLocation = target.CurrentLatitude == null && target.CurrentLongitude == null;
+            if (hasNoSavedLocation && scope.IncludeUsersWithoutLocation)
+                return;
+
+            if (scope.VisibleRegionIds == null)
+                return;
+
+            var targetRegionId = target.ManagedRegionId ?? target.CurrentCity?.RegionId;
+            if (targetRegionId.HasValue && scope.VisibleRegionIds.Contains(targetRegionId.Value))
+                return;
+
+            throw new UnauthorizedAccessException("You cannot manage users outside your region.");
+        }
+
+        private async Task SyncTouristOrganizationRegionAsync(
+            Guid userId,
+            string roleName,
+            Region? managedRegion,
+            DateTimeOffset now,
+            Guid currentUserId)
+        {
+            var existingAssignments = await _organizationRegionAssignmentRepository.GetByUserIdAsync(userId);
+            foreach (var assignment in existingAssignments)
+            {
+                await _organizationRegionAssignmentRepository.RemoveAsync(assignment.Id);
+            }
+
+            if (roleName == RoleNames.TouristOrganization && managedRegion != null)
+            {
+                await _organizationRegionAssignmentRepository.AddAsync(new OrganizationRegionAssignment
+                {
+                    Id = Guid.NewGuid(),
+                    OrganizationUserId = userId,
+                    RegionId = managedRegion.Id,
+                    AssignedAt = now,
+                    AssignedBy = currentUserId
+                });
+            }
+
+            await _organizationRegionAssignmentRepository.SaveChangesAsync();
         }
 
         private static AdminUserDirectoryItemDto MapDirectoryItem(User user)

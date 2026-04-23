@@ -13,5 +13,7 @@ namespace Explorea.Server.Services.Admin.Interfaces
         Task<List<AdminUserDirectoryRegionDto>> GetRegionsAsync(Guid currentUserId);
 
         Task<AdminUserDirectoryItemDto> CreateAsync(AdminCreateUserDto dto, Guid currentUserId);
+
+        Task<AdminUserDirectoryItemDto> UpdateAsync(Guid id, AdminUpdateUserDto dto, Guid currentUserId);
     }
 }
