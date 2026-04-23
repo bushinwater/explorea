@@ -17,5 +17,7 @@ namespace Explorea.Server.Services.Admin.Interfaces
         Task<AdminUserDirectoryItemDto> UpdateAsync(Guid id, AdminUpdateUserDto dto, Guid currentUserId);
 
         Task DeleteAsync(Guid id, Guid currentUserId);
+
+        Task<AdminUserDirectoryItemDto> SetStatusAsync(Guid id, AdminSetUserStatusDto dto, Guid currentUserId);
     }
 }

@@ -212,6 +212,28 @@ namespace Explorea.Server.Services.Admin
             await _userRepository.SaveChangesAsync();
         }
 
+        public async Task<AdminUserDirectoryItemDto> SetStatusAsync(Guid id, AdminSetUserStatusDto dto, Guid currentUserId)
+        {
+            var scope = await ResolveScopeAsync(currentUserId);
+            var user = await _userRepository.GetByIdWithAdminContextAsync(id);
+            if (user == null)
+                throw new KeyNotFoundException("User was not found.");
+
+            ValidateManageTarget(scope, user);
+
+            user.IsActive = NormalizeStatus(dto.Status);
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+            user.UpdatedBy = currentUserId;
+
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
+
+            var updated = await _userRepository.GetByIdWithAdminContextAsync(user.Id)
+                ?? throw new InvalidOperationException("Updated user could not be loaded.");
+
+            return MapDirectoryItem(updated);
+        }
+
         private async Task<AdminUserScope> ResolveScopeAsync(Guid currentUserId)
         {
             var currentUser = await _userRepository.GetByIdWithRoleAsync(currentUserId);
