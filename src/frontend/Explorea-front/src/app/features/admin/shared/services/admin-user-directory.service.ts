@@ -74,14 +74,7 @@ export class AdminUserDirectoryService {
   }
 
   deleteUser(id: string): Observable<void> {
-    const index = this.users.findIndex((user) => user.id === id);
-    if (index === -1) {
-      return throwError(() => new Error(this.ui.t('users.error.not_found')));
-    }
-
-    this.users.splice(index, 1);
-
-    return of(void 0).pipe(delay(250));
+    return this.http.delete<void>(`${this.api}/${id}`);
   }
 }
 

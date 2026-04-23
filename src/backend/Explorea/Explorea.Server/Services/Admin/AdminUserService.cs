@@ -193,6 +193,25 @@ namespace Explorea.Server.Services.Admin
             return MapDirectoryItem(updated);
         }
 
+        public async Task DeleteAsync(Guid id, Guid currentUserId)
+        {
+            var scope = await ResolveScopeAsync(currentUserId);
+            var user = await _userRepository.GetByIdWithAdminContextAsync(id);
+            if (user == null)
+                throw new KeyNotFoundException("User was not found.");
+
+            ValidateManageTarget(scope, user);
+
+            var existingAssignments = await _organizationRegionAssignmentRepository.GetByUserIdAsync(user.Id);
+            foreach (var assignment in existingAssignments)
+            {
+                await _organizationRegionAssignmentRepository.RemoveAsync(assignment.Id);
+            }
+
+            _userRepository.Remove(user);
+            await _userRepository.SaveChangesAsync();
+        }
+
         private async Task<AdminUserScope> ResolveScopeAsync(Guid currentUserId)
         {
             var currentUser = await _userRepository.GetByIdWithRoleAsync(currentUserId);
