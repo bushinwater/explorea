@@ -12,7 +12,7 @@ namespace Explorea.Server.Repositories.Implementations
         public async Task<RefreshToken?> GetRefreshTokenAsync(string tokenHash)
         {
             return await _db.RefreshTokens
-                .Include(t => t.User)
+                .Include(t => t.User).ThenInclude(u => u.Role)
                 .FirstOrDefaultAsync(t => t.TokenHash == tokenHash && !t.IsRevoked);
         }
 

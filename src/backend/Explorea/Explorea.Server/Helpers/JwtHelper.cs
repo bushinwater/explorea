@@ -1,4 +1,5 @@
 ﻿using Explorea.API.Models;
+using Explorea.Server.Data;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -10,10 +11,12 @@ namespace Explorea.Server.Helpers
     public class JwtHelper
     {
         private readonly IConfiguration _configuration;
+        private readonly AppDbContext _db;
 
-        public JwtHelper(IConfiguration configuration)
+        public JwtHelper(IConfiguration configuration, AppDbContext db)
         {
             _configuration = configuration;
+            _db = db;
         }
 
         public string GenerateAccessToken(User user)
@@ -25,10 +28,13 @@ namespace Explorea.Server.Helpers
             var audience = jwtSettings["Audience"];
             var expiryMinutes = int.Parse(jwtSettings["AccessTokenExpiryMinutes"]!);
 
+            var roleName = user.Role?.Name ?? _db.Roles.Find(user.RoleId)?.Name ?? "traveler";
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email)
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim("role", roleName)
             };
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));

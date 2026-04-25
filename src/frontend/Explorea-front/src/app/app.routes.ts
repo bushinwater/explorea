@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
 import { guestGuard } from './core/guards/guest-guard';
 import { adminUsersAccessGuard } from './core/guards/admin-users-access.guard';
+import { adminGuard } from './core/guards/admin.guard';
 import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-shell.component';
 import { AdminHomePageComponent } from './features/admin/home/admin-home-page.component';
 import { UserDirectoryPageComponent } from './features/admin/users/user-directory-page.component';
@@ -48,7 +49,7 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: AdminShellComponent,
-    // canActivate: [authGuard], // privremeno iskljuceno za testiranje dashboarda
+    canActivate: [adminGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: Dashboard },
