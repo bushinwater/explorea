@@ -1,10 +1,21 @@
-:host { display: block; }
+:host {
+  display: block;
+  container-type: inline-size;
+  height: auto !important;
+  align-self: start;
+}
 
 .qa {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+
+  /* OVO JE KLJUČNO */
+  height: auto !important;
+  min-height: unset !important;
+  max-height: fit-content;
+  align-self: start;
 }
 
 .qa__header {
@@ -12,45 +23,85 @@
   border-bottom: 1px solid var(--color-border-light);
 }
 
-.qa__title { font-size: var(--font-size-md); font-weight: 600; margin: 0; }
+.qa__title {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  margin: 0;
+}
 
 .qa__grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1px;
   background: var(--color-border-light);
+
+  /* BITNO */
+  height: auto !important;
+  align-items: start;
+  align-content: start;
+}
+
+/* Kada se smanji širina — ostaje kompaktno */
+@container (max-width: 420px) {
+  .qa__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@container (max-width: 220px) {
+  .qa__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 600px) {
-  .qa__grid { grid-template-columns: repeat(2, 1fr); }
+  .qa__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .qa__btn {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+
   gap: var(--sp-2);
-  padding: var(--sp-5) var(--sp-3);
+  padding: 16px 12px;
+
   border: none;
   background: var(--color-surface);
   cursor: pointer;
   transition: background 0.15s;
+
+  /* OVO sprečava razvlačenje */
+  height: auto !important;
+  min-height: 90px;
 }
 
-.qa__btn:hover { background: var(--color-surface-2); }
-.qa__btn:hover .qa__icon-wrap { transform: scale(1.08); }
+.qa__btn:hover {
+  background: var(--color-surface-2);
+}
+
+.qa__btn:hover .qa__icon-wrap {
+  transform: scale(1.08);
+}
 
 .qa__icon-wrap {
   width: 44px;
   height: 44px;
   border-radius: var(--radius-md);
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   transition: transform 0.18s;
 }
 
-.qa__icon-wrap .material-icons { font-size: 22px; }
+.qa__icon-wrap .material-icons {
+  font-size: 22px;
+}
 
 .qa__label {
   font-size: var(--font-size-xs);
@@ -61,20 +112,51 @@
 }
 
 /* Color variants */
-.qa__btn--primary .qa__icon-wrap { background: var(--color-primary-muted); }
-.qa__btn--primary .qa__icon-wrap .material-icons { color: var(--color-primary); }
 
-.qa__btn--accent .qa__icon-wrap { background: var(--color-accent-muted); }
-.qa__btn--accent .qa__icon-wrap .material-icons { color: var(--color-accent); }
+.qa__btn--primary .qa__icon-wrap {
+  background: var(--color-primary-muted);
+}
 
-.qa__btn--info .qa__icon-wrap { background: rgba(96,165,250,0.12); }
-.qa__btn--info .qa__icon-wrap .material-icons { color: var(--color-info); }
+.qa__btn--primary .qa__icon-wrap .material-icons {
+  color: var(--color-primary);
+}
 
-.qa__btn--warning .qa__icon-wrap { background: rgba(245,158,11,0.12); }
-.qa__btn--warning .qa__icon-wrap .material-icons { color: var(--color-warning); }
+.qa__btn--accent .qa__icon-wrap {
+  background: var(--color-accent-muted);
+}
 
-.qa__btn--danger .qa__icon-wrap { background: rgba(229,115,115,0.12); }
-.qa__btn--danger .qa__icon-wrap .material-icons { color: var(--color-danger); }
+.qa__btn--accent .qa__icon-wrap .material-icons {
+  color: var(--color-accent);
+}
 
-.qa__btn--muted .qa__icon-wrap { background: var(--color-surface-3); }
-.qa__btn--muted .qa__icon-wrap .material-icons { color: var(--color-text-secondary); }
+.qa__btn--info .qa__icon-wrap {
+  background: rgba(96, 165, 250, 0.12);
+}
+
+.qa__btn--info .qa__icon-wrap .material-icons {
+  color: var(--color-info);
+}
+
+.qa__btn--warning .qa__icon-wrap {
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.qa__btn--warning .qa__icon-wrap .material-icons {
+  color: var(--color-warning);
+}
+
+.qa__btn--danger .qa__icon-wrap {
+  background: rgba(229, 115, 115, 0.12);
+}
+
+.qa__btn--danger .qa__icon-wrap .material-icons {
+  color: var(--color-danger);
+}
+
+.qa__btn--muted .qa__icon-wrap {
+  background: var(--color-surface-3);
+}
+
+.qa__btn--muted .qa__icon-wrap .material-icons {
+  color: var(--color-text-secondary);
+}

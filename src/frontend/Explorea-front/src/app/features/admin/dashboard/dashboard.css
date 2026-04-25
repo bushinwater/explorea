@@ -1,49 +1,72 @@
-:host { display: block; }
+:host {
+  display: block;
+}
 
-/* ===== ALERT BANNER ===== */
-.alert-banner {
+/* ===== ALERT CARD ===== */
+.alert-card {
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
-  padding: 10px var(--sp-6);
-  background: linear-gradient(90deg, rgba(245,158,11,0.18), rgba(245,158,11,0.08));
-  border-bottom: 1px solid rgba(245,158,11,0.25);
+  gap: var(--sp-4);
+  padding: 14px var(--sp-5);
+  margin: var(--sp-5) var(--sp-6) 0;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
-.alert-banner__icon {
-  color: var(--color-warning);
-  font-size: 18px;
+.alert-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  color: var(--color-warning);
+}
+.alert-card__icon .material-icons {
+  font-size: 22px;
 }
 
-.alert-banner__text {
+.alert-card__body {
   flex: 1;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
   min-width: 0;
 }
 
-.alert-banner__text strong {
-  color: var(--color-warning);
-  font-weight: 600;
+.alert-card__title {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 3px;
 }
 
-.alert-banner__cta {
-  padding: 5px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-warning);
-  background: transparent;
-  color: var(--color-warning);
+.alert-card__desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alert-card__cta {
+  padding: 8px 20px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
   font-size: var(--font-size-sm);
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.18s;
   flex-shrink: 0;
+  transition: filter 0.18s;
 }
-.alert-banner__cta:hover { background: rgba(245,158,11,0.12); }
+.alert-card__cta:hover {
+  filter: brightness(1.12);
+}
 
-.alert-banner__close {
+.alert-card__close {
   width: 28px;
   height: 28px;
   border-radius: var(--radius-sm);
@@ -57,73 +80,458 @@
   flex-shrink: 0;
   transition: color 0.18s;
 }
-.alert-banner__close:hover { color: var(--color-text-primary); }
-.alert-banner__close .material-icons { font-size: 16px; }
-
-/* ===== LAYOUT ===== */
-.dash {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: var(--sp-5);
-  padding: var(--sp-6);
-  align-items: start;
+.alert-card__close:hover {
+  color: var(--color-text-primary);
+}
+.alert-card__close .material-icons {
+  font-size: 16px;
 }
 
-.dash--no-side {
-  grid-template-columns: 1fr;
+/* ===== TOOLBAR ===== */
+.dash-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--sp-3) var(--sp-6) 0;
 }
 
-@media (max-width: 1200px) {
-  .dash { grid-template-columns: 1fr; }
-  .dash__side { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--sp-5); }
-}
-
-@media (max-width: 640px) {
-  .dash { padding: var(--sp-4); gap: var(--sp-4); }
-}
-
-/* ===== MAIN COLUMN ===== */
-.dash__main {
+/* ===== DASHBOARD CANVAS ===== */
+/* Outer canvas: column of rows */
+.dash-canvas {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
-  min-width: 0;
+  gap: 16px;
+  padding: var(--sp-5) var(--sp-6) var(--sp-6);
+  min-height: 200px;
 }
 
+/* ===== DASH ROW ===== */
+/* Each row is a horizontal CDK drop list */
+.dash-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: flex-start;
+  min-height: 60px;
+}
+
+/* Highlight the row being dropped onto */
+.dash-row.cdk-drop-list-receiving {
+  outline: 2px dashed var(--color-primary);
+  outline-offset: 4px;
+  border-radius: var(--radius-lg);
+  background: rgba(99, 102, 241, 0.03);
+}
+
+/* ===== GAP ROW ZONE ===== */
+/* Appears between rows during drag to let user insert a widget as a standalone row */
+.gap-row-zone {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  height: 40px;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    color 0.2s;
+  cursor: default;
+}
+.gap-row-zone .material-icons {
+  font-size: 16px;
+}
+
+.gap-row-zone--visible {
+  display: flex;
+}
+
+.gap-row-zone.cdk-drop-list-receiving {
+  border-color: var(--color-primary);
+  background: rgba(99, 102, 241, 0.06);
+  color: var(--color-primary);
+}
+
+/* ===== WIDGET CARD ===== */
+.widget-card {
+  position: relative;
+  min-width: 0;
+  box-sizing: border-box;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s;
+  /* Container queries let widget content adapt to the widget's own width */
+  container-type: inline-size;
+}
+
+/* Proportional widths within a row — flex-basis 0 so lone widget fills 100% */
+.widget-card--cols-1 {
+  flex: 1 0 0;
+}
+.widget-card--cols-2 {
+  flex: 2 0 0;
+}
+.widget-card--cols-3 {
+  flex: 3 0 0;
+}
+.widget-card--cols-4 {
+  flex: 4 0 0;
+}
+
+/* Responsive: at tablet, min-width so narrow widgets stay readable */
+@media (max-width: 900px) {
+  .widget-card--cols-1 {
+    flex: 2 0 0;
+  }
+}
+@media (max-width: 640px) {
+  .dash-row {
+    flex-direction: column;
+  }
+  .widget-card--cols-1,
+  .widget-card--cols-2,
+  .widget-card--cols-3,
+  .widget-card--cols-4 {
+    flex: 1 0 auto;
+  }
+  .dash-canvas {
+    padding: var(--sp-4);
+    gap: var(--sp-4);
+  }
+}
+
+.widget-card:hover {
+  border-color: var(--color-primary);
+  box-shadow:
+    0 0 0 1px rgba(99, 102, 241, 0.15),
+    var(--shadow-md);
+}
+
+/* During drag: all non-dragged cards in other rows show subtle outline */
+.dash-canvas--dragging .dash-row:not(.cdk-drop-list-dragging) .widget-card {
+  outline: 1px dashed rgba(99, 102, 241, 0.18);
+  outline-offset: 1px;
+}
+
+/* CDK drag states */
+.widget-card.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+.dash-row.cdk-drop-list-dragging .widget-card:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+.widget-card.cdk-drag-preview {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
+  border-color: var(--color-primary);
+  opacity: 0.92;
+  border-radius: var(--radius-lg);
+}
+
+.widget-card--resizing {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25) !important;
+}
+
+/* Strip inner card borders — widget-card is the sole visual card */
+/* stylelint-disable */
+.widget-card ::ng-deep .feed,
+.widget-card ::ng-deep .qa,
+.widget-card ::ng-deep .ai,
+.widget-card ::ng-deep .status-widget,
+.widget-card ::ng-deep .chart-widget {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+/* stylelint-enable */
+
+/* ===== WIDGET HEADER (drag handle) ===== */
+.widget-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 8px 12px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border-light);
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+}
+.widget-header:active {
+  cursor: grabbing;
+}
+
+.widget-header__drag-icon {
+  font-size: 18px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.widget-header__title {
+  flex: 1;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.widget-header__size-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+/* ===== WIDGET BODY ===== */
+.widget-body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ===== WIDGET DROP PLACEHOLDER ===== */
+.cdk-drag-placeholder {
+  border: 2px dashed var(--color-primary) !important;
+  background: rgba(99, 102, 241, 0.04) !important;
+  border-radius: var(--radius-lg) !important;
+  overflow: hidden;
+  opacity: 1 !important;
+  min-height: 80px;
+}
+
+.widget-drop-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: 120px;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  animation: placeholderPulse 1.4s ease-in-out infinite;
+}
+.widget-drop-placeholder .material-icons {
+  font-size: 28px;
+  opacity: 0.7;
+}
+
+@keyframes placeholderPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ===== WIDGET RESIZE HANDLE ===== */
+.widget-resize {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ew-resize;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transition:
+    opacity 0.18s,
+    color 0.18s;
+  z-index: 10;
+}
+.widget-resize .material-icons {
+  font-size: 16px;
+}
+.widget-card:hover .widget-resize,
+.widget-resize--active {
+  opacity: 1;
+}
+.widget-resize:hover,
+.widget-resize--active {
+  color: var(--color-primary);
+}
+
+.widget-resize__label {
+  position: absolute;
+  bottom: 36px;
+  right: 0;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--shadow-md);
+}
+
+/* ===== NEW ROW ZONE ===== */
+.new-row-zone {
+  display: none; /* hidden unless dragging */
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  height: 52px;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    color 0.2s;
+  cursor: default;
+}
+.new-row-zone .material-icons {
+  font-size: 20px;
+}
+
+.new-row-zone--visible {
+  display: flex;
+}
+
+.new-row-zone.cdk-drop-list-receiving {
+  border-color: var(--color-primary);
+  background: rgba(99, 102, 241, 0.06);
+  color: var(--color-primary);
+}
+
+/* ===== SLOT INDICATORS ===== */
+/*
+  Zero-width flex items placed between every widget in a row.
+  They don't shift widget positions, but render a visible "drop here" gutter
+  via ::after when dragging. The active slot (nearest pointer) gets a stronger highlight.
+*/
+.slot-indicator {
+  position: relative;
+  flex: 0 0 0;
+  width: 0;
+  min-width: 0;
+  align-self: stretch;
+  overflow: visible;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.slot-indicator::after {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 4px;
+  bottom: 4px;
+  width: 10px;
+  border-radius: 5px;
+  background: transparent;
+  border: 2px solid transparent;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.slot-indicator--visible::after {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.slot-indicator--active::after {
+  background: rgba(99, 102, 241, 0.22);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
+
+/* ===== EMPTY STATE ===== */
+.dash-canvas__empty {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-10);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+.dash-canvas__empty .material-icons {
+  font-size: 48px;
+  opacity: 0.25;
+}
+.dash-canvas__empty p {
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+/* ===== STAT CARDS GRID ===== */
 .dash__stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--sp-4);
+  padding: var(--sp-4);
 }
-
+/* Container queries: adapt to the widget card's width, not the viewport */
+@container (max-width: 640px) {
+  .dash__stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@container (max-width: 320px) {
+  .dash__stats-row {
+    grid-template-columns: 1fr;
+  }
+}
+/* Fallback viewport queries for older browsers */
 @media (max-width: 900px) {
-  .dash__stats-row { grid-template-columns: repeat(2, 1fr); }
+  .dash__stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 @media (max-width: 480px) {
-  .dash__stats-row { grid-template-columns: 1fr; }
-}
-
-/* ===== SIDE COLUMN ===== */
-.dash__side {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-5);
-  min-width: 0;
+  .dash__stats-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ===== CUSTOMIZER BACKDROP ===== */
 .customizer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.45);
   z-index: 300;
   backdrop-filter: blur(2px);
   animation: fadeIn 0.2s ease;
+  pointer-events: none;
 }
-
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* ===== CUSTOMIZER DRAWER ===== */
@@ -140,36 +548,40 @@
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
-  animation: slideIn 0.22s cubic-bezier(0.4,0,0.2,1);
+  animation: slideIn 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
 }
-
 @keyframes slideIn {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 .customizer__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--sp-5) var(--sp-5);
+  padding: var(--sp-5);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
-
 .customizer__header-left {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
 }
-
 .customizer__header-left .material-icons {
   color: var(--color-primary);
   font-size: 20px;
 }
-
-.customizer__title { font-size: var(--font-size-md); font-weight: 600; margin: 0; }
-
+.customizer__title {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  margin: 0;
+}
 .customizer__close {
   width: 32px;
   height: 32px;
@@ -183,8 +595,13 @@
   cursor: pointer;
   transition: all 0.15s;
 }
-.customizer__close:hover { background: var(--color-surface-3); color: var(--color-text-primary); }
-.customizer__close .material-icons { font-size: 18px; }
+.customizer__close:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text-primary);
+}
+.customizer__close .material-icons {
+  font-size: 18px;
+}
 
 .customizer__hint {
   padding: var(--sp-4) var(--sp-5);
@@ -199,7 +616,6 @@
 .customizer__section {
   padding: var(--sp-4) var(--sp-5) 0;
 }
-
 .customizer__section-title {
   display: flex;
   align-items: center;
@@ -211,18 +627,17 @@
   letter-spacing: 0.07em;
   margin-bottom: var(--sp-3);
 }
+.customizer__section-title .material-icons {
+  font-size: 14px;
+}
 
-.customizer__section-title .material-icons { font-size: 14px; }
-
-/* CDK drop list */
 .customizer__list {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: var(--sp-5);
+  margin-bottom: var(--sp-4);
 }
 
-/* CDK drag item */
 .customizer__item {
   display: flex;
   align-items: center;
@@ -231,33 +646,14 @@
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  cursor: default;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s;
 }
-
-.customizer__item:hover { background: var(--color-surface-3); }
-
-.customizer__item--unavailable { opacity: 0.45; }
-
-/* CDK drag active state */
-.cdk-drag-animating { transition: transform 250ms cubic-bezier(0,0,0.2,1); }
-.customizer__list.cdk-drop-list-dragging .customizer__item:not(.cdk-drag-placeholder) {
-  transition: transform 250ms cubic-bezier(0,0,0.2,1);
+.customizer__item:hover {
+  background: var(--color-surface-3);
 }
-.cdk-drag-placeholder {
-  opacity: 0;
+.customizer__item--unavailable {
+  opacity: 0.45;
 }
-
-.customizer__drag-handle {
-  color: var(--color-text-muted);
-  cursor: grab;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-.customizer__drag-handle:active { cursor: grabbing; }
-.customizer__drag-handle .material-icons { font-size: 18px; }
-
 .customizer__item-label {
   flex: 1;
   font-size: var(--font-size-sm);
@@ -265,40 +661,24 @@
   color: var(--color-text-secondary);
   min-width: 0;
 }
-
 .customizer__unavailable-badge {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-style: italic;
 }
 
-/* Drag preview ghost */
-.customizer__drag-preview {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: 10px var(--sp-3);
-  background: var(--color-surface-3);
-  border: 1px dashed var(--color-primary);
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-/* Toggle switch */
+/* Toggle */
 .customizer__toggle {
   position: relative;
   flex-shrink: 0;
   cursor: pointer;
 }
-
 .customizer__toggle input {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
-
 .customizer__toggle-track {
   display: block;
   width: 34px;
@@ -306,15 +686,15 @@
   border-radius: 9px;
   background: var(--color-surface-3);
   border: 1px solid var(--color-border);
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
   position: relative;
 }
-
 .customizer__toggle input:checked + .customizer__toggle-track {
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
-
 .customizer__toggle-thumb {
   position: absolute;
   top: 2px;
@@ -323,15 +703,81 @@
   height: 12px;
   border-radius: 50%;
   background: var(--color-text-muted);
-  transition: transform 0.2s, background 0.2s;
+  transition:
+    transform 0.2s,
+    background 0.2s;
 }
-
 .customizer__toggle input:checked ~ .customizer__toggle-track .customizer__toggle-thumb {
   transform: translateX(16px);
   background: #fff;
 }
 
-/* Footer */
+/* ===== PALETTE ===== */
+.customizer__palette {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: var(--sp-4);
+  min-height: 40px;
+}
+.customizer__palette.cdk-drop-list-receiving {
+  background: rgba(99, 102, 241, 0.04);
+  border-radius: var(--radius-md);
+}
+.customizer__palette .cdk-drag-placeholder {
+  opacity: 0;
+}
+.customizer__palette-empty {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--sp-4);
+  margin: 0;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 10px var(--sp-3);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: grab;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.palette-item:hover {
+  background: var(--color-surface-3);
+  border-color: var(--color-primary);
+}
+.palette-item:active {
+  cursor: grabbing;
+}
+.palette-item__drag-icon {
+  font-size: 18px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+.palette-item__label {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+.palette-item.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+.palette-item--ghost {
+  border-style: dashed;
+  border-color: var(--color-primary);
+  background: var(--color-surface-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* ===== FOOTER ===== */
 .customizer__footer {
   margin-top: auto;
   display: flex;
@@ -340,9 +786,5 @@
   padding: var(--sp-4) var(--sp-5);
   border-top: 1px solid var(--color-border);
   flex-shrink: 0;
-}
-
-.customizer__footer-right {
-  display: flex;
   gap: var(--sp-2);
 }

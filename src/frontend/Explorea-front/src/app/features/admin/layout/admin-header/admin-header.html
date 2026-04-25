@@ -1,54 +1,59 @@
 <header class="header">
 
-  <!-- Left: page title + date -->
+  <!-- Left: region context -->
   <div class="header__left">
-    <span class="header__page-title">{{ ui.t('home.title') }}</span>
-    <span class="header__date">{{ today }}</span>
+    <button class="header__region-pill">
+      {{ ui.t('shell.region') }}: {{ auth.userRegion }}
+    </button>
+    <span class="header__to-view">{{ ui.t('shell.to_view') }}</span>
   </div>
 
-  <!-- Right: actions -->
+  <!-- Center: search -->
+  <div class="header__search-wrap">
+    <span class="material-icons header__search-icon">search</span>
+    <input
+      class="header__search-input"
+      type="text"
+      [placeholder]="ui.t('shell.search')" />
+  </div>
+
+  <!-- Right: notification + user + avatar -->
   <div class="header__right">
 
-    <!-- Customize widgets button -->
-    <button class="header__btn header__btn--customize" (click)="layout.openCustomize()" title="Prilagodi widgete">
-      <span class="material-icons">dashboard_customize</span>
-      <span class="header__btn-label">Prilagodi</span>
-    </button>
-
     <!-- Notifications -->
-    <button class="header__icon-btn" title="Obaveštenja">
-      <span class="material-icons">notifications_none</span>
-      <span class="header__notif-dot"></span>
+    <button class="header__icon-btn" [title]="ui.t('shell.notifications')">
+      <span class="material-icons">notifications</span>
+      @if (notifCount > 0) {
+        <span class="header__notif-badge">{{ notifCount }}</span>
+      }
     </button>
 
-    <!-- Role switcher (demo) -->
-    <div class="header__role-wrap">
-      <button class="header__role-btn" (click)="showRolePicker = !showRolePicker" title="Promeni ulogu (demo)">
-        <span class="material-icons">{{ roleIcon }}</span>
-        <span class="header__role-label">{{ auth.roleLabel }}</span>
-        <span class="material-icons header__role-chevron">expand_more</span>
-      </button>
-
-      @if (showRolePicker) {
-        <div class="header__role-dropdown">
-          <div class="header__role-dropdown-title">Demo — promeni ulogu</div>
-          @for (r of roles; track r.value) {
-            <button
-              class="header__role-option"
-              [class.header__role-option--active]="auth.role() === r.value"
-              (click)="selectRole(r.value)">
-              {{ r.label }}
-            </button>
-          }
-        </div>
-        <div class="header__backdrop" (click)="showRolePicker = false"></div>
-      }
+    <!-- User block — click to switch role (demo) -->
+    <div class="header__user-wrap" (click)="showRolePicker = !showRolePicker">
+      <div class="header__user-info">
+        <span class="header__user-name">{{ auth.userName }}</span>
+        <span class="header__user-role">{{ ui.t('shell.role.' + auth.role()) }}</span>
+      </div>
+      <div class="header__avatar" [title]="auth.userName">
+        {{ auth.userInitials }}
+      </div>
     </div>
 
-    <!-- User avatar -->
-    <div class="header__avatar" [title]="auth.userName">
-      {{ auth.userInitials }}
-    </div>
+    <!-- Role picker dropdown (demo) -->
+    @if (showRolePicker) {
+      <div class="header__role-dropdown">
+        <div class="header__role-dropdown-title">{{ ui.t('dashboard.header.demo_role') }}</div>
+        @for (r of roles; track r) {
+          <button
+            class="header__role-option"
+            [class.header__role-option--active]="auth.role() === r"
+            (click)="selectRole(r)">
+            {{ ui.t('shell.role.' + r) }}
+          </button>
+        }
+      </div>
+      <div class="header__backdrop" (click)="showRolePicker = false"></div>
+    }
 
   </div>
 </header>

@@ -16,29 +16,15 @@ import { AdminRole } from '../../core/models/admin.models';
 export class AdminHeader {
   showRolePicker = false;
 
-  readonly roles: { value: AdminRole; label: string }[] = [
-    { value: 'super_admin',          label: 'Super Admin' },
-    { value: 'tourist_organization', label: 'Tourist Organization' },
-    { value: 'place_owner',          label: 'Place Owner' },
-  ];
+  readonly roles: AdminRole[] = ['super_admin', 'tourist_organization', 'place_owner'];
+
+  readonly notifCount = 3;
 
   constructor(public auth: DashboardAuthService, public layout: LayoutService, public ui: AdminUiPreferencesService) {}
-
-  get today(): string {
-    const locale = this.ui.language() === 'en' ? 'en-US' : 'sr-RS';
-    return new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  }
 
   selectRole(role: AdminRole): void {
     this.auth.setRole(role);
     this.showRolePicker = false;
   }
 
-  get roleIcon(): string {
-    switch (this.auth.role()) {
-      case 'super_admin':          return 'admin_panel_settings';
-      case 'tourist_organization': return 'location_city';
-      case 'place_owner':          return 'storefront';
-    }
-  }
 }

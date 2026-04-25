@@ -24,6 +24,14 @@ export class DashboardAuthService {
     return stored && valid.includes(stored) ? stored : 'super_admin';
   }
 
+  get userRegion(): string {
+    switch (this._role()) {
+      case 'super_admin':          return 'Vojvodina';
+      case 'tourist_organization': return 'Šumadija';
+      case 'place_owner':          return 'Beograd';
+    }
+  }
+
   // Mock user info
   get userName(): string {
     switch (this._role()) {

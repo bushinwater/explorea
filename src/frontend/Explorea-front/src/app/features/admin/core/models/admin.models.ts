@@ -19,11 +19,14 @@ export type WidgetId =
 export interface WidgetConfig {
   id: WidgetId;
   label: string;
-  zone: 'main' | 'side';
+  zone: 'main' | 'side'; // kept for legacy storage compat
   visible: boolean;
   order: number;
-  /** Which roles can see this widget */
   roles: AdminRole[];
+  /** Width in 4-column units: 1=25%, 2=50%, 3=75%, 4=100% */
+  cols: 1 | 2 | 3 | 4;
+  /** Row index in the dashboard grid, saved after user rearranges */
+  row?: number;
 }
 
 // ===== STAT CARDS =====
