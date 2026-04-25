@@ -1,23 +1,30 @@
 import {
-  ChangeDetectionStrategy, Component, OnInit, computed, effect, signal,
+  ChangeDetectionStrategy, ChangeDetectorRef, Component,
+  OnDestroy, OnInit, WritableSignal, effect, signal, untracked,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CdkDragDrop, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder, moveItemInArray } from '@angular/cdk/drag-drop';
-
-import { DashboardAuthService }         from '../core/services/dashboard-auth.service';
-import { DashboardService }    from '../core/services/dashboard.service';
-import { LayoutService }       from '../core/services/layout.service';
-import { WidgetConfigService } from '../core/services/widget-config.service';
 import {
-  DashboardData, WidgetConfig, WidgetId,
-} from '../core/models/admin.models';
+  CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
+  CdkDragDrop, CdkDragMove, moveItemInArray, transferArrayItem,
+} from '@angular/cdk/drag-drop';
 
-import { StatCard }      from './widgets/stat-card/stat-card';
-import { ActivityFeed }  from './widgets/activity-feed/activity-feed';
-import { QuickActions }  from './widgets/quick-actions/quick-actions';
-import { TrafficChart }  from './widgets/traffic-chart/traffic-chart';
-import { SystemStatus }  from './widgets/system-status/system-status';
-import { AiPanel }       from './widgets/ai-panel/ai-panel';
+import { DashboardAuthService }      from '../core/services/dashboard-auth.service';
+import { DashboardService }           from '../core/services/dashboard.service';
+import { LayoutService }              from '../core/services/layout.service';
+import { WidgetConfigService }        from '../core/services/widget-config.service';
+import { AdminUiPreferencesService }  from '../core/services/admin-ui-preferences.service';
+import { DashboardData, WidgetConfig, WidgetId } from '../core/models/admin.models';
+
+import { StatCard }     from './widgets/stat-card/stat-card';
+import { ActivityFeed } from './widgets/activity-feed/activity-feed';
+import { QuickActions } from './widgets/quick-actions/quick-actions';
+import { TrafficChart } from './widgets/traffic-chart/traffic-chart';
+import { SystemStatus } from './widgets/system-status/system-status';
+import { AiPanel }      from './widgets/ai-panel/ai-panel';
+
+export interface DashRow { id: string; items: WidgetConfig[]; }
+
+const COL_LABELS: Record<number, string> = { 1: '25%', 2: '50%', 3: '75%', 4: '100%' };
 
 @Component({
   selector: 'app-dashboard',
@@ -26,128 +33,331 @@ import { AiPanel }       from './widgets/ai-panel/ai-panel';
   imports: [
     CommonModule,
     CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
-    StatCard, ActivityFeed, QuickActions,
-    TrafficChart, SystemStatus, AiPanel,
+    StatCard, ActivityFeed, QuickActions, TrafficChart, SystemStatus, AiPanel,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
-export class Dashboard implements OnInit {
-  data = signal<DashboardData | null>(null);
-  widgets = signal<WidgetConfig[]>([]);
+export class Dashboard implements OnInit, OnDestroy {
+  data           = signal<DashboardData | null>(null);
+  widgets        = signal<WidgetConfig[]>([]);
   alertDismissed = signal(false);
+  dragging       = signal(false);
+  activeSlotId   = signal<string | null>(null);  // 'rowId:slotIndex'
+  resizingId     = signal<WidgetId | null>(null);
+  resizeCols     = signal<1|2|3|4>(1);
+
+  // SIGNAL — so Angular OnPush detects any mutation immediately
+  visibleRows: WritableSignal<DashRow[]> = signal([]);
+  newRowZone:  WidgetConfig[]            = [];
+  hiddenWidgets: WidgetConfig[]          = [];
+
+  private nextRowId = 0;
+  // Shared empty buffers for gap-zone CDK drop lists (one per row ID)
+  private readonly gapBuffers: Record<string, WidgetConfig[]> = {};
+
+  private resizeState: {
+    startX: number; startCols: 1|2|3|4; widgetId: WidgetId;
+  } | null = null;
+
+  private readonly onMouseMove = this.handleResizeMove.bind(this);
+  private readonly onMouseUp   = this.handleResizeEnd.bind(this);
 
   constructor(
-    public auth:          DashboardAuthService,
+    public  auth:         DashboardAuthService,
     private dashService:  DashboardService,
-    public layout:        LayoutService,
+    public  layout:       LayoutService,
     private widgetConfig: WidgetConfigService,
+    private cdr:          ChangeDetectorRef,
+    public  ui:           AdminUiPreferencesService,
   ) {
-    // Reload when role changes
     effect(() => {
       const role = this.auth.role();
       this.data.set(this.dashService.getData(role));
       this.widgets.set(this.widgetConfig.load(role));
       this.alertDismissed.set(false);
+      this.layout.closeCustomize();
+      // untracked: prevents widgets signal from being a reactive dependency of
+      // this effect. Without it, syncFromRows() → widgets.set() would re-fire the
+      // effect and call buildRowsFrom(), destroying the user's drag arrangement.
+      untracked(() => this.buildArrays());
     });
   }
 
   ngOnInit(): void {}
 
-  // ===== Widget visibility helpers =====
-
-  isVisible(id: WidgetId): boolean {
-    return this.widgetConfig.isVisible(this.widgets(), id, this.auth.role());
+  ngOnDestroy(): void {
+    document.removeEventListener('mousemove', this.onMouseMove);
+    document.removeEventListener('mouseup',   this.onMouseUp);
   }
 
-  mainWidgets = computed(() =>
-    this.widgets()
-      .filter(w => w.zone === 'main')
-      .sort((a, b) => a.order - b.order),
-  );
+  // ===== State builders =====
 
-  sideWidgets = computed(() =>
-    this.widgets()
-      .filter(w => w.zone === 'side')
-      .sort((a, b) => a.order - b.order),
-  );
+  buildArrays(): void {
+    const role = this.auth.role();
+    const all  = this.widgets();
 
-  hasSideContent = computed(() =>
-    this.sideWidgets().some(w => w.visible && w.roles.includes(this.auth.role())),
-  );
+    const visible = all
+      .filter(w => w.visible && w.roles.includes(role))
+      .sort((a, b) => a.order - b.order)
+      .map(w => ({ ...w }));
 
-  // ===== Alert =====
+    this.hiddenWidgets = all
+      .filter(w => !w.visible || !w.roles.includes(role))
+      .map(w => ({ ...w }));
+
+    this.buildRowsFrom(visible);
+  }
+
+  private buildRowsFrom(widgets: WidgetConfig[]): void {
+    // If widgets carry saved row info, restore the exact grouping
+    if (widgets.some(w => w.row !== undefined)) {
+      const rowMap = new Map<number, WidgetConfig[]>();
+      for (const w of widgets) {
+        const key = w.row ?? 0;
+        if (!rowMap.has(key)) rowMap.set(key, []);
+        rowMap.get(key)!.push(w);
+      }
+      const rows: DashRow[] = [...rowMap.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([, items], i) => ({
+          id: `row-${i}`,
+          items: items.sort((a, b) => a.order - b.order),
+        }));
+      this.nextRowId  = rows.length;
+      this.newRowZone = [];
+      this.visibleRows.set(rows);
+      return;
+    }
+
+    // Fallback (first run / after reset): pack by cols, max 4 per row
+    const rows: DashRow[] = [];
+    let items: WidgetConfig[] = [];
+    let colsUsed = 0;
+    let ri = 0;
+
+    for (const w of widgets) {
+      const c = w.cols ?? 4;
+      if (colsUsed + c > 4 && items.length > 0) {
+        rows.push({ id: `row-${ri++}`, items });
+        items    = [];
+        colsUsed = 0;
+      }
+      items.push(w);
+      colsUsed += c;
+    }
+    if (items.length > 0) rows.push({ id: `row-${ri}`, items });
+
+    this.nextRowId  = ri + 1;
+    this.newRowZone = [];
+    this.visibleRows.set(rows);
+  }
+
+  syncFromRows(): void {
+    let ord = 0;
+    const visible: WidgetConfig[] = [];
+    this.visibleRows().forEach((row, rowIdx) => {
+      row.items.forEach(w => {
+        visible.push({ ...w, visible: true, order: ord++, row: rowIdx });
+      });
+    });
+    const updated: WidgetConfig[] = [
+      ...visible,
+      ...this.hiddenWidgets.map((w, i) => ({ ...w, visible: false, order: i, row: undefined })),
+    ];
+    this.widgets.set(updated);
+    this.widgetConfig.save(this.auth.role(), updated);
+  }
+
+  // ===== Connected list IDs =====
+
+  get allListIds(): string[] {
+    const rows = this.visibleRows();
+    return [
+      ...rows.map(r => r.id),
+      ...rows.map(r => `gap-${r.id}`),
+      'new-row-zone',
+      'panelList',
+    ];
+  }
+
+  gapBuffer(rowId: string): WidgetConfig[] {
+    return (this.gapBuffers[rowId] ??= []);
+  }
+
+  // ===== Drawer helpers =====
+
+  get drawerAllWidgets(): WidgetConfig[] {
+    return this.widgets()
+      .filter(w => w.roles.includes(this.auth.role()))
+      .sort((a, b) => a.order - b.order);
+  }
+
+  isAvailable(w: WidgetConfig): boolean { return w.roles.includes(this.auth.role()); }
 
   get showAlert(): boolean {
     return !this.alertDismissed() && (this.data()?.pendingCount ?? 0) > 0;
   }
 
+  colLabel(cols: 1|2|3|4): string { return COL_LABELS[cols] ?? ''; }
+
   // ===== Customizer =====
 
-  /** Working copy used inside the drawer */
-  drawerWidgets = signal<WidgetConfig[]>([]);
+  openCustomize(): void { this.buildArrays(); this.layout.openCustomize(); }
+  closeCustomize(): void { this.layout.closeCustomize(); }
 
-  openCustomizer(): void {
-    this.drawerWidgets.set(this.widgets().map(w => ({ ...w })));
-    this.layout.openCustomize();
-  }
-
-  closeCustomizer(): void {
-    this.layout.closeCustomize();
-  }
-
-  saveCustomizer(): void {
-    const updated = this.drawerWidgets().map((w, i) => ({
-      ...w,
-      order: this.drawerWidgets().filter(x => x.zone === w.zone).indexOf(w),
-    }));
-    this.widgets.set(updated);
-    this.widgetConfig.save(this.auth.role(), updated);
-    this.layout.closeCustomize();
-  }
-
-  resetCustomizer(): void {
+  resetLayout(): void {
     const reset = this.widgetConfig.reset(this.auth.role());
     this.widgets.set(reset);
-    this.drawerWidgets.set(reset.map(w => ({ ...w })));
-    this.widgetConfig.save(this.auth.role(), reset);
+    this.buildArrays();
+    this.syncFromRows();
   }
 
-  toggleWidgetVisibility(id: WidgetId): void {
-    this.drawerWidgets.update(list =>
-      list.map(w => w.id === id ? { ...w, visible: !w.visible } : w),
+  toggleVisibility(id: WidgetId): void {
+    const updated = this.widgets().map(w =>
+      w.id === id ? { ...w, visible: !w.visible } : w,
+    );
+    this.widgets.set(updated);
+    this.widgetConfig.save(this.auth.role(), updated);
+    this.buildArrays();
+  }
+
+  // ===== Drag =====
+
+  onDragStarted(): void { this.dragging.set(true); }
+
+  onDragEnded(): void {
+    this.dragging.set(false);
+    this.activeSlotId.set(null);
+  }
+
+  // Fired continuously during drag — find nearest slot and highlight it
+  onDragMoved(event: CdkDragMove): void {
+    const pt    = event.pointerPosition;
+    const slots = Array.from(document.querySelectorAll<HTMLElement>('[data-slot-id]'));
+    let found: string | null = null;
+    let closestDist = Infinity;
+
+    for (const el of slots) {
+      const rowEl = el.closest<HTMLElement>('.dash-row');
+      if (!rowEl) continue;
+      const rowRect = rowEl.getBoundingClientRect();
+
+      // Pointer must be within the row's vertical range (±24px tolerance)
+      if (pt.y < rowRect.top - 24 || pt.y > rowRect.bottom + 24) continue;
+
+      const slotRect    = el.getBoundingClientRect();
+      const slotCenterX = slotRect.left + slotRect.width / 2;
+      const dist        = Math.abs(pt.x - slotCenterX);
+
+      if (dist < closestDist) {
+        closestDist = dist;
+        found = el.dataset['slotId'] ?? null;
+      }
+    }
+
+    // Only activate a slot if pointer is within 80px of it
+    if (closestDist > 80) found = null;
+    if (found !== this.activeSlotId()) this.activeSlotId.set(found);
+  }
+
+  onDrop(event: CdkDragDrop<WidgetConfig[]>): void {
+    const fromId = event.previousContainer.id;
+    const toId   = event.container.id;
+
+    if (fromId === toId) {
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+      // Rebuild signal from mutated array
+      this.visibleRows.update(rows => rows.map(r => r.id === toId
+        ? { ...r, items: [...r.items] } : r));
+
+    } else if (toId === 'new-row-zone') {
+      transferArrayItem(event.previousContainer.data, event.container.data, event.previousIndex, 0);
+      const widget   = this.newRowZone.splice(0, 1)[0];
+      widget.visible = true;
+      this.visibleRows.update(rows => [
+        ...rows.map(r => r.id === fromId ? { ...r, items: [...r.items] } : r),
+        { id: `row-${this.nextRowId++}`, items: [widget] },
+      ]);
+
+    } else if (toId.startsWith('gap-')) {
+      const targetRowId = toId.slice(4);
+      const buf = this.gapBuffer(targetRowId);
+      transferArrayItem(event.previousContainer.data, buf, event.previousIndex, 0);
+      const widget = buf.splice(0, 1)[0];
+      widget.visible = true;
+      const insertIdx = this.visibleRows().findIndex(r => r.id === targetRowId);
+      const newRow: DashRow = { id: `row-${this.nextRowId++}`, items: [widget] };
+      this.visibleRows.update(rows => {
+        const refreshed = rows.map(r => r.id === fromId ? { ...r, items: [...r.items] } : r);
+        refreshed.splice(insertIdx === -1 ? refreshed.length : insertIdx, 0, newRow);
+        return refreshed;
+      });
+
+    } else {
+      transferArrayItem(
+        event.previousContainer.data,
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex,
+      );
+      event.container.data[event.currentIndex].visible = toId !== 'panelList';
+      // Rebuild both rows' signals
+      this.visibleRows.update(rows =>
+        rows.map(r => (r.id === fromId || r.id === toId)
+          ? { ...r, items: [...r.items] } : r));
+    }
+
+    // Remove empty rows
+    this.visibleRows.update(rows => rows.filter(r => r.items.length > 0));
+
+    this.dragging.set(false);
+    this.activeSlotId.set(null);
+    this.syncFromRows();
+  }
+
+  // ===== Resize =====
+
+  startResize(event: MouseEvent, widget: WidgetConfig): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.resizeState = { startX: event.clientX, startCols: widget.cols, widgetId: widget.id };
+    this.resizingId.set(widget.id);
+    this.resizeCols.set(widget.cols);
+    document.addEventListener('mousemove', this.onMouseMove);
+    document.addEventListener('mouseup',   this.onMouseUp);
+  }
+
+  private handleResizeMove(event: MouseEvent): void {
+    if (!this.resizeState) return;
+    const dx        = event.clientX - this.resizeState.startX;
+    const deltaCols = Math.round(dx / 140);
+    const newCols   = Math.max(1, Math.min(4, this.resizeState.startCols + deltaCols)) as 1|2|3|4;
+
+    if (newCols === this.resizeCols()) return;
+
+    this.resizeCols.set(newCols);
+
+    // Replace the item object so Angular signal-based change detection triggers
+    const id = this.resizeState.widgetId;
+    this.visibleRows.update(rows =>
+      rows.map(row => ({
+        ...row,
+        items: row.items.map(w => w.id === id ? { ...w, cols: newCols } : w),
+      }))
+    );
+
+    // Keep widgets signal in sync for storage
+    this.widgets.update(all =>
+      all.map(w => w.id === id ? { ...w, cols: newCols } : w)
     );
   }
 
-  dropMain(event: CdkDragDrop<WidgetConfig[]>): void {
-    const arr = this.drawerWidgets().filter(w => w.zone === 'main');
-    moveItemInArray(arr, event.previousIndex, event.currentIndex);
-    const side = this.drawerWidgets().filter(w => w.zone === 'side');
-    this.drawerWidgets.set([
-      ...arr.map((w, i) => ({ ...w, order: i })),
-      ...side,
-    ]);
-  }
-
-  dropSide(event: CdkDragDrop<WidgetConfig[]>): void {
-    const arr = this.drawerWidgets().filter(w => w.zone === 'side');
-    moveItemInArray(arr, event.previousIndex, event.currentIndex);
-    const main = this.drawerWidgets().filter(w => w.zone === 'main');
-    this.drawerWidgets.set([
-      ...main,
-      ...arr.map((w, i) => ({ ...w, order: i })),
-    ]);
-  }
-
-  drawerMain = computed(() =>
-    this.drawerWidgets().filter(w => w.zone === 'main').sort((a, b) => a.order - b.order),
-  );
-
-  drawerSide = computed(() =>
-    this.drawerWidgets().filter(w => w.zone === 'side').sort((a, b) => a.order - b.order),
-  );
-
-  isWidgetAvailableForRole(w: WidgetConfig): boolean {
-    return w.roles.includes(this.auth.role());
+  private handleResizeEnd(): void {
+    document.removeEventListener('mousemove', this.onMouseMove);
+    document.removeEventListener('mouseup',   this.onMouseUp);
+    if (this.resizeState) this.widgetConfig.save(this.auth.role(), this.widgets());
+    this.resizeState = null;
+    this.resizingId.set(null);
   }
 }

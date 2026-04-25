@@ -1,195 +1,249 @@
-<!-- ===== ALERT BANNER ===== -->
+<!-- ===== ALERT CARD ===== -->
 @if (showAlert) {
-  <div class="alert-banner">
-    <span class="material-icons alert-banner__icon">notifications_active</span>
-    <span class="alert-banner__text">
-      <strong>Akcija potrebna:</strong> {{ data()?.pendingCount }} novih zahteva čeka tvoju potvrdu
-    </span>
-    <button class="alert-banner__cta">Pregledaj zahteve</button>
-    <button class="alert-banner__close" (click)="alertDismissed.set(true)" title="Zatvori">
+  <div class="alert-card">
+    <div class="alert-card__icon">
+      <span class="material-icons">notifications_active</span>
+    </div>
+    <div class="alert-card__body">
+      <div class="alert-card__title">{{ ui.t('dashboard.alert.title') }}</div>
+      <div class="alert-card__desc">{{ ui.t('dashboard.alert.pending', { count: data()?.pendingCount ?? 0 }) }}</div>
+    </div>
+    <button class="alert-card__cta">{{ ui.t('dashboard.alert.cta') }}</button>
+    <button class="alert-card__close" (click)="alertDismissed.set(true)" [title]="ui.t('modal.close')">
       <span class="material-icons">close</span>
     </button>
   </div>
 }
 
-<!-- ===== DASHBOARD LAYOUT ===== -->
-<div class="dash" [class.dash--no-side]="!hasSideContent()">
+<!-- ===== TOOLBAR ===== -->
+<div class="dash-toolbar">
+  <button class="btn btn-ghost btn-sm" (click)="openCustomize()">
+    <span class="material-icons">dashboard_customize</span>
+    {{ ui.t('dashboard.header.customize') }}
+  </button>
+</div>
 
-  <!-- MAIN COLUMN -->
-  <div class="dash__main">
+<!-- ===== DASHBOARD CANVAS ===== -->
+<div class="dash-canvas" [class.dash-canvas--dragging]="dragging()">
 
-    @for (widget of mainWidgets(); track widget.id) {
-      @if (isVisible(widget.id)) {
-        @switch (widget.id) {
-          @case ('stat-cards') {
-            <div class="dash__stats-row">
-              @for (card of data()?.stats ?? []; track card.label) {
-                <app-stat-card [data]="card" />
+  @if (visibleRows().length === 0 && !dragging()) {
+    <div class="dash-canvas__empty">
+      <span class="material-icons">dashboard</span>
+      <p>{{ ui.t('dashboard.empty.text') }}</p>
+    </div>
+  }
+
+  @for (row of visibleRows(); track row.id) {
+    <!-- Gap zone — drop here to create a standalone row at this position -->
+    <div
+      [id]="'gap-' + row.id"
+      cdkDropList
+      cdkDropListOrientation="horizontal"
+      [cdkDropListData]="gapBuffer(row.id)"
+      [cdkDropListConnectedTo]="allListIds"
+      (cdkDropListDropped)="onDrop($event)"
+      class="gap-row-zone"
+      [class.gap-row-zone--visible]="dragging()">
+      <span class="material-icons">add_circle_outline</span>
+      <span>{{ ui.t('dashboard.row.new_here') }}</span>
+    </div>
+
+    <div
+      [id]="row.id"
+      cdkDropList
+      cdkDropListOrientation="horizontal"
+      [cdkDropListData]="row.items"
+      [cdkDropListConnectedTo]="allListIds"
+      (cdkDropListDropped)="onDrop($event)"
+      class="dash-row">
+
+      <!-- Slot 0: insertion point before the first widget -->
+      <div
+        class="slot-indicator"
+        [class.slot-indicator--visible]="dragging()"
+        [class.slot-indicator--active]="activeSlotId() === row.id + ':0'"
+        [attr.data-slot-id]="row.id + ':0'">
+      </div>
+
+      @for (widget of row.items; track widget.id; let wi = $index) {
+
+        <div
+          cdkDrag
+          class="widget-card widget-card--cols-{{ widget.cols }}"
+          [class.widget-card--resizing]="resizingId() === widget.id"
+          (cdkDragStarted)="onDragStarted()"
+          (cdkDragEnded)="onDragEnded()"
+          (cdkDragMoved)="onDragMoved($event)">
+
+          <!-- Drop placeholder -->
+          <div class="widget-drop-placeholder" *cdkDragPlaceholder>
+            <span class="material-icons">add_box</span>
+            <span>{{ ui.t('dashboard.drop.here') }}</span>
+          </div>
+
+          <!-- Widget header = drag handle -->
+          <div class="widget-header" cdkDragHandle>
+            <span class="material-icons widget-header__drag-icon">drag_indicator</span>
+            <span class="widget-header__title">{{ ui.t('dashboard.widget.' + widget.id) }}</span>
+          </div>
+
+          <!-- Widget content -->
+          <div class="widget-body">
+            @switch (widget.id) {
+              @case ('stat-cards') {
+                <div class="dash__stats-row">
+                  @for (card of data()?.stats ?? []; track card.label) {
+                    <app-stat-card [data]="card" />
+                  }
+                </div>
               }
-            </div>
-          }
-          @case ('traffic-chart') {
-            <app-traffic-chart [data]="data()?.traffic ?? []" />
-          }
-          @case ('activity-feed') {
-            <app-activity-feed [items]="data()?.activity ?? []" />
-          }
-          @case ('quick-actions') {
-            <app-quick-actions [actions]="data()?.quickActions ?? []" />
-          }
-        }
-      }
-    }
-
-  </div>
-
-  <!-- SIDE COLUMN -->
-  @if (hasSideContent()) {
-    <div class="dash__side">
-      @for (widget of sideWidgets(); track widget.id) {
-        @if (isVisible(widget.id)) {
-          @switch (widget.id) {
-            @case ('ai-panel') {
-              <app-ai-panel [insights]="data()?.aiInsights ?? []" />
+              @case ('traffic-chart') {
+                <app-traffic-chart [data]="data()?.traffic ?? []" />
+              }
+              @case ('activity-feed') {
+                <app-activity-feed [items]="data()?.activity ?? []" />
+              }
+              @case ('quick-actions') {
+                <app-quick-actions [actions]="data()?.quickActions ?? []" />
+              }
+              @case ('ai-panel') {
+                <app-ai-panel [insights]="data()?.aiInsights ?? []" />
+              }
+              @case ('system-status') {
+                <app-system-status [items]="data()?.systemStatus ?? []" />
+              }
             }
-            @case ('system-status') {
-              <app-system-status [items]="data()?.systemStatus ?? []" />
+          </div>
+
+          <!-- Resize handle -->
+          <div
+            class="widget-resize"
+            [class.widget-resize--active]="resizingId() === widget.id"
+            (mousedown)="startResize($event, widget)"
+            [title]="ui.t('dashboard.resize.hint')">
+            <span class="material-icons">drag_handle</span>
+            @if (resizingId() === widget.id) {
+              <span class="widget-resize__label">{{ colLabel(resizeCols()) }}</span>
             }
-          }
-        }
+          </div>
+
+        </div>
+
+        <!-- Slot after each widget -->
+        <div
+          class="slot-indicator"
+          [class.slot-indicator--visible]="dragging()"
+          [class.slot-indicator--active]="activeSlotId() === row.id + ':' + (wi + 1)"
+          [attr.data-slot-id]="row.id + ':' + (wi + 1)">
+        </div>
+
       }
     </div>
   }
 
+  <!-- New-row drop zone -->
+  <div
+    id="new-row-zone"
+    cdkDropList
+    cdkDropListOrientation="horizontal"
+    [cdkDropListData]="newRowZone"
+    [cdkDropListConnectedTo]="allListIds"
+    (cdkDropListDropped)="onDrop($event)"
+    class="new-row-zone"
+    [class.new-row-zone--visible]="dragging()">
+    <span class="material-icons">add_circle_outline</span>
+    <span>{{ ui.t('dashboard.row.new') }}</span>
+  </div>
+
 </div>
 
-<!-- ===== CUSTOMIZER BACKDROP ===== -->
+<!-- ===== CUSTOMIZER DRAWER ===== -->
 @if (layout.customizeOpen()) {
-  <div class="customizer-backdrop" (click)="closeCustomizer()"></div>
+  <div class="customizer-backdrop"></div>
 
-  <!-- CUSTOMIZER DRAWER -->
   <div class="customizer">
     <div class="customizer__header">
       <div class="customizer__header-left">
         <span class="material-icons">dashboard_customize</span>
-        <h3 class="customizer__title">Prilagodi widgete</h3>
+        <h3 class="customizer__title">{{ ui.t('dashboard.customize.title') }}</h3>
       </div>
-      <button class="customizer__close" (click)="closeCustomizer()">
+      <button class="customizer__close" (click)="closeCustomize()" [title]="ui.t('modal.close')">
         <span class="material-icons">close</span>
       </button>
     </div>
 
-    <p class="customizer__hint">Prevuci widgete da promenjiš redosled. Isključi vidljivost klikom na prekidač.</p>
+    <p class="customizer__hint">{{ ui.t('dashboard.customize.hint') }}</p>
 
-    <!-- Main column widgets -->
+    <!-- Toggle list -->
     <div class="customizer__section">
       <div class="customizer__section-title">
-        <span class="material-icons">view_stream</span>
-        Glavna kolona
+        <span class="material-icons">view_quilt</span>
+        {{ ui.t('dashboard.customize.section.widgets') }}
       </div>
-
-      <div
-        cdkDropList
-        [cdkDropListData]="drawerMain()"
-        (cdkDropListDropped)="dropMain($event)"
-        class="customizer__list">
-
-        @for (w of drawerMain(); track w.id) {
-          <div
-            cdkDrag
-            class="customizer__item"
-            [class.customizer__item--unavailable]="!isWidgetAvailableForRole(w)">
-
-            <div cdkDragHandle class="customizer__drag-handle" title="Prevuci za premeštanje">
-              <span class="material-icons">drag_indicator</span>
-            </div>
-
-            <span class="customizer__item-label">{{ w.label }}</span>
-
-            @if (!isWidgetAvailableForRole(w)) {
-              <span class="customizer__unavailable-badge">Nije dostupno za ulogu</span>
+      <div class="customizer__list">
+        @for (w of drawerAllWidgets; track w.id) {
+          <div class="customizer__item" [class.customizer__item--unavailable]="!isAvailable(w)">
+            <span class="customizer__item-label">{{ ui.t('dashboard.widget.' + w.id) }}</span>
+            @if (!isAvailable(w)) {
+              <span class="customizer__unavailable-badge">{{ ui.t('dashboard.customize.unavailable') }}</span>
             } @else {
               <label class="customizer__toggle">
-                <input
-                  type="checkbox"
-                  [checked]="w.visible"
-                  (change)="toggleWidgetVisibility(w.id)" />
+                <input type="checkbox" [checked]="w.visible" (change)="toggleVisibility(w.id)" />
                 <span class="customizer__toggle-track">
                   <span class="customizer__toggle-thumb"></span>
                 </span>
               </label>
             }
+          </div>
+        }
+      </div>
+    </div>
 
-            <div class="customizer__drag-preview" *cdkDragPlaceholder>
+    <!-- Palette -->
+    <div class="customizer__section">
+      <div class="customizer__section-title">
+        <span class="material-icons">add_box</span>
+        {{ ui.t('dashboard.customize.section.palette') }}
+      </div>
+
+      <div
+        id="panelList"
+        cdkDropList
+        cdkDropListOrientation="vertical"
+        [cdkDropListData]="hiddenWidgets"
+        [cdkDropListConnectedTo]="allListIds"
+        (cdkDropListDropped)="onDrop($event)"
+        class="customizer__palette">
+
+        @if (hiddenWidgets.length === 0) {
+          <p class="customizer__palette-empty">{{ ui.t('dashboard.customize.empty') }}</p>
+        }
+
+        @for (w of hiddenWidgets; track w.id) {
+          <div cdkDrag class="palette-item"
+               (cdkDragStarted)="onDragStarted()"
+               (cdkDragEnded)="onDragEnded()"
+               (cdkDragMoved)="onDragMoved($event)">
+            <span class="material-icons palette-item__drag-icon">drag_indicator</span>
+            <span class="palette-item__label">{{ ui.t('dashboard.widget.' + w.id) }}</span>
+            <div class="palette-item palette-item--ghost" *cdkDragPlaceholder>
               <span class="material-icons">drag_indicator</span>
-              {{ w.label }}
+              {{ ui.t('dashboard.widget.' + w.id) }}
             </div>
           </div>
         }
       </div>
     </div>
 
-    <!-- Side panel widgets -->
-    <div class="customizer__section">
-      <div class="customizer__section-title">
-        <span class="material-icons">view_sidebar</span>
-        Bočni panel
-      </div>
-
-      <div
-        cdkDropList
-        [cdkDropListData]="drawerSide()"
-        (cdkDropListDropped)="dropSide($event)"
-        class="customizer__list">
-
-        @for (w of drawerSide(); track w.id) {
-          <div
-            cdkDrag
-            class="customizer__item"
-            [class.customizer__item--unavailable]="!isWidgetAvailableForRole(w)">
-
-            <div cdkDragHandle class="customizer__drag-handle" title="Prevuci za premeštanje">
-              <span class="material-icons">drag_indicator</span>
-            </div>
-
-            <span class="customizer__item-label">{{ w.label }}</span>
-
-            @if (!isWidgetAvailableForRole(w)) {
-              <span class="customizer__unavailable-badge">Nije dostupno za ulogu</span>
-            } @else {
-              <label class="customizer__toggle">
-                <input
-                  type="checkbox"
-                  [checked]="w.visible"
-                  (change)="toggleWidgetVisibility(w.id)" />
-                <span class="customizer__toggle-track">
-                  <span class="customizer__toggle-thumb"></span>
-                </span>
-              </label>
-            }
-
-            <div class="customizer__drag-preview" *cdkDragPlaceholder>
-              <span class="material-icons">drag_indicator</span>
-              {{ w.label }}
-            </div>
-          </div>
-        }
-      </div>
-    </div>
-
-    <!-- Footer actions -->
+    <!-- Footer -->
     <div class="customizer__footer">
-      <button class="btn btn-ghost btn-sm" (click)="resetCustomizer()">
+      <button class="btn btn-ghost btn-sm" (click)="resetLayout()">
         <span class="material-icons">restart_alt</span>
-        Resetuj
+        {{ ui.t('dashboard.customize.reset') }}
       </button>
-      <div class="customizer__footer-right">
-        <button class="btn btn-ghost btn-sm" (click)="closeCustomizer()">Otkaži</button>
-        <button class="btn btn-primary btn-sm" (click)="saveCustomizer()">
-          <span class="material-icons">check</span>
-          Sačuvaj
-        </button>
-      </div>
+      <button class="btn btn-ghost btn-sm" (click)="closeCustomize()">
+        {{ ui.t('dashboard.customize.close') }}
+      </button>
     </div>
   </div>
 }

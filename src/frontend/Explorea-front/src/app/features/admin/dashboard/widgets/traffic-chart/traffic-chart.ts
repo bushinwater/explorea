@@ -2,7 +2,7 @@ import {
   AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, Input, OnChanges, OnDestroy, ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Chart, registerables } from 'chart.js';
+import { Chart, registerables, TooltipItem } from 'chart.js';
 import { TrafficPoint } from '../../../core/models/admin.models';
 import { AdminUiPreferencesService } from '../../../core/services/admin-ui-preferences.service';
 
@@ -109,7 +109,7 @@ export class TrafficChart implements AfterViewInit, OnChanges, OnDestroy {
             padding: 12,
             cornerRadius: 8,
             callbacks: {
-              label: ctx => ` ${ctx.dataset.label}: ${(ctx.parsed.y ?? 0).toLocaleString('sr-RS')}`,
+              label: (ctx: TooltipItem<'line'>) => ` ${ctx.dataset.label}: ${(ctx.parsed.y ?? 0).toLocaleString('sr-RS')}`,
             },
           },
         },
