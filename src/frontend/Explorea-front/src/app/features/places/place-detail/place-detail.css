@@ -972,7 +972,7 @@
     display: flex;
     gap: 12px;
     overflow-x: auto;
-    padding: 0 var(--spacing-md) var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm);
     scrollbar-width: none;
   }
 

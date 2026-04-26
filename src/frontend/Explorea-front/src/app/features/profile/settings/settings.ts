@@ -186,8 +186,13 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getEntityRoute(item: ForYouItemDto): string[] {
-    if (item.entityType === 'activity') return ['/activities', item.slug];
-    return ['/'];
+    switch (item.entityType) {
+      case 'destination': return ['/destinations', item.slug];
+      case 'place':       return ['/places', item.slug];
+      case 'event':       return ['/events', item.slug];
+      case 'activity':    return ['/activities', item.slug];
+      default:            return ['/'];
+    }
   }
 
   toggleSection(section: 'profile' | 'app' | 'reviews') {
