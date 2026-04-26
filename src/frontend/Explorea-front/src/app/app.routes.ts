@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminUsersAccessGuard } from './core/guards/admin-users-access.guard';
+import { adminGuard } from './core/guards/admin.guard';
 import { authGuard } from './core/guards/auth-guard';
 import { guestGuard } from './core/guards/guest-guard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
@@ -49,7 +50,7 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: AdminShellComponent,
-    //canActivate: [adminGuard],
+    canActivate: [adminGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: Dashboard },
