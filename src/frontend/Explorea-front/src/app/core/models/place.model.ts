@@ -33,7 +33,7 @@ export interface PlaceDetail extends PlaceCard {
     rating: number;
     comment: string | null;
     createdAt: string;
-    user: { id: string; firstName: string; lastName: string; travelerRank: string };
+    user: { id: string; firstName: string; lastName: string; travelerRank: string; profileImageUrl?: string | null };
   }[];
   similarPlaces: PlaceCard[];
   totalReviews: number;
@@ -46,4 +46,5 @@ export interface PlaceDetail extends PlaceCard {
   whatOffers: string[];
   openingHours: string | null;
   destination: { name: string; slug: string } | null;
+  extraFilters: Record<string, string | boolean | number> | null;
 }

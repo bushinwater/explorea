@@ -366,7 +366,9 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       container: this.mapContainer.nativeElement,
       style: this.isDark ? this.darkStyle : this.lightStyle,
       center: [lng, lat],
-      zoom: 13,
+      zoom: 16,
+      pitch: 45,
+      bearing: -17.6,
       attributionControl: false,
     });
 
