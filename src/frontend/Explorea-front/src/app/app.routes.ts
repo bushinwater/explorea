@@ -1,30 +1,30 @@
 import { Routes } from '@angular/router';
+import { adminUsersAccessGuard } from './core/guards/admin-users-access.guard';
 import { authGuard } from './core/guards/auth-guard';
 import { guestGuard } from './core/guards/guest-guard';
-import { adminUsersAccessGuard } from './core/guards/admin-users-access.guard';
-import { adminGuard } from './core/guards/admin.guard';
-import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-shell.component';
-import { AdminHomePageComponent } from './features/admin/home/admin-home-page.component';
-import { UserDirectoryPageComponent } from './features/admin/users/user-directory-page.component';
-import { Dashboard } from './features/admin/dashboard/dashboard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
-import { EventDetailComponent } from './features/events/event-detail/event-detail';
-import { PlaceDetailComponent } from './features/places/place-detail/place-detail';
-import { DestinationDetailComponent } from './features/destinations/destination-detail/destination-detail';
+import { Dashboard } from './features/admin/dashboard/dashboard';
+import { AdminDestinationsPageComponent } from './features/admin/destinations/admin-destinations-page.component';
+import { AdminHomePageComponent } from './features/admin/home/admin-home-page.component';
+import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-shell.component';
+import { UserDirectoryPageComponent } from './features/admin/users/user-directory-page.component';
+import { CompleteProfile } from './features/auth/complete-profile/complete-profile';
+import { FacebookCallback } from './features/auth/facebook-callback/facebook-callback';
 import { ForgotPassword } from './features/auth/forgot-password/forgot-password';
 import { Interests } from './features/auth/interests/interests';
 import { Login } from './features/auth/login/login';
 import { Register } from './features/auth/register/register';
 import { ResetPassword } from './features/auth/reset-password/reset-password';
-import { CompleteProfile } from './features/auth/complete-profile/complete-profile';
-import { FacebookCallback } from './features/auth/facebook-callback/facebook-callback';
 import { VerifyEmail } from './features/auth/verify-email/verify-email';
-import { Home } from './features/home/home';
-import { Explore } from './features/explore/explore';
-import { Search } from './features/search/search';
-import { Settings } from './features/profile/settings/settings';
-import { SavedItemsPage } from './features/profile/saved-items/saved-items';
+import { DestinationDetailComponent } from './features/destinations/destination-detail/destination-detail';
+import { EventDetailComponent } from './features/events/event-detail/event-detail';
 import { EventsListPage } from './features/events/events-list/events-list';
+import { Explore } from './features/explore/explore';
+import { Home } from './features/home/home';
+import { PlaceDetailComponent } from './features/places/place-detail/place-detail';
+import { SavedItemsPage } from './features/profile/saved-items/saved-items';
+import { Settings } from './features/profile/settings/settings';
+import { Search } from './features/search/search';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -49,16 +49,20 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: AdminShellComponent,
-    canActivate: [adminGuard],
+    //canActivate: [adminGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: Dashboard },
       { path: 'map-view', component: AdminHomePageComponent },
-      { path: 'destinations', component: AdminHomePageComponent },
+      { path: 'destinations', component: AdminDestinationsPageComponent },
       { path: 'reviews', component: AdminHomePageComponent },
       { path: 'reports', component: AdminHomePageComponent },
       { path: 'settings', component: AdminHomePageComponent },
-      { path: 'users', component: UserDirectoryPageComponent, canActivate: [adminUsersAccessGuard] },
+      {
+        path: 'users',
+        component: UserDirectoryPageComponent,
+        canActivate: [adminUsersAccessGuard],
+      },
       { path: '**', redirectTo: 'dashboard' },
     ],
   },
