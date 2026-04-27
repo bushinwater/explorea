@@ -47,6 +47,9 @@
     <div class="event-card__footer">
       <span *ngIf="event.price" class="event-card__price">od {{ event.price | number }} RSD</span>
       <span *ngIf="!event.price" class="event-card__price free">Besplatno</span>
+      <button *ngIf="showPlannerBtn" class="event-card__planner-btn" (click)="onPlannerClick($event)" type="button" title="Dodaj u planer">
+        <span class="material-icons">bookmark_add</span>
+      </button>
     </div>
   </div>
 </div>
