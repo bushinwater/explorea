@@ -126,6 +126,8 @@ builder.Services.AddScoped<IAdminQueueService, AdminQueueService>();
 builder.Services.AddScoped<IAdminAssignmentService, AdminAssignmentService>();
 builder.Services.AddScoped<IAdminEventRepository, AdminEventRepository>();
 builder.Services.AddScoped<IAdminEventService, AdminEventService>();
+builder.Services.AddScoped<IAdminReviewRepository, AdminReviewRepository>();
+builder.Services.AddScoped<IAdminReviewService, AdminReviewService>();
 builder.Services.AddScoped<IPopularityService, PopularityService>();
 
 builder.Services.AddMcpServer()
