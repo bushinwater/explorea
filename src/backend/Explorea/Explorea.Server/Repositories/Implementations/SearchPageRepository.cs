@@ -326,11 +326,16 @@ namespace Explorea.Server.Repositories.Implementations
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
           var q = query.Query.Trim().ToLower();
-          activitiesQuery = activitiesQuery.Where(a =>
-              a.Name.ToLower().Contains(q) ||
-              (a.Description != null && a.Description.ToLower().Contains(q)) ||
-              (a.StartPoint != null && a.StartPoint.ToLower().Contains(q)) ||
-              (a.City != null && a.City.Name.ToLower().Contains(q)));
+          if (q.Length >= 4)
+              activitiesQuery = activitiesQuery.Where(a =>
+                  a.Name.ToLower().Contains(q) ||
+                  (a.Description != null && a.Description.ToLower().Contains(q)) ||
+                  (a.StartPoint != null && a.StartPoint.ToLower().Contains(q)) ||
+                  (a.City != null && a.City.Name.ToLower().Contains(q)));
+          else
+              activitiesQuery = activitiesQuery.Where(a =>
+                  a.Name.ToLower().Contains(q) ||
+                  (a.City != null && a.City.Name.ToLower().Contains(q)));
       }
 
       if (query.RegionsIds?.Count > 0)
@@ -476,10 +481,15 @@ namespace Explorea.Server.Repositories.Implementations
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
         var q = query.Query.Trim().ToLower();
-        destinationsQuery = destinationsQuery.Where(d =>
-            d.Name.ToLower().Contains(q) ||
-            (d.Description != null && d.Description.ToLower().Contains(q)) ||
-            (d.City != null && d.City.Name.ToLower().Contains(q)));
+        if (q.Length >= 4)
+            destinationsQuery = destinationsQuery.Where(d =>
+                d.Name.ToLower().Contains(q) ||
+                (d.Description != null && d.Description.ToLower().Contains(q)) ||
+                (d.City != null && d.City.Name.ToLower().Contains(q)));
+        else
+            destinationsQuery = destinationsQuery.Where(d =>
+                d.Name.ToLower().Contains(q) ||
+                (d.City != null && d.City.Name.ToLower().Contains(q)));
       }
 
       if (query.RegionsIds?.Count > 0)
@@ -612,11 +622,16 @@ namespace Explorea.Server.Repositories.Implementations
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
         var q = query.Query.Trim().ToLower();
-        eventsQuery = eventsQuery.Where(e =>
-            e.Name.ToLower().Contains(q) ||
-            (e.Description != null && e.Description.ToLower().Contains(q)) ||
-            (e.Address != null && e.Address.ToLower().Contains(q)) ||
-            (e.City != null && e.City.Name.ToLower().Contains(q)));
+        if (q.Length >= 4)
+            eventsQuery = eventsQuery.Where(e =>
+                e.Name.ToLower().Contains(q) ||
+                (e.Description != null && e.Description.ToLower().Contains(q)) ||
+                (e.Address != null && e.Address.ToLower().Contains(q)) ||
+                (e.City != null && e.City.Name.ToLower().Contains(q)));
+        else
+            eventsQuery = eventsQuery.Where(e =>
+                e.Name.ToLower().Contains(q) ||
+                (e.City != null && e.City.Name.ToLower().Contains(q)));
       }
 
       if (query.RegionsIds?.Count > 0)
@@ -774,11 +789,16 @@ namespace Explorea.Server.Repositories.Implementations
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
           var q = query.Query.Trim().ToLower();
-          placesQuery = placesQuery.Where(p =>
-              p.Name.ToLower().Contains(q) ||
-              (p.Description != null && p.Description.ToLower().Contains(q)) ||
-              (p.Address != null && p.Address.ToLower().Contains(q)) ||
-              (p.City != null && p.City.Name.ToLower().Contains(q)));
+          if (q.Length >= 4)
+              placesQuery = placesQuery.Where(p =>
+                  p.Name.ToLower().Contains(q) ||
+                  (p.Description != null && p.Description.ToLower().Contains(q)) ||
+                  (p.Address != null && p.Address.ToLower().Contains(q)) ||
+                  (p.City != null && p.City.Name.ToLower().Contains(q)));
+          else
+              placesQuery = placesQuery.Where(p =>
+                  p.Name.ToLower().Contains(q) ||
+                  (p.City != null && p.City.Name.ToLower().Contains(q)));
       }
 
       if (query.RegionsIds?.Count > 0)

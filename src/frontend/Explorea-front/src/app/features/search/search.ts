@@ -698,13 +698,21 @@ export class Search implements OnInit, OnDestroy {
     this.activeChip = key;
     this.activeTab  = key;
     if (key === 'sve') {
-      this.query            = '';
-      this.allResults       = [];
-      this.hasSearched      = false;
-      this.loading          = false;
-      this.pagination       = { page: 1, totalPages: 1, total: 0 };
       this.filterEntityType = null;
-      this.cdr.detectChanges();
+      if (this.query.trim().length >= 2) {
+        this.allResults  = [];
+        this.hasSearched = true;
+        this.loading     = true;
+        this.pagination  = { page: 1, totalPages: 1, total: 0 };
+        this.cdr.detectChanges();
+        this.executeSearch(1, false);
+      } else {
+        this.allResults  = [];
+        this.hasSearched = false;
+        this.loading     = false;
+        this.pagination  = { page: 1, totalPages: 1, total: 0 };
+        this.cdr.detectChanges();
+      }
       return;
     }
     // Auto-sync filter entity type with the selected chip and clear stale category filters
