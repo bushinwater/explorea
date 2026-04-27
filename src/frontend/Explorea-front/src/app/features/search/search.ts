@@ -162,8 +162,25 @@ export class Search implements OnInit, OnDestroy {
   // ─── Lifecycle ────────────────────────────────────────────────────────────
 
   ngOnInit(): void {
+    const state = history.state;
+    const fromHero = state?.fromHero === true;
+
+    if (fromHero) {
+      if (state.query)  this.query = state.query;
+      if (state.filters) this.filters = { ...state.filters };
+      if (state.nearbyEnabled) this.nearbyEnabled = state.nearbyEnabled;
+      if (state.filterEntityType) {
+        this.filterEntityType = state.filterEntityType;
+        this.activeChip  = state.filterEntityType;
+        this.activeTab   = state.filterEntityType;
+      }
+      if (state.query || state.filterEntityType) {
+        this.hasSearched = true;
+      }
+    }
+
     const typeParam = this.route.snapshot.queryParamMap.get('type');
-    const preselected = typeParam && ENTITY_TABS.some(t => t.key === typeParam) && typeParam !== 'sve';
+    const preselected = !fromHero && typeParam && ENTITY_TABS.some(t => t.key === typeParam) && typeParam !== 'sve';
     if (preselected) {
       this.activeChip       = typeParam!;
       this.activeTab        = typeParam!;
@@ -175,7 +192,7 @@ export class Search implements OnInit, OnDestroy {
     this.loadUserLocation();
     this.loadLookups();
 
-    if (preselected) {
+    if (preselected || (fromHero && (this.query || this.filterEntityType))) {
       this.triggerSearch();
     }
 
