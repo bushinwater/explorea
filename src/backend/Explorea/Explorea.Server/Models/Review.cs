@@ -25,6 +25,10 @@ namespace Explorea.API.Models
         [Column("comment")]
         public string? Comment { get; set; }
 
+        [Column("is_hidden")]  public bool IsHidden  { get; set; } = false;
+        [Column("is_deleted")] public bool IsDeleted { get; set; } = false;
+        [Column("deleted_at")] public DateTimeOffset? DeletedAt { get; set; }
+
         [Column("created_at")] public DateTimeOffset CreatedAt { get; set; }
         [Column("updated_at")] public DateTimeOffset UpdatedAt { get; set; }
         [Column("created_by")] public Guid? CreatedBy { get; set; }
