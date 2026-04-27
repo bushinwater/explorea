@@ -290,7 +290,12 @@
 
               <ng-container *ngIf="destination.reviews.length > 0; else emptyReviews">
                 <div class="review-scroll-row">
-                  <app-review-card *ngFor="let review of destination.reviews.slice(0, 6)" [review]="$any(review)" />
+                  <app-review-card
+                    *ngFor="let review of destination.reviews.slice(0, 6)"
+                    [review]="$any(review)"
+                    [currentUserId]="currentUserId"
+                    (deleted)="onReviewDeleted($event)"
+                    (updated)="onReviewUpdated($event)" />
                 </div>
 
                 <app-rating-stats [avgRating]="destination.avgRating" [reviews]="destination.reviews" />
@@ -392,7 +397,10 @@
         [subtitle]="destination.city?.name || destination.name"
         [avgRating]="destination.avgRating"
         [reviews]="destination.reviews"
-        (closed)="closeShowAll()" />
+        [currentUserId]="currentUserId"
+        (closed)="closeShowAll()"
+        (deleted)="onReviewDeleted($event)"
+        (updated)="onReviewUpdated($event)" />
 
       <!-- REVIEW MODAL -->
       <app-review-modal

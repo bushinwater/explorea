@@ -64,6 +64,7 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   hasReviewed = false;
   reviewFormOpen = false;
   reviewsPanelOpen = false;
+  currentUserId = '';
   private savedScrollY = 0;
 
   scrollProgress = 0;
@@ -93,6 +94,7 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.currentUserId = this.authService.getCurrentUserId();
     this.routeSub = this.route.paramMap.subscribe(params => {
       const slug = params.get('slug') ?? '';
       this.loading = true;
@@ -243,6 +245,22 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     this.hasReviewed = true;
     this.cdr.detectChanges();
+  }
+
+  onReviewDeleted(id: string): void {
+    if (!this.event) return;
+    this.event.reviews = this.event.reviews.filter(r => r.id !== id);
+    this.hasReviewed = false;
+    this.cdr.detectChanges();
+  }
+
+  onReviewUpdated(review: ReviewDto): void {
+    if (!this.event) return;
+    const idx = this.event.reviews.findIndex(r => r.id === review.id);
+    if (idx !== -1) {
+      this.event.reviews[idx] = { ...this.event.reviews[idx], rating: review.rating, comment: review.comment ?? null };
+      this.cdr.detectChanges();
+    }
   }
 
   openReviewsPanel(): void {

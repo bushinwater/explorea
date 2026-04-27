@@ -81,6 +81,43 @@ namespace Explorea.Server.Controllers
             });
         }
 
+        [HttpPut("{id}")]
+        [Authorize]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateReviewDto dto)
+        {
+            var userId = await GetCurrentUserId();
+            var review = await _db.Reviews
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
+            if (review == null) return NotFound();
+
+            review.Rating = (short)dto.Rating;
+            review.Comment = dto.Comment;
+            review.UpdatedAt = DateTimeOffset.UtcNow;
+            review.UpdatedBy = userId;
+
+            await _db.SaveChangesAsync();
+
+            try { await UpdateAvgRating(review.EntityType, review.EntityId); } catch { /* non-fatal */ }
+
+            return Ok(new ReviewDto
+            {
+                Id = review.Id,
+                Rating = review.Rating,
+                Comment = review.Comment,
+                CreatedAt = review.CreatedAt,
+                User = new ReviewUserDto
+                {
+                    Id = review.User.Id,
+                    FirstName = review.User.FirstName,
+                    LastName = review.User.LastName,
+                    TravelerRank = review.User.TravelerRank,
+                    ProfileImageUrl = review.User.ProfileImageUrl
+                }
+            });
+        }
+
         [HttpDelete("{id}")]
         [Authorize]
         public async Task<IActionResult> Delete(Guid id)

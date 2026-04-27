@@ -1,4 +1,4 @@
-<div class="review-card">
+<div class="review-card" [class.review-card--editing]="editMode">
   <div class="review-card__header">
     <div class="review-card__avatar">
       <img *ngIf="showImage" [src]="review.user.profileImageUrl" [alt]="review.user.firstName" class="review-card__avatar-img" (error)="onImgError()" />
@@ -11,11 +11,55 @@
         {{ review.user.travelerRank }}
       </span>
     </div>
-    <app-star-rating [rating]="review.rating" [showValue]="false" class="review-card__stars" />
+    <div class="review-card__rating-col" *ngIf="!editMode">
+      <app-star-rating [rating]="review.rating" [showValue]="false" class="review-card__stars" />
+      <div class="review-card__actions" *ngIf="isOwner">
+        <button class="review-card__action-btn" (click)="startEdit()" type="button" title="Izmeni">
+          <span class="material-icons">edit</span>
+        </button>
+        <button class="review-card__action-btn review-card__action-btn--delete" (click)="onDelete()" [disabled]="deleting" type="button" title="Obriši">
+          <span class="material-icons" [class.spin]="deleting">{{ deleting ? 'sync' : 'delete_outline' }}</span>
+        </button>
+      </div>
+    </div>
   </div>
-  <a *ngIf="entityRoute" class="review-card__entity" [routerLink]="entityRoute">
+
+  <a *ngIf="entityRoute && !editMode" class="review-card__entity" [routerLink]="entityRoute">
     <span class="material-icons">place</span>
     {{ review.entityName }}
   </a>
-  <p class="review-card__comment">{{ review.comment }}</p>
+
+  <!-- Read mode -->
+  <p *ngIf="!editMode" class="review-card__comment">{{ review.comment }}</p>
+
+  <!-- Edit mode -->
+  <ng-container *ngIf="editMode">
+    <div class="review-card__edit-stars">
+      <button
+        *ngFor="let s of getStars()"
+        class="review-card__star-btn"
+        [class.filled]="s <= (editHover || editRating)"
+        (mouseenter)="editHover = s"
+        (mouseleave)="editHover = 0"
+        (click)="editRating = s"
+        type="button">
+        <span class="material-icons">star</span>
+      </button>
+    </div>
+    <textarea
+      class="review-card__edit-textarea"
+      [(ngModel)]="editComment"
+      placeholder="Napiši komentar..."
+      rows="3"
+      maxlength="1000">
+    </textarea>
+    <p *ngIf="editError" class="review-card__edit-error">{{ editError }}</p>
+    <div class="review-card__edit-actions">
+      <button class="review-card__edit-cancel" (click)="cancelEdit()" type="button">Otkaži</button>
+      <button class="review-card__edit-save" (click)="saveEdit()" [disabled]="editRating === 0 || saving" type="button">
+        <span class="material-icons spin" *ngIf="saving" style="font-size:16px">sync</span>
+        <span *ngIf="!saving">Sačuvaj</span>
+      </button>
+    </div>
+  </ng-container>
 </div>

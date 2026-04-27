@@ -76,6 +76,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
   isSavedLoading = false;
 
   hasReviewed = false;
+  currentUserId = '';
 
   // Show-all panel (similar activities)
   showAllOpen = false;
@@ -103,6 +104,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
   private slug = '';
 
   ngOnInit(): void {
+    this.currentUserId = this.authService.getCurrentUserId();
     this.routeSub = this.route.paramMap.subscribe(params => {
       this.slug = params.get('slug') ?? '';
       this.loading = true;
@@ -426,10 +428,27 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
         firstName: review.user.firstName,
         lastName: review.user.lastName,
         travelerRank: review.user.travelerRank,
+        profileImageUrl: review.user.profileImageUrl ?? null,
       },
     });
     this.hasReviewed = true;
     this.cdr.detectChanges();
+  }
+
+  onReviewDeleted(id: string): void {
+    if (!this.activity) return;
+    this.activity.reviews = this.activity.reviews.filter(r => r.id !== id);
+    this.hasReviewed = false;
+    this.cdr.detectChanges();
+  }
+
+  onReviewUpdated(review: ReviewDto): void {
+    if (!this.activity) return;
+    const idx = this.activity.reviews.findIndex(r => r.id === review.id);
+    if (idx !== -1) {
+      this.activity.reviews[idx] = { ...this.activity.reviews[idx], rating: review.rating, comment: review.comment };
+      this.cdr.detectChanges();
+    }
   }
 
   getStarsArray(): number[] {

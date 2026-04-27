@@ -99,6 +99,20 @@ export class AuthService {
     }
   }
 
+  getCurrentUserId(): string {
+    const token = this.getAccessToken();
+    if (!token) return '';
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload['sub']
+          ?? payload['nameid']
+          ?? payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']
+          ?? '';
+    } catch {
+      return '';
+    }
+  }
+
   getRole(): string {
     const token = this.getAccessToken();
     if (!token) return '';

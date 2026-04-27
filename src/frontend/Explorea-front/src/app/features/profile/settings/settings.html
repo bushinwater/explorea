@@ -93,10 +93,15 @@
           </div>
 
           <ng-container *ngIf="!reviewsLoading">
-            <div class="reviews-scroll" *ngIf="myReviewsAsDto.length > 0">
-              <app-review-card *ngFor="let r of myReviewsAsDto" [review]="r" />
+            <div class="reviews-scroll" *ngIf="reviewDtos.length > 0">
+              <app-review-card
+                *ngFor="let r of reviewDtos; trackBy: trackReviewById"
+                [review]="r"
+                [currentUserId]="currentUserId"
+                (deleted)="onReviewDeleted($event)"
+                (updated)="onReviewUpdated($event)" />
             </div>
-            <div class="reviews-empty" *ngIf="myReviewsAsDto.length === 0">
+            <div class="reviews-empty" *ngIf="reviewDtos.length === 0">
               <span class="material-icons">rate_review</span>
               <p>{{ 'MY_REVIEWS.EMPTY' | translate }}</p>
               <span class="reviews-empty__sub">{{ 'MY_REVIEWS.EMPTY_SUB' | translate }}</span>

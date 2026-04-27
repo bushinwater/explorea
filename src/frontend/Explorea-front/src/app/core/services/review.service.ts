@@ -26,6 +26,10 @@ export class ReviewService {
     return this.http.post<ReviewDto>(this.api, dto);
   }
 
+  update(id: string, dto: { rating: number; comment?: string }): Observable<ReviewDto> {
+    return this.http.put<ReviewDto>(`${this.api}/${id}`, dto);
+  }
+
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/${id}`);
   }

@@ -324,7 +324,11 @@
                   @if (placeReviews.length > 0) {
                     <div class="review-scroll-row">
                       @for (review of placeReviews.slice(0, 6); track review.id) {
-                        <app-review-card [review]="review" />
+                        <app-review-card
+                          [review]="review"
+                          [currentUserId]="currentUserId"
+                          (deleted)="onReviewDeleted($event)"
+                          (updated)="onReviewUpdated($event)" />
                       }
                     </div>
                     <app-rating-stats [avgRating]="place.avgRating" [reviews]="placeReviews" />
@@ -478,7 +482,10 @@
         [subtitle]="place.name"
         [avgRating]="place.avgRating"
         [reviews]="placeReviews"
-        (closed)="reviewsPanelOpen = false" />
+        [currentUserId]="currentUserId"
+        (closed)="reviewsPanelOpen = false"
+        (deleted)="onReviewDeleted($event)"
+        (updated)="onReviewUpdated($event)" />
 
       <!-- Review modal -->
       <app-review-modal

@@ -75,6 +75,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   reviewsPanelOpen = false;
   reviewFormOpen = false;
   hasReviewed = false;
+  currentUserId = '';
 
   lightboxOpen = false;
   lightboxIndex = 0;
@@ -105,6 +106,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.currentUserId = this.authService.getCurrentUserId();
     const slug = this.route.snapshot.paramMap.get('slug') ?? '';
     this.placeService.getBySlug(slug).subscribe({
       next: (data) => {
@@ -333,6 +335,28 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     this.hasReviewed = true;
     this.reviewFormOpen = false;
     this.cdr.detectChanges();
+  }
+
+  onReviewDeleted(id: string): void {
+    if (!this.place) return;
+    this.place = {
+      ...this.place,
+      reviews: this.place.reviews.filter((r: any) => r.id !== id),
+      totalReviews: Math.max(0, this.place.totalReviews - 1),
+    };
+    this.hasReviewed = false;
+    this.cdr.detectChanges();
+  }
+
+  onReviewUpdated(review: ReviewDto): void {
+    if (!this.place) return;
+    const idx = this.place.reviews.findIndex((r: any) => r.id === review.id);
+    if (idx !== -1) {
+      const updated = [...this.place.reviews];
+      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment };
+      this.place = { ...this.place, reviews: updated };
+      this.cdr.detectChanges();
+    }
   }
 
   get stickyBarVisible(): boolean { return this.scrollProgress > 0.88; }

@@ -149,7 +149,10 @@
           <div class="review-scroll-row">
             <app-review-card
               *ngFor="let r of reviewsAsDto.slice(0, 5)"
-              [review]="r" />
+              [review]="r"
+              [currentUserId]="currentUserId"
+              (deleted)="onReviewDeleted($event)"
+              (updated)="onReviewUpdated($event)" />
           </div>
           <app-rating-stats [avgRating]="avgRating" [reviews]="event.reviews" />
         </ng-container>
@@ -365,6 +368,9 @@
   [subtitle]="event?.name ?? ''"
   [avgRating]="avgRating"
   [reviews]="reviewsAsDto"
-  (closed)="closeReviewsPanel()" />
+  [currentUserId]="currentUserId"
+  (closed)="closeReviewsPanel()"
+  (deleted)="onReviewDeleted($event)"
+  (updated)="onReviewUpdated($event)" />
 
 <app-bottom-nav />

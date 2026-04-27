@@ -87,6 +87,12 @@
 .rp-list {
   display: flex;
   flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.rp-list ::ng-deep .review-card {
+  width: 100%;
+  flex-shrink: 1;
 }
 
 .rp-item {
