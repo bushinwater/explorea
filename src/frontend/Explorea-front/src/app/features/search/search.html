@@ -178,8 +178,8 @@
       ══════════════════════════════════════════ -->
       <ng-container *ngIf="showResults">
 
-        <!-- ENTITY TABS — only for free-text search -->
-        <div class="tabs-row" *ngIf="activeChip === 'sve' || activeChip === ''">
+        <!-- ENTITY TABS — only for free-text search with no category chip active -->
+        <div class="tabs-row" *ngIf="activeChip === 'sve'">
           <button
             *ngFor="let tab of entityTabs"
             class="tab-btn"

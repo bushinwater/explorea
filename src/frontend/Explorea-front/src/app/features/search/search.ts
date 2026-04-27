@@ -651,6 +651,14 @@ export class Search implements OnInit, OnDestroy {
 
   onQueryChange(): void {
     if (this.query.trim().length === 0) {
+      if (this.activeChip !== 'sve' && this.activeChip !== '') {
+        // User cleared query while a category chip is active — re-run category search without query
+        this.loading = true;
+        this.hasSearched = true;
+        this.cdr.detectChanges();
+        this.searchSubject.next();
+        return;
+      }
       this.activeChip  = 'sve';
       this.activeTab   = 'sve';
       this.allResults  = [];
@@ -661,7 +669,10 @@ export class Search implements OnInit, OnDestroy {
       return;
     }
     if (this.query.trim().length < 2) return;
-    this.activeChip = '';
+    // Keep the active chip if user is already browsing a specific category
+    if (this.activeChip === 'sve') {
+      this.activeChip = '';
+    }
     this.loading    = true;
     this.cdr.detectChanges();
     this.searchSubject.next();
@@ -708,7 +719,6 @@ export class Search implements OnInit, OnDestroy {
     };
     this.filterDefs       = [];
     this.filterDefsTypeId = null;
-    this.query            = '';
     this.hasSearched      = true;
     this.triggerSearch();
   }

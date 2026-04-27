@@ -320,6 +320,7 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(a => a.Category)
         .Include(a => a.City)
         .Include(a => a.Destination)
+        .Where(a => !a.IsDeleted)
         .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))
@@ -469,6 +470,7 @@ namespace Explorea.Server.Repositories.Implementations
         .AsNoTracking()
         .Include(d => d.City)
         .Include(d => d.Type)
+        .Where(d => !d.IsDeleted)
         .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))
@@ -604,7 +606,7 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(e => e.City)
         .Include(e => e.Type)
         .Include(e => e.Destination)
-        .Where(e => e.EndDatetime >= now)
+        .Where(e => !e.IsDeleted && e.EndDatetime >= now)
         .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))
@@ -759,13 +761,14 @@ namespace Explorea.Server.Repositories.Implementations
       var userPoint = BuildUserPoint(query.UserLat, query.UserLng);
       var currentDay = GetCurrentDayOfWeekNumber();
       var currentTime = GetCurrentUtcTimeOnly();
-      
+
       var placesQuery = _db.Places
           .AsNoTracking()
           .Include(p => p.City)
           .Include(p => p.Type)
           .Include(p => p.WorkingDays)
               .ThenInclude(wd => wd.Intervals)
+          .Where(p => !p.IsDeleted)
           .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))
