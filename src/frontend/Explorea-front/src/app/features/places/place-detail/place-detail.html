@@ -23,10 +23,61 @@
       </div>
     }
 
-    <!-- LOADING -->
+    <!-- SKELETON LOADING -->
     @if (loading) {
-      <div class="place-loading">
-        <span class="material-icons spin">refresh</span>
+      <div class="skel-hero">
+        <div class="skel-hero__topbar">
+          <div class="skel skel-circle"></div>
+          <div class="skel-hero__topbar-right">
+            <div class="skel skel-circle"></div>
+            <div class="skel skel-circle"></div>
+          </div>
+        </div>
+        <div class="skel-hero__content">
+          <div class="skel skel-badge-row">
+            <div class="skel skel-badge"></div>
+            <div class="skel skel-badge"></div>
+          </div>
+          <div class="skel skel-title"></div>
+          <div class="skel skel-subtitle"></div>
+        </div>
+      </div>
+
+      <div class="skel-place-content">
+        <!-- Description -->
+        <div class="skel-section">
+          <div class="skel skel-section-title"></div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line skel-line--short"></div>
+        </div>
+
+        <!-- Gallery -->
+        <div class="skel-section">
+          <div class="skel-gallery">
+            <div class="skel skel-gallery-main"></div>
+            <div class="skel-gallery-col">
+              <div class="skel skel-gallery-sm"></div>
+              <div class="skel skel-gallery-sm"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="skel-section">
+          <div class="skel-tabs-row">
+            <div class="skel skel-tab"></div>
+            <div class="skel skel-tab"></div>
+            <div class="skel skel-tab"></div>
+          </div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line skel-line--med"></div>
+        </div>
+
+        <!-- Map -->
+        <div class="skel-section">
+          <div class="skel skel-map"></div>
+        </div>
       </div>
     }
 
@@ -104,32 +155,8 @@
         <div class="detail-hero__bottom-gradient"></div>
       </section>
 
-      <!-- GALLERY + MAIN CONTENT -->
+      <!-- MAIN CONTENT -->
       <div class="place-below-hero">
-
-        <!-- Gallery header -->
-        @if (galleryImages.length > 0) {
-          <div class="gallery-head">
-            <a class="section-link section-link--subtle" href="javascript:void(0)" (click)="openLightbox(0)">
-              <span class="material-icons">photo_library</span>
-              {{ 'PLACE_DETAIL.GALLERY.VIEW_ALL' | translate:{ count: galleryImages.length } }}
-            </a>
-          </div>
-        }
-
-        <!-- Gallery desktop -->
-        <div class="place-gallery desktop-gallery">
-          @for (img of galleryImages; track img; let i = $index) {
-            <img [src]="img" [alt]="place.name + ' ' + i" (click)="openLightbox(i)" />
-          }
-        </div>
-
-        <!-- Gallery mobile -->
-        <div class="place-gallery-mobile mobile-gallery">
-          @for (img of galleryImages; track img; let i = $index) {
-            <img [src]="img" [alt]="place.name + ' ' + i" (click)="openLightbox(i)" />
-          }
-        </div>
 
         <!-- Mobile info row -->
         <div class="mobile-info mobile-only">
@@ -162,7 +189,7 @@
           <!-- Left: main content -->
           <div class="content-main">
 
-            <!-- About -->
+            <!-- About (description first) -->
             <div class="detail-section detail-section--plain">
               <div class="detail-section__head detail-section__head--about">
                 <h2>{{ 'PLACE_DETAIL.ABOUT' | translate }}</h2>
@@ -185,7 +212,29 @@
               }
             </div>
 
-            <!-- Amenities grid (desktop) from extraFilters -->
+            <!-- Gallery (after description) -->
+            @if (galleryImages.length > 0) {
+              <div class="gallery-head">
+                <a class="section-link section-link--subtle" href="javascript:void(0)" (click)="openLightbox(0)">
+                  <span class="material-icons">photo_library</span>
+                  {{ 'PLACE_DETAIL.GALLERY.VIEW_ALL' | translate:{ count: galleryImages.length } }}
+                </a>
+              </div>
+            }
+
+            <div class="place-gallery desktop-gallery">
+              @for (img of galleryImages; track img; let i = $index) {
+                <img [src]="img" [alt]="place.name + ' ' + i" (click)="openLightbox(i)" />
+              }
+            </div>
+
+            <div class="place-gallery-mobile mobile-gallery">
+              @for (img of galleryImages; track img; let i = $index) {
+                <img [src]="img" [alt]="place.name + ' ' + i" (click)="openLightbox(i)" />
+              }
+            </div>
+
+            <!-- Amenities grid (desktop) -->
             @if (extraFiltersEntries.length > 0) {
               <div class="amenities-grid desktop-only">
                 @for (f of extraFiltersEntries; track f.key) {
@@ -286,7 +335,7 @@
               }
             </section>
 
-            <!-- Plan visit (visible on both mobile and desktop) -->
+            <!-- Plan visit -->
             <div class="plan-visit">
               <h3 class="plan-visit__title">
                 <span class="material-icons">calendar_today</span>
@@ -358,77 +407,42 @@
           @if (isAccommodation) {
           <aside class="booking-aside desktop-only">
             <div class="booking-card">
+
               <div class="booking-card__price-row">
                 @if (place.pricePerNight) {
                   <span class="booking-card__price">{{ place.pricePerNight }}€</span>
                   <span class="booking-card__per">/ {{ 'PLACE_DETAIL.BOOK.PER_NIGHT' | translate }}</span>
+                } @else if (place.priceRange) {
+                  <span class="booking-card__price">{{ place.priceRange }}</span>
+                } @else {
+                  <span class="booking-card__price booking-card__price--na">Cena na upit</span>
                 }
+              </div>
+
+              @if (place.avgRating > 0) {
                 <div class="booking-card__rating">
                   <span class="material-icons">star</span>
-                  {{ place.avgRating }} ({{ place.totalReviews }})
-                </div>
-              </div>
-
-              <p class="booking-card__hint">{{ 'PLACE_DETAIL.BOOK.SELECT_DATES' | translate }}</p>
-
-              <div class="booking-card__dates">
-                <div class="booking-card__date-field">
-                  <span class="booking-card__date-label">{{ 'PLACE_DETAIL.BOOK.ARRIVAL' | translate }}</span>
-                  <span class="booking-card__date-value">{{ checkIn }}</span>
-                </div>
-                <div class="booking-card__date-sep"></div>
-                <div class="booking-card__date-field">
-                  <span class="booking-card__date-label">{{ 'PLACE_DETAIL.BOOK.DEPARTURE' | translate }}</span>
-                  <span class="booking-card__date-value">{{ checkOut }}</span>
-                </div>
-              </div>
-
-              <div class="booking-card__guests">
-                <span class="booking-card__date-label">{{ 'PLACE_DETAIL.BOOK.GUESTS' | translate }}</span>
-                <div class="guests-row">
-                  <span class="material-icons">person</span>
-                  <span>{{ guests }}</span>
-                </div>
-              </div>
-
-              @if (place.pricePerNight) {
-                <div class="booking-card__breakdown">
-                  <div class="breakdown-row">
-                    <span>{{ place.pricePerNight }}€ x {{ nights }} {{ 'PLACE_DETAIL.BOOK.NIGHTS' | translate }}</span>
-                    <span>{{ subtotal }}€</span>
-                  </div>
-                  <div class="breakdown-row">
-                    <span>{{ 'PLACE_DETAIL.BOOK.SERVICE_FEE' | translate }}</span>
-                    <span>{{ serviceFee }}€</span>
-                  </div>
-                  <div class="breakdown-row breakdown-row--total">
-                    <span>{{ 'PLACE_DETAIL.BOOK.TOTAL' | translate }}</span>
-                    <span>{{ total }}€</span>
-                  </div>
+                  {{ place.avgRating | number:'1.1-1' }}
+                  @if (place.totalReviews) {
+                    <span class="booking-card__rating-count">({{ place.totalReviews }})</span>
+                  }
                 </div>
               }
 
-              <button class="btn btn-primary booking-card__cta">
+              <a class="btn btn-primary booking-card__cta"
+                [href]="place.websiteUrl ?? ''"
+                [class.booking-card__cta--disabled]="!place.websiteUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                (click)="$event.stopPropagation()">
                 {{ 'PLACE_DETAIL.BOOK.CTA' | translate }}
-              </button>
-              <p class="booking-card__no-charge">{{ 'PLACE_DETAIL.BOOK.NO_CHARGE' | translate }}</p>
+              </a>
 
-              <div class="booking-card__safe">
-                <div class="safe-title">
-                  <span class="material-icons">verified_user</span>
-                  {{ 'PLACE_DETAIL.BOOK.SAFE_TITLE' | translate }}
-                </div>
-                <ul class="safe-list">
-                  <li><span class="material-icons">check</span> {{ 'PLACE_DETAIL.BOOK.SAFE_CANCEL' | translate }}</li>
-                  <li><span class="material-icons">check</span> {{ 'PLACE_DETAIL.BOOK.SAFE_NO_FEES' | translate }}</li>
-                  <li><span class="material-icons">check</span> {{ 'PLACE_DETAIL.BOOK.SAFE_SSL' | translate }}</li>
-                </ul>
+              <div class="booking-card__external-note">
+                <span class="material-icons">open_in_new</span>
+                Bićete preusmereni na spoljni sajt za rezervacije (Booking, Airbnb i sl.)
               </div>
 
-              <p class="booking-card__views">
-                {{ 'PLACE_DETAIL.BOOK.VIEWS_PREFIX' | translate }} {{ place.viewsLast24h }}
-                {{ 'PLACE_DETAIL.BOOK.VIEWS_SUFFIX' | translate }}
-              </p>
             </div>
           </aside>
           }
@@ -439,14 +453,21 @@
       <!-- Mobile sticky bottom bar -->
       @if (isAccommodation) {
         <div class="mobile-bottom-bar mobile-only">
-          <button class="mobile-bottom-bar__heart"
-            [class.mobile-bottom-bar__heart--saved]="isSaved"
-            (click)="toggleSave()">
-            <span class="material-icons">{{ isSaved ? 'favorite' : 'favorite_border' }}</span>
-          </button>
-          <button class="btn btn-primary mobile-bottom-bar__cta">
+          <div class="mobile-bottom-bar__price">
+            @if (place.pricePerNight) {
+              <span class="mobile-bottom-bar__amount">{{ place.pricePerNight }}€</span>
+              <span class="mobile-bottom-bar__per">/ noć</span>
+            } @else if (place.priceRange) {
+              <span class="mobile-bottom-bar__amount">{{ place.priceRange }}</span>
+            }
+          </div>
+          <a class="btn btn-primary mobile-bottom-bar__cta"
+            [href]="place.websiteUrl ?? ''"
+            [class.mobile-bottom-bar__cta--disabled]="!place.websiteUrl"
+            target="_blank"
+            rel="noopener noreferrer">
             {{ 'PLACE_DETAIL.BOOK.CTA' | translate }}
-          </button>
+          </a>
         </div>
       }
 

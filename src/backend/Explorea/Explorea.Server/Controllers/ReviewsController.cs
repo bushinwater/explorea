@@ -62,7 +62,7 @@ namespace Explorea.Server.Controllers
                 .Include(r => r.User)
                 .FirstAsync(r => r.Id == review.Id);
 
-            await UpdateAvgRating(dto.EntityType, dto.EntityId);
+            try { await UpdateAvgRating(dto.EntityType, dto.EntityId); } catch { /* non-fatal */ }
 
             return StatusCode(201, new ReviewDto
             {
@@ -75,7 +75,8 @@ namespace Explorea.Server.Controllers
                     Id = created.User.Id,
                     FirstName = created.User.FirstName,
                     LastName = created.User.LastName,
-                    TravelerRank = created.User.TravelerRank
+                    TravelerRank = created.User.TravelerRank,
+                    ProfileImageUrl = created.User.ProfileImageUrl
                 }
             });
         }

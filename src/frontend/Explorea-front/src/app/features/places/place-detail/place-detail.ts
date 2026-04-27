@@ -315,8 +315,12 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   }
 
   openReviewForm(): void {
-    if (!this.authService.isLoggedIn()) return;
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
     this.reviewFormOpen = true;
+    this.cdr.detectChanges();
   }
 
   onReviewSubmitted(review: ReviewDto): void {

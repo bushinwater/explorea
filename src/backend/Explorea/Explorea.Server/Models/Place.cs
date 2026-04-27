@@ -34,7 +34,8 @@ namespace Explorea.API.Models
         [NotMapped]
         public string? PreviewImageUrl { get; set; }
 
-        [MaxLength(50),  Column("price_range")] public string? PriceRange { get; set; }
+        [MaxLength(50),  Column("price_range")]  public string?  PriceRange    { get; set; }
+        [Column("price_per_night")]               public decimal? PricePerNight { get; set; }
         [MaxLength(50),  Column("phone")]        public string? Phone      { get; set; }
         [MaxLength(500), Column("website_url")]  public string? WebsiteUrl { get; set; }
 

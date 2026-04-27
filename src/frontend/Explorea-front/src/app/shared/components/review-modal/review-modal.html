@@ -28,8 +28,10 @@
               <span class="material-icons">star</span>
             </button>
           </div>
-          <span class="rm-stars__text" *ngIf="hoverRating || rating">
-            {{ 'REVIEW_MODAL.STARS_' + (hoverRating || rating) | translate }}
+          <span class="rm-stars__text">
+            @if (hoverRating || rating) {
+              {{ 'REVIEW_MODAL.STARS_' + (hoverRating || rating) | translate }}
+            }
           </span>
         </div>
 
