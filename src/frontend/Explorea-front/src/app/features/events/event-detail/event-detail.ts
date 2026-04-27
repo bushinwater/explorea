@@ -20,6 +20,7 @@ import { ReviewModal } from '../../../shared/components/review-modal/review-moda
 import { RatingStats } from '../../../shared/components/rating-stats/rating-stats';
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { PopularityService } from '../../../core/services/popularity.service';
+import { ShareButton } from '../../../shared/components/share-button/share-button';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
@@ -44,7 +45,7 @@ const LIGHT = {
 @Component({
   selector: 'app-event-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, EventCard, ImageGallery, DetailFooter, ReviewCard, ReviewModal, RatingStats, ReviewsPanel],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, EventCard, ImageGallery, DetailFooter, ReviewCard, ReviewModal, RatingStats, ReviewsPanel, ShareButton],
   templateUrl: './event-detail.html',
   styleUrl: './event-detail.css',
 })

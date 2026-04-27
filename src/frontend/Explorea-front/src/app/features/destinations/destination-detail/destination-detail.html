@@ -5,6 +5,7 @@
 
     <!-- STICKY BAR (background + save button) -->
     <div class="sticky-bar" [class.sticky-bar--visible]="stickyBarVisible">
+      <app-share-button [small]="true" />
       <button class="circle-btn circle-btn--sm"
         [class.circle-btn--saved]="isSaved"
         [disabled]="isSavedLoading"
@@ -105,6 +106,7 @@
             <span class="material-icons">arrow_back</span>
           </button>
           <div class="detail-hero__actions">
+            <app-share-button />
             <button class="circle-btn" type="button"
               [class.circle-btn--saved]="isSaved"
               [disabled]="isSavedLoading"

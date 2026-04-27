@@ -22,6 +22,7 @@ import { RatingStats } from '../../../shared/components/rating-stats/rating-stat
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
+import { ShareButton } from '../../../shared/components/share-button/share-button';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 const DESKTOP_SIMILAR_LIMIT = 6;
@@ -48,7 +49,7 @@ const LIGHT = {
 @Component({
   selector: 'app-activity-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel, ShareButton],
   templateUrl: './activity-detail.html',
   styleUrl: './activity-detail.css',
 })

@@ -1,0 +1,3 @@
+<button class="circle-btn" [class.circle-btn--sm]="small" [class.circle-btn--copied]="copied" type="button" (click)="share()" [title]="copied ? 'Kopirano!' : 'Podeli'">
+  <span class="material-icons">{{ copied ? 'check' : 'share' }}</span>
+</button>

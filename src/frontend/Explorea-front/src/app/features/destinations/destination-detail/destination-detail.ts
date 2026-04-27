@@ -45,6 +45,7 @@ import { DetailFooter } from '../../../shared/components/detail-footer/detail-fo
 import { RatingStats } from '../../../shared/components/rating-stats/rating-stats';
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { ReviewDto } from '../../../core/models/home.model';
+import { ShareButton } from '../../../shared/components/share-button/share-button';
 
 type DetailTab = 'places' | 'events' | 'activities' | 'reviews';
 type TabItem = PlaceCard | EventCard | ActivityCard;
@@ -52,7 +53,7 @@ type TabItem = PlaceCard | EventCard | ActivityCard;
 @Component({
   selector: 'app-destination-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel, ShareButton],
   templateUrl: './destination-detail.html',
   styleUrls: ['./destination-detail.css']
 })

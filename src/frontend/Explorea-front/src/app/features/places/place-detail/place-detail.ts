@@ -18,6 +18,7 @@ import { RatingStats } from '../../../shared/components/rating-stats/rating-stat
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { ReviewModal } from '../../../shared/components/review-modal/review-modal';
 import { ReviewDto } from '../../../core/models/home.model';
+import { ShareButton } from '../../../shared/components/share-button/share-button';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
@@ -45,7 +46,7 @@ const LIGHT = {
   imports: [
     CommonModule, NgStyle, RouterModule, TranslateModule,
     Sidebar, BottomNav,
-    ReviewCard, RatingStats, ReviewsPanel, ReviewModal,
+    ReviewCard, RatingStats, ReviewsPanel, ReviewModal, ShareButton,
   ],
   templateUrl: './place-detail.html',
   styleUrl: './place-detail.css',
