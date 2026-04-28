@@ -5,5 +5,10 @@
       <span class="logo-text">Explorea</span>
     </div>
     <p class="detail-footer__copy">{{ 'HOME.FOOTER.COPY' | translate }}</p>
+    <button class="about-link" (click)="aboutOpen = true" type="button">O timu</button>
   </div>
 </footer>
+
+<app-about-us-modal
+  *ngIf="aboutOpen"
+  (closed)="aboutOpen = false" />
