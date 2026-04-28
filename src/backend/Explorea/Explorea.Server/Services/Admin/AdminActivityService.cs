@@ -17,8 +17,24 @@ namespace Explorea.Server.Services.Admin
     {
       ValidatePagination(query.Page, query.PageSize);
 
-      var activitiesQuery = _repository.Query()
-        .OrderByDescending(a => a.CreatedAt);
+      var activitiesQuery = _repository.Query();
+
+      if (query.RegionId.HasValue)
+      {
+        activitiesQuery = activitiesQuery.Where(a =>
+          a.City != null &&
+          a.City.RegionId == query.RegionId.Value
+        );
+      }
+
+      if (query.CityId.HasValue)
+      {
+        activitiesQuery = activitiesQuery.Where(a =>
+          a.CityId == query.CityId.Value
+        );
+      }
+
+      activitiesQuery = activitiesQuery.OrderByDescending(a => a.CreatedAt);
 
       var total = await activitiesQuery.CountAsync();
 
