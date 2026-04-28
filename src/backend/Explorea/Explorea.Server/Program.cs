@@ -82,6 +82,7 @@ builder.Services.AddScoped<IAdminPlaceRepository, AdminPlaceRepository>();
 builder.Services.AddScoped<IAdminPlaceService, AdminPlaceService>();
 
 builder.Services.AddScoped<IOrganizationAssignmentRepository, OrganizationAssignmentRepository>();
+builder.Services.AddScoped<IOrganizationRegionAssignmentRepository, OrganizationRegionAssignmentRepository>();
 builder.Services.AddScoped<ISubmissionQueueRepository, SubmissionQueueRepository>();
 builder.Services.AddScoped<IAdminQueueService, AdminQueueService>();
 
@@ -120,10 +121,12 @@ builder.Services.AddScoped<IExploreService, ExploreService>();
 builder.Services.AddScoped<IPlaceRepository, PlaceRepository>();
 
 builder.Services.AddScoped<IOrganizationAssignmentRepository, OrganizationAssignmentRepository>();
+builder.Services.AddScoped<IOrganizationRegionAssignmentRepository, OrganizationRegionAssignmentRepository>();
 builder.Services.AddScoped<ISubmissionQueueRepository, SubmissionQueueRepository>();
 builder.Services.AddScoped<IAdminDestinationService, AdminDestinationService>();
 builder.Services.AddScoped<IAdminQueueService, AdminQueueService>();
 builder.Services.AddScoped<IAdminAssignmentService, AdminAssignmentService>();
+builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 builder.Services.AddScoped<IAdminEventRepository, AdminEventRepository>();
 builder.Services.AddScoped<IAdminEventService, AdminEventService>();
 builder.Services.AddScoped<IAdminReviewRepository, AdminReviewRepository>();

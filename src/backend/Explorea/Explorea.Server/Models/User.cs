@@ -61,6 +61,9 @@ namespace Explorea.API.Models
         [Column("current_city_id")]
         public int? CurrentCityId { get; set; }
 
+        [Column("managed_region_id")]
+        public int? ManagedRegionId { get; set; }
+
         [Column("current_location", TypeName = "geography(Point, 4326)")]
         public Point? CurrentLocation { get; set; }
 
@@ -73,6 +76,7 @@ namespace Explorea.API.Models
         public Role Role { get; set; } = null!;
 
         [ForeignKey("CurrentCityId")] public City? CurrentCity { get; set; }
+        [ForeignKey("ManagedRegionId")] public Region? ManagedRegion { get; set; }
 
         public UserPreferences?             Preferences  { get; set; }
         public ICollection<UserAuthAccount> AuthAccounts { get; set; } = new List<UserAuthAccount>();
@@ -82,6 +86,7 @@ namespace Explorea.API.Models
         public ICollection<Visit>           Visits       { get; set; } = new List<Visit>();
         public ICollection<TripPlan>        TripPlans    { get; set; } = new List<TripPlan>();
         public ICollection<UserInterestTag> InterestTags { get; set; } = new List<UserInterestTag>();
+        public ICollection<OrganizationRegionAssignment> OrganizationRegionAssignments { get; set; } = new List<OrganizationRegionAssignment>();
 
         [MaxLength(500), Column("profile_image_url")]
         public string? ProfileImageUrl { get; set; }

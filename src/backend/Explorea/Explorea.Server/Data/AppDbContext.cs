@@ -52,6 +52,7 @@ namespace Explorea.Server.Data
         public DbSet<ActivityInterestTag> ActivityInterestTags { get; set; }
         public DbSet<Country> Countries { get; set; }
         public DbSet<OrganizationAssignment> OrganizationAssignments { get; set; }
+        public DbSet<OrganizationRegionAssignment> OrganizationRegionAssignments { get; set; }
         public DbSet<SubmissionQueue> SubmissionQueue { get; set; }
         public DbSet<Newsletter> Newsletters { get; set; }
         public DbSet<DestinationType>  DestinationTypes  { get; set; }
@@ -175,6 +176,31 @@ namespace Explorea.Server.Data
                 .WithMany()
                 .HasForeignKey(a => a.AssignedBy)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // ---- OrganizationRegionAssignment relacije ----
+            modelBuilder.Entity<OrganizationRegionAssignment>()
+                .HasOne(a => a.OrganizationUser)
+                .WithMany(u => u.OrganizationRegionAssignments)
+                .HasForeignKey(a => a.OrganizationUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrganizationRegionAssignment>()
+                .HasOne(a => a.Region)
+                .WithMany(r => r.OrganizationAssignments)
+                .HasForeignKey(a => a.RegionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<OrganizationRegionAssignment>()
+                .HasOne(a => a.AssignedByUser)
+                .WithMany()
+                .HasForeignKey(a => a.AssignedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.ManagedRegion)
+                .WithMany(r => r.ManagedUsers)
+                .HasForeignKey(u => u.ManagedRegionId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // ---- SubmissionQueue relacije ----
             modelBuilder.Entity<SubmissionQueue>()
