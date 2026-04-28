@@ -39,13 +39,36 @@ namespace Explorea.Server.Controllers.Admin
             {
                 return BadRequest(new {message = ex.Message});
             }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.ToString() });
+            }
         }
 
         private Guid GetCurrentUserId()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return Guid.Parse(claim!);
+        
+            if (string.IsNullOrWhiteSpace(claim))
+            {
+                return Guid.Empty;
+            }
+        
+            return Guid.Parse(claim);
         }
+        
+        // PRIMENI OVO KADA TESTIRAS SA PRAVIM LOGIN/TOKEN FLOW
+        // private Guid GetCurrentUserId()
+        // {
+        //     var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        //     if (string.IsNullOrWhiteSpace(claim))
+        //     {
+        //         throw new UnauthorizedAccessException("User id claim is missing.");
+        //     }
+        
+        //     return Guid.Parse(claim);
+        // }
 
         [HttpPost]
         public IActionResult Create() => StatusCode(201);

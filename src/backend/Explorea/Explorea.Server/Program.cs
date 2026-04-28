@@ -2,6 +2,8 @@ using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Helpers;
 using Explorea.Server.McpTools;
+using Explorea.Server.Repositories.Admin;
+using Explorea.Server.Repositories.Admin.Interfaces;
 using Explorea.Server.Repositories.Implementations;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services;
@@ -81,7 +83,7 @@ builder.Services.AddScoped<ISearchPageRepository, SearchPageRepository>();
 builder.Services.AddScoped<IAdminPlaceRepository, AdminPlaceRepository>();
 builder.Services.AddScoped<IAdminPlaceService, AdminPlaceService>();
 
-// builder.Services.AddScoped<IAdminActivityRepository, AdminActivityRepository>();
+builder.Services.AddScoped<IAdminActivityRepository, AdminActivityRepository>();
 builder.Services.AddScoped<IAdminActivityService, AdminActivityService>();
 
 builder.Services.AddScoped<IOrganizationAssignmentRepository, OrganizationAssignmentRepository>();
