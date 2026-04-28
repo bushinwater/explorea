@@ -96,6 +96,17 @@ namespace Explorea.Server.Services.Admin
         };
       }
 
+      if (query.MinAvgRating.HasValue)
+      {
+        if(query.MinAvgRating < 0 || query.MinAvgRating > 5)
+        {
+          throw new ArithmeticException("MinAvgRating must be between 0 and 5");
+        }
+        activitiesQuery = activitiesQuery.Where(a =>
+          a.AvgRating >= query.MinAvgRating.Value
+        );
+      }
+
       activitiesQuery = activitiesQuery.OrderByDescending(a => a.CreatedAt);
 
       var total = await activitiesQuery.CountAsync();
