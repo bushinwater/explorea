@@ -123,4 +123,15 @@ export class AuthService {
       return '';
     }
   }
+
+  getFirstName(): string {
+    const token = this.getAccessToken();
+    if (!token) return '';
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload['firstName'] ?? '';
+    } catch {
+      return '';
+    }
+  }
 }

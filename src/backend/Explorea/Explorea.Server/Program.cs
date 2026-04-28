@@ -128,6 +128,8 @@ builder.Services.AddScoped<IAdminEventRepository, AdminEventRepository>();
 builder.Services.AddScoped<IAdminEventService, AdminEventService>();
 builder.Services.AddScoped<IPopularityService, PopularityService>();
 
+builder.Services.AddHttpClient<IChatService, GeminiChatService>();
+
 builder.Services.AddMcpServer()
     .WithHttpTransport()
     .WithTools<SearchTools>()

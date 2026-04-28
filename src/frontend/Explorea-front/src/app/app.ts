@@ -4,10 +4,11 @@ import { HttpClient } from '@angular/common/http';
 import { LanguageService } from './core/services/language.service';
 import { ThemeService } from './core/services/theme.service';
 import { ScrollRestorationService } from './core/services/scroll-restoration.service';
+import { ChatBubble } from './shared/components/chat-bubble/chat-bubble';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, ChatBubble],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
