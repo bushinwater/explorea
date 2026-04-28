@@ -10,11 +10,12 @@ import { ThemeService } from '../../../core/services/theme.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
+import { BugReportModal } from '../../../shared/components/bug-report-modal/bug-report-modal';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, Sidebar, TranslateModule, BottomNav],
+  imports: [CommonModule, FormsModule, RouterLink, Sidebar, TranslateModule, BottomNav, BugReportModal],
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
@@ -32,6 +33,7 @@ export class Login implements OnInit {
   loading = false;
   socialLoading: 'google' | 'facebook' | null = null;
   returnUrl = '/profile';
+  bugReportOpen = false;
 
   private static readonly EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

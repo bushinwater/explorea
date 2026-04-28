@@ -19,6 +19,7 @@ import { UserService } from '../../../core/services/user.service';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 import { ReviewCard } from '../../../shared/components/review-card/review-card';
+import { BugReportModal } from '../../../shared/components/bug-report-modal/bug-report-modal';
 
 const SCROLL_KEY = 'profile_scroll_y';
 const SECTION_KEY = 'profile_open_section';
@@ -26,7 +27,7 @@ const SECTION_KEY = 'profile_open_section';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, Sidebar, BottomNav, TranslateModule, ImageCropperComponent, ReviewCard],
+  imports: [CommonModule, FormsModule, RouterModule, Sidebar, BottomNav, TranslateModule, ImageCropperComponent, ReviewCard, BugReportModal],
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })
@@ -65,6 +66,7 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
   private lastCropEvent: ImageCroppedEvent | null = null;
 
   openSection: 'profile' | 'app' | 'reviews' | null = null;
+  bugReportOpen = false;
   reviewDtos: ReviewDto[] = [];
   reviewsLoaded = false;
   reviewsLoading = false;

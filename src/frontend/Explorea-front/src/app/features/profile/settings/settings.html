@@ -331,9 +331,23 @@
                 <option value="en">English (EN)</option>
               </select>
             </div>
+
+            <div class="field">
+              <div class="field-icon"><span class="material-icons">bug_report</span></div>
+              <div class="field-info">
+                <strong>Prijavi grešku</strong>
+                <span>Pošalji nam izveštaj o problemu</span>
+              </div>
+              <button class="btn btn-secondary" (click)="bugReportOpen = true" type="button">Prijavi</button>
+            </div>
           </div>
         </div>
       </section>
+
+      <app-bug-report-modal
+        *ngIf="bugReportOpen"
+        [isLoggedIn]="true"
+        (closed)="bugReportOpen = false" />
 
       <!-- LOGOUT -->
       <div class="logout-row">
