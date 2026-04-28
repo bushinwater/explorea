@@ -54,7 +54,7 @@ namespace Explorea.Server.Services.Admin
           "from_2h_to_6h" => activitiesQuery.Where(a =>
             a.DurationMinutes.HasValue &&
             a.DurationMinutes.Value > 120 && 
-            a.DurationMinutes.Value < 360
+            a.DurationMinutes.Value <= 360
           ),
           "multi_day" => activitiesQuery.Where(a =>
             a.DurationMinutes.HasValue &&
@@ -73,6 +73,26 @@ namespace Explorea.Server.Services.Admin
           "active" => activitiesQuery.Where(a => !a.IsDeleted),
           "inactive" => activitiesQuery.Where(a => a.IsDeleted),
           _ => throw new ArgumentException("Unsupported status filter value.")
+        };
+      }
+
+      if (!string.IsNullOrWhiteSpace(query.Popularity))
+      {
+        var popularity = query.Popularity.Trim().ToLowerInvariant();
+      
+        activitiesQuery = popularity switch
+        {
+          "low" => activitiesQuery.Where(a =>
+            a.Popularity < 300
+          ),
+          "medium" => activitiesQuery.Where(a =>
+            a.Popularity >= 300 &&
+            a.Popularity < 700
+          ),
+          "high" => activitiesQuery.Where(a =>
+            a.Popularity >= 700
+          ),
+          _ => throw new ArgumentException("Unsupported popularity filter value.")
         };
       }
 
