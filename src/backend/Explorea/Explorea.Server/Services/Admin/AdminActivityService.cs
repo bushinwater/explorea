@@ -51,19 +51,28 @@ namespace Explorea.Server.Services.Admin
             a.DurationMinutes.HasValue &&
             a.DurationMinutes.Value <= 120
           ),
-
           "from_2h_to_6h" => activitiesQuery.Where(a =>
             a.DurationMinutes.HasValue &&
             a.DurationMinutes.Value > 120 && 
             a.DurationMinutes.Value < 360
           ),
-          
           "multi_day" => activitiesQuery.Where(a =>
             a.DurationMinutes.HasValue &&
             a.DurationMinutes.Value > 360
           ),
-          
           _ => throw new ArgumentException("Unsupported duration filter value.")
+        };
+      }
+
+      if (!string.IsNullOrWhiteSpace(query.Status))
+      {
+        var status = query.Status.Trim().ToLowerInvariant();
+
+        activitiesQuery = status switch
+        {
+          "active" => activitiesQuery.Where(a => !a.IsDeleted),
+          "inactive" => activitiesQuery.Where(a => a.IsDeleted),
+          _ => throw new ArgumentException("Unsupported status filter value.")
         };
       }
 

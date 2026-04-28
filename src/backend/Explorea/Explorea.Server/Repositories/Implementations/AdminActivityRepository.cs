@@ -16,12 +16,13 @@ namespace Explorea.Server.Repositories.Admin
     public IQueryable<Activity> Query()
     {
       return _context.Activities
-          .AsNoTracking()
-          .Include(a => a.Category)
-          .Include(a => a.City)
-            .ThenInclude(c => c!.Region)
-          .Include(a => a.Destination)
-          .Include(a => a.Images);
+        .IgnoreQueryFilters()
+        .AsNoTracking()
+        .Include(a => a.Category)
+        .Include(a => a.City)
+          .ThenInclude(c => c!.Region)
+        .Include(a => a.Destination)
+        .Include(a => a.Images);
     }
     public async Task<Activity?> GetByIdAsync(Guid id)
     {
