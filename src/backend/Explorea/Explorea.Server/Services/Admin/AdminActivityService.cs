@@ -33,6 +33,13 @@ namespace Explorea.Server.Services.Admin
           a.CityId == query.CityId.Value
         );
       }
+      
+      if (query.CategoryId.HasValue)
+      {
+        activitiesQuery = activitiesQuery.Where(a =>
+          a.CategoryId == query.CategoryId.Value
+        );
+      }
 
       activitiesQuery = activitiesQuery.OrderByDescending(a => a.CreatedAt);
 
