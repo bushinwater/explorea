@@ -1,0 +1,8 @@
+:host {
+  display: contents;
+}
+
+.circle-btn--copied {
+  color: var(--color-success, #4caf50) !important;
+  border-color: var(--color-success, #4caf50) !important;
+}

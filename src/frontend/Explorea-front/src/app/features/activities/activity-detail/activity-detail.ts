@@ -22,6 +22,7 @@ import { RatingStats } from '../../../shared/components/rating-stats/rating-stat
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
+import { ShareButton } from '../../../shared/components/share-button/share-button';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 const DESKTOP_SIMILAR_LIMIT = 6;
@@ -48,7 +49,7 @@ const LIGHT = {
 @Component({
   selector: 'app-activity-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel, ShareButton],
   templateUrl: './activity-detail.html',
   styleUrl: './activity-detail.css',
 })
@@ -75,6 +76,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
   isSavedLoading = false;
 
   hasReviewed = false;
+  currentUserId = '';
 
   // Show-all panel (similar activities)
   showAllOpen = false;
@@ -102,6 +104,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
   private slug = '';
 
   ngOnInit(): void {
+    this.currentUserId = this.authService.getCurrentUserId();
     this.routeSub = this.route.paramMap.subscribe(params => {
       this.slug = params.get('slug') ?? '';
       this.loading = true;
@@ -279,7 +282,9 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
       container: this.mapContainer.nativeElement,
       style: this.isDark ? this.darkStyle : this.lightStyle,
       center: [lng, lat],
-      zoom: 12,
+      zoom: 16,
+      pitch: 45,
+      bearing: -17.6,
       attributionControl: false,
     });
 
@@ -423,10 +428,27 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
         firstName: review.user.firstName,
         lastName: review.user.lastName,
         travelerRank: review.user.travelerRank,
+        profileImageUrl: review.user.profileImageUrl ?? null,
       },
     });
     this.hasReviewed = true;
     this.cdr.detectChanges();
+  }
+
+  onReviewDeleted(id: string): void {
+    if (!this.activity) return;
+    this.activity.reviews = this.activity.reviews.filter(r => r.id !== id);
+    this.hasReviewed = false;
+    this.cdr.detectChanges();
+  }
+
+  onReviewUpdated(review: ReviewDto): void {
+    if (!this.activity) return;
+    const idx = this.activity.reviews.findIndex(r => r.id === review.id);
+    if (idx !== -1) {
+      this.activity.reviews[idx] = { ...this.activity.reviews[idx], rating: review.rating, comment: review.comment };
+      this.cdr.detectChanges();
+    }
   }
 
   getStarsArray(): number[] {

@@ -62,7 +62,7 @@ namespace Explorea.Server.Controllers
                 .Include(r => r.User)
                 .FirstAsync(r => r.Id == review.Id);
 
-            await UpdateAvgRating(dto.EntityType, dto.EntityId);
+            try { await UpdateAvgRating(dto.EntityType, dto.EntityId); } catch { /* non-fatal */ }
 
             return StatusCode(201, new ReviewDto
             {
@@ -75,7 +75,45 @@ namespace Explorea.Server.Controllers
                     Id = created.User.Id,
                     FirstName = created.User.FirstName,
                     LastName = created.User.LastName,
-                    TravelerRank = created.User.TravelerRank
+                    TravelerRank = created.User.TravelerRank,
+                    ProfileImageUrl = created.User.ProfileImageUrl
+                }
+            });
+        }
+
+        [HttpPut("{id}")]
+        [Authorize]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateReviewDto dto)
+        {
+            var userId = await GetCurrentUserId();
+            var review = await _db.Reviews
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
+            if (review == null) return NotFound();
+
+            review.Rating = (short)dto.Rating;
+            review.Comment = dto.Comment;
+            review.UpdatedAt = DateTimeOffset.UtcNow;
+            review.UpdatedBy = userId;
+
+            await _db.SaveChangesAsync();
+
+            try { await UpdateAvgRating(review.EntityType, review.EntityId); } catch { /* non-fatal */ }
+
+            return Ok(new ReviewDto
+            {
+                Id = review.Id,
+                Rating = review.Rating,
+                Comment = review.Comment,
+                CreatedAt = review.CreatedAt,
+                User = new ReviewUserDto
+                {
+                    Id = review.User.Id,
+                    FirstName = review.User.FirstName,
+                    LastName = review.User.LastName,
+                    TravelerRank = review.User.TravelerRank,
+                    ProfileImageUrl = review.User.ProfileImageUrl
                 }
             });
         }

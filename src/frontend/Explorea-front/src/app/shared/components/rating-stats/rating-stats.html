@@ -1,4 +1,4 @@
-<div class="rating-stats">
+<div class="rating-stats" *ngIf="reviews.length > 0; else noReviews">
   <div class="rating-stats__avg">
     <span class="rating-stats__number">{{ avgRating | number:'1.1-1' }}</span>
     <div class="rating-stats__stars">
@@ -20,3 +20,6 @@
     </div>
   </div>
 </div>
+<ng-template #noReviews>
+  <p class="rating-stats__none">Neocenjeno</p>
+</ng-template>

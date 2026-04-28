@@ -2,7 +2,8 @@
   "COMMON": {
     "ERROR_GENERIC": "Nešto nije u redu. Molimo pokušajte ponovo.",
     "READ_MORE": "Pročitaj više",
-    "READ_LESS": "Prikaži manje"
+    "READ_LESS": "Prikaži manje",
+    "GO_BACK": "Nazad"
   },
   "REVIEW_MODAL": {
     "TITLE": "Napiši recenziju",
@@ -403,13 +404,15 @@
     "PERSONS": "OSOBE",
     "ADULTS": "Odrasle",
     "CHECK_AVAILABILITY": "Proveri raspoloživost",
+    "NOT_FOUND": "Objekat nije pronađen.",
     "NO_EVENTS": "Nema događaja u blizini.",
     "NO_REVIEWS": "Još nema recenzija za ovaj objekat.",
     "BREADCRUMB": {
       "HOME": "Početna"
     },
     "GALLERY": {
-      "MORE": "slika"
+      "MORE": "slika",
+      "VIEW_ALL": "Pogledaj svih {{ count }} slika"
     },
     "TABS": {
       "DETAILS": "Detaljne informacije",

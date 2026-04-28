@@ -320,16 +320,22 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(a => a.Category)
         .Include(a => a.City)
         .Include(a => a.Destination)
+        .Where(a => !a.IsDeleted)
         .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
           var q = query.Query.Trim().ToLower();
-          activitiesQuery = activitiesQuery.Where(a =>
-              a.Name.ToLower().Contains(q) ||
-              (a.Description != null && a.Description.ToLower().Contains(q)) ||
-              (a.StartPoint != null && a.StartPoint.ToLower().Contains(q)) ||
-              (a.City != null && a.City.Name.ToLower().Contains(q)));
+          if (q.Length >= 4)
+              activitiesQuery = activitiesQuery.Where(a =>
+                  a.Name.ToLower().Contains(q) ||
+                  (a.Description != null && a.Description.ToLower().Contains(q)) ||
+                  (a.StartPoint != null && a.StartPoint.ToLower().Contains(q)) ||
+                  (a.City != null && a.City.Name.ToLower().Contains(q)));
+          else
+              activitiesQuery = activitiesQuery.Where(a =>
+                  a.Name.ToLower().Contains(q) ||
+                  (a.City != null && a.City.Name.ToLower().Contains(q)));
       }
 
       if (query.RegionsIds?.Count > 0)
@@ -469,15 +475,21 @@ namespace Explorea.Server.Repositories.Implementations
         .AsNoTracking()
         .Include(d => d.City)
         .Include(d => d.Type)
+        .Where(d => !d.IsDeleted)
         .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
         var q = query.Query.Trim().ToLower();
-        destinationsQuery = destinationsQuery.Where(d =>
-            d.Name.ToLower().Contains(q) ||
-            (d.Description != null && d.Description.ToLower().Contains(q)) ||
-            (d.City != null && d.City.Name.ToLower().Contains(q)));
+        if (q.Length >= 4)
+            destinationsQuery = destinationsQuery.Where(d =>
+                d.Name.ToLower().Contains(q) ||
+                (d.Description != null && d.Description.ToLower().Contains(q)) ||
+                (d.City != null && d.City.Name.ToLower().Contains(q)));
+        else
+            destinationsQuery = destinationsQuery.Where(d =>
+                d.Name.ToLower().Contains(q) ||
+                (d.City != null && d.City.Name.ToLower().Contains(q)));
       }
 
       if (query.RegionsIds?.Count > 0)
@@ -604,17 +616,22 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(e => e.City)
         .Include(e => e.Type)
         .Include(e => e.Destination)
-        .Where(e => e.EndDatetime >= now)
+        .Where(e => !e.IsDeleted && e.EndDatetime >= now)
         .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
         var q = query.Query.Trim().ToLower();
-        eventsQuery = eventsQuery.Where(e =>
-            e.Name.ToLower().Contains(q) ||
-            (e.Description != null && e.Description.ToLower().Contains(q)) ||
-            (e.Address != null && e.Address.ToLower().Contains(q)) ||
-            (e.City != null && e.City.Name.ToLower().Contains(q)));
+        if (q.Length >= 4)
+            eventsQuery = eventsQuery.Where(e =>
+                e.Name.ToLower().Contains(q) ||
+                (e.Description != null && e.Description.ToLower().Contains(q)) ||
+                (e.Address != null && e.Address.ToLower().Contains(q)) ||
+                (e.City != null && e.City.Name.ToLower().Contains(q)));
+        else
+            eventsQuery = eventsQuery.Where(e =>
+                e.Name.ToLower().Contains(q) ||
+                (e.City != null && e.City.Name.ToLower().Contains(q)));
       }
 
       if (query.RegionsIds?.Count > 0)
@@ -759,23 +776,29 @@ namespace Explorea.Server.Repositories.Implementations
       var userPoint = BuildUserPoint(query.UserLat, query.UserLng);
       var currentDay = GetCurrentDayOfWeekNumber();
       var currentTime = GetCurrentUtcTimeOnly();
-      
+
       var placesQuery = _db.Places
           .AsNoTracking()
           .Include(p => p.City)
           .Include(p => p.Type)
           .Include(p => p.WorkingDays)
               .ThenInclude(wd => wd.Intervals)
+          .Where(p => !p.IsDeleted)
           .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
           var q = query.Query.Trim().ToLower();
-          placesQuery = placesQuery.Where(p =>
-              p.Name.ToLower().Contains(q) ||
-              (p.Description != null && p.Description.ToLower().Contains(q)) ||
-              (p.Address != null && p.Address.ToLower().Contains(q)) ||
-              (p.City != null && p.City.Name.ToLower().Contains(q)));
+          if (q.Length >= 4)
+              placesQuery = placesQuery.Where(p =>
+                  p.Name.ToLower().Contains(q) ||
+                  (p.Description != null && p.Description.ToLower().Contains(q)) ||
+                  (p.Address != null && p.Address.ToLower().Contains(q)) ||
+                  (p.City != null && p.City.Name.ToLower().Contains(q)));
+          else
+              placesQuery = placesQuery.Where(p =>
+                  p.Name.ToLower().Contains(q) ||
+                  (p.City != null && p.City.Name.ToLower().Contains(q)));
       }
 
       if (query.RegionsIds?.Count > 0)

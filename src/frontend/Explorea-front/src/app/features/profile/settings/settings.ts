@@ -19,6 +19,7 @@ import { UserService } from '../../../core/services/user.service';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 import { ReviewCard } from '../../../shared/components/review-card/review-card';
+import { BugReportModal } from '../../../shared/components/bug-report-modal/bug-report-modal';
 
 const SCROLL_KEY = 'profile_scroll_y';
 const SECTION_KEY = 'profile_open_section';
@@ -26,7 +27,7 @@ const SECTION_KEY = 'profile_open_section';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, Sidebar, BottomNav, TranslateModule, ImageCropperComponent, ReviewCard],
+  imports: [CommonModule, FormsModule, RouterModule, Sidebar, BottomNav, TranslateModule, ImageCropperComponent, ReviewCard, BugReportModal],
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })
@@ -65,8 +66,11 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
   private lastCropEvent: ImageCroppedEvent | null = null;
 
   openSection: 'profile' | 'app' | 'reviews' | null = null;
-  myReviews: ProfileReviewDto[] | null = null;
+  bugReportOpen = false;
+  reviewDtos: ReviewDto[] = [];
+  reviewsLoaded = false;
   reviewsLoading = false;
+  currentUserId = '';
 
   get isDirty(): boolean {
     return this.firstName !== this.originalFirstName || this.lastName !== this.originalLastName;
@@ -101,6 +105,7 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.currentUserId = this.authService.getCurrentUserId();
     this.avatarUrl = this.avatarService.getUrl();
     this.interestsService.getInterestTags().subscribe();  // popuni cache za selectedInterestsLabel
 
@@ -186,8 +191,13 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getEntityRoute(item: ForYouItemDto): string[] {
-    if (item.entityType === 'activity') return ['/activities', item.slug];
-    return ['/'];
+    switch (item.entityType) {
+      case 'destination': return ['/destinations', item.slug];
+      case 'place':       return ['/places', item.slug];
+      case 'event':       return ['/events', item.slug];
+      case 'activity':    return ['/activities', item.slug];
+      default:            return ['/'];
+    }
   }
 
   toggleSection(section: 'profile' | 'app' | 'reviews') {
@@ -195,7 +205,7 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
     if (section === 'profile') {
       this.passwordChangeRequested = false;
     }
-    if (section === 'reviews' && this.openSection === 'reviews' && this.myReviews === null) {
+    if (section === 'reviews' && this.openSection === 'reviews' && !this.reviewsLoaded) {
       this.loadMyReviews();
     }
   }
@@ -205,21 +215,23 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
     this.cdr.detectChanges();
     this.profileService.getMyReviews().subscribe({
       next: (reviews) => {
-        this.myReviews = reviews;
+        this.reviewDtos = this.buildReviewDtos(reviews);
+        this.reviewsLoaded = true;
         this.reviewsLoading = false;
         this.cdr.detectChanges();
       },
       error: () => {
-        this.myReviews = [];
+        this.reviewDtos = [];
+        this.reviewsLoaded = true;
         this.reviewsLoading = false;
         this.cdr.detectChanges();
       },
     });
   }
 
-  get myReviewsAsDto(): ReviewDto[] {
-    if (!this.myReviews || !this.user) return [];
-    return this.myReviews.map(r => ({
+  private buildReviewDtos(reviews: ProfileReviewDto[]): ReviewDto[] {
+    if (!this.user) return [];
+    return reviews.map(r => ({
       id: r.id,
       rating: r.rating,
       comment: r.comment ?? '',
@@ -235,6 +247,23 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
         profileImageUrl: this.user!.profileImageUrl ?? null,
       },
     }));
+  }
+
+  trackReviewById(_: number, r: ReviewDto): string {
+    return r.id;
+  }
+
+  onReviewDeleted(id: string): void {
+    this.reviewDtos = this.reviewDtos.filter(r => r.id !== id);
+    this.cdr.detectChanges();
+  }
+
+  onReviewUpdated(review: ReviewDto): void {
+    const idx = this.reviewDtos.findIndex(r => r.id === review.id);
+    if (idx !== -1) {
+      this.reviewDtos[idx] = { ...this.reviewDtos[idx], rating: review.rating, comment: review.comment ?? '' };
+      this.cdr.detectChanges();
+    }
   }
 
   izmeniInterese() {

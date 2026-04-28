@@ -6,10 +6,12 @@
       class="place-card__img"
       loading="lazy"
     />
-    <div class="place-card__rating-badge">
-      <span class="material-icons">star</span>
-      {{ place.avgRating | number: '1.1-1' }}
-    </div>
+    @if (place.avgRating > 0) {
+      <div class="place-card__rating-badge">
+        <span class="material-icons">star</span>
+        {{ place.avgRating | number: '1.1-1' }}
+      </div>
+    }
   </div>
   <div class="place-card__body">
     <p class="place-card__name">{{ place.name }}</p>

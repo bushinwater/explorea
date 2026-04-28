@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
@@ -12,15 +12,19 @@ import { EventCard } from '../../../shared/components/event-card/event-card';
 import { DetailFooter } from '../../../shared/components/detail-footer/detail-footer';
 import { EventService } from '../../../core/services/event.service';
 import { LocationService } from '../../../core/services/location.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { PlannerService } from '../../../core/services/planner.service';
 import {
   EventCard as EventCardModel,
   EventType,
   CalendarDay,
   CalendarCell,
 } from '../../../core/models/event.model';
+import { PlannerDot, PlannerEntry, PlannerEventRef } from '../../../core/models/planner.model';
+import { ChatBubbleService } from '../../../core/services/chat-bubble.service';
 
 type QuickFilter = 'all' | 'today' | 'weekend' | 'free';
-type MobileView  = 'list' | 'calendar';
+type MobileView  = 'list' | 'calendar' | 'planner';
 type SortMode    = 'date' | 'location' | 'popularity';
 
 const PAGE_SIZE = 15;
@@ -37,8 +41,8 @@ export class EventsListPage implements OnInit, OnDestroy {
   mobileView: MobileView = 'list';
 
   allEvents: EventCardModel[] = [];
-  filteredEvents: EventCardModel[] = [];  // after filters + sort, full list
-  events: EventCardModel[] = [];          // paginated slice shown in template
+  filteredEvents: EventCardModel[] = [];
+  events: EventCardModel[] = [];
   total = 0;
   loading = false;
   types: EventType[] = [];
@@ -65,6 +69,31 @@ export class EventsListPage implements OnInit, OnDestroy {
   calendarDays: CalendarDay[] = [];
   calendarGrid: CalendarCell[] = [];
 
+  // ─── Auth ──────────────────────────────────────────────────────
+  isLoggedIn = false;
+
+  // ─── Desktop calendar tab switcher ────────────────────────────
+  desktopCalendarTab: 'filter' | 'planner' = 'filter';
+
+  // ─── Planner calendar ──────────────────────────────────────────
+  showPlannerSection   = false;
+  plannerViewDate      = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  plannerDots: PlannerDot[]  = [];
+  plannerGrid: CalendarCell[] = [];
+  plannerSelectedDate: Date | null = null;
+  plannerEntries: PlannerEntry[]   = [];
+  plannerEntriesLoading            = false;
+
+  // ─── Add-to-planner modal ─────────────────────────────────────
+  showAddModal      = false;
+  addModalRef: PlannerEventRef | null = null;
+  addModalDays: { value: string; label: string }[] = [];
+  addModalSelectedDay = '';
+  addModalNote        = '';
+  addModalSaving      = false;
+  addModalSuccess     = false;
+  addModalError       = '';
+
   readonly DAY_LABELS = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub', 'Ned'];
 
   private querySubject = new Subject<string>();
@@ -73,10 +102,24 @@ export class EventsListPage implements OnInit, OnDestroy {
   constructor(
     private eventService: EventService,
     private locationService: LocationService,
+    private authService: AuthService,
+    private plannerService: PlannerService,
     private cdr: ChangeDetectorRef,
+    private route: ActivatedRoute,
+    private chatBubbleService: ChatBubbleService,
   ) {}
 
+  openAiRecommendation(): void {
+    this.chatBubbleService.openWithMessage('Koji dogadjaji su nadolazeći i koje mi preporučuješ?');
+  }
+
   ngOnInit(): void {
+    this.isLoggedIn = this.authService.isLoggedIn();
+
+    if (this.route.snapshot.queryParamMap.get('tab') === 'planner') {
+      this.desktopCalendarTab = 'planner';
+    }
+
     this.eventService.getTypes().subscribe(types => {
       this.types = types;
       this.cdr.detectChanges();
@@ -84,6 +127,10 @@ export class EventsListPage implements OnInit, OnDestroy {
     this.loadUserLocation();
     this.loadEvents();
     this.loadCalendar();
+
+    if (this.isLoggedIn) {
+      this.loadPlannerDots();
+    }
 
     const searchSub = this.querySubject.pipe(
       debounceTime(120),
@@ -418,6 +465,205 @@ export class EventsListPage implements OnInit, OnDestroy {
 
   trackByEvent(_: number, e: EventCardModel): string { return e.id; }
   trackByCell(_: number, c: CalendarCell): string    { return c.date.toISOString(); }
+
+  // ─── Planner section toggle ───────────────────────────────────
+
+  togglePlannerSection(): void {
+    this.showPlannerSection = !this.showPlannerSection;
+    if (this.showPlannerSection) {
+      this.buildPlannerGrid();
+    }
+    this.cdr.detectChanges();
+  }
+
+  // ─── Planner calendar ─────────────────────────────────────────
+
+  loadPlannerDots(): void {
+    const y = this.plannerViewDate.getFullYear();
+    const m = this.plannerViewDate.getMonth() + 1;
+    this.plannerService.getMonthDots(y, m).subscribe({
+      next: dots => {
+        this.plannerDots = dots;
+        this.buildPlannerGrid();
+        this.cdr.detectChanges();
+      },
+      error: () => {},
+    });
+  }
+
+  buildPlannerGrid(): void {
+    const year  = this.plannerViewDate.getFullYear();
+    const month = this.plannerViewDate.getMonth();
+    const firstDay   = new Date(year, month, 1);
+    const lastDay    = new Date(year, month + 1, 0);
+    const startOffset = (firstDay.getDay() + 6) % 7;
+
+    const cells: CalendarCell[] = [];
+    for (let i = startOffset - 1; i >= 0; i--)
+      cells.push({ date: new Date(year, month, -i), isCurrentMonth: false, count: 0 });
+
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date    = new Date(year, month, d);
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dot     = this.plannerDots.find(p => p.date === dateStr);
+      cells.push({ date, isCurrentMonth: true, count: dot?.count ?? 0 });
+    }
+
+    while (cells.length % 7 !== 0) {
+      const n = cells.length - startOffset - lastDay.getDate() + 1;
+      cells.push({ date: new Date(year, month + 1, n), isCurrentMonth: false, count: 0 });
+    }
+
+    this.plannerGrid = cells;
+  }
+
+  prevPlannerMonth(): void {
+    this.plannerViewDate = new Date(this.plannerViewDate.getFullYear(), this.plannerViewDate.getMonth() - 1, 1);
+    this.plannerSelectedDate = null;
+    this.plannerEntries = [];
+    this.loadPlannerDots();
+  }
+
+  nextPlannerMonth(): void {
+    this.plannerViewDate = new Date(this.plannerViewDate.getFullYear(), this.plannerViewDate.getMonth() + 1, 1);
+    this.plannerSelectedDate = null;
+    this.plannerEntries = [];
+    this.loadPlannerDots();
+  }
+
+  selectPlannerDate(cell: CalendarCell): void {
+    if (!cell.isCurrentMonth) return;
+    if (this.plannerSelectedDate && isSameDay(cell.date, this.plannerSelectedDate)) {
+      this.plannerSelectedDate = null;
+      this.plannerEntries = [];
+      this.cdr.detectChanges();
+      return;
+    }
+    this.plannerSelectedDate = cell.date;
+    this.loadPlannerEntries(cell.date);
+  }
+
+  private loadPlannerEntries(date: Date): void {
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    this.plannerEntriesLoading = true;
+    this.plannerEntries = [];
+    this.cdr.detectChanges();
+    this.plannerService.getDayEntries(dateStr).subscribe({
+      next: entries => {
+        this.plannerEntries = entries;
+        this.plannerEntriesLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.plannerEntriesLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  removeEntry(id: string): void {
+    this.plannerService.removeEntry(id).subscribe({
+      next: () => {
+        this.plannerEntries = this.plannerEntries.filter(e => e.id !== id);
+        this.loadPlannerDots();
+        this.cdr.detectChanges();
+      },
+      error: () => {},
+    });
+  }
+
+  isPlannerSelected(date: Date): boolean {
+    return !!this.plannerSelectedDate && isSameDay(date, this.plannerSelectedDate);
+  }
+
+  get plannerMonthLabel(): string {
+    return this.plannerViewDate.toLocaleDateString('sr-Latn-RS', { month: 'long', year: 'numeric' });
+  }
+
+  get plannerSelectedDateLabel(): string {
+    return this.plannerSelectedDate
+      ? this.plannerSelectedDate.toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'long' })
+      : '';
+  }
+
+  // ─── Add-to-planner modal ─────────────────────────────────────
+
+  openAddModal(ref: PlannerEventRef): void {
+    this.addModalRef     = ref;
+    this.addModalNote    = '';
+    this.addModalSaving  = false;
+    this.addModalSuccess = false;
+    this.addModalError   = '';
+
+    const days: { value: string; label: string }[] = [];
+    const toDateStr = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    const startRaw = ref.startDatetime ? new Date(ref.startDatetime) : null;
+    const endRaw   = ref.endDatetime   ? new Date(ref.endDatetime)   : null;
+
+    if (startRaw && !isNaN(startRaw.getTime())) {
+      const endResolved = (endRaw && !isNaN(endRaw.getTime())) ? endRaw : startRaw;
+      const cur    = new Date(startRaw.getFullYear(), startRaw.getMonth(), startRaw.getDate());
+      const endDay = new Date(endResolved.getFullYear(), endResolved.getMonth(), endResolved.getDate());
+      while (cur <= endDay) {
+        days.push({
+          value: toDateStr(cur),
+          label: cur.toLocaleDateString('sr-Latn-RS', { weekday: 'short', day: 'numeric', month: 'short' }),
+        });
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+
+    // Fallback: if dates couldn't be parsed, default to today
+    if (days.length === 0) {
+      const today = new Date();
+      days.push({
+        value: toDateStr(today),
+        label: today.toLocaleDateString('sr-Latn-RS', { weekday: 'short', day: 'numeric', month: 'short' }),
+      });
+    }
+
+    this.addModalDays        = days;
+    this.addModalSelectedDay = days[0].value;
+    this.showAddModal        = true;
+    this.cdr.detectChanges();
+  }
+
+  cancelAddModal(): void {
+    this.showAddModal = false;
+    this.cdr.detectChanges();
+  }
+
+  confirmAddModal(): void {
+    if (!this.addModalRef || this.addModalSaving) return;
+    if (!this.addModalSelectedDay) {
+      this.addModalError = 'Izaberi dan.';
+      this.cdr.detectChanges();
+      return;
+    }
+    this.addModalSaving = true;
+    this.addModalError  = '';
+    this.cdr.detectChanges();
+
+    this.plannerService.addEntry(this.addModalRef.id, this.addModalSelectedDay, this.addModalNote).subscribe({
+      next: () => {
+        this.addModalSaving  = false;
+        this.addModalSuccess = true;
+        this.loadPlannerDots();
+        this.cdr.detectChanges();
+        setTimeout(() => {
+          this.showAddModal = false;
+          this.cdr.detectChanges();
+        }, 900);
+      },
+      error: (err) => {
+        this.addModalSaving = false;
+        this.addModalError  = err?.error?.message ?? 'Greška pri čuvanju. Pokušaj ponovo.';
+        this.cdr.detectChanges();
+      },
+    });
+  }
 }
 
 // ─── Pure helpers ──────────────────────────────────────────────

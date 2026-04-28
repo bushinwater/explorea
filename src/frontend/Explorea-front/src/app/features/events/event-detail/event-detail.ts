@@ -20,6 +20,7 @@ import { ReviewModal } from '../../../shared/components/review-modal/review-moda
 import { RatingStats } from '../../../shared/components/rating-stats/rating-stats';
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { PopularityService } from '../../../core/services/popularity.service';
+import { ShareButton } from '../../../shared/components/share-button/share-button';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
@@ -44,7 +45,7 @@ const LIGHT = {
 @Component({
   selector: 'app-event-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, EventCard, ImageGallery, DetailFooter, ReviewCard, ReviewModal, RatingStats, ReviewsPanel],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, EventCard, ImageGallery, DetailFooter, ReviewCard, ReviewModal, RatingStats, ReviewsPanel, ShareButton],
   templateUrl: './event-detail.html',
   styleUrl: './event-detail.css',
 })
@@ -63,6 +64,7 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   hasReviewed = false;
   reviewFormOpen = false;
   reviewsPanelOpen = false;
+  currentUserId = '';
   private savedScrollY = 0;
 
   scrollProgress = 0;
@@ -92,6 +94,7 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.currentUserId = this.authService.getCurrentUserId();
     this.routeSub = this.route.paramMap.subscribe(params => {
       const slug = params.get('slug') ?? '';
       this.loading = true;
@@ -244,6 +247,22 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  onReviewDeleted(id: string): void {
+    if (!this.event) return;
+    this.event.reviews = this.event.reviews.filter(r => r.id !== id);
+    this.hasReviewed = false;
+    this.cdr.detectChanges();
+  }
+
+  onReviewUpdated(review: ReviewDto): void {
+    if (!this.event) return;
+    const idx = this.event.reviews.findIndex(r => r.id === review.id);
+    if (idx !== -1) {
+      this.event.reviews[idx] = { ...this.event.reviews[idx], rating: review.rating, comment: review.comment ?? null };
+      this.cdr.detectChanges();
+    }
+  }
+
   openReviewsPanel(): void {
     this.savedScrollY = window.scrollY;
     document.body.style.position = 'fixed';
@@ -366,7 +385,9 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       container: this.mapContainer.nativeElement,
       style: this.isDark ? this.darkStyle : this.lightStyle,
       center: [lng, lat],
-      zoom: 13,
+      zoom: 16,
+      pitch: 45,
+      bearing: -17.6,
       attributionControl: false,
     });
 

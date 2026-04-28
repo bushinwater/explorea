@@ -92,6 +92,13 @@
         <div class="guest-link">
           <a href="#">{{ 'LOGIN.GUEST' | translate }}</a>
         </div>
+
+        <div class="bug-report-row">
+          <button class="bug-report-btn" (click)="bugReportOpen = true" type="button">
+            <span class="material-icons">bug_report</span>
+            Prijavi grešku
+          </button>
+        </div>
       </div>
 
       <div class="login-prefs">
@@ -106,8 +113,14 @@
           <span class="lang-sep">|</span>
           <button class="lang-btn" [class.lang-btn--active]="languageService.current === 'en'" (click)="languageService.set('en')">EN</button>
         </div>
+
       </div>
 
     </div>
   </main>
 </div>
+
+<app-bug-report-modal
+  *ngIf="bugReportOpen"
+  [isLoggedIn]="false"
+  (closed)="bugReportOpen = false" />

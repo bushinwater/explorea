@@ -1,4 +1,4 @@
-<span class="stars">
+<span class="stars" *ngIf="rating > 0; else noRating">
   <span *ngFor="let star of stars" class="star" [class.full]="star === 'full'" [class.half]="star === 'half'" [class.empty]="star === 'empty'">
     <span class="material-icons">
       {{ star === 'full' ? 'star' : star === 'half' ? 'star_half' : 'star_border' }}
@@ -6,3 +6,6 @@
   </span>
   <span *ngIf="showValue" class="rating-value">{{ rating | number: '1.1-1' }}</span>
 </span>
+<ng-template #noRating>
+  <span class="rating-none">Neocenjeno</span>
+</ng-template>

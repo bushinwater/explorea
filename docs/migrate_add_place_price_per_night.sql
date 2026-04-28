@@ -1,0 +1,2 @@
+ALTER TABLE places
+ADD COLUMN IF NOT EXISTS price_per_night NUMERIC(10, 2);

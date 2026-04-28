@@ -23,32 +23,36 @@ namespace Explorea.Server.Services
 
             var now = DateTimeOffset.UtcNow;
 
+            // Interest scores se uvek ažuriraju pri kliku prijavljenog korisnika
+            if (userId.HasValue)
+                await UpdateInterestScoresAsync(userId.Value, type, entityId, 1);
+
+            // Popularity counter i log su zaštićeni cooldown-om (anti-gaming)
+            bool cooldownPassed;
             if (userId.HasValue)
             {
-                var recentExists = await _db.PopularityLogs.AnyAsync(l =>
+                cooldownPassed = !await _db.PopularityLogs.AnyAsync(l =>
                     l.UserId == userId &&
                     l.EntityType == type &&
                     l.EntityId == entityId &&
                     l.Source == "click" &&
                     l.CreatedAt > now - AuthCooldown);
-
-                if (recentExists) return;
             }
             else if (!string.IsNullOrEmpty(sessionId))
             {
-                var recentExists = await _db.PopularityLogs.AnyAsync(l =>
+                cooldownPassed = !await _db.PopularityLogs.AnyAsync(l =>
                     l.SessionId == sessionId &&
                     l.EntityType == type &&
                     l.EntityId == entityId &&
                     l.Source == "click" &&
                     l.CreatedAt > now - AnonCooldown);
-
-                if (recentExists) return;
             }
             else
             {
                 return;
             }
+
+            if (!cooldownPassed) return;
 
             await IncrementAsync(type, entityId, 1);
 
@@ -65,9 +69,6 @@ namespace Explorea.Server.Services
             });
 
             await _db.SaveChangesAsync();
-
-            if (userId.HasValue)
-                await UpdateInterestScoresAsync(userId.Value, type, entityId, 1);
         }
 
         public async Task TrackSaveAsync(string entityType, Guid entityId, Guid userId)

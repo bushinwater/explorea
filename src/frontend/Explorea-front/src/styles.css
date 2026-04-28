@@ -142,11 +142,16 @@
 
 /* ===== HERO TEXT — light theme override (must be global to bypass Angular encapsulation) ===== */
 
-[data-theme="light"] .floating-title,
-[data-theme="light"] .detail-hero__main h1,
-[data-theme="light"] .detail-hero__text h1,
+/* h1 and floating-title stay WHITE in the hero on light theme.
+   The floating-title transitions to text-primary via .floating-title--arrived. */
+
 [data-theme="light"] .detail-meta-item,
 [data-theme="light"] .detail-hero__location {
+  color: var(--color-text-primary);
+  text-shadow: none;
+}
+
+[data-theme="light"] .floating-title--arrived {
   color: var(--color-text-primary);
   text-shadow: none;
 }

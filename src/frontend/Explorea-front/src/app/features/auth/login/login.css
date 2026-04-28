@@ -321,6 +321,33 @@ h1 {
   text-decoration: underline;
 }
 
+/* BUG REPORT */
+.bug-report-row {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+  width: 100%;
+  margin-top: var(--spacing-xs);
+}
+
+.bug-report-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-small);
+  font-family: var(--font-primary);
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.bug-report-btn:hover { color: var(--color-text-primary); }
+.bug-report-btn .material-icons { font-size: 16px; }
+
 /* PREFERENCES — mobile only */
 .login-prefs {
   display: none;

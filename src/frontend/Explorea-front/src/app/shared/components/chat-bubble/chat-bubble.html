@@ -1,0 +1,74 @@
+<div class="chat-bubble-wrapper">
+
+  <!-- Panel -->
+  <div class="chat-panel" [class.chat-panel--open]="open" role="dialog" aria-label="AI asistent">
+    <div class="chat-header">
+      <div class="chat-header-info">
+        <span class="material-icons chat-header-icon">smart_toy</span>
+        <div>
+          <div class="chat-header-title">Explorea AI</div>
+          <div class="chat-header-sub">Pitajte me za destinacije, mesta i događaje</div>
+        </div>
+      </div>
+      <button class="chat-close-btn" (click)="toggle()" aria-label="Zatvori">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <div class="chat-messages" (click)="navigateLink($event)">
+      <div class="chat-welcome" *ngIf="messages.length === 0">
+        <span class="material-icons chat-welcome-icon">explore</span>
+        <p *ngIf="isLoggedIn">Zdravo, <strong>{{ firstName }}</strong>! Mogu da vam pomognem da pronađete destinacije, aktivnosti, događaje i mesta u Srbiji.</p>
+        <p *ngIf="!isLoggedIn">Mogu da vam pomognem da pronađete destinacije, aktivnosti, događaje i mesta u Srbiji.</p>
+        <div class="chat-suggestions">
+          <button class="suggestion-chip" (click)="input = 'Koje destinacije su popularne?'; send()">Popularne destinacije</button>
+          <button class="suggestion-chip" (click)="input = 'Koji su nadolazeci dogadjaji?'; send()">Nadolazeći događaji</button>
+          <button class="suggestion-chip" (click)="input = 'Preporuci mi aktivnosti'; send()">Aktivnosti</button>
+        </div>
+      </div>
+
+      <ng-container *ngFor="let msg of messages">
+        <div class="chat-message"
+             [class.chat-message--user]="msg.role === 'user'"
+             [class.chat-message--assistant]="msg.role === 'assistant'">
+          <div class="message-bubble" [innerHTML]="formatMessage(msg.content)"></div>
+        </div>
+      </ng-container>
+
+      <div class="chat-typing" *ngIf="loading">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+
+      <div #messagesEnd></div>
+    </div>
+
+    <div class="chat-send-error" *ngIf="sendError">
+      <span class="material-icons">error_outline</span>
+      {{ sendError }}
+    </div>
+
+    <div class="chat-input-row">
+      <textarea
+        #inputEl
+        class="chat-input"
+        [(ngModel)]="input"
+        (ngModelChange)="sendError = ''"
+        (keydown)="onKeydown($event)"
+        placeholder="Postavite pitanje..."
+        rows="1"
+        [disabled]="loading"
+      ></textarea>
+      <button class="chat-send-btn" (click)="send()" [disabled]="!input.trim() || loading" aria-label="Pošalji">
+        <span class="material-icons">send</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Trigger button -->
+  <button class="chat-fab" (click)="toggle()" [class.chat-fab--open]="open" aria-label="AI asistent">
+    <span class="material-icons">{{ open ? 'close' : 'smart_toy' }}</span>
+  </button>
+
+</div>

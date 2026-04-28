@@ -2,7 +2,8 @@
   "COMMON": {
     "ERROR_GENERIC": "Something went wrong. Please try again.",
     "READ_MORE": "Read more",
-    "READ_LESS": "Show less"
+    "READ_LESS": "Show less",
+    "GO_BACK": "Go back"
   },
   "REVIEW_MODAL": {
     "TITLE": "Write a review",
@@ -403,13 +404,15 @@
     "PERSONS": "PERSONS",
     "ADULTS": "Adults",
     "CHECK_AVAILABILITY": "Check availability",
+    "NOT_FOUND": "Place not found.",
     "NO_EVENTS": "No nearby events.",
     "NO_REVIEWS": "No reviews yet for this place.",
     "BREADCRUMB": {
       "HOME": "Home"
     },
     "GALLERY": {
-      "MORE": "photos"
+      "MORE": "photos",
+      "VIEW_ALL": "View all {{ count }} photos"
     },
     "TABS": {
       "DETAILS": "Detailed info",

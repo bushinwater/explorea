@@ -93,10 +93,15 @@
           </div>
 
           <ng-container *ngIf="!reviewsLoading">
-            <div class="reviews-scroll" *ngIf="myReviewsAsDto.length > 0">
-              <app-review-card *ngFor="let r of myReviewsAsDto" [review]="r" />
+            <div class="reviews-scroll" *ngIf="reviewDtos.length > 0">
+              <app-review-card
+                *ngFor="let r of reviewDtos; trackBy: trackReviewById"
+                [review]="r"
+                [currentUserId]="currentUserId"
+                (deleted)="onReviewDeleted($event)"
+                (updated)="onReviewUpdated($event)" />
             </div>
-            <div class="reviews-empty" *ngIf="myReviewsAsDto.length === 0">
+            <div class="reviews-empty" *ngIf="reviewDtos.length === 0">
               <span class="material-icons">rate_review</span>
               <p>{{ 'MY_REVIEWS.EMPTY' | translate }}</p>
               <span class="reviews-empty__sub">{{ 'MY_REVIEWS.EMPTY_SUB' | translate }}</span>
@@ -326,9 +331,23 @@
                 <option value="en">English (EN)</option>
               </select>
             </div>
+
+            <div class="field">
+              <div class="field-icon"><span class="material-icons">bug_report</span></div>
+              <div class="field-info">
+                <strong>Prijavi grešku</strong>
+                <span>Pošalji nam izveštaj o problemu</span>
+              </div>
+              <button class="btn btn-secondary" (click)="bugReportOpen = true" type="button">Prijavi</button>
+            </div>
           </div>
         </div>
       </section>
+
+      <app-bug-report-modal
+        *ngIf="bugReportOpen"
+        [isLoggedIn]="true"
+        (closed)="bugReportOpen = false" />
 
       <!-- LOGOUT -->
       <div class="logout-row">

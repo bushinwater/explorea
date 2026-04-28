@@ -1,10 +1,12 @@
 <a class="dest-card" [routerLink]="['/destinations', destination.slug]">
   <div class="dest-card__image-wrap">
     <img [src]="destination.previewImageUrl" [alt]="destination.name" class="dest-card__image" loading="lazy" />
-    <span class="dest-card__rating">
-      <span class="material-icons">star</span>
-      {{ destination.avgRating | number: '1.1-1' }}
-    </span>
+    @if (destination.avgRating > 0) {
+      <span class="dest-card__rating">
+        <span class="material-icons">star</span>
+        {{ destination.avgRating | number: '1.1-1' }}
+      </span>
+    }
   </div>
 
   <div class="dest-card__body">

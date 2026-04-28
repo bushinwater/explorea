@@ -19,3 +19,9 @@
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
 }
+
+.rating-none {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}

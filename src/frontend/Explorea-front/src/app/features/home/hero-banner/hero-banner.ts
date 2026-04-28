@@ -7,11 +7,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { Router } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, forkJoin } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, switchMap, tap, takeUntil } from 'rxjs/operators';
 import { HeroBanner as HeroBannerModel, CityFilter } from '../../../core/models/home.model';
 import { SearchService } from '../../../core/services/search.service';
+import { LocationService } from '../../../core/services/location.service';
+import { LookupService, LookupItem, FilterDefinition } from '../../../core/services/lookup.service';
 import { SearchItem } from '../../../core/models/search.model';
+import { SearchFilters } from '../../../core/models/search-page.model';
 
 @Component({
   selector: 'app-hero-banner',
@@ -43,6 +46,40 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   showDropdown = false;
   searchLoading = false;
 
+  // ─── Filter panel ─────────────────────────────────────────────
+  showFilterPanel    = false;
+  draftFilters: SearchFilters = {};
+  filters: SearchFilters      = {};
+  filterEntityType: 'destination' | 'place' | 'activity' | 'event' | null = null;
+  draftNearbyEnabled = false;
+  nearbyEnabled      = false;
+
+  // location
+  locationAvailable    = false;
+  showLocationModal    = false;
+  locationModalLoading = false;
+  locationModalBlocked = false;
+  private userLat: number | null = null;
+  private userLng: number | null = null;
+
+  // lookups
+  placeTypes:         LookupItem[] = [];
+  activityCategories: LookupItem[] = [];
+  eventTypes:         LookupItem[] = [];
+  destinationTypes:   LookupItem[] = [];
+  lookupsLoading = false;
+
+  filterDefs:         FilterDefinition[] = [];
+  filterDefsLoading  = false;
+  private filterDefsTypeId: number | null = null;
+
+  readonly filterEntityTypes = [
+    { key: 'destination' as const, icon: 'landscape',      labelKey: 'SEARCH.TAB_DESTINATIONS' },
+    { key: 'place'       as const, icon: 'store',          labelKey: 'SEARCH.TAB_PLACES' },
+    { key: 'activity'    as const, icon: 'directions_run', labelKey: 'SEARCH.TAB_ACTIVITIES' },
+    { key: 'event'       as const, icon: 'event',          labelKey: 'SEARCH.TAB_EVENTS' },
+  ];
+
   private timer: ReturnType<typeof setInterval> | null = null;
   private touchStartX = 0;
   private searchSubject = new Subject<string>();
@@ -52,9 +89,14 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private router: Router,
     private searchService: SearchService,
+    private locationService: LocationService,
+    private lookupService: LookupService,
   ) {}
 
   ngOnInit() {
+    this.loadUserLocation();
+    this.loadLookups();
+
     this.searchSubject.pipe(
       debounceTime(50),
       distinctUntilChanged(),
@@ -172,16 +214,303 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   }
 
   onSearch() {
-    if (this.searchQuery.trim()) {
-      this.showDropdown = false;
-      this.searchSubmitted.emit(this.searchQuery.trim());
+    this.showDropdown = false;
+    this.router.navigate(['/search'], {
+      state: {
+        fromHero: true,
+        query: this.searchQuery.trim(),
+        filters: this.filters,
+        nearbyEnabled: this.nearbyEnabled,
+        filterEntityType: this.filterEntityType,
+      },
+    });
+  }
+
+  get hasActiveFilters(): boolean {
+    const f = this.filters;
+    return !!(
+      this.nearbyEnabled ||
+      f.minRating != null || f.minPrice != null || f.maxPrice != null ||
+      f.openNow != null || f.radiusKm != null ||
+      (f.placeTypeIds        ?? []).length > 0 ||
+      (f.activityCategoryIds ?? []).length > 0 ||
+      (f.eventTypeIds        ?? []).length > 0 ||
+      (f.destinationTypeIds  ?? []).length > 0 ||
+      Object.keys(f.extraFilters ?? {}).length > 0
+    );
+  }
+
+  // ─── Filter panel ────────────────────────────────────────────
+
+  openFilterPanel(): void {
+    this.draftFilters       = { ...this.filters };
+    this.draftNearbyEnabled = this.nearbyEnabled;
+    if (this.filterEntityType && this.filterEntityType !== 'activity') {
+      const ids = this.getSelectedCategoryIds();
+      if (ids.length === 1 && this.filterDefsTypeId !== ids[0]) this.loadFilterDefs(ids[0]);
+    }
+    this.showFilterPanel = true;
+    this.cdr.markForCheck();
+  }
+
+  closeFilterPanel(): void {
+    this.showFilterPanel = false;
+    this.cdr.markForCheck();
+  }
+
+  applyFilters(): void {
+    this.nearbyEnabled = this.draftNearbyEnabled;
+    const f = { ...this.draftFilters };
+    if (!this.nearbyEnabled) delete f.radiusKm;
+    else if (!f.radiusKm) f.radiusKm = 50;
+    this.filters         = f;
+    this.showFilterPanel = false;
+    this.router.navigate(['/search'], {
+      state: {
+        fromHero:         true,
+        query:            this.searchQuery.trim(),
+        filters:          this.filters,
+        nearbyEnabled:    this.nearbyEnabled,
+        filterEntityType: this.filterEntityType,
+      },
+    });
+  }
+
+  resetFilters(): void {
+    this.draftFilters       = {};
+    this.filters            = {};
+    this.nearbyEnabled      = false;
+    this.draftNearbyEnabled = false;
+    this.filterEntityType   = null;
+    this.filterDefs         = [];
+    this.filterDefsTypeId   = null;
+    this.showFilterPanel    = false;
+    this.cdr.markForCheck();
+  }
+
+  setFilterEntityType(type: 'destination' | 'place' | 'activity' | 'event' | null): void {
+    if (this.filterEntityType === type) {
+      this.filterEntityType = null;
+    } else {
+      this.filterEntityType = type;
+      if (type !== 'destination') this.draftFilters = { ...this.draftFilters, destinationTypeIds: [] };
+      if (type !== 'place')       this.draftFilters = { ...this.draftFilters, placeTypeIds: [] };
+      if (type !== 'activity')    this.draftFilters = { ...this.draftFilters, activityCategoryIds: [] };
+      if (type !== 'event')       this.draftFilters = { ...this.draftFilters, eventTypeIds: [] };
+      this.draftFilters     = { ...this.draftFilters, extraFilters: {} };
+      this.filterDefs       = [];
+      this.filterDefsTypeId = null;
+    }
+    this.cdr.markForCheck();
+  }
+
+  getCategoriesForType(): LookupItem[] {
+    switch (this.filterEntityType) {
+      case 'destination': return this.destinationTypes;
+      case 'place':       return this.placeTypes;
+      case 'activity':    return this.activityCategories;
+      case 'event':       return this.eventTypes;
+      default:            return [];
     }
   }
 
+  getSelectedCategoryIds(): number[] {
+    switch (this.filterEntityType) {
+      case 'destination': return this.draftFilters.destinationTypeIds ?? [];
+      case 'place':       return this.draftFilters.placeTypeIds ?? [];
+      case 'activity':    return this.draftFilters.activityCategoryIds ?? [];
+      case 'event':       return this.draftFilters.eventTypeIds ?? [];
+      default:            return [];
+    }
+  }
+
+  isCategorySelected(id: number): boolean {
+    return this.getSelectedCategoryIds().includes(id);
+  }
+
+  toggleCategory(id: number): void {
+    const toggle = (arr: number[]) => {
+      const idx = arr.indexOf(id);
+      return idx >= 0 ? arr.filter(x => x !== id) : [...arr, id];
+    };
+    switch (this.filterEntityType) {
+      case 'destination': {
+        const newIds = toggle(this.draftFilters.destinationTypeIds ?? []);
+        this.draftFilters = { ...this.draftFilters, destinationTypeIds: newIds, extraFilters: {} };
+        if (newIds.length === 1) this.loadFilterDefs(newIds[0]);
+        else { this.filterDefs = []; this.filterDefsTypeId = null; }
+        break;
+      }
+      case 'place': {
+        const newIds = toggle(this.draftFilters.placeTypeIds ?? []);
+        this.draftFilters = { ...this.draftFilters, placeTypeIds: newIds, extraFilters: {} };
+        if (newIds.length === 1) this.loadFilterDefs(newIds[0]);
+        else { this.filterDefs = []; this.filterDefsTypeId = null; }
+        break;
+      }
+      case 'activity':
+        this.draftFilters = { ...this.draftFilters, activityCategoryIds: toggle(this.draftFilters.activityCategoryIds ?? []) };
+        break;
+      case 'event': {
+        const newIds = toggle(this.draftFilters.eventTypeIds ?? []);
+        this.draftFilters = { ...this.draftFilters, eventTypeIds: newIds, extraFilters: {} };
+        if (newIds.length === 1) this.loadFilterDefs(newIds[0]);
+        else { this.filterDefs = []; this.filterDefsTypeId = null; }
+        break;
+      }
+    }
+  }
+
+  isExtraFilterActive(key: string, value: string = 'true'): boolean {
+    return this.draftFilters.extraFilters?.[key] === value;
+  }
+
+  toggleExtraFilter(key: string, value: string = 'true'): void {
+    const current = { ...(this.draftFilters.extraFilters ?? {}) };
+    if (current[key] === value) delete current[key];
+    else current[key] = value;
+    this.draftFilters = { ...this.draftFilters, extraFilters: current };
+  }
+
+  loadFilterDefs(typeId: number): void {
+    if (!this.filterEntityType || this.filterDefsTypeId === typeId) return;
+    this.filterDefsLoading = true;
+    this.filterDefsTypeId  = typeId;
+    this.cdr.markForCheck();
+    this.lookupService.getFilterDefinitions(this.filterEntityType, typeId).subscribe({
+      next: defs => {
+        this.filterDefs        = defs;
+        this.filterDefsLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.filterDefs        = [];
+        this.filterDefsLoading = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  toggleDraftNearby(): void {
+    this.draftNearbyEnabled = !this.draftNearbyEnabled;
+    if (this.draftNearbyEnabled) {
+      if (!this.draftFilters.radiusKm) this.draftFilters = { ...this.draftFilters, radiusKm: 50 };
+      if (!this.locationAvailable) this.requestLocationSilent();
+    }
+    this.cdr.markForCheck();
+  }
+
+  enableLocationFromModal(): void {
+    this.locationModalBlocked = false;
+    this.locationModalLoading = true;
+    this.cdr.markForCheck();
+    this.locationService.enable();
+    if (!navigator.geolocation) {
+      this.locationModalLoading = false;
+      this.locationModalBlocked = true;
+      this.cdr.markForCheck();
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        this.userLat              = pos.coords.latitude;
+        this.userLng              = pos.coords.longitude;
+        this.locationAvailable    = true;
+        this.locationModalLoading = false;
+        this.showLocationModal    = false;
+        this.cdr.markForCheck();
+      },
+      err => {
+        this.locationModalLoading = false;
+        this.locationModalBlocked = err.code === 1;
+        if (err.code !== 1) this.showLocationModal = false;
+        this.cdr.markForCheck();
+      },
+      { timeout: 10000 },
+    );
+  }
+
+  dismissLocationModal(): void {
+    this.showLocationModal    = false;
+    this.locationModalLoading = false;
+    this.locationModalBlocked = false;
+    this.cdr.markForCheck();
+  }
+
+  // ─── Private helpers ─────────────────────────────────────────
+
+  private loadUserLocation(): void {
+    if (!this.locationService.isEnabled()) return;
+    const cached = this.locationService.getCached();
+    if (cached) {
+      this.userLat           = cached.lat;
+      this.userLng           = cached.lng;
+      this.locationAvailable = true;
+      return;
+    }
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          this.userLat           = pos.coords.latitude;
+          this.userLng           = pos.coords.longitude;
+          this.locationAvailable = true;
+          this.cdr.markForCheck();
+        },
+        () => {},
+        { timeout: 5000, maximumAge: 60_000 },
+      );
+    }
+  }
+
+  private loadLookups(): void {
+    this.lookupsLoading = true;
+    forkJoin({
+      placeTypes:         this.lookupService.getPlaceTypes(),
+      activityCategories: this.lookupService.getActivityCategories(),
+      eventTypes:         this.lookupService.getEventTypes(),
+      destinationTypes:   this.lookupService.getDestinationTypes(),
+    }).subscribe({
+      next: res => {
+        this.placeTypes         = res.placeTypes;
+        this.activityCategories = res.activityCategories;
+        this.eventTypes         = res.eventTypes;
+        this.destinationTypes   = res.destinationTypes;
+        this.lookupsLoading     = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.lookupsLoading = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private requestLocationSilent(): void {
+    if (!navigator.geolocation || !window.isSecureContext) return;
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        this.userLat           = pos.coords.latitude;
+        this.userLng           = pos.coords.longitude;
+        this.locationAvailable = true;
+        this.locationService.enable();
+        this.cdr.markForCheck();
+      },
+      () => {},
+      { timeout: 10000 },
+    );
+  }
+
   onSearchKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter') this.onSearch();
+    if (event.key === 'Enter') {
+      if (this.showDropdown && this.searchResults.length > 0) {
+        this.onSelectResult(this.searchResults[0]);
+      } else {
+        this.onSearch();
+      }
+    }
     if (event.key === 'Escape') {
       this.showDropdown = false;
+      this.cdr.markForCheck();
     }
   }
 

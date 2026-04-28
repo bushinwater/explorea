@@ -93,6 +93,13 @@
   line-height: 1;
 }
 
+.rating-stats__none {
+  color: var(--color-text-secondary);
+  font-style: italic;
+  font-size: var(--font-size-base);
+  padding: var(--spacing-sm) 0;
+}
+
 @media (max-width: 768px) {
   .rating-stats {
     flex-direction: column;

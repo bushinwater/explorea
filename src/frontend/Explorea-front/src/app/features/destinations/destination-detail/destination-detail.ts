@@ -45,6 +45,7 @@ import { DetailFooter } from '../../../shared/components/detail-footer/detail-fo
 import { RatingStats } from '../../../shared/components/rating-stats/rating-stats';
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { ReviewDto } from '../../../core/models/home.model';
+import { ShareButton } from '../../../shared/components/share-button/share-button';
 
 type DetailTab = 'places' | 'events' | 'activities' | 'reviews';
 type TabItem = PlaceCard | EventCard | ActivityCard;
@@ -52,7 +53,7 @@ type TabItem = PlaceCard | EventCard | ActivityCard;
 @Component({
   selector: 'app-destination-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel, ShareButton],
   templateUrl: './destination-detail.html',
   styleUrls: ['./destination-detail.css']
 })
@@ -99,6 +100,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
 
   hasReviewed = false;
   reviewFormOpen = false;
+  currentUserId = '';
 
   scrollProgress = 0;
   titleCaptured = false;
@@ -107,6 +109,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   private scrollThreshold = 300;
 
   ngOnInit(): void {
+    this.currentUserId = this.authService.getCurrentUserId();
     this.routeSub = this.route.paramMap.subscribe(params => {
       const slug = params.get('slug');
 
@@ -295,10 +298,27 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
         firstName: review.user.firstName,
         lastName: review.user.lastName,
         travelerRank: review.user.travelerRank,
+        profileImageUrl: review.user.profileImageUrl ?? null,
       },
     });
     this.hasReviewed = true;
     this.cdr.detectChanges();
+  }
+
+  onReviewDeleted(id: string): void {
+    if (!this.destination) return;
+    this.destination.reviews = this.destination.reviews.filter((r: any) => r.id !== id);
+    this.hasReviewed = false;
+    this.cdr.detectChanges();
+  }
+
+  onReviewUpdated(review: ReviewDto): void {
+    if (!this.destination) return;
+    const idx = this.destination.reviews.findIndex((r: any) => r.id === review.id);
+    if (idx !== -1) {
+      this.destination.reviews[idx] = { ...this.destination.reviews[idx], rating: review.rating, comment: review.comment };
+      this.cdr.detectChanges();
+    }
   }
 
   get ratingBreakdown(): { stars: number; count: number; pct: number }[] {

@@ -16,13 +16,13 @@ namespace Explorea.Server.Controllers
     }
 
     [HttpGet("all")]
-    public async Task<IActionResult> GetAll([FromQuery] SearchPageAllQueryDto query)
+    public async Task<IActionResult> GetAll([FromQuery] SearchPageAllQueryDto dto)
     {
       try
       {
-        var result = await _searchPageService.GetAllAsync(query);
+        var result = await _searchPageService.GetAllAsync(dto);
         return Ok(result);
-      } 
+      }
       catch (ArgumentException ex)
       {
         return BadRequest(new {message = ex.Message});
@@ -30,11 +30,11 @@ namespace Explorea.Server.Controllers
     }
 
     [HttpGet("list")]
-    public async Task<IActionResult> GetList([FromQuery] SearchPageListQueryDto query)
+    public async Task<IActionResult> GetList([FromQuery] SearchPageListQueryDto dto)
     {
       try
       {
-        var result = await _searchPageService.GetListAsync(query);
+        var result = await _searchPageService.GetListAsync(dto);
         return Ok(result);
       }
       catch (ArgumentException ex)

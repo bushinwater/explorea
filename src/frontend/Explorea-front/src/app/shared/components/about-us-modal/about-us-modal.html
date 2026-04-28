@@ -1,0 +1,48 @@
+<div class="modal-overlay" (click)="closed.emit()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="closed.emit()" aria-label="Zatvori">
+      <span class="material-icons">close</span>
+    </button>
+
+    <div class="modal-logo">
+      <img src="assets/committed-solutions-logo.jpeg" alt="Committed Solutions" class="team-logo" />
+    </div>
+
+    <h2 class="modal-title">O timu</h2>
+    <p class="modal-subtitle">Committed Solutions</p>
+
+    <p class="modal-desc">
+      Explorea je turistička platforma za otkrivanje najlepših destinacija, aktivnosti, mesta i događaja u Srbiji.
+      Razvila ju je studentska ekipa <strong>Committed Solutions</strong> u okviru predmeta Softversko inženjerstvo
+      na Prirodno-matematičkom fakultetu u Kragujevcu.
+    </p>
+
+    <div class="modal-members">
+      <div class="member">
+        <span class="material-icons">person</span>
+        <span>Stefan Mirković</span>
+      </div>
+      <div class="member">
+        <span class="material-icons">person</span>
+        <span>Lazar Ivanović</span>
+      </div>
+      <div class="member">
+        <span class="material-icons">person</span>
+        <span>Ana Tanasković</span>
+      </div>
+      <div class="member">
+        <span class="material-icons">person</span>
+        <span>Angelina Lazarević</span>
+      </div>
+      <div class="member">
+        <span class="material-icons">person</span>
+        <span>Ognjen Jovanović</span>
+      </div>
+    </div>
+
+    <div class="modal-footer-line">
+      <img src="assets/logo.png" alt="Explorea" class="explorea-logo" />
+      <span>Explorea &copy; 2026</span>
+    </div>
+  </div>
+</div>

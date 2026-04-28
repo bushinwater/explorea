@@ -5,6 +5,7 @@
 
     <!-- STICKY BAR -->
     <div class="sticky-bar" [class.sticky-bar--visible]="stickyBarVisible">
+      <app-share-button [small]="true" />
       <button class="circle-btn circle-btn--sm"
         [class.circle-btn--saved]="isSaved"
         [disabled]="isSavedLoading"
@@ -58,6 +59,7 @@
             <span class="material-icons">arrow_back</span>
           </button>
           <div class="detail-hero__actions">
+            <app-share-button />
             <button class="circle-btn"
               [class.circle-btn--saved]="isSaved"
               [disabled]="isSavedLoading"
@@ -202,7 +204,10 @@
               <div class="review-scroll-row">
                 <app-review-card
                   *ngFor="let review of activity.reviews.slice(0, 15)"
-                  [review]="$any(review)" />
+                  [review]="$any(review)"
+                  [currentUserId]="currentUserId"
+                  (deleted)="onReviewDeleted($event)"
+                  (updated)="onReviewUpdated($event)" />
               </div>
 
               <app-rating-stats
@@ -312,7 +317,10 @@
     [subtitle]="activity.name"
     [avgRating]="activity.avgRating"
     [reviews]="activity.reviews"
-    (closed)="closeShowAll()" />
+    [currentUserId]="currentUserId"
+    (closed)="closeShowAll()"
+    (deleted)="onReviewDeleted($event)"
+    (updated)="onReviewUpdated($event)" />
 
   <!-- REVIEW MODAL -->
   <app-review-modal

@@ -46,6 +46,16 @@
           (blur)="onSearchBlur()"
           autocomplete="off"
         />
+        <button
+          class="hero__filter-toggle"
+          [class.active]="hasActiveFilters"
+          type="button"
+          (click)="openFilterPanel()"
+        >
+          <span class="material-icons">tune</span>
+          <span class="hero__filter-toggle__label">{{ 'SEARCH.FILTER' | translate }}</span>
+          <span class="hero__filter-dot" *ngIf="hasActiveFilters"></span>
+        </button>
         <button class="btn btn-primary hero__search-btn" (click)="onSearch()">{{ 'HOME.HERO.SEARCH_BTN' | translate }}</button>
       </div>
 
@@ -96,3 +106,188 @@
   <!-- Bottom gradient: prelaz od slike ka pozadini sajta -->
   <div class="hero__bottom-gradient"></div>
 </section>
+
+<!-- FILTER PANEL -->
+<div class="filter-backdrop" *ngIf="showFilterPanel" (click)="closeFilterPanel()"></div>
+<aside class="filter-panel" [class.open]="showFilterPanel">
+
+  <div class="filter-panel__header">
+    <h2 class="filter-panel__title">{{ 'SEARCH.FILTER_TITLE' | translate }}</h2>
+    <button class="filter-panel__close" (click)="closeFilterPanel()" type="button">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+
+  <div class="filter-panel__body">
+
+    <div class="filter-group">
+      <p class="filter-label">{{ 'SEARCH.FILTER_ENTITY_TYPE' | translate }}</p>
+      <div class="filter-entity-grid">
+        <button
+          *ngFor="let et of filterEntityTypes"
+          class="filter-entity-btn"
+          [class.active]="filterEntityType === et.key"
+          (click)="setFilterEntityType(et.key)"
+          type="button"
+        >
+          <span class="material-icons">{{ et.icon }}</span>
+          <span>{{ et.labelKey | translate }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <p class="filter-label">{{ 'SEARCH.FILTER_LOCATION' | translate }}</p>
+      <div class="filter-toggle-row">
+        <p class="filter-label" style="margin:0">{{ 'SEARCH.FILTER_NEARBY' | translate }}</p>
+        <button class="toggle-btn" [class.on]="draftNearbyEnabled" (click)="toggleDraftNearby()" type="button">
+          <span class="toggle-btn__track"><span class="toggle-btn__thumb"></span></span>
+        </button>
+      </div>
+      <p class="filter-nearby-hint" *ngIf="draftNearbyEnabled && !locationAvailable">
+        <span class="material-icons">info</span>
+        {{ 'SEARCH.FILTER_NEARBY_UNAVAILABLE' | translate }}
+      </p>
+      <ng-container *ngIf="draftNearbyEnabled && locationAvailable">
+        <div class="filter-label-row">
+          <p class="filter-label" style="margin:0">{{ 'SEARCH.FILTER_RADIUS' | translate }}</p>
+          <span class="filter-value-badge">{{ draftFilters.radiusKm ?? 50 }} km</span>
+        </div>
+        <input
+          type="range"
+          class="radius-slider"
+          min="5"
+          max="200"
+          step="5"
+          [value]="draftFilters.radiusKm ?? 50"
+          (input)="draftFilters.radiusKm = +$any($event.target).value"
+          [style.background]="'linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ' + (((draftFilters.radiusKm ?? 50) - 5) / 195 * 100) + '%, var(--color-border) ' + (((draftFilters.radiusKm ?? 50) - 5) / 195 * 100) + '%, var(--color-border) 100%)'"
+        />
+        <div class="radius-ticks"><span>5 km</span><span>200 km</span></div>
+      </ng-container>
+    </div>
+
+    <div class="filter-group" *ngIf="filterEntityType && getCategoriesForType().length > 0">
+      <p class="filter-label">{{ 'SEARCH.FILTER_CATEGORIES' | translate }}</p>
+      <div class="filter-chips">
+        <button
+          *ngFor="let cat of getCategoriesForType()"
+          class="filter-chip"
+          [class.active]="isCategorySelected(cat.id)"
+          (click)="toggleCategory(cat.id)"
+          type="button"
+        >{{ cat.name }}</button>
+      </div>
+    </div>
+
+    <ng-container *ngIf="filterDefsLoading">
+      <div class="filter-group">
+        <div class="filter-defs-loading">
+          <span class="material-icons spin">sync</span>
+        </div>
+      </div>
+    </ng-container>
+    <ng-container *ngIf="!filterDefsLoading && filterDefs.length > 0">
+      <div class="filter-group">
+        <p class="filter-label">{{ 'SEARCH.FILTER_EXTRA' | translate }}</p>
+        <div class="filter-extra-list">
+          <ng-container *ngFor="let def of filterDefs">
+            <label class="filter-extra-item" *ngIf="def.filterType === 'boolean'">
+              <span class="filter-extra-item__label">{{ def.filterLabel }}</span>
+              <button class="toggle-btn toggle-btn--sm" [class.on]="isExtraFilterActive(def.filterKey)" (click)="toggleExtraFilter(def.filterKey)" type="button">
+                <span class="toggle-btn__track"><span class="toggle-btn__thumb"></span></span>
+              </button>
+            </label>
+            <div class="filter-extra-select" *ngIf="def.filterType === 'select' || def.filterType === 'multi_select'">
+              <p class="filter-extra-select__label">{{ def.filterLabel }}</p>
+              <div class="filter-chips">
+                <button *ngFor="let opt of def.options" class="filter-chip"
+                  [class.active]="isExtraFilterActive(def.filterKey, opt.optionValue)"
+                  (click)="toggleExtraFilter(def.filterKey, opt.optionValue)" type="button">{{ opt.optionLabel }}</button>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </ng-container>
+
+    <div class="filter-group">
+      <p class="filter-label">{{ 'SEARCH.FILTER_RATING' | translate }}</p>
+      <div class="rating-chips">
+        <button class="rating-chip" [class.active]="draftFilters.minRating === 3"
+          (click)="draftFilters.minRating = draftFilters.minRating === 3 ? undefined : 3" type="button">
+          <span class="material-icons">star</span> 3+
+        </button>
+        <button class="rating-chip" [class.active]="draftFilters.minRating === 4"
+          (click)="draftFilters.minRating = draftFilters.minRating === 4 ? undefined : 4" type="button">
+          <span class="material-icons">star</span> 4+
+        </button>
+        <button class="rating-chip" [class.active]="draftFilters.minRating === 4.5"
+          (click)="draftFilters.minRating = draftFilters.minRating === 4.5 ? undefined : 4.5" type="button">
+          <span class="material-icons">star</span> 4.5+
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-group" *ngIf="filterEntityType === 'place' || filterEntityType === 'activity' || filterEntityType === null">
+      <div class="filter-toggle-row">
+        <p class="filter-label" style="margin:0">{{ 'SEARCH.FILTER_OPEN_NOW' | translate }}</p>
+        <button class="toggle-btn" [class.on]="draftFilters.openNow"
+          (click)="draftFilters.openNow = draftFilters.openNow ? undefined : true" type="button">
+          <span class="toggle-btn__track"><span class="toggle-btn__thumb"></span></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-group" *ngIf="filterEntityType === 'event' || filterEntityType === 'place'">
+      <p class="filter-label">{{ 'SEARCH.FILTER_PRICE' | translate }}</p>
+      <div class="filter-price-row">
+        <div class="filter-price-input">
+          <label class="filter-price-label">{{ 'SEARCH.FILTER_PRICE_MIN' | translate }}</label>
+          <input type="number" class="filter-input" placeholder="0" [(ngModel)]="draftFilters.minPrice" min="0" />
+        </div>
+        <span class="filter-price-sep">—</span>
+        <div class="filter-price-input">
+          <label class="filter-price-label">{{ 'SEARCH.FILTER_PRICE_MAX' | translate }}</label>
+          <input type="number" class="filter-input" [placeholder]="'SEARCH.FILTER_PRICE_MAX_HINT' | translate" [(ngModel)]="draftFilters.maxPrice" min="0" />
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="filter-panel__footer">
+    <button class="filter-reset-btn" (click)="resetFilters()" type="button">{{ 'SEARCH.FILTER_RESET' | translate }}</button>
+    <button class="filter-apply-btn" (click)="applyFilters()" type="button">{{ 'SEARCH.FILTER_APPLY' | translate }}</button>
+  </div>
+</aside>
+
+<!-- LOCATION MODAL -->
+<div class="location-modal-backdrop" *ngIf="showLocationModal" (click)="dismissLocationModal()">
+  <div class="location-modal" (click)="$event.stopPropagation()">
+    <ng-container *ngIf="locationModalBlocked; else normalModal">
+      <div class="location-modal__icon location-modal__icon--error">
+        <span class="material-icons">location_disabled</span>
+      </div>
+      <h3 class="location-modal__title">{{ 'SEARCH.LOCATION_BLOCKED_TITLE' | translate }}</h3>
+      <p class="location-modal__text">{{ 'SEARCH.LOCATION_BLOCKED_TEXT' | translate }}</p>
+      <div class="location-modal__actions">
+        <button class="location-modal__cancel" (click)="dismissLocationModal()">{{ 'SEARCH.LOCATION_MODAL_CANCEL' | translate }}</button>
+      </div>
+    </ng-container>
+    <ng-template #normalModal>
+      <div class="location-modal__icon">
+        <span class="material-icons">{{ locationModalLoading ? 'sync' : 'location_off' }}</span>
+      </div>
+      <h3 class="location-modal__title">{{ 'SEARCH.LOCATION_MODAL_TITLE' | translate }}</h3>
+      <p class="location-modal__text">{{ 'SEARCH.LOCATION_MODAL_TEXT' | translate }}</p>
+      <div class="location-modal__actions">
+        <button class="location-modal__cancel" [disabled]="locationModalLoading" (click)="dismissLocationModal()">{{ 'SEARCH.LOCATION_MODAL_CANCEL' | translate }}</button>
+        <button class="location-modal__enable" [disabled]="locationModalLoading" (click)="enableLocationFromModal()">
+          <span class="material-icons" [class.spin]="locationModalLoading">{{ locationModalLoading ? 'sync' : 'my_location' }}</span>
+          {{ locationModalLoading ? ('SEARCH.LOCATION_MODAL_WAITING' | translate) : ('SEARCH.LOCATION_MODAL_ENABLE' | translate) }}
+        </button>
+      </div>
+    </ng-template>
+  </div>
+</div>

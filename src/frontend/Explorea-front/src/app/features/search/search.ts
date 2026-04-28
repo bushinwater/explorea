@@ -162,8 +162,25 @@ export class Search implements OnInit, OnDestroy {
   // ─── Lifecycle ────────────────────────────────────────────────────────────
 
   ngOnInit(): void {
+    const state = history.state;
+    const fromHero = state?.fromHero === true;
+
+    if (fromHero) {
+      if (state.query)  this.query = state.query;
+      if (state.filters) this.filters = { ...state.filters };
+      if (state.nearbyEnabled) this.nearbyEnabled = state.nearbyEnabled;
+      if (state.filterEntityType) {
+        this.filterEntityType = state.filterEntityType;
+        this.activeChip  = state.filterEntityType;
+        this.activeTab   = state.filterEntityType;
+      }
+      if (state.query || state.filterEntityType) {
+        this.hasSearched = true;
+      }
+    }
+
     const typeParam = this.route.snapshot.queryParamMap.get('type');
-    const preselected = typeParam && ENTITY_TABS.some(t => t.key === typeParam) && typeParam !== 'sve';
+    const preselected = !fromHero && typeParam && ENTITY_TABS.some(t => t.key === typeParam) && typeParam !== 'sve';
     if (preselected) {
       this.activeChip       = typeParam!;
       this.activeTab        = typeParam!;
@@ -175,7 +192,7 @@ export class Search implements OnInit, OnDestroy {
     this.loadUserLocation();
     this.loadLookups();
 
-    if (preselected) {
+    if (preselected || (fromHero && (this.query || this.filterEntityType))) {
       this.triggerSearch();
     }
 
@@ -651,6 +668,14 @@ export class Search implements OnInit, OnDestroy {
 
   onQueryChange(): void {
     if (this.query.trim().length === 0) {
+      if (this.activeChip !== 'sve' && this.activeChip !== '') {
+        // User cleared query while a category chip is active — re-run category search without query
+        this.loading = true;
+        this.hasSearched = true;
+        this.cdr.detectChanges();
+        this.searchSubject.next();
+        return;
+      }
       this.activeChip  = 'sve';
       this.activeTab   = 'sve';
       this.allResults  = [];
@@ -661,7 +686,10 @@ export class Search implements OnInit, OnDestroy {
       return;
     }
     if (this.query.trim().length < 2) return;
-    this.activeChip = '';
+    // Keep the active chip if user is already browsing a specific category
+    if (this.activeChip === 'sve') {
+      this.activeChip = '';
+    }
     this.loading    = true;
     this.cdr.detectChanges();
     this.searchSubject.next();
@@ -687,13 +715,21 @@ export class Search implements OnInit, OnDestroy {
     this.activeChip = key;
     this.activeTab  = key;
     if (key === 'sve') {
-      this.query            = '';
-      this.allResults       = [];
-      this.hasSearched      = false;
-      this.loading          = false;
-      this.pagination       = { page: 1, totalPages: 1, total: 0 };
       this.filterEntityType = null;
-      this.cdr.detectChanges();
+      if (this.query.trim().length >= 2) {
+        this.allResults  = [];
+        this.hasSearched = true;
+        this.loading     = true;
+        this.pagination  = { page: 1, totalPages: 1, total: 0 };
+        this.cdr.detectChanges();
+        this.executeSearch(1, false);
+      } else {
+        this.allResults  = [];
+        this.hasSearched = false;
+        this.loading     = false;
+        this.pagination  = { page: 1, totalPages: 1, total: 0 };
+        this.cdr.detectChanges();
+      }
       return;
     }
     // Auto-sync filter entity type with the selected chip and clear stale category filters
@@ -708,7 +744,6 @@ export class Search implements OnInit, OnDestroy {
     };
     this.filterDefs       = [];
     this.filterDefsTypeId = null;
-    this.query            = '';
     this.hasSearched      = true;
     this.triggerSearch();
   }
