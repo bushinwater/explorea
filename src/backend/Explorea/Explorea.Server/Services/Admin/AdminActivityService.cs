@@ -41,6 +41,32 @@ namespace Explorea.Server.Services.Admin
         );
       }
 
+      if (!string.IsNullOrWhiteSpace(query.Duration))
+      {
+        var duration = query.Duration.Trim().ToLowerInvariant();
+
+        activitiesQuery = duration switch
+        {
+          "up_to_2h" => activitiesQuery.Where(a =>
+            a.DurationMinutes.HasValue &&
+            a.DurationMinutes.Value <= 120
+          ),
+
+          "from_2h_to_6h" => activitiesQuery.Where(a =>
+            a.DurationMinutes.HasValue &&
+            a.DurationMinutes.Value > 120 && 
+            a.DurationMinutes.Value < 360
+          ),
+          
+          "multi_day" => activitiesQuery.Where(a =>
+            a.DurationMinutes.HasValue &&
+            a.DurationMinutes.Value > 360
+          ),
+          
+          _ => throw new ArgumentException("Unsupported duration filter value.")
+        };
+      }
+
       activitiesQuery = activitiesQuery.OrderByDescending(a => a.CreatedAt);
 
       var total = await activitiesQuery.CountAsync();
