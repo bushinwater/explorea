@@ -1,4 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using Explorea.Server.Services.Admin.Interfaces;
+using Explorea.API.DTOs.Admin.Activity;
+using System.Security.Claims;
 
 namespace Explorea.Server.Controllers.Admin
 {
@@ -6,8 +9,43 @@ namespace Explorea.Server.Controllers.Admin
     [Route("api/admin/activities")]
     public class AdminActivitiesController : ControllerBase
     {
+        private readonly IAdminActivityService _service;
+
+        public AdminActivitiesController(IAdminActivityService service)
+        {
+            _service = service;
+        }
+        
         [HttpGet]
-        public IActionResult GetAll() => Ok();
+        public async Task<IActionResult> GetAll([FromQuery] AdminActivityListQueryDto query)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+
+                var (items, total) = await _service.GetAllAsync(query, userId);
+
+                return Ok(new
+                {
+                    total,
+                    items
+                });
+            } 
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new {message = ex.Message});    
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new {message = ex.Message});
+            }
+        }
+
+        private Guid GetCurrentUserId()
+        {
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return Guid.Parse(claim!);
+        }
 
         [HttpPost]
         public IActionResult Create() => StatusCode(201);
