@@ -1,0 +1,355 @@
+<!-- ===== FEEDBACK BANNERS ===== -->
+@if (successMessage()) {
+  <app-feedback-banner variant="info" [title]="successMessage()" />
+}
+@if (errorMessage()) {
+  <app-feedback-banner variant="error" [title]="errorMessage()" />
+}
+
+<div class="dest-page">
+  <!-- ===== STATS ROW ===== -->
+  <div class="dest-stats">
+    <app-stat-card
+      [label]="ui.t('destinations.stats.totalViews')"
+      [value]="formatBigNumber(stats()?.totalViews ?? 0)"
+      [trend]="stats()?.totalViewsTrend ?? ''"
+    />
+
+    <app-stat-card
+      [label]="ui.t('destinations.stats.inactive')"
+      [value]="stats()?.inactiveCount ?? 0"
+      [trend]="stats()?.inactiveTrend ?? ''"
+      tone="danger"
+    />
+
+    <app-stat-card
+      [label]="ui.t('destinations.stats.pending')"
+      [value]="stats()?.pendingCount ?? 0"
+      [hint]="stats()?.pendingHint ?? ''"
+      tone="neutral"
+    />
+
+    <!-- 4th card: 30-day adds sparkline -->
+    <article class="dest-stat-chart">
+      <div class="dest-stat-chart__top">
+        <p class="dest-stat-chart__label">{{ ui.t('destinations.stats.added30Days') }}</p>
+        <span class="material-icons dest-stat-chart__icon">trending_up</span>
+      </div>
+      <svg class="dest-stat-chart__svg" viewBox="0 0 130 40" preserveAspectRatio="none">
+        @if (addedLast30DaysPath()) {
+          <path
+            [attr.d]="addedLast30DaysPath()"
+            fill="none"
+            stroke="var(--color-primary)"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        }
+      </svg>
+    </article>
+  </div>
+
+  <!-- ===== MAIN TABLE CARD ===== -->
+  <div class="dest-card">
+    <!-- Card header -->
+    <div class="dest-card__header">
+      <div class="dest-card__title-group">
+        <div class="dest-card__title-row">
+          <span class="material-icons dest-card__title-icon">location_on</span>
+          <h2 class="dest-card__title">{{ ui.t('destinations.title') }}</h2>
+        </div>
+        <p class="dest-card__subtitle">{{ ui.t('destinations.subtitle') }}</p>
+      </div>
+
+      <div class="dest-card__actions">
+        <!-- Search -->
+        <div class="dest-search-wrap">
+          <span class="material-icons dest-search-wrap__icon">search</span>
+          <input
+            class="dest-search"
+            type="search"
+            [placeholder]="ui.t('destinations.search.placeholder')"
+            [value]="filters().search"
+            (input)="updateSearch($any($event.target).value)"
+          />
+        </div>
+
+        <!-- Filter button -->
+        <div class="dest-filter-wrap">
+          <button
+            class="btn btn-ghost btn-sm dest-filter-btn"
+            [class.dest-filter-btn--active]="activeFilterCount() > 0"
+            (click)="isFilterOpen.set(!isFilterOpen()); $event.stopPropagation()"
+          >
+            <span class="material-icons">filter_list</span>
+            {{ ui.t('destinations.filter.btn') }}
+            @if (activeFilterCount() > 0) {
+              <span class="dest-filter-badge">{{ activeFilterCount() }}</span>
+            }
+          </button>
+
+          <!-- Filter panel -->
+          @if (isFilterOpen()) {
+            <div class="dest-filter-panel" (click)="$event.stopPropagation()">
+              <div class="dest-filter-panel__header">
+                <span class="dest-filter-panel__title">{{
+                  ui.t('destinations.filter.title')
+                }}</span>
+                @if (activeFilterCount() > 0) {
+                  <button class="dest-filter-panel__reset" (click)="resetFilters()">
+                    {{ ui.t('destinations.filter.reset') }}
+                  </button>
+                }
+              </div>
+
+              <!-- Category filter -->
+              <div class="dest-filter-section">
+                <label class="dest-filter-section__label">{{
+                  ui.t('destinations.filter.category')
+                }}</label>
+                <div class="dest-filter-chips">
+                  @for (cat of categories; track cat.value) {
+                    <button
+                      class="dest-chip"
+                      [class.dest-chip--active]="filters().category === cat.value"
+                      (click)="applyCategory(cat.value)"
+                    >
+                      {{ cat.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Status filter -->
+              <div class="dest-filter-section">
+                <label class="dest-filter-section__label">{{
+                  ui.t('destinations.filter.status')
+                }}</label>
+                <div class="dest-filter-chips">
+                  @for (s of statuses; track s.value) {
+                    <button
+                      class="dest-chip"
+                      [class.dest-chip--active]="filters().status === s.value"
+                      (click)="applyStatus(s.value)"
+                    >
+                      {{ s.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Region filter (super admin only) -->
+              @if (isSuperAdmin()) {
+                <div class="dest-filter-section">
+                  <label class="dest-filter-section__label">{{
+                    ui.t('destinations.filter.region')
+                  }}</label>
+                  <div class="dest-filter-chips">
+                    <button
+                      class="dest-chip"
+                      [class.dest-chip--active]="filters().region === 'all'"
+                      (click)="applyRegion('all')"
+                    >
+                      {{ ui.t('destinations.filter.allRegions') }}
+                    </button>
+                    @for (r of regions(); track r) {
+                      <button
+                        class="dest-chip"
+                        [class.dest-chip--active]="filters().region === r"
+                        (click)="applyRegion(r)"
+                      >
+                        {{ r }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="dest-filter-backdrop" (click)="isFilterOpen.set(false)"></div>
+          }
+        </div>
+
+        <!-- Add new -->
+        <button class="btn btn-primary btn-sm">
+          <span class="material-icons">add</span>
+          {{ ui.t('destinations.addNew') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="dest-table-wrap">
+      @if (isLoading()) {
+        <app-table-skeleton [rows]="7" />
+      } @else if (!destinations().length) {
+        <app-empty-state
+          [title]="ui.t('destinations.empty.title')"
+          [description]="ui.t('destinations.empty.description')"
+        />
+      } @else {
+        <table class="dest-table">
+          <thead>
+            <tr>
+              <th class="dest-th">{{ ui.t('destinations.table.destination') }}</th>
+              <th class="dest-th">{{ ui.t('destinations.table.category') }}</th>
+              <th class="dest-th">{{ ui.t('destinations.table.status') }}</th>
+              <th class="dest-th dest-th--center">{{ ui.t('destinations.table.trend') }}</th>
+              <th class="dest-th dest-th--right">{{ ui.t('destinations.table.views') }}</th>
+              <th class="dest-th">{{ ui.t('destinations.table.updated') }}</th>
+              <th class="dest-th"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (dest of destinations(); track dest.id) {
+              <tr class="dest-row">
+                <!-- Destination name + thumb -->
+                <td class="dest-td">
+                  <div class="dest-name-cell">
+                    <div class="dest-thumb" [style.background-color]="thumbColor(dest.category)">
+                      <span class="material-icons dest-thumb__icon">{{
+                        categoryIcon(dest.category)
+                      }}</span>
+                    </div>
+                    <div class="dest-name-info">
+                      <span class="dest-name-info__name">{{ dest.name }}</span>
+                      <span class="dest-name-info__location">
+                        <span class="material-icons">location_on</span>
+                        {{ dest.city }}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Category -->
+                <td class="dest-td">
+                  <div class="dest-category">
+                    <span class="material-icons dest-category__icon">{{
+                      categoryIcon(dest.category)
+                    }}</span>
+                    {{ categoryLabel(dest.category) }}
+                  </div>
+                </td>
+
+                <!-- Status -->
+                <td class="dest-td">
+                  <span class="dest-status dest-status--{{ dest.status }}">
+                    {{ statusLabel(dest.status) }}
+                  </span>
+                </td>
+
+                <!-- Sparkline -->
+                <td class="dest-td dest-td--center">
+                  <svg class="dest-sparkline" viewBox="0 0 80 32" preserveAspectRatio="none">
+                    <path
+                      [attr.d]="sparklinePath(dest.sparklineData)"
+                      fill="none"
+                      stroke="#28694c"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </td>
+
+                <!-- Views -->
+                <td class="dest-td dest-td--right">
+                  <div class="dest-views">
+                    <span class="material-icons">visibility</span>
+                    {{ formatViews(dest.views) }}
+                  </div>
+                </td>
+
+                <!-- Last updated -->
+                <td class="dest-td">
+                  <div class="dest-updated">
+                    <span class="material-icons">calendar_today</span>
+                    {{ timeAgo(dest.lastUpdatedAt) }}
+                  </div>
+                </td>
+
+                <!-- Actions -->
+                <td class="dest-td dest-td--actions">
+                  <div class="row-menu-wrap">
+                    <button
+                      class="dest-menu-btn"
+                      (click)="toggleMenu(dest.id, $event)"
+                      [title]="ui.t('destinations.actions.label')"
+                    >
+                      <span class="material-icons">more_vert</span>
+                    </button>
+                    @if (activeMenuId() === dest.id) {
+                      <div class="dest-menu-dropdown">
+                        <button class="dest-menu-item">
+                          <span class="material-icons">edit</span>
+                          {{ ui.t('destinations.actions.edit') }}
+                        </button>
+                        <button
+                          class="dest-menu-item dest-menu-item--danger"
+                          (click)="openDeleteDialog(dest)"
+                        >
+                          <span class="material-icons">delete</span>
+                          {{ ui.t('destinations.actions.delete') }}
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1 || total() > 0) {
+      <div class="dest-pagination">
+        <span class="dest-pagination__info">{{ visibleRangeText() }}</span>
+        <div class="dest-pagination__pages">
+          <button
+            class="dest-page-btn dest-page-btn--nav"
+            [disabled]="currentPage() <= 1"
+            (click)="goToPage(currentPage() - 1)"
+          >
+            <span class="material-icons">chevron_left</span>
+          </button>
+
+          @for (page of pageNumbers(); track page) {
+            <button
+              class="dest-page-btn"
+              [class.dest-page-btn--active]="page === currentPage()"
+              (click)="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          }
+
+          <button
+            class="dest-page-btn dest-page-btn--nav"
+            [disabled]="currentPage() >= totalPages()"
+            (click)="goToPage(currentPage() + 1)"
+          >
+            <span class="material-icons">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- ===== DELETE CONFIRM DIALOG ===== -->
+@if (isDeleteDialogOpen()) {
+  <app-confirm-dialog
+    [title]="ui.t('destinations.delete.title')"
+    [description]="
+      ui.t('destinations.delete.description', { name: selectedDestination()?.name ?? '' })
+    "
+    [confirmLabel]="ui.t('destinations.delete.confirm')"
+    [cancelLabel]="ui.t('destinations.delete.cancel')"
+    [loadingLabel]="ui.t('destinations.delete.loading')"
+    [isLoading]="isDeleting()"
+    (cancel)="closeDeleteDialog()"
+    (confirm)="confirmDelete()"
+  ></app-confirm-dialog>
+}

@@ -166,5 +166,44 @@
   "dashboard.customize.reset": "Resetuj",
   "dashboard.customize.close": "Zatvori",
   "dashboard.header.customize": "Prilagodi",
-  "dashboard.header.demo_role": "Demo — promeni ulogu"
+  "dashboard.header.demo_role": "Demo — promeni ulogu",
+
+  "destinations.stats.totalViews": "Ukupno pregleda",
+  "destinations.stats.inactive": "Neaktivne destinacije",
+  "destinations.stats.pending": "Čeka odobrenje",
+  "destinations.stats.added30Days": "Dodato — poslednjih 30 dana",
+
+  "destinations.title": "Regionalne destinacije",
+  "destinations.subtitle": "Upravljajte i pratite sve turističke lokacije u regionu",
+  "destinations.addNew": "Dodaj novu",
+
+  "destinations.search.placeholder": "Pretraži destinacije...",
+
+  "destinations.filter.btn": "Filter",
+  "destinations.filter.title": "Filteri",
+  "destinations.filter.reset": "Resetuj sve",
+  "destinations.filter.category": "Kategorija",
+  "destinations.filter.status": "Status",
+  "destinations.filter.region": "Region",
+  "destinations.filter.allRegions": "Svi regioni",
+
+  "destinations.table.destination": "Destinacija",
+  "destinations.table.category": "Kategorija",
+  "destinations.table.status": "Status",
+  "destinations.table.trend": "7-dnevni trend",
+  "destinations.table.views": "Pregledi",
+  "destinations.table.updated": "Ažurirano",
+
+  "destinations.empty.title": "Nema destinacija",
+  "destinations.empty.description": "Nismo pronašli destinacije koje odgovaraju trenutnim filterima.",
+
+  "destinations.actions.label": "Akcije",
+  "destinations.actions.edit": "Izmeni",
+  "destinations.actions.delete": "Obriši",
+
+  "destinations.delete.title": "Ukloni destinaciju",
+  "destinations.delete.description": "Da li ste sigurni da želite da uklonite {name}? Ova akcija se ne može poništiti.",
+  "destinations.delete.confirm": "Ukloni",
+  "destinations.delete.cancel": "Otkaži",
+  "destinations.delete.loading": "Uklanjanje..."
 }

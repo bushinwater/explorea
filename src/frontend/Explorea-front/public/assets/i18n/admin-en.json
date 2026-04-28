@@ -166,5 +166,44 @@
   "dashboard.customize.reset": "Reset",
   "dashboard.customize.close": "Close",
   "dashboard.header.customize": "Customize",
-  "dashboard.header.demo_role": "Demo — change role"
+  "dashboard.header.demo_role": "Demo — change role",
+
+  "destinations.stats.totalViews": "Total Views",
+  "destinations.stats.inactive": "Inactive Destinations",
+  "destinations.stats.pending": "Pending Approval",
+  "destinations.stats.added30Days": "Added — last 30 days",
+
+  "destinations.title": "Regional Destinations",
+  "destinations.subtitle": "Manage and track all tourist locations in the region",
+  "destinations.addNew": "Add New",
+
+  "destinations.search.placeholder": "Search destinations...",
+
+  "destinations.filter.btn": "Filter",
+  "destinations.filter.title": "Filters",
+  "destinations.filter.reset": "Reset all",
+  "destinations.filter.category": "Category",
+  "destinations.filter.status": "Status",
+  "destinations.filter.region": "Region",
+  "destinations.filter.allRegions": "All regions",
+
+  "destinations.table.destination": "Destination",
+  "destinations.table.category": "Category",
+  "destinations.table.status": "Status",
+  "destinations.table.trend": "7-day trend",
+  "destinations.table.views": "Views",
+  "destinations.table.updated": "Updated",
+
+  "destinations.empty.title": "No destinations",
+  "destinations.empty.description": "No destinations match the current filters.",
+
+  "destinations.actions.label": "Actions",
+  "destinations.actions.edit": "Edit",
+  "destinations.actions.delete": "Delete",
+
+  "destinations.delete.title": "Remove destination",
+  "destinations.delete.description": "Are you sure you want to remove {name}? This action cannot be undone.",
+  "destinations.delete.confirm": "Remove",
+  "destinations.delete.cancel": "Cancel",
+  "destinations.delete.loading": "Removing..."
 }
