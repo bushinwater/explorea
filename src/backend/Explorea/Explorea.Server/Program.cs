@@ -81,6 +81,9 @@ builder.Services.AddScoped<ISearchPageRepository, SearchPageRepository>();
 builder.Services.AddScoped<IAdminPlaceRepository, AdminPlaceRepository>();
 builder.Services.AddScoped<IAdminPlaceService, AdminPlaceService>();
 
+// builder.Services.AddScoped<IAdminActivityRepository, AdminActivityRepository>();
+builder.Services.AddScoped<IAdminActivityService, AdminActivityService>();
+
 builder.Services.AddScoped<IOrganizationAssignmentRepository, OrganizationAssignmentRepository>();
 builder.Services.AddScoped<IOrganizationRegionAssignmentRepository, OrganizationRegionAssignmentRepository>();
 builder.Services.AddScoped<ISubmissionQueueRepository, SubmissionQueueRepository>();
