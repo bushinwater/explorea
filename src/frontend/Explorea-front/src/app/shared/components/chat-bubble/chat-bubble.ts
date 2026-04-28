@@ -4,6 +4,8 @@ import {
   Component,
   ElementRef,
   HostListener,
+  OnDestroy,
+  OnInit,
   ViewChild,
   inject,
 } from '@angular/core';
@@ -11,9 +13,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ChatService, ChatMessage, ChatContext } from '../../../core/services/chat.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LocationService } from '../../../core/services/location.service';
+import { ChatBubbleService } from '../../../core/services/chat-bubble.service';
 
 @Component({
   selector: 'app-chat-bubble',
@@ -23,7 +27,7 @@ import { LocationService } from '../../../core/services/location.service';
   styleUrl: './chat-bubble.css',
   changeDetection: ChangeDetectionStrategy.Default,
 })
-export class ChatBubble {
+export class ChatBubble implements OnInit, OnDestroy {
   @ViewChild('messagesEnd') messagesEnd!: ElementRef<HTMLDivElement>;
   @ViewChild('inputEl') inputEl!: ElementRef<HTMLTextAreaElement>;
 
@@ -36,12 +40,32 @@ export class ChatBubble {
   private chatService = inject(ChatService);
   private authService = inject(AuthService);
   private locationService = inject(LocationService);
+  private chatBubbleService = inject(ChatBubbleService);
   private sanitizer = inject(DomSanitizer);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 
+  private sub = new Subscription();
+
   get firstName(): string { return this.authService.getFirstName(); }
   get isLoggedIn(): boolean { return this.authService.isLoggedIn(); }
+
+  ngOnInit(): void {
+    this.sub.add(
+      this.chatBubbleService.trigger$.subscribe((message) => {
+        this.open = true;
+        this.cdr.detectChanges();
+        setTimeout(() => {
+          this.input = message;
+          this.send();
+        }, 80);
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.sub.unsubscribe();
+  }
 
   toggle(): void {
     this.open = !this.open;

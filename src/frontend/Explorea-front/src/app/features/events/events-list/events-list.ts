@@ -21,6 +21,7 @@ import {
   CalendarCell,
 } from '../../../core/models/event.model';
 import { PlannerDot, PlannerEntry, PlannerEventRef } from '../../../core/models/planner.model';
+import { ChatBubbleService } from '../../../core/services/chat-bubble.service';
 
 type QuickFilter = 'all' | 'today' | 'weekend' | 'free';
 type MobileView  = 'list' | 'calendar' | 'planner';
@@ -105,7 +106,12 @@ export class EventsListPage implements OnInit, OnDestroy {
     private plannerService: PlannerService,
     private cdr: ChangeDetectorRef,
     private route: ActivatedRoute,
+    private chatBubbleService: ChatBubbleService,
   ) {}
+
+  openAiRecommendation(): void {
+    this.chatBubbleService.openWithMessage('Koji dogadjaji su nadolazeći i koje mi preporučuješ?');
+  }
 
   ngOnInit(): void {
     this.isLoggedIn = this.authService.isLoggedIn();
