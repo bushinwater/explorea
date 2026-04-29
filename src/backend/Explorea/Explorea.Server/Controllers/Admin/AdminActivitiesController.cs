@@ -114,8 +114,30 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        // PUT /api/admin/activities/{id}
         [HttpPut("{id}")]
-        public IActionResult Update(Guid id) => Ok();
+        public async Task<IActionResult> Update(Guid id, [FromBody] AdminUpdateActivityDto dto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+
+                var updated = await _service.UpdateAsync(id, dto, userId);
+
+                if (updated == null)
+                    return NotFound();
+
+                return Ok(updated);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
         [HttpDelete("{id}")]
         public IActionResult Delete(Guid id) => NoContent();

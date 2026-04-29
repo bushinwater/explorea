@@ -215,10 +215,6 @@ namespace Explorea.Server.Services.Admin
 
       return created!;
     }
-    public Task<bool> DeleteAsync(Guid id, Guid currentUserId)
-    {
-      throw new NotImplementedException();
-    }
     public async Task<AdminActivityDetailsDto?> GetByIdAsync(Guid id, Guid currentUserId)
     {
       var activity = await _repository.GetByIdAsync(id);
@@ -270,11 +266,97 @@ namespace Explorea.Server.Services.Admin
         UpdatedAt = activity.UpdatedAt
       };
     }
-    public Task<AdminActivityDetailsDto?> UpdateAsync(Guid id, AdminUpdateActivityDto dto, Guid updatedBy)
+    public async Task<AdminActivityDetailsDto?> UpdateAsync(Guid id, AdminUpdateActivityDto dto, Guid updatedBy)
+    {
+        ValidateUpdateDto(dto);
+
+        var activity = await _repository.GetByIdAsync(id);
+
+        if (activity == null)
+            return null;
+
+        var now = DateTimeOffset.UtcNow;
+
+        if (dto.CityId.HasValue)
+            activity.CityId = dto.CityId.Value;
+
+        if (dto.DestinationId.HasValue)
+            activity.DestinationId = dto.DestinationId.Value;
+
+        if (dto.PlaceId.HasValue)
+            activity.PlaceId = dto.PlaceId.Value;
+
+        if (dto.CategoryId.HasValue)
+            activity.CategoryId = dto.CategoryId.Value;
+
+        if (dto.SeasonId.HasValue)
+            activity.SeasonId = dto.SeasonId.Value;
+
+        if (dto.CountryId.HasValue)
+            activity.CountryId = dto.CountryId.Value;
+
+        if (!string.IsNullOrWhiteSpace(dto.Name))
+            activity.Name = dto.Name.Trim();
+
+        if (!string.IsNullOrWhiteSpace(dto.Slug))
+            activity.Slug = dto.Slug.Trim();
+
+        if (dto.Description != null)
+            activity.Description = dto.Description.Trim();
+
+        if (dto.Price.HasValue)
+            activity.Price = dto.Price.Value;
+
+        if (dto.DurationMinutes.HasValue)
+            activity.DurationMinutes = dto.DurationMinutes.Value;
+
+        if (dto.DifficultyLevel != null)
+            activity.DifficultyLevel = dto.DifficultyLevel.Trim();
+
+        if (dto.DistanceKm.HasValue)
+            activity.DistanceKm = dto.DistanceKm.Value;
+
+        if (dto.StartPoint != null)
+            activity.StartPoint = dto.StartPoint.Trim();
+
+        if (dto.ExtraData != null)
+            activity.ExtraData = dto.ExtraData;
+
+        if (dto.Latitude.HasValue || dto.Longitude.HasValue)
+        {
+            activity.Latitude = dto.Latitude;
+            activity.Longitude = dto.Longitude;
+            activity.Location = BuildLocation(dto.Latitude, dto.Longitude);
+        }
+
+        if (dto.Popularity.HasValue)
+            activity.Popularity = dto.Popularity.Value;
+
+        if (dto.IsFeatured.HasValue)
+            activity.IsFeatured = dto.IsFeatured.Value;
+
+        if (dto.IsActive.HasValue)
+        {
+            activity.IsDeleted = !dto.IsActive.Value;
+            activity.DeletedAt = dto.IsActive.Value ? null : now;
+        }
+
+        if (dto.OrganizerWebsite != null)
+            activity.OrganizerWebsite = dto.OrganizerWebsite.Trim();
+
+        activity.UpdatedAt = now;
+        activity.UpdatedBy = updatedBy;
+
+        _repository.Update(activity);
+        await _repository.SaveChangesAsync();
+
+        return await GetByIdAsync(activity.Id, updatedBy);
+    }
+
+    public Task<bool> DeleteAsync(Guid id, Guid currentUserId)
     {
       throw new NotImplementedException();
     }
-
     private static void ValidateCreateDto(AdminCreateActivityDto dto)
     {
       if(string.IsNullOrWhiteSpace(dto.Name)) throw new ArgumentException("Name is required");
@@ -286,6 +368,28 @@ namespace Explorea.Server.Services.Admin
       if(dto.Latitude is < -90 or > 90) throw new ArgumentException("Latitude must be between -90 and 90");
       if(dto.Longitude is < -180 or > 180) throw new ArgumentException("Longitude must be between -180 and 180");
     }
+
+    private static void ValidateUpdateDto(AdminUpdateActivityDto dto)
+    {
+        if (dto.Name != null && string.IsNullOrWhiteSpace(dto.Name))
+            throw new ArgumentException("Name cannot be empty.");
+        if (dto.Slug != null && string.IsNullOrWhiteSpace(dto.Slug))
+            throw new ArgumentException("Slug cannot be empty");
+        if (dto.CategoryId.HasValue && dto.CategoryId.Value <= 0)
+            throw new ArgumentException("CategoryId must be greater than 0");
+        if (dto.Price.HasValue && dto.Price.Value < 0)
+            throw new ArgumentException("Price must be greater than or equal to 0");
+        if (dto.DurationMinutes.HasValue && dto.DurationMinutes.Value <= 0)
+            throw new ArgumentException("DurationMinutes must be greater than 0");
+        if (dto.Latitude.HasValue ^ dto.Longitude.HasValue)
+            throw new ArgumentException("Latitude and Longitude must be provided together");
+        if (dto.Latitude is < -90 or > 90)
+            throw new ArgumentException("Latitude must be between -90 and 90");
+        if (dto.Longitude is < -180 or > 180)
+            throw new ArgumentException("Longitude must be between -180 and 180");
+        if (dto.Popularity.HasValue && dto.Popularity.Value < 0)
+            throw new ArgumentException("Popularity must be greater than or equal to 0");
+    }    
     private static Point? BuildLocation(double? latitude, double? longitude)
     {
       if(!latitude.HasValue || !longitude.HasValue) return null;
