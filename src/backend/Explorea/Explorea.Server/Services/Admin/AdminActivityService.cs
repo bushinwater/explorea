@@ -353,9 +353,20 @@ namespace Explorea.Server.Services.Admin
         return await GetByIdAsync(activity.Id, updatedBy);
     }
 
-    public Task<bool> DeleteAsync(Guid id, Guid currentUserId)
+    public async Task<bool> DeleteAsync(Guid id, Guid currentUserId)
     {
-      throw new NotImplementedException();
+      var activity = await _repository.GetByIdAsync(id);
+
+      if (activity == null)
+          return false;
+
+      if (activity.IsDeleted)
+          return true;
+
+      _repository.Delete(activity);
+      await _repository.SaveChangesAsync();
+
+      return true;
     }
     private static void ValidateCreateDto(AdminCreateActivityDto dto)
     {

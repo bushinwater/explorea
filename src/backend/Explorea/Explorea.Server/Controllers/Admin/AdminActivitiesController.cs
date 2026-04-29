@@ -140,6 +140,27 @@ namespace Explorea.Server.Controllers.Admin
         }
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(Guid id) => NoContent();
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+        
+                var deleted = await _service.DeleteAsync(id, userId);
+        
+                if (!deleted)
+                    return NotFound();
+        
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }
