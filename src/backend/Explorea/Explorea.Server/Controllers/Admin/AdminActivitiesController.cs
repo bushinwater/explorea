@@ -45,6 +45,29 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+
+                var result = await _service.GetByIdAsync(id, userId);
+
+                if(result == null) return NotFound();
+
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new {message = ex.Message});
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new {message = ex.Message});
+            }
+        }
+
         private Guid GetCurrentUserId()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

@@ -27,6 +27,7 @@ namespace Explorea.Server.Repositories.Admin
     public async Task<Activity?> GetByIdAsync(Guid id)
     {
       return await _context.Activities
+        .IgnoreQueryFilters()
         .Include(a => a.Category)
         .Include(a => a.City)
           .ThenInclude(c => c!.Region)

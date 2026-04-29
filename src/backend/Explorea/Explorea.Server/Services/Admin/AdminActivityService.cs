@@ -167,9 +167,56 @@ namespace Explorea.Server.Services.Admin
     {
       throw new NotImplementedException();
     }
-    public Task<AdminActivityDetailsDto?> GetByIdAsync(Guid id, Guid currentUserId)
+    public async Task<AdminActivityDetailsDto?> GetByIdAsync(Guid id, Guid currentUserId)
     {
-      throw new NotImplementedException();
+      var activity = await _repository.GetByIdAsync(id);
+
+      if (activity == null) return null;
+
+      return new AdminActivityDetailsDto
+      {
+        Id = activity.Id,
+
+        CityId = activity.CityId,
+        DestinationId = activity.DestinationId,
+        PlaceId = activity.PlaceId,
+
+        CategoryId = activity.CategoryId,
+        SeasonId = activity.SeasonId,
+        CountryId = activity.CountryId,
+
+        Name = activity.Name,
+        Slug = activity.Slug, 
+        Description = activity.Description,
+
+        Price = activity.Price,
+        DurationMinutes = activity.DurationMinutes,
+
+        DifficultyLevel = activity.DifficultyLevel,
+        DistanceKm = activity.DistanceKm,
+        StartPoint = activity.StartPoint,
+
+        AvgRating = activity.AvgRating,
+        Popularity = activity.Popularity,
+
+        ExtraData = activity.ExtraData,
+
+        Latitude = activity.Latitude,
+        Longitude = activity.Longitude,
+
+        IsFeatured = activity.IsFeatured,
+        IsActive = !activity.IsDeleted,
+
+        OrganizerWebsite = activity.OrganizerWebsite,
+
+        PreviewImageUrl = activity.Images
+          .OrderBy(i => i.SortOrder)
+          .Select(i => i.ImageUrl)
+          .FirstOrDefault(),
+
+        CreatedAt = activity.CreatedAt,
+        UpdatedAt = activity.UpdatedAt
+      };
     }
     public Task<AdminActivityDetailsDto?> UpdateAsync(Guid id, AdminUpdateActivityDto dto, Guid updatedBy)
     {
