@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using Explorea.API.DTOs.Admin.Activity;
 using Explorea.Server.Repositories.Admin.Interfaces;
 using Explorea.Server.Services.Admin.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 
 namespace Explorea.Server.Services.Admin
 {
@@ -159,9 +161,59 @@ namespace Explorea.Server.Services.Admin
 
         return (items, total);
     }
-    public Task<AdminActivityDetailsDto> CreateAsync(AdminCreateActivityDto dto, Guid createdBy)
+    public async Task<AdminActivityDetailsDto> CreateAsync(AdminCreateActivityDto dto, Guid createdBy)
     {
-      throw new NotImplementedException();
+      ValidateCreateDto(dto);
+
+      var now = DateTimeOffset.UtcNow;
+      
+      var activity = new API.Models.Activity
+      {
+        Id = Guid.NewGuid(),
+
+        CityId = dto.CityId,
+        DestinationId = dto.DestinationId,
+        PlaceId = dto.PlaceId,
+        CategoryId = dto.CategoryId,
+        SeasonId = dto.SeasonId,
+        CountryId = dto.CountryId,
+
+        Name = dto.Name.Trim(),
+        Slug = dto.Slug.Trim(),
+        Description = dto.Description?.Trim(),
+
+        Price = dto.Price,
+        DurationMinutes = dto.DurationMinutes,
+
+        DifficultyLevel = dto.DifficultyLevel?.Trim(),
+        DistanceKm = dto.DistanceKm,
+        StartPoint = dto.StartPoint?.Trim(),
+
+        ExtraData = dto.ExtraData,
+
+        Latitude = dto.Latitude,
+        Longitude = dto.Longitude,
+        Location = BuildLocation(dto.Latitude, dto.Longitude),
+
+        Popularity = dto.Popularity,
+        IsFeatured = dto.IsFeatured,
+        IsDeleted = !dto.IsActive,
+        DeletedAt = dto.IsActive ? null : now,
+
+        OrganizerWebsite = dto.OrganizerWebsite?.Trim(),
+
+        CreatedAt = now,
+        UpdatedAt = now,
+        CreatedBy = createdBy,
+        UpdatedBy = createdBy
+      };
+
+      await _repository.AddAsync(activity);
+      await _repository.SaveChangesAsync();
+
+      var created = await GetByIdAsync(activity.Id, createdBy);
+
+      return created!;
     }
     public Task<bool> DeleteAsync(Guid id, Guid currentUserId)
     {
@@ -223,6 +275,23 @@ namespace Explorea.Server.Services.Admin
       throw new NotImplementedException();
     }
 
+    private static void ValidateCreateDto(AdminCreateActivityDto dto)
+    {
+      if(string.IsNullOrWhiteSpace(dto.Name)) throw new ArgumentException("Name is required");
+      if(string.IsNullOrWhiteSpace(dto.Slug)) throw new ArgumentException("Slug is required");
+      if(dto.CategoryId <= 0) throw new ArgumentException("CategoryId is required");
+      if(dto.Price.HasValue && dto.Price.Value < 0) throw new ArgumentException("Price must be greater than or equal to 0");
+      if(dto.DurationMinutes.HasValue && dto.DurationMinutes.Value < 0) throw new ArgumentException("DurationMinutes must be greater than 0");
+      if(dto.Latitude.HasValue ^ dto.Longitude.HasValue) throw new ArgumentException("Latitude and Longitude must be provided together");
+      if(dto.Latitude is < -90 or > 90) throw new ArgumentException("Latitude must be between -90 and 90");
+      if(dto.Longitude is < -180 or > 180) throw new ArgumentException("Longitude must be between -180 and 180");
+    }
+    private static Point? BuildLocation(double? latitude, double? longitude)
+    {
+      if(!latitude.HasValue || !longitude.HasValue) return null;
+
+      return new Point(longitude.Value, latitude.Value) {SRID = 4326};
+    }
     private static void ValidatePagination(int page, int pageSize)
     {
       if (page < 1)
