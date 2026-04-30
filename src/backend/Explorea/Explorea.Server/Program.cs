@@ -108,6 +108,8 @@ builder.Services.AddScoped<ILookupRepository, LookupRepository>();
 builder.Services.AddScoped<ISavedItemRepository, SavedItemRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<ISupportRepository, SupportRepository>();
+builder.Services.AddScoped<IUserSupportService, UserSupportService>();
 builder.Services.AddScoped<IAiBotService, AiBotService>();
 builder.Services.AddScoped<IDestinationRepository, DestinationRepository>();
 builder.Services.AddScoped<IDestinationService, DestinationService>();
