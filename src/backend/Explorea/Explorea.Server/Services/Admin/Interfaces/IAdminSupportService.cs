@@ -21,5 +21,7 @@ namespace Explorea.Server.Services.Admin.Interfaces
             Guid id,
             AdminUpdateSupportTicketStatusDto dto,
             Guid currentUserId);
+
+        Task<SupportTicketDetailDto> EscalateAsync(Guid id, Guid currentUserId);
     }
 }

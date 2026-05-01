@@ -117,6 +117,32 @@ namespace Explorea.Server.Services.Admin
             return MapDetail(updated, includeInternalMessages: true);
         }
 
+        public async Task<SupportTicketDetailDto> EscalateAsync(Guid id, Guid currentUserId)
+        {
+            await EnsureTouristOrganizationAsync(currentUserId);
+
+            var ticket = await _supportRepository.GetTicketDetailAsync(id, includeInternalMessages: true);
+            if (ticket == null || ticket.AssignedToUserId != currentUserId)
+                throw new KeyNotFoundException("Support ticket was not found.");
+
+            if (ticket.Status == SupportTicketStatuses.Closed)
+                throw new InvalidOperationException("Closed support tickets cannot be escalated.");
+
+            var now = DateTimeOffset.UtcNow;
+            ticket.IsEscalated = true;
+            ticket.EscalatedAt ??= now;
+            ticket.EscalatedByUserId ??= currentUserId;
+            ticket.LastActivityAt = now;
+
+            _supportRepository.Update(ticket);
+            await _supportRepository.SaveChangesAsync();
+
+            var updated = await _supportRepository.GetTicketDetailAsync(id, includeInternalMessages: true)
+                ?? throw new InvalidOperationException("Escalated support ticket could not be loaded.");
+
+            return MapDetail(updated, includeInternalMessages: true);
+        }
+
         private async Task EnsureTouristOrganizationAsync(Guid currentUserId)
         {
             var user = await _userRepository.GetByIdWithRoleAsync(currentUserId);
