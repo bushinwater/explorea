@@ -134,6 +134,17 @@ namespace Explorea.Server.Services.Admin
             ticket.EscalatedByUserId ??= currentUserId;
             ticket.LastActivityAt = now;
 
+            await _supportRepository.AddMessageAsync(new SupportMessage
+            {
+                Id = Guid.NewGuid(),
+                TicketId = ticket.Id,
+                SenderUserId = currentUserId,
+                SenderType = SupportSenderTypes.ToAdmin,
+                Content = "Ticket escalated to superadmin.",
+                IsInternal = true,
+                CreatedAt = now
+            });
+
             _supportRepository.Update(ticket);
             await _supportRepository.SaveChangesAsync();
 
