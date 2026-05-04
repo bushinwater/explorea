@@ -63,6 +63,7 @@ namespace Explorea.Server.Data
         public DbSet<BugReport> BugReports { get; set; }
         public DbSet<SupportTicket> SupportTickets { get; set; }
         public DbSet<SupportMessage> SupportMessages { get; set; }
+        public DbSet<ReportTemplate> ReportTemplates { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -290,6 +291,10 @@ namespace Explorea.Server.Data
             modelBuilder.Entity<Place>().HasQueryFilter(p => !p.IsDeleted);
             modelBuilder.Entity<Event>().HasQueryFilter(e => !e.IsDeleted);
             modelBuilder.Entity<Activity>().HasQueryFilter(a => !a.IsDeleted);
+
+            modelBuilder.Entity<ReportTemplate>()
+                .Property(t => t.Parameters)
+                .HasColumnType("jsonb");
         }
     }
 }

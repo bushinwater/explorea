@@ -2,6 +2,8 @@ using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Helpers;
 using Explorea.Server.McpTools;
+using Explorea.Server.Repositories.Admin;
+using Explorea.Server.Repositories.Admin.Interfaces;
 using Explorea.Server.Repositories.Implementations;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services;
@@ -13,6 +15,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,6 +85,9 @@ builder.Services.AddScoped<ISearchPageRepository, SearchPageRepository>();
 builder.Services.AddScoped<IAdminPlaceRepository, AdminPlaceRepository>();
 builder.Services.AddScoped<IAdminPlaceService, AdminPlaceService>();
 
+builder.Services.AddScoped<IAdminActivityRepository, AdminActivityRepository>();
+builder.Services.AddScoped<IAdminActivityService, AdminActivityService>();
+
 builder.Services.AddScoped<IOrganizationAssignmentRepository, OrganizationAssignmentRepository>();
 builder.Services.AddScoped<IOrganizationRegionAssignmentRepository, OrganizationRegionAssignmentRepository>();
 builder.Services.AddScoped<ISubmissionQueueRepository, SubmissionQueueRepository>();
@@ -136,6 +143,8 @@ builder.Services.AddScoped<IAdminReviewService, AdminReviewService>();
 builder.Services.AddScoped<IAdminSupportService, AdminSupportService>();
 builder.Services.AddScoped<ISuperAdminSupportService, SuperAdminSupportService>();
 builder.Services.AddScoped<IPopularityService, PopularityService>();
+builder.Services.AddScoped<IAdminReportRepository, AdminReportRepository>();
+builder.Services.AddScoped<IAdminReportService, AdminReportService>();
 
 builder.Services.AddHttpClient<IChatService, GeminiChatService>();
 
