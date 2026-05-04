@@ -61,6 +61,8 @@ namespace Explorea.Server.Data
         public DbSet<PopularityLog> PopularityLogs { get; set; }
         public DbSet<UserInterestScore> UserInterestScores { get; set; }
         public DbSet<BugReport> BugReports { get; set; }
+        public DbSet<SupportTicket> SupportTickets { get; set; }
+        public DbSet<SupportMessage> SupportMessages { get; set; }
         public DbSet<ReportTemplate> ReportTemplates { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -226,6 +228,61 @@ namespace Explorea.Server.Data
                 .HasOne(q => q.ReviewedByOwner)
                 .WithMany()
                 .HasForeignKey(q => q.ReviewedByOwnerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ---- Support ticket relacije ----
+            modelBuilder.Entity<SupportTicket>()
+                .HasIndex(t => new { t.OwnerUserId, t.LastActivityAt });
+
+            modelBuilder.Entity<SupportTicket>()
+                .HasIndex(t => new { t.AssignedToUserId, t.Status, t.LastActivityAt });
+
+            modelBuilder.Entity<SupportTicket>()
+                .HasIndex(t => new { t.IsEscalated, t.Status, t.Priority, t.LastActivityAt });
+
+            modelBuilder.Entity<SupportTicket>()
+                .HasIndex(t => new { t.LinkedContextType, t.LinkedContextId });
+
+            modelBuilder.Entity<SupportTicket>()
+                .HasOne(t => t.OwnerUser)
+                .WithMany()
+                .HasForeignKey(t => t.OwnerUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SupportTicket>()
+                .HasOne(t => t.AssignedToUser)
+                .WithMany()
+                .HasForeignKey(t => t.AssignedToUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<SupportTicket>()
+                .HasOne(t => t.CreatedByAdmin)
+                .WithMany()
+                .HasForeignKey(t => t.CreatedByAdminId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SupportTicket>()
+                .HasOne(t => t.EscalatedByUser)
+                .WithMany()
+                .HasForeignKey(t => t.EscalatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<SupportMessage>()
+                .HasIndex(m => new { m.TicketId, m.CreatedAt });
+
+            modelBuilder.Entity<SupportMessage>()
+                .HasIndex(m => new { m.TicketId, m.IsInternal, m.CreatedAt });
+
+            modelBuilder.Entity<SupportMessage>()
+                .HasOne(m => m.Ticket)
+                .WithMany(t => t.Messages)
+                .HasForeignKey(m => m.TicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SupportMessage>()
+                .HasOne(m => m.SenderUser)
+                .WithMany()
+                .HasForeignKey(m => m.SenderUserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // ---- Soft delete global query filter ----
