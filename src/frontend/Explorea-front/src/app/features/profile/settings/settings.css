@@ -177,6 +177,21 @@ a.nav-card {
   border-color: var(--color-primary);
 }
 
+.nav-card--admin {
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
+}
+
+.nav-card--admin:hover {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+}
+
+.accordion-icon--admin {
+  background: var(--color-primary);
+  color: #fff;
+}
+
 .nav-arrow {
   color: var(--color-text-secondary);
   flex-shrink: 0;

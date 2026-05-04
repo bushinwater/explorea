@@ -62,6 +62,17 @@
 
       <!-- NAV CARDS: Sačuvano / Moje recenzije -->
       <div class="nav-cards">
+        <a class="nav-card nav-card--admin" routerLink="/admin" *ngIf="isAdminUser">
+          <div class="accordion-icon accordion-icon--admin">
+            <span class="material-icons">admin_panel_settings</span>
+          </div>
+          <div class="accordion-info">
+            <strong>Admin panel</strong>
+            <span>Upravljanje platformom</span>
+          </div>
+          <span class="material-icons nav-arrow">chevron_right</span>
+        </a>
+
         <a class="nav-card" routerLink="/saved">
           <div class="accordion-icon">
             <span class="material-icons">bookmark</span>

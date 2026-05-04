@@ -72,6 +72,11 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
   reviewsLoading = false;
   currentUserId = '';
 
+  get isAdminUser(): boolean {
+    const role = this.authService.getRole();
+    return role === 'super_admin' || role === 'tourist_organization' || role === 'place_owner';
+  }
+
   get isDirty(): boolean {
     return this.firstName !== this.originalFirstName || this.lastName !== this.originalLastName;
   }

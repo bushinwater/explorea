@@ -309,6 +309,7 @@ namespace Explorea.Server.Services
             "3. Ako `get_destination_details` vrati grešku, pokušaj ponovo sa `search` da pronađes tacan slug.\n" +
             "4. Kada korisnik pita šta ima u blizini, blizu njega, u okolini ili na kom mestu da ide - koristi `get_nearby` sa korisnikovom lokacijom.\n" +
             "5. Za opšta pitanja o aktivnostima/mestima/dogadjajima bez specificnog mesta - koristi `get_activities`, `get_places`, `get_upcoming_events`.\n" +
+            "6. Kada korisnik pita o popularnim, preporucenim ili najboljim destinacijama bez specificnog naziva i bez GPS lokacije - pozovi `search` sa kljucnom recju 'destinacija' da vidis sta je dostupno, pa preporuci nekoliko.\n" +
 
             "FORMAT ODGOVORA:\n" +
             "- Odgovaraj kratko i konkretno.\n" +
