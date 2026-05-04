@@ -14,6 +14,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -132,6 +134,8 @@ builder.Services.AddScoped<IAdminEventService, AdminEventService>();
 builder.Services.AddScoped<IAdminReviewRepository, AdminReviewRepository>();
 builder.Services.AddScoped<IAdminReviewService, AdminReviewService>();
 builder.Services.AddScoped<IPopularityService, PopularityService>();
+builder.Services.AddScoped<IAdminReportRepository, AdminReportRepository>();
+builder.Services.AddScoped<IAdminReportService, AdminReportService>();
 
 builder.Services.AddHttpClient<IChatService, GeminiChatService>();
 
