@@ -454,4 +454,44 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       }),
     );
   }
+
+  protected selectedCategoryLabel(): string {
+    const value = this.filters().category;
+
+    if (value === 'all') return '';
+
+    return this.categories.find((category) => category.value === value)?.label ?? value;
+  }
+
+  protected selectedStatusLabel(): string {
+    const value = this.filters().status;
+
+    if (value === 'all') return '';
+
+    return this.statuses.find((status) => status.value === value)?.label ?? value;
+  }
+
+  protected selectedDifficultyLabel(): string {
+    const value = this.filters().difficulty;
+
+    if (value === 'all') return '';
+
+    return this.difficulties.find((difficulty) => difficulty.value === value)?.label ?? value;
+  }
+
+  protected selectedRatingLabel(): string {
+    const value = this.filters().minRating;
+
+    if (value === 'all') return '';
+
+    return this.ratingOptions.find((rating) => rating.value === value)?.label ?? `${value}+`;
+  }
+
+  protected selectedRegionLabel(): string {
+    const value = this.filters().region;
+
+    if (value === 'all') return '';
+
+    return value;
+  }
 }

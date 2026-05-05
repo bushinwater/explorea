@@ -243,6 +243,9 @@
   "activities.actions.edit": "Edit",
   "activities.actions.delete": "Delete",
 
+  "activities.activeFilters.label": "Active filters",
+  "activities.activeFilters.clearAll": "Clear all",
+
   "activities.delete.title": "Delete activity",
   "activities.delete.description": "Are you sure you want to delete “{name}”?",
   "activities.delete.confirm": "Delete",

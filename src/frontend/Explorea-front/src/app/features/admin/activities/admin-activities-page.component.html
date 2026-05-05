@@ -164,6 +164,54 @@
       </div>
     </div>
 
+    <!-- Active filters -->
+    @if (activeFilterCount() > 0) {
+    <div class="activity-active-filters">
+      <span class="activity-active-filters__label">
+        {{ ui.t('activities.activeFilters.label') }}
+      </span>
+
+      @if (filters().category !== 'all') {
+      <button class="activity-active-filter" type="button" (click)="applyCategory('all')">
+        {{ selectedCategoryLabel() }}
+        <span class="material-icons">close</span>
+      </button>
+      }
+
+      @if (filters().status !== 'all') {
+      <button class="activity-active-filter" type="button" (click)="applyStatus('all')">
+        {{ selectedStatusLabel() }}
+        <span class="material-icons">close</span>
+      </button>
+      }
+
+      @if (filters().difficulty !== 'all') {
+      <button class="activity-active-filter" type="button" (click)="applyDifficulty('all')">
+        {{ selectedDifficultyLabel() }}
+        <span class="material-icons">close</span>
+      </button>
+      }
+
+      @if (filters().minRating !== 'all') {
+      <button class="activity-active-filter" type="button" (click)="applyMinRating('all')">
+        {{ selectedRatingLabel() }}
+        <span class="material-icons">close</span>
+      </button>
+      }
+
+      @if (filters().region !== 'all') {
+      <button class="activity-active-filter" type="button" (click)="applyRegion('all')">
+        {{ selectedRegionLabel() }}
+        <span class="material-icons">close</span>
+      </button>
+      }
+
+      <button class="activity-active-filters__reset" type="button" (click)="resetFilters()">
+        {{ ui.t('activities.activeFilters.clearAll') }}
+      </button>
+    </div>
+    }
+
     <!-- Table -->
     <div class="activity-table-wrap">
       @if (isLoading()) {
@@ -295,141 +343,128 @@
   </div>
 
   @if (isDetailsPanelOpen()) {
-    <div class="activity-details-backdrop" (click)="closeDetailsPanel()"></div>
+  <div class="activity-details-backdrop" (click)="closeDetailsPanel()"></div>
 
-    @if (selectedActivity(); as activity) {
-      <aside class="activity-details-panel" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-      <div class="activity-details-panel__header">
-        <div class="activity-details-panel__title-group">
-          <div class="activity-details-panel__icon" [style.background-color]="thumbColor(activity.category)">
-            <span class="material-icons">{{ categoryIcon(activity.category) }}</span>
-          </div>
-
-          <div>
-            <h3 class="activity-details-panel__title">{{ activity.name }}</h3>
-            <p class="activity-details-panel__subtitle">
-              {{ activity.region }} / {{ activity.city }}
-            </p>
-          </div>
+  @if (selectedActivity(); as activity) {
+  <aside class="activity-details-panel" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <div class="activity-details-panel__header">
+      <div class="activity-details-panel__title-group">
+        <div class="activity-details-panel__icon" [style.background-color]="thumbColor(activity.category)">
+          <span class="material-icons">{{ categoryIcon(activity.category) }}</span>
         </div>
 
-        <button class="activity-details-panel__close" type="button" (click)="closeDetailsPanel()">
-          <span class="material-icons">close</span>
-        </button>
-      </div>
-
-      <div class="activity-details-panel__body">
-        <div class="activity-details-panel__badges">
-          <span class="activity-status activity-status--{{ activity.status }}">
-            {{ statusLabel(activity.status) }}
-          </span>
-
-          <span class="activity-difficulty activity-difficulty--{{ activity.difficulty }}">
-            {{ difficultyLabel(activity.difficulty) }}
-          </span>
-        </div>
-
-        <p class="activity-details-panel__description">
-          {{ activity.shortDescription }}
-        </p>
-
-        <div class="activity-details-grid">
-          <div class="activity-details-item">
-            <span class="activity-details-item__label">Kategorija</span>
-            <strong class="activity-details-item__value">
-              {{ categoryLabel(activity.category) }}
-            </strong>
-          </div>
-
-          <div class="activity-details-item">
-            <span class="activity-details-item__label">Ocena</span>
-            <strong class="activity-details-item__value">
-              {{ formatRating(activity.rating) }} / 5
-              <span class="activity-details-item__muted">({{ activity.reviewCount }})</span>
-            </strong>
-          </div>
-
-          <div class="activity-details-item">
-            <span class="activity-details-item__label">Trajanje</span>
-            <strong class="activity-details-item__value">
-              {{ formatDuration(activity.durationMinutes) }}
-            </strong>
-          </div>
-
-          <div class="activity-details-item">
-            <span class="activity-details-item__label">Pregledi</span>
-            <strong class="activity-details-item__value">
-              {{ formatViews(activity.views) }}
-            </strong>
-          </div>
-
-          <div class="activity-details-item">
-            <span class="activity-details-item__label">Cena</span>
-            <strong class="activity-details-item__value">
-              {{ activity.price === null ? 'Besplatno' : activity.price + ' RSD' }}
-            </strong>
-          </div>
-
-          <div class="activity-details-item">
-            <span class="activity-details-item__label">Kapacitet</span>
-            <strong class="activity-details-item__value">
-              {{ activity.maxCapacity === null ? 'Nije ograničeno' : activity.maxCapacity + ' osoba' }}
-            </strong>
-          </div>
-
-          <div class="activity-details-item activity-details-item--full">
-            <span class="activity-details-item__label">Poslednja izmena</span>
-            <strong class="activity-details-item__value">
-              {{ timeAgo(activity.lastUpdatedAt) }}
-            </strong>
-          </div>
+        <div>
+          <h3 class="activity-details-panel__title">{{ activity.name }}</h3>
+          <p class="activity-details-panel__subtitle">
+            {{ activity.region }} / {{ activity.city }}
+          </p>
         </div>
       </div>
 
-      <div class="activity-details-panel__footer">
-        @if (activity.status === 'pending' || activity.status === 'rejected') {
-          <button
-            class="btn btn-primary btn-sm"
-            type="button"
-            [disabled]="isUpdatingStatus()"
-            (click)="approveSelectedActivity()"
-          >
-            <span class="material-icons">check</span>
-            Odobri
-          </button>
-        }
+      <button class="activity-details-panel__close" type="button" (click)="closeDetailsPanel()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
 
-        @if (activity.status === 'active') {
-          <button
-            class="btn btn-ghost btn-sm activity-details-panel__danger"
-            type="button"
-            [disabled]="isUpdatingStatus()"
-            (click)="deactivateSelectedActivity()"
-          >
-            <span class="material-icons">block</span>
-            Deaktiviraj
-          </button>
-        }
+    <div class="activity-details-panel__body">
+      <div class="activity-details-panel__badges">
+        <span class="activity-status activity-status--{{ activity.status }}">
+          {{ statusLabel(activity.status) }}
+        </span>
 
-        <button class="btn btn-ghost btn-sm" type="button" (click)="closeDetailsPanel()">
-          Otkaži
-        </button>
+        <span class="activity-difficulty activity-difficulty--{{ activity.difficulty }}">
+          {{ difficultyLabel(activity.difficulty) }}
+        </span>
       </div>
-    </aside>
-    }
+
+      <p class="activity-details-panel__description">
+        {{ activity.shortDescription }}
+      </p>
+
+      <div class="activity-details-grid">
+        <div class="activity-details-item">
+          <span class="activity-details-item__label">Kategorija</span>
+          <strong class="activity-details-item__value">
+            {{ categoryLabel(activity.category) }}
+          </strong>
+        </div>
+
+        <div class="activity-details-item">
+          <span class="activity-details-item__label">Ocena</span>
+          <strong class="activity-details-item__value">
+            {{ formatRating(activity.rating) }} / 5
+            <span class="activity-details-item__muted">({{ activity.reviewCount }})</span>
+          </strong>
+        </div>
+
+        <div class="activity-details-item">
+          <span class="activity-details-item__label">Trajanje</span>
+          <strong class="activity-details-item__value">
+            {{ formatDuration(activity.durationMinutes) }}
+          </strong>
+        </div>
+
+        <div class="activity-details-item">
+          <span class="activity-details-item__label">Pregledi</span>
+          <strong class="activity-details-item__value">
+            {{ formatViews(activity.views) }}
+          </strong>
+        </div>
+
+        <div class="activity-details-item">
+          <span class="activity-details-item__label">Cena</span>
+          <strong class="activity-details-item__value">
+            {{ activity.price === null ? 'Besplatno' : activity.price + ' RSD' }}
+          </strong>
+        </div>
+
+        <div class="activity-details-item">
+          <span class="activity-details-item__label">Kapacitet</span>
+          <strong class="activity-details-item__value">
+            {{ activity.maxCapacity === null ? 'Nije ograničeno' : activity.maxCapacity + ' osoba' }}
+          </strong>
+        </div>
+
+        <div class="activity-details-item activity-details-item--full">
+          <span class="activity-details-item__label">Poslednja izmena</span>
+          <strong class="activity-details-item__value">
+            {{ timeAgo(activity.lastUpdatedAt) }}
+          </strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="activity-details-panel__footer">
+      @if (activity.status === 'pending' || activity.status === 'rejected') {
+      <button class="btn btn-primary btn-sm" type="button" [disabled]="isUpdatingStatus()"
+        (click)="approveSelectedActivity()">
+        <span class="material-icons">check</span>
+        Odobri
+      </button>
+      }
+
+      @if (activity.status === 'active') {
+      <button class="btn btn-ghost btn-sm activity-details-panel__danger" type="button" [disabled]="isUpdatingStatus()"
+        (click)="deactivateSelectedActivity()">
+        <span class="material-icons">block</span>
+        Deaktiviraj
+      </button>
+      }
+
+      <button class="btn btn-ghost btn-sm" type="button" (click)="closeDetailsPanel()">
+        Otkaži
+      </button>
+    </div>
+  </aside>
+  }
   }
 </div>
 
 <!-- ===== DELETE CONFIRM DIALOG ===== -->
 @if (isDeleteDialogOpen()) {
-  <app-confirm-dialog 
-    [title]="ui.t('activities.delete.title')" 
-    [description]="ui.t('activities.delete.description', { name: selectedActivity()?.name ?? '' })" 
-    [confirmLabel]="ui.t('activities.delete.confirm')" 
-    [cancelLabel]="ui.t('activities.delete.cancel')"
-    [loadingLabel]="ui.t('activities.delete.loading')" 
-    [isLoading]="isDeleting()" 
-    (cancel)="closeDeleteDialog()"
-    (confirm)="confirmDelete()"
-  ></app-confirm-dialog>
+<app-confirm-dialog [title]="ui.t('activities.delete.title')"
+  [description]="ui.t('activities.delete.description', { name: selectedActivity()?.name ?? '' })"
+  [confirmLabel]="ui.t('activities.delete.confirm')" [cancelLabel]="ui.t('activities.delete.cancel')"
+  [loadingLabel]="ui.t('activities.delete.loading')" [isLoading]="isDeleting()" (cancel)="closeDeleteDialog()"
+  (confirm)="confirmDelete()"></app-confirm-dialog>
 }

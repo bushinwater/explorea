@@ -243,6 +243,9 @@
   "activities.actions.edit": "Izmeni",
   "activities.actions.delete": "Obriši",
 
+  "activities.activeFilters.label": "Aktivni filteri",
+  "activities.activeFilters.clearAll": "Resetuj sve",
+
   "activities.delete.title": "Brisanje aktivnosti",
   "activities.delete.description": "Da li sigurno želiš da obrišeš aktivnost „{name}”?",
   "activities.delete.confirm": "Obriši",
