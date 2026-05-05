@@ -17,6 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: 'dashboard',      labelKey: 'sidebar.dashboard',    route: '/admin/dashboard',    roles: ['super_admin', 'tourist_organization', 'place_owner'] },
   { icon: 'people',         labelKey: 'sidebar.users',        route: '/admin/users',        roles: ['super_admin'] },
   { icon: 'location_on',    labelKey: 'sidebar.destinations', route: '/admin/destinations', roles: ['super_admin', 'tourist_organization'] },
+  { icon: 'hiking',         labelKey: 'sidebar.activities',   route: '/admin/activities',   roles: ['super_admin', 'tourist_organization'] },
   { icon: 'map',            labelKey: 'sidebar.map',          route: '/admin/map-view',     roles: ['super_admin', 'tourist_organization'] },
   { icon: 'star',           labelKey: 'sidebar.reviews',      route: '/admin/reviews',      roles: ['super_admin', 'tourist_organization'] },
   { icon: 'bar_chart',      labelKey: 'sidebar.reports',      route: '/admin/reports',      roles: ['super_admin', 'tourist_organization'] },

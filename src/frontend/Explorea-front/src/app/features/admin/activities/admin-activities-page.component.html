@@ -1,0 +1,288 @@
+<!-- ===== FEEDBACK BANNERS ===== -->
+@if (successMessage()) {
+<app-feedback-banner variant="info" [title]="successMessage()" />
+}
+@if (errorMessage()) {
+<app-feedback-banner variant="error" [title]="errorMessage()" />
+}
+
+<div class="activity-page">
+  <!-- ===== STATS ROW ===== -->
+  <div class="activity-stats">
+    <app-stat-card [label]="ui.t('activities.stats.totalActivities')" [value]="stats()?.totalActivities ?? 0"
+      [trend]="stats()?.totalActivitiesTrend ?? ''" />
+
+    <app-stat-card [label]="ui.t('activities.stats.pending')" [value]="stats()?.pendingCount ?? 0"
+      [hint]="stats()?.pendingHint ?? ''" tone="neutral" />
+
+    <app-stat-card [label]="ui.t('activities.stats.averageRating')" [value]="formatRating(stats()?.averageRating ?? 0)"
+      [hint]="stats()?.averageRatingHint ?? ''" />
+
+    <app-stat-card [label]="ui.t('activities.stats.monthlyViews')" [value]="formatBigNumber(stats()?.monthlyViews ?? 0)"
+      [trend]="stats()?.monthlyViewsTrend ?? ''" />
+  </div>
+
+  <!-- ===== MAIN TABLE CARD ===== -->
+  <div class="activity-card">
+    <!-- Card header -->
+    <div class="activity-card__header">
+      <div class="activity-card__title-group">
+        <div class="activity-card__title-row">
+          <span class="material-icons activity-card__title-icon">location_on</span>
+          <h2 class="activity-card__title">{{ ui.t('activities.title') }}</h2>
+        </div>
+        <p class="activity-card__subtitle">{{ ui.t('activities.subtitle') }}</p>
+      </div>
+
+      <div class="activity-card__actions">
+        <!-- Search -->
+        <div class="activity-search-wrap">
+          <span class="material-icons activity-search-wrap__icon">search</span>
+          <input class="activity-search" type="search" [placeholder]="ui.t('activities.search.placeholder')"
+            [value]="filters().search" (input)="updateSearch($any($event.target).value)" />
+        </div>
+
+        <!-- Filter button -->
+        <div class="activity-filter-wrap">
+          <button class="btn btn-ghost btn-sm activity-filter-btn"
+            [class.activity-filter-btn--active]="activeFilterCount() > 0"
+            (click)="isFilterOpen.set(!isFilterOpen()); $event.stopPropagation()">
+            <span class="material-icons">filter_list</span>
+            {{ ui.t('activities.filter.btn') }}
+            @if (activeFilterCount() > 0) {
+            <span class="activity-filter-badge">{{ activeFilterCount() }}</span>
+            }
+          </button>
+
+          <!-- Filter panel -->
+          @if (isFilterOpen()) {
+          <div class="activity-filter-panel" (click)="$event.stopPropagation()">
+            <div class="activity-filter-panel__header">
+              <span class="activity-filter-panel__title">{{
+                ui.t('activities.filter.title')
+                }}</span>
+              @if (activeFilterCount() > 0) {
+              <button class="activity-filter-panel__reset" (click)="resetFilters()">
+                {{ ui.t('activities.filter.reset') }}
+              </button>
+              }
+            </div>
+
+            <!-- Category filter -->
+            <div class="activity-filter-section">
+              <label class="activity-filter-section__label">{{
+                ui.t('activities.filter.category')
+                }}</label>
+              <div class="activity-filter-chips">
+                @for (cat of categories; track cat.value) {
+                <button class="activity-chip" [class.activity-chip--active]="filters().category === cat.value"
+                  (click)="applyCategory(cat.value)">
+                  {{ cat.label }}
+                </button>
+                }
+              </div>
+            </div>
+
+            <!-- Status filter -->
+            <div class="activity-filter-section">
+              <label class="activity-filter-section__label">{{
+                ui.t('activities.filter.status')
+                }}</label>
+              <div class="activity-filter-chips">
+                @for (s of statuses; track s.value) {
+                <button class="activity-chip" [class.activity-chip--active]="filters().status === s.value"
+                  (click)="applyStatus(s.value)">
+                  {{ s.label }}
+                </button>
+                }
+              </div>
+            </div>
+
+            <!-- Region filter (super admin only) -->
+            @if (isSuperAdmin()) {
+            <div class="activity-filter-section">
+              <label class="activity-filter-section__label">{{
+                ui.t('activities.filter.region')
+                }}</label>
+              <div class="activity-filter-chips">
+                <button class="activity-chip" [class.activity-chip--active]="filters().region === 'all'"
+                  (click)="applyRegion('all')">
+                  {{ ui.t('activities.filter.allRegions') }}
+                </button>
+                @for (r of regions(); track r) {
+                <button class="activity-chip" [class.activity-chip--active]="filters().region === r"
+                  (click)="applyRegion(r)">
+                  {{ r }}
+                </button>
+                }
+              </div>
+            </div>
+            }
+          </div>
+          <div class="activity-filter-backdrop" (click)="isFilterOpen.set(false)"></div>
+          }
+        </div>
+
+        <!-- Add new -->
+        <button class="btn btn-primary btn-sm">
+          <span class="material-icons">add</span>
+          {{ ui.t('activities.addNew') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="activity-table-wrap">
+      @if (isLoading()) {
+      <app-table-skeleton [rows]="7" />
+      } @else if (!activities().length) {
+      <app-empty-state [title]="ui.t('activities.empty.title')" [description]="ui.t('activities.empty.description')" />
+      } @else {
+      <table class="activity-table">
+        <thead>
+          <tr>
+            <th class="activity-th">{{ ui.t('activities.table.activity') }}</th>
+            <th class="activity-th">{{ ui.t('activities.table.category') }}</th>
+            <th class="activity-th">{{ ui.t('activities.table.location') }}</th>
+            <th class="activity-th activity-th--center">{{ ui.t('activities.table.rating') }}</th>
+            <th class="activity-th">{{ ui.t('activities.table.difficulty') }}</th>
+            <th class="activity-th">{{ ui.t('activities.table.status') }}</th>
+            <th class="activity-th"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (activity of activities(); track activity.id) {
+          <tr class="activity-row">
+            <td class="activity-td">
+              <div class="activity-name-cell">
+                <div class="activity-thumb" [style.background-color]="thumbColor(activity.category)">
+                  <span class="material-icons activity-thumb__icon">
+                    {{ categoryIcon(activity.category) }}</span>
+                </div>
+
+                <div class="activity-name-info">
+                  <span class="activity-name-info__name">{{ activity.name }}</span>
+                  <span class="activity-name-info__location">
+                    <span class="material-icons">schedule</span>
+                    {{ formatDuration(activity.durationMinutes) }}
+                  </span>
+                </div>
+              </div>
+            </td>
+
+            <td class="activity-td">
+              <div class="activity-category">
+                <span class="material-icons activity-category__icon">{{
+                  categoryIcon(activity.category)
+                  }}</span>
+                {{ categoryLabel(activity.category) }}
+              </div>
+            </td>
+
+            <td class="activity-td">
+              <div class="activity-updated">
+                <span class="material-icons">location_on</span>
+                {{ activity.region }} / {{ activity.city }}
+              </div>
+            </td>
+
+            <td class="activity-td activity-td--center">
+              <div class="activity-rating">
+                <span class="material-icons">star</span>
+                {{ formatRating(activity.rating) }}
+                <span class="activity-rating__count">({{ activity.reviewCount }})</span>
+              </div>
+            </td>
+
+            <td class="activity-td">
+              <span class="activity-difficulty activity-difficulty--{{ activity.difficulty }}">
+                {{ difficultyLabel(activity.difficulty) }}
+              </span>
+            </td>
+
+            <!-- Status -->
+            <td class="activity-td">
+              <span class="activity-status activity-status--{{ activity.status }}">
+                {{ statusLabel(activity.status) }}
+              </span>
+            </td>
+
+            <!-- Views -->
+            <td class="activity-td activity-td--right">
+              <div class="activity-views">
+                <span class="material-icons">visibility</span>
+                {{ formatViews(activity.views) }}
+              </div>
+            </td>
+
+            <!-- Last updated -->
+            <td class="activity-td">
+              <div class="activity-updated">
+                <span class="material-icons">calendar_today</span>
+                {{ timeAgo(activity.lastUpdatedAt) }}
+              </div>
+            </td>
+
+            <!-- Actions -->
+            <td class="activity-td activity-td--actions">
+              <div class="row-menu-wrap">
+                <button class="activity-menu-btn" (click)="toggleMenu(activity.id, $event)"
+                  [title]="ui.t('activities.actions.label')">
+                  <span class="material-icons">more_vert</span>
+                </button>
+                @if (activeMenuId() === activity.id) {
+                <div class="activity-menu-dropdown">
+                  <button class="activity-menu-item">
+                    <span class="material-icons">edit</span>
+                    {{ ui.t('activities.actions.edit') }}
+                  </button>
+                  <button class="activity-menu-item activity-menu-item--danger" (click)="openDeleteDialog(activity)">
+                    <span class="material-icons">delete</span>
+                    {{ ui.t('activities.actions.delete') }}
+                  </button>
+                </div>
+                }
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+      }
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1 || total() > 0) {
+    <div class="activity-pagination">
+      <span class="activity-pagination__info">{{ visibleRangeText() }}</span>
+      <div class="activity-pagination__pages">
+        <button class="activity-page-btn activity-page-btn--nav" [disabled]="currentPage() <= 1"
+          (click)="goToPage(currentPage() - 1)">
+          <span class="material-icons">chevron_left</span>
+        </button>
+
+        @for (page of pageNumbers(); track page) {
+        <button class="activity-page-btn" [class.activity-page-btn--active]="page === currentPage()"
+          (click)="goToPage(page)">
+          {{ page }}
+        </button>
+        }
+
+        <button class="activity-page-btn activity-page-btn--nav" [disabled]="currentPage() >= totalPages()"
+          (click)="goToPage(currentPage() + 1)">
+          <span class="material-icons">chevron_right</span>
+        </button>
+      </div>
+    </div>
+    }
+  </div>
+</div>
+
+<!-- ===== DELETE CONFIRM DIALOG ===== -->
+@if (isDeleteDialogOpen()) {
+<app-confirm-dialog [title]="ui.t('activities.delete.title')" [description]="
+      ui.t('activities.delete.description', { name: selectedActivity()?.name ?? '' })
+    " [confirmLabel]="ui.t('activities.delete.confirm')" [cancelLabel]="ui.t('activities.delete.cancel')"
+  [loadingLabel]="ui.t('activities.delete.loading')" [isLoading]="isDeleting()" (cancel)="closeDeleteDialog()"
+  (confirm)="confirmDelete()"></app-confirm-dialog>
+}

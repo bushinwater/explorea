@@ -205,5 +205,47 @@
   "destinations.delete.description": "Da li ste sigurni da želite da uklonite {name}? Ova akcija se ne može poništiti.",
   "destinations.delete.confirm": "Ukloni",
   "destinations.delete.cancel": "Otkaži",
-  "destinations.delete.loading": "Uklanjanje..."
+  "destinations.delete.loading": "Uklanjanje...",
+
+  "sidebar.activities": "Aktivnosti",
+
+  "activities.title": "Aktivnosti",
+  "activities.subtitle": "Pregled i upravljanje aktivnostima",
+  "activities.addNew": "Dodaj novu",
+  "activities.search.placeholder": "Pretraži aktivnosti...",
+
+  "activities.stats.totalActivities": "Ukupne aktivnosti",
+  "activities.stats.pending": "Zahtevi na čekanju",
+  "activities.stats.averageRating": "Prosečna ocena",
+  "activities.stats.monthlyViews": "Mesečni pregledi",
+
+  "activities.filter.btn": "Filter",
+  "activities.filter.title": "Filteri",
+  "activities.filter.reset": "Resetuj",
+  "activities.filter.category": "Kategorija",
+  "activities.filter.status": "Status",
+  "activities.filter.region": "Regija",
+  "activities.filter.allRegions": "Sve regije",
+  "activities.filter.difficulty": "Težina",
+  "activities.filter.rating": "Ocena",
+
+  "activities.table.activity": "Aktivnost",
+  "activities.table.category": "Kategorija",
+  "activities.table.location": "Regija / Lokacija",
+  "activities.table.rating": "Ocena",
+  "activities.table.difficulty": "Težina",
+  "activities.table.status": "Status",
+
+  "activities.empty.title": "Nema aktivnosti",
+  "activities.empty.description": "Nema aktivnosti za zadate filtere.",
+
+  "activities.actions.label": "Akcije",
+  "activities.actions.edit": "Izmeni",
+  "activities.actions.delete": "Obriši",
+
+  "activities.delete.title": "Brisanje aktivnosti",
+  "activities.delete.description": "Da li sigurno želiš da obrišeš aktivnost „{name}”?",
+  "activities.delete.confirm": "Obriši",
+  "activities.delete.cancel": "Otkaži",
+  "activities.delete.loading": "Brisanje..."
 }

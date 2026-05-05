@@ -6,6 +6,7 @@ import { guestGuard } from './core/guards/guest-guard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
 import { Dashboard } from './features/admin/dashboard/dashboard';
 import { AdminDestinationsPageComponent } from './features/admin/destinations/admin-destinations-page.component';
+import { AdminActivitiesPageComponent } from './features/admin/activities/admin-activities-page.component';
 import { AdminHomePageComponent } from './features/admin/home/admin-home-page.component';
 import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-shell.component';
 import { UserDirectoryPageComponent } from './features/admin/users/user-directory-page.component';
@@ -56,6 +57,7 @@ export const routes: Routes = [
       { path: 'dashboard', component: Dashboard },
       { path: 'map-view', component: AdminHomePageComponent },
       { path: 'destinations', component: AdminDestinationsPageComponent },
+      { path: 'activities', component: AdminActivitiesPageComponent },
       { path: 'reviews', component: AdminHomePageComponent },
       { path: 'reports', component: AdminHomePageComponent },
       { path: 'settings', component: AdminHomePageComponent },

@@ -205,5 +205,47 @@
   "destinations.delete.description": "Are you sure you want to remove {name}? This action cannot be undone.",
   "destinations.delete.confirm": "Remove",
   "destinations.delete.cancel": "Cancel",
-  "destinations.delete.loading": "Removing..."
+  "destinations.delete.loading": "Removing...",
+
+  "sidebar.activities": "Activities",
+
+  "activities.title": "Activities",
+  "activities.subtitle": "Review and manage activities",
+  "activities.addNew": "Add New",
+  "activities.search.placeholder": "Search activities...",
+
+  "activities.stats.totalActivities": "Total activities",
+  "activities.stats.pending": "Pending requests",
+  "activities.stats.averageRating": "Average rating",
+  "activities.stats.monthlyViews": "Monthly views",
+
+  "activities.filter.btn": "Filter",
+  "activities.filter.title": "Filters",
+  "activities.filter.reset": "Reset",
+  "activities.filter.category": "Category",
+  "activities.filter.status": "Status",
+  "activities.filter.region": "Region",
+  "activities.filter.allRegions": "All regions",
+  "activities.filter.difficulty": "Difficulty",
+  "activities.filter.rating": "Rating",
+
+  "activities.table.activity": "Activity",
+  "activities.table.category": "Category",
+  "activities.table.location": "Region / Location",
+  "activities.table.rating": "Rating",
+  "activities.table.difficulty": "Difficulty",
+  "activities.table.status": "Status",
+
+  "activities.empty.title": "No activities",
+  "activities.empty.description": "There are no activities for the selected filters.",
+
+  "activities.actions.label": "Actions",
+  "activities.actions.edit": "Edit",
+  "activities.actions.delete": "Delete",
+
+  "activities.delete.title": "Delete activity",
+  "activities.delete.description": "Are you sure you want to delete “{name}”?",
+  "activities.delete.confirm": "Delete",
+  "activities.delete.cancel": "Cancel",
+  "activities.delete.loading": "Deleting..."
 }
