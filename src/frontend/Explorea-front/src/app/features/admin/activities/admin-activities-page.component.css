@@ -35,59 +35,6 @@
   }
 }
 
-/* 4th stat card — sparkline variant */
-.activity-stat-chart {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-
-  min-height: unset;
-  padding: 14px 14px 12px 18px;
-  gap: 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  background:
-    radial-gradient(circle at top right, rgba(60, 104, 76, 0.16), transparent 34%),
-    linear-gradient(180deg, rgba(27, 40, 31, 0.92), rgba(21, 31, 24, 0.96));
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
-}
-
-.activity-stat-chart__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.activity-stat-chart__label {
-  margin: 0;
-  font-size: 0.78rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-text-primary);
-  opacity: 0.9;
-}
-
-.activity-stat-chart__icon {
-  font-size: 18px;
-  color: var(--color-primary);
-  opacity: 0.8;
-}
-
-.activity-stat-chart__svg {
-  width: 100%;
-  height: 40px;
-  flex-shrink: 0;
-}
-
-:host-context([data-theme='light']) .activity-stat-chart {
-  background:
-    radial-gradient(circle at top right, rgba(40, 105, 76, 0.1), transparent 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(243, 247, 245, 1));
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-}
-
 /* ===== MAIN CARD ===== */
 .activity-card {
   background: var(--color-surface);
@@ -446,29 +393,6 @@
   color: #ef4444;
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-/* Sparkline */
-.activity-sparkline {
-  width: 80px;
-  height: 32px;
-  display: block;
-  margin: 0 auto;
-}
-
-/* Views */
-.activity-views {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  justify-content: flex-end;
-}
-
-.activity-views .material-icons {
-  font-size: 15px;
-  color: var(--color-text-muted);
 }
 
 /* Updated */

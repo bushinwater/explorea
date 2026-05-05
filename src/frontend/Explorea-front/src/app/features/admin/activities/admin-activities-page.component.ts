@@ -107,7 +107,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     { value: 'rejected', label: 'Odbijeno' },
   ];
 
-  protected readonly difficulties: Array<{}> = [
+  protected readonly difficulties: Array<{ value: ActivityDifficulty | 'all'; label: string }> = [
     { value: 'all', label: 'Sve težine' },
     { value: 'easy', label: 'Easy' },
     { value: 'medium', label: 'Medium' },
@@ -201,9 +201,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.activeMenuId.update((current) => (current === id ? null : id));
   }
 
-  protected openDeleteDialog(dest: ActivityRow): void {
+  protected openDeleteDialog(activity: ActivityRow): void {
     this.activeMenuId.set(null);
-    this.selectedActivity.set(dest);
+    this.selectedActivity.set(activity);
     this.isDeleteDialogOpen.set(true);
   }
 
@@ -214,31 +214,27 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   protected confirmDelete(): void {
-    const dest = this.selectedActivity();
-    if (!dest) return;
+    const activity = this.selectedActivity();
+    if (!activity) return;
 
     this.isDeleting.set(true);
 
     this.subscription.add(
-      this.activitiesService.deleteActivity(dest.id).subscribe({
+      this.activitiesService.deleteActivity(activity.id).subscribe({
         next: () => {
           this.isDeleting.set(false);
           this.isDeleteDialogOpen.set(false);
           this.selectedActivity.set(null);
-          this.successMessage.set(`„${dest.name}" je uspešno uklonjena.`);
+          this.successMessage.set(`„${activity.name}" je uspešno uklonjena.`);
           this.loadActivities();
         },
         error: () => {
           this.isDeleting.set(false);
-          this.errorMessage.set('Greška pri brisanju destinacije.');
+          this.errorMessage.set('Greška pri brisanju aktivnosti.');
         },
       }),
     );
   }
-
-  // protected sparklinePath(data: number[]): string {
-  //   return this.buildSparklinePath(data, 80, 32);
-  // }
 
   protected timeAgo(isoDate: string): string {
     const diffMs = Date.now() - new Date(isoDate).getTime();
@@ -364,23 +360,6 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.activeMenuId.set(null);
   }
 
-  // private buildSparklinePath(data: number[], w: number, h: number): string {
-  //   if (data.length < 2) return '';
-  //   const min = Math.min(...data);
-  //   const max = Math.max(...data);
-  //   const range = max - min || 1;
-  //   const pts = data.map((v, i) => ({
-  //     x: (i / (data.length - 1)) * w,
-  //     y: h - ((v - min) / range) * (h - 6) - 3,
-  //   }));
-  //   let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-  //   for (let i = 1; i < pts.length; i++) {
-  //     const cx = ((pts[i - 1].x + pts[i].x) / 2).toFixed(1);
-  //     d += ` C${cx},${pts[i - 1].y.toFixed(1)} ${cx},${pts[i].y.toFixed(1)} ${pts[i].x.toFixed(1)},${pts[i].y.toFixed(1)}`;
-  //   }
-  //   return d;
-  // }
-
   private patchFilter(patch: Partial<ActivityFilters>): void {
     this.filters.update((current) => ({ ...current, ...patch }));
     if (patch.page !== undefined) this.currentPage.set(patch.page);
@@ -400,7 +379,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         error: () => {
           this.activities.set([]);
           this.total.set(0);
-          this.errorMessage.set('Greška pri učitavanju destinacija.');
+          this.errorMessage.set('Greška pri učitavanju aktivnosti.');
           this.isLoading.set(false);
         },
       }),

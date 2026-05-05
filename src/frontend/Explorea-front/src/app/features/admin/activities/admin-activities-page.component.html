@@ -28,7 +28,7 @@
     <div class="activity-card__header">
       <div class="activity-card__title-group">
         <div class="activity-card__title-row">
-          <span class="material-icons activity-card__title-icon">location_on</span>
+          <span class="material-icons activity-card__title-icon">hiking</span>
           <h2 class="activity-card__title">{{ ui.t('activities.title') }}</h2>
         </div>
         <p class="activity-card__subtitle">{{ ui.t('activities.subtitle') }}</p>
@@ -98,6 +98,38 @@
               </div>
             </div>
 
+            <!-- Difficulty filter -->
+            <div class="activity-filter-section">
+              <label class="activity-filter-section__label">
+                {{ ui.t('activities.filter.difficulty') }}
+              </label>
+
+              <div class="activity-filter-chips">
+                @for (difficulty of difficulties; track difficulty.value) {
+                <button class="activity-chip" [class.activity-chip--active]="filters().difficulty === difficulty.value"
+                  (click)="applyDifficulty(difficulty.value)">
+                  {{ difficulty.label }}
+                </button>
+                }
+              </div>
+            </div>
+
+            <!-- Rating filter -->
+            <div class="activity-filter-section">
+              <label class="activity-filter-section__label">
+                {{ ui.t('activities.filter.rating') }}
+              </label>
+
+              <div class="activity-filter-chips">
+                @for (rating of ratingOptions; track rating.value) {
+                <button class="activity-chip" [class.activity-chip--active]="filters().minRating === rating.value"
+                  (click)="applyMinRating(rating.value)">
+                  {{ rating.label }}
+                </button>
+                }
+              </div>
+            </div>
+
             <!-- Region filter (super admin only) -->
             @if (isSuperAdmin()) {
             <div class="activity-filter-section">
@@ -118,6 +150,7 @@
               </div>
             </div>
             }
+
           </div>
           <div class="activity-filter-backdrop" (click)="isFilterOpen.set(false)"></div>
           }
@@ -205,22 +238,6 @@
               <span class="activity-status activity-status--{{ activity.status }}">
                 {{ statusLabel(activity.status) }}
               </span>
-            </td>
-
-            <!-- Views -->
-            <td class="activity-td activity-td--right">
-              <div class="activity-views">
-                <span class="material-icons">visibility</span>
-                {{ formatViews(activity.views) }}
-              </div>
-            </td>
-
-            <!-- Last updated -->
-            <td class="activity-td">
-              <div class="activity-updated">
-                <span class="material-icons">calendar_today</span>
-                {{ timeAgo(activity.lastUpdatedAt) }}
-              </div>
             </td>
 
             <!-- Actions -->
