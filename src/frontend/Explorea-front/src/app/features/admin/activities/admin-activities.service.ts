@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
-import { Observable, delay, of } from 'rxjs';
+import { Observable, delay, of, throwError } from 'rxjs';
 import {
   ActivityFilters,
   ActivityPagedResponse,
   ActivityRow,
   ActivityStats,
+  ActivityStatus,
 } from './admin-activities.models';
 
 const MOCK: ActivityRow[] = [
@@ -96,5 +97,18 @@ export class AdminActivitiesService {
     const idx = this.data.findIndex((d) => d.id === id);
     if (idx !== -1) this.data.splice(idx, 1);
     return of(undefined).pipe(delay(300));
+  }
+
+  updateActivityStatus(id: string, status: ActivityStatus): Observable<ActivityRow> {
+    const activity = this.data.find((item) => item.id === id);
+
+    if (!activity) {
+      return throwError(() => new Error('Activity not found'));
+    }
+
+    activity.status = status;
+    activity.lastUpdatedAt = new Date().toISOString();
+
+    return of({ ...activity }).pipe(delay(250));
   }
 }

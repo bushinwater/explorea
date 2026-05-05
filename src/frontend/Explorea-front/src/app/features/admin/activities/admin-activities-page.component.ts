@@ -68,6 +68,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly selectedActivity = signal<ActivityRow | null>(null);
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
+  protected readonly activityToDelete = signal<ActivityRow | null>(null);
+  protected readonly isDetailsPanelOpen = signal(false);
+  protected readonly isUpdatingStatus = signal(false);
 
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.total() / this.filters().pageSize)),
@@ -203,18 +206,18 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected openDeleteDialog(activity: ActivityRow): void {
     this.activeMenuId.set(null);
-    this.selectedActivity.set(activity);
+    this.activityToDelete.set(activity);
     this.isDeleteDialogOpen.set(true);
   }
 
   protected closeDeleteDialog(): void {
     this.isDeleting.set(false);
-    this.selectedActivity.set(null);
+    this.activityToDelete.set(null);
     this.isDeleteDialogOpen.set(false);
   }
 
   protected confirmDelete(): void {
-    const activity = this.selectedActivity();
+    const activity = this.activityToDelete();
     if (!activity) return;
 
     this.isDeleting.set(true);
@@ -224,7 +227,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         next: () => {
           this.isDeleting.set(false);
           this.isDeleteDialogOpen.set(false);
-          this.selectedActivity.set(null);
+          this.activityToDelete.set(null);
           this.successMessage.set(`„${activity.name}" je uspešno uklonjena.`);
           this.loadActivities();
         },
@@ -403,6 +406,51 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.activitiesService.getRegions().subscribe({
         next: (regions) => this.regions.set(regions),
+      }),
+    );
+  }
+
+  protected openDetailsPanel(activity: ActivityRow): void {
+    this.activeMenuId.set(null);
+    this.selectedActivity.set(activity);
+    this.isDetailsPanelOpen.set(true);
+  }
+
+  protected closeDetailsPanel(): void {
+    this.isDetailsPanelOpen.set(false);
+    this.selectedActivity.set(null);
+  }
+
+  protected approveSelectedActivity(): void {
+    this.updateSelectedActivityStatus('active', 'odobrena');
+  }
+
+  protected deactivateSelectedActivity(): void {
+    this.updateSelectedActivityStatus('inactive', 'deaktivirana');
+  }
+
+  private updateSelectedActivityStatus(status: ActivityStatus, actionLabel: string): void {
+    const activity = this.selectedActivity();
+    if (!activity) return;
+
+    this.isUpdatingStatus.set(true);
+    this.errorMessage.set('');
+
+    this.subscription.add(
+      this.activitiesService.updateActivityStatus(activity.id, status).subscribe({
+        next: (updatedActivity) => {
+          this.activities.update((items) =>
+            items.map((item) => (item.id === updatedActivity.id ? updatedActivity : item)),
+          );
+
+          this.selectedActivity.set(updatedActivity);
+          this.isUpdatingStatus.set(false);
+          this.successMessage.set(`„${updatedActivity.name}" je ${actionLabel}.`);
+        },
+        error: () => {
+          this.isUpdatingStatus.set(false);
+          this.errorMessage.set('Greška pri promeni statusa aktivnosti.');
+        },
       }),
     );
   }
