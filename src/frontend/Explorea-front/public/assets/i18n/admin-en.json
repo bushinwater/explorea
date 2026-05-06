@@ -250,5 +250,8 @@
   "activities.delete.description": "Are you sure you want to delete “{name}”?",
   "activities.delete.confirm": "Delete",
   "activities.delete.cancel": "Cancel",
-  "activities.delete.loading": "Deleting..."
+  "activities.delete.loading": "Deleting...",
+
+  "activities.details.showMore": "Show more",
+  "activities.details.showLess": "Show less"
 }

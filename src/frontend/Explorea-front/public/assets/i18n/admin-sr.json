@@ -250,5 +250,8 @@
   "activities.delete.description": "Da li sigurno želiš da obrišeš aktivnost „{name}”?",
   "activities.delete.confirm": "Obriši",
   "activities.delete.cancel": "Otkaži",
-  "activities.delete.loading": "Brisanje..."
+  "activities.delete.loading": "Brisanje...",
+
+  "activities.details.showMore": "Prikaži više",
+  "activities.details.showLess": "Prikaži manje"
 }

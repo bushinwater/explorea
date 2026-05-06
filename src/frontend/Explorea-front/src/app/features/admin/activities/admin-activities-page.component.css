@@ -40,7 +40,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Card header */
@@ -128,6 +128,7 @@
 /* Filter wrap */
 .activity-filter-wrap {
   position: relative;
+  z-index: 50;
 }
 
 .activity-filter-btn {
@@ -165,8 +166,10 @@
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  z-index: 200;
+  z-index: 1000;
   width: 320px;
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
