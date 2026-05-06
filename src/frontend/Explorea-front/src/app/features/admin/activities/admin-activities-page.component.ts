@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { StatCardComponent } from '@shared/components';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
@@ -126,11 +127,15 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly activitiesService: AdminActivitiesService,
+    private readonly router: Router,
+    private readonly route: ActivatedRoute,
     protected readonly authContext: AdminAuthContextService,
     protected readonly ui: AdminUiPreferencesService,
   ) {}
 
   ngOnInit(): void {
+    this.hydrateFiltersFromQueryParams();
+
     this.subscription.add(
       this.searchInput$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((value) => {
         this.patchFilter({ search: value, page: 1 });
@@ -189,6 +194,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     }));
 
     this.currentPage.set(1);
+    this.syncFiltersToQueryParams();
     this.loadActivities();
   }
 
@@ -366,6 +372,114 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   private patchFilter(patch: Partial<ActivityFilters>): void {
     this.filters.update((current) => ({ ...current, ...patch }));
     if (patch.page !== undefined) this.currentPage.set(patch.page);
+    this.syncFiltersToQueryParams();
+  }
+
+  private hydrateFiltersFromQueryParams(): void {
+    const queryParamMap = this.route.snapshot.queryParamMap;
+
+    const page = this.parsePositiveInt(queryParamMap.get('page'), 1);
+    const pageSize = this.parsePositiveInt(queryParamMap.get('pageSize'), this.filters().pageSize);
+
+    this.filters.set({
+      search: queryParamMap.get('search')?.trim() ?? '',
+      category: this.parseCategory(queryParamMap.get('category')),
+      status: this.parseStatus(queryParamMap.get('status')),
+      difficulty: this.parseDifficulty(queryParamMap.get('difficulty')),
+      minRating: this.parseMinRating(queryParamMap.get('minRating')),
+      region: queryParamMap.get('region')?.trim() || 'all',
+      page,
+      pageSize,
+    });
+
+    this.currentPage.set(page);
+  }
+
+  private syncFiltersToQueryParams(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: this.buildQueryParams(),
+      replaceUrl: true,
+    });
+  }
+
+  private buildQueryParams(): Record<string, string | number> {
+    const filters = this.filters();
+    const queryParams: Record<string, string | number> = {};
+
+    if (filters.search.trim()) {
+      queryParams['search'] = filters.search.trim();
+    }
+
+    if (filters.category !== 'all') {
+      queryParams['category'] = filters.category;
+    }
+
+    if (filters.status !== 'all') {
+      queryParams['status'] = filters.status;
+    }
+
+    if (filters.difficulty !== 'all') {
+      queryParams['difficulty'] = filters.difficulty;
+    }
+
+    if (filters.minRating !== 'all') {
+      queryParams['minRating'] = filters.minRating;
+    }
+
+    if (filters.region !== 'all') {
+      queryParams['region'] = filters.region;
+    }
+
+    if (filters.page > 1) {
+      queryParams['page'] = filters.page;
+    }
+
+    if (filters.pageSize !== 7) {
+      queryParams['pageSize'] = filters.pageSize;
+    }
+
+    return queryParams;
+  }
+
+  private parseCategory(value: string | null): ActivityCategory | 'all' {
+    return this.categories.some((category) => category.value === value)
+      ? (value as ActivityCategory | 'all')
+      : 'all';
+  }
+
+  private parseStatus(value: string | null): ActivityStatus | 'all' {
+    return this.statuses.some((status) => status.value === value)
+      ? (value as ActivityStatus | 'all')
+      : 'all';
+  }
+
+  private parseDifficulty(value: string | null): ActivityDifficulty | 'all' {
+    return this.difficulties.some((difficulty) => difficulty.value === value)
+      ? (value as ActivityDifficulty | 'all')
+      : 'all';
+  }
+
+  private parseMinRating(value: string | null): number | 'all' {
+    if (!value || value === 'all') {
+      return 'all';
+    }
+
+    const numericValue = Number(value);
+
+    return this.ratingOptions.some((rating) => rating.value === numericValue)
+      ? numericValue
+      : 'all';
+  }
+
+  private parsePositiveInt(value: string | null, fallback: number): number {
+    const parsed = Number(value);
+
+    if (!Number.isInteger(parsed) || parsed < 1) {
+      return fallback;
+    }
+
+    return parsed;
   }
 
   private loadActivities(): void {
