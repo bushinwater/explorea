@@ -258,5 +258,58 @@
   "requests.success.rejected": "Request has been rejected.",
 
   "requests.empty.title": "Request not found",
-  "requests.empty.description": "This request does not exist or has been removed."
+  "requests.empty.description": "This request does not exist or has been removed.",
+
+  "reviews.stats.total": "Total Reviews",
+  "reviews.stats.hidden": "Hidden Content",
+  "reviews.stats.avgRating": "Average Rating",
+
+  "reviews.title": "Reviews",
+  "reviews.subtitle": "Browse and manage user reviews",
+
+  "reviews.filter.btn": "Filters",
+  "reviews.filter.title": "Filters",
+  "reviews.filter.reset": "Reset all",
+  "reviews.filter.entityType": "Entity type",
+  "reviews.filter.entity.all": "All",
+  "reviews.filter.entity.destination": "Destination",
+  "reviews.filter.entity.activity": "Activity",
+  "reviews.filter.entity.place": "Place",
+  "reviews.filter.entity.event": "Event",
+  "reviews.filter.rating": "Rating",
+  "reviews.filter.rating.min": "Min",
+  "reviews.filter.rating.max": "Max",
+  "reviews.filter.rating.any": "Any",
+  "reviews.filter.visibility": "Status",
+  "reviews.filter.visibility.all": "All",
+  "reviews.filter.visibility.visible": "Visible",
+  "reviews.filter.visibility.hidden": "Hidden",
+
+  "reviews.table.user": "User",
+  "reviews.table.rating": "Rating",
+  "reviews.table.comment": "Content",
+  "reviews.table.date": "Date",
+  "reviews.table.actions": "Actions",
+
+  "reviews.badge.hidden": "Hidden",
+
+  "reviews.empty.title": "No reviews",
+  "reviews.empty.description": "No reviews match the current filters.",
+
+  "reviews.actions.hide": "Hide",
+  "reviews.actions.approve": "Approve",
+  "reviews.actions.delete": "Delete",
+
+  "reviews.delete.title": "Delete review",
+  "reviews.delete.description": "Are you sure you want to delete the review by {name}? This action cannot be undone.",
+  "reviews.delete.confirm": "Delete",
+  "reviews.delete.cancel": "Cancel",
+  "reviews.delete.loading": "Deleting...",
+
+  "reviews.success.hidden": "Review has been hidden.",
+  "reviews.success.approved": "Review has been approved.",
+  "reviews.success.deleted": "Review has been deleted.",
+
+  "reviews.error.load": "Failed to load reviews.",
+  "reviews.error.action": "Action failed. Please try again."
 }
