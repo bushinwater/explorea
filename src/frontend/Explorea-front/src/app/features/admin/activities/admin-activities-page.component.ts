@@ -72,6 +72,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly activityToDelete = signal<ActivityRow | null>(null);
   protected readonly isDetailsPanelOpen = signal(false);
   protected readonly isUpdatingStatus = signal(false);
+  protected readonly isDescriptionExpanded = signal(false);
 
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.total() / this.filters().pageSize)),
@@ -528,11 +529,13 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.activeMenuId.set(null);
     this.selectedActivity.set(activity);
     this.isDetailsPanelOpen.set(true);
+    this.isDescriptionExpanded.set(false);
   }
 
   protected closeDetailsPanel(): void {
     this.isDetailsPanelOpen.set(false);
     this.selectedActivity.set(null);
+    this.isDescriptionExpanded.set(false);
   }
 
   protected approveSelectedActivity(): void {
@@ -607,5 +610,21 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     if (value === 'all') return '';
 
     return value;
+  }
+
+  protected toggleDescription(): void {
+    this.isDescriptionExpanded.update((current) => !current);
+  }
+
+  protected shouldShowDescriptionToggle(description: string): boolean {
+    return description.length > 140;
+  }
+
+  protected visibleDescription(description: string): string {
+    if (this.isDescriptionExpanded() || description.length <= 140) {
+      return description;
+    }
+
+    return `${description.slice(0, 140).trimEnd()}...`;
   }
 }

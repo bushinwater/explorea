@@ -367,6 +367,18 @@
     </div>
 
     <div class="activity-details-panel__body">
+      <div class="activity-details-hero">
+        @if (activity.thumbnailUrl) {
+        <img class="activity-details-hero__image" [src]="activity.thumbnailUrl" [alt]="activity.name" />
+        } @else {
+        <div class="activity-details-hero__placeholder" [style.background-color]="thumbColor(activity.category)">
+          <span class="material-icons">
+            {{ categoryIcon(activity.category) }}
+          </span>
+        </div>
+        }
+      </div>
+
       <div class="activity-details-panel__badges">
         <span class="activity-status activity-status--{{ activity.status }}">
           {{ statusLabel(activity.status) }}
@@ -377,9 +389,21 @@
         </span>
       </div>
 
-      <p class="activity-details-panel__description">
-        {{ activity.shortDescription }}
-      </p>
+      <div class="activity-details-description">
+        <p class="activity-details-panel__description">
+          {{ visibleDescription(activity.shortDescription) }}
+        </p>
+
+        @if (shouldShowDescriptionToggle(activity.shortDescription)) {
+        <button class="activity-details-description__toggle" type="button" (click)="toggleDescription()">
+          {{
+          isDescriptionExpanded()
+          ? ui.t('activities.details.showLess')
+          : ui.t('activities.details.showMore')
+          }}
+        </button>
+        }
+      </div>
 
       <div class="activity-details-grid">
         <div class="activity-details-item">
@@ -421,7 +445,11 @@
         <div class="activity-details-item">
           <span class="activity-details-item__label">Kapacitet</span>
           <strong class="activity-details-item__value">
-            {{ activity.maxCapacity === null ? 'Nije ograničeno' : activity.maxCapacity + ' osoba' }}
+            {{
+            activity.maxCapacity === null
+            ? 'Nije ograničeno'
+            : activity.maxCapacity + ' osoba'
+            }}
           </strong>
         </div>
 
