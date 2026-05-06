@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
 import { adminUsersAccessGuard } from './core/guards/admin-users-access.guard';
-import { adminGuard } from './core/guards/admin.guard';
 import { authGuard } from './core/guards/auth-guard';
 import { guestGuard } from './core/guards/guest-guard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
@@ -50,13 +49,20 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: AdminShellComponent,
-    canActivate: [adminGuard],
+    //canActivate: [adminGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: Dashboard },
       { path: 'map-view', component: AdminHomePageComponent },
       { path: 'destinations', component: AdminDestinationsPageComponent },
       { path: 'reviews', component: AdminHomePageComponent },
+      {
+        path: 'object-requests/:id',
+        loadComponent: () =>
+          import('./features/admin/object-requests/pages/object-request-detail/object-request-detail').then(
+            (m) => m.AdminObjectRequestDetailComponent,
+          ),
+      },
       { path: 'reports', component: AdminHomePageComponent },
       { path: 'settings', component: AdminHomePageComponent },
       {

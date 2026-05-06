@@ -1,0 +1,282 @@
+@if (successMessage()) {
+  <app-feedback-banner variant="info" [title]="successMessage()"></app-feedback-banner>
+}
+@if (errorMessage()) {
+  <app-feedback-banner variant="error" [title]="errorMessage()"></app-feedback-banner>
+}
+
+<div class="req-page">
+
+  <!-- Breadcrumb bar -->
+  <div class="req-breadcrumb">
+    <nav class="req-crumbs">
+      <span>{{ ui.t('requests.breadcrumb.destinations') }}</span>
+      <span class="material-icons">chevron_right</span>
+      <span class="req-crumbs__current">
+        Request #{{ request()?.requestNumber ?? route.snapshot.paramMap.get('id') }}
+      </span>
+    </nav>
+    <button class="req-back" (click)="goBack()">
+      <span class="material-icons">reply</span>
+      {{ ui.t('requests.back') }}
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="req-skeleton">
+      <div class="req-skeleton__left">
+        <div class="req-skel req-skel--hero"></div>
+        <div class="req-skel req-skel--card"></div>
+      </div>
+      <div class="req-skeleton__right">
+        <div class="req-skel req-skel--side"></div>
+      </div>
+    </div>
+  } @else if (request(); as r) {
+    <div class="req-layout">
+
+      <!-- ===== LEFT COLUMN ===== -->
+      <div class="req-left">
+
+        <!-- Hero image -->
+        <div class="req-hero">
+          <img class="req-hero__img" [src]="r.heroImageUrl" [alt]="r.name" />
+          <div class="req-hero__overlay"></div>
+          <div class="req-hero__footer">
+            <span class="req-priority req-priority--{{ r.priority }}">
+              {{ ui.t('requests.priority.label') }}: {{ priorityLabel(r.priority) }}
+            </span>
+            <h1 class="req-hero__title">{{ r.name }}</h1>
+            <div class="req-hero__meta">
+              <span class="material-icons">location_on</span>
+              {{ r.address }}
+              <span class="material-icons req-hero__meta-sep">calendar_today</span>
+              {{ ui.t('requests.submitted') }}: {{ r.submittedAt }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Details card -->
+        <div class="req-card">
+
+          <!-- Key info grid -->
+          <div class="req-kv-grid">
+            <div class="req-kv">
+              <span class="material-icons">bed</span>
+              <div>
+                <span class="req-kv__label">{{ ui.t('requests.kv.capacity') }}</span>
+                <span class="req-kv__value">
+                  {{ ui.t('requests.kv.capacity.value', { rooms: r.capacityRooms ?? 0, guests: r.capacityGuests ?? 0 }) }}
+                </span>
+              </div>
+            </div>
+            <div class="req-kv">
+              <span class="material-icons">phone</span>
+              <div>
+                <span class="req-kv__label">{{ ui.t('requests.kv.contact') }}</span>
+                <span class="req-kv__value">{{ r.contactPhone }}</span>
+              </div>
+            </div>
+            <div class="req-kv">
+              <span class="material-icons">language</span>
+              <div>
+                <span class="req-kv__label">{{ ui.t('requests.kv.website') }}</span>
+                <span class="req-kv__value">{{ r.website }}</span>
+              </div>
+            </div>
+            <div class="req-kv">
+              <span class="material-icons">fingerprint</span>
+              <div>
+                <span class="req-kv__label">{{ ui.t('requests.kv.entityId') }}</span>
+                <span class="req-kv__value">{{ r.entityId }}</span>
+              </div>
+            </div>
+          </div>
+
+          <hr class="req-divider" />
+
+          <!-- Venue Overview -->
+          <section class="req-section">
+            <h2 class="req-section__title">
+              <span class="material-icons">storefront</span>
+              {{ ui.t('requests.section.venueOverview') }}
+            </h2>
+            <p class="req-section__body">{{ r.description }}</p>
+          </section>
+
+          <hr class="req-divider" />
+
+          <!-- Characteristics table -->
+          <div class="req-features">
+            <div class="req-feature">
+              <span class="req-feature__label">{{ ui.t('requests.feature.accessibility') }}</span>
+              <span class="req-tag req-tag--blue">{{ r.features.accessibility }}</span>
+            </div>
+            <div class="req-feature">
+              <span class="req-feature__label">{{ ui.t('requests.feature.ecoCertified') }}</span>
+              <span class="req-tag req-tag--green">{{ r.features.ecoCertified }}</span>
+            </div>
+            <div class="req-feature">
+              <span class="req-feature__label">{{ ui.t('requests.feature.parking') }}</span>
+              <span class="req-feature__value">{{ r.features.parkingSpaces }}</span>
+            </div>
+            <div class="req-feature">
+              <span class="req-feature__label">{{ ui.t('requests.feature.hours') }}</span>
+              <span class="req-feature__value">{{ r.features.openingHours }}</span>
+            </div>
+          </div>
+
+          <hr class="req-divider" />
+
+          <!-- Required Documentation -->
+          <section class="req-section">
+            <h2 class="req-section__title">
+              <span class="material-icons">description</span>
+              {{ ui.t('requests.section.docs') }}
+            </h2>
+            <div class="req-docs">
+              @for (doc of r.documents; track doc.id) {
+                <div class="req-doc" (click)="downloadDoc(doc)">
+                  <span class="material-icons req-doc__icon">picture_as_pdf</span>
+                  <div class="req-doc__info">
+                    <span class="req-doc__name">{{ doc.name }}</span>
+                    @if (doc.size) {
+                      <span class="req-doc__size">PDF &bull; {{ doc.size }}</span>
+                    }
+                  </div>
+                  <span class="material-icons req-doc__dl">file_download</span>
+                </div>
+              }
+            </div>
+          </section>
+
+        </div>
+      </div>
+
+      <!-- ===== RIGHT COLUMN ===== -->
+      <div class="req-right">
+
+        <!-- Approval Pipeline -->
+        <div class="req-card">
+          <div class="req-pipeline-hdr">
+            <h2 class="req-pipeline-hdr__title">{{ ui.t('requests.pipeline.title') }}</h2>
+            <span class="req-step-badge">
+              {{ ui.t('requests.pipeline.step', { current: currentStep(), total: totalSteps() }) }}
+            </span>
+          </div>
+
+          <div class="req-stepper">
+            @for (step of fullPipelineSteps(); let i = $index; track step.label) {
+              <div class="req-step req-step--{{ step.state }}">
+                <div class="req-step__track">
+                  <div class="req-step__dot">
+                    @if (step.state === 'done') {
+                      <span class="material-icons">check_circle</span>
+                    } @else if (step.state === 'rejected') {
+                      <span class="material-icons">cancel</span>
+                    } @else if (step.state === 'active') {
+                      <span class="material-icons">radio_button_checked</span>
+                    } @else {
+                      <span class="material-icons">radio_button_unchecked</span>
+                    }
+                  </div>
+                  @if (i < fullPipelineSteps().length - 1) {
+                    <div class="req-step__connector"></div>
+                  }
+                </div>
+                <div class="req-step__body">
+                  <div class="req-step__row">
+                    <span class="req-step__label">{{ step.label }}</span>
+                    @if (step.date) {
+                      <span class="req-step__date">{{ step.date }}</span>
+                    }
+                  </div>
+                  @if (step.actor) {
+                    <div class="req-step__actor">{{ step.actor }}</div>
+                  }
+                  @if (step.comment) {
+                    <div class="req-step__comment">"{{ step.comment }}"</div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Admin Verification -->
+        @if (r.status === 'pending') {
+          <div class="req-card req-card--verify">
+            <h3 class="req-verify-title">{{ ui.t('requests.verify.title') }}</h3>
+
+            <div class="req-notes-hdr">
+              <span class="req-notes-label">{{ ui.t('requests.verify.notes') }}</span>
+              <span class="req-notes-hint">
+                <span class="material-icons">info</span>
+                {{ ui.t('requests.verify.notesHint') }}
+              </span>
+            </div>
+
+            <textarea
+              class="req-textarea"
+              [placeholder]="ui.t('requests.verify.placeholder')"
+              [value]="adminComment()"
+              (input)="adminComment.set($any($event.target).value)"
+            ></textarea>
+
+            <p class="req-approve-hint">
+              <span class="material-icons">check_circle_outline</span>
+              {{ ui.t('requests.verify.approveHint') }}
+            </p>
+
+            <div class="req-actions">
+              <button class="req-btn-approve" (click)="initiateAction('approve')">
+                <span class="material-icons">check_circle</span>
+                {{ ui.t('requests.btn.approve') }}
+              </button>
+              <button class="req-btn-reject" (click)="initiateAction('decline')">
+                <span class="material-icons">close</span>
+                {{ ui.t('requests.btn.reject') }}
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="req-card req-card--resolved req-card--{{ r.status }}">
+            @if (r.status === 'approved') {
+              <span class="material-icons req-resolved-icon">check_circle</span>
+              <p class="req-resolved-text">{{ ui.t('requests.resolved.approved') }}</p>
+            } @else {
+              <span class="material-icons req-resolved-icon">cancel</span>
+              <p class="req-resolved-text">{{ ui.t('requests.resolved.rejected') }}</p>
+              @if (r.rejectionReason) {
+                <p class="req-rejection-reason">{{ r.rejectionReason }}</p>
+              }
+            }
+          </div>
+        }
+
+        <!-- Help footer -->
+        <div class="req-help">
+          <span class="material-icons req-help__icon">warning_amber</span>
+          <p class="req-help__text" [innerHTML]="ui.t('requests.help')"></p>
+        </div>
+
+      </div>
+    </div>
+  } @else {
+    <app-empty-state
+      [title]="ui.t('requests.empty.title')"
+      [description]="ui.t('requests.empty.description')"
+    ></app-empty-state>
+  }
+
+</div>
+
+@if (isConfirmOpen()) {
+  <app-confirm-dialog
+    [title]="ui.t(pendingAction() === 'approve' ? 'requests.confirm.approve.title' : 'requests.confirm.reject.title')"
+    [description]="ui.t(pendingAction() === 'approve' ? 'requests.confirm.approve.desc' : 'requests.confirm.reject.desc')"
+    [isLoading]="isSubmitting()"
+    (confirm)="submitAction()"
+    (cancel)="cancelAction()"
+  ></app-confirm-dialog>
+}

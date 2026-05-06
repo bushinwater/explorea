@@ -205,5 +205,58 @@
   "destinations.delete.description": "Da li ste sigurni da želite da uklonite {name}? Ova akcija se ne može poništiti.",
   "destinations.delete.confirm": "Ukloni",
   "destinations.delete.cancel": "Otkaži",
-  "destinations.delete.loading": "Uklanjanje..."
+  "destinations.delete.loading": "Uklanjanje...",
+
+  "requests.breadcrumb.destinations": "Destinacije",
+  "requests.back": "Nazad na listu",
+  "requests.submitted": "Podnet",
+  "requests.priority.label": "Prioritet",
+  "requests.priority.low": "Nizak",
+  "requests.priority.medium": "Srednji",
+  "requests.priority.high": "Visok",
+
+  "requests.kv.capacity": "KAPACITET",
+  "requests.kv.capacity.value": "{rooms} soba / {guests} gostiju",
+  "requests.kv.contact": "KONTAKT",
+  "requests.kv.website": "WEBSITE",
+  "requests.kv.entityId": "ENTITY ID",
+
+  "requests.section.venueOverview": "Pregled objekta",
+  "requests.section.docs": "Potrebna dokumentacija",
+
+  "requests.feature.accessibility": "Pristupačnost",
+  "requests.feature.ecoCertified": "Eko sertifikat",
+  "requests.feature.parking": "Parking mesta",
+  "requests.feature.hours": "Radno vreme",
+
+  "requests.pipeline.title": "Pipeline odobrenja",
+  "requests.pipeline.step": "Korak {current} od {total}",
+  "requests.pipeline.adminDecision": "Odluka admina",
+  "requests.pipeline.approvedComment": "Zahtev odobren i objavljen.",
+
+  "requests.verify.title": "Admin verifikacija",
+  "requests.verify.notes": "INTERNE NAPOMENE",
+  "requests.verify.notesHint": "Vidljivo samo adminima",
+  "requests.verify.placeholder": "Dodajte komentare o statusu odobrenja ili razlozima za odbijanje...",
+  "requests.verify.approveHint": "Odobravanjem ovog zahteva automatski se obaveštava vlasnik objekta i generiše nacrt javnog listinga.",
+
+  "requests.btn.approve": "Odobri zahtev za objekat",
+  "requests.btn.reject": "Odbij sa napomenom",
+
+  "requests.resolved.approved": "Zahtev je uspešno odobren.",
+  "requests.resolved.rejected": "Zahtev je odbijen.",
+
+  "requests.help": "Potrebna pomoć? Kontaktirajte regionalnu turističku organizaciju na <strong>+381 21 000 000</strong> za pitanja o lokalnoj zakonskoj regulativi vezanoj za ovaj zahtev.",
+
+  "requests.confirm.approve.title": "Odobri zahtev za objekat?",
+  "requests.confirm.approve.desc": "Vlasnik objekta će biti obavešten i generisaće se nacrt javnog listinga.",
+  "requests.confirm.reject.title": "Odbij sa napomenom?",
+  "requests.confirm.reject.desc": "Ova akcija se ne može poništiti. Podnosilac zahteva biće obavešten o odbijanju.",
+
+  "requests.error.commentRequired": "Komentar je obavezan pri odbijanju zahteva.",
+  "requests.success.approved": "Zahtev je uspešno odobren.",
+  "requests.success.rejected": "Zahtev je odbijen.",
+
+  "requests.empty.title": "Zahtev nije pronađen",
+  "requests.empty.description": "Ovaj zahtev ne postoji ili je uklonjen."
 }
