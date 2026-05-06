@@ -8,6 +8,7 @@ import { Dashboard } from './features/admin/dashboard/dashboard';
 import { AdminDestinationsPageComponent } from './features/admin/destinations/admin-destinations-page.component';
 import { AdminHomePageComponent } from './features/admin/home/admin-home-page.component';
 import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-shell.component';
+import { AdminSupportPageComponent } from './features/admin/support/admin-support-page.component';
 import { UserDirectoryPageComponent } from './features/admin/users/user-directory-page.component';
 import { CompleteProfile } from './features/auth/complete-profile/complete-profile';
 import { FacebookCallback } from './features/auth/facebook-callback/facebook-callback';
@@ -59,6 +60,7 @@ export const routes: Routes = [
       { path: 'reviews', component: AdminHomePageComponent },
       { path: 'reports', component: AdminHomePageComponent },
       { path: 'settings', component: AdminHomePageComponent },
+      { path: 'support', component: AdminSupportPageComponent },
       {
         path: 'users',
         component: UserDirectoryPageComponent,
