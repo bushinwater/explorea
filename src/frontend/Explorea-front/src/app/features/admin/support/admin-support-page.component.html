@@ -1,8 +1,61 @@
 <section class="support-page" aria-label="Support chat">
   <aside class="support-page__panel support-page__panel--list">
-    <div class="support-page__placeholder">
-      <span class="material-icons support-page__placeholder-icon">forum</span>
-      <p class="support-page__placeholder-title">Razgovori</p>
+    <div class="support-list">
+      <div class="support-list__header">
+        <div>
+          <h2 class="support-list__title">Support</h2>
+          <p class="support-list__subtitle">Razgovori korisnicke podrske</p>
+        </div>
+      </div>
+
+      <label class="support-search">
+        <span class="material-icons support-search__icon">search</span>
+        <input
+          class="support-search__input"
+          type="search"
+          placeholder="Pretrazi ime ili temu"
+          [value]="searchTerm()"
+          (input)="updateSearch($any($event.target).value)"
+        />
+      </label>
+
+      <div class="support-conversations">
+        @if (isLoading()) {
+          @for (_ of [1, 2, 3, 4]; track $index) {
+            <div class="support-conversation support-conversation--loading">
+              <span class="support-conversation__avatar support-skeleton"></span>
+              <span class="support-conversation__body">
+                <span class="support-skeleton support-skeleton--title"></span>
+                <span class="support-skeleton support-skeleton--line"></span>
+              </span>
+            </div>
+          }
+        } @else if (!conversations().length) {
+          <div class="support-list__empty">
+            <span class="material-icons">forum</span>
+            <p>Nema razgovora za prikaz.</p>
+          </div>
+        } @else {
+          @for (conversation of conversations(); track conversation.id) {
+            <button class="support-conversation" type="button">
+              <span class="support-conversation__avatar">{{ conversation.userInitials }}</span>
+              <span class="support-conversation__body">
+                <span class="support-conversation__topline">
+                  <span class="support-conversation__name">{{ conversation.userName }}</span>
+                  <span class="support-conversation__time">{{ relativeTime(conversation.lastMessageAt) }}</span>
+                </span>
+                <span class="support-conversation__subject">{{ conversation.subject }}</span>
+                <span class="support-conversation__message">{{ conversation.lastMessage }}</span>
+              </span>
+              <span class="support-conversation__meta">
+                <span class="support-status support-status--{{ conversation.status }}">
+                  {{ statusLabel(conversation.status) }}
+                </span>
+              </span>
+            </button>
+          }
+        }
+      </div>
     </div>
   </aside>
 
