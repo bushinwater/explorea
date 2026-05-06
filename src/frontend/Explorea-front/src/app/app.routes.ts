@@ -1,13 +1,15 @@
 import { Routes } from '@angular/router';
 import { adminUsersAccessGuard } from './core/guards/admin-users-access.guard';
+import { adminGuard } from './core/guards/admin.guard';
 import { authGuard } from './core/guards/auth-guard';
 import { guestGuard } from './core/guards/guest-guard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
 import { Dashboard } from './features/admin/dashboard/dashboard';
 import { AdminDestinationsPageComponent } from './features/admin/destinations/admin-destinations-page.component';
+import { AdminEventsPageComponent } from './features/admin/events/admin-events-page.component';
 import { AdminHomePageComponent } from './features/admin/home/admin-home-page.component';
-import { AdminReviewsPageComponent } from './features/admin/reviews/admin-reviews-page.component';
 import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-shell.component';
+import { AdminReviewsPageComponent } from './features/admin/reviews/admin-reviews-page.component';
 import { UserDirectoryPageComponent } from './features/admin/users/user-directory-page.component';
 import { CompleteProfile } from './features/auth/complete-profile/complete-profile';
 import { FacebookCallback } from './features/auth/facebook-callback/facebook-callback';
@@ -50,12 +52,13 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: AdminShellComponent,
-    //canActivate: [adminGuard],
+    canActivate: [adminGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: Dashboard },
       { path: 'map-view', component: AdminHomePageComponent },
       { path: 'destinations', component: AdminDestinationsPageComponent },
+      { path: 'events', component: AdminEventsPageComponent },
       { path: 'reviews', component: AdminReviewsPageComponent },
       {
         path: 'object-requests/:id',

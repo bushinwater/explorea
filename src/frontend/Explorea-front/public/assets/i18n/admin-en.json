@@ -311,5 +311,63 @@
   "reviews.success.deleted": "Review has been deleted.",
 
   "reviews.error.load": "Failed to load reviews.",
-  "reviews.error.action": "Action failed. Please try again."
+  "reviews.error.action": "Action failed. Please try again.",
+
+  "sidebar.events": "Events",
+
+  "events.title": "Event Management",
+  "events.subtitle": "Review organization requests, approve dates and communicate with owners.",
+  "events.btn.export": "Export list",
+  "events.btn.create": "Create internal event",
+
+  "events.stats.activeRequests": "Active Requests",
+  "events.stats.pendingApproval": "Needs Approval",
+  "events.stats.approvedThisMonth": "Approved (This Month)",
+  "events.stats.rejected": "Rejected",
+
+  "events.tabs.pending": "Pending Requests",
+  "events.tabs.active": "Active Events",
+  "events.tabs.history": "History",
+
+  "events.search.placeholder": "Filter by name...",
+  "events.filter.btn": "Filter",
+  "events.filter.title": "Filters",
+  "events.filter.reset": "Reset all",
+  "events.filter.type": "Type",
+  "events.filter.region": "Region",
+  "events.filter.allRegions": "All regions",
+
+  "events.table.event": "Event / Organizer",
+  "events.table.type": "Type",
+  "events.table.location": "Location",
+  "events.table.date": "Date",
+  "events.table.priority": "Priority",
+  "events.table.status": "Status",
+  "events.action.details": "Details",
+
+  "events.empty.title": "No events",
+  "events.empty.description": "No events match the current filters.",
+
+  "events.panel.date": "DATE",
+  "events.panel.expectedGuests": "EXPECTED GUESTS",
+  "events.panel.location": "LOCATION",
+  "events.panel.description": "Request Description",
+  "events.panel.coordination": "Coordination with Owner",
+  "events.panel.coordinationHint": "This location is privately owned. Before approving, forward the request to the owner for review.",
+  "events.panel.forward": "Forward to Owner ({owner})",
+  "events.panel.approve": "Approve",
+  "events.panel.reject": "Reject",
+
+  "events.confirm.approve.title": "Approve Event Request?",
+  "events.confirm.approve.desc": "The organizer will be notified that their event has been approved.",
+  "events.confirm.reject.title": "Reject Request?",
+  "events.confirm.reject.desc": "This action cannot be undone. The organizer will be notified of the rejection.",
+  "events.confirm.forward.title": "Forward to Owner?",
+  "events.confirm.forward.desc": "The venue owner will receive a request for approval.",
+
+  "events.success.approved": "Event approved successfully.",
+  "events.success.rejected": "Event request rejected.",
+  "events.success.forwarded": "Request forwarded to owner.",
+  "events.error.load": "Failed to load events.",
+  "events.error.action": "An error occurred. Please try again."
 }
