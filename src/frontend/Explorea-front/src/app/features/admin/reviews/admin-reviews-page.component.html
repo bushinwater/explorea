@@ -1,0 +1,309 @@
+<!-- ===== FEEDBACK BANNERS ===== -->
+@if (successMessage()) {
+  <app-feedback-banner variant="info" [title]="successMessage()" />
+}
+@if (errorMessage()) {
+  <app-feedback-banner variant="error" [title]="errorMessage()" />
+}
+
+<div class="rv-page">
+  <!-- ===== STATS ROW ===== -->
+  <div class="rv-stats">
+    <app-stat-card
+      [label]="ui.t('reviews.stats.total')"
+      [value]="stats()?.total ?? 0"
+      tone="neutral"
+    />
+    <app-stat-card
+      [label]="ui.t('reviews.stats.avgRating')"
+      [value]="avgRatingLabel()"
+      tone="neutral"
+    />
+    <app-stat-card
+      [label]="ui.t('reviews.stats.hidden')"
+      [value]="stats()?.hiddenCount ?? 0"
+      tone="danger"
+    />
+  </div>
+
+  <!-- ===== MAIN TABLE CARD ===== -->
+  <div class="rv-card">
+    <!-- Card header -->
+    <div class="rv-card__header">
+      <div class="rv-card__title-group">
+        <div class="rv-card__title-row">
+          <span class="material-icons rv-card__title-icon">rate_review</span>
+          <h2 class="rv-card__title">{{ ui.t('reviews.title') }}</h2>
+        </div>
+        <p class="rv-card__subtitle">{{ ui.t('reviews.subtitle') }}</p>
+      </div>
+
+      <div class="rv-card__actions">
+        <!-- Filter button -->
+        <div class="rv-filter-wrap">
+          <button
+            class="btn btn-ghost btn-sm rv-filter-btn"
+            [class.rv-filter-btn--active]="activeFilterCount() > 0"
+            (click)="toggleFilter($event)"
+          >
+            <span class="material-icons">filter_list</span>
+            {{ ui.t('reviews.filter.btn') }}
+            @if (activeFilterCount() > 0) {
+              <span class="rv-filter-badge">{{ activeFilterCount() }}</span>
+            }
+          </button>
+
+          <!-- Filter panel -->
+          @if (isFilterOpen()) {
+            <div
+              class="rv-filter-panel"
+              [style.top.px]="filterPanelTop()"
+              [style.right]="filterPanelRight() + 'px'"
+              (click)="$event.stopPropagation()"
+            >
+              <div class="rv-filter-panel__header">
+                <span class="rv-filter-panel__title">{{ ui.t('reviews.filter.title') }}</span>
+                @if (activeFilterCount() > 0) {
+                  <button class="rv-filter-panel__reset" (click)="resetFilters()">
+                    {{ ui.t('reviews.filter.reset') }}
+                  </button>
+                }
+              </div>
+
+              <!-- Entity type filter (not for PlaceOwner) -->
+              @if (showEntityTypeFilter()) {
+                <div class="rv-filter-section">
+                  <label class="rv-filter-section__label">
+                    {{ ui.t('reviews.filter.entityType') }}
+                  </label>
+                  <div class="rv-filter-chips">
+                    @for (et of entityTypes; track et.value) {
+                      <button
+                        class="rv-chip"
+                        [class.rv-chip--active]="filters().entityType === et.value"
+                        (click)="applyEntityType(et.value)"
+                      >
+                        {{ ui.t(et.labelKey) }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Rating filter -->
+              <div class="rv-filter-section">
+                <label class="rv-filter-section__label">{{ ui.t('reviews.filter.rating') }}</label>
+                <div class="rv-rating-range">
+                  <select
+                    class="rv-filter-select"
+                    [value]="filters().minRating ?? ''"
+                    (change)="applyMinRating($any($event.target).value)"
+                  >
+                    <option value="">{{ ui.t('reviews.filter.rating.min') }}</option>
+                    <option value="1">1★</option>
+                    <option value="2">2★</option>
+                    <option value="3">3★</option>
+                    <option value="4">4★</option>
+                    <option value="5">5★</option>
+                  </select>
+                  <span class="rv-rating-range__sep">—</span>
+                  <select
+                    class="rv-filter-select"
+                    [value]="filters().maxRating ?? ''"
+                    (change)="applyMaxRating($any($event.target).value)"
+                  >
+                    <option value="">{{ ui.t('reviews.filter.rating.max') }}</option>
+                    <option value="1">1★</option>
+                    <option value="2">2★</option>
+                    <option value="3">3★</option>
+                    <option value="4">4★</option>
+                    <option value="5">5★</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Visibility filter (not for PlaceOwner) -->
+              @if (showVisibilityFilter()) {
+                <div class="rv-filter-section">
+                  <label class="rv-filter-section__label">
+                    {{ ui.t('reviews.filter.visibility') }}
+                  </label>
+                  <div class="rv-filter-chips">
+                    @for (v of visibilityOptions; track v.value) {
+                      <button
+                        class="rv-chip"
+                        [class.rv-chip--active]="filters().visibility === v.value"
+                        (click)="applyVisibility(v.value)"
+                      >
+                        {{ ui.t(v.labelKey) }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="rv-filter-backdrop" (click)="isFilterOpen.set(false)"></div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="rv-table-wrap">
+      @if (isLoading()) {
+        <app-table-skeleton [rows]="10" />
+      } @else if (!reviews().length) {
+        <app-empty-state
+          [title]="ui.t('reviews.empty.title')"
+          [description]="ui.t('reviews.empty.description')"
+        />
+      } @else {
+        <table class="rv-table">
+          <thead>
+            <tr>
+              <th class="rv-th">{{ ui.t('reviews.table.user') }}</th>
+              <th class="rv-th">{{ ui.t('reviews.table.rating') }}</th>
+              <th class="rv-th">{{ ui.t('reviews.table.comment') }}</th>
+              <th class="rv-th rv-th--nowrap">{{ ui.t('reviews.table.date') }}</th>
+              @if (showActionsMenu()) {
+                <th class="rv-th"></th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (review of reviews(); track review.id) {
+              <tr class="rv-row" [class.rv-row--hidden]="review.isHidden">
+                <!-- User -->
+                <td class="rv-td">
+                  <div class="rv-user-cell">
+                    <div class="rv-avatar">
+                      {{ review.userFullName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() }}
+                    </div>
+                    <div class="rv-user-info">
+                      <span class="rv-user-info__name">{{ review.userFullName }}</span>
+                      <span class="rv-user-info__meta">{{ entityTypeLabel(review.entityType) }}</span>
+                    </div>
+                    @if (review.isHidden) {
+                      <app-status-badge status="revoked" [label]="ui.t('reviews.badge.hidden')" />
+                    }
+                  </div>
+                </td>
+
+                <!-- Rating -->
+                <td class="rv-td rv-td--nowrap">
+                  <span class="rv-stars rv-stars--{{ ratingClass(review.rating) }}">
+                    @for (filled of starsArray(review.rating); track $index) {
+                      <span class="material-icons rv-star">{{ filled ? 'star' : 'star_border' }}</span>
+                    }
+                  </span>
+                </td>
+
+                <!-- Comment -->
+                <td class="rv-td rv-td--comment">
+                  {{ truncateComment(review.comment) }}
+                </td>
+
+                <!-- Date -->
+                <td class="rv-td rv-td--nowrap">
+                  <span class="rv-date">
+                    <span class="material-icons">calendar_today</span>
+                    {{ formatDate(review.createdAt) }}
+                  </span>
+                </td>
+
+                <!-- Actions -->
+                @if (showActionsMenu()) {
+                  <td class="rv-td rv-td--actions">
+                    <div class="rv-menu-wrap">
+                      <button
+                        class="rv-menu-btn"
+                        (click)="toggleMenu(review.id, $event)"
+                        [disabled]="isActionLoading()"
+                      >
+                        <span class="material-icons">more_vert</span>
+                      </button>
+                      @if (activeMenuId() === review.id) {
+                        <div class="rv-menu-dropdown">
+                          @if (canHideApprove()) {
+                            @if (!review.isHidden) {
+                              <button class="rv-menu-item" (click)="hideReview(review)">
+                                <span class="material-icons">visibility_off</span>
+                                {{ ui.t('reviews.actions.hide') }}
+                              </button>
+                            } @else {
+                              <button class="rv-menu-item rv-menu-item--success" (click)="approveReview(review)">
+                                <span class="material-icons">visibility</span>
+                                {{ ui.t('reviews.actions.approve') }}
+                              </button>
+                            }
+                          }
+                          @if (isSuperAdmin()) {
+                            <button
+                              class="rv-menu-item rv-menu-item--danger"
+                              (click)="openDeleteDialog(review)"
+                            >
+                              <span class="material-icons">delete</span>
+                              {{ ui.t('reviews.actions.delete') }}
+                            </button>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1 || total() > 0) {
+      <div class="rv-pagination">
+        <span class="rv-pagination__info">{{ visibleRangeText() }}</span>
+        <div class="rv-pagination__pages">
+          <button
+            class="rv-page-btn rv-page-btn--nav"
+            [disabled]="currentPage() <= 1"
+            (click)="goToPage(currentPage() - 1)"
+          >
+            <span class="material-icons">chevron_left</span>
+          </button>
+
+          @for (page of pageNumbers(); track page) {
+            <button
+              class="rv-page-btn"
+              [class.rv-page-btn--active]="page === currentPage()"
+              (click)="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          }
+
+          <button
+            class="rv-page-btn rv-page-btn--nav"
+            [disabled]="currentPage() >= totalPages()"
+            (click)="goToPage(currentPage() + 1)"
+          >
+            <span class="material-icons">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- ===== DELETE CONFIRM DIALOG ===== -->
+@if (isDeleteDialogOpen()) {
+  <app-confirm-dialog
+    [title]="ui.t('reviews.delete.title')"
+    [description]="ui.t('reviews.delete.description', { name: selectedReview()?.userFullName ?? '' })"
+    [confirmLabel]="ui.t('reviews.delete.confirm')"
+    [cancelLabel]="ui.t('reviews.delete.cancel')"
+    [loadingLabel]="ui.t('reviews.delete.loading')"
+    [isLoading]="isDeleting()"
+    (cancel)="closeDeleteDialog()"
+    (confirm)="confirmDelete()"
+  />
+}
