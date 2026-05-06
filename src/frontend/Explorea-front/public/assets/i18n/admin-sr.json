@@ -258,5 +258,58 @@
   "requests.success.rejected": "Zahtev je odbijen.",
 
   "requests.empty.title": "Zahtev nije pronađen",
-  "requests.empty.description": "Ovaj zahtev ne postoji ili je uklonjen."
+  "requests.empty.description": "Ovaj zahtev ne postoji ili je uklonjen.",
+
+  "reviews.stats.total": "Ukupno recenzija",
+  "reviews.stats.hidden": "Sakriveni sadržaj",
+  "reviews.stats.avgRating": "Prosečna ocena",
+
+  "reviews.title": "Recenzije",
+  "reviews.subtitle": "Pregledajte i upravljajte recenzijama korisnika",
+
+  "reviews.filter.btn": "Filteri",
+  "reviews.filter.title": "Filteri",
+  "reviews.filter.reset": "Resetuj sve",
+  "reviews.filter.entityType": "Tip entiteta",
+  "reviews.filter.entity.all": "Sve",
+  "reviews.filter.entity.destination": "Destinacija",
+  "reviews.filter.entity.activity": "Aktivnost",
+  "reviews.filter.entity.place": "Mesto",
+  "reviews.filter.entity.event": "Događaj",
+  "reviews.filter.rating": "Ocena",
+  "reviews.filter.rating.min": "Min",
+  "reviews.filter.rating.max": "Maks",
+  "reviews.filter.rating.any": "Bez ograničenja",
+  "reviews.filter.visibility": "Status",
+  "reviews.filter.visibility.all": "Sve",
+  "reviews.filter.visibility.visible": "Vidljive",
+  "reviews.filter.visibility.hidden": "Sakrivene",
+
+  "reviews.table.user": "Korisnik",
+  "reviews.table.rating": "Ocena",
+  "reviews.table.comment": "Sadržaj",
+  "reviews.table.date": "Datum",
+  "reviews.table.actions": "Akcije",
+
+  "reviews.badge.hidden": "Sakriveno",
+
+  "reviews.empty.title": "Nema recenzija",
+  "reviews.empty.description": "Nismo pronašli recenzije koje odgovaraju trenutnim filterima.",
+
+  "reviews.actions.hide": "Sakrij",
+  "reviews.actions.approve": "Odobri",
+  "reviews.actions.delete": "Obriši",
+
+  "reviews.delete.title": "Obriši recenziju",
+  "reviews.delete.description": "Da li si siguran/na da želiš da obrišeš recenziju korisnika {name}? Ova akcija se ne može poništiti.",
+  "reviews.delete.confirm": "Obriši",
+  "reviews.delete.cancel": "Otkaži",
+  "reviews.delete.loading": "Brisanje...",
+
+  "reviews.success.hidden": "Recenzija je sakrivena.",
+  "reviews.success.approved": "Recenzija je odobrena.",
+  "reviews.success.deleted": "Recenzija je obrisana.",
+
+  "reviews.error.load": "Greška pri učitavanju recenzija.",
+  "reviews.error.action": "Akcija nije uspela. Pokušaj ponovo."
 }
