@@ -10,13 +10,14 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth-interceptor';
+import { apiUrlInterceptor } from './core/interceptors/api-url-interceptor';
 import { AdminUiPreferencesService } from './features/admin/core/services/admin-ui-preferences.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([apiUrlInterceptor, authInterceptor])),
     provideTranslateService({ fallbackLang: 'sr' }),
     provideTranslateHttpLoader({
       prefix: '/assets/i18n/',

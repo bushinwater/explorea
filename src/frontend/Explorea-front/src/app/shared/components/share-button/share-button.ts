@@ -28,6 +28,22 @@ export class ShareButton {
     return !!navigator.share;
   }
 
+  private async copyToClipboard(text: string): Promise<void> {
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+  }
+
   async share(): Promise<void> {
     if (this.canNativeShare) {
       try {
@@ -36,7 +52,7 @@ export class ShareButton {
         // korisnik otkazao — nije greška
       }
     } else {
-      await navigator.clipboard.writeText(this.shareUrl);
+      await this.copyToClipboard(this.shareUrl);
       this.copied = true;
       if (this.copyTimer) clearTimeout(this.copyTimer);
       this.copyTimer = setTimeout(() => { this.copied = false; }, 2000);

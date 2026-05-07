@@ -6,9 +6,11 @@ import { guestGuard } from './core/guards/guest-guard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
 import { Dashboard } from './features/admin/dashboard/dashboard';
 import { AdminDestinationsPageComponent } from './features/admin/destinations/admin-destinations-page.component';
+import { AdminEventsPageComponent } from './features/admin/events/admin-events-page.component';
 import { AdminHomePageComponent } from './features/admin/home/admin-home-page.component';
 import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-shell.component';
 import { AdminSupportPageComponent } from './features/admin/support/admin-support-page.component';
+import { AdminReviewsPageComponent } from './features/admin/reviews/admin-reviews-page.component';
 import { UserDirectoryPageComponent } from './features/admin/users/user-directory-page.component';
 import { CompleteProfile } from './features/auth/complete-profile/complete-profile';
 import { FacebookCallback } from './features/auth/facebook-callback/facebook-callback';
@@ -57,7 +59,15 @@ export const routes: Routes = [
       { path: 'dashboard', component: Dashboard },
       { path: 'map-view', component: AdminHomePageComponent },
       { path: 'destinations', component: AdminDestinationsPageComponent },
-      { path: 'reviews', component: AdminHomePageComponent },
+      { path: 'events', component: AdminEventsPageComponent },
+      { path: 'reviews', component: AdminReviewsPageComponent },
+      {
+        path: 'object-requests/:id',
+        loadComponent: () =>
+          import('./features/admin/object-requests/pages/object-request-detail/object-request-detail').then(
+            (m) => m.AdminObjectRequestDetailComponent,
+          ),
+      },
       { path: 'reports', component: AdminHomePageComponent },
       { path: 'settings', component: AdminHomePageComponent },
       { path: 'support', component: AdminSupportPageComponent },

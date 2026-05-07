@@ -206,5 +206,169 @@
   "destinations.delete.description": "Are you sure you want to remove {name}? This action cannot be undone.",
   "destinations.delete.confirm": "Remove",
   "destinations.delete.cancel": "Cancel",
-  "destinations.delete.loading": "Removing..."
+  "destinations.delete.loading": "Removing...",
+
+  "requests.breadcrumb.destinations": "Destinations",
+  "requests.back": "Back to List",
+  "requests.submitted": "Submitted",
+  "requests.priority.label": "Priority",
+  "requests.priority.low": "Low",
+  "requests.priority.medium": "Medium",
+  "requests.priority.high": "High",
+
+  "requests.kv.capacity": "CAPACITY",
+  "requests.kv.capacity.value": "{rooms} Rooms / {guests} Guests",
+  "requests.kv.contact": "CONTACT",
+  "requests.kv.website": "WEBSITE",
+  "requests.kv.entityId": "ENTITY ID",
+
+  "requests.section.venueOverview": "Venue Overview",
+  "requests.section.docs": "Required Documentation",
+
+  "requests.feature.accessibility": "Accessibility",
+  "requests.feature.ecoCertified": "Eco-Certified",
+  "requests.feature.parking": "Parking Spaces",
+  "requests.feature.hours": "Opening Hours",
+
+  "requests.pipeline.title": "Approval Pipeline",
+  "requests.pipeline.step": "Step {current} of {total}",
+  "requests.pipeline.adminDecision": "Admin Decision",
+  "requests.pipeline.approvedComment": "Request approved and published.",
+
+  "requests.verify.title": "Admin Verification",
+  "requests.verify.notes": "INTERNAL NOTES",
+  "requests.verify.notesHint": "Visible only to Admins",
+  "requests.verify.placeholder": "Add specific comments about the approval status or reasons for rejection...",
+  "requests.verify.approveHint": "Approving this request will automatically notify the Business Owner and generate their public listing draft.",
+
+  "requests.btn.approve": "Approve Venue Request",
+  "requests.btn.reject": "Reject with Note",
+
+  "requests.resolved.approved": "Request approved successfully.",
+  "requests.resolved.rejected": "Request has been rejected.",
+
+  "requests.help": "Need help? Contact the Regional Tourism Board at <strong>+381 21 000 000</strong> for specific local legislation queries regarding this request.",
+
+  "requests.confirm.approve.title": "Approve Venue Request?",
+  "requests.confirm.approve.desc": "This will notify the Business Owner and generate a public listing draft.",
+  "requests.confirm.reject.title": "Reject with Note?",
+  "requests.confirm.reject.desc": "This action cannot be undone. The submitter will be notified of the rejection.",
+
+  "requests.error.commentRequired": "Comment is required when rejecting a request.",
+  "requests.success.approved": "Request approved successfully.",
+  "requests.success.rejected": "Request has been rejected.",
+
+  "requests.empty.title": "Request not found",
+  "requests.empty.description": "This request does not exist or has been removed.",
+
+  "reviews.stats.total": "Total Reviews",
+  "reviews.stats.hidden": "Hidden Content",
+  "reviews.stats.avgRating": "Average Rating",
+
+  "reviews.title": "Reviews",
+  "reviews.subtitle": "Browse and manage user reviews",
+
+  "reviews.filter.btn": "Filters",
+  "reviews.filter.title": "Filters",
+  "reviews.filter.reset": "Reset all",
+  "reviews.filter.entityType": "Entity type",
+  "reviews.filter.entity.all": "All",
+  "reviews.filter.entity.destination": "Destination",
+  "reviews.filter.entity.activity": "Activity",
+  "reviews.filter.entity.place": "Place",
+  "reviews.filter.entity.event": "Event",
+  "reviews.filter.rating": "Rating",
+  "reviews.filter.rating.min": "Min",
+  "reviews.filter.rating.max": "Max",
+  "reviews.filter.rating.any": "Any",
+  "reviews.filter.visibility": "Status",
+  "reviews.filter.visibility.all": "All",
+  "reviews.filter.visibility.visible": "Visible",
+  "reviews.filter.visibility.hidden": "Hidden",
+
+  "reviews.table.user": "User",
+  "reviews.table.rating": "Rating",
+  "reviews.table.comment": "Content",
+  "reviews.table.date": "Date",
+  "reviews.table.actions": "Actions",
+
+  "reviews.badge.hidden": "Hidden",
+
+  "reviews.empty.title": "No reviews",
+  "reviews.empty.description": "No reviews match the current filters.",
+
+  "reviews.actions.hide": "Hide",
+  "reviews.actions.approve": "Approve",
+  "reviews.actions.delete": "Delete",
+
+  "reviews.delete.title": "Delete review",
+  "reviews.delete.description": "Are you sure you want to delete the review by {name}? This action cannot be undone.",
+  "reviews.delete.confirm": "Delete",
+  "reviews.delete.cancel": "Cancel",
+  "reviews.delete.loading": "Deleting...",
+
+  "reviews.success.hidden": "Review has been hidden.",
+  "reviews.success.approved": "Review has been approved.",
+  "reviews.success.deleted": "Review has been deleted.",
+
+  "reviews.error.load": "Failed to load reviews.",
+  "reviews.error.action": "Action failed. Please try again.",
+
+  "sidebar.events": "Events",
+
+  "events.title": "Event Management",
+  "events.subtitle": "Review organization requests, approve dates and communicate with owners.",
+  "events.btn.export": "Export list",
+  "events.btn.create": "Create internal event",
+
+  "events.stats.activeRequests": "Active Requests",
+  "events.stats.pendingApproval": "Needs Approval",
+  "events.stats.approvedThisMonth": "Approved (This Month)",
+  "events.stats.rejected": "Rejected",
+
+  "events.tabs.pending": "Pending Requests",
+  "events.tabs.active": "Active Events",
+  "events.tabs.history": "History",
+
+  "events.search.placeholder": "Filter by name...",
+  "events.filter.btn": "Filter",
+  "events.filter.title": "Filters",
+  "events.filter.reset": "Reset all",
+  "events.filter.type": "Type",
+  "events.filter.region": "Region",
+  "events.filter.allRegions": "All regions",
+
+  "events.table.event": "Event / Organizer",
+  "events.table.type": "Type",
+  "events.table.location": "Location",
+  "events.table.date": "Date",
+  "events.table.priority": "Priority",
+  "events.table.status": "Status",
+  "events.action.details": "Details",
+
+  "events.empty.title": "No events",
+  "events.empty.description": "No events match the current filters.",
+
+  "events.panel.date": "DATE",
+  "events.panel.expectedGuests": "EXPECTED GUESTS",
+  "events.panel.location": "LOCATION",
+  "events.panel.description": "Request Description",
+  "events.panel.coordination": "Coordination with Owner",
+  "events.panel.coordinationHint": "This location is privately owned. Before approving, forward the request to the owner for review.",
+  "events.panel.forward": "Forward to Owner ({owner})",
+  "events.panel.approve": "Approve",
+  "events.panel.reject": "Reject",
+
+  "events.confirm.approve.title": "Approve Event Request?",
+  "events.confirm.approve.desc": "The organizer will be notified that their event has been approved.",
+  "events.confirm.reject.title": "Reject Request?",
+  "events.confirm.reject.desc": "This action cannot be undone. The organizer will be notified of the rejection.",
+  "events.confirm.forward.title": "Forward to Owner?",
+  "events.confirm.forward.desc": "The venue owner will receive a request for approval.",
+
+  "events.success.approved": "Event approved successfully.",
+  "events.success.rejected": "Event request rejected.",
+  "events.success.forwarded": "Request forwarded to owner.",
+  "events.error.load": "Failed to load events.",
+  "events.error.action": "An error occurred. Please try again."
 }
