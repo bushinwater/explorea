@@ -252,9 +252,71 @@
   </main>
 
   <aside class="support-page__panel support-page__panel--details">
-    <div class="support-page__placeholder">
-      <span class="material-icons support-page__placeholder-icon">confirmation_number</span>
-      <p class="support-page__placeholder-title">Detalji tiketa</p>
-    </div>
+    @if (selectedTicket(); as ticket) {
+      <section class="support-details">
+        <header class="support-details__header">
+          <span class="material-icons support-details__icon">confirmation_number</span>
+          <div>
+            <p class="support-details__eyebrow">Tiket</p>
+            <h2 class="support-details__title">{{ ticket.ticketNumber }}</h2>
+          </div>
+        </header>
+
+        <dl class="support-details__list">
+          <div class="support-details__row">
+            <dt>Status</dt>
+            <dd>
+              <span class="support-status support-status--{{ ticket.status }}">
+                {{ statusLabel(ticket.status) }}
+              </span>
+            </dd>
+          </div>
+
+          <div class="support-details__row">
+            <dt>Prioritet</dt>
+            <dd>
+              <span class="support-priority support-priority--{{ ticket.priority }}">
+                {{ priorityLabel(ticket.priority) }}
+              </span>
+            </dd>
+          </div>
+
+          <div class="support-details__row">
+            <dt>Korisnik</dt>
+            <dd>{{ ticket.userName }}</dd>
+          </div>
+
+          <div class="support-details__row">
+            <dt>Tema</dt>
+            <dd>{{ ticket.subject }}</dd>
+          </div>
+        </dl>
+
+        @if (ticket.context) {
+          <section class="support-context">
+            <p class="support-details__eyebrow">Povezani kontekst</p>
+            <a class="support-context__card" [href]="ticket.context.route">
+              <span class="support-context__thumb">
+                @if (ticket.context.thumbnailUrl) {
+                  <img [src]="ticket.context.thumbnailUrl" [alt]="ticket.context.name" />
+                } @else {
+                  <span class="material-icons">travel_explore</span>
+                }
+              </span>
+              <span class="support-context__body">
+                <span class="support-context__type">{{ contextTypeLabel(ticket.context.type) }}</span>
+                <span class="support-context__name">{{ ticket.context.name }}</span>
+              </span>
+              <span class="material-icons support-context__arrow">open_in_new</span>
+            </a>
+          </section>
+        }
+      </section>
+    } @else {
+      <div class="support-page__placeholder">
+        <span class="material-icons support-page__placeholder-icon">confirmation_number</span>
+        <p class="support-page__placeholder-title">Detalji tiketa</p>
+      </div>
+    }
   </aside>
 </section>

@@ -7,7 +7,9 @@ import { AdminSupportService } from './admin-support.service';
 import {
   AiSupportMessage,
   SupportConversation,
+  SupportContextType,
   SupportMessage,
+  SupportTicketPriority,
   SupportTicket,
   SupportTicketStatus,
 } from './admin-support.models';
@@ -104,6 +106,28 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
     };
 
     return labels[status];
+  }
+
+  protected priorityLabel(priority: SupportTicketPriority): string {
+    const labels: Record<SupportTicketPriority, string> = {
+      low: 'Nizak',
+      medium: 'Srednji',
+      high: 'Visok',
+      urgent: 'Hitan',
+    };
+
+    return labels[priority];
+  }
+
+  protected contextTypeLabel(type: SupportContextType): string {
+    const labels: Record<SupportContextType, string> = {
+      destination: 'Destinacija',
+      place: 'Mesto',
+      activity: 'Aktivnost',
+      event: 'Dogadjaj',
+    };
+
+    return labels[type];
   }
 
   protected relativeTime(isoDate: string): string {
