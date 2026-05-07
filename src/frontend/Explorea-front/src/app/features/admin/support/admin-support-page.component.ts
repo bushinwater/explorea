@@ -40,6 +40,9 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
   protected readonly aiSendError = signal('');
   protected readonly activeConversationId = signal<string | null>(null);
   protected readonly selectedTicket = signal<SupportTicket | null>(null);
+  protected readonly internalMessages = computed(() =>
+    this.selectedTicket()?.messages.filter((message) => message.isInternal) ?? [],
+  );
   protected readonly selectedConversation = computed(() => {
     const activeId = this.activeConversationId();
     if (!activeId || activeId === 'ai-assistant') return null;

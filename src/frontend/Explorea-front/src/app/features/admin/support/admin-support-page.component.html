@@ -204,6 +204,11 @@
                 </div>
               </article>
             }
+          } @else {
+            <div class="support-chat-empty">
+              <span class="material-icons">chat_bubble_outline</span>
+              <p>Nije moguce ucitati poruke za ovaj tiket.</p>
+            </div>
           }
         </div>
 
@@ -252,7 +257,22 @@
   </main>
 
   <aside class="support-page__panel support-page__panel--details">
-    @if (selectedTicket(); as ticket) {
+    @if (isTicketLoading()) {
+      <section class="support-details">
+        <div class="support-details__header">
+          <span class="support-skeleton support-skeleton--details-icon"></span>
+          <div class="support-details__skeleton-title">
+            <span class="support-skeleton support-skeleton--title"></span>
+            <span class="support-skeleton support-skeleton--line"></span>
+          </div>
+        </div>
+        <div class="support-details__skeleton-list">
+          @for (_ of [1, 2, 3, 4]; track $index) {
+            <span class="support-skeleton support-skeleton--details-row"></span>
+          }
+        </div>
+      </section>
+    } @else if (selectedTicket(); as ticket) {
       <section class="support-details">
         <header class="support-details__header">
           <span class="material-icons support-details__icon">confirmation_number</span>
@@ -311,11 +331,34 @@
             </a>
           </section>
         }
+
+        <section class="support-internal-notes">
+          <p class="support-details__eyebrow">Interne napomene</p>
+          @if (internalMessages().length) {
+            <div class="support-internal-notes__list">
+              @for (note of internalMessages(); track note.id) {
+                <article class="support-internal-note">
+                  <div class="support-internal-note__meta">
+                    <span>{{ note.authorName }}</span>
+                    <span>{{ messageTime(note.createdAt) }}</span>
+                  </div>
+                  <p>{{ note.content }}</p>
+                </article>
+              }
+            </div>
+          } @else {
+            <p class="support-internal-notes__empty">Nema internih napomena.</p>
+          }
+        </section>
       </section>
     } @else {
-      <div class="support-page__placeholder">
-        <span class="material-icons support-page__placeholder-icon">confirmation_number</span>
-        <p class="support-page__placeholder-title">Detalji tiketa</p>
+      <div class="support-page__placeholder support-page__placeholder--details">
+        <span class="material-icons support-page__placeholder-icon">
+          {{ isAiAssistantActive() ? 'smart_toy' : 'confirmation_number' }}
+        </span>
+        <p class="support-page__placeholder-title">
+          {{ isAiAssistantActive() ? 'AI razgovor nema tiket detalje' : 'Izaberi tiket za detalje' }}
+        </p>
       </div>
     }
   </aside>
