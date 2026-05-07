@@ -51,12 +51,23 @@
           </div>
         } @else {
           @for (conversation of conversations(); track conversation.id) {
-            <button class="support-conversation" type="button">
+            <button
+              class="support-conversation"
+              [class.support-conversation--active]="activeConversationId() === conversation.id"
+              [class.support-conversation--unread]="conversation.unreadCount > 0"
+              type="button"
+              (click)="selectConversation(conversation.id)"
+            >
               <span class="support-conversation__avatar">{{ conversation.userInitials }}</span>
               <span class="support-conversation__body">
                 <span class="support-conversation__topline">
                   <span class="support-conversation__name">{{ conversation.userName }}</span>
-                  <span class="support-conversation__time">{{ relativeTime(conversation.lastMessageAt) }}</span>
+                  <span class="support-conversation__time-wrap">
+                    @if (conversation.unreadCount > 0) {
+                      <span class="support-conversation__dot" aria-label="Neprocitano"></span>
+                    }
+                    <span class="support-conversation__time">{{ relativeTime(conversation.lastMessageAt) }}</span>
+                  </span>
                 </span>
                 <span class="support-conversation__subject">{{ conversation.subject }}</span>
                 <span class="support-conversation__message">{{ conversation.lastMessage }}</span>
@@ -65,6 +76,9 @@
                 <span class="support-status support-status--{{ conversation.status }}">
                   {{ statusLabel(conversation.status) }}
                 </span>
+                @if (conversation.unreadCount > 0) {
+                  <span class="support-unread-count">{{ conversation.unreadCount }}</span>
+                }
               </span>
             </button>
           }

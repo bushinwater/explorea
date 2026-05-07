@@ -47,6 +47,10 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
     this.activeConversationId.set('ai-assistant');
   }
 
+  protected selectConversation(conversationId: string): void {
+    this.activeConversationId.set(conversationId);
+  }
+
   protected statusLabel(status: SupportTicketStatus): string {
     const labels: Record<SupportTicketStatus, string> = {
       open: 'Otvoren',
