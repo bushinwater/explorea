@@ -99,6 +99,65 @@
             </div>
           </div>
         </header>
+
+        <div class="support-messages support-messages--ai">
+          @if (!aiMessages().length) {
+            <div class="support-ai-welcome">
+              <span class="material-icons">auto_awesome</span>
+              <p>Postavi pitanje AI asistentu za destinacije, mesta, dogadjaje ili interni support.</p>
+            </div>
+          } @else {
+            @for (message of aiMessages(); track message.id) {
+              <article class="support-message" [ngClass]="aiMessageClass(message)">
+                <div class="support-message__bubble">
+                  <div class="support-message__meta">
+                    <span>{{ message.role === 'assistant' ? 'AI Asistent' : 'Vi' }}</span>
+                    <span>{{ messageTime(message.createdAt) }}</span>
+                  </div>
+                  <p class="support-message__content">{{ message.content }}</p>
+                </div>
+              </article>
+            }
+          }
+
+          @if (isAiSending()) {
+            <article class="support-message support-message--ai">
+              <div class="support-message__bubble support-message__bubble--typing">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </article>
+          }
+
+          @if (aiSendError()) {
+            <p class="support-ai-error">{{ aiSendError() }}</p>
+          }
+        </div>
+
+        <div class="support-reply">
+          <textarea
+            class="support-reply__input"
+            rows="3"
+            placeholder="Pitaj AI asistenta..."
+            [value]="aiInputText()"
+            [disabled]="isAiSending()"
+            (input)="updateAiInputText($any($event.target).value)"
+            (keydown)="onAiKeydown($event)"
+          ></textarea>
+
+          <div class="support-reply__footer support-reply__footer--end">
+            <button
+              class="btn btn-primary support-reply__send"
+              type="button"
+              [disabled]="!aiInputText().trim() || isAiSending()"
+              (click)="sendAiMessage()"
+            >
+              <span class="material-icons">send</span>
+              {{ isAiSending() ? 'Slanje...' : 'Posalji AI-ju' }}
+            </button>
+          </div>
+        </div>
       } @else if (selectedConversation(); as conversation) {
         <header class="support-chat__header">
           <div class="support-chat__identity">
@@ -112,9 +171,14 @@
           </div>
 
           @if (conversation.status !== 'resolved') {
-            <button class="btn btn-primary btn-sm support-chat__resolve" type="button">
+            <button
+              class="btn btn-primary btn-sm support-chat__resolve"
+              type="button"
+              [disabled]="isResolvingTicket()"
+              (click)="resolveTicket()"
+            >
               <span class="material-icons">check_circle</span>
-              Resi tiket
+              {{ isResolvingTicket() ? 'Resavanje...' : 'Resi tiket' }}
             </button>
           }
         </header>

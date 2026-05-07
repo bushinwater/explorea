@@ -99,6 +99,11 @@
   flex-shrink: 0;
 }
 
+.support-chat__resolve:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .support-messages {
   display: flex;
   min-height: 0;
@@ -109,6 +114,12 @@
   padding: var(--sp-5);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 160px),
+    var(--color-surface);
+}
+
+.support-messages--ai {
+  background:
+    linear-gradient(180deg, rgba(96, 165, 250, 0.06), transparent 170px),
     var(--color-surface);
 }
 
@@ -139,6 +150,30 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface-2);
+}
+
+.support-message__bubble--typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 58px;
+}
+
+.support-message__bubble--typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-info);
+  opacity: 0.5;
+  animation: support-typing 1s ease-in-out infinite;
+}
+
+.support-message__bubble--typing span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.support-message__bubble--typing span:nth-child(3) {
+  animation-delay: 0.28s;
 }
 
 .support-message--admin .support-message__bubble {
@@ -191,6 +226,20 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
+}
+
+@keyframes support-typing {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
 }
 
 .support-skeleton--message {
@@ -249,6 +298,10 @@
   flex-wrap: wrap;
 }
 
+.support-reply__footer--end {
+  justify-content: flex-end;
+}
+
 .support-reply__toggle {
   display: inline-flex;
   align-items: center;
@@ -271,6 +324,39 @@
 .support-reply__send:disabled {
   cursor: not-allowed;
   opacity: 0.58;
+}
+
+.support-ai-welcome {
+  display: flex;
+  max-width: 420px;
+  align-self: center;
+  align-items: center;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: auto 0;
+  padding: var(--sp-5);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.support-ai-welcome .material-icons {
+  font-size: 32px;
+  color: var(--color-info);
+}
+
+.support-ai-welcome p,
+.support-ai-error {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.support-ai-error {
+  align-self: center;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-md);
+  background: rgba(229, 115, 115, 0.12);
+  color: var(--color-danger);
 }
 
 .support-list {
