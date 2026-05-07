@@ -204,6 +204,75 @@
   align-self: flex-end;
 }
 
+.support-reply {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.support-reply__input {
+  width: 100%;
+  min-height: 82px;
+  resize: vertical;
+  padding: var(--sp-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+.support-reply__input:focus {
+  border-color: var(--color-primary);
+}
+
+.support-reply__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.support-reply__input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.support-reply__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.support-reply__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.support-reply__toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+.support-reply__send {
+  min-height: 38px;
+}
+
+.support-reply__send:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .support-list {
   display: flex;
   height: 100%;

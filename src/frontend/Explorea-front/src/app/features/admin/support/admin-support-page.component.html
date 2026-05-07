@@ -142,6 +142,42 @@
             }
           }
         </div>
+
+        @if (selectedTicket(); as ticket) {
+          <div class="support-reply">
+            <textarea
+              class="support-reply__input"
+              rows="3"
+              placeholder="Unesi odgovor..."
+              [value]="replyText()"
+              [disabled]="ticket.status === 'resolved' || isSendingReply()"
+              (input)="updateReplyText($any($event.target).value)"
+              (keydown)="onReplyKeydown($event)"
+            ></textarea>
+
+            <div class="support-reply__footer">
+              <label class="support-reply__toggle">
+                <input
+                  type="checkbox"
+                  [checked]="isInternalNote()"
+                  [disabled]="ticket.status === 'resolved' || isSendingReply()"
+                  (change)="toggleInternalNote($any($event.target).checked)"
+                />
+                <span>Interna napomena</span>
+              </label>
+
+              <button
+                class="btn btn-primary support-reply__send"
+                type="button"
+                [disabled]="ticket.status === 'resolved' || !replyText().trim() || isSendingReply()"
+                (click)="sendReply()"
+              >
+                <span class="material-icons">send</span>
+                {{ isSendingReply() ? 'Slanje...' : 'Posalji odgovor' }}
+              </button>
+            </div>
+          </div>
+        }
       } @else {
         <div class="support-page__placeholder">
           <span class="material-icons support-page__placeholder-icon">support_agent</span>

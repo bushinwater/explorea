@@ -20,7 +20,10 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
   protected readonly conversations = signal<SupportConversation[]>([]);
   protected readonly isLoading = signal(false);
   protected readonly isTicketLoading = signal(false);
+  protected readonly isSendingReply = signal(false);
   protected readonly searchTerm = signal('');
+  protected readonly replyText = signal('');
+  protected readonly isInternalNote = signal(false);
   protected readonly activeConversationId = signal<string | null>(null);
   protected readonly selectedTicket = signal<SupportTicket | null>(null);
   protected readonly selectedConversation = computed(() => {
@@ -49,6 +52,14 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
 
   protected updateSearch(value: string): void {
     this.searchInput$.next(value);
+  }
+
+  protected updateReplyText(value: string): void {
+    this.replyText.set(value);
+  }
+
+  protected toggleInternalNote(checked: boolean): void {
+    this.isInternalNote.set(checked);
   }
 
   protected selectAiAssistant(): void {
@@ -99,8 +110,44 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
     return `support-message--${message.author}`;
   }
 
-  private loadConversations(): void {
-    this.isLoading.set(true);
+  protected sendReply(): void {
+    const ticket = this.selectedTicket();
+    const content = this.replyText().trim();
+    if (!ticket || !content || this.isSendingReply()) return;
+
+    this.isSendingReply.set(true);
+
+    this.subscription.add(
+      this.supportService.sendMessage({
+        ticketId: ticket.id,
+        content,
+        isInternal: this.isInternalNote(),
+      }).subscribe({
+        next: (updatedTicket) => {
+          this.selectedTicket.set(updatedTicket);
+          this.replyText.set('');
+          this.isInternalNote.set(false);
+          this.isSendingReply.set(false);
+          this.loadConversations(false);
+        },
+        error: () => {
+          this.isSendingReply.set(false);
+        },
+      }),
+    );
+  }
+
+  protected onReplyKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.sendReply();
+    }
+  }
+
+  private loadConversations(showLoading = true): void {
+    if (showLoading) {
+      this.isLoading.set(true);
+    }
 
     this.subscription.add(
       this.supportService.getConversations({ search: this.searchTerm() }).subscribe({
