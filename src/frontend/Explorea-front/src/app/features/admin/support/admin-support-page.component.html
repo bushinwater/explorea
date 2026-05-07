@@ -1,5 +1,8 @@
 <section class="support-page" aria-label="Support chat">
-  <aside class="support-page__panel support-page__panel--list">
+  <aside
+    class="support-page__panel support-page__panel--list"
+    [class.support-page__panel--mobile-active]="mobileView() === 'list'"
+  >
     <div class="support-list">
       <div class="support-list__header">
         <div>
@@ -87,8 +90,25 @@
     </div>
   </aside>
 
-  <main class="support-page__panel support-page__panel--chat">
+  <main
+    class="support-page__panel support-page__panel--chat"
+    [class.support-page__panel--mobile-active]="mobileView() === 'chat'"
+  >
     <section class="support-chat">
+      <div class="support-mobile-bar">
+        <button class="support-mobile-action" type="button" (click)="backToMobileList()">
+          <span class="material-icons">arrow_back</span>
+          Razgovori
+        </button>
+
+        @if (selectedTicket()) {
+          <button class="support-mobile-action support-mobile-action--secondary" type="button" (click)="openMobileDetails()">
+            Detalji
+            <span class="material-icons">chevron_right</span>
+          </button>
+        }
+      </div>
+
       @if (isAiAssistantActive()) {
         <header class="support-chat__header support-chat__header--ai">
           <div class="support-chat__identity">
@@ -256,7 +276,17 @@
     </section>
   </main>
 
-  <aside class="support-page__panel support-page__panel--details">
+  <aside
+    class="support-page__panel support-page__panel--details"
+    [class.support-page__panel--mobile-active]="mobileView() === 'details'"
+  >
+    <div class="support-mobile-bar support-mobile-bar--details">
+      <button class="support-mobile-action" type="button" (click)="backToMobileChat()">
+        <span class="material-icons">arrow_back</span>
+        Chat
+      </button>
+    </div>
+
     @if (isTicketLoading()) {
       <section class="support-details">
         <div class="support-details__header">

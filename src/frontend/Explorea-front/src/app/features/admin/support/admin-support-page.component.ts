@@ -14,6 +14,8 @@ import {
   SupportTicketStatus,
 } from './admin-support.models';
 
+type SupportMobileView = 'list' | 'chat' | 'details';
+
 @Component({
   selector: 'app-admin-support-page',
   standalone: true,
@@ -40,6 +42,7 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
   protected readonly aiSendError = signal('');
   protected readonly activeConversationId = signal<string | null>(null);
   protected readonly selectedTicket = signal<SupportTicket | null>(null);
+  protected readonly mobileView = signal<SupportMobileView>('list');
   protected readonly internalMessages = computed(() =>
     this.selectedTicket()?.messages.filter((message) => message.isInternal) ?? [],
   );
@@ -90,11 +93,27 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
     this.activeConversationId.set('ai-assistant');
     this.selectedTicket.set(null);
     this.isTicketLoading.set(false);
+    this.mobileView.set('chat');
   }
 
   protected selectConversation(conversationId: string): void {
     this.activeConversationId.set(conversationId);
+    this.mobileView.set('chat');
     this.loadTicket(conversationId);
+  }
+
+  protected backToMobileList(): void {
+    this.mobileView.set('list');
+  }
+
+  protected backToMobileChat(): void {
+    this.mobileView.set('chat');
+  }
+
+  protected openMobileDetails(): void {
+    if (this.selectedTicket()) {
+      this.mobileView.set('details');
+    }
   }
 
   protected isAiAssistantActive(): boolean {
