@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AdminSupportService } from './admin-support.service';
@@ -21,6 +21,12 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
   protected readonly isLoading = signal(false);
   protected readonly searchTerm = signal('');
   protected readonly activeConversationId = signal<string | null>(null);
+  protected readonly selectedConversation = computed(() => {
+    const activeId = this.activeConversationId();
+    if (!activeId || activeId === 'ai-assistant') return null;
+
+    return this.conversations().find((conversation) => conversation.id === activeId) ?? null;
+  });
 
   constructor(private readonly supportService: AdminSupportService) {}
 
@@ -49,6 +55,10 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
 
   protected selectConversation(conversationId: string): void {
     this.activeConversationId.set(conversationId);
+  }
+
+  protected isAiAssistantActive(): boolean {
+    return this.activeConversationId() === 'ai-assistant';
   }
 
   protected statusLabel(status: SupportTicketStatus): string {

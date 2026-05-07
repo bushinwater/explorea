@@ -88,10 +88,43 @@
   </aside>
 
   <main class="support-page__panel support-page__panel--chat">
-    <div class="support-page__placeholder">
-      <span class="material-icons support-page__placeholder-icon">support_agent</span>
-      <p class="support-page__placeholder-title">Aktivni chat</p>
-    </div>
+    <section class="support-chat">
+      @if (isAiAssistantActive()) {
+        <header class="support-chat__header support-chat__header--ai">
+          <div class="support-chat__identity">
+            <span class="support-chat__avatar support-chat__avatar--ai material-icons">smart_toy</span>
+            <div class="support-chat__title-group">
+              <h2 class="support-chat__title">AI Asistent</h2>
+              <p class="support-chat__subtitle">Direktan razgovor sa AI podrskom</p>
+            </div>
+          </div>
+        </header>
+      } @else if (selectedConversation(); as conversation) {
+        <header class="support-chat__header">
+          <div class="support-chat__identity">
+            <span class="support-chat__avatar">{{ conversation.userInitials }}</span>
+            <div class="support-chat__title-group">
+              <h2 class="support-chat__title">{{ conversation.userName }}</h2>
+              <p class="support-chat__subtitle">
+                {{ conversation.ticketNumber }} · {{ statusLabel(conversation.status) }}
+              </p>
+            </div>
+          </div>
+
+          @if (conversation.status !== 'resolved') {
+            <button class="btn btn-primary btn-sm support-chat__resolve" type="button">
+              <span class="material-icons">check_circle</span>
+              Resi tiket
+            </button>
+          }
+        </header>
+      } @else {
+        <div class="support-page__placeholder">
+          <span class="material-icons support-page__placeholder-icon">support_agent</span>
+          <p class="support-page__placeholder-title">Izaberi razgovor</p>
+        </div>
+      }
+    </section>
   </main>
 
   <aside class="support-page__panel support-page__panel--details">
