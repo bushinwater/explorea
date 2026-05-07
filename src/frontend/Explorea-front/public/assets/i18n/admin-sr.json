@@ -311,5 +311,63 @@
   "reviews.success.deleted": "Recenzija je obrisana.",
 
   "reviews.error.load": "Greška pri učitavanju recenzija.",
-  "reviews.error.action": "Akcija nije uspela. Pokušaj ponovo."
+  "reviews.error.action": "Akcija nije uspela. Pokušaj ponovo.",
+
+  "sidebar.events": "Događaji",
+
+  "events.title": "Upravljanje Događajima",
+  "events.subtitle": "Pregledajte zahteve organizacija, odobrite termine i komunicirajte sa vlasnicima.",
+  "events.btn.export": "Izvezi listu",
+  "events.btn.create": "Kreiraj interni događaj",
+
+  "events.stats.activeRequests": "Aktivni zahtevi",
+  "events.stats.pendingApproval": "Potrebno odobrenje",
+  "events.stats.approvedThisMonth": "Odobreno (ovaj mesec)",
+  "events.stats.rejected": "Odbijeno",
+
+  "events.tabs.pending": "Zahtevi na čekanju",
+  "events.tabs.active": "Aktivni događaji",
+  "events.tabs.history": "Istorija",
+
+  "events.search.placeholder": "Filtriraj po imenu...",
+  "events.filter.btn": "Filter",
+  "events.filter.title": "Filteri",
+  "events.filter.reset": "Resetuj sve",
+  "events.filter.type": "Tip",
+  "events.filter.region": "Region",
+  "events.filter.allRegions": "Svi regioni",
+
+  "events.table.event": "Događaj / Organizator",
+  "events.table.type": "Tip",
+  "events.table.location": "Lokacija",
+  "events.table.date": "Datum",
+  "events.table.priority": "Prioritet",
+  "events.table.status": "Status",
+  "events.action.details": "Detalji",
+
+  "events.empty.title": "Nema događaja",
+  "events.empty.description": "Nema događaja koji odgovaraju trenutnim filterima.",
+
+  "events.panel.date": "DATUM",
+  "events.panel.expectedGuests": "OČEKIVANO LJUDI",
+  "events.panel.location": "LOKACIJA",
+  "events.panel.description": "Opis zahteva",
+  "events.panel.coordination": "Koordinacija sa vlasnikom",
+  "events.panel.coordinationHint": "Ovaj lokalitet je u privatnom vlasništvu. Pre odobrenja, prosledite zahtev vlasniku na uvid.",
+  "events.panel.forward": "Prosleđuj vlasniku ({owner})",
+  "events.panel.approve": "Odobri",
+  "events.panel.reject": "Odbij",
+
+  "events.confirm.approve.title": "Odobriti zahtev za događaj?",
+  "events.confirm.approve.desc": "Organizator će biti obavešten da je njihov događaj odobren.",
+  "events.confirm.reject.title": "Odbiti zahtev?",
+  "events.confirm.reject.desc": "Ova akcija se ne može poništiti. Organizator će biti obavešten o odbijanju.",
+  "events.confirm.forward.title": "Prosleđuj vlasniku?",
+  "events.confirm.forward.desc": "Vlasnik objekta će dobiti zahtev za odobrenje.",
+
+  "events.success.approved": "Događaj je uspešno odobren.",
+  "events.success.rejected": "Zahtev za događaj je odbijen.",
+  "events.success.forwarded": "Zahtev je prosleđen vlasniku.",
+  "events.error.load": "Učitavanje događaja nije uspelo.",
+  "events.error.action": "Došlo je do greške. Pokušajte ponovo."
 }
