@@ -118,6 +118,30 @@
             </button>
           }
         </header>
+
+        <div class="support-messages">
+          @if (isTicketLoading()) {
+            <div class="support-message-skeleton">
+              <span class="support-skeleton support-skeleton--message"></span>
+              <span class="support-skeleton support-skeleton--message support-skeleton--message-short"></span>
+            </div>
+          } @else if (selectedTicket(); as ticket) {
+            @for (message of ticket.messages; track message.id) {
+              <article class="support-message" [ngClass]="messageClass(message)">
+                <div class="support-message__bubble">
+                  <div class="support-message__meta">
+                    <span>{{ message.authorName }}</span>
+                    <span>{{ messageTime(message.createdAt) }}</span>
+                  </div>
+                  <p class="support-message__content">{{ message.content }}</p>
+                  @if (message.isInternal) {
+                    <span class="support-message__internal-label">Interna napomena</span>
+                  }
+                </div>
+              </article>
+            }
+          }
+        </div>
       } @else {
         <div class="support-page__placeholder">
           <span class="material-icons support-page__placeholder-icon">support_agent</span>

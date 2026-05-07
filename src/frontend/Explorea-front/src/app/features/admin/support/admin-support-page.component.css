@@ -99,6 +99,111 @@
   flex-shrink: 0;
 }
 
+.support-messages {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-3);
+  overflow-y: auto;
+  padding: var(--sp-5);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 160px),
+    var(--color-surface);
+}
+
+.support-message {
+  display: flex;
+  width: 100%;
+}
+
+.support-message--user {
+  justify-content: flex-start;
+}
+
+.support-message--admin {
+  justify-content: flex-end;
+}
+
+.support-message--ai {
+  justify-content: flex-start;
+}
+
+.support-message--internal {
+  justify-content: center;
+}
+
+.support-message__bubble {
+  max-width: min(78%, 620px);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+
+.support-message--admin .support-message__bubble {
+  border-color: rgba(40, 105, 76, 0.45);
+  background: rgba(40, 105, 76, 0.18);
+}
+
+.support-message--ai .support-message__bubble {
+  border-color: rgba(96, 165, 250, 0.45);
+  background: rgba(96, 165, 250, 0.14);
+}
+
+.support-message--internal .support-message__bubble {
+  max-width: min(88%, 680px);
+  border-color: rgba(217, 178, 111, 0.36);
+  background: rgba(217, 178, 111, 0.1);
+}
+
+.support-message__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: 6px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.support-message__content {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.support-message__internal-label {
+  display: inline-flex;
+  margin-top: var(--sp-2);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(217, 178, 111, 0.16);
+  color: var(--color-accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.support-message-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.support-skeleton--message {
+  width: 70%;
+  height: 76px;
+  border-radius: var(--radius-md);
+}
+
+.support-skeleton--message-short {
+  width: 48%;
+  align-self: flex-end;
+}
+
 .support-list {
   display: flex;
   height: 100%;

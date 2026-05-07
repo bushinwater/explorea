@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, signal
 import { FormsModule } from '@angular/forms';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AdminSupportService } from './admin-support.service';
-import { SupportConversation, SupportTicketStatus } from './admin-support.models';
+import { SupportConversation, SupportMessage, SupportTicket, SupportTicketStatus } from './admin-support.models';
 
 @Component({
   selector: 'app-admin-support-page',
@@ -19,8 +19,10 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
 
   protected readonly conversations = signal<SupportConversation[]>([]);
   protected readonly isLoading = signal(false);
+  protected readonly isTicketLoading = signal(false);
   protected readonly searchTerm = signal('');
   protected readonly activeConversationId = signal<string | null>(null);
+  protected readonly selectedTicket = signal<SupportTicket | null>(null);
   protected readonly selectedConversation = computed(() => {
     const activeId = this.activeConversationId();
     if (!activeId || activeId === 'ai-assistant') return null;
@@ -51,10 +53,13 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
 
   protected selectAiAssistant(): void {
     this.activeConversationId.set('ai-assistant');
+    this.selectedTicket.set(null);
+    this.isTicketLoading.set(false);
   }
 
   protected selectConversation(conversationId: string): void {
     this.activeConversationId.set(conversationId);
+    this.loadTicket(conversationId);
   }
 
   protected isAiAssistantActive(): boolean {
@@ -82,6 +87,18 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
     return `${Math.floor(hours / 24)} d`;
   }
 
+  protected messageTime(isoDate: string): string {
+    return new Intl.DateTimeFormat('sr-Latn-RS', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(isoDate));
+  }
+
+  protected messageClass(message: SupportMessage): string {
+    if (message.isInternal) return 'support-message--internal';
+    return `support-message--${message.author}`;
+  }
+
   private loadConversations(): void {
     this.isLoading.set(true);
 
@@ -94,6 +111,24 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
         error: () => {
           this.conversations.set([]);
           this.isLoading.set(false);
+        },
+      }),
+    );
+  }
+
+  private loadTicket(ticketId: string): void {
+    this.isTicketLoading.set(true);
+    this.selectedTicket.set(null);
+
+    this.subscription.add(
+      this.supportService.getTicket(ticketId).subscribe({
+        next: (ticket) => {
+          this.selectedTicket.set(ticket);
+          this.isTicketLoading.set(false);
+        },
+        error: () => {
+          this.selectedTicket.set(null);
+          this.isTicketLoading.set(false);
         },
       }),
     );
