@@ -20,6 +20,7 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
   protected readonly conversations = signal<SupportConversation[]>([]);
   protected readonly isLoading = signal(false);
   protected readonly searchTerm = signal('');
+  protected readonly activeConversationId = signal<string | null>(null);
 
   constructor(private readonly supportService: AdminSupportService) {}
 
@@ -40,6 +41,10 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
 
   protected updateSearch(value: string): void {
     this.searchInput$.next(value);
+  }
+
+  protected selectAiAssistant(): void {
+    this.activeConversationId.set('ai-assistant');
   }
 
   protected statusLabel(status: SupportTicketStatus): string {

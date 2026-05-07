@@ -19,6 +19,20 @@
         />
       </label>
 
+      <button
+        class="support-ai-entry"
+        [class.support-ai-entry--active]="activeConversationId() === 'ai-assistant'"
+        type="button"
+        (click)="selectAiAssistant()"
+      >
+        <span class="support-ai-entry__icon material-icons">smart_toy</span>
+        <span class="support-ai-entry__body">
+          <span class="support-ai-entry__title">AI Asistent</span>
+          <span class="support-ai-entry__subtitle">Direktan razgovor sa AI podrskom</span>
+        </span>
+        <span class="support-ai-entry__pin material-icons">push_pin</span>
+      </button>
+
       <div class="support-conversations">
         @if (isLoading()) {
           @for (_ of [1, 2, 3, 4]; track $index) {
