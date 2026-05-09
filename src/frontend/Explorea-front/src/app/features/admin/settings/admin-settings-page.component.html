@@ -1,0 +1,59 @@
+<section class="admin-settings-page">
+  <header class="admin-settings-page__header">
+    <div>
+      <p class="admin-settings-page__eyebrow">Admin nalog</p>
+      <h1>Profil i podešavanja</h1>
+      <p>Upravljaj profilom, preferencijama, obaveštenjima i sistemskim opcijama.</p>
+    </div>
+  </header>
+
+  <nav class="settings-tabs" aria-label="Admin settings tabs">
+    @for (tab of visibleTabs(); track tab.id) {
+    <button class="settings-tab" type="button" [class.settings-tab--active]="activeTab() === tab.id"
+      (click)="setActiveTab(tab.id)">
+      <span class="material-icons settings-tab__icon">{{ tab.icon }}</span>
+
+      <span class="settings-tab__content">
+        <strong>{{ tab.label }}</strong>
+        <small>{{ tab.description }}</small>
+      </span>
+    </button>
+    }
+  </nav>
+
+  <section class="settings-panel card">
+    @switch (activeTab()) {
+    @case ('profile') {
+    <div class="settings-placeholder">
+      <span class="material-icons">person</span>
+      <h2>Profile</h2>
+      <p>Ovde ide Profile tab po Figmi: leva profil kartica, desno forma za izmenu ličnih podataka.</p>
+    </div>
+    }
+
+    @case ('preferences') {
+    <div class="settings-placeholder">
+      <span class="material-icons">tune</span>
+      <h2>App Preferences</h2>
+      <p>Ovde idu podešavanja vezana za izgled i ponašanje aplikacije.</p>
+    </div>
+    }
+
+    @case ('notifications') {
+    <div class="settings-placeholder">
+      <span class="material-icons">notifications</span>
+      <h2>Notifications</h2>
+      <p>Ovde idu podešavanja koja obaveštenja admin prima.</p>
+    </div>
+    }
+
+    @case ('administration') {
+    <div class="settings-placeholder">
+      <span class="material-icons">admin_panel_settings</span>
+      <h2>Administration</h2>
+      <p>Ovde idu sistemska podešavanja vidljiva samo superadminu.</p>
+    </div>
+    }
+    }
+  </section>
+</section>
