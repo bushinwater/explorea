@@ -4,8 +4,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
-  CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
-  CdkDragDrop, CdkDragMove, moveItemInArray, transferArrayItem,
+  CdkDropListGroup, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
+  CdkDragDrop, moveItemInArray, transferArrayItem,
 } from '@angular/cdk/drag-drop';
 
 import { DashboardAuthService }      from '../core/services/dashboard-auth.service';
@@ -32,7 +32,7 @@ const COL_LABELS: Record<number, string> = { 1: '25%', 2: '50%', 3: '75%', 4: '1
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
-    CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
+    CdkDropListGroup, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
     StatCard, ActivityFeed, QuickActions, TrafficChart, SystemStatus, AiPanel,
   ],
   templateUrl: './dashboard.html',
@@ -42,9 +42,8 @@ export class Dashboard implements OnInit, OnDestroy {
   data           = signal<DashboardData | null>(null);
   widgets        = signal<WidgetConfig[]>([]);
   alertDismissed = signal(false);
-  dragging       = signal(false);
-  activeSlotId   = signal<string | null>(null);  // 'rowId:slotIndex'
-  resizingId     = signal<WidgetId | null>(null);
+  dragging   = signal(false);
+  resizingId = signal<WidgetId | null>(null);
   resizeCols     = signal<1|2|3|4>(1);
 
   // SIGNAL — so Angular OnPush detects any mutation immediately
@@ -53,8 +52,6 @@ export class Dashboard implements OnInit, OnDestroy {
   hiddenWidgets: WidgetConfig[]          = [];
 
   private nextRowId = 0;
-  // Shared empty buffers for gap-zone CDK drop lists (one per row ID)
-  private readonly gapBuffers: Record<string, WidgetConfig[]> = {};
 
   private resizeState: {
     startX: number; startCols: 1|2|3|4; widgetId: WidgetId;
@@ -169,20 +166,9 @@ export class Dashboard implements OnInit, OnDestroy {
     this.widgetConfig.save(this.auth.role(), updated);
   }
 
-  // ===== Connected list IDs =====
-
-  get allListIds(): string[] {
-    const rows = this.visibleRows();
-    return [
-      ...rows.map(r => r.id),
-      ...rows.map(r => `gap-${r.id}`),
-      'new-row-zone',
-      'panelList',
-    ];
-  }
-
-  gapBuffer(rowId: string): WidgetConfig[] {
-    return (this.gapBuffers[rowId] ??= []);
+  // IDs for panelList → connects the customizer palette to all dashboard rows
+  get panelListIds(): string[] {
+    return ['new-row-zone', ...this.visibleRows().map(r => r.id)];
   }
 
   // ===== Drawer helpers =====
@@ -226,40 +212,7 @@ export class Dashboard implements OnInit, OnDestroy {
 
   onDragStarted(): void { this.dragging.set(true); }
 
-  onDragEnded(): void {
-    this.dragging.set(false);
-    this.activeSlotId.set(null);
-  }
-
-  // Fired continuously during drag — find nearest slot and highlight it
-  onDragMoved(event: CdkDragMove): void {
-    const pt    = event.pointerPosition;
-    const slots = Array.from(document.querySelectorAll<HTMLElement>('[data-slot-id]'));
-    let found: string | null = null;
-    let closestDist = Infinity;
-
-    for (const el of slots) {
-      const rowEl = el.closest<HTMLElement>('.dash-row');
-      if (!rowEl) continue;
-      const rowRect = rowEl.getBoundingClientRect();
-
-      // Pointer must be within the row's vertical range (±24px tolerance)
-      if (pt.y < rowRect.top - 24 || pt.y > rowRect.bottom + 24) continue;
-
-      const slotRect    = el.getBoundingClientRect();
-      const slotCenterX = slotRect.left + slotRect.width / 2;
-      const dist        = Math.abs(pt.x - slotCenterX);
-
-      if (dist < closestDist) {
-        closestDist = dist;
-        found = el.dataset['slotId'] ?? null;
-      }
-    }
-
-    // Only activate a slot if pointer is within 80px of it
-    if (closestDist > 80) found = null;
-    if (found !== this.activeSlotId()) this.activeSlotId.set(found);
-  }
+  onDragEnded(): void { this.dragging.set(false); }
 
   onDrop(event: CdkDragDrop<WidgetConfig[]>): void {
     const fromId = event.previousContainer.id;
@@ -280,20 +233,6 @@ export class Dashboard implements OnInit, OnDestroy {
         { id: `row-${this.nextRowId++}`, items: [widget] },
       ]);
 
-    } else if (toId.startsWith('gap-')) {
-      const targetRowId = toId.slice(4);
-      const buf = this.gapBuffer(targetRowId);
-      transferArrayItem(event.previousContainer.data, buf, event.previousIndex, 0);
-      const widget = buf.splice(0, 1)[0];
-      widget.visible = true;
-      const insertIdx = this.visibleRows().findIndex(r => r.id === targetRowId);
-      const newRow: DashRow = { id: `row-${this.nextRowId++}`, items: [widget] };
-      this.visibleRows.update(rows => {
-        const refreshed = rows.map(r => r.id === fromId ? { ...r, items: [...r.items] } : r);
-        refreshed.splice(insertIdx === -1 ? refreshed.length : insertIdx, 0, newRow);
-        return refreshed;
-      });
-
     } else {
       transferArrayItem(
         event.previousContainer.data,
@@ -312,7 +251,6 @@ export class Dashboard implements OnInit, OnDestroy {
     this.visibleRows.update(rows => rows.filter(r => r.items.length > 0));
 
     this.dragging.set(false);
-    this.activeSlotId.set(null);
     this.syncFromRows();
   }
 

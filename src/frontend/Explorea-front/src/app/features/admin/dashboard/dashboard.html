@@ -24,7 +24,7 @@
 </div>
 
 <!-- ===== DASHBOARD CANVAS ===== -->
-<div class="dash-canvas" [class.dash-canvas--dragging]="dragging()">
+<div class="dash-canvas" [class.dash-canvas--dragging]="dragging()" cdkDropListGroup>
 
   @if (visibleRows().length === 0 && !dragging()) {
     <div class="dash-canvas__empty">
@@ -34,46 +34,23 @@
   }
 
   @for (row of visibleRows(); track row.id) {
-    <!-- Gap zone — drop here to create a standalone row at this position -->
-    <div
-      [id]="'gap-' + row.id"
-      cdkDropList
-      cdkDropListOrientation="horizontal"
-      [cdkDropListData]="gapBuffer(row.id)"
-      [cdkDropListConnectedTo]="allListIds"
-      (cdkDropListDropped)="onDrop($event)"
-      class="gap-row-zone"
-      [class.gap-row-zone--visible]="dragging()">
-      <span class="material-icons">add_circle_outline</span>
-      <span>{{ ui.t('dashboard.row.new_here') }}</span>
-    </div>
-
     <div
       [id]="row.id"
       cdkDropList
       cdkDropListOrientation="horizontal"
       [cdkDropListData]="row.items"
-      [cdkDropListConnectedTo]="allListIds"
       (cdkDropListDropped)="onDrop($event)"
       class="dash-row">
 
-      <!-- Slot 0: insertion point before the first widget -->
-      <div
-        class="slot-indicator"
-        [class.slot-indicator--visible]="dragging()"
-        [class.slot-indicator--active]="activeSlotId() === row.id + ':0'"
-        [attr.data-slot-id]="row.id + ':0'">
-      </div>
-
-      @for (widget of row.items; track widget.id; let wi = $index) {
+      @for (widget of row.items; track widget.id) {
 
         <div
           cdkDrag
+          [cdkDragData]="widget"
           class="widget-card widget-card--cols-{{ widget.cols }}"
           [class.widget-card--resizing]="resizingId() === widget.id"
           (cdkDragStarted)="onDragStarted()"
-          (cdkDragEnded)="onDragEnded()"
-          (cdkDragMoved)="onDragMoved($event)">
+          (cdkDragEnded)="onDragEnded()">
 
           <!-- Drop placeholder -->
           <div class="widget-drop-placeholder" *cdkDragPlaceholder>
@@ -129,28 +106,19 @@
 
         </div>
 
-        <!-- Slot after each widget -->
-        <div
-          class="slot-indicator"
-          [class.slot-indicator--visible]="dragging()"
-          [class.slot-indicator--active]="activeSlotId() === row.id + ':' + (wi + 1)"
-          [attr.data-slot-id]="row.id + ':' + (wi + 1)">
-        </div>
-
       }
     </div>
   }
 
-  <!-- New-row drop zone -->
+  <!-- New-row drop zone — always in layout (never display:none) so CDK can detect it -->
   <div
     id="new-row-zone"
     cdkDropList
     cdkDropListOrientation="horizontal"
     [cdkDropListData]="newRowZone"
-    [cdkDropListConnectedTo]="allListIds"
     (cdkDropListDropped)="onDrop($event)"
     class="new-row-zone"
-    [class.new-row-zone--visible]="dragging()">
+    [class.new-row-zone--active]="dragging()">
     <span class="material-icons">add_circle_outline</span>
     <span>{{ ui.t('dashboard.row.new') }}</span>
   </div>
@@ -211,7 +179,7 @@
         cdkDropList
         cdkDropListOrientation="vertical"
         [cdkDropListData]="hiddenWidgets"
-        [cdkDropListConnectedTo]="allListIds"
+        [cdkDropListConnectedTo]="panelListIds"
         (cdkDropListDropped)="onDrop($event)"
         class="customizer__palette">
 
@@ -220,10 +188,9 @@
         }
 
         @for (w of hiddenWidgets; track w.id) {
-          <div cdkDrag class="palette-item"
+          <div cdkDrag [cdkDragData]="w" class="palette-item"
                (cdkDragStarted)="onDragStarted()"
-               (cdkDragEnded)="onDragEnded()"
-               (cdkDragMoved)="onDragMoved($event)">
+               (cdkDragEnded)="onDragEnded()">
             <span class="material-icons palette-item__drag-icon">drag_indicator</span>
             <span class="palette-item__label">{{ ui.t('dashboard.widget.' + w.id) }}</span>
             <div class="palette-item palette-item--ghost" *cdkDragPlaceholder>

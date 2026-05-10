@@ -122,39 +122,6 @@
   background: rgba(99, 102, 241, 0.03);
 }
 
-/* ===== GAP ROW ZONE ===== */
-/* Appears between rows during drag to let user insert a widget as a standalone row */
-.gap-row-zone {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-  height: 40px;
-  border: 2px dashed var(--color-border);
-  border-radius: var(--radius-lg);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  transition:
-    border-color 0.2s,
-    background 0.2s,
-    color 0.2s;
-  cursor: default;
-}
-.gap-row-zone .material-icons {
-  font-size: 16px;
-}
-
-.gap-row-zone--visible {
-  display: flex;
-}
-
-.gap-row-zone.cdk-drop-list-receiving {
-  border-color: var(--color-primary);
-  background: rgba(99, 102, 241, 0.06);
-  color: var(--color-primary);
-}
-
 /* ===== WIDGET CARD ===== */
 .widget-card {
   position: relative;
@@ -173,40 +140,25 @@
   container-type: inline-size;
 }
 
-/* Proportional widths within a row — flex-basis 0 so lone widget fills 100% */
-.widget-card--cols-1 {
-  flex: 1 0 0;
-}
-.widget-card--cols-2 {
-  flex: 2 0 0;
-}
-.widget-card--cols-3 {
-  flex: 3 0 0;
-}
-.widget-card--cols-4 {
-  flex: 4 0 0;
-}
+/*
+  Proporcionalne širine — widget raste da popuni slobodan prostor u redu.
+  flex-grow = cols vrednost, flex-shrink = 1, flex-basis = 0.
+  Kada je widget sam u redu → dobija 100% (flex-grow ga širi).
+  Kada ima komšije → dele prostor u odnosu cols : cols.
+  Container queries unutar widget-card automatski menjaju raspored sadržaja.
+*/
+.widget-card--cols-1 { flex: 1 1 0; min-width: 180px; }
+.widget-card--cols-2 { flex: 2 1 0; min-width: 240px; }
+.widget-card--cols-3 { flex: 3 1 0; min-width: 320px; }
+.widget-card--cols-4 { flex: 4 1 0; min-width: 0;     }
 
-/* Responsive: at tablet, min-width so narrow widgets stay readable */
-@media (max-width: 900px) {
-  .widget-card--cols-1 {
-    flex: 2 0 0;
-  }
-}
 @media (max-width: 640px) {
-  .dash-row {
-    flex-direction: column;
-  }
+  .dash-row { flex-direction: column; }
   .widget-card--cols-1,
   .widget-card--cols-2,
   .widget-card--cols-3,
-  .widget-card--cols-4 {
-    flex: 1 0 auto;
-  }
-  .dash-canvas {
-    padding: var(--sp-4);
-    gap: var(--sp-4);
-  }
+  .widget-card--cols-4 { flex: 1 0 auto; min-width: 0; }
+  .dash-canvas { padding: var(--sp-4); gap: var(--sp-4); }
 }
 
 .widget-card:hover {
@@ -309,11 +261,14 @@
 /* ===== WIDGET DROP PLACEHOLDER ===== */
 .cdk-drag-placeholder {
   border: 2px dashed var(--color-primary) !important;
-  background: rgba(99, 102, 241, 0.04) !important;
+  background: rgba(99, 102, 241, 0.06) !important;
   border-radius: var(--radius-lg) !important;
   overflow: hidden;
   opacity: 1 !important;
-  min-height: 80px;
+  min-height: 120px;
+  /* CDK copies widget-card--cols-N class to placeholder, so flex-basis is inherited.
+     This fallback ensures the placeholder is never invisible. */
+  min-width: 160px;
 }
 
 .widget-drop-placeholder {
@@ -389,8 +344,10 @@
 }
 
 /* ===== NEW ROW ZONE ===== */
+/* Always display:flex so CDK can measure the element at drag start.
+   Opacity/pointer-events control visibility instead of display. */
 .new-row-zone {
-  display: none; /* hidden unless dragging */
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--sp-2);
@@ -400,7 +357,10 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
   transition:
+    opacity 0.2s,
     border-color 0.2s,
     background 0.2s,
     color 0.2s;
@@ -410,8 +370,9 @@
   font-size: 20px;
 }
 
-.new-row-zone--visible {
-  display: flex;
+.new-row-zone--active {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .new-row-zone.cdk-drop-list-receiving {
@@ -420,48 +381,14 @@
   color: var(--color-primary);
 }
 
-/* ===== SLOT INDICATORS ===== */
-/*
-  Zero-width flex items placed between every widget in a row.
-  They don't shift widget positions, but render a visible "drop here" gutter
-  via ::after when dragging. The active slot (nearest pointer) gets a stronger highlight.
-*/
-.slot-indicator {
-  position: relative;
-  flex: 0 0 0;
-  width: 0;
-  min-width: 0;
-  align-self: stretch;
-  overflow: visible;
-  z-index: 5;
-  pointer-events: none;
-}
-
-.slot-indicator::after {
-  content: '';
-  position: absolute;
-  left: -5px;
-  top: 4px;
-  bottom: 4px;
-  width: 10px;
-  border-radius: 5px;
-  background: transparent;
-  border: 2px solid transparent;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-
-.slot-indicator--visible::after {
-  background: rgba(99, 102, 241, 0.08);
-  border-color: rgba(99, 102, 241, 0.25);
-}
-
-.slot-indicator--active::after {
-  background: rgba(99, 102, 241, 0.22);
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+/* ===== ROW RECEIVING HIGHLIGHT ===== */
+/* CDK adds cdk-drop-list-receiving when a dragged item hovers over this list */
+.dash-row.cdk-drop-list-receiving {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+  border-radius: var(--radius-lg);
+  background: rgba(99, 102, 241, 0.04);
+  transition: background 0.15s;
 }
 
 /* ===== EMPTY STATE ===== */
