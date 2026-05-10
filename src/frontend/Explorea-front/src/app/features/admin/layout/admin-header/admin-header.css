@@ -243,14 +243,32 @@
   z-index: 199;
 }
 
+/* Hamburger */
+.header__hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.header__hamburger:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+}
+.header__hamburger .material-icons { font-size: 22px; }
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-  .header__left {
-    display: none;
-  }
-  .header__user-info {
-    display: none;
-  }
+  .header__hamburger { display: flex; }
+  .header__left { display: none; }
+  .header__user-info { display: none; }
 }
 
 @media (max-width: 480px) {

@@ -133,7 +133,13 @@
   .logo-text { font-size: 1.4rem; }
 
   .nav-item { gap: var(--spacing-md); padding: var(--spacing-md) var(--spacing-lg); }
-  .sidebar-bottom { gap: var(--spacing-sm); }
+
+  .sidebar-bottom {
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--color-border);
+  }
 }
 
 /* ===== DESKTOP ===== */

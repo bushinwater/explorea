@@ -1,0 +1,188 @@
+<div class="admin-map-wrapper">
+
+  <!-- Top bar -->
+  <div class="admin-map-topbar">
+    <div class="topbar-region">
+      <span class="material-icons">public</span>
+      <span>{{ regionLabel }}</span>
+    </div>
+    <div class="topbar-stat">
+      <span class="material-icons">location_on</span>
+      <span>Pinova: <strong>{{ pinCount }}</strong></span>
+    </div>
+
+    <!-- Filter toggle button -->
+    <button class="topbar-filter-btn" [class.active]="filterPanelVisible || activeFilterCount > 0" type="button" (click)="filterPanelVisible = !filterPanelVisible">
+      <span class="material-icons">tune</span>
+      Filteri
+      @if (activeFilterCount > 0) {
+        <span class="topbar-filter-badge">{{ activeFilterCount }}</span>
+      }
+    </button>
+
+    <!-- Satellite toggle -->
+    <button class="topbar-satellite-btn" [class.active]="isSatellite" type="button" (click)="toggleSatellite()">
+      <span class="material-icons">satellite</span>
+      Satelit
+    </button>
+
+    <div class="topbar-sync">
+      <span class="sync-dot"></span>
+      Live
+    </div>
+
+    @if (loading) {
+      <div class="topbar-loading">
+        <span class="material-icons spin">sync</span>
+      </div>
+    }
+  </div>
+
+  <!-- Map -->
+  <div #mapContainer class="admin-map-container"></div>
+
+</div>
+
+<!-- Filter panel (outside wrapper so it's not clipped) -->
+<aside class="admin-filter-panel" [class.visible]="filterPanelVisible">
+
+  <div class="filter-panel__header">
+    <div class="filter-panel__title-row">
+      <span class="material-icons">tune</span>
+      <h2>Filteri</h2>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      @if (activeFilterCount > 0) {
+        <span class="filter-badge">{{ activeFilterCount }}</span>
+      }
+      <button class="circle-btn circle-btn--sm" type="button" (click)="filterPanelVisible = false">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tip entiteta -->
+  <div class="filter-group">
+    <span class="filter-group__label">Tip</span>
+    <div class="entity-type-grid">
+      @for (et of entityTypes; track et.type) {
+        <button
+          class="entity-type-chip"
+          [class.active]="isEntityTypeSelected(et.type)"
+          type="button"
+          (click)="toggleEntityType(et.type)"
+        >
+          <span class="material-icons" [style.color]="et.color">{{ et.icon }}</span>
+          <span>{{ et.label }}</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Podtip -->
+  @if (subcatEntityType && subcatsToShow.length > 0) {
+    <div class="filter-group">
+      <span class="filter-group__label">Podtip</span>
+      <div class="filter-chips">
+        @for (cat of subcatsToShow; track cat.id) {
+          <button class="filter-chip" [class.active]="isSubcatSelected(cat.id)" type="button" (click)="toggleSubcat(cat.id)">
+            {{ cat.name }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Radno vreme -->
+  <div class="filter-group">
+    <span class="filter-group__label">Radno vreme</span>
+    <label class="toggle-row" (click)="openNowOnly = !openNowOnly; applyFilters()">
+      <span class="material-icons toggle-icon">schedule</span>
+      <span class="toggle-label">Otvoreno sada</span>
+      <div class="toggle-switch" [class.on]="openNowOnly">
+        <div class="toggle-thumb"></div>
+      </div>
+    </label>
+  </div>
+
+  <!-- Minimalna ocena -->
+  <div class="filter-group">
+    <span class="filter-group__label">Minimalna ocena</span>
+    <div class="rating-chips">
+      <button class="rating-chip" [class.active]="minRating === 3"   type="button" (click)="setMinRating(3)">
+        <span class="material-icons">star</span> 3+
+      </button>
+      <button class="rating-chip" [class.active]="minRating === 4"   type="button" (click)="setMinRating(4)">
+        <span class="material-icons">star</span> 4+
+      </button>
+      <button class="rating-chip" [class.active]="minRating === 4.5" type="button" (click)="setMinRating(4.5)">
+        <span class="material-icons">star</span> 4.5+
+      </button>
+    </div>
+  </div>
+
+  <!-- Dodatni filteri (samo kada je izabran jedan tip objekta) -->
+  @if (filterDefsLoading) {
+    <div class="filter-group">
+      <div class="filter-defs-loading">
+        <span class="material-icons spin">sync</span>
+      </div>
+    </div>
+  }
+  @if (!filterDefsLoading && showExtraFilters && filterDefs.length > 0) {
+    <div class="filter-group">
+      <span class="filter-group__label">Dodatni filteri</span>
+      <div class="filter-extra-list">
+        @for (def of filterDefs; track def.filterKey) {
+          @if (def.filterType === 'boolean') {
+            <label class="filter-extra-item">
+              <span class="filter-extra-item__label">{{ def.filterLabel }}</span>
+              <button class="toggle-btn toggle-btn--sm" [class.on]="isExtraFilterActive(def.filterKey)" type="button" (click)="toggleExtraFilter(def.filterKey)">
+                <span class="toggle-btn__track"><span class="toggle-btn__thumb"></span></span>
+              </button>
+            </label>
+          }
+          @if (def.filterType === 'select' || def.filterType === 'multi_select') {
+            <div class="filter-extra-select">
+              <p class="filter-extra-select__label">{{ def.filterLabel }}</p>
+              <div class="filter-chips">
+                @for (opt of def.options; track opt.optionValue) {
+                  <button class="filter-chip" [class.active]="isExtraFilterActive(def.filterKey, opt.optionValue)" type="button" (click)="toggleExtraFilter(def.filterKey, opt.optionValue)">
+                    {{ opt.optionLabel }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Raspon cene -->
+  @if (showPriceRange) {
+    <div class="filter-group">
+      <span class="filter-group__label">Raspon cene (RSD)</span>
+      <div class="filter-price-row">
+        <div class="filter-price-input">
+          <label class="filter-price-label">Min</label>
+          <input type="number" class="filter-input" placeholder="0" [(ngModel)]="minPrice" min="0" />
+        </div>
+        <span class="filter-price-sep">—</span>
+        <div class="filter-price-input">
+          <label class="filter-price-label">Max</label>
+          <input type="number" class="filter-input" placeholder="Bez limita" [(ngModel)]="maxPrice" min="0" />
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Akcije -->
+  @if (activeFilterCount > 0) {
+    <div class="filter-actions">
+      <button class="ghost-btn ghost-btn--sm" type="button" (click)="resetFilters()">Resetuj</button>
+      <button class="primary-btn" type="button" (click)="applyFilters()">Primeni</button>
+    </div>
+  }
+
+</aside>

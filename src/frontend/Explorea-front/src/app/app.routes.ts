@@ -9,6 +9,7 @@ import { AdminDestinationsPageComponent } from './features/admin/destinations/ad
 import { AdminEventsPageComponent } from './features/admin/events/admin-events-page.component';
 import { AdminActivitiesPageComponent } from './features/admin/activities/admin-activities-page.component';
 import { AdminHomePageComponent } from './features/admin/home/admin-home-page.component';
+import { AdminMapViewComponent } from './features/admin/map-view/admin-map-view.component';
 import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-shell.component';
 import { AdminSupportPageComponent } from './features/admin/support/admin-support-page.component';
 import { AdminReviewsPageComponent } from './features/admin/reviews/admin-reviews-page.component';
@@ -58,7 +59,7 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: Dashboard },
-      { path: 'map-view', component: AdminHomePageComponent },
+      { path: 'map-view', component: AdminMapViewComponent },
       { path: 'destinations', component: AdminDestinationsPageComponent },
       { path: 'events', component: AdminEventsPageComponent },
       { path: 'activities', component: AdminActivitiesPageComponent },
