@@ -51,6 +51,20 @@ export class AdminSettingsPageComponent {
     },
   ];
 
+  readonly adminProfile = {
+    firstName: 'Marko',
+    lastName: 'Petrović',
+    fullName: 'Marko Petrović',
+    initials: 'MP',
+    username: 'marko_petrovic',
+    email: 'marko.p@example.rs',
+    role: 'Super Admin',
+    region: 'Beograd, SRB',
+    status: 'Active',
+    bio: 'Upravlja Explorea administracijom, moderacijom sadržaja i sistemskim podešavanjima.',
+    joinedAt: 'Mart 2023.',
+  };
+
   constructor(public auth: DashboardAuthService) {}
 
   visibleTabs(): SettingsTabItem[] {

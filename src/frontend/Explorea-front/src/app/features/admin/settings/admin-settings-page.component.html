@@ -24,10 +24,101 @@
   <section class="settings-panel card">
     @switch (activeTab()) {
     @case ('profile') {
-    <div class="settings-placeholder">
-      <span class="material-icons">person</span>
-      <h2>Profile</h2>
-      <p>Ovde ide Profile tab po Figmi: leva profil kartica, desno forma za izmenu ličnih podataka.</p>
+    <div class="profile-tab">
+      <aside class="profile-card">
+        <div class="profile-card__avatar-wrap">
+          <div class="profile-card__avatar">
+            {{ adminProfile.initials }}
+          </div>
+
+          <span class="profile-card__status-dot" aria-label="Active status"></span>
+        </div>
+
+        <h2>{{ adminProfile.fullName }}</h2>
+        <p class="profile-card__email">{{ adminProfile.email }}</p>
+
+        <span class="profile-card__role">
+          {{ adminProfile.role }}
+        </span>
+
+        <dl class="profile-card__meta">
+          <div>
+            <dt>Status</dt>
+            <dd>{{ adminProfile.status }}</dd>
+          </div>
+
+          <div>
+            <dt>Region</dt>
+            <dd>{{ adminProfile.region }}</dd>
+          </div>
+
+          <div>
+            <dt>Član od</dt>
+            <dd>{{ adminProfile.joinedAt }}</dd>
+          </div>
+        </dl>
+
+        <div class="profile-card__actions">
+          <button class="btn btn-secondary" type="button">
+            <span class="material-icons">photo_camera</span>
+            Upload New Photo
+          </button>
+
+          <button class="profile-card__delete" type="button">
+            <span class="material-icons">delete</span>
+            Delete Photo
+          </button>
+        </div>
+      </aside>
+
+      <section class="profile-form">
+        <header class="profile-form__header">
+          <div>
+            <h2>Informacije o profilu</h2>
+            <p>Ažuriraj lične podatke ulogovanog admina.</p>
+          </div>
+
+          <span class="profile-form__badge">Mock data</span>
+        </header>
+
+        <div class="profile-form__grid">
+          <label class="profile-field">
+            <span>Ime</span>
+            <input type="text" [value]="adminProfile.firstName" />
+          </label>
+
+          <label class="profile-field">
+            <span>Prezime</span>
+            <input type="text" [value]="adminProfile.lastName" />
+          </label>
+
+          <label class="profile-field">
+            <span>Email</span>
+            <input type="email" [value]="adminProfile.email" />
+          </label>
+
+          <label class="profile-field">
+            <span>Region</span>
+            <input type="text" [value]="adminProfile.region" />
+          </label>
+
+          <label class="profile-field profile-field--full">
+            <span>Kratka bio / opis uloge</span>
+            <textarea rows="5">{{ adminProfile.bio }}</textarea>
+          </label>
+        </div>
+
+        <footer class="profile-form__actions">
+          <button class="btn btn-secondary" type="button">
+            Reset Changes
+          </button>
+
+          <button class="btn btn-primary" type="button">
+            <span class="material-icons">save</span>
+            Save Profile
+          </button>
+        </footer>
+      </section>
     </div>
     }
 
