@@ -15,11 +15,11 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { icon: 'dashboard',      labelKey: 'sidebar.dashboard',    route: '/admin/dashboard',    roles: ['super_admin', 'tourist_organization', 'place_owner'] },
+  { icon: 'map',            labelKey: 'sidebar.map',          route: '/admin/map-view',     roles: ['super_admin', 'tourist_organization'] },
   { icon: 'people',         labelKey: 'sidebar.users',        route: '/admin/users',        roles: ['super_admin'] },
   { icon: 'location_on',    labelKey: 'sidebar.destinations', route: '/admin/destinations', roles: ['super_admin', 'tourist_organization'] },
   { icon: 'event',          labelKey: 'sidebar.events',       route: '/admin/events',       roles: ['super_admin', 'tourist_organization'] },
   { icon: 'hiking',         labelKey: 'sidebar.activities',   route: '/admin/activities',   roles: ['super_admin', 'tourist_organization'] },
-  { icon: 'map',            labelKey: 'sidebar.map',          route: '/admin/map-view',     roles: ['super_admin', 'tourist_organization'] },
   { icon: 'star',           labelKey: 'sidebar.reviews',      route: '/admin/reviews',      roles: ['super_admin', 'tourist_organization', 'place_owner'] },
   { icon: 'bar_chart',      labelKey: 'sidebar.reports',      route: '/admin/reports',      roles: ['super_admin', 'tourist_organization'] },
   { icon: 'support_agent',  labelKey: 'sidebar.support',      route: '/admin/support',      roles: ['super_admin', 'tourist_organization', 'place_owner'] },
