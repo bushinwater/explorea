@@ -1,0 +1,395 @@
+<section class="support-page" aria-label="Support chat">
+  <aside
+    class="support-page__panel support-page__panel--list"
+    [class.support-page__panel--mobile-active]="mobileView() === 'list'"
+  >
+    <div class="support-list">
+      <div class="support-list__header">
+        <div>
+          <h2 class="support-list__title">Support</h2>
+          <p class="support-list__subtitle">Razgovori korisnicke podrske</p>
+        </div>
+      </div>
+
+      <label class="support-search">
+        <span class="material-icons support-search__icon">search</span>
+        <input
+          class="support-search__input"
+          type="search"
+          placeholder="Pretrazi ime ili temu"
+          [value]="searchTerm()"
+          (input)="updateSearch($any($event.target).value)"
+        />
+      </label>
+
+      <button
+        class="support-ai-entry"
+        [class.support-ai-entry--active]="activeConversationId() === 'ai-assistant'"
+        type="button"
+        (click)="selectAiAssistant()"
+      >
+        <span class="support-ai-entry__icon material-icons">smart_toy</span>
+        <span class="support-ai-entry__body">
+          <span class="support-ai-entry__title">AI Asistent</span>
+          <span class="support-ai-entry__subtitle">Direktan razgovor sa AI podrskom</span>
+        </span>
+        <span class="support-ai-entry__pin material-icons">push_pin</span>
+      </button>
+
+      <div class="support-conversations">
+        @if (isLoading()) {
+          @for (_ of [1, 2, 3, 4]; track $index) {
+            <div class="support-conversation support-conversation--loading">
+              <span class="support-conversation__avatar support-skeleton"></span>
+              <span class="support-conversation__body">
+                <span class="support-skeleton support-skeleton--title"></span>
+                <span class="support-skeleton support-skeleton--line"></span>
+              </span>
+            </div>
+          }
+        } @else if (!conversations().length) {
+          <div class="support-list__empty">
+            <span class="material-icons">forum</span>
+            <p>Nema razgovora za prikaz.</p>
+          </div>
+        } @else {
+          @for (conversation of conversations(); track conversation.id) {
+            <button
+              class="support-conversation"
+              [class.support-conversation--active]="activeConversationId() === conversation.id"
+              [class.support-conversation--unread]="conversation.unreadCount > 0"
+              type="button"
+              (click)="selectConversation(conversation.id)"
+            >
+              <span class="support-conversation__avatar">{{ conversation.userInitials }}</span>
+              <span class="support-conversation__body">
+                <span class="support-conversation__topline">
+                  <span class="support-conversation__name">{{ conversation.userName }}</span>
+                  <span class="support-conversation__time-wrap">
+                    @if (conversation.unreadCount > 0) {
+                      <span class="support-conversation__dot" aria-label="Neprocitano"></span>
+                    }
+                    <span class="support-conversation__time">{{ relativeTime(conversation.lastMessageAt) }}</span>
+                  </span>
+                </span>
+                <span class="support-conversation__subject">{{ conversation.subject }}</span>
+                <span class="support-conversation__message">{{ conversation.lastMessage }}</span>
+              </span>
+              <span class="support-conversation__meta">
+                <span class="support-status support-status--{{ conversation.status }}">
+                  {{ statusLabel(conversation.status) }}
+                </span>
+                @if (conversation.unreadCount > 0) {
+                  <span class="support-unread-count">{{ conversation.unreadCount }}</span>
+                }
+              </span>
+            </button>
+          }
+        }
+      </div>
+    </div>
+  </aside>
+
+  <main
+    class="support-page__panel support-page__panel--chat"
+    [class.support-page__panel--mobile-active]="mobileView() === 'chat'"
+  >
+    <section class="support-chat">
+      <div class="support-mobile-bar">
+        <button class="support-mobile-action" type="button" (click)="backToMobileList()">
+          <span class="material-icons">arrow_back</span>
+          Razgovori
+        </button>
+
+        @if (selectedTicket()) {
+          <button class="support-mobile-action support-mobile-action--secondary" type="button" (click)="openMobileDetails()">
+            Detalji
+            <span class="material-icons">chevron_right</span>
+          </button>
+        }
+      </div>
+
+      @if (isAiAssistantActive()) {
+        <header class="support-chat__header support-chat__header--ai">
+          <div class="support-chat__identity">
+            <span class="support-chat__avatar support-chat__avatar--ai material-icons">smart_toy</span>
+            <div class="support-chat__title-group">
+              <h2 class="support-chat__title">AI Asistent</h2>
+              <p class="support-chat__subtitle">Direktan razgovor sa AI podrskom</p>
+            </div>
+          </div>
+        </header>
+
+        <div class="support-messages support-messages--ai">
+          @if (!aiMessages().length) {
+            <div class="support-ai-welcome">
+              <span class="material-icons">auto_awesome</span>
+              <p>Postavi pitanje AI asistentu za destinacije, mesta, dogadjaje ili interni support.</p>
+            </div>
+          } @else {
+            @for (message of aiMessages(); track message.id) {
+              <article class="support-message" [ngClass]="aiMessageClass(message)">
+                <div class="support-message__bubble">
+                  <div class="support-message__meta">
+                    <span>{{ message.role === 'assistant' ? 'AI Asistent' : 'Vi' }}</span>
+                    <span>{{ messageTime(message.createdAt) }}</span>
+                  </div>
+                  <p class="support-message__content">{{ message.content }}</p>
+                </div>
+              </article>
+            }
+          }
+
+          @if (isAiSending()) {
+            <article class="support-message support-message--ai">
+              <div class="support-message__bubble support-message__bubble--typing">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </article>
+          }
+
+          @if (aiSendError()) {
+            <p class="support-ai-error">{{ aiSendError() }}</p>
+          }
+        </div>
+
+        <div class="support-reply">
+          <textarea
+            class="support-reply__input"
+            rows="3"
+            placeholder="Pitaj AI asistenta..."
+            [value]="aiInputText()"
+            [disabled]="isAiSending()"
+            (input)="updateAiInputText($any($event.target).value)"
+            (keydown)="onAiKeydown($event)"
+          ></textarea>
+
+          <div class="support-reply__footer support-reply__footer--end">
+            <button
+              class="btn btn-primary support-reply__send"
+              type="button"
+              [disabled]="!aiInputText().trim() || isAiSending()"
+              (click)="sendAiMessage()"
+            >
+              <span class="material-icons">send</span>
+              {{ isAiSending() ? 'Slanje...' : 'Posalji AI-ju' }}
+            </button>
+          </div>
+        </div>
+      } @else if (selectedConversation(); as conversation) {
+        <header class="support-chat__header">
+          <div class="support-chat__identity">
+            <span class="support-chat__avatar">{{ conversation.userInitials }}</span>
+            <div class="support-chat__title-group">
+              <h2 class="support-chat__title">{{ conversation.userName }}</h2>
+              <p class="support-chat__subtitle">
+                {{ conversation.ticketNumber }} · {{ statusLabel(conversation.status) }}
+              </p>
+            </div>
+          </div>
+
+          @if (conversation.status !== 'resolved') {
+            <button
+              class="btn btn-primary btn-sm support-chat__resolve"
+              type="button"
+              [disabled]="isResolvingTicket()"
+              (click)="resolveTicket()"
+            >
+              <span class="material-icons">check_circle</span>
+              {{ isResolvingTicket() ? 'Resavanje...' : 'Resi tiket' }}
+            </button>
+          }
+        </header>
+
+        <div class="support-messages">
+          @if (isTicketLoading()) {
+            <div class="support-message-skeleton">
+              <span class="support-skeleton support-skeleton--message"></span>
+              <span class="support-skeleton support-skeleton--message support-skeleton--message-short"></span>
+            </div>
+          } @else if (selectedTicket(); as ticket) {
+            @for (message of ticket.messages; track message.id) {
+              <article class="support-message" [ngClass]="messageClass(message)">
+                <div class="support-message__bubble">
+                  <div class="support-message__meta">
+                    <span>{{ message.authorName }}</span>
+                    <span>{{ messageTime(message.createdAt) }}</span>
+                  </div>
+                  <p class="support-message__content">{{ message.content }}</p>
+                  @if (message.isInternal) {
+                    <span class="support-message__internal-label">Interna napomena</span>
+                  }
+                </div>
+              </article>
+            }
+          } @else {
+            <div class="support-chat-empty">
+              <span class="material-icons">chat_bubble_outline</span>
+              <p>Nije moguce ucitati poruke za ovaj tiket.</p>
+            </div>
+          }
+        </div>
+
+        @if (selectedTicket(); as ticket) {
+          <div class="support-reply">
+            <textarea
+              class="support-reply__input"
+              rows="3"
+              placeholder="Unesi odgovor..."
+              [value]="replyText()"
+              [disabled]="ticket.status === 'resolved' || isSendingReply()"
+              (input)="updateReplyText($any($event.target).value)"
+              (keydown)="onReplyKeydown($event)"
+            ></textarea>
+
+            <div class="support-reply__footer">
+              <label class="support-reply__toggle">
+                <input
+                  type="checkbox"
+                  [checked]="isInternalNote()"
+                  [disabled]="ticket.status === 'resolved' || isSendingReply()"
+                  (change)="toggleInternalNote($any($event.target).checked)"
+                />
+                <span>Interna napomena</span>
+              </label>
+
+              <button
+                class="btn btn-primary support-reply__send"
+                type="button"
+                [disabled]="ticket.status === 'resolved' || !replyText().trim() || isSendingReply()"
+                (click)="sendReply()"
+              >
+                <span class="material-icons">send</span>
+                {{ isSendingReply() ? 'Slanje...' : 'Posalji odgovor' }}
+              </button>
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="support-page__placeholder">
+          <span class="material-icons support-page__placeholder-icon">support_agent</span>
+          <p class="support-page__placeholder-title">Izaberi razgovor</p>
+        </div>
+      }
+    </section>
+  </main>
+
+  <aside
+    class="support-page__panel support-page__panel--details"
+    [class.support-page__panel--mobile-active]="mobileView() === 'details'"
+  >
+    <div class="support-mobile-bar support-mobile-bar--details">
+      <button class="support-mobile-action" type="button" (click)="backToMobileChat()">
+        <span class="material-icons">arrow_back</span>
+        Chat
+      </button>
+    </div>
+
+    @if (isTicketLoading()) {
+      <section class="support-details">
+        <div class="support-details__header">
+          <span class="support-skeleton support-skeleton--details-icon"></span>
+          <div class="support-details__skeleton-title">
+            <span class="support-skeleton support-skeleton--title"></span>
+            <span class="support-skeleton support-skeleton--line"></span>
+          </div>
+        </div>
+        <div class="support-details__skeleton-list">
+          @for (_ of [1, 2, 3, 4]; track $index) {
+            <span class="support-skeleton support-skeleton--details-row"></span>
+          }
+        </div>
+      </section>
+    } @else if (selectedTicket(); as ticket) {
+      <section class="support-details">
+        <header class="support-details__header">
+          <span class="material-icons support-details__icon">confirmation_number</span>
+          <div>
+            <p class="support-details__eyebrow">Tiket</p>
+            <h2 class="support-details__title">{{ ticket.ticketNumber }}</h2>
+          </div>
+        </header>
+
+        <dl class="support-details__list">
+          <div class="support-details__row">
+            <dt>Status</dt>
+            <dd>
+              <span class="support-status support-status--{{ ticket.status }}">
+                {{ statusLabel(ticket.status) }}
+              </span>
+            </dd>
+          </div>
+
+          <div class="support-details__row">
+            <dt>Prioritet</dt>
+            <dd>
+              <span class="support-priority support-priority--{{ ticket.priority }}">
+                {{ priorityLabel(ticket.priority) }}
+              </span>
+            </dd>
+          </div>
+
+          <div class="support-details__row">
+            <dt>Korisnik</dt>
+            <dd>{{ ticket.userName }}</dd>
+          </div>
+
+          <div class="support-details__row">
+            <dt>Tema</dt>
+            <dd>{{ ticket.subject }}</dd>
+          </div>
+        </dl>
+
+        @if (ticket.context) {
+          <section class="support-context">
+            <p class="support-details__eyebrow">Povezani kontekst</p>
+            <a class="support-context__card" [href]="ticket.context.route">
+              <span class="support-context__thumb">
+                @if (ticket.context.thumbnailUrl) {
+                  <img [src]="ticket.context.thumbnailUrl" [alt]="ticket.context.name" />
+                } @else {
+                  <span class="material-icons">travel_explore</span>
+                }
+              </span>
+              <span class="support-context__body">
+                <span class="support-context__type">{{ contextTypeLabel(ticket.context.type) }}</span>
+                <span class="support-context__name">{{ ticket.context.name }}</span>
+              </span>
+              <span class="material-icons support-context__arrow">open_in_new</span>
+            </a>
+          </section>
+        }
+
+        <section class="support-internal-notes">
+          <p class="support-details__eyebrow">Interne napomene</p>
+          @if (internalMessages().length) {
+            <div class="support-internal-notes__list">
+              @for (note of internalMessages(); track note.id) {
+                <article class="support-internal-note">
+                  <div class="support-internal-note__meta">
+                    <span>{{ note.authorName }}</span>
+                    <span>{{ messageTime(note.createdAt) }}</span>
+                  </div>
+                  <p>{{ note.content }}</p>
+                </article>
+              }
+            </div>
+          } @else {
+            <p class="support-internal-notes__empty">Nema internih napomena.</p>
+          }
+        </section>
+      </section>
+    } @else {
+      <div class="support-page__placeholder support-page__placeholder--details">
+        <span class="material-icons support-page__placeholder-icon">
+          {{ isAiAssistantActive() ? 'smart_toy' : 'confirmation_number' }}
+        </span>
+        <p class="support-page__placeholder-title">
+          {{ isAiAssistantActive() ? 'AI razgovor nema tiket detalje' : 'Izaberi tiket za detalje' }}
+        </p>
+      </div>
+    }
+  </aside>
+</section>
