@@ -1,6 +1,7 @@
 .admin-settings-page {
   display: grid;
   gap: 24px;
+  padding-bottom: 96px;
 }
 
 .admin-settings-page__header {
@@ -65,6 +66,15 @@
 .settings-tab:hover {
   color: var(--color-text-primary);
   background: color-mix(in srgb, var(--color-primary-dark) 38%, transparent);
+}
+
+.settings-tab:focus-visible,
+.toggle:focus-visible,
+.preference-select:focus-visible,
+.delivery-field select:focus-visible,
+.danger-zone__button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 60%, transparent);
+  outline-offset: 3px;
 }
 
 .settings-tab--active {
@@ -1168,5 +1178,22 @@
 
   .administration-actions {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 520px) {
+  .settings-tab {
+    flex: 1 1 100%;
+  }
+
+  .admin-settings-page__header h1 {
+    font-size: 2rem;
+  }
+
+  .profile-card__meta div,
+  .notification-type-item,
+  .system-toggle-item,
+  .danger-zone__item {
+    align-items: flex-start;
   }
 }
