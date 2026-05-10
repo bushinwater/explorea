@@ -96,6 +96,60 @@ export class AdminSettingsPageComponent {
     },
   ];
 
+  readonly notificationChannels = [
+    {
+      icon: 'notifications_active',
+      title: 'Push obaveštenja',
+      description: 'Primaj obaveštenja o važnim promenama direktno u browseru.',
+      enabled: true,
+    },
+    {
+      icon: 'mail',
+      title: 'Email obaveštenja',
+      description: 'Dobijaj sažetke, potvrde i sistemske poruke putem emaila.',
+      enabled: true,
+    },
+    {
+      icon: 'campaign',
+      title: 'Marketing emailovi',
+      description: 'Specijalne ponude, preporuke i novosti vezane za Explorea platformu.',
+      enabled: false,
+    },
+  ];
+
+  readonly notificationTypes = [
+    {
+      icon: 'rate_review',
+      title: 'Recenzije i moderacija',
+      description: 'Nove recenzije, prijave korisnika i sadržaj koji čeka proveru.',
+      enabled: true,
+    },
+    {
+      icon: 'event_available',
+      title: 'Događaji i aktivnosti',
+      description: 'Promene statusa događaja, aktivnosti i novih zahteva organizatora.',
+      enabled: true,
+    },
+    {
+      icon: 'admin_panel_settings',
+      title: 'Sistemska upozorenja',
+      description: 'Bezbednosna upozorenja, promene privilegija i administrativne akcije.',
+      enabled: true,
+    },
+    {
+      icon: 'analytics',
+      title: 'Nedeljni izveštaji',
+      description: 'Kratak pregled performansi, aktivnosti korisnika i popularnog sadržaja.',
+      enabled: false,
+    },
+  ];
+
+  readonly notificationDelivery = {
+    digestFrequency: 'Dnevno',
+    quietHours: '22:00 - 08:00',
+    priority: 'Samo važno',
+  };
+
   constructor(public auth: DashboardAuthService) {}
 
   visibleTabs(): SettingsTabItem[] {

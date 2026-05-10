@@ -258,10 +258,118 @@
     }
 
     @case ('notifications') {
-    <div class="settings-placeholder">
-      <span class="material-icons">notifications</span>
-      <h2>Notifications</h2>
-      <p>Ovde idu podešavanja koja obaveštenja admin prima.</p>
+    <div class="notifications-tab">
+      <section class="notifications-hero">
+        <div>
+          <p class="section-eyebrow">Notifications</p>
+          <h2>Podešavanja obaveštenja</h2>
+          <p>Izaberi kako i kada admin prima obaveštenja o važnim promenama na platformi.</p>
+        </div>
+
+        <span class="profile-form__badge">Mock data</span>
+      </section>
+
+      <section class="notification-channel-grid">
+        @for (channel of notificationChannels; track channel.title) {
+        <article class="notification-channel-card">
+          <div class="notification-channel-card__icon">
+            <span class="material-icons">{{ channel.icon }}</span>
+          </div>
+
+          <div class="notification-channel-card__content">
+            <h3>{{ channel.title }}</h3>
+            <p>{{ channel.description }}</p>
+          </div>
+
+          <button class="toggle" type="button" [class.toggle--active]="channel.enabled"
+            [attr.aria-pressed]="channel.enabled">
+            <span></span>
+          </button>
+        </article>
+        }
+      </section>
+
+      <section class="notification-panel">
+        <header class="notification-panel__header">
+          <div>
+            <p class="section-eyebrow">Vrste obaveštenja</p>
+            <h3>Šta admin želi da prima?</h3>
+            <p>Uključi ili isključi različite kategorije obaveštenja za ovaj nalog.</p>
+          </div>
+        </header>
+
+        <div class="notification-type-list">
+          @for (notification of notificationTypes; track notification.title) {
+          <article class="notification-type-item">
+            <div class="notification-type-item__icon">
+              <span class="material-icons">{{ notification.icon }}</span>
+            </div>
+
+            <div class="notification-type-item__content">
+              <h4>{{ notification.title }}</h4>
+              <p>{{ notification.description }}</p>
+            </div>
+
+            <button class="toggle" type="button" [class.toggle--active]="notification.enabled"
+              [attr.aria-pressed]="notification.enabled">
+              <span></span>
+            </button>
+          </article>
+          }
+        </div>
+      </section>
+
+      <section class="delivery-panel">
+        <header class="delivery-panel__header">
+          <div>
+            <p class="section-eyebrow">Raspored slanja</p>
+            <h3>Učestalost i prioritet</h3>
+            <p>Podesi koliko često se šalju obaveštenja i da li se poštuju mirni sati.</p>
+          </div>
+        </header>
+
+        <div class="delivery-grid">
+          <label class="delivery-field">
+            <span>Učestalost sažetka</span>
+            <select [value]="notificationDelivery.digestFrequency">
+              <option>Dnevno</option>
+              <option>Nedeljno</option>
+              <option>Odmah</option>
+              <option>Isključeno</option>
+            </select>
+          </label>
+
+          <label class="delivery-field">
+            <span>Mirni sati</span>
+            <select [value]="notificationDelivery.quietHours">
+              <option>22:00 - 08:00</option>
+              <option>23:00 - 07:00</option>
+              <option>00:00 - 06:00</option>
+              <option>Bez mirnih sati</option>
+            </select>
+          </label>
+
+          <label class="delivery-field">
+            <span>Prioritet obaveštenja</span>
+            <select [value]="notificationDelivery.priority">
+              <option>Samo važno</option>
+              <option>Sva obaveštenja</option>
+              <option>Samo sistemska upozorenja</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <footer class="notifications-actions">
+        <button class="btn btn-secondary" type="button">
+          Reset Changes
+        </button>
+
+        <button class="btn btn-primary" type="button">
+          <span class="material-icons">save</span>
+          Save Notifications
+        </button>
+      </footer>
     </div>
     }
 
