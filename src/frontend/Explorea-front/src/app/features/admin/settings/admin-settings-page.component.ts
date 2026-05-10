@@ -150,6 +150,84 @@ export class AdminSettingsPageComponent {
     priority: 'Samo važno',
   };
 
+  readonly administrationStats = [
+    {
+      icon: 'verified_user',
+      label: 'Aktivni admini',
+      value: '12',
+      description: 'Nalozi sa aktivnim pristupom admin panelu.',
+    },
+    {
+      icon: 'pending_actions',
+      label: 'Zahtevi na čekanju',
+      value: '24',
+      description: 'Objekti, recenzije i izmene koje čekaju proveru.',
+    },
+    {
+      icon: 'security',
+      label: 'Bezbednosni status',
+      value: 'Stabilno',
+      description: 'Nema kritičnih upozorenja u poslednja 24h.',
+    },
+  ];
+
+  readonly administrationSettings = [
+    {
+      icon: 'manage_accounts',
+      title: 'Upravljanje admin ulogama',
+      description: 'Superadmin može da kontroliše dozvole, regione i pristup drugim adminima.',
+      actionLabel: 'Otvori korisnike',
+    },
+    {
+      icon: 'rule',
+      title: 'Pravila moderacije',
+      description:
+        'Podesi osnovna pravila za odobravanje destinacija, mesta, događaja i aktivnosti.',
+      actionLabel: 'Podesi pravila',
+    },
+    {
+      icon: 'database',
+      title: 'Sistemski podaci',
+      description:
+        'Pregled osnovnih sistemskih parametara, seed podataka i administrativnih podešavanja.',
+      actionLabel: 'Pregledaj sistem',
+    },
+  ];
+
+  readonly systemToggles = [
+    {
+      icon: 'admin_panel_settings',
+      title: 'Dozvoli registraciju novih admina',
+      description: 'Kada je uključeno, novi admin nalozi mogu biti kreirani kroz admin panel.',
+      enabled: false,
+    },
+    {
+      icon: 'fact_check',
+      title: 'Obavezna ručna moderacija',
+      description: 'Novi korisnički sadržaj mora biti ručno odobren pre prikaza na platformi.',
+      enabled: true,
+    },
+    {
+      icon: 'history',
+      title: 'Detaljan audit log',
+      description: 'Pamti detaljne administrativne akcije radi bezbednosti i kasnije provere.',
+      enabled: true,
+    },
+  ];
+
+  readonly dangerousActions = [
+    {
+      icon: 'restart_alt',
+      title: 'Resetuj mock podešavanja',
+      description: 'Vrati sva frontend mock podešavanja na početne vrednosti.',
+    },
+    {
+      icon: 'delete_forever',
+      title: 'Obriši test podatke',
+      description: 'Akcija je prikazana samo kao UI placeholder i nije povezana sa backendom.',
+    },
+  ];
+
   constructor(public auth: DashboardAuthService) {}
 
   visibleTabs(): SettingsTabItem[] {
