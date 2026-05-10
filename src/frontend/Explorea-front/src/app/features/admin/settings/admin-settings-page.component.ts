@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
+import { descriptors } from 'node_modules/chart.js/dist/core/core.defaults';
 
 type SettingsTab = 'profile' | 'preferences' | 'notifications' | 'administration';
 
@@ -64,6 +65,36 @@ export class AdminSettingsPageComponent {
     bio: 'Upravlja Explorea administracijom, moderacijom sadržaja i sistemskim podešavanjima.',
     joinedAt: 'Mart 2023.',
   };
+
+  readonly appPreferences = {
+    language: 'Srpski (SR)',
+    theme: 'Tamna tema',
+    landingPage: 'Dashboard',
+    sidebarMode: 'Kompaktan prikaz',
+    dateFormat: 'DD.MM.YYYY',
+    accentColor: 'Explorea zelena',
+  };
+
+  readonly behaviorPreferences = [
+    {
+      icon: 'dashboard_customize',
+      title: 'Kompaktan sidebar',
+      description: 'Prikaži samo ikonice dok se navigacija ne proširi.',
+      enabled: true,
+    },
+    {
+      icon: 'table_rows',
+      title: 'Gusti prikaz tabela',
+      description: 'Prikaži više redova u admin tabelama sa manjim razmacima.',
+      enabled: false,
+    },
+    {
+      icon: 'bolt',
+      title: 'Brze akcije',
+      description: 'Prikaži najčešće admin akcije odmah na vrhu stranica.',
+      enabled: true,
+    },
+  ];
 
   constructor(public auth: DashboardAuthService) {}
 

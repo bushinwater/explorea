@@ -129,10 +129,131 @@
     }
 
     @case ('preferences') {
-    <div class="settings-placeholder">
-      <span class="material-icons">tune</span>
-      <h2>App Preferences</h2>
-      <p>Ovde idu podešavanja vezana za izgled i ponašanje aplikacije.</p>
+    <div class="preferences-tab">
+      <section class="preferences-hero">
+        <div>
+          <p class="section-eyebrow">App Preferences</p>
+          <h2>Izgled i ponašanje aplikacije</h2>
+          <p>Podesi kako admin panel izgleda i kako se ponaša tokom svakodnevnog rada.</p>
+        </div>
+
+        <span class="profile-form__badge">Mock data</span>
+      </section>
+
+      <section class="preferences-grid">
+        <article class="preference-card preference-card--featured">
+          <div class="preference-card__icon">
+            <span class="material-icons">dark_mode</span>
+          </div>
+
+          <div class="preference-card__content">
+            <span>Tema interfejsa</span>
+            <strong>{{ appPreferences.theme }}</strong>
+            <p>Admin panel trenutno prati tamni Explorea izgled sa zelenim akcentima.</p>
+          </div>
+
+          <select class="preference-select" [value]="appPreferences.theme">
+            <option>Tamna tema</option>
+            <option>Svetla tema</option>
+            <option>Sistemska tema</option>
+          </select>
+        </article>
+
+        <article class="preference-card">
+          <div class="preference-card__icon">
+            <span class="material-icons">language</span>
+          </div>
+
+          <div class="preference-card__content">
+            <span>Jezik aplikacije</span>
+            <strong>{{ appPreferences.language }}</strong>
+            <p>Primarni jezik za admin interfejs i sistemske poruke.</p>
+          </div>
+
+          <select class="preference-select" [value]="appPreferences.language">
+            <option>Srpski (SR)</option>
+            <option>English (EN)</option>
+          </select>
+        </article>
+
+        <article class="preference-card">
+          <div class="preference-card__icon">
+            <span class="material-icons">home</span>
+          </div>
+
+          <div class="preference-card__content">
+            <span>Početna admin stranica</span>
+            <strong>{{ appPreferences.landingPage }}</strong>
+            <p>Stranica koja se otvara nakon ulaska u admin panel.</p>
+          </div>
+
+          <select class="preference-select" [value]="appPreferences.landingPage">
+            <option>Dashboard</option>
+            <option>Korisnici</option>
+            <option>Destinacije</option>
+            <option>Recenzije</option>
+          </select>
+        </article>
+
+        <article class="preference-card">
+          <div class="preference-card__icon">
+            <span class="material-icons">calendar_month</span>
+          </div>
+
+          <div class="preference-card__content">
+            <span>Format datuma</span>
+            <strong>{{ appPreferences.dateFormat }}</strong>
+            <p>Način prikaza datuma u tabelama, karticama i izveštajima.</p>
+          </div>
+
+          <select class="preference-select" [value]="appPreferences.dateFormat">
+            <option>DD.MM.YYYY.</option>
+            <option>YYYY-MM-DD</option>
+            <option>MM/DD/YYYY</option>
+          </select>
+        </article>
+      </section>
+
+      <section class="behavior-panel">
+        <header class="behavior-panel__header">
+          <div>
+            <p class="section-eyebrow">Ponašanje aplikacije</p>
+            <h3>Radni tok admin panela</h3>
+            <p>Opcije koje utiču na navigaciju, prikaz tabela i brzinu rada.</p>
+          </div>
+        </header>
+
+        <div class="behavior-list">
+          @for (preference of behaviorPreferences; track preference.title) {
+          <article class="behavior-item">
+            <div class="behavior-item__icon">
+              <span class="material-icons">{{ preference.icon }}</span>
+            </div>
+
+            <div class="behavior-item__content">
+              <h4>{{ preference.title }}</h4>
+              <p>{{ preference.description }}</p>
+            </div>
+
+            <button class="toggle" type="button" [class.toggle--active]="preference.enabled"
+              [attr.aria-pressed]="preference.enabled">
+              <span></span>
+            </button>
+          </article>
+          }
+        </div>
+      </section>
+
+      <footer class="preferences-actions">
+        <button class="btn btn-secondary" type="button">
+          Reset Changes
+        </button>
+
+        <button class="btn btn-primary" type="button">
+          <span class="material-icons">save</span>
+          Save Preferences
+        </button>
+      </footer>
     </div>
     }
 
