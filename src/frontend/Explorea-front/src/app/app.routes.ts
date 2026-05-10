@@ -10,6 +10,7 @@ import { AdminEventsPageComponent } from './features/admin/events/admin-events-p
 import { AdminHomePageComponent } from './features/admin/home/admin-home-page.component';
 import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-shell.component';
 import { AdminReviewsPageComponent } from './features/admin/reviews/admin-reviews-page.component';
+import { AdminSettingsPageComponent } from './features/admin/settings/admin-settings-page.component';
 import { UserDirectoryPageComponent } from './features/admin/users/user-directory-page.component';
 import { CompleteProfile } from './features/auth/complete-profile/complete-profile';
 import { FacebookCallback } from './features/auth/facebook-callback/facebook-callback';
@@ -68,7 +69,7 @@ export const routes: Routes = [
           ),
       },
       { path: 'reports', component: AdminHomePageComponent },
-      { path: 'settings', component: AdminHomePageComponent },
+      { path: 'settings', component: AdminSettingsPageComponent },
       {
         path: 'users',
         component: UserDirectoryPageComponent,

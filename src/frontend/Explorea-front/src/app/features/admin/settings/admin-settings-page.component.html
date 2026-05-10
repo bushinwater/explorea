@@ -26,20 +26,25 @@
     @case ('profile') {
     <div class="profile-tab">
       <aside class="profile-card">
-        <div class="profile-card__avatar-wrap">
-          <div class="profile-card__avatar">
-            {{ adminProfile.initials }}
+        <div class="profile-card__top">
+          <div class="profile-card__avatar-wrap">
+            <div class="profile-card__avatar">
+              {{ adminProfile.initials }}
+            </div>
+
+            <span class="profile-card__status-dot" aria-label="Active status"></span>
           </div>
 
-          <span class="profile-card__status-dot" aria-label="Active status"></span>
+          <h2>{{ adminProfile.fullName }}</h2>
+          <p class="profile-card__email">
+            <span class="material-icons">mail</span>
+            {{ adminProfile.email }}
+          </p>
+
+          <span class="profile-card__role">
+            {{ adminProfile.role }}
+          </span>
         </div>
-
-        <h2>{{ adminProfile.fullName }}</h2>
-        <p class="profile-card__email">{{ adminProfile.email }}</p>
-
-        <span class="profile-card__role">
-          {{ adminProfile.role }}
-        </span>
 
         <dl class="profile-card__meta">
           <div>
@@ -74,6 +79,7 @@
       <section class="profile-form">
         <header class="profile-form__header">
           <div>
+            <p class="profile-form__eyebrow">Profile</p>
             <h2>Informacije o profilu</h2>
             <p>Ažuriraj lične podatke ulogovanog admina.</p>
           </div>
