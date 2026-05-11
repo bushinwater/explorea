@@ -1,0 +1,264 @@
+@if (successMessage()) {
+  <app-feedback-banner variant="info" [title]="successMessage()" />
+}
+
+<div class="rp-page">
+
+  <!-- ===== PERFORMANCE INSIGHTS ===== -->
+  <section class="rp-insights">
+    <div class="rp-insights__header">
+      <div class="rp-insights__heading">
+        <h1 class="rp-insights__title">{{ ui.t('reports.insights.title') }}</h1>
+        <p class="rp-insights__subtitle">{{ ui.t('reports.insights.subtitle') }}</p>
+      </div>
+      <a class="rp-view-all" routerLink="/admin/dashboard">
+        {{ ui.t('reports.insights.viewAll') }}
+        <span class="material-icons">north_east</span>
+      </a>
+    </div>
+    <div class="rp-insights__cards">
+      @for (stat of performanceStats; track stat.labelKey) {
+        <app-stat-card
+          [label]="ui.t(stat.labelKey)"
+          [value]="stat.value"
+          [trend]="stat.trend"
+          [hint]="ui.t(stat.hintKey)"
+          [tone]="stat.tone"
+        />
+      }
+    </div>
+  </section>
+
+  <!-- ===== REPORT BUILDER ===== -->
+  <section class="rp-builder-card">
+
+    <div class="rp-builder-card__header">
+      <div class="rp-builder-card__title-row">
+        <span class="material-icons rp-builder-card__icon">bar_chart</span>
+        <div>
+          <h2 class="rp-builder-card__title">{{ ui.t('reports.builder.title') }}</h2>
+          <p class="rp-builder-card__subtitle">{{ ui.t('reports.builder.subtitle') }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="rp-builder-body">
+
+      <!-- ===== LEFT: CONFIG ===== -->
+      <div class="rp-config">
+
+        <!-- Data Source -->
+        <div class="rp-config-section">
+          <span class="rp-config-section__label">{{ ui.t('reports.source.title') }}</span>
+          <div class="rp-source-tabs">
+            @for (src of dataSources; track src.id) {
+              <button
+                class="rp-source-tab"
+                [class.rp-source-tab--active]="dataSource() === src.id"
+                (click)="selectDataSource(src.id)"
+              >{{ ui.t(src.labelKey) }}</button>
+            }
+          </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="rp-config-section">
+          <span class="rp-config-section__label">{{ ui.t('reports.metrics.title') }}</span>
+          <div class="rp-metrics">
+            @for (m of metrics; track m.id) {
+              <label class="rp-metric">
+                <input
+                  type="checkbox"
+                  class="rp-metric__check"
+                  [checked]="selectedMetrics().has(m.id)"
+                  (change)="toggleMetric(m.id)"
+                />
+                <span class="rp-metric__dot" [style.background]="m.color"></span>
+                <span class="rp-metric__name">{{ ui.t(m.labelKey) }}</span>
+              </label>
+            }
+          </div>
+        </div>
+
+        <!-- Visualization -->
+        <div class="rp-config-section">
+          <span class="rp-config-section__label">{{ ui.t('reports.viz.title') }}</span>
+          <div class="rp-viz-grid">
+            @for (vt of vizTypes; track vt.id) {
+              <button
+                class="rp-viz-btn"
+                [class.rp-viz-btn--active]="vizType() === vt.id"
+                (click)="selectVizType(vt.id)"
+              >
+                <span class="material-icons">{{ vt.icon }}</span>
+                <span class="rp-viz-btn__label">{{ ui.t(vt.labelKey) }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Time Frame -->
+        <div class="rp-config-section">
+          <span class="rp-config-section__label">{{ ui.t('reports.timeframe.title') }}</span>
+          <div class="rp-tf-wrap">
+            <span class="material-icons rp-tf-icon">schedule</span>
+            <select
+              class="rp-tf-select"
+              [value]="timeFrame()"
+              (change)="selectTimeFrame($any($event.target).value)"
+            >
+              @for (tf of timeFrames; track tf.id) {
+                <option [value]="tf.id">{{ ui.t(tf.labelKey) }}</option>
+              }
+            </select>
+            <span class="material-icons rp-tf-chevron">expand_more</span>
+          </div>
+        </div>
+
+        <!-- Saved Templates -->
+        <div class="rp-config-section">
+          <button class="rp-templates-toggle" (click)="toggleTemplates()">
+            <span class="rp-templates-toggle__text">{{ ui.t('reports.templates.title') }}</span>
+            <span
+              class="material-icons rp-templates-chevron"
+              [class.rp-templates-chevron--open]="isTemplatesOpen()"
+            >expand_more</span>
+          </button>
+          @if (isTemplatesOpen()) {
+            <div class="rp-templates-list">
+              @if (!savedTemplates().length) {
+                <p class="rp-templates-empty">{{ ui.t('reports.templates.empty') }}</p>
+              }
+              @for (tpl of savedTemplates(); track tpl.id) {
+                <div class="rp-template-item" (click)="loadTemplate(tpl)">
+                  <span class="material-icons rp-template-item__icon">description</span>
+                  <span class="rp-template-item__name">{{ tpl.name }}</span>
+                  <button class="rp-template-item__del" (click)="deleteTemplate(tpl.id, $event)">
+                    <span class="material-icons">close</span>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+      </div>
+
+      <!-- ===== RIGHT: PREVIEW ===== -->
+      <div class="rp-preview">
+
+        <!-- Toolbar -->
+        <div class="rp-preview__toolbar">
+          <span class="rp-preview__view-label">
+            {{ ui.t('reports.builder.currentView') }} {{ currentViewLabel() }}
+          </span>
+          <div class="rp-preview__toolbar-actions">
+            <button class="btn btn-ghost btn-sm" (click)="exportPdf()">
+              <span class="material-icons">picture_as_pdf</span>
+              {{ ui.t('reports.builder.export.pdf') }}
+            </button>
+            <button class="btn btn-ghost btn-sm" (click)="exportCsv()">
+              <span class="material-icons">download</span>
+              {{ ui.t('reports.builder.export.csv') }}
+            </button>
+            <button class="btn btn-primary btn-sm" (click)="openSave()">
+              <span class="material-icons">bookmark_add</span>
+              {{ ui.t('reports.builder.saveTemplate') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Chart area -->
+        <div class="rp-chart-area">
+          <div class="rp-chart-area__header">
+            <div>
+              <h3 class="rp-chart-area__title">{{ chartTitle() }}</h3>
+              <p class="rp-chart-area__sub">{{ chartSubtitle() }}</p>
+            </div>
+            <span class="material-icons rp-chart-area__more">more_vert</span>
+          </div>
+
+          <div class="rp-chart-wrap">
+            <!-- Canvas always in DOM so @ViewChild resolves immediately -->
+            <canvas
+              #chartCanvas
+              class="rp-chart-canvas"
+              [class.rp-hidden]="vizType() === 'table' || activeMetrics().length === 0"
+            ></canvas>
+
+            @if (activeMetrics().length === 0) {
+              <div class="rp-chart-empty">
+                <span class="material-icons">stacked_line_chart</span>
+                <p>{{ ui.t('reports.chart.noMetrics') }}</p>
+              </div>
+            } @else if (vizType() === 'table') {
+              <div class="rp-data-table-wrap">
+                <table class="rp-data-table">
+                  <thead>
+                    <tr>
+                      <th class="rp-dt-th">{{ ui.t('reports.table.period') }}</th>
+                      @for (m of activeMetrics(); track m.id) {
+                        <th class="rp-dt-th">
+                          <span class="rp-dt-dot" [style.background]="m.color"></span>
+                          {{ ui.t(m.labelKey) }}
+                        </th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of tableData(); track row.label) {
+                      <tr class="rp-dt-row">
+                        <td class="rp-dt-td rp-dt-td--period">{{ row.label }}</td>
+                        @for (val of row.values; track $index) {
+                          <td class="rp-dt-td">{{ formatNum(val) }}</td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+
+          @if (vizType() !== 'table' && activeMetrics().length > 0) {
+            <div class="rp-chart-footer">
+              @for (m of activeMetrics(); track m.id) {
+                <span class="rp-chart-stat">
+                  <span class="rp-chart-stat__dot" [style.background]="m.color"></span>
+                  {{ ui.t('reports.chart.maxLabel') }} {{ ui.t(m.labelKey) }}: {{ metricSummary(m.id) }}
+                </span>
+              }
+              <span class="rp-chart-sync">{{ ui.t('reports.builder.synced') }}</span>
+            </div>
+          }
+        </div>
+
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===== SAVE TEMPLATE DIALOG ===== -->
+@if (isSaveOpen()) {
+  <div class="rp-save-backdrop" (click)="closeSave()">
+    <div class="rp-save-dialog" (click)="$event.stopPropagation()">
+      <h3 class="rp-save-dialog__title">{{ ui.t('reports.templates.save.title') }}</h3>
+      <input
+        class="rp-save-dialog__input"
+        type="text"
+        [value]="templateName()"
+        (input)="templateName.set($any($event.target).value)"
+        [placeholder]="ui.t('reports.templates.save.placeholder')"
+        (keydown.enter)="confirmSave()"
+      />
+      <div class="rp-save-dialog__actions">
+        <button class="btn btn-ghost btn-sm" (click)="closeSave()">
+          {{ ui.t('reports.templates.save.cancel') }}
+        </button>
+        <button class="btn btn-primary btn-sm" [disabled]="!templateName().trim()" (click)="confirmSave()">
+          {{ ui.t('reports.templates.save.confirm') }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
