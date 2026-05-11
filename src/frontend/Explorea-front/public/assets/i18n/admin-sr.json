@@ -429,5 +429,64 @@
   "activities.delete.loading": "Brisanje...",
 
   "activities.details.showMore": "Prikaži više",
-  "activities.details.showLess": "Prikaži manje"
+  "activities.details.showLess": "Prikaži manje",
+
+  "reports.insights.title": "Uvidi o performansama",
+  "reports.insights.subtitle": "Brzi pregled ključnih metrika platforme.",
+  "reports.insights.viewAll": "Prikaži sve tabele",
+  "reports.insights.traffic": "Mesečni saobraćaj platforme",
+  "reports.insights.traffic.hint": "od prošlog meseca",
+  "reports.insights.topDest": "Najpopularnija destinacija",
+  "reports.insights.topDest.hint": "mesečni rast poseta",
+  "reports.insights.score": "Prosečna ocena operatora",
+  "reports.insights.score.hint": "prosek ocena operatora YTD",
+
+  "reports.builder.title": "Kreator izveštaja",
+  "reports.builder.subtitle": "Konfigurišite parametre za generisanje vizualizacija.",
+  "reports.builder.currentView": "Trenutni prikaz:",
+  "reports.builder.preview.title": "Interaktivni pregled: {vizType} vizualizacija",
+  "reports.builder.preview.subtitle": "Prikaz podataka za {source} — {timeframe}.",
+  "reports.builder.export.pdf": "Izvezi PDF",
+  "reports.builder.export.csv": "CSV",
+  "reports.builder.saveTemplate": "Sačuvaj sablon",
+  "reports.builder.synced": "Poslednja sinhronizacija: pre 2 minuta",
+  "reports.export.pdf.done": "PDF je izvezen.",
+  "reports.export.csv.done": "CSV je izvezen.",
+
+  "reports.source.title": "Izvor podataka",
+  "reports.source.destinations": "Destinacije",
+  "reports.source.users": "Korisnici",
+  "reports.source.reviews": "Recenzije",
+  "reports.source.requests": "Zahtevi",
+
+  "reports.metrics.title": "Metrike",
+  "reports.metric.traffic": "Saobraćaj",
+  "reports.metric.conversion": "Konverzija",
+  "reports.metric.users": "Korisnici",
+  "reports.metric.growth": "Rast",
+
+  "reports.viz.title": "Vizualizacija",
+  "reports.viz.bar": "Stubičasti",
+  "reports.viz.line": "Linijski",
+  "reports.viz.pie": "Kružni",
+  "reports.viz.table": "Tabela",
+
+  "reports.timeframe.title": "Vremenski opseg",
+  "reports.timeframe.last30": "Poslednjih 30 dana",
+  "reports.timeframe.last3months": "Poslednja 3 meseca",
+  "reports.timeframe.last6months": "Poslednjih 6 meseci",
+  "reports.timeframe.ytd": "Od početka godine",
+  "reports.timeframe.last12months": "Poslednjih 12 meseci",
+
+  "reports.chart.noMetrics": "Izaberite barem jednu metriku za prikaz.",
+  "reports.chart.maxLabel": "Maks",
+  "reports.table.period": "Period",
+
+  "reports.templates.title": "Sačuvani šabloni",
+  "reports.templates.empty": "Nema sačuvanih šablona.",
+  "reports.templates.saved": "Šablon je sačuvan.",
+  "reports.templates.save.title": "Sačuvaj šablon",
+  "reports.templates.save.placeholder": "Naziv šablona...",
+  "reports.templates.save.confirm": "Sačuvaj",
+  "reports.templates.save.cancel": "Otkaži"
 }
