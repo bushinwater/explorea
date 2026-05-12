@@ -46,7 +46,16 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         public async Task<(List<Destination> Items, int Total)> GetAdminPagedAsync(
-            int? cityId, string? visibility, List<Guid>? restrictToIds, int page, int pageSize)
+            string? search,
+            int? cityId,
+            string? visibility,
+            int? regionId,
+            int? typeId,
+            decimal? minRating,
+            decimal? maxRating,
+            List<Guid>? restrictToIds,
+            int page,
+            int pageSize)
         {
             var query = _db.Destinations
                 .IgnoreQueryFilters() // admin vidi i soft-deleted
@@ -57,11 +66,37 @@ namespace Explorea.Server.Repositories.Implementations
                 .Where(d => !d.IsDeleted)
                 .AsQueryable();
 
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(d =>
+                    d.Name.ToLower().Contains(term) ||
+                    d.Slug.ToLower().Contains(term) ||
+                    (d.City != null && d.City.Name.ToLower().Contains(term)) ||
+                    (d.Country != null && d.Country.Name.ToLower().Contains(term)) ||
+                    (d.Type != null && d.Type.Name.ToLower().Contains(term)));
+            }
+
             if (cityId.HasValue)
                 query = query.Where(d => d.CityId == cityId.Value);
 
             if (!string.IsNullOrWhiteSpace(visibility))
-                query = query.Where(d => d.Visibility == visibility);
+            {
+                var visibilityValues = NormalizeVisibilityValues(visibility);
+                query = query.Where(d => visibilityValues.Contains(d.Visibility.ToLower()));
+            }
+
+            if (regionId.HasValue)
+                query = query.Where(d => d.City != null && d.City.RegionId == regionId.Value);
+
+            if (typeId.HasValue)
+                query = query.Where(d => d.TypeId == typeId.Value);
+
+            if (minRating.HasValue)
+                query = query.Where(d => d.AvgRating >= minRating.Value);
+
+            if (maxRating.HasValue)
+                query = query.Where(d => d.AvgRating <= maxRating.Value);
 
             if (restrictToIds != null && restrictToIds.Count > 0)
                 query = query.Where(d => restrictToIds.Contains(d.Id));
@@ -96,6 +131,18 @@ namespace Explorea.Server.Repositories.Implementations
                 .Select(d => d.CityId!.Value)
                 .Distinct()
                 .ToListAsync();
+        }
+
+        private static string[] NormalizeVisibilityValues(string visibility)
+        {
+            return visibility.Trim().ToLower() switch
+            {
+                "active" => ["active", "published"],
+                "pending" => ["pending", "draft"],
+                "inactive" => ["inactive", "archived"],
+                "rejected" => ["rejected"],
+                var value => [value]
+            };
         }
     }
 }

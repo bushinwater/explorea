@@ -5,7 +5,16 @@ namespace Explorea.Server.Services.Admin.Interfaces
     public interface IAdminDestinationService
     {
         Task<(List<AdminDestinationListDto> Items, int Total)> GetAllAsync(
-            int? cityId, string? visibility, int page, int pageSize, Guid currentUserId);
+            string? search,
+            int? cityId,
+            string? visibility,
+            int? regionId,
+            int? typeId,
+            decimal? minRating,
+            decimal? maxRating,
+            int page,
+            int pageSize,
+            Guid currentUserId);
 
         Task<AdminDestinationListDto?> GetByIdAsync(Guid id, Guid currentUserId);
 

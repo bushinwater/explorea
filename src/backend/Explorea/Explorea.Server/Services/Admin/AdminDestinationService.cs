@@ -27,7 +27,16 @@ namespace Explorea.Server.Services.Admin
         }
 
         public async Task<(List<AdminDestinationListDto> Items, int Total)> GetAllAsync(
-            int? cityId, string? visibility, int page, int pageSize, Guid currentUserId)
+            string? search,
+            int? cityId,
+            string? visibility,
+            int? regionId,
+            int? typeId,
+            decimal? minRating,
+            decimal? maxRating,
+            int page,
+            int pageSize,
+            Guid currentUserId)
         {
             List<Guid>? restrictToIds = null;
 
@@ -44,7 +53,16 @@ namespace Explorea.Server.Services.Admin
             }
 
             var (items, total) = await _destinationRepo.GetAdminPagedAsync(
-                cityId, visibility, restrictToIds, page, pageSize);
+                search,
+                cityId,
+                visibility,
+                regionId,
+                typeId,
+                minRating,
+                maxRating,
+                restrictToIds,
+                page,
+                pageSize);
 
             return (items.Select(MapToListDto).ToList(), total);
         }

@@ -21,15 +21,30 @@ namespace Explorea.Server.Controllers.Admin
         // GET /api/admin/destinations
         [HttpGet]
         public async Task<IActionResult> GetAll(
+            [FromQuery] string? search,
             [FromQuery] int? cityId,
             [FromQuery] string? visibility,
+            [FromQuery] int? regionId,
+            [FromQuery] int? typeId,
+            [FromQuery] decimal? minRating,
+            [FromQuery] decimal? maxRating,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 20)
+            [FromQuery] int pageSize = 15)
         {
             try
             {
                 var userId = GetCurrentUserId();
-                var (items, total) = await _service.GetAllAsync(cityId, visibility, page, pageSize, userId);
+                var (items, total) = await _service.GetAllAsync(
+                    search,
+                    cityId,
+                    visibility,
+                    regionId,
+                    typeId,
+                    minRating,
+                    maxRating,
+                    page,
+                    pageSize,
+                    userId);
                 return Ok(new { total, items });
             }
             catch (UnauthorizedAccessException ex)
