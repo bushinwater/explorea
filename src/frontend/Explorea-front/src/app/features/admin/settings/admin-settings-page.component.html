@@ -91,23 +91,29 @@
             <p>Ažuriraj lične podatke ulogovanog admina.</p>
           </div>
 
+          @if (profileSuccessMessage()) {
+          <p class="settings-inline-message settings-inline-message--success">{{ profileSuccessMessage() }}</p>
+          }
           <span class="profile-form__badge">Backend Data</span>
         </header>
 
         <div class="profile-form__grid">
           <label class="profile-field">
             <span>Ime</span>
-            <input type="text" [value]="adminProfile().firstName" />
+            <input #firstNameInput type="text" [value]="profileForm().firstName" [disabled]="isProfileSaving()"
+              (input)="updateProfileField('firstName', firstNameInput.value)" />
           </label>
 
           <label class="profile-field">
             <span>Prezime</span>
-            <input type="text" [value]="adminProfile().lastName" />
+            <input #lastNameInput type="text" [value]="profileForm().lastName" [disabled]="isProfileSaving()"
+              (input)="updateProfileField('lastName', lastNameInput.value)" />
           </label>
 
           <label class="profile-field">
             <span>Email</span>
-            <input type="email" [value]="adminProfile().email" />
+            <input #emailInput type="email" [value]="profileForm().email" [disabled]="isProfileSaving()"
+              (input)="updateProfileField('email', emailInput.value)" />
           </label>
 
           <label class="profile-field">
@@ -123,13 +129,14 @@
         </div>
 
         <footer class="profile-form__actions">
-          <button class="btn btn-secondary" type="button">
+          <button class="btn btn-secondary" type="button" [disabled]="isProfileSaving()"
+            (click)="resetProfileChanges()">
             Reset Changes
           </button>
 
-          <button class="btn btn-primary" type="button">
+          <button class="btn btn-primary" type="button" [disabled]="isProfileSaving()" (click)="saveProfile()">
             <span class="material-icons">save</span>
-            Save Profile
+            {{ isProfileSaving() ? 'Saving...' : 'Save Profile' }}
           </button>
         </footer>
       </section>

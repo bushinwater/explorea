@@ -7,6 +7,13 @@ import { AdminProfileDto, AdminSettingsService } from './admin-settings.service'
 
 type SettingsTab = 'profile' | 'preferences' | 'notifications' | 'administration';
 
+interface AdminProfileFormState {
+  firstName: string;
+  lastName: string;
+  email: string;
+  profileImageUrl: string | null;
+}
+
 interface SettingsTabItem {
   id: SettingsTab;
   label: string;
@@ -30,6 +37,9 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
   readonly isProfileLoading = signal(false);
   readonly profileErrorMessage = signal('');
+
+  readonly isProfileSaving = signal(false);
+  readonly profileSuccessMessage = signal('');
 
   readonly tabs: SettingsTabItem[] = [
     {
@@ -236,6 +246,13 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     },
   ];
 
+  readonly profileForm = signal<AdminProfileFormState>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    profileImageUrl: '',
+  });
+
   constructor(
     public auth: DashboardAuthService,
     private readonly adminSettingsService: AdminSettingsService,
@@ -264,6 +281,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       this.adminSettingsService.getProfile().subscribe({
         next: (profile) => {
           this.adminProfile.set(profile);
+          this.resetProfileForm(profile);
           this.isProfileLoading.set(false);
         },
         error: () => {
@@ -272,6 +290,66 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  protected updateProfileField(field: keyof AdminProfileFormState, value: string): void {
+    this.profileForm.update((current) => ({
+      ...current,
+      [field]: field === 'profileImageUrl' && !value.trim() ? null : value,
+    }));
+
+    this.profileSuccessMessage.set('');
+    this.profileErrorMessage.set('');
+  }
+
+  protected resetProfileChanges(): void {
+    this.resetProfileForm(this.adminProfile());
+    this.profileSuccessMessage.set('');
+    this.profileErrorMessage.set('');
+  }
+
+  protected saveProfile(): void {
+    const form = this.profileForm();
+
+    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
+      this.profileErrorMessage.set('Ime, prezime i email su obavezni.');
+      return;
+    }
+
+    this.isProfileSaving.set(true);
+    this.profileErrorMessage.set('');
+    this.profileSuccessMessage.set('');
+
+    this.subscription.add(
+      this.adminSettingsService
+        .updateProfile({
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          email: form.email.trim(),
+          profileImageUrl: form.profileImageUrl,
+        })
+        .subscribe({
+          next: (profile) => {
+            this.adminProfile.set(profile);
+            this.resetProfileForm(profile);
+            this.profileSuccessMessage.set('Profil je uspešno sačuvan.');
+            this.isProfileSaving.set(false);
+          },
+          error: () => {
+            this.profileErrorMessage.set('Nije moguće sačuvati izmene profila.');
+            this.isProfileSaving.set(false);
+          },
+        }),
+    );
+  }
+
+  private resetProfileForm(profile: AdminProfileDto): void {
+    this.profileForm.set({
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      email: profile.email,
+      profileImageUrl: profile.profileImageUrl,
+    });
   }
 
   protected formattedMemberSince(): string {

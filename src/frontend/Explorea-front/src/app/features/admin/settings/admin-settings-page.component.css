@@ -123,6 +123,10 @@
   font-size: 0.9rem;
 }
 
+.settings-inline-message--success {
+  color: var(--color-primary);
+}
+
 .settings-inline-message--error {
   color: var(--color-danger);
 }
@@ -390,11 +394,23 @@
   line-height: 1.55;
 }
 
+.profile-field input[readonly] {
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
 .profile-field input:focus,
 .profile-field textarea:focus {
   border-color: color-mix(in srgb, var(--color-primary) 54%, transparent);
   background: var(--color-surface-3);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.profile-field input:disabled,
+.profile-field textarea:disabled,
+.profile-form__actions .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .profile-form__actions {
