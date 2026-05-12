@@ -188,7 +188,9 @@ namespace Explorea.Server.Controllers.Admin
           RoleLabel = FormatRoleLabel(user.Role.Name),
           Region = user.ManagedRegion?.Name ?? "Sve regije",
           Status = user.IsActive ? "Active" : "Inactive",
-          MemberSince = user.MemberSince,
+          MemberSince = user.MemberSince.Year <= 1
+          ? user.CreatedAt
+          : user.MemberSince,
           ProfileImageUrl = user.ProfileImageUrl
       };
     }
@@ -200,6 +202,7 @@ namespace Explorea.Server.Controllers.Admin
           "super_admin" => "Super Admin",
           "tourist_organization" => "Tourist Organization",
           "place_owner" => "Place Owner",
+          "admin" => "Admin",
           _ => role
       };
     }
@@ -216,6 +219,15 @@ namespace Explorea.Server.Controllers.Admin
 
       var initials = $"{firstInitial}{lastInitial}".ToUpperInvariant();
       return string.IsNullOrWhiteSpace(initials) ? "AD" : initials;
+    }
+
+    private static DateTimeOffset ResolveMemberSince(User user)
+    {
+      if(user.MemberSince.Year > 1) return user.MemberSince;
+
+      if(user.CreatedAt.Year > 1) return user.CreatedAt;
+
+      return DateTimeOffset.UtcNow;
     }
 
     private Guid? TryGetCurrentUserId()

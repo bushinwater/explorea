@@ -117,6 +117,16 @@
   box-shadow: none;
 }
 
+.settings-inline-message {
+  margin: 10px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.settings-inline-message--error {
+  color: var(--color-danger);
+}
+
 .profile-tab {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);

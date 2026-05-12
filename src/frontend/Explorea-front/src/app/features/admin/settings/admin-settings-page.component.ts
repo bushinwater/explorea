@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { descriptors } from 'node_modules/chart.js/dist/core/core.defaults';
+import { Subscription } from 'rxjs';
+import { AdminProfileDto, AdminSettingsService } from './admin-settings.service';
 
 type SettingsTab = 'profile' | 'preferences' | 'notifications' | 'administration';
 
@@ -21,8 +23,13 @@ interface SettingsTabItem {
   styleUrl: './admin-settings-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminSettingsPageComponent {
+export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   activeTab = signal<SettingsTab>('profile');
+
+  private readonly subscription = new Subscription();
+
+  readonly isProfileLoading = signal(false);
+  readonly profileErrorMessage = signal('');
 
   readonly tabs: SettingsTabItem[] = [
     {
@@ -52,19 +59,20 @@ export class AdminSettingsPageComponent {
     },
   ];
 
-  readonly adminProfile = {
+  readonly adminProfile = signal<AdminProfileDto>({
+    id: '',
     firstName: 'Marko',
     lastName: 'Petrović',
     fullName: 'Marko Petrović',
     initials: 'MP',
-    username: 'marko_petrovic',
     email: 'marko.p@example.rs',
-    role: 'Super Admin',
+    role: 'super_admin',
+    roleLabel: 'Super Admin',
     region: 'Beograd, SRB',
     status: 'Active',
-    bio: 'Upravlja Explorea administracijom, moderacijom sadržaja i sistemskim podešavanjima.',
-    joinedAt: 'Mart 2023.',
-  };
+    memberSince: '2023-03-01T00:00:00Z',
+    profileImageUrl: null,
+  });
 
   readonly appPreferences = {
     language: 'Srpski (SR)',
@@ -228,7 +236,17 @@ export class AdminSettingsPageComponent {
     },
   ];
 
-  constructor(public auth: DashboardAuthService) {}
+  constructor(
+    public auth: DashboardAuthService,
+    private readonly adminSettingsService: AdminSettingsService,
+  ) {}
+
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
+  }
+  ngOnInit(): void {
+    this.loadProfile();
+  }
 
   visibleTabs(): SettingsTabItem[] {
     return this.tabs.filter((tab) => !tab.superAdminOnly || this.auth.role() === 'super_admin');
@@ -236,5 +254,39 @@ export class AdminSettingsPageComponent {
 
   setActiveTab(tab: SettingsTab): void {
     this.activeTab.set(tab);
+  }
+
+  private loadProfile(): void {
+    this.isProfileLoading.set(true);
+    this.profileErrorMessage.set('');
+
+    this.subscription.add(
+      this.adminSettingsService.getProfile().subscribe({
+        next: (profile) => {
+          this.adminProfile.set(profile);
+          this.isProfileLoading.set(false);
+        },
+        error: () => {
+          this.profileErrorMessage.set('Nije moguće učitati podatke admin profila.');
+          this.isProfileLoading.set(false);
+        },
+      }),
+    );
+  }
+
+  protected formattedMemberSince(): string {
+    const value = this.adminProfile().memberSince;
+
+    if (!value) return 'N/A';
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime()) || date.getFullYear() <= 1) return 'N/A';
+
+    return new Intl.DateTimeFormat('sr-Latn-RS', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date(value));
   }
 }
