@@ -1,17 +1,17 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { AdminRole, ROLE_LABELS } from '../models/admin.models';
+import { AdminProfileService } from './admin-profile.service';
 
 const STORAGE_KEY = 'explorea_admin_role';
 
 @Injectable({ providedIn: 'root' })
 export class DashboardAuthService {
-  private _role = signal<AdminRole>(this.loadRole());
+  private readonly profileService = inject(AdminProfileService);
 
+  private _role = signal<AdminRole>(this.loadRole());
   readonly role = this._role.asReadonly();
 
-  get roleLabel(): string {
-    return ROLE_LABELS[this._role()];
-  }
+  get roleLabel(): string { return ROLE_LABELS[this._role()]; }
 
   setRole(role: AdminRole): void {
     this._role.set(role);
@@ -25,23 +25,26 @@ export class DashboardAuthService {
   }
 
   get userRegion(): string {
-    switch (this._role()) {
-      case 'super_admin':          return 'Vojvodina';
-      case 'tourist_organization': return 'Šumadija';
-      case 'place_owner':          return 'Beograd';
-    }
+    const role = this._role();
+    const profile = this.profileService.profile();
+    if (role === 'super_admin') return profile?.countryContext ?? 'Srbija';
+    if (role === 'tourist_organization') return profile?.managedRegionName ?? '';
+    return '';
   }
 
-  // Mock user info
   get userName(): string {
-    switch (this._role()) {
-      case 'super_admin':          return 'Marko Jovanović';
-      case 'tourist_organization': return 'Ana Nikolić';
-      case 'place_owner':          return 'Stefan Petrović';
-    }
+    const p = this.profileService.profile();
+    if (p) return `${p.firstName} ${p.lastName}`;
+    return '';
   }
 
   get userInitials(): string {
-    return this.userName.split(' ').map(n => n[0]).join('');
+    const p = this.profileService.profile();
+    if (p?.firstName && p?.lastName) return `${p.firstName[0]}${p.lastName[0]}`.toUpperCase();
+    return '?';
+  }
+
+  get profileImageUrl(): string | null {
+    return this.profileService.profile()?.profileImageUrl ?? null;
   }
 }

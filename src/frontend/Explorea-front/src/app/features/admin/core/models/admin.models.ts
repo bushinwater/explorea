@@ -7,6 +7,19 @@ export const ROLE_LABELS: Record<AdminRole, string> = {
   place_owner: 'Place Owner',
 };
 
+// ===== ADMIN PROFILE =====
+export interface AdminProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  roleName: string;
+  profileImageUrl: string | null;
+  managedRegionId: number | null;
+  managedRegionName: string | null;
+  countryContext: string | null;
+}
+
 // ===== WIDGET SYSTEM =====
 export type WidgetId =
   | 'stat-cards'

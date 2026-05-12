@@ -5,12 +5,14 @@
     <span class="material-icons">menu</span>
   </button>
 
-  <!-- Left: region context -->
+  <!-- Left: region context (hidden for place_owner) -->
   <div class="header__left">
-    <button class="header__region-pill">
-      {{ ui.t('shell.region') }}: {{ auth.userRegion }}
-    </button>
-    <span class="header__to-view">{{ ui.t('shell.to_view') }}</span>
+    @if (auth.userRegion) {
+      <button class="header__region-pill">
+        {{ ui.t('shell.region') }}: {{ auth.userRegion }}
+      </button>
+      <span class="header__to-view">{{ ui.t('shell.to_view') }}</span>
+    }
   </div>
 
   <!-- Center: search -->
@@ -40,7 +42,11 @@
         <span class="header__user-role">{{ ui.t('shell.role.' + auth.role()) }}</span>
       </div>
       <div class="header__avatar" [title]="auth.userName">
-        {{ auth.userInitials }}
+        @if (auth.profileImageUrl) {
+          <img [src]="auth.profileImageUrl" [alt]="auth.userName" class="header__avatar-img" />
+        } @else {
+          {{ auth.userInitials }}
+        }
       </div>
     </div>
 
