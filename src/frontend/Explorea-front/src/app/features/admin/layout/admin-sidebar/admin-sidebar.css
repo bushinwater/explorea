@@ -81,7 +81,8 @@
   flex-direction: column;
   gap: var(--spacing-sm);
   margin-top: auto;
-  overflow: hidden;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--spacing-md);
 }
 
 .lang-wrapper { position: relative; }
@@ -143,16 +144,27 @@
 }
 
 /* ===== DESKTOP ===== */
+/*
+ * All vertical sizes use min(Xvh, Ypx):
+ * - At normal zoom: Xvh > Ypx so Ypx wins → normal appearance
+ * - At high browser zoom: viewport shrinks in CSS px, Xvh < Ypx so Xvh wins → everything
+ *   scales down proportionally and always fits in 100vh without scroll
+ */
 @media (min-width: 769px) {
   .sidebar {
     width: 72px;
-    padding: var(--spacing-lg) 0;
+    padding: min(1.8vh, 16px) 0;
     align-items: stretch;
     transition: width 0.25s ease;
     overflow: hidden;
   }
 
-  .logo { padding: 8px 0 8px 18px; margin-bottom: var(--spacing-lg); }
+  .logo {
+    padding: min(0.9vh, 8px) 0 min(0.9vh, 8px) 18px;
+    margin-bottom: min(1.8vh, 16px);
+  }
+
+  .logo-icon { width: min(4vh, 36px); height: min(4vh, 36px); }
 
   .logo-text {
     font-size: 1.2rem;
@@ -161,12 +173,12 @@
     transition: max-width 0.25s ease, opacity 0.2s ease;
   }
 
-  .nav { width: 100%; gap: 2px; align-items: stretch; }
+  .nav { width: 100%; gap: min(0.22vh, 2px); align-items: stretch; }
 
   .nav-item {
     justify-content: flex-start;
     align-items: center;
-    padding: 11px 0 11px 22px;
+    padding: min(1.2vh, 11px) 0 min(1.2vh, 11px) 22px;
     gap: 0;
     width: 100%;
     border-radius: 0;
@@ -174,17 +186,26 @@
   }
   .nav-item:hover { background: transparent; color: var(--color-primary); }
 
+  .nav-icon { font-size: min(2.7vh, 24px); }
+
   .nav-label {
     max-width: 0;
     opacity: 0;
     transition: max-width 0.25s ease, opacity 0.2s ease;
   }
 
-  .sidebar-bottom { width: 100%; gap: 2px; align-items: stretch; padding-bottom: 14px; }
+  .sidebar-bottom {
+    width: 100%;
+    gap: min(0.22vh, 2px);
+    align-items: stretch;
+    padding-top: min(1.3vh, 12px);
+    padding-bottom: min(1.6vh, 14px);
+    margin-top: auto;
+  }
 
   /* Expanded state */
   .sidebar.expanded { width: 280px; z-index: 101; }
   .sidebar.expanded .logo-text  { max-width: 200px; opacity: 1; }
-  .sidebar.expanded .nav-item   { gap: var(--spacing-md); padding: 11px 16px 11px 22px; }
+  .sidebar.expanded .nav-item   { gap: var(--spacing-md); padding: min(1.2vh, 11px) 16px min(1.2vh, 11px) 22px; }
   .sidebar.expanded .nav-label  { max-width: 180px; opacity: 1; }
 }
