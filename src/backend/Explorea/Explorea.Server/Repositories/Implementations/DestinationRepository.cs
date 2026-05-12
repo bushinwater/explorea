@@ -51,7 +51,9 @@ namespace Explorea.Server.Repositories.Implementations
             var query = _db.Destinations
                 .IgnoreQueryFilters() // admin vidi i soft-deleted
                 .Include(d => d.City)
+                    .ThenInclude(c => c!.Region)
                 .Include(d => d.Country)
+                .Include(d => d.Type)
                 .Where(d => !d.IsDeleted)
                 .AsQueryable();
 
@@ -79,8 +81,10 @@ namespace Explorea.Server.Repositories.Implementations
             return await _db.Destinations
                 .IgnoreQueryFilters()
                 .Include(d => d.City)
+                    .ThenInclude(c => c!.Region)
                 .Include(d => d.Country)
                 .Include(d => d.Images)
+                .Include(d => d.Type)
                 .FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
         }
 

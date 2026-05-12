@@ -170,7 +170,13 @@ namespace Explorea.Server.Services.Admin
             Id             = d.Id,
             Name           = d.Name,
             Slug           = d.Slug,
-            PreviewImageUrl= d.PreviewImageUrl,
+            PreviewImageUrl= d.PreviewImageUrl ?? d.HeroImageUrl,
+            Region         = d.City?.Region?.Name,
+            RegionId       = d.City?.RegionId,
+            Views          = d.Popularity,
+            Status         = MapStatus(d.Visibility),
+            TypeId         = d.TypeId,
+            TypeName       = d.Type?.Name,
             AvgRating      = d.AvgRating,
             IsFeatured     = d.IsFeatured,
             Visibility     = d.Visibility,
@@ -179,5 +185,20 @@ namespace Explorea.Server.Services.Admin
             CreatedAt      = d.CreatedAt,
             UpdatedAt      = d.UpdatedAt
         };
+
+        private static string MapStatus(string visibility)
+        {
+            return visibility.Trim().ToLower() switch
+            {
+                "published" => "active",
+                "active" => "active",
+                "draft" => "pending",
+                "pending" => "pending",
+                "archived" => "inactive",
+                "inactive" => "inactive",
+                "rejected" => "rejected",
+                _ => "inactive"
+            };
+        }
     }
 }
