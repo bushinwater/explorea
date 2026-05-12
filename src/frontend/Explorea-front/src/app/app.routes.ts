@@ -13,6 +13,7 @@ import { AdminMapViewComponent } from './features/admin/map-view/admin-map-view.
 import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-shell.component';
 import { AdminSupportPageComponent } from './features/admin/support/admin-support-page.component';
 import { AdminReviewsPageComponent } from './features/admin/reviews/admin-reviews-page.component';
+import { AdminReportsPageComponent } from './features/admin/reports/admin-reports-page.component';
 import { UserDirectoryPageComponent } from './features/admin/users/user-directory-page.component';
 import { CompleteProfile } from './features/auth/complete-profile/complete-profile';
 import { FacebookCallback } from './features/auth/facebook-callback/facebook-callback';
@@ -71,7 +72,7 @@ export const routes: Routes = [
             (m) => m.AdminObjectRequestDetailComponent,
           ),
       },
-      { path: 'reports', component: AdminHomePageComponent },
+      { path: 'reports', component: AdminReportsPageComponent },
       { path: 'settings', component: AdminHomePageComponent },
       { path: 'support', component: AdminSupportPageComponent },
       {

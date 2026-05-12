@@ -429,5 +429,64 @@
   "activities.delete.loading": "Deleting...",
 
   "activities.details.showMore": "Show more",
-  "activities.details.showLess": "Show less"
+  "activities.details.showLess": "Show less",
+
+  "reports.insights.title": "Performance Insights",
+  "reports.insights.subtitle": "Quick-view summaries of core platform metrics.",
+  "reports.insights.viewAll": "View All Dashboards",
+  "reports.insights.traffic": "Monthly Platform Traffic",
+  "reports.insights.traffic.hint": "from last month",
+  "reports.insights.topDest": "Most Popular Destination",
+  "reports.insights.topDest.hint": "monthly visit growth",
+  "reports.insights.score": "Avg Operator Rating",
+  "reports.insights.score.hint": "average operator score YTD",
+
+  "reports.builder.title": "Report Builder",
+  "reports.builder.subtitle": "Configure custom parameters to generate deep-dive visualizations.",
+  "reports.builder.currentView": "Current View:",
+  "reports.builder.preview.title": "Interactive Preview: {vizType} Visualization",
+  "reports.builder.preview.subtitle": "Live data rendering for {source} scoped to {timeframe}.",
+  "reports.builder.export.pdf": "Export PDF",
+  "reports.builder.export.csv": "CSV",
+  "reports.builder.saveTemplate": "Save Template",
+  "reports.builder.synced": "Last synchronized: 2 mins ago",
+  "reports.export.pdf.done": "PDF exported.",
+  "reports.export.csv.done": "CSV exported.",
+
+  "reports.source.title": "Data Source",
+  "reports.source.destinations": "Destinations",
+  "reports.source.users": "Users",
+  "reports.source.reviews": "Reviews",
+  "reports.source.requests": "Requests",
+
+  "reports.metrics.title": "Metrics",
+  "reports.metric.traffic": "Traffic",
+  "reports.metric.conversion": "Conversion Rate",
+  "reports.metric.users": "User",
+  "reports.metric.growth": "Growth",
+
+  "reports.viz.title": "Visualization",
+  "reports.viz.bar": "Bar",
+  "reports.viz.line": "Line",
+  "reports.viz.pie": "Pie",
+  "reports.viz.table": "Table",
+
+  "reports.timeframe.title": "Time Frame",
+  "reports.timeframe.last30": "Last 30 Days",
+  "reports.timeframe.last3months": "Last 3 Months",
+  "reports.timeframe.last6months": "Last 6 Months",
+  "reports.timeframe.ytd": "Year to Date",
+  "reports.timeframe.last12months": "Last 12 Months",
+
+  "reports.chart.noMetrics": "Select at least one metric to display.",
+  "reports.chart.maxLabel": "Max",
+  "reports.table.period": "Period",
+
+  "reports.templates.title": "Saved Templates",
+  "reports.templates.empty": "No saved templates.",
+  "reports.templates.saved": "Template saved.",
+  "reports.templates.save.title": "Save Template",
+  "reports.templates.save.placeholder": "Template name...",
+  "reports.templates.save.confirm": "Save",
+  "reports.templates.save.cancel": "Cancel"
 }
