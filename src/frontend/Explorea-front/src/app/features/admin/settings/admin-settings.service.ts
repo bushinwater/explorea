@@ -54,4 +54,15 @@ export class AdminSettingsService {
   getNotifications(): Observable<AdminNotificationsDto> {
     return this.http.get<AdminNotificationsDto>(`${this.api}/notifications`);
   }
+
+  uploadProfilePhoto(file: File): Observable<AdminProfileDto> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post<AdminProfileDto>(`${this.api}/profile-photo`, formData);
+  }
+
+  deleteProfilePhoto(): Observable<AdminProfileDto> {
+    return this.http.delete<AdminProfileDto>(`${this.api}/profile-photo`);
+  }
 }

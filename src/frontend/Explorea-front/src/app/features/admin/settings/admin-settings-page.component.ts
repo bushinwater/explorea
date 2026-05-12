@@ -1,11 +1,15 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
-import { descriptors } from 'node_modules/chart.js/dist/core/core.defaults';
 import { Subscription } from 'rxjs';
 import { AdminProfileDto, AdminSettingsService } from './admin-settings.service';
 
 type SettingsTab = 'profile' | 'preferences' | 'notifications' | 'administration';
+
+interface SettingsToastState {
+  type: 'success' | 'error';
+  message: string;
+}
 
 interface AdminProfileFormState {
   firstName: string;
@@ -41,6 +45,10 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   readonly isProfileSaving = signal(false);
   readonly profileSuccessMessage = signal('');
 
+  readonly isProfilePhotoUploading = signal(false);
+  readonly isProfilePhotoDeleting = signal(false);
+
+  readonly toast = signal<SettingsToastState | null>(null);
   readonly tabs: SettingsTabItem[] = [
     {
       id: 'profile',
@@ -285,7 +293,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           this.isProfileLoading.set(false);
         },
         error: () => {
-          this.profileErrorMessage.set('Nije moguće učitati podatke admin profila.');
+          this.showToast('error', 'Nije moguće učitati podatke admin profila.');
           this.isProfileLoading.set(false);
         },
       }),
@@ -312,7 +320,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     const form = this.profileForm();
 
     if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
-      this.profileErrorMessage.set('Ime, prezime i email su obavezni.');
+      this.showToast('error', 'Ime, prezime i email su obavezni.');
       return;
     }
 
@@ -332,11 +340,11 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           next: (profile) => {
             this.adminProfile.set(profile);
             this.resetProfileForm(profile);
-            this.profileSuccessMessage.set('Profil je uspešno sačuvan.');
+            this.showToast('success', 'Profil je uspešno sačuvan.');
             this.isProfileSaving.set(false);
           },
           error: () => {
-            this.profileErrorMessage.set('Nije moguće sačuvati izmene profila.');
+            this.showToast('error', 'Nije moguće sačuvati izmene profila.');
             this.isProfileSaving.set(false);
           },
         }),
@@ -366,5 +374,79 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       month: 'long',
       year: 'numeric',
     }).format(new Date(value));
+  }
+
+  protected uploadProfilePhoto(files: FileList | null): void {
+    const file = files?.item(0);
+
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.showToast('error', 'Možeš okačiti samo sliku.');
+      return;
+    }
+
+    const maxFileSize = 5 * 1024 * 1024;
+
+    if (file.size > maxFileSize) {
+      this.showToast('error', 'Slika mora biti manje od 5MB.');
+      return;
+    }
+
+    this.isProfilePhotoUploading.set(true);
+    this.profileErrorMessage.set('');
+    this.profileSuccessMessage.set('');
+
+    this.subscription.add(
+      this.adminSettingsService.uploadProfilePhoto(file).subscribe({
+        next: (profile) => {
+          this.adminProfile.set(profile);
+          this.resetProfileForm(profile);
+          this.showToast('success', 'Profilna slika je uspešno sačuvana.');
+          this.isProfilePhotoUploading.set(false);
+        },
+        error: () => {
+          this.showToast('error', 'Nije moguće okačiti profilnu sliku.');
+          this.isProfilePhotoUploading.set(false);
+        },
+      }),
+    );
+  }
+
+  protected deleteProfilePhoto(): void {
+    if (!this.adminProfile().profileImageUrl) {
+      return;
+    }
+
+    this.isProfilePhotoDeleting.set(true);
+    this.profileErrorMessage.set('');
+    this.profileSuccessMessage.set('');
+
+    this.subscription.add(
+      this.adminSettingsService.deleteProfilePhoto().subscribe({
+        next: (profile) => {
+          this.adminProfile.set(profile);
+          this.resetProfileForm(profile);
+          this.showToast('success', 'Profilna slika je obrisana.');
+          this.isProfilePhotoDeleting.set(false);
+        },
+        error: () => {
+          this.showToast('error', 'Nije moguće obrisati profilnu sliku.');
+          this.isProfilePhotoDeleting.set(false);
+        },
+      }),
+    );
+  }
+
+  private showToast(type: 'success' | 'error', message: string): void {
+    this.toast.set({ type, message });
+
+    window.setTimeout(() => {
+      this.toast.set(null);
+    }, 3500);
+  }
+
+  protected closeToast(): void {
+    this.toast.set(null);
   }
 }

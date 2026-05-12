@@ -1,6 +1,8 @@
 using Explorea.API.DTOs.Admin.Settings;
 using Explorea.API.Models;
 using Explorea.Server.Data;
+using Explorea.Server.Services;
+using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,9 +19,12 @@ namespace Explorea.Server.Controllers.Admin
   {
     private readonly AppDbContext _db;
 
-    public AdminSettingsController(AppDbContext db) 
+    private readonly ICloudinaryService _cloudinaryService;
+
+    public AdminSettingsController(AppDbContext db, ICloudinaryService CloudinaryService) 
     {
       _db = db;
+      _cloudinaryService = CloudinaryService;
     }
     
     [HttpGet("profile")]
@@ -76,6 +81,75 @@ namespace Explorea.Server.Controllers.Admin
       return Ok(MapProfile(user));
     }
 
+    [HttpPost("profile-photo")]
+    public async Task<IActionResult> UploadProfilePhoto([FromForm] IFormFile file)
+    {
+      var userId = TryGetCurrentUserId();
+      if(userId == null) return Unauthorized();
+
+      if(file == null || file.Length == 0) return BadRequest(new {message = "Profile photo is required."});
+
+      if(!file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        return BadRequest(new {message = "Only image files are allowed."});
+
+      const long maxFileSize = 5 * 1024 * 1024;
+
+      if(file.Length > maxFileSize) return BadRequest(new {message = "Profile photo must be smaller than 5MB."});
+
+      var user = await _db.Users
+        .Include(u => u.Role)
+        .Include(u => u.ManagedRegion)
+        .FirstOrDefaultAsync(u => u.Id == userId.Value);
+
+      if(user == null) return NotFound(new {message = "User not found."});
+
+      string imageUrl;
+
+      try
+      {
+        imageUrl = await _cloudinaryService.UploadImageAsync(file, "admin-profile-photos");
+      }
+      catch (InvalidOperationException)
+      {
+        return StatusCode(500, new {message = "Profile photo upload is not configured,"});
+      }
+      catch (Exception)
+      {
+        return StatusCode(500, new {message = "Profile photo upload failed."});
+      }
+
+      user.ProfileImageUrl = imageUrl;
+      user.UpdatedAt = DateTimeOffset.UtcNow;
+
+      await _db.SaveChangesAsync();
+
+      return Ok(MapProfile(user)); 
+    }
+    
+    [HttpDelete("profile-photo")]
+    public async Task<IActionResult> DeleteProfilePhoto()
+    {
+      var userId = TryGetCurrentUserId();
+      if(userId == null) return Unauthorized();
+
+      var user = await _db.Users
+        .Include(u => u.Role)
+        .Include(u => u.ManagedRegion)
+        .FirstOrDefaultAsync(u => u.Id == userId.Value);
+
+      if(user == null) return NotFound(new {message = "User not found"});
+
+      user.ProfileImageUrl = null;
+      user.UpdatedAt = DateTimeOffset.UtcNow;
+
+      user.ProfileImageUrl = null;
+      user.UpdatedAt = DateTimeOffset.UtcNow;
+
+      await _db.SaveChangesAsync();
+
+      return Ok(MapProfile(user));
+    }
+    
     [HttpGet("preferences")]
     public async Task<IActionResult> GetPreferences()
     {
@@ -188,9 +262,7 @@ namespace Explorea.Server.Controllers.Admin
           RoleLabel = FormatRoleLabel(user.Role.Name),
           Region = user.ManagedRegion?.Name ?? "Sve regije",
           Status = user.IsActive ? "Active" : "Inactive",
-          MemberSince = user.MemberSince.Year <= 1
-          ? user.CreatedAt
-          : user.MemberSince,
+          MemberSince = ResolveMemberSince(user),
           ProfileImageUrl = user.ProfileImageUrl
       };
     }

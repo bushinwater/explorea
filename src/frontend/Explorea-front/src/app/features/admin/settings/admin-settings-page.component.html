@@ -28,8 +28,12 @@
       <aside class="profile-card">
         <div class="profile-card__top">
           <div class="profile-card__avatar-wrap">
-            <div class="profile-card__avatar">
+            <div class="profile-card__avatar" [class.profile-card__avatar--image]="adminProfile().profileImageUrl">
+              @if (adminProfile().profileImageUrl){
+              <img [src]="adminProfile().profileImageUrl" [alt]="adminProfile().fullName" />
+              } @else {
               {{ adminProfile().initials }}
+              }
             </div>
 
             <span class="profile-card__status-dot" aria-label="Active status"></span>
@@ -64,14 +68,19 @@
         </dl>
 
         <div class="profile-card__actions">
-          <button class="btn btn-secondary" type="button">
+          <input #profilePhotoInput class="profile-card__file-input" type="file" accept="image/*"
+            (change)="uploadProfilePhoto(profilePhotoInput.files); profilePhotoInput.value = ''" />
+          <button class="btn btn-secondary" type="button"
+            [disabled]="isProfilePhotoUploading() || isProfilePhotoDeleting()" (click)="profilePhotoInput.click()">
             <span class="material-icons">photo_camera</span>
-            Upload New Photo
+            {{ isProfilePhotoUploading() ? 'Uploading...' : 'Upload New Photo' }}
           </button>
 
-          <button class="profile-card__delete" type="button">
+          <button class="profile-card__delete" type="button"
+            [disabled]="!adminProfile().profileImageUrl || isProfilePhotoUploading() || isProfilePhotoDeleting()"
+            (click)="deleteProfilePhoto()">
             <span class="material-icons">delete</span>
-            Delete Photo
+            {{ isProfilePhotoDeleting() ? 'Deleting...' : 'Delete Photo' }}
           </button>
         </div>
       </aside>
@@ -82,18 +91,11 @@
           <p class="settings-inline-message">Učitavanje profila...</p>
           }
 
-          @if (profileErrorMessage()) {
-          <p class="settings-inline-message settings-inline-message--error">{{ profileErrorMessage() }}</p>
-          }
           <div>
             <p class="profile-form__eyebrow">Profile</p>
             <h2>Informacije o profilu</h2>
             <p>Ažuriraj lične podatke ulogovanog admina.</p>
           </div>
-
-          @if (profileSuccessMessage()) {
-          <p class="settings-inline-message settings-inline-message--success">{{ profileSuccessMessage() }}</p>
-          }
           <span class="profile-form__badge">Backend Data</span>
         </header>
 
@@ -118,7 +120,7 @@
 
           <label class="profile-field">
             <span>Region</span>
-            <input type="text" [value]="adminProfile().region" />
+            <input type="text" [value]="adminProfile().region" readonly />
           </label>
 
           <label class="profile-field profile-field--full">
@@ -526,4 +528,18 @@
     }
     }
   </section>
+
+  @if (toast()) {
+  <div class="settings-toast" [class.settings-toast--error]="toast()?.type === 'error'">
+    <span class="material-icons">
+      {{ toast()?.type === 'success' ? 'check_circle' : 'error' }}
+    </span>
+
+    <p>{{ toast()?.message }}</p>
+
+    <button type="button" (click)="closeToast()" aria-label="Close notification">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+  }
 </section>
