@@ -3,6 +3,7 @@ import { Injectable, signal } from '@angular/core';
 import { catchError, firstValueFrom, of, tap } from 'rxjs';
 
 export type AdminLanguage = 'sr' | 'en';
+export type AdminTheme = 'dark' | 'light' | 'system';
 
 @Injectable({ providedIn: 'root' })
 export class AdminUiPreferencesService {
@@ -11,19 +12,38 @@ export class AdminUiPreferencesService {
   private readonly loadedDictionaries = new Map<AdminLanguage, Record<string, string>>();
 
   readonly language = signal<AdminLanguage>('sr');
+  readonly theme = signal<AdminTheme>('dark');
   readonly isDark = signal(true);
   readonly dictionary = signal<Record<string, string>>({});
 
   constructor(private readonly http: HttpClient) {}
+
+  // async initialize(): Promise<void> {
+  //   const savedLanguage = this.readLanguage();
+  //   const savedTheme = this.readTheme();
+
+  //   this.language.set(savedLanguage ?? 'sr');
+  //   this.isDark.set(savedTheme ? savedTheme === 'dark' : true);
+  //   this.applyTheme();
+  //   await this.loadDictionary(this.language());
+  // }
 
   async initialize(): Promise<void> {
     const savedLanguage = this.readLanguage();
     const savedTheme = this.readTheme();
 
     this.language.set(savedLanguage ?? 'sr');
-    this.isDark.set(savedTheme ? savedTheme === 'dark' : true);
-    this.applyTheme();
+    this.setTheme(savedTheme ?? 'dark', false);
     await this.loadDictionary(this.language());
+  }
+
+  setTheme(theme: AdminTheme, persist = true): void {
+    this.theme.set(theme);
+
+    if (persist) localStorage.setItem(this.themeStorageKey, theme);
+
+    this.isDark.set(this.resolveIsDark(theme));
+    this.applyTheme();
   }
 
   setLanguage(language: AdminLanguage): void {
@@ -32,10 +52,14 @@ export class AdminUiPreferencesService {
     void this.loadDictionary(language);
   }
 
+  // toggleTheme(): void {
+  //   this.isDark.update((current) => !current);
+  //   localStorage.setItem(this.themeStorageKey, this.isDark() ? 'dark' : 'light');
+  //   this.applyTheme();
+  // }
+
   toggleTheme(): void {
-    this.isDark.update((current) => !current);
-    localStorage.setItem(this.themeStorageKey, this.isDark() ? 'dark' : 'light');
-    this.applyTheme();
+    this.setTheme(this.isDark() ? 'light' : 'dark');
   }
 
   t(key: string, params?: Record<string, string | number>): string {
@@ -76,6 +100,16 @@ export class AdminUiPreferencesService {
     this.dictionary.set(dictionary);
   }
 
+  private resolveIsDark(theme: AdminTheme): boolean {
+    if (theme === 'system') {
+      return typeof window !== 'undefined'
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+        : true;
+    }
+
+    return theme === 'dark';
+  }
+
   private applyTheme(): void {
     document.documentElement.setAttribute('data-theme', this.isDark() ? 'dark' : 'light');
   }
@@ -85,7 +119,14 @@ export class AdminUiPreferencesService {
     return savedLanguage === 'sr' || savedLanguage === 'en' ? savedLanguage : null;
   }
 
-  private readTheme(): string | null {
-    return localStorage.getItem(this.themeStorageKey);
+  // private readTheme(): string | null {
+  //   return localStorage.getItem(this.themeStorageKey);
+  // }
+
+  private readTheme(): AdminTheme | null {
+    const savedTheme = localStorage.getItem(this.themeStorageKey);
+    return savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'system'
+      ? savedTheme
+      : null;
   }
 }

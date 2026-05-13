@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { Subscription } from 'rxjs';
 import { AdminProfileDto, AdminSettingsService } from './admin-settings.service';
+import {
+  AdminLanguage,
+  AdminTheme,
+  AdminUiPreferencesService,
+} from '../core/services/admin-ui-preferences.service';
 
 type SettingsTab = 'profile' | 'preferences' | 'notifications' | 'administration';
 
@@ -27,6 +32,15 @@ interface SettingsTabItem {
   superAdminOnly?: boolean;
 }
 
+interface AppPreferencesFormState {
+  theme: string;
+  language: string;
+}
+
+interface NotificationsFormState {
+  notificationsEnabled: boolean;
+}
+
 @Component({
   selector: 'app-admin-settings-page',
   standalone: true,
@@ -48,6 +62,16 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
   readonly isProfilePhotoUploading = signal(false);
   readonly isProfilePhotoDeleting = signal(false);
+
+  readonly isPreferencesLoading = signal(false);
+  readonly isPreferencesSaving = signal(false);
+  readonly preferencesErrorMessage = signal('');
+  readonly preferencesSuccessMessage = signal('');
+
+  readonly isNotificationsLoading = signal(false);
+  readonly isNotificationsSaving = signal(false);
+  readonly notificationsErrorMessage = signal('');
+  readonly notificationsSuccessMessage = signal('');
 
   readonly toast = signal<SettingsToastState | null>(null);
   readonly tabs: SettingsTabItem[] = [
@@ -264,9 +288,19 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     bio: '',
   });
 
+  readonly preferencesForm = signal<AppPreferencesFormState>({
+    theme: 'dark',
+    language: 'sr',
+  });
+
+  readonly notificationsForm = signal<NotificationsFormState>({
+    notificationsEnabled: true,
+  });
+
   constructor(
     public auth: DashboardAuthService,
     private readonly adminSettingsService: AdminSettingsService,
+    private readonly ui: AdminUiPreferencesService,
   ) {}
 
   ngOnDestroy(): void {
@@ -274,6 +308,171 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   }
   ngOnInit(): void {
     this.loadProfile();
+    this.loadPrefernces();
+    this.loadNotifications();
+  }
+
+  private loadPrefernces(): void {
+    this.isPreferencesLoading.set(true);
+    this.preferencesErrorMessage.set('');
+
+    this.subscription.add(
+      this.adminSettingsService.getPreferences().subscribe({
+        next: (preferences) => {
+          this.preferencesForm.set({
+            theme: preferences.theme,
+            language: preferences.language,
+          });
+
+          this.ui.setTheme(preferences.theme as AdminTheme);
+          this.ui.setLanguage(preferences.language as AdminLanguage);
+
+          this.isPreferencesLoading.set(false);
+        },
+        error: () => {
+          this.showToast('error', 'Nije moguće učitati podešavanja aplikacije.');
+          this.isPreferencesLoading.set(false);
+        },
+      }),
+    );
+  }
+
+  protected updatePreferencesField(field: keyof AppPreferencesFormState, value: string): void {
+    this.preferencesForm.update((current) => ({
+      ...current,
+      [field]: value,
+    }));
+
+    if (field === 'theme') this.ui.setTheme(value as AdminTheme);
+
+    if (field === 'language') this.ui.setLanguage(value as AdminLanguage);
+
+    this.preferencesSuccessMessage.set('');
+    this.preferencesErrorMessage.set('');
+  }
+
+  protected resetPreferencesChanges(): void {
+    this.loadPrefernces();
+    this.preferencesSuccessMessage.set('');
+    this.preferencesErrorMessage.set('');
+  }
+
+  protected savePreferences(): void {
+    const form = this.preferencesForm();
+
+    this.isPreferencesSaving.set(true);
+    this.preferencesSuccessMessage.set('');
+    this.preferencesErrorMessage.set('');
+
+    this.subscription.add(
+      this.adminSettingsService
+        .updatePreferences({
+          theme: form.theme,
+          language: form.language,
+        })
+        .subscribe({
+          next: (preferences) => {
+            this.preferencesForm.set({
+              theme: preferences.theme,
+              language: preferences.language,
+            });
+
+            this.ui.setTheme(preferences.theme as AdminTheme);
+            this.ui.setLanguage(preferences.language as AdminLanguage);
+
+            this.showToast('success', 'Podešavanja aplikacije su uspešno sačuvana.');
+            this.isPreferencesSaving.set(false);
+          },
+          error: () => {
+            this.showToast('error', 'Nije moguće sačuvati podešavanja aplikacije.');
+            this.isPreferencesSaving.set(false);
+          },
+        }),
+    );
+  }
+
+  private loadNotifications(): void {
+    this.isNotificationsLoading.set(true);
+    this.notificationsErrorMessage.set('');
+
+    this.subscription.add(
+      this.adminSettingsService.getNotifications().subscribe({
+        next: (notifications) => {
+          this.notificationsForm.set({
+            notificationsEnabled: notifications.notificationsEnabled,
+          });
+          this.isNotificationsLoading.set(false);
+        },
+        error: () => {
+          this.showToast('error', 'Nije moguće učitati podešavanja obaveštenja.');
+          this.isNotificationsLoading.set(false);
+        },
+      }),
+    );
+  }
+
+  protected updateNotificationsEnabled(enabled: boolean): void {
+    this.notificationsForm.set({ notificationsEnabled: enabled });
+    this.notificationsSuccessMessage.set('');
+    this.notificationsErrorMessage.set('');
+  }
+
+  protected resetNotificationChanges(): void {
+    this.loadNotifications();
+    this.notificationsSuccessMessage.set('');
+    this.notificationsErrorMessage.set('');
+  }
+
+  protected saveNotifications(): void {
+    const form = this.notificationsForm();
+
+    this.isNotificationsSaving.set(true);
+    this.notificationsSuccessMessage.set('');
+    this.notificationsErrorMessage.set('');
+
+    this.subscription.add(
+      this.adminSettingsService
+        .updateNotifications({
+          notificationsEnabled: form.notificationsEnabled,
+        })
+        .subscribe({
+          next: (notifications) => {
+            this.notificationsForm.set({
+              notificationsEnabled: notifications.notificationsEnabled,
+            });
+            this.showToast('success', 'Podešavanja obaveštenja su uspešno sačuvana.');
+            this.isNotificationsSaving.set(false);
+          },
+          error: () => {
+            this.notificationsErrorMessage.set('Nije moguće sačuvati podešavanja obaveštenja.');
+            this.isNotificationsSaving.set(false);
+          },
+        }),
+    );
+  }
+
+  protected themeLabel(value: string): string {
+    switch (value) {
+      case 'dark':
+        return 'Tamna tema';
+      case 'light':
+        return 'Svetla tema';
+      case 'system':
+        return 'Sistemska tema';
+      default:
+        return value;
+    }
+  }
+
+  protected languageLabel(value: string): string {
+    switch (value) {
+      case 'sr':
+        return 'Srpski (SR)';
+      case 'en':
+        return 'English (EN)';
+      default:
+        return value;
+    }
   }
 
   visibleTabs(): SettingsTabItem[] {

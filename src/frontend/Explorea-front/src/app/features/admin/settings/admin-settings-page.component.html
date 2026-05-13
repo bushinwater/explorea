@@ -152,9 +152,21 @@
           <p class="section-eyebrow">App Preferences</p>
           <h2>Izgled i ponašanje aplikacije</h2>
           <p>Podesi kako admin panel izgleda i kako se ponaša tokom svakodnevnog rada.</p>
+
+          @if (isPreferencesLoading()) {
+          <p class="settings-inline-message">Učitavanje podešavanja...</p>
+          }
+
+          @if (preferencesErrorMessage()) {
+          <p class="settings-inline-message settings-inline-message--error">{{ preferencesErrorMessage() }}</p>
+          }
+
+          @if (preferencesSuccessMessage()) {
+          <p class="settings-inline-message settings-inline-message--success">{{ preferencesSuccessMessage() }}</p>
+          }
         </div>
 
-        <span class="profile-form__badge">Mock data</span>
+        <span class="profile-form__badge">Backend Data</span>
       </section>
 
       <section class="preferences-grid">
@@ -165,14 +177,15 @@
 
           <div class="preference-card__content">
             <span>Tema interfejsa</span>
-            <strong>{{ appPreferences.theme }}</strong>
+            <strong>{{ themeLabel(preferencesForm().theme) }}</strong>
             <p>Admin panel trenutno prati tamni Explorea izgled sa zelenim akcentima.</p>
           </div>
 
-          <select class="preference-select" [value]="appPreferences.theme">
-            <option>Tamna tema</option>
-            <option>Svetla tema</option>
-            <option>Sistemska tema</option>
+          <select #themeSelect class="preference-select" [value]="preferencesForm().theme"
+            [disabled]="isPreferencesSaving()" (change)="updatePreferencesField('theme', themeSelect.value)">
+            <option value="dark">Tamna tema</option>
+            <option value="light">Svetla tema</option>
+            <option value="system">Sistemska tema</option>
           </select>
         </article>
 
@@ -183,13 +196,14 @@
 
           <div class="preference-card__content">
             <span>Jezik aplikacije</span>
-            <strong>{{ appPreferences.language }}</strong>
+            <strong>{{ languageLabel(preferencesForm().language) }}</strong>
             <p>Primarni jezik za admin interfejs i sistemske poruke.</p>
           </div>
 
-          <select class="preference-select" [value]="appPreferences.language">
-            <option>Srpski (SR)</option>
-            <option>English (EN)</option>
+          <select #languageSelect class="preference-select" [value]="preferencesForm().language"
+            [disabled]="isPreferencesSaving()" (change)="updatePreferencesField('language', languageSelect.value)">
+            <option value="sr">Srpski (SR)</option>
+            <option value="en">English (EN)</option>
           </select>
         </article>
 
@@ -262,13 +276,14 @@
       </section>
 
       <footer class="preferences-actions">
-        <button class="btn btn-secondary" type="button">
+        <button class="btn btn-secondary" type="button" [disabled]="isPreferencesSaving()"
+          (click)="resetPreferencesChanges()">
           Reset Changes
         </button>
 
-        <button class="btn btn-primary" type="button">
+        <button class="btn btn-primary" type="button" [disabled]="isPreferencesSaving()" (click)="savePreferences()">
           <span class="material-icons">save</span>
-          Save Preferences
+          {{ isPreferencesSaving() ? 'Saving...' : 'Save Preferences' }}
         </button>
       </footer>
     </div>
@@ -281,9 +296,21 @@
           <p class="section-eyebrow">Notifications</p>
           <h2>Podešavanja obaveštenja</h2>
           <p>Izaberi kako i kada admin prima obaveštenja o važnim promenama na platformi.</p>
+
+          @if (isNotificationsLoading()) {
+          <p class="settings-inline-message">Učitavanje obaveštenja...</p>
+          }
+
+          @if (notificationsErrorMessage()) {
+          <p class="settings-inline-message settings-inline-message--error">{{ notificationsErrorMessage() }}</p>
+          }
+
+          @if (notificationsSuccessMessage()) {
+          <p class="settings-inline-message settings-inline-message--success">{{ notificationsSuccessMessage() }}</p>
+          }
         </div>
 
-        <span class="profile-form__badge">Mock data</span>
+        <span class="profile-form__badge">Backend data</span>
       </section>
 
       <section class="notification-channel-grid">
@@ -298,8 +325,11 @@
             <p>{{ channel.description }}</p>
           </div>
 
-          <button class="toggle" type="button" [class.toggle--active]="channel.enabled"
-            [attr.aria-pressed]="channel.enabled">
+          <button class="toggle" type="button"
+            [class.toggle--active]="channel.title === 'Push obaveštenja' ? notificationsForm().notificationsEnabled : channel.enabled"
+            [attr.aria-pressed]="channel.title === 'Push obaveštenja' ? notificationsForm().notificationsEnabled : channel.enabled"
+            [disabled]="isNotificationsSaving()"
+            (click)="channel.title === 'Push obaveštenja' && updateNotificationsEnabled(!notificationsForm().notificationsEnabled)">
             <span></span>
           </button>
         </article>
@@ -378,13 +408,15 @@
       </section>
 
       <footer class="notifications-actions">
-        <button class="btn btn-secondary" type="button">
+        <button class="btn btn-secondary" type="button" [disabled]="isNotificationsSaving()"
+          (click)="resetNotificationChanges()">
           Reset Changes
         </button>
 
-        <button class="btn btn-primary" type="button">
+        <button class="btn btn-primary" type="button" [disabled]="isNotificationsSaving()"
+          (click)="saveNotifications()">
           <span class="material-icons">save</span>
-          Save Notifications
+          {{ isNotificationsSaving() ? 'Saving...' : 'Save Notifications' }}
         </button>
       </footer>
     </div>

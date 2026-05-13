@@ -31,7 +31,16 @@ export interface AdminAppPreferencesDto {
   language: string;
 }
 
+export interface AdminUpdateAppPreferencesDto {
+  theme: string;
+  language: string;
+}
+
 export interface AdminNotificationsDto {
+  notificationsEnabled: boolean;
+}
+
+export interface AdminUpdateNotificationsDto {
   notificationsEnabled: boolean;
 }
 
@@ -53,8 +62,16 @@ export class AdminSettingsService {
     return this.http.get<AdminAppPreferencesDto>(`${this.api}/preferences`);
   }
 
+  updatePreferences(dto: AdminUpdateAppPreferencesDto): Observable<AdminAppPreferencesDto> {
+    return this.http.put<AdminAppPreferencesDto>(`${this.api}/preferences`, dto);
+  }
+
   getNotifications(): Observable<AdminNotificationsDto> {
     return this.http.get<AdminNotificationsDto>(`${this.api}/notifications`);
+  }
+
+  updateNotifications(dto: AdminUpdateNotificationsDto): Observable<AdminNotificationsDto> {
+    return this.http.put<AdminNotificationsDto>(`${this.api}/notifications`, dto);
   }
 
   uploadProfilePhoto(file: File): Observable<AdminProfileDto> {
