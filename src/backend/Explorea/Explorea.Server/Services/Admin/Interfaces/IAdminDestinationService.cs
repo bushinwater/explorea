@@ -18,6 +18,10 @@ namespace Explorea.Server.Services.Admin.Interfaces
 
         Task<AdminDestinationStatsDto> GetStatsAsync(Guid currentUserId);
 
+        Task<List<AdminDestinationLookupDto>> GetRegionsAsync(Guid currentUserId);
+
+        Task<List<AdminDestinationLookupDto>> GetTypesAsync(Guid currentUserId);
+
         Task<AdminDestinationListDto?> GetByIdAsync(Guid id, Guid currentUserId);
 
         Task<AdminDestinationListDto> CreateAsync(AdminCreateDestinationDto dto, Guid createdBy);

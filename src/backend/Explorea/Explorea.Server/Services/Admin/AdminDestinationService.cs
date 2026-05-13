@@ -127,6 +127,58 @@ namespace Explorea.Server.Services.Admin
             };
         }
 
+        public async Task<List<AdminDestinationLookupDto>> GetRegionsAsync(Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+
+            if (user?.Role.Name == RoleNames.SuperAdmin)
+            {
+                return await _db.Regions
+                    .OrderBy(r => r.Name)
+                    .Select(r => new AdminDestinationLookupDto
+                    {
+                        Id = r.Id,
+                        Name = r.Name
+                    })
+                    .ToListAsync();
+            }
+
+            if (user?.Role.Name != RoleNames.TouristOrganization)
+                throw new UnauthorizedAccessException("Access denied.");
+
+            if (!user.ManagedRegionId.HasValue)
+                return new List<AdminDestinationLookupDto>();
+
+            return await _db.Regions
+                .Where(r => r.Id == user.ManagedRegionId.Value)
+                .Select(r => new AdminDestinationLookupDto
+                {
+                    Id = r.Id,
+                    Name = r.Name
+                })
+                .ToListAsync();
+        }
+
+        public async Task<List<AdminDestinationLookupDto>> GetTypesAsync(Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+
+            if (user?.Role.Name != RoleNames.SuperAdmin &&
+                user?.Role.Name != RoleNames.TouristOrganization)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            return await _db.DestinationTypes
+                .OrderBy(t => t.Name)
+                .Select(t => new AdminDestinationLookupDto
+                {
+                    Id = t.Id,
+                    Name = t.Name
+                })
+                .ToListAsync();
+        }
+
         public async Task<AdminDestinationListDto?> GetByIdAsync(Guid id, Guid currentUserId)
         {
             var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);

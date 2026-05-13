@@ -69,6 +69,38 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        // GET /api/admin/destinations/regions
+        [HttpGet("regions")]
+        public async Task<IActionResult> GetRegions()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var regions = await _service.GetRegionsAsync(userId);
+                return Ok(regions);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
+        // GET /api/admin/destinations/types
+        [HttpGet("types")]
+        public async Task<IActionResult> GetTypes()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var types = await _service.GetTypesAsync(userId);
+                return Ok(types);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
         // GET /api/admin/destinations/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
