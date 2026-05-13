@@ -6,20 +6,40 @@ namespace Explorea.Server.Services
 {
     public class CloudinaryService : ICloudinaryService
     {
-        private readonly Cloudinary _cloudinary;
+        private readonly Cloudinary? _cloudinary;
 
+        // public CloudinaryService(IConfiguration config)
+        // {
+        //     var account = new Account(
+        //         config["Cloudinary:CloudName"],
+        //         config["Cloudinary:ApiKey"],
+        //         config["Cloudinary:ApiSecret"]
+        //     );
+        //     _cloudinary = new Cloudinary(account) { Api = { Secure = true } };
+        // }
         public CloudinaryService(IConfiguration config)
         {
-            var account = new Account(
-                config["Cloudinary:CloudName"],
-                config["Cloudinary:ApiKey"],
-                config["Cloudinary:ApiSecret"]
-            );
+            var cloudName = config["Cloudinary:CloudName"];
+            var apiKey = config["Cloudinary:ApiKey"];
+            var apiSecret = config["Cloudinary:ApiSecret"];
+
+            if(string.IsNullOrWhiteSpace(cloudName)
+             || string.IsNullOrWhiteSpace(apiKey)
+             || string.IsNullOrWhiteSpace(apiSecret)
+            )
+            {
+                _cloudinary = null;
+                return;
+            }
+            
+            var account = new Account(cloudName, apiKey, apiSecret);
             _cloudinary = new Cloudinary(account) { Api = { Secure = true } };
         }
 
         public async Task<string> UploadImageAsync(IFormFile file, string folder)
         {
+            if(_cloudinary == null) throw new InvalidOperationException("Cloudinary is not configured.");
+            
             await using var stream = file.OpenReadStream();
 
             var uploadParams = new ImageUploadParams

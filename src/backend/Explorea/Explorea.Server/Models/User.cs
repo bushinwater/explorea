@@ -90,5 +90,8 @@ namespace Explorea.API.Models
 
         [MaxLength(500), Column("profile_image_url")]
         public string? ProfileImageUrl { get; set; }
+
+        [MaxLength(1000), Column("bio")]
+        public string? Bio { get; set; }
     }
 }

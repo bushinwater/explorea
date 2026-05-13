@@ -14,6 +14,7 @@ import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-s
 import { AdminSupportPageComponent } from './features/admin/support/admin-support-page.component';
 import { AdminReviewsPageComponent } from './features/admin/reviews/admin-reviews-page.component';
 import { AdminReportsPageComponent } from './features/admin/reports/admin-reports-page.component';
+import { AdminSettingsPageComponent } from './features/admin/settings/admin-settings-page.component';
 import { UserDirectoryPageComponent } from './features/admin/users/user-directory-page.component';
 import { CompleteProfile } from './features/auth/complete-profile/complete-profile';
 import { FacebookCallback } from './features/auth/facebook-callback/facebook-callback';
@@ -73,7 +74,7 @@ export const routes: Routes = [
           ),
       },
       { path: 'reports', component: AdminReportsPageComponent },
-      { path: 'settings', component: AdminHomePageComponent },
+      { path: 'settings', component: AdminSettingsPageComponent },
       { path: 'support', component: AdminSupportPageComponent },
       {
         path: 'users',
