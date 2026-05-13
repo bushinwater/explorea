@@ -186,6 +186,13 @@ const MOCK_STATS: DestinationStats = {
   pendingCount: 14,
   pendingHint: '+5 zahteva koja čekaju akciju',
   addedLast30Days: [2,4,3,5,2,6,4,7,3,5,4,6,8,5,4,7,6,9,5,8,7,10,6,8,9,11,7,9,8,12],
+  mostPopularName: 'Kalemegdan tvrđava',
+  mostPopularViews: 45600,
+  topDestinations: [
+    { name: 'Kalemegdan tvrđava', views: 45600 },
+    { name: 'Zlatibor planina', views: 31400 },
+    { name: 'Tara Nacionalni park', views: 22100 },
+  ],
 };
 
 const MOCK_REGIONS = ['Šumadija', 'Beograd', 'Toplica', 'Raška', 'Zlatibor', 'Vojvodina'];

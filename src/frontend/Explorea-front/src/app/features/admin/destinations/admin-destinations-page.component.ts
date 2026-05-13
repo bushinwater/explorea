@@ -47,6 +47,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     category: 'all',
     status: 'all',
     region: 'all',
+    minRating: null,
     page: 1,
     pageSize: 7,
   });
@@ -80,7 +81,8 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly addedLast30DaysPath = computed(() => {
-    const data = this.stats()?.addedLast30Days ?? [];
+    const addedLast30Days = this.stats()?.addedLast30Days;
+    const data = Array.isArray(addedLast30Days) ? addedLast30Days : [];
     return this.buildSparklinePath(data, 130, 40);
   });
 
@@ -150,6 +152,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       category: 'all',
       status: 'all',
       region: 'all',
+      minRating: null,
       page: 1,
       pageSize: f.pageSize,
     }));
