@@ -16,6 +16,8 @@ namespace Explorea.Server.Services.Admin.Interfaces
             int pageSize,
             Guid currentUserId);
 
+        Task<AdminDestinationStatsDto> GetStatsAsync(Guid currentUserId);
+
         Task<AdminDestinationListDto?> GetByIdAsync(Guid id, Guid currentUserId);
 
         Task<AdminDestinationListDto> CreateAsync(AdminCreateDestinationDto dto, Guid createdBy);

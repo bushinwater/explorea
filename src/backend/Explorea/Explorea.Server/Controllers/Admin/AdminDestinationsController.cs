@@ -53,6 +53,22 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        // GET /api/admin/destinations/stats
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetStats()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var stats = await _service.GetStatsAsync(userId);
+                return Ok(stats);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
         // GET /api/admin/destinations/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)

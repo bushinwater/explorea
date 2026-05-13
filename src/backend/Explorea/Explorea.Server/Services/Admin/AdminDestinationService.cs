@@ -1,8 +1,10 @@
 using Explorea.API.DTOs.Admin.Destination;
 using Explorea.API.Models;
+using Explorea.Server.Data;
 using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Admin.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
 namespace Explorea.Server.Services.Admin
@@ -12,6 +14,7 @@ namespace Explorea.Server.Services.Admin
         private readonly IDestinationRepository _destinationRepo;
         private readonly IOrganizationAssignmentRepository _assignmentRepo;
         private readonly IUserRepository _userRepo;
+        private readonly AppDbContext _db;
 
         private static readonly GeometryFactory _geometryFactory =
             new GeometryFactory(new PrecisionModel(), 4326);
@@ -19,11 +22,13 @@ namespace Explorea.Server.Services.Admin
         public AdminDestinationService(
             IDestinationRepository destinationRepo,
             IOrganizationAssignmentRepository assignmentRepo,
-            IUserRepository userRepo)
+            IUserRepository userRepo,
+            AppDbContext db)
         {
             _destinationRepo = destinationRepo;
             _assignmentRepo  = assignmentRepo;
             _userRepo        = userRepo;
+            _db              = db;
         }
 
         public async Task<(List<AdminDestinationListDto> Items, int Total)> GetAllAsync(
@@ -65,6 +70,61 @@ namespace Explorea.Server.Services.Admin
                 pageSize);
 
             return (items.Select(MapToListDto).ToList(), total);
+        }
+
+        public async Task<AdminDestinationStatsDto> GetStatsAsync(Guid currentUserId)
+        {
+            var destinationQuery = _db.Destinations
+                .IgnoreQueryFilters()
+                .Where(d => !d.IsDeleted);
+
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+
+            if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
+                var destinationIds = assignments.Select(a => a.DestinationId).ToList();
+                destinationQuery = destinationQuery.Where(d => destinationIds.Contains(d.Id));
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            var recentCutoff = now.AddDays(-30);
+
+            var totalViews = await destinationQuery.SumAsync(d => (long)d.Popularity);
+            var inactiveCount = await destinationQuery.CountAsync(d =>
+                !_db.PopularityLogs.Any(l =>
+                    l.EntityType == "destination" &&
+                    l.EntityId == d.Id &&
+                    l.Source == "click" &&
+                    l.CreatedAt > recentCutoff));
+            var addedLast30Days = await destinationQuery.CountAsync(d => d.CreatedAt > recentCutoff);
+
+            var topDestinations = await destinationQuery
+                .OrderByDescending(d => d.Popularity)
+                .ThenBy(d => d.Name)
+                .Take(3)
+                .Select(d => new AdminDestinationTopItemDto
+                {
+                    Name = d.Name,
+                    Views = d.Popularity
+                })
+                .ToListAsync();
+
+            var mostPopular = topDestinations.FirstOrDefault();
+
+            return new AdminDestinationStatsDto
+            {
+                TotalViews = totalViews,
+                InactiveCount = inactiveCount,
+                AddedLast30Days = addedLast30Days,
+                MostPopularName = mostPopular?.Name ?? string.Empty,
+                MostPopularViews = mostPopular?.Views ?? 0,
+                TopDestinations = topDestinations
+            };
         }
 
         public async Task<AdminDestinationListDto?> GetByIdAsync(Guid id, Guid currentUserId)
