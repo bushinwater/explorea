@@ -2,7 +2,13 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@
 import { CommonModule } from '@angular/common';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { Subscription } from 'rxjs';
-import { AdminProfileDto, AdminSettingsService } from './admin-settings.service';
+import {
+  AdminAdministrationSettingDto,
+  AdminAdministrationStatDto,
+  AdminProfileDto,
+  AdminSettingsService,
+  AdminSystemToggleDto,
+} from './admin-settings.service';
 import {
   AdminLanguage,
   AdminTheme,
@@ -72,6 +78,9 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   readonly isNotificationsSaving = signal(false);
   readonly notificationsErrorMessage = signal('');
   readonly notificationsSuccessMessage = signal('');
+
+  readonly isAdministrationLoading = signal(false);
+  readonly administrationErrorMessage = signal('');
 
   readonly toast = signal<SettingsToastState | null>(null);
   readonly tabs: SettingsTabItem[] = [
@@ -202,28 +211,28 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     priority: 'Samo važno',
   };
 
-  readonly administrationStats = [
+  readonly administrationStats = signal<AdminAdministrationStatDto[]>([
     {
       icon: 'verified_user',
       label: 'Aktivni admini',
-      value: '12',
+      value: '0',
       description: 'Nalozi sa aktivnim pristupom admin panelu.',
     },
     {
       icon: 'pending_actions',
       label: 'Zahtevi na čekanju',
-      value: '24',
+      value: '0',
       description: 'Objekti, recenzije i izmene koje čekaju proveru.',
     },
     {
       icon: 'security',
       label: 'Bezbednosni status',
-      value: 'Stabilno',
-      description: 'Nema kritičnih upozorenja u poslednja 24h.',
+      value: 'Učitavanje',
+      description: 'Provera sistemskog statusa je u toku.',
     },
-  ];
+  ]);
 
-  readonly administrationSettings = [
+  readonly administrationSettings = signal<AdminAdministrationSettingDto[]>([
     {
       icon: 'manage_accounts',
       title: 'Upravljanje admin ulogama',
@@ -244,9 +253,9 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
         'Pregled osnovnih sistemskih parametara, seed podataka i administrativnih podešavanja.',
       actionLabel: 'Pregledaj sistem',
     },
-  ];
+  ]);
 
-  readonly systemToggles = [
+  readonly systemToggles = signal<AdminSystemToggleDto[]>([
     {
       icon: 'admin_panel_settings',
       title: 'Dozvoli registraciju novih admina',
@@ -265,7 +274,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       description: 'Pamti detaljne administrativne akcije radi bezbednosti i kasnije provere.',
       enabled: true,
     },
-  ];
+  ]);
 
   readonly dangerousActions = [
     {
@@ -310,6 +319,8 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     this.loadProfile();
     this.loadPrefernces();
     this.loadNotifications();
+
+    if (this.auth.role() === 'super_admin') this.loadAdministration();
   }
 
   private loadPrefernces(): void {
@@ -473,6 +484,27 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       default:
         return value;
     }
+  }
+
+  private loadAdministration(): void {
+    this.isAdministrationLoading.set(true);
+    this.administrationErrorMessage.set('');
+
+    this.subscription.add(
+      this.adminSettingsService.getAdministration().subscribe({
+        next: (overview) => {
+          this.administrationStats.set(overview.stats);
+          this.administrationSettings.set(overview.settings);
+          this.systemToggles.set(overview.systemToggles);
+          this.isAdministrationLoading.set(false);
+        },
+        error: () => {
+          this.showToast('error', 'Nije moguće učitati sistemska podešavanja.');
+          this.administrationErrorMessage.set('Nije moguće učitati sistemska podešavanja.');
+          this.isAdministrationLoading.set(false);
+        },
+      }),
+    );
   }
 
   visibleTabs(): SettingsTabItem[] {

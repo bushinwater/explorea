@@ -430,13 +430,21 @@
           <p class="section-eyebrow">Administration</p>
           <h2>Sistemska podešavanja</h2>
           <p>Centralno mesto za superadmin kontrole, bezbednosne opcije i sistemske parametre.</p>
+
+          @if (isAdministrationLoading()) {
+          <p class="settings-inline-message">Učitavanje sistemskog pregleda...</p>
+          }
+
+          @if (administrationErrorMessage()) {
+          <p class="settings-inline-message settings-inline-message--error">{{ administrationErrorMessage() }}</p>
+          }
         </div>
 
-        <span class="profile-form__badge">Superadmin only</span>
+        <span class="profile-form__badge">Backend overview</span>
       </section>
 
       <section class="administration-stats-grid">
-        @for (stat of administrationStats; track stat.label) {
+        @for (stat of administrationStats(); track stat.label) {
         <article class="administration-stat-card">
           <div class="administration-stat-card__icon">
             <span class="material-icons">{{ stat.icon }}</span>
@@ -461,7 +469,7 @@
         </header>
 
         <div class="administration-control-grid">
-          @for (setting of administrationSettings; track setting.title) {
+          @for (setting of administrationSettings(); track setting.title) {
           <article class="administration-control-card">
             <div class="administration-control-card__icon">
               <span class="material-icons">{{ setting.icon }}</span>
@@ -490,7 +498,7 @@
         </header>
 
         <div class="system-toggle-list">
-          @for (setting of systemToggles; track setting.title) {
+          @for (setting of systemToggles(); track setting.title) {
           <article class="system-toggle-item">
             <div class="system-toggle-item__icon">
               <span class="material-icons">{{ setting.icon }}</span>

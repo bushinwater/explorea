@@ -1,4 +1,4 @@
-
+using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
 namespace Explorea.API.DTOs.Admin.Settings
@@ -61,5 +61,41 @@ namespace Explorea.API.DTOs.Admin.Settings
     public class AdminUpdateNotificationsDto
     {
         public bool NotificationsEnabled { get; set; }
+    }
+
+    public class AdminAdministrationOverviewDto
+    {
+        public List<AdminAdministrationStatDto> Stats { get; set; } = new();
+        public List<AdminAdministrationSettingDto> Settings { get; set; } = new();
+        public List<AdminSystemToggleDto> SystemToggles { get; set; } = new();
+    }
+    
+    public class AdminAdministrationStatDto
+    {
+        public string Icon { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+    
+    public class AdminAdministrationSettingDto
+    {
+        public string Icon { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string ActionLabel { get; set; } = string.Empty;
+    }
+    
+    public class AdminSystemToggleDto
+    {
+        public string Icon { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public bool Enabled { get; set; }
+    }
+    public class AdminProfilePhotoUploadDto
+    {
+       [Required]
+        public IFormFile File { get; set; } = null!;
     }
 }
