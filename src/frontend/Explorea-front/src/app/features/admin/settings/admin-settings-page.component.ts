@@ -16,6 +16,7 @@ interface AdminProfileFormState {
   lastName: string;
   email: string;
   profileImageUrl: string | null;
+  bio: string | null;
 }
 
 interface SettingsTabItem {
@@ -90,6 +91,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     status: 'Active',
     memberSince: '2023-03-01T00:00:00Z',
     profileImageUrl: null,
+    bio: null,
   });
 
   readonly appPreferences = {
@@ -259,6 +261,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     lastName: '',
     email: '',
     profileImageUrl: '',
+    bio: '',
   });
 
   constructor(
@@ -335,6 +338,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           lastName: form.lastName.trim(),
           email: form.email.trim(),
           profileImageUrl: form.profileImageUrl,
+          bio: form.bio?.trim() || null,
         })
         .subscribe({
           next: (profile) => {
@@ -357,6 +361,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       lastName: profile.lastName,
       email: profile.email,
       profileImageUrl: profile.profileImageUrl,
+      bio: profile.bio ?? '',
     });
   }
 

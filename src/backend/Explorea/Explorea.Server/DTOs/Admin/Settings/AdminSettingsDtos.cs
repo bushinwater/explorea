@@ -17,6 +17,7 @@ namespace Explorea.API.DTOs.Admin.Settings
       public string Status { get; set; } = string.Empty;
       public DateTimeOffset MemberSince { get; set; }
       public string? ProfileImageUrl { get; set; }
+      public string? Bio { get; set; }
   }
   
    public class AdminUpdateProfileDto
@@ -32,6 +33,9 @@ namespace Explorea.API.DTOs.Admin.Settings
 
         [MaxLength(500)]
         public string? ProfileImageUrl { get; set; }
+
+        [MaxLength(1000)]
+        public string? Bio { get; set; }
     }
 
      public class AdminAppPreferencesDto

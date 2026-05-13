@@ -125,8 +125,8 @@
 
           <label class="profile-field profile-field--full">
             <span>Kratka bio / opis uloge</span>
-            <textarea
-              rows="5">Upravlja Explorea administracijom, moderacijom sadržaja i sistemskim podešavanjima.</textarea>
+            <textarea #bioInput rows="5" [value]="profileForm().bio ?? ''" [disabled]="isProfileSaving()"
+              (input)="updateProfileField('bio', bioInput.value)"></textarea>
           </label>
         </div>
 

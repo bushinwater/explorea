@@ -74,6 +74,9 @@ namespace Explorea.Server.Controllers.Admin
       user.ProfileImageUrl = string.IsNullOrWhiteSpace(dto.ProfileImageUrl)
         ? null
         : dto.ProfileImageUrl.Trim();
+      user.Bio = string.IsNullOrWhiteSpace(dto.Bio)
+        ? null
+        : dto.Bio.Trim();
       user.UpdatedAt = DateTimeOffset.UtcNow;
 
       await _db.SaveChangesAsync();
@@ -263,7 +266,8 @@ namespace Explorea.Server.Controllers.Admin
           Region = user.ManagedRegion?.Name ?? "Sve regije",
           Status = user.IsActive ? "Active" : "Inactive",
           MemberSince = ResolveMemberSince(user),
-          ProfileImageUrl = user.ProfileImageUrl
+          ProfileImageUrl = user.ProfileImageUrl,
+          Bio = user.Bio
       };
     }
 

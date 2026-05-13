@@ -15,6 +15,7 @@ export interface AdminProfileDto {
   status: string;
   memberSince: string;
   profileImageUrl: string | null;
+  bio: string | null;
 }
 
 export interface AdminUpdateProfileDto {
@@ -22,6 +23,7 @@ export interface AdminUpdateProfileDto {
   lastName: string;
   email: string;
   profileImageUrl: string | null;
+  bio: string | null;
 }
 
 export interface AdminAppPreferencesDto {
