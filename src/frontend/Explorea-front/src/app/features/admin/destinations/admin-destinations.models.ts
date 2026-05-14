@@ -20,7 +20,6 @@ export interface DestinationRow {
   status: DestinationStatus;
   thumbnailUrl: string | null;
   views: number;
-  sparklineData: number[];
   avgRating?: number;
   lastUpdatedAt: string;
 }
@@ -32,15 +31,11 @@ export interface TopDestination {
 
 export interface DestinationStats {
   totalViews: number;
-  totalViewsTrend?: string;
   inactiveCount: number;
-  inactiveTrend?: string;
-  pendingCount?: number;
-  pendingHint?: string;
-  addedLast30Days: number | number[];
+  addedLast30Days: number;
   mostPopularName: string;
   mostPopularViews: number;
-  topDestinations?: TopDestination[];
+  topDestinations: TopDestination[];
 }
 
 export interface DestinationFilters {

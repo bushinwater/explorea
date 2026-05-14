@@ -36,12 +36,26 @@ interface ApiDestinationItem {
   updatedAt: string;
 }
 
+interface ApiDestinationStats {
+  totalViews: number;
+  inactiveCount: number;
+  addedLast30Days: number;
+  mostPopularName: string;
+  mostPopularViews: number;
+  topDestinations?: Array<{ name: string; views: number }>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminDestinationsService {
   private readonly http = inject(HttpClient);
 
   getStats(): Observable<DestinationStats> {
-    return this.http.get<DestinationStats>('/api/admin/destinations/stats');
+    return this.http.get<ApiDestinationStats>('/api/admin/destinations/stats').pipe(
+      map((stats) => ({
+        ...stats,
+        topDestinations: stats.topDestinations ?? [],
+      })),
+    );
   }
 
   getDestinations(filters: DestinationFilters): Observable<DestinationPagedResponse> {
@@ -104,7 +118,6 @@ export class AdminDestinationsService {
       status: this.mapStatus(item.status || item.visibility),
       thumbnailUrl: item.previewImageUrl,
       views: item.views,
-      sparklineData: [],
       avgRating: item.avgRating,
       lastUpdatedAt: item.updatedAt,
     };

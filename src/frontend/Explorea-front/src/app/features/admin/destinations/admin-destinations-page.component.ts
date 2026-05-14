@@ -86,16 +86,6 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     ].filter(Boolean).length;
   });
 
-  protected readonly categories: Array<{ value: DestinationCategory | 'all'; label: string }> = [
-    { value: 'all', label: 'Sve kategorije' },
-    { value: 'cultural', label: 'Kulturno' },
-    { value: 'nature', label: 'Priroda' },
-    { value: 'gastronomy', label: 'Gastronomija' },
-    { value: 'adventure', label: 'Avantura' },
-    { value: 'wellness', label: 'Wellness' },
-    { value: 'historical', label: 'Istorijsko' },
-  ];
-
   protected readonly statuses: Array<{ value: DestinationStatus | 'all'; label: string }> = [
     { value: 'all', label: 'Svi statusi' },
     { value: 'active', label: 'Aktivno' },
@@ -242,8 +232,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected addedLast30DaysValue(): number {
-    const value = this.stats()?.addedLast30Days ?? 0;
-    return Array.isArray(value) ? value.reduce((sum, current) => sum + current, 0) : value;
+    return this.stats()?.addedLast30Days ?? 0;
   }
 
   protected topDestinationPercent(views: number): number {
@@ -296,15 +285,6 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       historical: '#4a3060',
     };
     return map[category];
-  }
-
-  protected thumbInitials(name: string): string {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((w) => w[0])
-      .join('')
-      .toUpperCase();
   }
 
   protected visibleRangeText(): string {
