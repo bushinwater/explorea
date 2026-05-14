@@ -33,6 +33,7 @@ namespace Explorea.Server.Services.Admin
             var priority = NormalizeOptionalPriority(query.Priority);
 
             var (items, total) = await _supportRepository.GetSuperAdminTicketsAsync(
+                currentUserId,
                 status,
                 priority,
                 query.IsEscalated,
@@ -53,9 +54,10 @@ namespace Explorea.Server.Services.Admin
             await EnsureSuperAdminAsync(currentUserId);
 
             var ticket = await _supportRepository.GetTicketDetailAsync(id, includeInternalMessages: true);
-            return ticket == null
-                ? null
-                : MapDetail(ticket, includeInternalMessages: true);
+            if (ticket == null) return null;
+            if (!ticket.IsEscalated && ticket.AssignedToUserId != currentUserId) return null;
+
+            return MapDetail(ticket, includeInternalMessages: true);
         }
 
         public async Task<SupportMessageDto> AddMessageAsync(
@@ -81,7 +83,7 @@ namespace Explorea.Server.Services.Admin
                 SenderUserId = currentUserId,
                 SenderType = SupportSenderTypes.SuperAdmin,
                 Content = content,
-                IsInternal = true,
+                IsInternal = dto.IsInternal,
                 CreatedAt = now
             };
 
@@ -220,7 +222,21 @@ namespace Explorea.Server.Services.Admin
                 LastActivityAt = ticket.LastActivityAt,
                 MessageCount = includeInternalMessages
                     ? ticket.Messages.Count
-                    : ticket.Messages.Count(m => !m.IsInternal)
+                    : ticket.Messages.Count(m => !m.IsInternal),
+                LastMessage = ticket.Messages
+                    .Where(m => !m.IsInternal)
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Select(m => m.Content)
+                    .FirstOrDefault(),
+                LastMessageAt = ticket.Messages
+                    .Where(m => !m.IsInternal)
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Select(m => (DateTimeOffset?)m.CreatedAt)
+                    .FirstOrDefault(),
+                SenderRole = ticket.Messages
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Select(m => m.SenderType)
+                    .FirstOrDefault()
             };
         }
 
