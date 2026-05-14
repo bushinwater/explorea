@@ -1,4 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { AuthService } from '../../../../core/services/auth.service';
 import { AdminRole, ROLE_LABELS } from '../models/admin.models';
 import { AdminProfileService } from './admin-profile.service';
 
@@ -7,6 +8,7 @@ const STORAGE_KEY = 'explorea_admin_role';
 @Injectable({ providedIn: 'root' })
 export class DashboardAuthService {
   private readonly profileService = inject(AdminProfileService);
+  private readonly authService = inject(AuthService);
 
   private _role = signal<AdminRole>(this.loadRole());
   readonly role = this._role.asReadonly();
@@ -18,10 +20,34 @@ export class DashboardAuthService {
     localStorage.setItem(STORAGE_KEY, role);
   }
 
+  syncRoleFromJwt(): void {
+    const jwtRole = this.authService.getRole();
+    const valid: AdminRole[] = ['super_admin', 'tourist_organization', 'place_owner'];
+    if (valid.includes(jwtRole as AdminRole)) {
+      this._role.set(jwtRole as AdminRole);
+      localStorage.setItem(STORAGE_KEY, jwtRole);
+    }
+  }
+
   private loadRole(): AdminRole {
     const stored = localStorage.getItem(STORAGE_KEY) as AdminRole | null;
     const valid: AdminRole[] = ['super_admin', 'tourist_organization', 'place_owner'];
-    return stored && valid.includes(stored) ? stored : 'super_admin';
+    if (stored && valid.includes(stored)) return stored;
+
+    // Fallback: čitaj iz JWT tokena
+    const jwtRole = this.getJwtRole();
+    return valid.includes(jwtRole as AdminRole) ? (jwtRole as AdminRole) : 'super_admin';
+  }
+
+  private getJwtRole(): string {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return '';
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload['role'] ?? '';
+    } catch {
+      return '';
+    }
   }
 
   get userRegion(): string {

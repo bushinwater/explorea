@@ -9,6 +9,12 @@
           <h2 class="support-list__title">Support</h2>
           <p class="support-list__subtitle">Razgovori korisnicke podrske</p>
         </div>
+        @if (auth.role() === 'place_owner' || auth.role() === 'tourist_organization') {
+          <button class="btn btn-primary btn-sm" type="button" (click)="openNewTicket()">
+            <span class="material-icons">add</span>
+            Novi tiket
+          </button>
+        }
       </div>
 
       <label class="support-search">
@@ -190,17 +196,36 @@
             </div>
           </div>
 
-          @if (conversation.status !== 'resolved') {
-            <button
-              class="btn btn-primary btn-sm support-chat__resolve"
-              type="button"
-              [disabled]="isResolvingTicket()"
-              (click)="resolveTicket()"
-            >
-              <span class="material-icons">check_circle</span>
-              {{ isResolvingTicket() ? 'Resavanje...' : 'Resi tiket' }}
-            </button>
-          }
+          <div class="support-chat__actions">
+            @if (auth.role() !== 'place_owner' && conversation.status !== 'resolved' && conversation.status !== 'closed') {
+              <button
+                class="btn btn-primary btn-sm"
+                type="button"
+                [disabled]="isResolvingTicket()"
+                (click)="resolveTicket()"
+              >
+                <span class="material-icons">check_circle</span>
+                {{ isResolvingTicket() ? 'Rešavanje...' : 'Reši tiket' }}
+              </button>
+            }
+            @if (auth.role() === 'tourist_organization' && !conversation.isEscalated) {
+              <button
+                class="btn btn-secondary btn-sm"
+                type="button"
+                [disabled]="isEscalatingTicket()"
+                (click)="escalateTicket()"
+                title="Prosledi superadminu"
+              >
+                <span class="material-icons">escalator_warning</span>
+                {{ isEscalatingTicket() ? 'Eskalacija...' : 'Eskaliraj' }}
+              </button>
+            }
+            @if (conversation.isEscalated) {
+              <span class="support-escalated-badge">
+                <span class="material-icons">warning</span> Eskalirano
+              </span>
+            }
+          </div>
         </header>
 
         <div class="support-messages">
@@ -393,3 +418,109 @@
     }
   </aside>
 </section>
+
+@if (showNewTicketModal()) {
+  <div class="nt-backdrop" (click)="closeNewTicket()">
+    <div class="nt-dialog" (click)="$event.stopPropagation()">
+
+      <div class="nt-dialog__header">
+        <h3 class="nt-dialog__title">Novi tiket</h3>
+        <button class="nt-dialog__close" type="button" (click)="closeNewTicket()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <!-- Korak 1: selekcija objekta (samo za place_owner) -->
+      @if (newTicketStep() === 'place-select') {
+        <div class="nt-dialog__body">
+          <p class="nt-step-label">Za koji objekat je tiket?</p>
+          @if (isLoadingPlaces()) {
+            <div class="nt-loading">
+              <span class="material-icons nt-spin">refresh</span> Učitavanje...
+            </div>
+          } @else {
+            <div class="nt-places">
+              @for (place of myPlaces(); track place.id) {
+                <button
+                  class="nt-place-item"
+                  [class.nt-place-item--selected]="selectedPlaceId() === place.id"
+                  type="button"
+                  (click)="selectPlaceForTicket(place.id)"
+                >
+                  @if (place.previewImageUrl) {
+                    <img class="nt-place-item__thumb" [src]="place.previewImageUrl" [alt]="place.name" />
+                  } @else {
+                    <span class="nt-place-item__thumb nt-place-item__thumb--empty material-icons">store</span>
+                  }
+                  <span class="nt-place-item__name">{{ place.name }}</span>
+                </button>
+              }
+              <button class="nt-place-item nt-place-item--none" type="button" (click)="selectPlaceForTicket(null)">
+                <span class="nt-place-item__thumb nt-place-item__thumb--empty material-icons">block</span>
+                <span class="nt-place-item__name">Nije vezano za objekat</span>
+              </button>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Korak 2: AI ili čovek -->
+      @if (newTicketStep() === 'contact-type') {
+        <div class="nt-dialog__body">
+          <p class="nt-step-label">Kako želiš da dobiješ pomoć?</p>
+          <div class="nt-contact-options">
+            <button class="nt-contact-option" type="button" (click)="chooseAi()">
+              <span class="material-icons nt-contact-option__icon">smart_toy</span>
+              <span class="nt-contact-option__title">AI asistent</span>
+              <span class="nt-contact-option__desc">Trenutni odgovor od AI podrške</span>
+            </button>
+            <button class="nt-contact-option" type="button" (click)="chooseHuman()">
+              <span class="material-icons nt-contact-option__icon">support_agent</span>
+              <span class="nt-contact-option__title">Čovek</span>
+              <span class="nt-contact-option__desc">Poveži se sa agentom podrške</span>
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Korak 3: forma -->
+      @if (newTicketStep() === 'form') {
+        <div class="nt-dialog__body">
+          <label class="nt-field">
+            <span class="nt-field__label">Naslov</span>
+            <input
+              class="nt-field__input"
+              type="text"
+              placeholder="Kratko opiši problem"
+              [value]="newTicketTitle()"
+              (input)="newTicketTitle.set($any($event.target).value)"
+              maxlength="200"
+            />
+          </label>
+          <label class="nt-field">
+            <span class="nt-field__label">Poruka</span>
+            <textarea
+              class="nt-field__input nt-field__textarea"
+              placeholder="Detaljno opiši problem..."
+              [value]="newTicketMessage()"
+              (input)="newTicketMessage.set($any($event.target).value)"
+              rows="4"
+            ></textarea>
+          </label>
+        </div>
+        <div class="nt-dialog__footer">
+          <button class="btn btn-secondary btn-sm" type="button" (click)="closeNewTicket()">Otkaži</button>
+          <button
+            class="btn btn-primary btn-sm"
+            type="button"
+            [disabled]="!newTicketTitle().trim() || !newTicketMessage().trim() || isCreatingTicket()"
+            (click)="submitNewTicket()"
+          >
+            {{ isCreatingTicket() ? 'Slanje...' : 'Pošalji tiket' }}
+          </button>
+        </div>
+      }
+
+    </div>
+  </div>
+}
