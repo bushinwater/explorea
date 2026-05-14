@@ -12,7 +12,9 @@ export const MOCK_SUPPORT_TICKETS: SupportTicket[] = [
     unreadCount: 2,
     status: 'open',
     priority: 'high',
-    assignedToRole: 'super_admin',
+    isEscalated: true,
+    senderRole: 'to_admin',
+    assignedToName: 'SuperAdmin',
     region: 'Sumadija',
     placeOwnerId: null,
     context: {
@@ -52,9 +54,11 @@ export const MOCK_SUPPORT_TICKETS: SupportTicket[] = [
     lastMessage: 'Mozete li da proverite zasto se thumbnail ne prikazuje?',
     lastMessageAt: '2026-05-04T09:20:00.000Z',
     unreadCount: 1,
-    status: 'pending',
+    status: 'in_progress',
     priority: 'medium',
-    assignedToRole: 'tourist_organization',
+    isEscalated: false,
+    senderRole: 'user',
+    assignedToName: 'TO Sumadija',
     region: 'Sumadija',
     placeOwnerId: null,
     context: {
@@ -95,8 +99,10 @@ export const MOCK_SUPPORT_TICKETS: SupportTicket[] = [
     lastMessageAt: '2026-05-03T16:30:00.000Z',
     unreadCount: 0,
     status: 'open',
-    priority: 'urgent',
-    assignedToRole: 'place_owner',
+    priority: 'high',
+    isEscalated: false,
+    senderRole: 'user',
+    assignedToName: 'TO Beograd',
     region: 'Beograd',
     placeOwnerId: 'owner-belgrade-01',
     context: {
@@ -138,7 +144,9 @@ export const MOCK_SUPPORT_TICKETS: SupportTicket[] = [
     unreadCount: 3,
     status: 'open',
     priority: 'high',
-    assignedToRole: 'super_admin',
+    isEscalated: true,
+    senderRole: 'to_admin',
+    assignedToName: 'SuperAdmin',
     region: 'Vojvodina',
     placeOwnerId: null,
     context: {
@@ -180,7 +188,9 @@ export const MOCK_SUPPORT_TICKETS: SupportTicket[] = [
     unreadCount: 0,
     status: 'resolved',
     priority: 'low',
-    assignedToRole: 'place_owner',
+    isEscalated: false,
+    senderRole: 'user',
+    assignedToName: 'TO Sumadija',
     region: 'Sumadija',
     placeOwnerId: 'owner-sumadija-02',
     context: {
@@ -217,15 +227,7 @@ export function filterSupportTicketsByScope(
   tickets: SupportTicket[],
   scope: SupportRoleScope,
 ): SupportTicket[] {
-  return tickets.filter((ticket) => {
-    if (scope.role === 'super_admin') {
-      return ticket.assignedToRole === 'super_admin';
-    }
-
-    if (scope.role === 'tourist_organization') {
-      return ticket.assignedToRole === 'tourist_organization' && ticket.region === scope.region;
-    }
-
-    return ticket.assignedToRole === 'place_owner' && ticket.placeOwnerId === scope.placeOwnerId;
-  });
+  if (scope.role === 'super_admin') return tickets;
+  if (scope.role === 'tourist_organization') return tickets.filter((t) => t.region === scope.region);
+  return tickets.filter((t) => t.placeOwnerId === scope.placeOwnerId);
 }
