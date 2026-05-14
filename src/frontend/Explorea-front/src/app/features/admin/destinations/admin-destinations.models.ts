@@ -1,5 +1,24 @@
 export type DestinationStatus = 'active' | 'pending' | 'inactive' | 'rejected';
 
+export interface DestinationImage {
+  id: string;
+  imageUrl: string;
+  sortOrder: number;
+}
+
+export interface DestinationDetail {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  visibility: string;
+  previewImageUrl: string | null;
+  typeId: number | null;
+  images: DestinationImage[];
+}
+
 export type DestinationCategory =
   | 'cultural'
   | 'nature'
@@ -10,6 +29,7 @@ export type DestinationCategory =
 
 export interface DestinationRow {
   id: string;
+  slug: string;
   name: string;
   city: string;
   region: string;

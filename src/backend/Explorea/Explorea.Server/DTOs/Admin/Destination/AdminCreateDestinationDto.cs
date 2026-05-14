@@ -11,5 +11,6 @@ namespace Explorea.API.DTOs.Admin.Destination
         public int? CountryId { get; set; }
         public string? HeroImageUrl { get; set; }
         public string Visibility { get; set; } = "draft";
+        public int? TypeId { get; set; }
     }
 }

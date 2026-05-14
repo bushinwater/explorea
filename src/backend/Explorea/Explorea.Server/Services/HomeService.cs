@@ -50,9 +50,9 @@ namespace Explorea.Server.Services
       Id = d.Id,
       Name = d.Name,
       Slug = d.Slug,
-      PreviewImageUrl = d.HeroImageUrl,
+      PreviewImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
       AvgRating = d.AvgRating,
-      HeroImageUrl = d.HeroImageUrl,
+      HeroImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
       Popularity = d.Popularity,
       IsFeatured = d.IsFeatured,
       City = d.City == null ? null : new CityRefDto

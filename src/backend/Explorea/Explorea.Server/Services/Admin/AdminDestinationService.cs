@@ -4,6 +4,7 @@ using Explorea.Server.Data;
 using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Admin.Interfaces;
+using Explorea.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
@@ -14,6 +15,8 @@ namespace Explorea.Server.Services.Admin
         private readonly IDestinationRepository _destinationRepo;
         private readonly IOrganizationAssignmentRepository _assignmentRepo;
         private readonly IUserRepository _userRepo;
+        private readonly ISearchRepository _searchRepo;
+        private readonly ICloudinaryService _cloudinary;
         private readonly AppDbContext _db;
 
         private static readonly GeometryFactory _geometryFactory =
@@ -23,11 +26,15 @@ namespace Explorea.Server.Services.Admin
             IDestinationRepository destinationRepo,
             IOrganizationAssignmentRepository assignmentRepo,
             IUserRepository userRepo,
+            ISearchRepository searchRepo,
+            ICloudinaryService cloudinary,
             AppDbContext db)
         {
             _destinationRepo = destinationRepo;
             _assignmentRepo  = assignmentRepo;
             _userRepo        = userRepo;
+            _searchRepo      = searchRepo;
+            _cloudinary      = cloudinary;
             _db              = db;
         }
 
@@ -60,9 +67,28 @@ namespace Explorea.Server.Services.Admin
                     restrictToIds = assignments.Select(a => a.DestinationId).ToList();
                 }
             }
-            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            else if (user?.Role.Name == RoleNames.SuperAdmin)
+            {
+                await SyncInactiveVisibilityAsync();
+            }
+            else
             {
                 throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var hits = await _searchRepo.SearchDestinationsAsync(search, take: 200);
+                var searchIds = hits.Select(h => h.Entity.Id).ToList();
+
+                if (searchIds.Count == 0)
+                    return (new List<AdminDestinationListDto>(), 0);
+
+                restrictToIds = restrictToIds == null
+                    ? searchIds
+                    : restrictToIds.Intersect(searchIds).ToList();
+
+                search = null;
             }
 
             var (items, total) = await _destinationRepo.GetAdminPagedAsync(
@@ -145,13 +171,13 @@ namespace Explorea.Server.Services.Admin
                 })
                 .ToDictionaryAsync(x => x.DestinationId, x => x.Views);
 
-            var totalViews = destinationStats.Sum(d => (long)loggedViews.GetValueOrDefault(d.Id, d.Popularity));
+            var totalViews = destinationStats.Sum(d => (long)loggedViews.GetValueOrDefault(d.Id, 0));
 
             var topDestinations = destinationStats
                 .Select(d => new AdminDestinationTopItemDto
                 {
                     Name = d.Name,
-                    Views = loggedViews.GetValueOrDefault(d.Id, d.Popularity)
+                    Views = loggedViews.GetValueOrDefault(d.Id, 0)
                 })
                 .OrderByDescending(d => d.Views)
                 .ThenBy(d => d.Name)
@@ -262,6 +288,7 @@ namespace Explorea.Server.Services.Admin
                 CountryId   = dto.CountryId,
                 HeroImageUrl = dto.HeroImageUrl,
                 Visibility  = dto.Visibility,
+                TypeId      = dto.TypeId,
                 CreatedAt   = now,
                 UpdatedAt   = now,
                 CreatedBy   = createdBy,
@@ -309,6 +336,9 @@ namespace Explorea.Server.Services.Admin
                     new Coordinate(dto.Longitude.Value, dto.Latitude.Value));
             }
 
+            if (dto.ClearTypeId)      destination.TypeId = null;
+            else if (dto.TypeId.HasValue) destination.TypeId = dto.TypeId.Value;
+
             destination.UpdatedAt = DateTimeOffset.UtcNow;
             destination.UpdatedBy = updatedBy;
 
@@ -343,23 +373,35 @@ namespace Explorea.Server.Services.Admin
             Destination d,
             IReadOnlyDictionary<Guid, int>? viewCounts = null) => new()
         {
-            Id             = d.Id,
-            Name           = d.Name,
-            Slug           = d.Slug,
-            PreviewImageUrl= d.PreviewImageUrl ?? d.HeroImageUrl,
-            Region         = d.City?.Region?.Name,
-            RegionId       = d.City?.RegionId,
-            Views          = viewCounts?.GetValueOrDefault(d.Id) ?? d.Popularity,
-            Status         = MapStatus(d.Visibility),
-            TypeId         = d.TypeId,
-            TypeName       = d.Type?.Name,
-            AvgRating      = d.AvgRating,
-            IsFeatured     = d.IsFeatured,
-            Visibility     = d.Visibility,
-            City           = d.City?.Name,
-            Country        = d.Country?.Name,
-            CreatedAt      = d.CreatedAt,
-            UpdatedAt      = d.UpdatedAt
+            Id              = d.Id,
+            Name            = d.Name,
+            Slug            = d.Slug,
+            PreviewImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
+            Region          = d.City?.Region?.Name,
+            RegionId        = d.City?.RegionId,
+            Views           = viewCounts?.GetValueOrDefault(d.Id) ?? 0,
+            Status          = MapStatus(d.Visibility),
+            TypeId          = d.TypeId,
+            TypeName        = d.Type?.Name,
+            AvgRating       = d.AvgRating,
+            IsFeatured      = d.IsFeatured,
+            Visibility      = d.Visibility,
+            City            = d.City?.Name,
+            Country         = d.Country?.Name,
+            Description     = d.Description,
+            Latitude        = d.Latitude,
+            Longitude       = d.Longitude,
+            Images          = d.Images
+                                .OrderBy(i => i.SortOrder)
+                                .Select(i => new AdminDestinationImageDto
+                                {
+                                    Id       = i.Id,
+                                    ImageUrl = i.ImageUrl,
+                                    SortOrder = i.SortOrder
+                                })
+                                .ToList(),
+            CreatedAt       = d.CreatedAt,
+            UpdatedAt       = d.UpdatedAt
         };
 
         private async Task<Dictionary<Guid, int>> GetViewCountsAsync(List<Destination> destinations)
@@ -377,12 +419,6 @@ namespace Explorea.Server.Services.Admin
                     Views = g.Count()
                 })
                 .ToDictionaryAsync(x => x.DestinationId, x => x.Views);
-
-            foreach (var destination in destinations)
-            {
-                if (!loggedViews.ContainsKey(destination.Id) && destination.Popularity > 0)
-                    loggedViews[destination.Id] = destination.Popularity;
-            }
 
             return loggedViews;
         }
@@ -416,6 +452,134 @@ namespace Explorea.Server.Services.Admin
             }
 
             return await _assignmentRepo.ExistsAsync(userId, destinationId);
+        }
+
+        public async Task<AdminDestinationImageDto> AddImageAsync(Guid destinationId, IFormFile file, Guid userId)
+        {
+            var destination = await _destinationRepo.GetAdminByIdAsync(destinationId)
+                ?? throw new KeyNotFoundException("Destination not found.");
+
+            var imageCount = await _db.DestinationImages
+                .CountAsync(i => i.DestinationId == destinationId);
+
+            if (imageCount >= 10)
+                throw new InvalidOperationException("Maximum of 10 images allowed per destination.");
+
+            if (!file.ContentType.StartsWith("image/"))
+                throw new InvalidOperationException("Only image files are allowed.");
+
+            if (file.Length > 5 * 1024 * 1024)
+                throw new InvalidOperationException("File size must be under 5 MB.");
+
+            var url = await _cloudinary.UploadLandscapeAsync(file, "destination-images");
+
+            var maxOrder = await _db.DestinationImages
+                .Where(i => i.DestinationId == destinationId)
+                .MaxAsync(i => (int?)i.SortOrder) ?? -1;
+
+            var image = new DestinationImage
+            {
+                Id            = Guid.NewGuid(),
+                DestinationId = destinationId,
+                ImageUrl      = url,
+                SortOrder     = maxOrder + 1,
+                CreatedAt     = DateTimeOffset.UtcNow,
+                CreatedBy     = userId
+            };
+
+            _db.DestinationImages.Add(image);
+            await _db.SaveChangesAsync();
+
+            return new AdminDestinationImageDto
+            {
+                Id        = image.Id,
+                ImageUrl  = image.ImageUrl,
+                SortOrder = image.SortOrder
+            };
+        }
+
+        public async Task<bool> DeleteImageAsync(Guid destinationId, Guid imageId, Guid userId)
+        {
+            var image = await _db.DestinationImages
+                .FirstOrDefaultAsync(i => i.Id == imageId && i.DestinationId == destinationId);
+
+            if (image == null) return false;
+
+            _db.DestinationImages.Remove(image);
+
+            var destination = await _destinationRepo.GetAdminByIdAsync(destinationId);
+            if (destination != null && destination.PreviewImageUrl == image.ImageUrl)
+            {
+                destination.PreviewImageUrl = null;
+                destination.UpdatedAt = DateTimeOffset.UtcNow;
+                _destinationRepo.Update(destination);
+            }
+
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<string?> SetPreviewImageAsync(Guid destinationId, Guid imageId, Guid userId)
+        {
+            var image = await _db.DestinationImages
+                .FirstOrDefaultAsync(i => i.Id == imageId && i.DestinationId == destinationId);
+
+            if (image == null) return null;
+
+            var destination = await _destinationRepo.GetAdminByIdAsync(destinationId);
+            if (destination == null) return null;
+
+            destination.PreviewImageUrl = image.ImageUrl;
+            destination.UpdatedAt = DateTimeOffset.UtcNow;
+            destination.UpdatedBy = userId;
+            _destinationRepo.Update(destination);
+            await _destinationRepo.SaveChangesAsync();
+
+            return image.ImageUrl;
+        }
+
+        public async Task<AdminDestinationLookupDto> CreateTypeAsync(string name, Guid userId)
+        {
+            var trimmed = name.Trim();
+            if (string.IsNullOrEmpty(trimmed))
+                throw new ArgumentException("Type name cannot be empty.");
+
+            var existing = await _db.DestinationTypes
+                .FirstOrDefaultAsync(t => t.Name.ToLower() == trimmed.ToLower());
+            if (existing != null)
+                return new AdminDestinationLookupDto { Id = existing.Id, Name = existing.Name };
+
+            var now = DateTimeOffset.UtcNow;
+            var type = new DestinationType
+            {
+                Name      = trimmed,
+                CreatedAt = now,
+                UpdatedAt = now,
+                CreatedBy = userId,
+                UpdatedBy = userId,
+            };
+            _db.DestinationTypes.Add(type);
+            await _db.SaveChangesAsync();
+
+            return new AdminDestinationLookupDto { Id = type.Id, Name = type.Name };
+        }
+
+        private async Task SyncInactiveVisibilityAsync()
+        {
+            var recentCutoff = DateTimeOffset.UtcNow.AddDays(-30);
+
+            await _db.Destinations
+                .IgnoreQueryFilters()
+                .Where(d =>
+                    !d.IsDeleted &&
+                    d.Visibility == "published" &&
+                    d.CreatedAt < recentCutoff &&
+                    !_db.PopularityLogs.Any(l =>
+                        l.EntityType == "destination" &&
+                        l.EntityId == d.Id &&
+                        l.Source == "click" &&
+                        l.CreatedAt > recentCutoff))
+                .ExecuteUpdateAsync(s => s.SetProperty(d => d.Visibility, "inactive"));
         }
     }
 }

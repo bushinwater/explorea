@@ -1,0 +1,280 @@
+<div class="edit-modal__backdrop" (click)="cancel.emit()"></div>
+
+<aside class="edit-modal__panel">
+  <!-- Header -->
+  <header class="edit-modal__header">
+    <div class="edit-modal__title-block">
+      <span class="material-icons edit-modal__title-icon">add_location_alt</span>
+      <div>
+        <h2 class="edit-modal__title">Nova destinacija</h2>
+        <p class="edit-modal__subtitle">Popuni sva polja i sačuvaj</p>
+      </div>
+    </div>
+    <button class="edit-modal__close" type="button" (click)="cancel.emit()">
+      <span class="material-icons">close</span>
+    </button>
+  </header>
+
+  @if (error()) {
+    <div class="edit-modal__error">
+      <span class="material-icons">error_outline</span>
+      {{ error() }}
+    </div>
+  }
+
+  @if (!isCreated) {
+    <!-- Phase 1: form -->
+    <form [formGroup]="form" class="edit-modal__body" (ngSubmit)="save()">
+
+      <div class="edit-modal__cols">
+
+        <!-- Left: form fields -->
+        <div class="edit-modal__form-col">
+
+          <div class="edit-field">
+            <label class="edit-field__label" for="new-dest-name">Naziv <span class="edit-field__required">*</span></label>
+            <input
+              id="new-dest-name"
+              class="edit-field__input"
+              [class.edit-field__input--error]="form.controls.name.invalid && form.controls.name.touched"
+              formControlName="name"
+              placeholder="Naziv destinacije"
+              maxlength="200"
+            />
+            @if (form.controls.name.invalid && form.controls.name.touched) {
+              <span class="edit-field__error">Naziv je obavezan (maks. 200 znakova).</span>
+            }
+          </div>
+
+          <div class="edit-field">
+            <label class="edit-field__label" for="new-dest-desc">
+              Opis <span class="edit-field__required">*</span>
+              <span class="edit-field__counter">{{ descLength }} / {{ MAX_DESC }}</span>
+            </label>
+            <textarea
+              id="new-dest-desc"
+              class="edit-field__textarea"
+              [class.edit-field__input--error]="form.controls.description.invalid && form.controls.description.touched"
+              formControlName="description"
+              placeholder="Opis destinacije..."
+              [maxlength]="MAX_DESC"
+              rows="6"
+            ></textarea>
+            @if (form.controls.description.invalid && form.controls.description.touched) {
+              <span class="edit-field__error">Opis je obavezan.</span>
+            }
+          </div>
+
+          <div class="edit-field">
+            <label class="edit-field__label" for="new-dest-type">Kategorija</label>
+            <select id="new-dest-type" class="edit-field__select" formControlName="typeId">
+              <option [ngValue]="null">— Bez kategorije —</option>
+              @for (t of localTypes(); track t.id) {
+                <option [ngValue]="t.id.toString()">{{ t.name }}</option>
+              }
+            </select>
+            @if (!showNewTypeInput()) {
+              <button class="edit-field__add-type-btn" type="button" (click)="showNewTypeInput.set(true)">
+                <span class="material-icons">add</span> Dodaj novu kategoriju
+              </button>
+            } @else {
+              <div class="edit-field__new-type-row">
+                <input
+                  class="edit-field__input edit-field__input--new-type"
+                  placeholder="Naziv kategorije..."
+                  [value]="newTypeName()"
+                  (input)="newTypeName.set($any($event.target).value)"
+                  (keydown.enter)="$event.preventDefault(); confirmNewType()"
+                  maxlength="100"
+                />
+                <button
+                  class="edit-field__new-type-confirm"
+                  type="button"
+                  (click)="confirmNewType()"
+                  [disabled]="!newTypeName().trim() || isCreatingType()"
+                >
+                  @if (isCreatingType()) {
+                    <span class="material-icons edit-modal__spin">sync</span>
+                  } @else {
+                    <span class="material-icons">check</span>
+                  }
+                </button>
+                <button class="edit-field__new-type-cancel" type="button" (click)="showNewTypeInput.set(false); newTypeName.set('')">
+                  <span class="material-icons">close</span>
+                </button>
+              </div>
+            }
+          </div>
+
+          <div class="edit-field">
+            <label class="edit-field__label" for="new-dest-vis">Status <span class="edit-field__required">*</span></label>
+            <select id="new-dest-vis" class="edit-field__select" formControlName="visibility">
+              @for (opt of visibilityOptions; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="edit-field__coords">
+            <span class="edit-field__coords-label">
+              Koordinate <span class="edit-field__required">*</span>
+            </span>
+            <span class="edit-field__coords-value"
+              [class.edit-field__coords-value--missing]="form.controls.latitude.invalid && form.controls.latitude.touched">
+              @if (form.value.latitude != null) {
+                {{ form.value.latitude | number: '1.5-5' }},
+                {{ form.value.longitude | number: '1.5-5' }}
+              } @else {
+                Nije postavljeno — klikni na mapu
+              }
+            </span>
+          </div>
+
+        </div>
+
+        <!-- Right: map -->
+        <div class="edit-modal__map-col">
+          <label class="edit-field__label">Lokacija <span class="edit-field__required">*</span></label>
+
+          <div class="edit-modal__address-row">
+            <input
+              class="edit-field__input edit-field__input--address"
+              formControlName="address"
+              placeholder="Unesi adresu..."
+              (keydown.enter)="$event.preventDefault(); geocode()"
+            />
+            <button
+              class="edit-modal__geo-btn"
+              type="button"
+              (click)="geocode()"
+              [disabled]="isGeocoding()"
+              title="Pronađi koordinate"
+            >
+              @if (isGeocoding()) {
+                <span class="material-icons edit-modal__spin">sync</span>
+              } @else {
+                <span class="material-icons">search</span>
+              }
+            </button>
+          </div>
+
+          <div #mapEl class="edit-modal__map"></div>
+          <p class="edit-modal__map-hint">Klikni na mapu ili prevuci pin da postaviš lokaciju.</p>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <footer class="edit-modal__footer">
+        <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="cancel.emit()">
+          Otkaži
+        </button>
+        <button
+          class="edit-modal__btn edit-modal__btn--save"
+          type="submit"
+          [disabled]="form.invalid || isSaving()"
+        >
+          @if (isSaving()) {
+            <span class="material-icons edit-modal__spin">sync</span>
+          } @else {
+            <span class="material-icons">add_circle_outline</span>
+          }
+          Kreiraj destinaciju
+        </button>
+      </footer>
+
+    </form>
+
+  } @else {
+    <!-- Phase 2: images after creation -->
+    <div class="edit-modal__body">
+
+      <div class="edit-modal__created-banner">
+        <span class="material-icons">check_circle</span>
+        Destinacija „{{ createdRow()!.name }}" je kreirana. Možeš dodati slike.
+      </div>
+
+      <div class="edit-modal__images-section">
+        <div class="edit-modal__images-header">
+          <span class="edit-field__label">
+            Slike
+            <span class="edit-field__counter">{{ images().length }} / {{ MAX_IMAGES }}</span>
+          </span>
+          @if (images().length < MAX_IMAGES) {
+            <label class="edit-modal__add-img-btn" title="Dodaj sliku">
+              <span class="material-icons">add_photo_alternate</span>
+              Dodaj
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                (change)="onFilesSelected($event)"
+              />
+            </label>
+          }
+        </div>
+
+        <div class="edit-modal__images-grid">
+
+          @for (img of images(); track img.id) {
+            <div class="edit-modal__img-card" [class.edit-modal__img-card--hero]="heroImageId() === img.id">
+              <img [src]="img.imageUrl" alt="Slika destinacije" class="edit-modal__img" />
+              <button
+                class="edit-modal__img-hero"
+                type="button"
+                [title]="heroImageId() === img.id ? 'Hero slika' : 'Postavi kao hero'"
+                (click)="setHero(img.id)"
+                [disabled]="isSettingHero()"
+              >
+                <span class="material-icons">{{ heroImageId() === img.id ? 'star' : 'star_border' }}</span>
+              </button>
+              <button
+                class="edit-modal__img-delete"
+                type="button"
+                title="Ukloni sliku"
+                (click)="removeImage(img.id)"
+              >
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+          }
+
+          @for (i of [].constructor(uploadingCount()); track $index) {
+            <div class="edit-modal__img-card edit-modal__img-card--uploading">
+              <span class="material-icons edit-modal__spin">sync</span>
+            </div>
+          }
+
+          @if (images().length === 0 && uploadingCount() === 0) {
+            <div class="edit-modal__images-empty">
+              <span class="material-icons">image_not_supported</span>
+              Nema slika
+            </div>
+          }
+
+        </div>
+      </div>
+
+      <footer class="edit-modal__footer">
+        @if (!canFinish) {
+          <span class="edit-modal__finish-hint">
+            <span class="material-icons">info_outline</span>
+            Dodaj najmanje 2 slike da bi završio
+          </span>
+        }
+        <button
+          class="edit-modal__btn edit-modal__btn--save"
+          type="button"
+          (click)="finish()"
+          [disabled]="!canFinish"
+        >
+          <span class="material-icons">check</span>
+          Završi
+        </button>
+      </footer>
+
+    </div>
+  }
+
+</aside>

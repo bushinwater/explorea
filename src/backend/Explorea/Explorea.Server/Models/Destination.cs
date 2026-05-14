@@ -29,8 +29,7 @@ namespace Explorea.API.Models
         [Column("location", TypeName = "geography(Point, 4326)")]
         public Point Location { get; set; } = null!;
 
-        // destinations table has no preview_image_url column — use HeroImageUrl instead.
-        [NotMapped]
+        [MaxLength(500), Column("preview_image_url")]
         public string? PreviewImageUrl { get; set; }
 
         [Column("avg_rating")]  public decimal AvgRating  { get; set; } = 0;

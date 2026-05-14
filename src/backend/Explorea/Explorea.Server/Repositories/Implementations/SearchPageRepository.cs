@@ -133,7 +133,7 @@ namespace Explorea.Server.Repositories.Implementations
             Id = d.Id,
             Name = d.Name,
             Slug = d.Slug,
-            PreviewImageUrl = d.HeroImageUrl,
+            PreviewImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
             AvgRating = d.AvgRating,
             City = d.City == null ? null : new CityRefDto
             {
@@ -580,8 +580,8 @@ namespace Explorea.Server.Repositories.Implementations
             Id = d.Id,
             Name = d.Name,
             Slug = d.Slug,
-            PreviewImageUrl = d.HeroImageUrl,
-            HeroImageUrl = d.HeroImageUrl,
+            PreviewImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
+            HeroImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
             AvgRating = d.AvgRating,
             Popularity = d.Popularity,
             City = d.City == null ? null : new CityRefDto

@@ -84,7 +84,7 @@ namespace Explorea.Server.Repositories.Implementations
             if (!string.IsNullOrWhiteSpace(visibility))
             {
                 var visibilityValues = NormalizeVisibilityValues(visibility);
-                query = query.Where(d => visibilityValues.Contains(d.Visibility.ToLower()));
+                query = query.Where(d => d.Visibility != null && visibilityValues.Contains(d.Visibility.ToLower()));
             }
 
             if (regionId.HasValue)
@@ -137,15 +137,15 @@ namespace Explorea.Server.Repositories.Implementations
                 .ToListAsync();
         }
 
-        private static string[] NormalizeVisibilityValues(string visibility)
+        private static List<string> NormalizeVisibilityValues(string visibility)
         {
             return visibility.Trim().ToLower() switch
             {
-                "active" => ["active", "published"],
-                "pending" => ["pending", "draft"],
-                "inactive" => ["inactive", "archived"],
-                "rejected" => ["rejected"],
-                var value => [value]
+                "active"   => new List<string> { "active", "published" },
+                "pending"  => new List<string> { "pending", "draft" },
+                "inactive" => new List<string> { "inactive", "archived" },
+                "rejected" => new List<string> { "rejected" },
+                var value  => new List<string> { value }
             };
         }
     }

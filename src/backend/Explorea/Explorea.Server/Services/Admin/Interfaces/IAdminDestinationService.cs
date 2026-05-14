@@ -29,5 +29,13 @@ namespace Explorea.Server.Services.Admin.Interfaces
         Task<AdminDestinationListDto?> UpdateAsync(Guid id, AdminUpdateDestinationDto dto, Guid updatedBy);
 
         Task<bool> DeleteAsync(Guid id, Guid currentUserId);
+
+        Task<AdminDestinationImageDto> AddImageAsync(Guid destinationId, IFormFile file, Guid userId);
+
+        Task<bool> DeleteImageAsync(Guid destinationId, Guid imageId, Guid userId);
+
+        Task<string?> SetPreviewImageAsync(Guid destinationId, Guid imageId, Guid userId);
+
+        Task<AdminDestinationLookupDto> CreateTypeAsync(string name, Guid userId);
     }
 }

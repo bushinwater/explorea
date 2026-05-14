@@ -1,4 +1,4 @@
-:host { display: block; min-height: 100vh; }
+:host { display: block; height: 100vh; overflow: hidden; }
 
 .overlay {
   position: fixed;
@@ -8,7 +8,8 @@
 }
 
 .workspace {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   min-width: 0;
   margin-left: 72px;
   display: flex;
@@ -17,7 +18,7 @@
 
 .workspace--expanded { margin-left: 280px; }
 
-.workspace__content { flex: 1; padding: 20px; }
+.workspace__content { flex: 1; overflow-y: auto; padding: 20px; }
 
 @media (max-width: 768px) {
   .desktop-overlay { display: none; }

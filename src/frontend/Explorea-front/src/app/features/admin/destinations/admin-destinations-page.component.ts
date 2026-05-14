@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { StatCardComponent } from '@shared/components';
-import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, Subscription, debounceTime, distinctUntilChanged, interval } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
@@ -24,6 +24,8 @@ import {
   TypeOption,
 } from './admin-destinations.models';
 import { AdminDestinationsService } from './admin-destinations.service';
+import { DestinationEditModalComponent } from './admin-destination-edit-modal.component';
+import { DestinationCreateModalComponent } from './admin-destination-create-modal.component';
 
 @Component({
   selector: 'app-admin-destinations-page',
@@ -35,6 +37,8 @@ import { AdminDestinationsService } from './admin-destinations.service';
     ConfirmDialogComponent,
     EmptyStateComponent,
     TableSkeletonComponent,
+    DestinationEditModalComponent,
+    DestinationCreateModalComponent,
   ],
   templateUrl: './admin-destinations-page.component.html',
   styleUrl: './admin-destinations-page.component.css',
@@ -64,6 +68,8 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected readonly isFilterOpen = signal(false);
   protected readonly isDeleteDialogOpen = signal(false);
   protected readonly isDeleting = signal(false);
+  protected readonly isEditModalOpen = signal(false);
+  protected readonly isCreateModalOpen = signal(false);
   protected readonly selectedDestination = signal<DestinationRow | null>(null);
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
@@ -119,6 +125,10 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.loadRegions();
     this.loadTypes();
     this.loadDestinations();
+
+    this.subscription.add(
+      interval(5 * 60 * 1000).subscribe(() => this.silentRefresh()),
+    );
   }
 
   ngOnDestroy(): void {
@@ -172,9 +182,40 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
 
   protected openEdit(row: DestinationRow): void {
     this.selectedDestination.set(row);
+    this.isEditModalOpen.set(true);
+  }
+
+  protected closeEditModal(): void {
+    this.isEditModalOpen.set(false);
+    this.selectedDestination.set(null);
+  }
+
+  protected onEditSaved(updated: DestinationRow): void {
+    this.successMessage.set(`„${updated.name}" je uspešno ažurirana.`);
+    this.closeEditModal();
+    this.silentRefresh();
   }
 
   protected openCreateModal(): void {
+    this.isCreateModalOpen.set(true);
+  }
+
+  protected closeCreateModal(): void {
+    this.isCreateModalOpen.set(false);
+  }
+
+  protected onDestinationCreated(row: DestinationRow): void {
+    this.successMessage.set(`„${row.name}" je uspešno kreirana.`);
+    this.closeCreateModal();
+    this.loadDestinations();
+    this.loadStats();
+  }
+
+  protected onTypeCreated(type: TypeOption): void {
+    this.types.update(list => {
+      if (list.some(t => t.id === type.id)) return list;
+      return [...list, type];
+    });
   }
 
   protected openDeleteDialog(dest: DestinationRow): void {
@@ -329,6 +370,18 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  protected silentRefresh(): void {
+    this.destinationsService.getDestinations(this.filters()).subscribe({
+      next: (response) => {
+        this.destinations.set(response.items);
+        this.total.set(response.total);
+      },
+    });
+    this.destinationsService.getStats().subscribe({
+      next: (stats) => this.stats.set(stats),
+    });
   }
 
   private loadStats(): void {

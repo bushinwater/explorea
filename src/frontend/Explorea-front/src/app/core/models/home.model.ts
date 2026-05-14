@@ -18,7 +18,7 @@ export interface DestinationCard {
   slug: string;
   previewImageUrl: string;
   avgRating: number;
-  city: City;
+  city: City | null;
   location: { lat: number; lng: number };
   isFeatured?: boolean;
 }
