@@ -8,7 +8,7 @@ import {
   HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, forkJoin } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, switchMap, tap, takeUntil } from 'rxjs/operators';
@@ -95,6 +95,7 @@ export class Explore implements AfterViewInit, OnDestroy {
     private searchService: SearchService,
     private lookupService: LookupService,
     private translate: TranslateService,
+    private route: ActivatedRoute,
   ) {}
 
   // ── Real-time drag state for mobile bottom sheet ──────────────
@@ -146,7 +147,7 @@ export class Explore implements AfterViewInit, OnDestroy {
   currentZoom = 7;
 
   // Filters
-  nearbyOnly = true;
+  nearbyOnly = false;
   radiusKm = 25;
   selectedEntityTypes: string[] = [];
   openNowOnly = false;
@@ -420,6 +421,9 @@ export class Explore implements AfterViewInit, OnDestroy {
       this.showSearchDropdown = false;
       this.cdr.detectChanges();
     }
+    if (event.key === 'Enter' && this.searchResults.length > 0) {
+      this.onSelectSearchResult(this.searchResults[0]);
+    }
   }
 
   onSearchBlur() {
@@ -668,6 +672,15 @@ export class Explore implements AfterViewInit, OnDestroy {
     return themed;
   }
 
+  private checkFlyToParams(): void {
+    const p = this.route.snapshot.queryParamMap;
+    const lat = parseFloat(p.get('lat') ?? '');
+    const lng = parseFloat(p.get('lng') ?? '');
+    if (!isNaN(lat) && !isNaN(lng)) {
+      this.map.flyTo({ center: [lng, lat], zoom: 15, duration: 1000 });
+    }
+  }
+
   private async initMap() {
     const res = await fetch(MAP_STYLE_URL);
     const base = await res.json();
@@ -691,6 +704,7 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.map.on('load', () => {
       this.add3DBuildings();
       this.addMarkers();
+      this.checkFlyToParams();
     });
 
     this.map.on('zoomend', () => {

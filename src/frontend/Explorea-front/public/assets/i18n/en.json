@@ -36,7 +36,7 @@
     "SUBTITLE": "Manage your account, preferences and privacy on the Explorea platform.",
     "SETTINGS_LABEL": "Settings",
     "STATS": {
-      "ADVENTURES": "ADVENTURES",
+      "PLANS": "PLANS",
       "REVIEWS": "REVIEWS",
       "SAVED": "SAVED"
     },
@@ -593,7 +593,7 @@
     "READ_LESS": "Show less",
     "LOCATION": "Location",
     "ROUTE": "Route",
-    "OPEN_MAPS": "Open in Google Maps",
+    "OPEN_MAPS": "Open in maps",
     "GALLERY": "Gallery of previous editions",
     "VIEW_ALL": "View all",
     "SIMILAR": "Similar events",

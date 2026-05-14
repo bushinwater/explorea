@@ -60,6 +60,7 @@ namespace Explorea.Server.Data
         public DbSet<FilterOption>     FilterOptions     { get; set; }
         public DbSet<PopularityLog> PopularityLogs { get; set; }
         public DbSet<UserInterestScore> UserInterestScores { get; set; }
+        public DbSet<UserChatHistory> UserChatHistories { get; set; }
         public DbSet<BugReport> BugReports { get; set; }
         public DbSet<SupportTicket> SupportTickets { get; set; }
         public DbSet<SupportMessage> SupportMessages { get; set; }
@@ -294,6 +295,10 @@ namespace Explorea.Server.Data
 
             modelBuilder.Entity<ReportTemplate>()
                 .Property(t => t.Parameters)
+                .HasColumnType("jsonb");
+
+            modelBuilder.Entity<UserChatHistory>()
+                .Property(h => h.Messages)
                 .HasColumnType("jsonb");
         }
     }

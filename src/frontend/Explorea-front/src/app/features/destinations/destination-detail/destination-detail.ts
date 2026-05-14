@@ -288,19 +288,9 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
 
   onReviewSubmitted(review: ReviewDto): void {
     if (!this.destination) return;
-    this.destination.reviews.unshift({
-      id: review.id,
-      rating: review.rating,
-      comment: review.comment ?? '',
-      createdAt: review.createdAt,
-      user: {
-        id: review.user.id,
-        firstName: review.user.firstName,
-        lastName: review.user.lastName,
-        travelerRank: review.user.travelerRank,
-        profileImageUrl: review.user.profileImageUrl ?? null,
-      },
-    });
+    const newReviews = [{ id: review.id, rating: review.rating, comment: review.comment ?? '', createdAt: review.createdAt, user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.destination.reviews];
+    this.destination.reviews = newReviews;
+    this.destination.avgRating = this.calcAvg(newReviews);
     this.hasReviewed = true;
     this.cdr.detectChanges();
   }
@@ -308,6 +298,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   onReviewDeleted(id: string): void {
     if (!this.destination) return;
     this.destination.reviews = this.destination.reviews.filter((r: any) => r.id !== id);
+    this.destination.avgRating = this.calcAvg(this.destination.reviews);
     this.hasReviewed = false;
     this.cdr.detectChanges();
   }
@@ -316,9 +307,17 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     if (!this.destination) return;
     const idx = this.destination.reviews.findIndex((r: any) => r.id === review.id);
     if (idx !== -1) {
-      this.destination.reviews[idx] = { ...this.destination.reviews[idx], rating: review.rating, comment: review.comment };
+      const updated = [...this.destination.reviews];
+      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment };
+      this.destination.reviews = updated;
+      this.destination.avgRating = this.calcAvg(updated);
       this.cdr.detectChanges();
     }
+  }
+
+  private calcAvg(reviews: { rating: number }[]): number {
+    if (!reviews.length) return 0;
+    return Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 10) / 10;
   }
 
   get ratingBreakdown(): { stars: number; count: number; pct: number }[] {

@@ -101,6 +101,10 @@ export class Register implements OnInit {
         this.handleSocialLogin('google', response.access_token);
         this.cdr.detectChanges();
       },
+      error_callback: () => {
+        this.socialLoading = null;
+        this.cdr.detectChanges();
+      },
     });
 
     client.requestAccessToken();

@@ -78,7 +78,7 @@
         <div class="chip__text">
           <span class="chip__primary">{{ event.address }}</span>
           <span class="chip__secondary" *ngIf="event.city">{{ event.city.name }}</span>
-          <a class="chip__map-link" [href]="googleMapsUrl" target="_blank" rel="noopener">
+          <a class="chip__map-link" [routerLink]="['/explore']" [queryParams]="exploreMapParams">
             {{ 'EVENT_DETAIL.OPEN_MAPS' | translate }}
           </a>
         </div>

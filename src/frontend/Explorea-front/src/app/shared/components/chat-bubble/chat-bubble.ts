@@ -31,6 +31,9 @@ export class ChatBubble implements OnInit, OnDestroy {
   @ViewChild('messagesEnd') messagesEnd!: ElementRef<HTMLDivElement>;
   @ViewChild('inputEl') inputEl!: ElementRef<HTMLTextAreaElement>;
 
+  private static readonly STORAGE_KEY = 'explorea_chat_history';
+  private static readonly MAX_MESSAGES = 50;
+
   open = false;
   input = '';
   loading = false;
@@ -46,11 +49,29 @@ export class ChatBubble implements OnInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
 
   private sub = new Subscription();
+  private wasLoggedIn = false;
 
   get firstName(): string { return this.authService.getFirstName(); }
   get isLoggedIn(): boolean { return this.authService.isLoggedIn(); }
 
   ngOnInit(): void {
+    this.wasLoggedIn = this.isLoggedIn;
+
+    if (this.isLoggedIn) {
+      this.chatService.getHistory().subscribe({
+        next: (res) => {
+          this.messages = res.messages;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.messages = this.loadLocalHistory();
+          this.cdr.detectChanges();
+        },
+      });
+    } else {
+      this.messages = this.loadLocalHistory();
+    }
+
     this.sub.add(
       this.chatBubbleService.trigger$.subscribe((message) => {
         this.open = true;
@@ -105,6 +126,46 @@ export class ChatBubble implements OnInit, OnDestroy {
     const text = this.input.trim();
     if (!text || this.loading) return;
 
+    // User just logged in mid-session — migrate history then send
+    if (this.isLoggedIn && !this.wasLoggedIn) {
+      this.wasLoggedIn = true;
+      this.loading = true;
+      this.cdr.detectChanges();
+
+      this.chatService.getHistory().subscribe({
+        next: (res) => {
+          if (res.messages.length > 0) {
+            // Account already has history → use it
+            this.messages = res.messages;
+          } else if (this.messages.length > 0) {
+            // Account is empty → migrate local history to server
+            this.chatService.saveHistory(this.messages).subscribe();
+          }
+          localStorage.removeItem(ChatBubble.STORAGE_KEY);
+          this.loading = false;
+          this.cdr.detectChanges();
+          this.dispatchMessage(text);
+        },
+        error: () => {
+          this.loading = false;
+          this.cdr.detectChanges();
+          this.dispatchMessage(text);
+        },
+      });
+      return;
+    }
+
+    this.dispatchMessage(text);
+  }
+
+  onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.send();
+    }
+  }
+
+  private dispatchMessage(text: string): void {
     this.sendError = '';
     this.messages.push({ role: 'user', content: text });
     this.input = '';
@@ -121,6 +182,7 @@ export class ChatBubble implements OnInit, OnDestroy {
     this.chatService.send(history, text, context).subscribe({
       next: (res) => {
         this.messages.push({ role: 'assistant', content: res.reply });
+        this.persistHistory();
         this.loading = false;
         this.cdr.detectChanges();
         this.scrollToBottom();
@@ -133,14 +195,30 @@ export class ChatBubble implements OnInit, OnDestroy {
     });
   }
 
-  onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      this.send();
+  private persistHistory(): void {
+    const trimmed = this.messages.slice(-ChatBubble.MAX_MESSAGES);
+    this.messages = trimmed;
+    if (this.isLoggedIn) {
+      this.chatService.saveHistory(trimmed).subscribe();
+    } else {
+      this.saveLocalHistory(trimmed);
     }
   }
 
   private scrollToBottom(): void {
     setTimeout(() => this.messagesEnd?.nativeElement.scrollIntoView({ behavior: 'smooth' }), 50);
+  }
+
+  private loadLocalHistory(): ChatMessage[] {
+    try {
+      const raw = localStorage.getItem(ChatBubble.STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as ChatMessage[]) : [];
+    } catch { return []; }
+  }
+
+  private saveLocalHistory(messages: ChatMessage[]): void {
+    try {
+      localStorage.setItem(ChatBubble.STORAGE_KEY, JSON.stringify(messages));
+    } catch { /* storage unavailable */ }
   }
 }

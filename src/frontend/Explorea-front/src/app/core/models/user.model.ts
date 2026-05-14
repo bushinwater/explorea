@@ -36,6 +36,7 @@ export interface UpdatePreferencesDto {
 export interface ProfileStatsDto {
   reviewsCount: number;
   savedItemsCount: number;
+  plannedEventsCount: number;
   memberSince: string;
 }
 

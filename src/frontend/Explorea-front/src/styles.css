@@ -392,6 +392,15 @@
   transform: rotate(-45deg) scale(1.15);
 }
 
+/* Lift chat bubble above mobile sticky CTA bars */
+@media (max-width: 768px) {
+  body:has(.mobile-cta) .chat-bubble-wrapper,
+  body:has(.mobile-bottom-bar) .chat-bubble-wrapper {
+    bottom: 140px !important;
+    z-index: 1010 !important;
+  }
+}
+
 /* RESET */
 * {
   box-sizing: border-box;

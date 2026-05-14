@@ -14,12 +14,13 @@ import {
   SocialLoginDto,
   VerifyEmailDto,
 } from '../models/auth.model';
+import { AvatarService } from './avatar.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private api = '/api/auth';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private avatarService: AvatarService) {}
 
   login(dto: LoginDto): Observable<AuthResponseDto> {
     return this.http.post<AuthResponseDto>(`${this.api}/login`, dto);
@@ -72,6 +73,11 @@ export class AuthService {
   saveTokens(response: AuthResponseDto): void {
     if (response.accessToken)  localStorage.setItem('accessToken',  response.accessToken);
     if (response.refreshToken) localStorage.setItem('refreshToken', response.refreshToken);
+    // Read avatar from the freshly issued JWT (most reliable source — always in sync with DB)
+    const avatarFromToken = this.getAvatarUrl();
+    if (avatarFromToken) {
+      this.avatarService.setUrl(avatarFromToken);
+    }
   }
 
   getAccessToken(): string | null {
@@ -132,6 +138,17 @@ export class AuthService {
       return payload['firstName'] ?? '';
     } catch {
       return '';
+    }
+  }
+
+  getAvatarUrl(): string | null {
+    const token = this.getAccessToken();
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload['avatarUrl'] || null;
+    } catch {
+      return null;
     }
   }
 }

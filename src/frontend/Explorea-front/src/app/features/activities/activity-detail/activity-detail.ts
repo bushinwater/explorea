@@ -418,19 +418,9 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
 
   onReviewSubmitted(review: ReviewDto): void {
     if (!this.activity) return;
-    this.activity.reviews.unshift({
-      id: review.id,
-      rating: review.rating,
-      comment: review.comment,
-      createdAt: review.createdAt,
-      user: {
-        id: review.user.id,
-        firstName: review.user.firstName,
-        lastName: review.user.lastName,
-        travelerRank: review.user.travelerRank,
-        profileImageUrl: review.user.profileImageUrl ?? null,
-      },
-    });
+    const newReviews = [{ id: review.id, rating: review.rating, comment: review.comment, createdAt: review.createdAt, user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.activity.reviews];
+    this.activity.reviews = newReviews;
+    this.activity.avgRating = this.calcAvg(newReviews);
     this.hasReviewed = true;
     this.cdr.detectChanges();
   }
@@ -438,6 +428,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
   onReviewDeleted(id: string): void {
     if (!this.activity) return;
     this.activity.reviews = this.activity.reviews.filter(r => r.id !== id);
+    this.activity.avgRating = this.calcAvg(this.activity.reviews);
     this.hasReviewed = false;
     this.cdr.detectChanges();
   }
@@ -446,9 +437,17 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
     if (!this.activity) return;
     const idx = this.activity.reviews.findIndex(r => r.id === review.id);
     if (idx !== -1) {
-      this.activity.reviews[idx] = { ...this.activity.reviews[idx], rating: review.rating, comment: review.comment };
+      const updated = [...this.activity.reviews];
+      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment };
+      this.activity.reviews = updated;
+      this.activity.avgRating = this.calcAvg(updated);
       this.cdr.detectChanges();
     }
+  }
+
+  private calcAvg(reviews: { rating: number }[]): number {
+    if (!reviews.length) return 0;
+    return Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 10) / 10;
   }
 
   getStarsArray(): number[] {

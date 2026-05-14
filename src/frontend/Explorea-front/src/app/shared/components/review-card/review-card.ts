@@ -22,6 +22,7 @@ export class ReviewCard {
   @Output() updated = new EventEmitter<ReviewDto>();
 
   editMode = false;
+  confirmingDelete = false;
   editRating = 0;
   editHover = 0;
   editComment = '';
@@ -106,8 +107,14 @@ export class ReviewCard {
   }
 
   onDelete(): void {
+    if (!this.confirmingDelete) {
+      this.confirmingDelete = true;
+      this.cdr.detectChanges();
+      return;
+    }
     if (this.deleting) return;
     this.deleting = true;
+    this.confirmingDelete = false;
     this.reviewService.delete(this.review.id).subscribe({
       next: () => {
         this.deleted.emit(this.review.id);
@@ -117,6 +124,11 @@ export class ReviewCard {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  cancelDelete(): void {
+    this.confirmingDelete = false;
+    this.cdr.detectChanges();
   }
 
   getStars(): number[] {
