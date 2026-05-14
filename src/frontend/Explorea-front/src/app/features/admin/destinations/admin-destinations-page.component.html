@@ -12,41 +12,49 @@
     <app-stat-card
       [label]="ui.t('destinations.stats.totalViews')"
       [value]="formatBigNumber(stats()?.totalViews ?? 0)"
-      [trend]="stats()?.totalViewsTrend ?? ''"
+      hint="Ukupno iz pregleda"
     />
 
     <app-stat-card
       [label]="ui.t('destinations.stats.inactive')"
       [value]="stats()?.inactiveCount ?? 0"
-      [trend]="stats()?.inactiveTrend ?? ''"
+      hint="Bez klika 30 dana"
       tone="danger"
     />
 
     <app-stat-card
-      [label]="ui.t('destinations.stats.pending')"
-      [value]="stats()?.pendingCount ?? 0"
-      [hint]="stats()?.pendingHint ?? ''"
+      [label]="ui.t('destinations.stats.added30Days')"
+      [value]="addedLast30DaysValue()"
+      hint="Dodato u poslednjih 30 dana"
       tone="neutral"
     />
 
-    <!-- 4th card: 30-day adds sparkline -->
+    <!-- 4th card: top destinations by views -->
     <article class="dest-stat-chart">
       <div class="dest-stat-chart__top">
-        <p class="dest-stat-chart__label">{{ ui.t('destinations.stats.added30Days') }}</p>
-        <span class="material-icons dest-stat-chart__icon">trending_up</span>
+        <div>
+          <p class="dest-stat-chart__label">Najpopularnija</p>
+          <p class="dest-stat-chart__value">{{ stats()?.mostPopularName || 'Nema podataka' }}</p>
+        </div>
+        <span class="dest-stat-chart__views">{{ formatViews(stats()?.mostPopularViews ?? 0) }}</span>
       </div>
-      <svg class="dest-stat-chart__svg" viewBox="0 0 130 40" preserveAspectRatio="none">
-        @if (addedLast30DaysPath()) {
-          <path
-            [attr.d]="addedLast30DaysPath()"
-            fill="none"
-            stroke="var(--color-primary)"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
+      <ol class="dest-top-list">
+        @for (item of stats()?.topDestinations ?? []; track item.name; let index = $index) {
+          <li class="dest-top-list__item">
+            <span class="dest-top-list__rank">{{ index + 1 }}.</span>
+            <span class="dest-top-list__name">{{ item.name }}</span>
+            <span class="dest-top-list__bar">
+              <span
+                class="dest-top-list__bar-fill"
+                [style.width.%]="topDestinationPercent(item.views)"
+              ></span>
+            </span>
+            <span class="dest-top-list__views">{{ formatViews(item.views) }}</span>
+          </li>
+        } @empty {
+          <li class="dest-top-list__empty">Nema podataka</li>
         }
-      </svg>
+      </ol>
     </article>
   </div>
 

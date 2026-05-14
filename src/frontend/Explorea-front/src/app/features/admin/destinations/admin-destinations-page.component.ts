@@ -88,12 +88,6 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     ].filter(Boolean).length;
   });
 
-  protected readonly addedLast30DaysPath = computed(() => {
-    const addedLast30Days = this.stats()?.addedLast30Days;
-    const data = Array.isArray(addedLast30Days) ? addedLast30Days : [];
-    return this.buildSparklinePath(data, 130, 40);
-  });
-
   protected readonly categories: Array<{ value: DestinationCategory | 'all'; label: string }> = [
     { value: 'all', label: 'Sve kategorije' },
     { value: 'cultural', label: 'Kulturno' },
@@ -250,6 +244,17 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`;
     if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
     return views.toString();
+  }
+
+  protected addedLast30DaysValue(): number {
+    const value = this.stats()?.addedLast30Days ?? 0;
+    return Array.isArray(value) ? value.reduce((sum, current) => sum + current, 0) : value;
+  }
+
+  protected topDestinationPercent(views: number): number {
+    const maxViews = this.stats()?.topDestinations?.[0]?.views ?? 0;
+    if (maxViews <= 0) return 0;
+    return Math.max(8, Math.round((views / maxViews) * 100));
   }
 
   protected categoryLabel(cat: DestinationCategory): string {
