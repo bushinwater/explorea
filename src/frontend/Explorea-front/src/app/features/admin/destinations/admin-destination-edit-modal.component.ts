@@ -78,8 +78,9 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
   protected readonly images        = signal<DestinationImage[]>([]);
   protected readonly uploadingCount = signal(0);
   protected readonly heroImageId      = signal<string | null>(null);
-  protected readonly isSettingHero    = signal(false);
   protected readonly localTypes       = signal<TypeOption[]>([]);
+
+  private originalHeroImageId: string | null = null;
   protected readonly showNewTypeInput = signal(false);
   protected readonly newTypeName      = signal('');
   protected readonly isCreatingType   = signal(false);
@@ -121,7 +122,10 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
           this.images.set(detail.images);
           if (detail.previewImageUrl) {
             const heroImg = detail.images.find(i => i.imageUrl === detail.previewImageUrl);
-            if (heroImg) this.heroImageId.set(heroImg.id);
+            if (heroImg) {
+              this.heroImageId.set(heroImg.id);
+              this.originalHeroImageId = heroImg.id;
+            }
           }
           this.isLoading.set(false);
           this.cdr.detectChanges();
@@ -227,9 +231,8 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
         next: () => {
           this.images.update((list) => list.filter((i) => i.id !== imageId));
           if (this.heroImageId() === imageId) {
-            this.heroImageId.set(null);
             const remaining = this.images();
-            if (remaining.length > 0) this.setHero(remaining[0].id);
+            this.heroImageId.set(remaining.length > 0 ? remaining[0].id : null);
           }
           this.cdr.detectChanges();
         },
@@ -267,22 +270,7 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
   }
 
   protected setHero(imageId: string): void {
-    if (this.isSettingHero()) return;
-    this.isSettingHero.set(true);
-    this.sub.add(
-      this.svc.setPreviewImage(this.row.id, imageId).subscribe({
-        next: () => {
-          this.heroImageId.set(imageId);
-          this.isSettingHero.set(false);
-          this.cdr.detectChanges();
-        },
-        error: () => {
-          this.isSettingHero.set(false);
-          this.error.set('Greška pri postavljanju hero slike.');
-          this.cdr.detectChanges();
-        },
-      }),
-    );
+    this.heroImageId.set(imageId);
   }
 
   protected save(): void {
@@ -304,8 +292,16 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
         })
         .subscribe({
           next: (updated) => {
-            this.isSaving.set(false);
-            this.saved.emit(updated);
+            const pendingHero = this.heroImageId();
+            if (pendingHero && pendingHero !== this.originalHeroImageId) {
+              this.svc.setPreviewImage(this.row.id, pendingHero).subscribe({
+                next: () => { this.isSaving.set(false); this.saved.emit(updated); },
+                error: () => { this.isSaving.set(false); this.saved.emit(updated); },
+              });
+            } else {
+              this.isSaving.set(false);
+              this.saved.emit(updated);
+            }
           },
           error: () => {
             this.isSaving.set(false);

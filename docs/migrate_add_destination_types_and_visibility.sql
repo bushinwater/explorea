@@ -5,7 +5,6 @@
 --   - destinations.visibility (published/draft/archived/rejected)
 --   - destinations.extra_filters (jsonb, nullable)
 -- ============================================================
-\encoding UTF8
 
 -- 1. destination_types table
 CREATE TABLE IF NOT EXISTS destination_types (
@@ -18,15 +17,20 @@ CREATE TABLE IF NOT EXISTS destination_types (
     updated_by UUID
 );
 
--- 2. Seed default types
-INSERT INTO destination_types (name) VALUES
+-- 2. Seed default types (safe even without a UNIQUE constraint on name)
+INSERT INTO destination_types (name)
+SELECT v.name
+FROM (VALUES
     ('Kulturni'),
     ('Prirodni'),
     ('Gastronomski'),
     ('Avanturisticki'),
     ('Wellness / Spa'),
     ('Istorijski')
-ON CONFLICT (name) DO NOTHING;
+) AS v(name)
+WHERE NOT EXISTS (
+    SELECT 1 FROM destination_types dt WHERE dt.name = v.name
+);
 
 -- 3. Add type_id to destinations
 ALTER TABLE destinations

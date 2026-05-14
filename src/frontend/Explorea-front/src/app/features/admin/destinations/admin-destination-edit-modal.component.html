@@ -194,7 +194,6 @@
                 type="button"
                 [title]="heroImageId() === img.id ? 'Hero slika' : 'Postavi kao hero'"
                 (click)="setHero(img.id)"
-                [disabled]="isSettingHero()"
               >
                 <span class="material-icons">{{ heroImageId() === img.id ? 'star' : 'star_border' }}</span>
               </button>
