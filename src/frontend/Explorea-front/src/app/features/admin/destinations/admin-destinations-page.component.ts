@@ -50,7 +50,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     region: 'all',
     minRating: null,
     page: 1,
-    pageSize: 7,
+    pageSize: 17,
   });
 
   protected readonly destinations = signal<DestinationRow[]>([]);
@@ -184,6 +184,9 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.selectedDestination.set(row);
   }
 
+  protected openCreateModal(): void {
+  }
+
   protected openDeleteDialog(dest: DestinationRow): void {
     this.selectedDestination.set(dest);
     this.isDeleteDialogOpen.set(true);
@@ -216,10 +219,6 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
-  }
-
-  protected sparklinePath(data: number[]): string {
-    return this.buildSparklinePath(data, 80, 32);
   }
 
   protected timeAgo(isoDate: string): string {
@@ -324,23 +323,6 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     const current = this.currentPage();
     const pages = new Set([1, total, current, current - 1, current + 1]);
     return [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
-  }
-
-  private buildSparklinePath(data: number[], w: number, h: number): string {
-    if (data.length < 2) return '';
-    const min = Math.min(...data);
-    const max = Math.max(...data);
-    const range = max - min || 1;
-    const pts = data.map((v, i) => ({
-      x: (i / (data.length - 1)) * w,
-      y: h - ((v - min) / range) * (h - 6) - 3,
-    }));
-    let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-    for (let i = 1; i < pts.length; i++) {
-      const cx = ((pts[i - 1].x + pts[i].x) / 2).toFixed(1);
-      d += ` C${cx},${pts[i - 1].y.toFixed(1)} ${cx},${pts[i].y.toFixed(1)} ${pts[i].x.toFixed(1)},${pts[i].y.toFixed(1)}`;
-    }
-    return d;
   }
 
   private patchFilter(patch: Partial<DestinationFilters>): void {
