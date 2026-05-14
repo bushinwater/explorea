@@ -44,13 +44,21 @@ namespace Explorea.Server.Services.Admin
             Guid currentUserId)
         {
             List<Guid>? restrictToIds = null;
+            int? restrictToRegionId = null;
 
             var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
 
             if (user?.Role.Name == RoleNames.TouristOrganization)
             {
-                var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
-                restrictToIds = assignments.Select(a => a.DestinationId).ToList();
+                if (user.ManagedRegionId.HasValue)
+                {
+                    restrictToRegionId = user.ManagedRegionId.Value;
+                }
+                else
+                {
+                    var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
+                    restrictToIds = assignments.Select(a => a.DestinationId).ToList();
+                }
             }
             else if (user?.Role.Name != RoleNames.SuperAdmin)
             {
@@ -66,10 +74,12 @@ namespace Explorea.Server.Services.Admin
                 minRating,
                 maxRating,
                 restrictToIds,
+                restrictToRegionId,
                 page,
                 pageSize);
 
-            return (items.Select(MapToListDto).ToList(), total);
+            var viewCounts = await GetViewCountsAsync(items);
+            return (items.Select(d => MapToListDto(d, viewCounts)).ToList(), total);
         }
 
         public async Task<AdminDestinationStatsDto> GetStatsAsync(Guid currentUserId)
@@ -82,9 +92,17 @@ namespace Explorea.Server.Services.Admin
 
             if (user?.Role.Name == RoleNames.TouristOrganization)
             {
-                var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
-                var destinationIds = assignments.Select(a => a.DestinationId).ToList();
-                destinationQuery = destinationQuery.Where(d => destinationIds.Contains(d.Id));
+                if (user.ManagedRegionId.HasValue)
+                {
+                    destinationQuery = destinationQuery.Where(d =>
+                        d.City != null && d.City.RegionId == user.ManagedRegionId.Value);
+                }
+                else
+                {
+                    var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
+                    var destinationIds = assignments.Select(a => a.DestinationId).ToList();
+                    destinationQuery = destinationQuery.Where(d => destinationIds.Contains(d.Id));
+                }
             }
             else if (user?.Role.Name != RoleNames.SuperAdmin)
             {
@@ -94,7 +112,13 @@ namespace Explorea.Server.Services.Admin
             var now = DateTimeOffset.UtcNow;
             var recentCutoff = now.AddDays(-30);
 
-            var totalViews = await destinationQuery.SumAsync(d => (long)d.Popularity);
+            var destinationIdsQuery = destinationQuery.Select(d => d.Id);
+            var logViewsQuery = _db.PopularityLogs
+                .Where(l =>
+                    l.EntityType == "destination" &&
+                    l.Source == "click" &&
+                    destinationIdsQuery.Contains(l.EntityId));
+
             var inactiveCount = await destinationQuery.CountAsync(d =>
                 !_db.PopularityLogs.Any(l =>
                     l.EntityType == "destination" &&
@@ -103,16 +127,36 @@ namespace Explorea.Server.Services.Admin
                     l.CreatedAt > recentCutoff));
             var addedLast30Days = await destinationQuery.CountAsync(d => d.CreatedAt > recentCutoff);
 
-            var topDestinations = await destinationQuery
-                .OrderByDescending(d => d.Popularity)
-                .ThenBy(d => d.Name)
-                .Take(3)
+            var destinationStats = await destinationQuery
+                .Select(d => new
+                {
+                    d.Id,
+                    Name = d.Name,
+                    d.Popularity
+                })
+                .ToListAsync();
+
+            var loggedViews = await logViewsQuery
+                .GroupBy(l => l.EntityId)
+                .Select(g => new
+                {
+                    DestinationId = g.Key,
+                    Views = g.Count()
+                })
+                .ToDictionaryAsync(x => x.DestinationId, x => x.Views);
+
+            var totalViews = destinationStats.Sum(d => (long)loggedViews.GetValueOrDefault(d.Id, d.Popularity));
+
+            var topDestinations = destinationStats
                 .Select(d => new AdminDestinationTopItemDto
                 {
                     Name = d.Name,
-                    Views = d.Popularity
+                    Views = loggedViews.GetValueOrDefault(d.Id, d.Popularity)
                 })
-                .ToListAsync();
+                .OrderByDescending(d => d.Views)
+                .ThenBy(d => d.Name)
+                .Take(3)
+                .ToList();
 
             var mostPopular = topDestinations.FirstOrDefault();
 
@@ -185,7 +229,7 @@ namespace Explorea.Server.Services.Admin
 
             if (user?.Role.Name == RoleNames.TouristOrganization)
             {
-                var hasAccess = await _assignmentRepo.ExistsAsync(currentUserId, id);
+                var hasAccess = await HasDestinationAccessAsync(user, currentUserId, id);
                 if (!hasAccess) return null;
             }
             else if (user?.Role.Name != RoleNames.SuperAdmin)
@@ -237,7 +281,7 @@ namespace Explorea.Server.Services.Admin
             var user = await _userRepo.GetByIdWithRoleAsync(updatedBy);
             if (user?.Role.Name == RoleNames.TouristOrganization)
             {
-                var hasAccess = await _assignmentRepo.ExistsAsync(updatedBy, id);
+                var hasAccess = await HasDestinationAccessAsync(user, updatedBy, id);
                 if (!hasAccess)
                     throw new UnauthorizedAccessException("You do not have access to this destination.");
             }
@@ -295,7 +339,9 @@ namespace Explorea.Server.Services.Admin
 
         // ---- Helpers ----
 
-        private static AdminDestinationListDto MapToListDto(Destination d) => new()
+        private static AdminDestinationListDto MapToListDto(
+            Destination d,
+            IReadOnlyDictionary<Guid, int>? viewCounts = null) => new()
         {
             Id             = d.Id,
             Name           = d.Name,
@@ -303,7 +349,7 @@ namespace Explorea.Server.Services.Admin
             PreviewImageUrl= d.PreviewImageUrl ?? d.HeroImageUrl,
             Region         = d.City?.Region?.Name,
             RegionId       = d.City?.RegionId,
-            Views          = d.Popularity,
+            Views          = viewCounts?.GetValueOrDefault(d.Id) ?? d.Popularity,
             Status         = MapStatus(d.Visibility),
             TypeId         = d.TypeId,
             TypeName       = d.Type?.Name,
@@ -315,6 +361,31 @@ namespace Explorea.Server.Services.Admin
             CreatedAt      = d.CreatedAt,
             UpdatedAt      = d.UpdatedAt
         };
+
+        private async Task<Dictionary<Guid, int>> GetViewCountsAsync(List<Destination> destinations)
+        {
+            var ids = destinations.Select(d => d.Id).ToList();
+            if (ids.Count == 0)
+                return new Dictionary<Guid, int>();
+
+            var loggedViews = await _db.PopularityLogs
+                .Where(l => l.EntityType == "destination" && l.Source == "click" && ids.Contains(l.EntityId))
+                .GroupBy(l => l.EntityId)
+                .Select(g => new
+                {
+                    DestinationId = g.Key,
+                    Views = g.Count()
+                })
+                .ToDictionaryAsync(x => x.DestinationId, x => x.Views);
+
+            foreach (var destination in destinations)
+            {
+                if (!loggedViews.ContainsKey(destination.Id) && destination.Popularity > 0)
+                    loggedViews[destination.Id] = destination.Popularity;
+            }
+
+            return loggedViews;
+        }
 
         private static string MapStatus(string visibility)
         {
@@ -329,6 +400,22 @@ namespace Explorea.Server.Services.Admin
                 "rejected" => "rejected",
                 _ => "inactive"
             };
+        }
+
+        private async Task<bool> HasDestinationAccessAsync(User user, Guid userId, Guid destinationId)
+        {
+            if (user.ManagedRegionId.HasValue)
+            {
+                return await _db.Destinations
+                    .IgnoreQueryFilters()
+                    .AnyAsync(d =>
+                        d.Id == destinationId &&
+                        !d.IsDeleted &&
+                        d.City != null &&
+                        d.City.RegionId == user.ManagedRegionId.Value);
+            }
+
+            return await _assignmentRepo.ExistsAsync(userId, destinationId);
         }
     }
 }

@@ -18,6 +18,7 @@ namespace Explorea.Server.Repositories.Interfaces
             decimal? minRating,
             decimal? maxRating,
             List<Guid>? restrictToIds,
+            int? restrictToRegionId,
             int page,
             int pageSize);
         Task<Destination?> GetAdminByIdAsync(Guid id);

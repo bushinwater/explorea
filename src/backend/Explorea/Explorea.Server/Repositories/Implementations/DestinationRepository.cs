@@ -54,6 +54,7 @@ namespace Explorea.Server.Repositories.Implementations
             decimal? minRating,
             decimal? maxRating,
             List<Guid>? restrictToIds,
+            int? restrictToRegionId,
             int page,
             int pageSize)
         {
@@ -98,8 +99,11 @@ namespace Explorea.Server.Repositories.Implementations
             if (maxRating.HasValue)
                 query = query.Where(d => d.AvgRating <= maxRating.Value);
 
-            if (restrictToIds != null && restrictToIds.Count > 0)
+            if (restrictToIds != null)
                 query = query.Where(d => restrictToIds.Contains(d.Id));
+
+            if (restrictToRegionId.HasValue)
+                query = query.Where(d => d.City != null && d.City.RegionId == restrictToRegionId.Value);
 
             var total = await query.CountAsync();
             var items = await query
