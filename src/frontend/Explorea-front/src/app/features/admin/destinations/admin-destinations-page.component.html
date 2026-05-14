@@ -12,41 +12,49 @@
     <app-stat-card
       [label]="ui.t('destinations.stats.totalViews')"
       [value]="formatBigNumber(stats()?.totalViews ?? 0)"
-      [trend]="stats()?.totalViewsTrend ?? ''"
+      hint="Ukupno iz pregleda"
     />
 
     <app-stat-card
       [label]="ui.t('destinations.stats.inactive')"
       [value]="stats()?.inactiveCount ?? 0"
-      [trend]="stats()?.inactiveTrend ?? ''"
+      hint="Bez klika 30 dana"
       tone="danger"
     />
 
     <app-stat-card
-      [label]="ui.t('destinations.stats.pending')"
-      [value]="stats()?.pendingCount ?? 0"
-      [hint]="stats()?.pendingHint ?? ''"
+      [label]="ui.t('destinations.stats.added30Days')"
+      [value]="addedLast30DaysValue()"
+      hint="Dodato u poslednjih 30 dana"
       tone="neutral"
     />
 
-    <!-- 4th card: 30-day adds sparkline -->
+    <!-- 4th card: top destinations by views -->
     <article class="dest-stat-chart">
       <div class="dest-stat-chart__top">
-        <p class="dest-stat-chart__label">{{ ui.t('destinations.stats.added30Days') }}</p>
-        <span class="material-icons dest-stat-chart__icon">trending_up</span>
+        <div>
+          <p class="dest-stat-chart__label">Najpopularnija</p>
+          <p class="dest-stat-chart__value">{{ stats()?.mostPopularName || 'Nema podataka' }}</p>
+        </div>
+        <span class="dest-stat-chart__views">{{ formatViews(stats()?.mostPopularViews ?? 0) }}</span>
       </div>
-      <svg class="dest-stat-chart__svg" viewBox="0 0 130 40" preserveAspectRatio="none">
-        @if (addedLast30DaysPath()) {
-          <path
-            [attr.d]="addedLast30DaysPath()"
-            fill="none"
-            stroke="var(--color-primary)"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
+      <ol class="dest-top-list">
+        @for (item of stats()?.topDestinations ?? []; track item.name; let index = $index) {
+          <li class="dest-top-list__item">
+            <span class="dest-top-list__rank">{{ index + 1 }}.</span>
+            <span class="dest-top-list__name">{{ item.name }}</span>
+            <span class="dest-top-list__bar">
+              <span
+                class="dest-top-list__bar-fill"
+                [style.width.%]="topDestinationPercent(item.views)"
+              ></span>
+            </span>
+            <span class="dest-top-list__views">{{ formatViews(item.views) }}</span>
+          </li>
+        } @empty {
+          <li class="dest-top-list__empty">Nema podataka</li>
         }
-      </svg>
+      </ol>
     </article>
   </div>
 
@@ -109,13 +117,20 @@
                   ui.t('destinations.filter.category')
                 }}</label>
                 <div class="dest-filter-chips">
-                  @for (cat of categories; track cat.value) {
+                  <button
+                    class="dest-chip"
+                    [class.dest-chip--active]="filters().category === 'all'"
+                    (click)="applyCategory('all')"
+                  >
+                    Sve kategorije
+                  </button>
+                  @for (type of types(); track type.id) {
                     <button
                       class="dest-chip"
-                      [class.dest-chip--active]="filters().category === cat.value"
-                      (click)="applyCategory(cat.value)"
+                      [class.dest-chip--active]="filters().category === type.id.toString()"
+                      (click)="applyCategory(type.id.toString())"
                     >
-                      {{ cat.label }}
+                      {{ type.name }}
                     </button>
                   }
                 </div>
@@ -153,25 +168,41 @@
                     >
                       {{ ui.t('destinations.filter.allRegions') }}
                     </button>
-                    @for (r of regions(); track r) {
+                    @for (r of regions(); track r.id) {
                       <button
                         class="dest-chip"
-                        [class.dest-chip--active]="filters().region === r"
-                        (click)="applyRegion(r)"
+                        [class.dest-chip--active]="filters().region === r.id.toString()"
+                        (click)="applyRegion(r.id.toString())"
                       >
-                        {{ r }}
+                        {{ r.name }}
                       </button>
                     }
                   </div>
                 </div>
               }
+
+              <!-- Rating filter -->
+              <div class="dest-filter-section">
+                <label class="dest-filter-section__label">Prosečna ocena</label>
+                <div class="dest-filter-chips">
+                  @for (rating of ratingFilters; track rating.label) {
+                    <button
+                      class="dest-chip"
+                      [class.dest-chip--active]="filters().minRating === rating.value"
+                      (click)="applyMinRating(rating.value)"
+                    >
+                      {{ rating.label }}
+                    </button>
+                  }
+                </div>
+              </div>
             </div>
             <div class="dest-filter-backdrop" (click)="isFilterOpen.set(false)"></div>
           }
         </div>
 
         <!-- Add new -->
-        <button class="btn btn-primary btn-sm">
+        <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
           <span class="material-icons">add</span>
           {{ ui.t('destinations.addNew') }}
         </button>
@@ -181,7 +212,7 @@
     <!-- Table -->
     <div class="dest-table-wrap">
       @if (isLoading()) {
-        <app-table-skeleton [rows]="7" />
+        <app-table-skeleton [rows]="17" />
       } @else if (!destinations().length) {
         <app-empty-state
           [title]="ui.t('destinations.empty.title')"
@@ -194,7 +225,6 @@
               <th class="dest-th">{{ ui.t('destinations.table.destination') }}</th>
               <th class="dest-th">{{ ui.t('destinations.table.category') }}</th>
               <th class="dest-th">{{ ui.t('destinations.table.status') }}</th>
-              <th class="dest-th dest-th--center">{{ ui.t('destinations.table.trend') }}</th>
               <th class="dest-th dest-th--right">{{ ui.t('destinations.table.views') }}</th>
               <th class="dest-th">{{ ui.t('destinations.table.updated') }}</th>
               <th class="dest-th"></th>
@@ -227,7 +257,7 @@
                     <span class="material-icons dest-category__icon">{{
                       categoryIcon(dest.category)
                     }}</span>
-                    {{ categoryLabel(dest.category) }}
+                    {{ dest.typeName || categoryLabel(dest.category) }}
                   </div>
                 </td>
 
@@ -236,20 +266,6 @@
                   <span class="dest-status dest-status--{{ dest.status }}">
                     {{ statusLabel(dest.status) }}
                   </span>
-                </td>
-
-                <!-- Sparkline -->
-                <td class="dest-td dest-td--center">
-                  <svg class="dest-sparkline" viewBox="0 0 80 32" preserveAspectRatio="none">
-                    <path
-                      [attr.d]="sparklinePath(dest.sparklineData)"
-                      fill="none"
-                      stroke="#28694c"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
                 </td>
 
                 <!-- Views -->
@@ -270,29 +286,21 @@
 
                 <!-- Actions -->
                 <td class="dest-td dest-td--actions">
-                  <div class="row-menu-wrap">
+                  <div class="row-actions">
                     <button
-                      class="dest-menu-btn"
-                      (click)="toggleMenu(dest.id, $event)"
-                      [title]="ui.t('destinations.actions.label')"
+                      class="btn-icon"
+                      title="Izmeni"
+                      (click)="openEdit(dest)"
                     >
-                      <span class="material-icons">more_vert</span>
+                      <span class="material-icons">edit</span>
                     </button>
-                    @if (activeMenuId() === dest.id) {
-                      <div class="dest-menu-dropdown">
-                        <button class="dest-menu-item">
-                          <span class="material-icons">edit</span>
-                          {{ ui.t('destinations.actions.edit') }}
-                        </button>
-                        <button
-                          class="dest-menu-item dest-menu-item--danger"
-                          (click)="openDeleteDialog(dest)"
-                        >
-                          <span class="material-icons">delete</span>
-                          {{ ui.t('destinations.actions.delete') }}
-                        </button>
-                      </div>
-                    }
+                    <button
+                      class="btn-icon btn-icon--danger"
+                      title="Obriši"
+                      (click)="openDeleteDialog(dest)"
+                    >
+                      <span class="material-icons">delete</span>
+                    </button>
                   </div>
                 </td>
               </tr>

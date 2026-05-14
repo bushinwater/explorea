@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  HostListener,
   OnDestroy,
   OnInit,
   computed,
@@ -21,6 +20,8 @@ import {
   DestinationRow,
   DestinationStats,
   DestinationStatus,
+  RegionOption,
+  TypeOption,
 } from './admin-destinations.models';
 import { AdminDestinationsService } from './admin-destinations.service';
 
@@ -47,19 +48,20 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     category: 'all',
     status: 'all',
     region: 'all',
+    minRating: null,
     page: 1,
-    pageSize: 7,
+    pageSize: 17,
   });
 
   protected readonly destinations = signal<DestinationRow[]>([]);
   protected readonly stats = signal<DestinationStats | null>(null);
-  protected readonly regions = signal<string[]>([]);
+  protected readonly regions = signal<RegionOption[]>([]);
+  protected readonly types = signal<TypeOption[]>([]);
   protected readonly total = signal(0);
   protected readonly currentPage = signal(1);
   protected readonly isLoading = signal(false);
   protected readonly isStatsLoading = signal(false);
   protected readonly isFilterOpen = signal(false);
-  protected readonly activeMenuId = signal<string | null>(null);
   protected readonly isDeleteDialogOpen = signal(false);
   protected readonly isDeleting = signal(false);
   protected readonly selectedDestination = signal<DestinationRow | null>(null);
@@ -76,23 +78,13 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
 
   protected readonly activeFilterCount = computed(() => {
     const f = this.filters();
-    return [f.category !== 'all', f.status !== 'all', f.region !== 'all'].filter(Boolean).length;
+    return [
+      f.category !== 'all',
+      f.status !== 'all',
+      f.region !== 'all',
+      f.minRating !== null,
+    ].filter(Boolean).length;
   });
-
-  protected readonly addedLast30DaysPath = computed(() => {
-    const data = this.stats()?.addedLast30Days ?? [];
-    return this.buildSparklinePath(data, 130, 40);
-  });
-
-  protected readonly categories: Array<{ value: DestinationCategory | 'all'; label: string }> = [
-    { value: 'all', label: 'Sve kategorije' },
-    { value: 'cultural', label: 'Kulturno' },
-    { value: 'nature', label: 'Priroda' },
-    { value: 'gastronomy', label: 'Gastronomija' },
-    { value: 'adventure', label: 'Avantura' },
-    { value: 'wellness', label: 'Wellness' },
-    { value: 'historical', label: 'Istorijsko' },
-  ];
 
   protected readonly statuses: Array<{ value: DestinationStatus | 'all'; label: string }> = [
     { value: 'all', label: 'Svi statusi' },
@@ -100,6 +92,13 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     { value: 'pending', label: 'Na čekanju' },
     { value: 'inactive', label: 'Neaktivno' },
     { value: 'rejected', label: 'Odbijeno' },
+  ];
+
+  protected readonly ratingFilters: Array<{ value: number | null; label: string }> = [
+    { value: null, label: 'Sve ocene' },
+    { value: 4, label: '★ 4+' },
+    { value: 3, label: '★ 3+' },
+    { value: 2, label: '★ 2+' },
   ];
 
   constructor(
@@ -118,6 +117,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
 
     this.loadStats();
     this.loadRegions();
+    this.loadTypes();
     this.loadDestinations();
   }
 
@@ -129,7 +129,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.searchInput$.next(value);
   }
 
-  protected applyCategory(value: DestinationCategory | 'all'): void {
+  protected applyCategory(value: string | 'all'): void {
     this.patchFilter({ category: value, page: 1 });
     this.loadDestinations();
   }
@@ -144,12 +144,18 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.loadDestinations();
   }
 
+  protected applyMinRating(value: number | null): void {
+    this.patchFilter({ minRating: value, page: 1 });
+    this.loadDestinations();
+  }
+
   protected resetFilters(): void {
     this.filters.update((f) => ({
       search: '',
       category: 'all',
       status: 'all',
       region: 'all',
+      minRating: null,
       page: 1,
       pageSize: f.pageSize,
     }));
@@ -164,13 +170,14 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.loadDestinations();
   }
 
-  protected toggleMenu(id: string, event: MouseEvent): void {
-    event.stopPropagation();
-    this.activeMenuId.update((current) => (current === id ? null : id));
+  protected openEdit(row: DestinationRow): void {
+    this.selectedDestination.set(row);
+  }
+
+  protected openCreateModal(): void {
   }
 
   protected openDeleteDialog(dest: DestinationRow): void {
-    this.activeMenuId.set(null);
     this.selectedDestination.set(dest);
     this.isDeleteDialogOpen.set(true);
   }
@@ -204,10 +211,6 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     );
   }
 
-  protected sparklinePath(data: number[]): string {
-    return this.buildSparklinePath(data, 80, 32);
-  }
-
   protected timeAgo(isoDate: string): string {
     const diffMs = Date.now() - new Date(isoDate).getTime();
     const minutes = Math.max(1, Math.floor(diffMs / 60000));
@@ -226,6 +229,16 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`;
     if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
     return views.toString();
+  }
+
+  protected addedLast30DaysValue(): number {
+    return this.stats()?.addedLast30Days ?? 0;
+  }
+
+  protected topDestinationPercent(views: number): number {
+    const maxViews = this.stats()?.topDestinations?.[0]?.views ?? 0;
+    if (maxViews <= 0) return 0;
+    return Math.max(8, Math.round((views / maxViews) * 100));
   }
 
   protected categoryLabel(cat: DestinationCategory): string {
@@ -274,15 +287,6 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     return map[category];
   }
 
-  protected thumbInitials(name: string): string {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((w) => w[0])
-      .join('')
-      .toUpperCase();
-  }
-
   protected visibleRangeText(): string {
     const total = this.total();
     if (!total) return '';
@@ -299,28 +303,6 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     const current = this.currentPage();
     const pages = new Set([1, total, current, current - 1, current + 1]);
     return [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
-  }
-
-  @HostListener('document:click')
-  onDocumentClick(): void {
-    this.activeMenuId.set(null);
-  }
-
-  private buildSparklinePath(data: number[], w: number, h: number): string {
-    if (data.length < 2) return '';
-    const min = Math.min(...data);
-    const max = Math.max(...data);
-    const range = max - min || 1;
-    const pts = data.map((v, i) => ({
-      x: (i / (data.length - 1)) * w,
-      y: h - ((v - min) / range) * (h - 6) - 3,
-    }));
-    let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-    for (let i = 1; i < pts.length; i++) {
-      const cx = ((pts[i - 1].x + pts[i].x) / 2).toFixed(1);
-      d += ` C${cx},${pts[i - 1].y.toFixed(1)} ${cx},${pts[i].y.toFixed(1)} ${pts[i].x.toFixed(1)},${pts[i].y.toFixed(1)}`;
-    }
-    return d;
   }
 
   private patchFilter(patch: Partial<DestinationFilters>): void {
@@ -366,6 +348,14 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.destinationsService.getRegions().subscribe({
         next: (regions) => this.regions.set(regions),
+      }),
+    );
+  }
+
+  private loadTypes(): void {
+    this.subscription.add(
+      this.destinationsService.getTypes().subscribe({
+        next: (types) => this.types.set(types),
       }),
     );
   }

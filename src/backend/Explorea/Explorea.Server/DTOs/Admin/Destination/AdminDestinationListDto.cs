@@ -6,6 +6,12 @@ namespace Explorea.API.DTOs.Admin.Destination
         public string Name { get; set; } = null!;
         public string Slug { get; set; } = null!;
         public string? PreviewImageUrl { get; set; }
+        public string? Region { get; set; }
+        public int? RegionId { get; set; }
+        public int Views { get; set; }
+        public string Status { get; set; } = null!;
+        public int? TypeId { get; set; }
+        public string? TypeName { get; set; }
         public decimal AvgRating { get; set; }
         public bool IsFeatured { get; set; }
         public string Visibility { get; set; } = null!;

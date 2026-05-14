@@ -21,16 +21,79 @@ namespace Explorea.Server.Controllers.Admin
         // GET /api/admin/destinations
         [HttpGet]
         public async Task<IActionResult> GetAll(
+            [FromQuery] string? search,
             [FromQuery] int? cityId,
             [FromQuery] string? visibility,
+            [FromQuery] int? regionId,
+            [FromQuery] int? typeId,
+            [FromQuery] decimal? minRating,
+            [FromQuery] decimal? maxRating,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 20)
+            [FromQuery] int pageSize = 15)
         {
             try
             {
                 var userId = GetCurrentUserId();
-                var (items, total) = await _service.GetAllAsync(cityId, visibility, page, pageSize, userId);
+                var (items, total) = await _service.GetAllAsync(
+                    search,
+                    cityId,
+                    visibility,
+                    regionId,
+                    typeId,
+                    minRating,
+                    maxRating,
+                    page,
+                    pageSize,
+                    userId);
                 return Ok(new { total, items });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
+        // GET /api/admin/destinations/stats
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetStats()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var stats = await _service.GetStatsAsync(userId);
+                return Ok(stats);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
+        // GET /api/admin/destinations/regions
+        [HttpGet("regions")]
+        public async Task<IActionResult> GetRegions()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var regions = await _service.GetRegionsAsync(userId);
+                return Ok(regions);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
+        // GET /api/admin/destinations/types
+        [HttpGet("types")]
+        public async Task<IActionResult> GetTypes()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var types = await _service.GetTypesAsync(userId);
+                return Ok(types);
             }
             catch (UnauthorizedAccessException ex)
             {
