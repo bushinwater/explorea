@@ -22,6 +22,7 @@ import {
   DestinationStats,
   DestinationStatus,
   RegionOption,
+  TypeOption,
 } from './admin-destinations.models';
 import { AdminDestinationsService } from './admin-destinations.service';
 
@@ -56,6 +57,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected readonly destinations = signal<DestinationRow[]>([]);
   protected readonly stats = signal<DestinationStats | null>(null);
   protected readonly regions = signal<RegionOption[]>([]);
+  protected readonly types = signal<TypeOption[]>([]);
   protected readonly total = signal(0);
   protected readonly currentPage = signal(1);
   protected readonly isLoading = signal(false);
@@ -78,7 +80,12 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
 
   protected readonly activeFilterCount = computed(() => {
     const f = this.filters();
-    return [f.category !== 'all', f.status !== 'all', f.region !== 'all'].filter(Boolean).length;
+    return [
+      f.category !== 'all',
+      f.status !== 'all',
+      f.region !== 'all',
+      f.minRating !== null,
+    ].filter(Boolean).length;
   });
 
   protected readonly addedLast30DaysPath = computed(() => {
@@ -105,6 +112,13 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     { value: 'rejected', label: 'Odbijeno' },
   ];
 
+  protected readonly ratingFilters: Array<{ value: number | null; label: string }> = [
+    { value: null, label: 'Sve ocene' },
+    { value: 4, label: '★ 4+' },
+    { value: 3, label: '★ 3+' },
+    { value: 2, label: '★ 2+' },
+  ];
+
   constructor(
     private readonly destinationsService: AdminDestinationsService,
     protected readonly authContext: AdminAuthContextService,
@@ -121,6 +135,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
 
     this.loadStats();
     this.loadRegions();
+    this.loadTypes();
     this.loadDestinations();
   }
 
@@ -132,7 +147,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.searchInput$.next(value);
   }
 
-  protected applyCategory(value: DestinationCategory | 'all'): void {
+  protected applyCategory(value: string | 'all'): void {
     this.patchFilter({ category: value, page: 1 });
     this.loadDestinations();
   }
@@ -144,6 +159,11 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
 
   protected applyRegion(value: string | 'all'): void {
     this.patchFilter({ region: value, page: 1 });
+    this.loadDestinations();
+  }
+
+  protected applyMinRating(value: number | null): void {
+    this.patchFilter({ minRating: value, page: 1 });
     this.loadDestinations();
   }
 
@@ -370,6 +390,14 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.destinationsService.getRegions().subscribe({
         next: (regions) => this.regions.set(regions),
+      }),
+    );
+  }
+
+  private loadTypes(): void {
+    this.subscription.add(
+      this.destinationsService.getTypes().subscribe({
+        next: (types) => this.types.set(types),
       }),
     );
   }

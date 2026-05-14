@@ -109,13 +109,20 @@
                   ui.t('destinations.filter.category')
                 }}</label>
                 <div class="dest-filter-chips">
-                  @for (cat of categories; track cat.value) {
+                  <button
+                    class="dest-chip"
+                    [class.dest-chip--active]="filters().category === 'all'"
+                    (click)="applyCategory('all')"
+                  >
+                    Sve kategorije
+                  </button>
+                  @for (type of types(); track type.id) {
                     <button
                       class="dest-chip"
-                      [class.dest-chip--active]="filters().category === cat.value"
-                      (click)="applyCategory(cat.value)"
+                      [class.dest-chip--active]="filters().category === type.id.toString()"
+                      (click)="applyCategory(type.id.toString())"
                     >
-                      {{ cat.label }}
+                      {{ type.name }}
                     </button>
                   }
                 </div>
@@ -165,6 +172,22 @@
                   </div>
                 </div>
               }
+
+              <!-- Rating filter -->
+              <div class="dest-filter-section">
+                <label class="dest-filter-section__label">Prosečna ocena</label>
+                <div class="dest-filter-chips">
+                  @for (rating of ratingFilters; track rating.label) {
+                    <button
+                      class="dest-chip"
+                      [class.dest-chip--active]="filters().minRating === rating.value"
+                      (click)="applyMinRating(rating.value)"
+                    >
+                      {{ rating.label }}
+                    </button>
+                  }
+                </div>
+              </div>
             </div>
             <div class="dest-filter-backdrop" (click)="isFilterOpen.set(false)"></div>
           }
