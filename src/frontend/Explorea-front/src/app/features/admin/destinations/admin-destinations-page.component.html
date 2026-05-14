@@ -301,29 +301,21 @@
 
                 <!-- Actions -->
                 <td class="dest-td dest-td--actions">
-                  <div class="row-menu-wrap">
+                  <div class="row-actions">
                     <button
-                      class="dest-menu-btn"
-                      (click)="toggleMenu(dest.id, $event)"
-                      [title]="ui.t('destinations.actions.label')"
+                      class="btn-icon"
+                      title="Izmeni"
+                      (click)="openEdit(dest)"
                     >
-                      <span class="material-icons">more_vert</span>
+                      <span class="material-icons">edit</span>
                     </button>
-                    @if (activeMenuId() === dest.id) {
-                      <div class="dest-menu-dropdown">
-                        <button class="dest-menu-item">
-                          <span class="material-icons">edit</span>
-                          {{ ui.t('destinations.actions.edit') }}
-                        </button>
-                        <button
-                          class="dest-menu-item dest-menu-item--danger"
-                          (click)="openDeleteDialog(dest)"
-                        >
-                          <span class="material-icons">delete</span>
-                          {{ ui.t('destinations.actions.delete') }}
-                        </button>
-                      </div>
-                    }
+                    <button
+                      class="btn-icon btn-icon--danger"
+                      title="Obriši"
+                      (click)="openDeleteDialog(dest)"
+                    >
+                      <span class="material-icons">delete</span>
+                    </button>
                   </div>
                 </td>
               </tr>

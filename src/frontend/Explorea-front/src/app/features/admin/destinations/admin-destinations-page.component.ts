@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  HostListener,
   OnDestroy,
   OnInit,
   computed,
@@ -63,7 +62,6 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected readonly isLoading = signal(false);
   protected readonly isStatsLoading = signal(false);
   protected readonly isFilterOpen = signal(false);
-  protected readonly activeMenuId = signal<string | null>(null);
   protected readonly isDeleteDialogOpen = signal(false);
   protected readonly isDeleting = signal(false);
   protected readonly selectedDestination = signal<DestinationRow | null>(null);
@@ -182,13 +180,11 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.loadDestinations();
   }
 
-  protected toggleMenu(id: string, event: MouseEvent): void {
-    event.stopPropagation();
-    this.activeMenuId.update((current) => (current === id ? null : id));
+  protected openEdit(row: DestinationRow): void {
+    this.selectedDestination.set(row);
   }
 
   protected openDeleteDialog(dest: DestinationRow): void {
-    this.activeMenuId.set(null);
     this.selectedDestination.set(dest);
     this.isDeleteDialogOpen.set(true);
   }
@@ -328,11 +324,6 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     const current = this.currentPage();
     const pages = new Set([1, total, current, current - 1, current + 1]);
     return [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
-  }
-
-  @HostListener('document:click')
-  onDocumentClick(): void {
-    this.activeMenuId.set(null);
   }
 
   private buildSparklinePath(data: number[], w: number, h: number): string {
