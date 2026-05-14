@@ -1,0 +1,585 @@
+<section class="admin-settings-page">
+  <header class="admin-settings-page__header">
+    <div>
+      <p class="admin-settings-page__eyebrow">Admin nalog</p>
+      <h1>Profil i podešavanja</h1>
+      <p>Upravljaj profilom, preferencijama, obaveštenjima i sistemskim opcijama.</p>
+    </div>
+  </header>
+
+  <nav class="settings-tabs" aria-label="Admin settings tabs">
+    @for (tab of visibleTabs(); track tab.id) {
+    <button class="settings-tab" type="button" [class.settings-tab--active]="activeTab() === tab.id"
+      (click)="setActiveTab(tab.id)">
+      <span class="material-icons settings-tab__icon">{{ tab.icon }}</span>
+
+      <span class="settings-tab__content">
+        <strong>{{ tab.label }}</strong>
+        <small>{{ tab.description }}</small>
+      </span>
+    </button>
+    }
+  </nav>
+
+  <section class="settings-panel card">
+    @switch (activeTab()) {
+    @case ('profile') {
+    <div class="profile-tab">
+      <aside class="profile-card">
+        <div class="profile-card__top">
+          <div class="profile-card__avatar-wrap">
+            <div class="profile-card__avatar" [class.profile-card__avatar--image]="adminProfile().profileImageUrl">
+              @if (adminProfile().profileImageUrl){
+              <img [src]="adminProfile().profileImageUrl" [alt]="adminProfile().fullName" />
+              } @else {
+              {{ adminProfile().initials }}
+              }
+            </div>
+
+            <span class="profile-card__status-dot" aria-label="Active status"></span>
+          </div>
+
+          <h2>{{ adminProfile().fullName }}</h2>
+          <p class="profile-card__email">
+            <span class="material-icons">mail</span>
+            {{ adminProfile().email }}
+          </p>
+
+          <span class="profile-card__role">
+            {{ adminProfile().roleLabel }}
+          </span>
+        </div>
+
+        <dl class="profile-card__meta">
+          <div>
+            <dt>Status</dt>
+            <dd>{{ adminProfile().status }}</dd>
+          </div>
+
+          <div>
+            <dt>Region</dt>
+            <dd>{{ adminProfile().region }}</dd>
+          </div>
+
+          <div>
+            <dt>Član od</dt>
+            <dd>{{ formattedMemberSince() }}</dd>
+          </div>
+        </dl>
+
+        <div class="profile-card__actions">
+          <input #profilePhotoInput class="profile-card__file-input" type="file" accept="image/*"
+            (change)="uploadProfilePhoto(profilePhotoInput.files); profilePhotoInput.value = ''" />
+          <button class="btn btn-secondary" type="button"
+            [disabled]="isProfilePhotoUploading() || isProfilePhotoDeleting()" (click)="profilePhotoInput.click()">
+            <span class="material-icons">photo_camera</span>
+            {{ isProfilePhotoUploading() ? 'Uploading...' : 'Upload New Photo' }}
+          </button>
+
+          <button class="profile-card__delete" type="button"
+            [disabled]="!adminProfile().profileImageUrl || isProfilePhotoUploading() || isProfilePhotoDeleting()"
+            (click)="deleteProfilePhoto()">
+            <span class="material-icons">delete</span>
+            {{ isProfilePhotoDeleting() ? 'Deleting...' : 'Delete Photo' }}
+          </button>
+        </div>
+      </aside>
+
+      <section class="profile-form">
+        <header class="profile-form__header">
+          @if (isProfileLoading()) {
+          <p class="settings-inline-message">Učitavanje profila...</p>
+          }
+
+          <div>
+            <p class="profile-form__eyebrow">Profile</p>
+            <h2>Informacije o profilu</h2>
+            <p>Ažuriraj lične podatke ulogovanog admina.</p>
+          </div>
+          <span class="profile-form__badge">Backend Data</span>
+        </header>
+
+        <div class="profile-form__grid">
+          <label class="profile-field">
+            <span>Ime</span>
+            <input #firstNameInput type="text" [value]="profileForm().firstName" [disabled]="isProfileSaving()"
+              (input)="updateProfileField('firstName', firstNameInput.value)" />
+          </label>
+
+          <label class="profile-field">
+            <span>Prezime</span>
+            <input #lastNameInput type="text" [value]="profileForm().lastName" [disabled]="isProfileSaving()"
+              (input)="updateProfileField('lastName', lastNameInput.value)" />
+          </label>
+
+          <label class="profile-field">
+            <span>Email</span>
+            <input #emailInput type="email" [value]="profileForm().email" [disabled]="isProfileSaving()"
+              (input)="updateProfileField('email', emailInput.value)" />
+          </label>
+
+          <label class="profile-field">
+            <span>Region</span>
+            <input type="text" [value]="adminProfile().region" readonly />
+          </label>
+
+          <label class="profile-field profile-field--full">
+            <span>Kratka bio / opis uloge</span>
+            <textarea #bioInput rows="5" [value]="profileForm().bio ?? ''" [disabled]="isProfileSaving()"
+              (input)="updateProfileField('bio', bioInput.value)"></textarea>
+          </label>
+        </div>
+
+        <footer class="profile-form__actions">
+          <button class="btn btn-secondary" type="button" [disabled]="isProfileSaving()"
+            (click)="resetProfileChanges()">
+            Reset Changes
+          </button>
+
+          <button class="btn btn-primary" type="button" [disabled]="isProfileSaving()" (click)="saveProfile()">
+            <span class="material-icons">save</span>
+            {{ isProfileSaving() ? 'Saving...' : 'Save Profile' }}
+          </button>
+        </footer>
+      </section>
+    </div>
+    }
+
+    @case ('preferences') {
+    <div class="preferences-tab">
+      <section class="preferences-hero">
+        <div>
+          <p class="section-eyebrow">App Preferences</p>
+          <h2>Izgled i ponašanje aplikacije</h2>
+          <p>Podesi kako admin panel izgleda i kako se ponaša tokom svakodnevnog rada.</p>
+
+          @if (isPreferencesLoading()) {
+          <p class="settings-inline-message">Učitavanje podešavanja...</p>
+          }
+
+          @if (preferencesErrorMessage()) {
+          <p class="settings-inline-message settings-inline-message--error">{{ preferencesErrorMessage() }}</p>
+          }
+
+          @if (preferencesSuccessMessage()) {
+          <p class="settings-inline-message settings-inline-message--success">{{ preferencesSuccessMessage() }}</p>
+          }
+        </div>
+
+        <span class="profile-form__badge">Backend Data</span>
+      </section>
+
+      <section class="preferences-grid">
+        <article class="preference-card preference-card--featured">
+          <div class="preference-card__icon">
+            <span class="material-icons">dark_mode</span>
+          </div>
+
+          <div class="preference-card__content">
+            <span>Tema interfejsa</span>
+            <strong>{{ themeLabel(preferencesForm().theme) }}</strong>
+            <p>Admin panel trenutno prati tamni Explorea izgled sa zelenim akcentima.</p>
+          </div>
+
+          <select #themeSelect class="preference-select" [value]="preferencesForm().theme"
+            [disabled]="isPreferencesSaving()" (change)="updatePreferencesField('theme', themeSelect.value)">
+            <option value="dark">Tamna tema</option>
+            <option value="light">Svetla tema</option>
+            <option value="system">Sistemska tema</option>
+          </select>
+        </article>
+
+        <article class="preference-card">
+          <div class="preference-card__icon">
+            <span class="material-icons">language</span>
+          </div>
+
+          <div class="preference-card__content">
+            <span>Jezik aplikacije</span>
+            <strong>{{ languageLabel(preferencesForm().language) }}</strong>
+            <p>Primarni jezik za admin interfejs i sistemske poruke.</p>
+          </div>
+
+          <select #languageSelect class="preference-select" [value]="preferencesForm().language"
+            [disabled]="isPreferencesSaving()" (change)="updatePreferencesField('language', languageSelect.value)">
+            <option value="sr">Srpski (SR)</option>
+            <option value="en">English (EN)</option>
+          </select>
+        </article>
+
+        <article class="preference-card">
+          <div class="preference-card__icon">
+            <span class="material-icons">home</span>
+          </div>
+
+          <div class="preference-card__content">
+            <span>Početna admin stranica</span>
+            <strong>{{ appPreferences.landingPage }}</strong>
+            <p>Stranica koja se otvara nakon ulaska u admin panel.</p>
+          </div>
+
+          <select class="preference-select" [value]="appPreferences.landingPage">
+            <option>Dashboard</option>
+            <option>Korisnici</option>
+            <option>Destinacije</option>
+            <option>Recenzije</option>
+          </select>
+        </article>
+
+        <article class="preference-card">
+          <div class="preference-card__icon">
+            <span class="material-icons">calendar_month</span>
+          </div>
+
+          <div class="preference-card__content">
+            <span>Format datuma</span>
+            <strong>{{ appPreferences.dateFormat }}</strong>
+            <p>Način prikaza datuma u tabelama, karticama i izveštajima.</p>
+          </div>
+
+          <select class="preference-select" [value]="appPreferences.dateFormat">
+            <option>DD.MM.YYYY.</option>
+            <option>YYYY-MM-DD</option>
+            <option>MM/DD/YYYY</option>
+          </select>
+        </article>
+      </section>
+
+      <section class="behavior-panel">
+        <header class="behavior-panel__header">
+          <div>
+            <p class="section-eyebrow">Ponašanje aplikacije</p>
+            <h3>Radni tok admin panela</h3>
+            <p>Opcije koje utiču na navigaciju, prikaz tabela i brzinu rada.</p>
+          </div>
+        </header>
+
+        <div class="behavior-list">
+          @for (preference of behaviorPreferences; track preference.title) {
+          <article class="behavior-item">
+            <div class="behavior-item__icon">
+              <span class="material-icons">{{ preference.icon }}</span>
+            </div>
+
+            <div class="behavior-item__content">
+              <h4>{{ preference.title }}</h4>
+              <p>{{ preference.description }}</p>
+            </div>
+
+            <button class="toggle" type="button" [class.toggle--active]="preference.enabled"
+              [attr.aria-pressed]="preference.enabled">
+              <span></span>
+            </button>
+          </article>
+          }
+        </div>
+      </section>
+
+      <footer class="preferences-actions">
+        <button class="btn btn-secondary" type="button" [disabled]="isPreferencesSaving()"
+          (click)="resetPreferencesChanges()">
+          Reset Changes
+        </button>
+
+        <button class="btn btn-primary" type="button" [disabled]="isPreferencesSaving()" (click)="savePreferences()">
+          <span class="material-icons">save</span>
+          {{ isPreferencesSaving() ? 'Saving...' : 'Save Preferences' }}
+        </button>
+      </footer>
+    </div>
+    }
+
+    @case ('notifications') {
+    <div class="notifications-tab">
+      <section class="notifications-hero">
+        <div>
+          <p class="section-eyebrow">Notifications</p>
+          <h2>Podešavanja obaveštenja</h2>
+          <p>Izaberi kako i kada admin prima obaveštenja o važnim promenama na platformi.</p>
+
+          @if (isNotificationsLoading()) {
+          <p class="settings-inline-message">Učitavanje obaveštenja...</p>
+          }
+
+          @if (notificationsErrorMessage()) {
+          <p class="settings-inline-message settings-inline-message--error">{{ notificationsErrorMessage() }}</p>
+          }
+
+          @if (notificationsSuccessMessage()) {
+          <p class="settings-inline-message settings-inline-message--success">{{ notificationsSuccessMessage() }}</p>
+          }
+        </div>
+
+        <span class="profile-form__badge">Backend data</span>
+      </section>
+
+      <section class="notification-channel-grid">
+        @for (channel of notificationChannels; track channel.title) {
+        <article class="notification-channel-card">
+          <div class="notification-channel-card__icon">
+            <span class="material-icons">{{ channel.icon }}</span>
+          </div>
+
+          <div class="notification-channel-card__content">
+            <h3>{{ channel.title }}</h3>
+            <p>{{ channel.description }}</p>
+          </div>
+
+          <button class="toggle" type="button"
+            [class.toggle--active]="channel.title === 'Push obaveštenja' ? notificationsForm().notificationsEnabled : channel.enabled"
+            [attr.aria-pressed]="channel.title === 'Push obaveštenja' ? notificationsForm().notificationsEnabled : channel.enabled"
+            [disabled]="isNotificationsSaving()"
+            (click)="channel.title === 'Push obaveštenja' && updateNotificationsEnabled(!notificationsForm().notificationsEnabled)">
+            <span></span>
+          </button>
+        </article>
+        }
+      </section>
+
+      <section class="notification-panel">
+        <header class="notification-panel__header">
+          <div>
+            <p class="section-eyebrow">Vrste obaveštenja</p>
+            <h3>Šta admin želi da prima?</h3>
+            <p>Uključi ili isključi različite kategorije obaveštenja za ovaj nalog.</p>
+          </div>
+        </header>
+
+        <div class="notification-type-list">
+          @for (notification of notificationTypes; track notification.title) {
+          <article class="notification-type-item">
+            <div class="notification-type-item__icon">
+              <span class="material-icons">{{ notification.icon }}</span>
+            </div>
+
+            <div class="notification-type-item__content">
+              <h4>{{ notification.title }}</h4>
+              <p>{{ notification.description }}</p>
+            </div>
+
+            <button class="toggle" type="button" [class.toggle--active]="notification.enabled"
+              [attr.aria-pressed]="notification.enabled">
+              <span></span>
+            </button>
+          </article>
+          }
+        </div>
+      </section>
+
+      <section class="delivery-panel">
+        <header class="delivery-panel__header">
+          <div>
+            <p class="section-eyebrow">Raspored slanja</p>
+            <h3>Učestalost i prioritet</h3>
+            <p>Podesi koliko često se šalju obaveštenja i da li se poštuju mirni sati.</p>
+          </div>
+        </header>
+
+        <div class="delivery-grid">
+          <label class="delivery-field">
+            <span>Učestalost sažetka</span>
+            <select [value]="notificationDelivery.digestFrequency">
+              <option>Dnevno</option>
+              <option>Nedeljno</option>
+              <option>Odmah</option>
+              <option>Isključeno</option>
+            </select>
+          </label>
+
+          <label class="delivery-field">
+            <span>Mirni sati</span>
+            <select [value]="notificationDelivery.quietHours">
+              <option>22:00 - 08:00</option>
+              <option>23:00 - 07:00</option>
+              <option>00:00 - 06:00</option>
+              <option>Bez mirnih sati</option>
+            </select>
+          </label>
+
+          <label class="delivery-field">
+            <span>Prioritet obaveštenja</span>
+            <select [value]="notificationDelivery.priority">
+              <option>Samo važno</option>
+              <option>Sva obaveštenja</option>
+              <option>Samo sistemska upozorenja</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <footer class="notifications-actions">
+        <button class="btn btn-secondary" type="button" [disabled]="isNotificationsSaving()"
+          (click)="resetNotificationChanges()">
+          Reset Changes
+        </button>
+
+        <button class="btn btn-primary" type="button" [disabled]="isNotificationsSaving()"
+          (click)="saveNotifications()">
+          <span class="material-icons">save</span>
+          {{ isNotificationsSaving() ? 'Saving...' : 'Save Notifications' }}
+        </button>
+      </footer>
+    </div>
+    }
+
+    @case ('administration') {
+    @if (auth.role() === 'super_admin') {
+    <div class="administration-tab">
+      <section class="administration-hero">
+        <div>
+          <p class="section-eyebrow">Administration</p>
+          <h2>Sistemska podešavanja</h2>
+          <p>Centralno mesto za superadmin kontrole, bezbednosne opcije i sistemske parametre.</p>
+
+          @if (isAdministrationLoading()) {
+          <p class="settings-inline-message">Učitavanje sistemskog pregleda...</p>
+          }
+
+          @if (administrationErrorMessage()) {
+          <p class="settings-inline-message settings-inline-message--error">{{ administrationErrorMessage() }}</p>
+          }
+        </div>
+
+        <span class="profile-form__badge">Backend overview</span>
+      </section>
+
+      <section class="administration-stats-grid">
+        @for (stat of administrationStats(); track stat.label) {
+        <article class="administration-stat-card">
+          <div class="administration-stat-card__icon">
+            <span class="material-icons">{{ stat.icon }}</span>
+          </div>
+
+          <div>
+            <span>{{ stat.label }}</span>
+            <strong>{{ stat.value }}</strong>
+            <p>{{ stat.description }}</p>
+          </div>
+        </article>
+        }
+      </section>
+
+      <section class="administration-panel">
+        <header class="administration-panel__header">
+          <div>
+            <p class="section-eyebrow">Sistemske kontrole</p>
+            <h3>Administrativne oblasti</h3>
+            <p>Brzi pregled najvažnijih oblasti koje superadmin može da kontroliše.</p>
+          </div>
+        </header>
+
+        <div class="administration-control-grid">
+          @for (setting of administrationSettings(); track setting.title) {
+          <article class="administration-control-card">
+            <div class="administration-control-card__icon">
+              <span class="material-icons">{{ setting.icon }}</span>
+            </div>
+
+            <div class="administration-control-card__content">
+              <h4>{{ setting.title }}</h4>
+              <p>{{ setting.description }}</p>
+            </div>
+
+            <button class="btn btn-secondary" type="button">
+              {{ setting.actionLabel }}
+            </button>
+          </article>
+          }
+        </div>
+      </section>
+
+      <section class="system-toggle-panel">
+        <header class="system-toggle-panel__header">
+          <div>
+            <p class="section-eyebrow">Globalna pravila</p>
+            <h3>Ponašanje sistema</h3>
+            <p>Opcije koje utiču na administrativni tok rada cele Explorea platforme.</p>
+          </div>
+        </header>
+
+        <div class="system-toggle-list">
+          @for (setting of systemToggles(); track setting.title) {
+          <article class="system-toggle-item">
+            <div class="system-toggle-item__icon">
+              <span class="material-icons">{{ setting.icon }}</span>
+            </div>
+
+            <div class="system-toggle-item__content">
+              <h4>{{ setting.title }}</h4>
+              <p>{{ setting.description }}</p>
+            </div>
+
+            <button class="toggle" type="button" [class.toggle--active]="setting.enabled"
+              [attr.aria-pressed]="setting.enabled">
+              <span></span>
+            </button>
+          </article>
+          }
+        </div>
+      </section>
+
+      <section class="danger-zone">
+        <header class="danger-zone__header">
+          <div>
+            <p class="section-eyebrow">Danger zone</p>
+            <h3>Osetljive akcije</h3>
+            <p>Ove opcije su prikazane kao frontend placeholder i nisu povezane sa backendom.</p>
+          </div>
+        </header>
+
+        <div class="danger-zone__list">
+          @for (action of dangerousActions; track action.title) {
+          <article class="danger-zone__item">
+            <div class="danger-zone__icon">
+              <span class="material-icons">{{ action.icon }}</span>
+            </div>
+
+            <div>
+              <h4>{{ action.title }}</h4>
+              <p>{{ action.description }}</p>
+            </div>
+
+            <button class="danger-zone__button" type="button">
+              Pokreni
+            </button>
+          </article>
+          }
+        </div>
+      </section>
+
+      <footer class="administration-actions">
+        <button class="btn btn-secondary" type="button">
+          Reset Changes
+        </button>
+
+        <button class="btn btn-primary" type="button">
+          <span class="material-icons">save</span>
+          Save Administration
+        </button>
+      </footer>
+    </div>
+    } @else {
+    <div class="settings-placeholder">
+      <span class="material-icons">lock</span>
+      <h2>Administration nije dostupna</h2>
+      <p>Ova podešavanja su vidljiva samo superadmin korisnicima.</p>
+    </div>
+    }
+    }
+    }
+  </section>
+
+  @if (toast()) {
+  <div class="settings-toast" [class.settings-toast--error]="toast()?.type === 'error'">
+    <span class="material-icons">
+      {{ toast()?.type === 'success' ? 'check_circle' : 'error' }}
+    </span>
+
+    <p>{{ toast()?.message }}</p>
+
+    <button type="button" (click)="closeToast()" aria-label="Close notification">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+  }
+</section>
