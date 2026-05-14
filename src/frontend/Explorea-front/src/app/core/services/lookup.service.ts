@@ -44,7 +44,7 @@ export class LookupService {
   }
 
   getDestinationTypes(): Observable<LookupItem[]> {
-    return this.http.get<LookupItem[]>('/api/destination-types').pipe(shareReplay(1));
+    return this.http.get<LookupItem[]>('/api/destination-types');
   }
 
   getFilterDefinitions(entityType: string, typeId: number): Observable<FilterDefinition[]> {

@@ -88,7 +88,7 @@ namespace Explorea.Server.Services
             Name = d.Name,
             Lat = d.Latitude ?? 0,
             Lng = d.Longitude ?? 0,
-            PreviewImageUrl = d.HeroImageUrl,
+            PreviewImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
             AvgRating = d.AvgRating,
             Subtitle = d.City?.Name
         };

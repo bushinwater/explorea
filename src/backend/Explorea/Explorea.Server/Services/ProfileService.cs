@@ -273,7 +273,7 @@ namespace Explorea.Server.Services
                     var destIds = destMatches.Select(x => x.Id).ToList();
                     var dests = await _db.Destinations
                         .Where(d => destIds.Contains(d.Id))
-                        .Select(d => new { d.Id, d.Name, d.Slug, PreviewImageUrl = d.HeroImageUrl, d.AvgRating })
+                        .Select(d => new { d.Id, d.Name, d.Slug, PreviewImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl, d.AvgRating })
                         .ToListAsync();
 
                     items.AddRange(destMatches.Join(dests, m => m.Id, d => d.Id, (m, d) => new ForYouItemDto
@@ -384,7 +384,7 @@ namespace Explorea.Server.Services
                     {
                         Id = d.Id, EntityType = "destination",
                         Name = d.Name, Slug = d.Slug,
-                        PreviewImageUrl = d.HeroImageUrl,
+                        PreviewImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
                         AvgRating = (double)d.AvgRating, MatchedTagsCount = 0
                     })
                     .ToListAsync();
@@ -532,7 +532,7 @@ namespace Explorea.Server.Services
                         EntityId = item.EntityId,
                         Name = x.Name,
                         Slug = x.Slug,
-                        PreviewImageUrl = x.HeroImageUrl,
+                        PreviewImageUrl = x.PreviewImageUrl ?? x.HeroImageUrl,
                         Subtitle = x.City != null ? x.City.Name : null,
                         SavedAt = item.SavedAt
                     })
@@ -610,7 +610,7 @@ namespace Explorea.Server.Services
                         EntityId = review.EntityId,
                         EntityName = x.Name,
                         EntitySlug = x.Slug,
-                        PreviewImageUrl = x.HeroImageUrl,
+                        PreviewImageUrl = x.PreviewImageUrl ?? x.HeroImageUrl,
                         Rating = review.Rating,
                         Comment = review.Comment,
                         CreatedAt = review.CreatedAt,

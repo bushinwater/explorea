@@ -3,7 +3,9 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
   DestinationCategory,
+  DestinationDetail,
   DestinationFilters,
+  DestinationImage,
   DestinationPagedResponse,
   DestinationRow,
   DestinationStats,
@@ -101,6 +103,67 @@ export class AdminDestinationsService {
     return this.http.get<TypeOption[]>('/api/admin/destinations/types');
   }
 
+  createDestination(dto: {
+    name: string; slug: string; description: string;
+    latitude: number; longitude: number; visibility: string;
+    typeId?: number | null;
+  }): Observable<DestinationRow> {
+    return this.http.post<ApiDestinationItem>('/api/admin/destinations', dto).pipe(
+      map((item) => this.mapToRow(item)),
+    );
+  }
+
+  createType(name: string): Observable<{ id: number; name: string }> {
+    return this.http.post<{ id: number; name: string }>(
+      '/api/admin/destinations/types', { name }
+    );
+  }
+
+  getDestinationById(id: string): Observable<DestinationDetail> {
+    return this.http.get<ApiDestinationItem>(`/api/admin/destinations/${id}`).pipe(
+      map((item) => ({
+        id: item.id,
+        name: item.name,
+        slug: item.slug,
+        description: (item as any).description ?? null,
+        latitude: (item as any).latitude ?? null,
+        longitude: (item as any).longitude ?? null,
+        visibility: item.visibility,
+        previewImageUrl: item.previewImageUrl ?? null,
+        typeId: item.typeId ?? null,
+        images: ((item as any).images ?? []).map((img: any) => ({
+          id: img.id,
+          imageUrl: img.imageUrl,
+          sortOrder: img.sortOrder,
+        })),
+      })),
+    );
+  }
+
+  setPreviewImage(destinationId: string, imageId: string): Observable<{ previewImageUrl: string }> {
+    return this.http.put<{ previewImageUrl: string }>(
+      `/api/admin/destinations/${destinationId}/images/${imageId}/preview`, {}
+    );
+  }
+
+  updateDestination(id: string, dto: Partial<{ name: string; description: string; latitude: number; longitude: number; visibility: string; typeId: number | null; clearTypeId: boolean }>): Observable<DestinationRow> {
+    return this.http.put<ApiDestinationItem>(`/api/admin/destinations/${id}`, dto).pipe(
+      map((item) => this.mapToRow(item)),
+    );
+  }
+
+  addImage(destinationId: string, file: File): Observable<DestinationImage> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<{ id: string; imageUrl: string; sortOrder: number }>(
+      `/api/admin/destinations/${destinationId}/images`, form
+    );
+  }
+
+  deleteImage(destinationId: string, imageId: string): Observable<void> {
+    return this.http.delete<void>(`/api/admin/destinations/${destinationId}/images/${imageId}`);
+  }
+
   deleteDestination(id: string): Observable<void> {
     return this.http.delete<void>(`/api/admin/destinations/${id}`);
   }
@@ -108,6 +171,7 @@ export class AdminDestinationsService {
   private mapToRow(item: ApiDestinationItem): DestinationRow {
     return {
       id: item.id,
+      slug: item.slug,
       name: item.name,
       city: item.city ?? item.country ?? 'Nepoznato',
       region: item.region ?? 'Bez regije',

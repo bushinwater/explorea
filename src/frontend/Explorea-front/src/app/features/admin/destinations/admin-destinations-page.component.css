@@ -239,7 +239,6 @@
 /* Filter wrap */
 .dest-filter-wrap {
   position: relative;
-  align-self: flex-start;
   overflow: visible;
 }
 

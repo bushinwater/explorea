@@ -85,6 +85,20 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        // POST /api/admin/destinations/types
+        [HttpPost("types")]
+        public async Task<IActionResult> CreateType([FromBody] CreateTypeRequest request)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var type = await _service.CreateTypeAsync(request.Name, userId);
+                return StatusCode(201, type);
+            }
+            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+        }
+
         // GET /api/admin/destinations/types
         [HttpGet("types")]
         public async Task<IActionResult> GetTypes()
@@ -168,6 +182,50 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        // POST /api/admin/destinations/{id}/images
+        [HttpPost("{id}/images")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> AddImage(Guid id, IFormFile file)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var result = await _service.AddImageAsync(id, file, userId);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException) { return NotFound(); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+        }
+
+        // PUT /api/admin/destinations/{id}/images/{imageId}/preview
+        [HttpPut("{id}/images/{imageId}/preview")]
+        public async Task<IActionResult> SetPreviewImage(Guid id, Guid imageId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var previewUrl = await _service.SetPreviewImageAsync(id, imageId, userId);
+                if (previewUrl == null) return NotFound();
+                return Ok(new { previewImageUrl = previewUrl });
+            }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+        }
+
+        // DELETE /api/admin/destinations/{id}/images/{imageId}
+        [HttpDelete("{id}/images/{imageId}")]
+        public async Task<IActionResult> DeleteImage(Guid id, Guid imageId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var deleted = await _service.DeleteImageAsync(id, imageId, userId);
+                if (!deleted) return NotFound();
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+        }
+
         // GET /api/admin/destinations/{id}/analytics
         [HttpGet("{id}/analytics")]
         public IActionResult GetAnalytics(Guid id)
@@ -187,4 +245,6 @@ namespace Explorea.Server.Controllers.Admin
             return Guid.Parse(claim!);
         }
     }
+
+    public record CreateTypeRequest(string Name);
 }

@@ -6,6 +6,25 @@
   <app-feedback-banner variant="error" [title]="errorMessage()" />
 }
 
+@if (isEditModalOpen() && selectedDestination()) {
+  <app-destination-edit-modal
+    [row]="selectedDestination()!"
+    [types]="types()"
+    (cancel)="closeEditModal()"
+    (saved)="onEditSaved($event)"
+    (typeCreated)="onTypeCreated($event)"
+  />
+}
+
+@if (isCreateModalOpen()) {
+  <app-destination-create-modal
+    [types]="types()"
+    (cancel)="closeCreateModal()"
+    (created)="onDestinationCreated($event)"
+    (typeCreated)="onTypeCreated($event)"
+  />
+}
+
 <div class="dest-page">
   <!-- ===== STATS ROW ===== -->
   <div class="dest-stats">
@@ -287,6 +306,15 @@
                 <!-- Actions -->
                 <td class="dest-td dest-td--actions">
                   <div class="row-actions">
+                    <a
+                      class="btn-icon"
+                      title="Otvori u aplikaciji"
+                      [href]="'/destinations/' + dest.slug"
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      <span class="material-icons">open_in_new</span>
+                    </a>
                     <button
                       class="btn-icon"
                       title="Izmeni"

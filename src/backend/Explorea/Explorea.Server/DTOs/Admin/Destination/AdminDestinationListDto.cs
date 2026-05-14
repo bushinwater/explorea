@@ -17,6 +17,10 @@ namespace Explorea.API.DTOs.Admin.Destination
         public string Visibility { get; set; } = null!;
         public string? City { get; set; }
         public string? Country { get; set; }
+        public string? Description { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public List<AdminDestinationImageDto> Images { get; set; } = new();
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
     }
