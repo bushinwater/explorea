@@ -14,12 +14,23 @@
     <div class="review-card__rating-col" *ngIf="!editMode">
       <app-star-rating [rating]="review.rating" [showValue]="false" class="review-card__stars" />
       <div class="review-card__actions" *ngIf="isOwner">
-        <button class="review-card__action-btn" (click)="startEdit()" type="button" title="Izmeni">
-          <span class="material-icons">edit</span>
-        </button>
-        <button class="review-card__action-btn review-card__action-btn--delete" (click)="onDelete()" [disabled]="deleting" type="button" title="Obriši">
-          <span class="material-icons" [class.spin]="deleting">{{ deleting ? 'sync' : 'delete_outline' }}</span>
-        </button>
+        <ng-container *ngIf="!confirmingDelete">
+          <button class="review-card__action-btn" (click)="startEdit()" type="button" title="Izmeni">
+            <span class="material-icons">edit</span>
+          </button>
+          <button class="review-card__action-btn review-card__action-btn--delete" (click)="onDelete()" [disabled]="deleting" type="button" title="Obriši">
+            <span class="material-icons" [class.spin]="deleting">{{ deleting ? 'sync' : 'delete_outline' }}</span>
+          </button>
+        </ng-container>
+        <ng-container *ngIf="confirmingDelete">
+          <span class="review-card__confirm-text">Obrisati?</span>
+          <button class="review-card__action-btn review-card__action-btn--delete" (click)="onDelete()" type="button" title="Potvrdi brisanje">
+            <span class="material-icons">check</span>
+          </button>
+          <button class="review-card__action-btn" (click)="cancelDelete()" type="button" title="Otkaži">
+            <span class="material-icons">close</span>
+          </button>
+        </ng-container>
       </div>
     </div>
   </div>

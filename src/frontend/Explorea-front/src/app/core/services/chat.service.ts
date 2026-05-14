@@ -20,4 +20,12 @@ export class ChatService {
   send(history: ChatMessage[], message: string, context?: ChatContext): Observable<{ reply: string }> {
     return this.http.post<{ reply: string }>('/api/chat', { history, message, context });
   }
+
+  getHistory(): Observable<{ messages: ChatMessage[] }> {
+    return this.http.get<{ messages: ChatMessage[] }>('/api/chat/history');
+  }
+
+  saveHistory(messages: ChatMessage[]): Observable<void> {
+    return this.http.put<void>('/api/chat/history', { messages });
+  }
 }

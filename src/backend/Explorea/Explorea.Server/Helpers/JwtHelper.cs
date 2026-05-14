@@ -35,7 +35,8 @@ namespace Explorea.Server.Helpers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim("role", roleName),
-                new Claim("firstName", user.FirstName ?? "")
+                new Claim("firstName", user.FirstName ?? ""),
+                new Claim("avatarUrl", user.ProfileImageUrl ?? "")
             };
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));

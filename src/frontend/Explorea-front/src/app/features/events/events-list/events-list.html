@@ -159,11 +159,6 @@
           </div>
         </div>
 
-        <!-- Planner toggle + panel (below filter calendar) -->
-        <button *ngIf="isLoggedIn" class="planner-toggle-btn" [class.active]="showPlannerSection" (click)="togglePlannerSection()">
-          <span class="material-icons">event_note</span>
-          Moj planer
-        </button>
         <div class="planner-panel" *ngIf="isLoggedIn && showPlannerSection">
           <div class="calendar-card">
             <div class="calendar-header">
@@ -216,6 +211,11 @@
             </div>
           </ng-container>
         </div>
+
+        <button *ngIf="isLoggedIn" class="planner-toggle-btn" [class.active]="showPlannerSection" (click)="togglePlannerSection()">
+          <span class="material-icons">event_note</span>
+          Moj planer
+        </button>
 
         <!-- Quick filters -->
         <div class="chips-row">

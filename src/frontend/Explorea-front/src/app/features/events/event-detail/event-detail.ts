@@ -230,26 +230,17 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onReviewSubmitted(review: ReviewDto): void {
     if (!this.event) return;
-    this.event.reviews.unshift({
-      id: review.id,
-      rating: review.rating,
-      comment: review.comment ?? null,
-      createdAt: review.createdAt,
-      user: {
-        id: review.user.id,
-        firstName: review.user.firstName,
-        lastName: review.user.lastName,
-        travelerRank: review.user.travelerRank,
-        profileImageUrl: review.user.profileImageUrl ?? null,
-      },
-    });
+    this.event = {
+      ...this.event,
+      reviews: [{ id: review.id, rating: review.rating, comment: review.comment ?? null, createdAt: review.createdAt, user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.event.reviews],
+    };
     this.hasReviewed = true;
     this.cdr.detectChanges();
   }
 
   onReviewDeleted(id: string): void {
     if (!this.event) return;
-    this.event.reviews = this.event.reviews.filter(r => r.id !== id);
+    this.event = { ...this.event, reviews: this.event.reviews.filter(r => r.id !== id) };
     this.hasReviewed = false;
     this.cdr.detectChanges();
   }
@@ -258,7 +249,9 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.event) return;
     const idx = this.event.reviews.findIndex(r => r.id === review.id);
     if (idx !== -1) {
-      this.event.reviews[idx] = { ...this.event.reviews[idx], rating: review.rating, comment: review.comment ?? null };
+      const updated = [...this.event.reviews];
+      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment ?? null };
+      this.event = { ...this.event, reviews: updated };
       this.cdr.detectChanges();
     }
   }
@@ -464,10 +457,9 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return `${startDay} – ${endDay}`;
   }
 
-  get googleMapsUrl(): string {
+  get exploreMapParams(): { lat?: number; lng?: number } {
     const loc = this.event?.location;
-    if (!loc) return 'https://maps.google.com';
-    return `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
+    return loc ? { lat: loc.lat, lng: loc.lng } : {};
   }
 
   get googleMapsDirectionsUrl(): string {

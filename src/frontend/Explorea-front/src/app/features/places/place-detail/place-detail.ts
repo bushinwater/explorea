@@ -327,10 +327,12 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
 
   onReviewSubmitted(review: ReviewDto): void {
     if (!this.place) return;
+    const newReviews = [review as any, ...this.place.reviews];
     this.place = {
       ...this.place,
-      reviews: [review as any, ...this.place.reviews],
+      reviews: newReviews,
       totalReviews: this.place.totalReviews + 1,
+      avgRating: this.calcAvg(newReviews),
     };
     this.hasReviewed = true;
     this.reviewFormOpen = false;
@@ -339,10 +341,12 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
 
   onReviewDeleted(id: string): void {
     if (!this.place) return;
+    const newReviews = this.place.reviews.filter((r: any) => r.id !== id);
     this.place = {
       ...this.place,
-      reviews: this.place.reviews.filter((r: any) => r.id !== id),
+      reviews: newReviews,
       totalReviews: Math.max(0, this.place.totalReviews - 1),
+      avgRating: this.calcAvg(newReviews),
     };
     this.hasReviewed = false;
     this.cdr.detectChanges();
@@ -354,9 +358,14 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     if (idx !== -1) {
       const updated = [...this.place.reviews];
       updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment };
-      this.place = { ...this.place, reviews: updated };
+      this.place = { ...this.place, reviews: updated, avgRating: this.calcAvg(updated) };
       this.cdr.detectChanges();
     }
+  }
+
+  private calcAvg(reviews: { rating: number }[]): number {
+    if (!reviews.length) return 0;
+    return Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 10) / 10;
   }
 
   get stickyBarVisible(): boolean { return this.scrollProgress > 0.88; }

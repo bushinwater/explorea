@@ -1124,6 +1124,11 @@
   background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg));
 }
 
+.mobile-only .planner-toggle-btn {
+  margin-left: var(--spacing-md);
+  margin-bottom: var(--spacing-xs);
+}
+
 .planner-toggle-btn--desktop {
   align-self: flex-start;
   margin-top: 4px;
@@ -1150,7 +1155,7 @@
    ══════════════════════════════════════ */
 
 .planner-panel {
-  margin: var(--spacing-md) var(--spacing-md) 0;
+  margin: var(--spacing-md);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;

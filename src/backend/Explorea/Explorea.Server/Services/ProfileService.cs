@@ -238,11 +238,14 @@ namespace Explorea.Server.Services
 
             var reviewsCount = await _db.Reviews.CountAsync(r => r.UserId == userId);
             var savedItemsCount = await _db.SavedItems.CountAsync(s => s.UserId == userId);
+            var userPlanIds = _db.TripPlans.Where(p => p.UserId == userId).Select(p => p.Id);
+            var plannedEventsCount = await _db.TripPlanItems.CountAsync(i => userPlanIds.Contains(i.TripPlanId));
 
             return new ProfileStatsDto
             {
                 ReviewsCount = reviewsCount,
                 SavedItemsCount = savedItemsCount,
+                PlannedEventsCount = plannedEventsCount,
                 MemberSince = user.MemberSince
             };
         }

@@ -1,8 +1,8 @@
 .chat-bubble-wrapper {
   position: fixed;
-  bottom: 24px;
+  bottom: var(--chat-bubble-bottom, 24px);
   right: 24px;
-  z-index: 1000;
+  z-index: var(--chat-bubble-z, 1000);
 }
 
 /* FAB trigger button */

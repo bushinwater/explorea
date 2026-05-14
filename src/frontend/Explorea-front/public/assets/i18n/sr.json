@@ -36,7 +36,7 @@
     "SUBTITLE": "Upravljaj svojim nalogom, preferencijama i privatnošću na Explorea platformi.",
     "SETTINGS_LABEL": "Podešavanja",
     "STATS": {
-      "ADVENTURES": "AVANTURE",
+      "PLANS": "PLANOVI",
       "REVIEWS": "RECENZIJE",
       "SAVED": "SAČUVANO"
     },
@@ -593,7 +593,7 @@
     "READ_LESS": "Prikaži manje",
     "LOCATION": "Lokacija",
     "ROUTE": "Ruta",
-    "OPEN_MAPS": "Otvori u Google Mapama",
+    "OPEN_MAPS": "Otvori u mapama",
     "GALLERY": "Galerija prethodnih izdanja",
     "VIEW_ALL": "Vidi sve",
     "SIMILAR": "Slični događaji",

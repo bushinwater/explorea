@@ -438,6 +438,11 @@ namespace Explorea.Server.Services
 
             user.LastLoginAt = now;
             user.UpdatedAt = now;
+
+            // Persist Google profile picture on first social login if not already set
+            if (user.ProfileImageUrl == null && profileImageUrl != null)
+                user.ProfileImageUrl = profileImageUrl;
+
             _userRepository.Update(user);
             await _userRepository.SaveChangesAsync();
 
@@ -451,7 +456,8 @@ namespace Explorea.Server.Services
             return new AuthResponseDto
             {
                 AccessToken = accessToken,
-                RefreshToken = refreshToken
+                RefreshToken = refreshToken,
+                ProfileImageUrl = user.ProfileImageUrl,
             };
         }
 
