@@ -153,13 +153,13 @@
                     >
                       {{ ui.t('destinations.filter.allRegions') }}
                     </button>
-                    @for (r of regions(); track r) {
+                    @for (r of regions(); track r.id) {
                       <button
                         class="dest-chip"
-                        [class.dest-chip--active]="filters().region === r"
-                        (click)="applyRegion(r)"
+                        [class.dest-chip--active]="filters().region === r.id.toString()"
+                        (click)="applyRegion(r.id.toString())"
                       >
-                        {{ r }}
+                        {{ r.name }}
                       </button>
                     }
                   </div>

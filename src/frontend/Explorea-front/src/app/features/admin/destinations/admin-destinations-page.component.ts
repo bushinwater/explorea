@@ -21,6 +21,7 @@ import {
   DestinationRow,
   DestinationStats,
   DestinationStatus,
+  RegionOption,
 } from './admin-destinations.models';
 import { AdminDestinationsService } from './admin-destinations.service';
 
@@ -54,7 +55,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
 
   protected readonly destinations = signal<DestinationRow[]>([]);
   protected readonly stats = signal<DestinationStats | null>(null);
-  protected readonly regions = signal<string[]>([]);
+  protected readonly regions = signal<RegionOption[]>([]);
   protected readonly total = signal(0);
   protected readonly currentPage = signal(1);
   protected readonly isLoading = signal(false);

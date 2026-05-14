@@ -1,246 +1,140 @@
-import { Injectable } from '@angular/core';
-import { Observable, delay, of } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, map } from 'rxjs';
 import {
+  DestinationCategory,
   DestinationFilters,
   DestinationPagedResponse,
   DestinationRow,
   DestinationStats,
+  DestinationStatus,
+  RegionOption,
+  TypeOption,
 } from './admin-destinations.models';
 
-const MOCK: DestinationRow[] = [
-  {
-    id: '1',
-    name: 'Oplenac Royal Complex',
-    city: 'Topola',
-    region: 'Šumadija',
-    category: 'cultural',
-    status: 'active',
-    thumbnailUrl: null,
-    views: 12400,
-    sparklineData: [3200, 4100, 3800, 5200, 4600, 5800, 6200],
-    lastUpdatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Bukovička Banja Park',
-    city: 'Aranđelovac',
-    region: 'Šumadija',
-    category: 'nature',
-    status: 'active',
-    thumbnailUrl: null,
-    views: 8200,
-    sparklineData: [1800, 2400, 2100, 3100, 2800, 3600, 4200],
-    lastUpdatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '3',
-    name: 'Vinarija Aleksandrović',
-    city: 'Vinča',
-    region: 'Šumadija',
-    category: 'gastronomy',
-    status: 'pending',
-    thumbnailUrl: null,
-    views: 3100,
-    sparklineData: [800, 1200, 900, 1400, 1100, 1600, 1800],
-    lastUpdatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '4',
-    name: 'Risovača pećina',
-    city: 'Aranđelovac',
-    region: 'Šumadija',
-    category: 'adventure',
-    status: 'rejected',
-    thumbnailUrl: null,
-    views: 1200,
-    sparklineData: [600, 400, 300, 500, 200, 100, 150],
-    lastUpdatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '5',
-    name: 'Gruža jezero',
-    city: 'Knić',
-    region: 'Šumadija',
-    category: 'nature',
-    status: 'active',
-    thumbnailUrl: null,
-    views: 6700,
-    sparklineData: [1900, 2300, 2800, 2400, 3100, 3400, 3800],
-    lastUpdatedAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '6',
-    name: 'Kalemegdan tvrđava',
-    city: 'Beograd',
-    region: 'Beograd',
-    category: 'historical',
-    status: 'active',
-    thumbnailUrl: null,
-    views: 45600,
-    sparklineData: [8200, 9100, 7800, 11200, 10600, 12800, 14200],
-    lastUpdatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '7',
-    name: 'Đavolja varoš',
-    city: 'Kursumlija',
-    region: 'Toplica',
-    category: 'adventure',
-    status: 'active',
-    thumbnailUrl: null,
-    views: 9800,
-    sparklineData: [2100, 2800, 2400, 3200, 2900, 3600, 4100],
-    lastUpdatedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '8',
-    name: 'Vrnjačka Banja šetnja',
-    city: 'Vrnjačka Banja',
-    region: 'Raška',
-    category: 'wellness',
-    status: 'inactive',
-    thumbnailUrl: null,
-    views: 2300,
-    sparklineData: [900, 800, 700, 600, 500, 400, 300],
-    lastUpdatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '9',
-    name: 'Tara Nacionalni park',
-    city: 'Bajina Bašta',
-    region: 'Zlatibor',
-    category: 'nature',
-    status: 'active',
-    thumbnailUrl: null,
-    views: 22100,
-    sparklineData: [4200, 5100, 4800, 6200, 5600, 7800, 8200],
-    lastUpdatedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '10',
-    name: 'Studenica manastir',
-    city: 'Raška',
-    region: 'Raška',
-    category: 'cultural',
-    status: 'pending',
-    thumbnailUrl: null,
-    views: 5400,
-    sparklineData: [1200, 1600, 1400, 1800, 1600, 2100, 2400],
-    lastUpdatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '11',
-    name: 'Zlatibor planina',
-    city: 'Čajetina',
-    region: 'Zlatibor',
-    category: 'nature',
-    status: 'active',
-    thumbnailUrl: null,
-    views: 31400,
-    sparklineData: [5200, 6800, 6100, 7400, 7200, 8600, 9100],
-    lastUpdatedAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '12',
-    name: 'Novi Sad tvrđava',
-    city: 'Novi Sad',
-    region: 'Vojvodina',
-    category: 'historical',
-    status: 'active',
-    thumbnailUrl: null,
-    views: 18700,
-    sparklineData: [3800, 4200, 3600, 5100, 4700, 6200, 7100],
-    lastUpdatedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '13',
-    name: 'Uvac kanjon',
-    city: 'Nova Varoš',
-    region: 'Zlatibor',
-    category: 'adventure',
-    status: 'inactive',
-    thumbnailUrl: null,
-    views: 4100,
-    sparklineData: [1100, 900, 800, 700, 600, 500, 400],
-    lastUpdatedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '14',
-    name: 'Fruška Gora manastiri',
-    city: 'Sremska Mitrovica',
-    region: 'Vojvodina',
-    category: 'cultural',
-    status: 'pending',
-    thumbnailUrl: null,
-    views: 7300,
-    sparklineData: [1600, 2100, 1900, 2400, 2200, 2800, 3100],
-    lastUpdatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
+interface ApiDestinationResponse {
+  total: number;
+  items: ApiDestinationItem[];
+}
 
-const MOCK_STATS: DestinationStats = {
-  totalViews: 248392,
-  totalViewsTrend: '+12.5% od prošlog meseca',
-  inactiveCount: 25,
-  inactiveTrend: '+2.3% od prošlog meseca',
-  pendingCount: 14,
-  pendingHint: '+5 zahteva koja čekaju akciju',
-  addedLast30Days: [2,4,3,5,2,6,4,7,3,5,4,6,8,5,4,7,6,9,5,8,7,10,6,8,9,11,7,9,8,12],
-  mostPopularName: 'Kalemegdan tvrđava',
-  mostPopularViews: 45600,
-  topDestinations: [
-    { name: 'Kalemegdan tvrđava', views: 45600 },
-    { name: 'Zlatibor planina', views: 31400 },
-    { name: 'Tara Nacionalni park', views: 22100 },
-  ],
-};
-
-const MOCK_REGIONS = ['Šumadija', 'Beograd', 'Toplica', 'Raška', 'Zlatibor', 'Vojvodina'];
+interface ApiDestinationItem {
+  id: string;
+  name: string;
+  slug: string;
+  previewImageUrl: string | null;
+  region: string | null;
+  regionId: number | null;
+  views: number;
+  status: string;
+  typeId: number | null;
+  typeName: string | null;
+  avgRating: number;
+  visibility: string;
+  city: string | null;
+  country: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AdminDestinationsService {
-  private readonly data = [...MOCK];
+  private readonly http = inject(HttpClient);
 
   getStats(): Observable<DestinationStats> {
-    return of(MOCK_STATS).pipe(delay(300));
+    return this.http.get<DestinationStats>('/api/admin/destinations/stats');
   }
 
   getDestinations(filters: DestinationFilters): Observable<DestinationPagedResponse> {
-    let results = [...this.data];
+    let params = new HttpParams()
+      .set('page', filters.page)
+      .set('pageSize', filters.pageSize);
 
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      results = results.filter(
-        d => d.name.toLowerCase().includes(q) || d.city.toLowerCase().includes(q),
-      );
+    if (filters.search.trim()) {
+      params = params.set('search', filters.search.trim());
     }
 
-    if (filters.category !== 'all') {
-      results = results.filter(d => d.category === filters.category);
+    const regionId = Number(filters.region);
+    if (filters.region !== 'all' && Number.isFinite(regionId)) {
+      params = params.set('regionId', regionId);
+    }
+
+    const typeId = Number(filters.category);
+    if (filters.category !== 'all' && Number.isFinite(typeId)) {
+      params = params.set('typeId', typeId);
+    }
+
+    if (filters.minRating !== null) {
+      params = params.set('minRating', filters.minRating);
     }
 
     if (filters.status !== 'all') {
-      results = results.filter(d => d.status === filters.status);
+      params = params.set('visibility', filters.status);
     }
 
-    if (filters.region !== 'all') {
-      results = results.filter(d => d.region === filters.region);
-    }
-
-    const total = results.length;
-    const from = (filters.page - 1) * filters.pageSize;
-    const items = results.slice(from, from + filters.pageSize);
-
-    return of({ items, total }).pipe(delay(200));
+    return this.http.get<ApiDestinationResponse>('/api/admin/destinations', { params }).pipe(
+      map((response) => ({
+        total: response.total,
+        items: response.items.map((item) => this.mapToRow(item)),
+      })),
+    );
   }
 
-  getRegions(): Observable<string[]> {
-    return of(MOCK_REGIONS);
+  getRegions(): Observable<RegionOption[]> {
+    return this.http.get<RegionOption[]>('/api/admin/destinations/regions');
+  }
+
+  getTypes(): Observable<TypeOption[]> {
+    return this.http.get<TypeOption[]>('/api/admin/destinations/types');
   }
 
   deleteDestination(id: string): Observable<void> {
-    const idx = this.data.findIndex(d => d.id === id);
-    if (idx !== -1) this.data.splice(idx, 1);
-    return of(undefined).pipe(delay(300));
+    return this.http.delete<void>(`/api/admin/destinations/${id}`);
+  }
+
+  private mapToRow(item: ApiDestinationItem): DestinationRow {
+    return {
+      id: item.id,
+      name: item.name,
+      city: item.city ?? item.country ?? 'Nepoznato',
+      region: item.region ?? 'Bez regije',
+      regionId: item.regionId,
+      category: this.mapCategory(item.typeName),
+      typeId: item.typeId,
+      typeName: item.typeName,
+      status: this.mapStatus(item.status || item.visibility),
+      thumbnailUrl: item.previewImageUrl,
+      views: item.views,
+      sparklineData: [],
+      avgRating: item.avgRating,
+      lastUpdatedAt: item.updatedAt,
+    };
+  }
+
+  private mapStatus(value: string): DestinationStatus {
+    const normalized = value.trim().toLowerCase();
+    if (['active', 'pending', 'inactive', 'rejected'].includes(normalized)) {
+      return normalized as DestinationStatus;
+    }
+
+    const map: Record<string, DestinationStatus> = {
+      published: 'active',
+      draft: 'pending',
+      archived: 'inactive',
+    };
+
+    return map[normalized] ?? 'inactive';
+  }
+
+  private mapCategory(typeName: string | null): DestinationCategory {
+    const normalized = typeName?.trim().toLowerCase() ?? '';
+
+    if (normalized.includes('kultur') || normalized.includes('culture')) return 'cultural';
+    if (normalized.includes('priro') || normalized.includes('nature')) return 'nature';
+    if (normalized.includes('gastro') || normalized.includes('food')) return 'gastronomy';
+    if (normalized.includes('avant') || normalized.includes('adventure')) return 'adventure';
+    if (normalized.includes('wellness') || normalized.includes('spa')) return 'wellness';
+    if (normalized.includes('istor') || normalized.includes('history')) return 'historical';
+
+    return 'cultural';
   }
 }
