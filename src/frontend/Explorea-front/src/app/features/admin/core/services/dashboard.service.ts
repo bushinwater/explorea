@@ -1,8 +1,25 @@
-import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import {
   AdminRole, DashboardData, TrafficPoint,
-  SystemStatusItem, AiInsight,
+  SystemStatusItem, AiInsight, StatCardData,
 } from '../models/admin.models';
+import { Observable, map } from 'rxjs';
+
+interface AdminPopularEntity {
+  entityType: string;
+  entityId: string;
+  name: string;
+  views: number;
+}
+
+interface AdminStatsOverview {
+  totalUsers: number;
+  newUsersLast30Days: number;
+  activeDestinations: number;
+  mostPopularDestination: AdminPopularEntity | null;
+  mostPopularEntity: AdminPopularEntity | null;
+}
 
 function trafficData(): TrafficPoint[] {
   const days = ['Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned'];
@@ -103,7 +120,63 @@ const MOCK: Record<AdminRole, DashboardData> = {
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
+  private readonly http = inject(HttpClient);
+
   getData(role: AdminRole): DashboardData {
     return MOCK[role];
+  }
+
+  getOverviewStats(): Observable<StatCardData[]> {
+    return this.http.get<AdminStatsOverview>('/api/admin/stats/overview').pipe(
+      map((overview) => [
+        {
+          icon: 'people',
+          value: this.formatNumber(overview.totalUsers),
+          label: 'Ukupno korisnika',
+          sublabel: `${this.formatNumber(overview.newUsersLast30Days)} novih u poslednjih 30 dana`,
+          color: 'primary',
+        },
+        {
+          icon: 'person_add',
+          value: this.formatNumber(overview.newUsersLast30Days),
+          label: 'Novi korisnici',
+          sublabel: 'Poslednjih 30 dana',
+          color: 'info',
+        },
+        {
+          icon: 'location_on',
+          value: this.formatNumber(overview.activeDestinations),
+          label: 'Aktivne destinacije',
+          sublabel: overview.mostPopularDestination
+            ? `Najpopularnija: ${overview.mostPopularDestination.name}`
+            : 'Nema pregleda destinacija',
+          color: 'warning',
+        },
+        {
+          icon: 'trending_up',
+          value: overview.mostPopularEntity?.name ?? 'Nema podataka',
+          label: 'Najpopularniji entitet',
+          sublabel: overview.mostPopularEntity
+            ? `${this.entityTypeLabel(overview.mostPopularEntity.entityType)} - ${this.formatNumber(overview.mostPopularEntity.views)} pregleda`
+            : 'Nema zabelezenih pregleda',
+          color: 'accent',
+        },
+      ]),
+    );
+  }
+
+  private formatNumber(value: number): string {
+    return value.toLocaleString('sr-RS');
+  }
+
+  private entityTypeLabel(entityType: string): string {
+    const labels: Record<string, string> = {
+      destination: 'Destinacija',
+      place: 'Objekat',
+      event: 'Dogadjaj',
+      activity: 'Aktivnost',
+    };
+
+    return labels[entityType] ?? entityType;
   }
 }

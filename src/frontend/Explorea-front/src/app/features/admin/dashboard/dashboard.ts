@@ -3,6 +3,7 @@ import {
   OnDestroy, OnInit, WritableSignal, effect, signal, untracked,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import {
   CdkDropListGroup, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
   CdkDragDrop, moveItemInArray, transferArrayItem,
@@ -13,7 +14,7 @@ import { DashboardService }           from '../core/services/dashboard.service';
 import { LayoutService }              from '../core/services/layout.service';
 import { WidgetConfigService }        from '../core/services/widget-config.service';
 import { AdminUiPreferencesService }  from '../core/services/admin-ui-preferences.service';
-import { DashboardData, WidgetConfig, WidgetId } from '../core/models/admin.models';
+import { AdminRole, DashboardData, WidgetConfig, WidgetId } from '../core/models/admin.models';
 
 import { StatCard }     from './widgets/stat-card/stat-card';
 import { ActivityFeed } from './widgets/activity-feed/activity-feed';
@@ -56,6 +57,7 @@ export class Dashboard implements OnInit, OnDestroy {
   private resizeState: {
     startX: number; startCols: 1|2|3|4; widgetId: WidgetId;
   } | null = null;
+  private statsSubscription?: Subscription;
 
   private readonly onMouseMove = this.handleResizeMove.bind(this);
   private readonly onMouseUp   = this.handleResizeEnd.bind(this);
@@ -71,6 +73,7 @@ export class Dashboard implements OnInit, OnDestroy {
     effect(() => {
       const role = this.auth.role();
       this.data.set(this.dashService.getData(role));
+      this.loadOverviewStats(role);
       this.widgets.set(this.widgetConfig.load(role));
       this.alertDismissed.set(false);
       this.layout.closeCustomize();
@@ -84,6 +87,7 @@ export class Dashboard implements OnInit, OnDestroy {
   ngOnInit(): void {}
 
   ngOnDestroy(): void {
+    this.statsSubscription?.unsubscribe();
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup',   this.onMouseUp);
   }
@@ -186,6 +190,21 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   colLabel(cols: 1|2|3|4): string { return COL_LABELS[cols] ?? ''; }
+
+  private loadOverviewStats(role: AdminRole): void {
+    this.statsSubscription?.unsubscribe();
+
+    if (role !== 'super_admin' && role !== 'tourist_organization') {
+      return;
+    }
+
+    this.statsSubscription = this.dashService.getOverviewStats().subscribe({
+      next: (stats) => {
+        this.data.update((current) => current ? { ...current, stats } : current);
+        this.cdr.markForCheck();
+      },
+    });
+  }
 
   // ===== Customizer =====
 
