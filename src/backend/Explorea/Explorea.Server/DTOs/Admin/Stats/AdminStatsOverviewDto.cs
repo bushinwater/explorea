@@ -16,4 +16,10 @@ namespace Explorea.API.DTOs.Admin.Stats
         public string Name { get; set; } = string.Empty;
         public int Views { get; set; }
     }
+
+    public class AdminTrafficPointDto
+    {
+        public string Date { get; set; } = string.Empty;
+        public int Views { get; set; }
+    }
 }

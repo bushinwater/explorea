@@ -32,6 +32,21 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpGet("traffic")]
+        public async Task<IActionResult> GetTraffic([FromQuery] int days = 30)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var traffic = await _service.GetTrafficAsync(userId, days);
+                return Ok(traffic);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
         private Guid GetCurrentUserId()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

@@ -54,6 +54,48 @@ namespace Explorea.Server.Services.Admin
             };
         }
 
+        public async Task<List<AdminTrafficPointDto>> GetTrafficAsync(Guid currentUserId, int days)
+        {
+            var user = await _userRepository.GetByIdWithRoleAsync(currentUserId)
+                ?? throw new UnauthorizedAccessException("Current user was not found.");
+
+            if (user.Role.Name != RoleNames.SuperAdmin && user.Role.Name != RoleNames.TouristOrganization)
+                throw new UnauthorizedAccessException("Access denied.");
+
+            var clampedDays = Math.Clamp(days, 1, 90);
+            var today = DateTimeOffset.UtcNow.Date;
+            var startDate = today.AddDays(-(clampedDays - 1));
+
+            var destinationQuery = await BuildDestinationScopeAsync(user, currentUserId);
+            var destinationIdsQuery = destinationQuery.Select(d => d.Id);
+
+            var viewsByDate = await _db.PopularityLogs
+                .Where(l =>
+                    l.EntityType == "destination" &&
+                    l.Source == "click" &&
+                    l.CreatedAt >= startDate &&
+                    destinationIdsQuery.Contains(l.EntityId))
+                .GroupBy(l => l.CreatedAt.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Views = g.Count()
+                })
+                .ToDictionaryAsync(x => x.Date, x => x.Views);
+
+            return Enumerable.Range(0, clampedDays)
+                .Select(offset =>
+                {
+                    var date = startDate.AddDays(offset);
+                    return new AdminTrafficPointDto
+                    {
+                        Date = date.ToString("yyyy-MM-dd"),
+                        Views = viewsByDate.GetValueOrDefault(date, 0)
+                    };
+                })
+                .ToList();
+        }
+
         private async Task<IQueryable<Destination>> BuildDestinationScopeAsync(User user, Guid currentUserId)
         {
             var query = _db.Destinations
