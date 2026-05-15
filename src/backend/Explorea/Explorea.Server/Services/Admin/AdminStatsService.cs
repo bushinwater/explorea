@@ -13,15 +13,18 @@ namespace Explorea.Server.Services.Admin
         private readonly AppDbContext _db;
         private readonly IUserRepository _userRepository;
         private readonly IOrganizationAssignmentRepository _assignmentRepository;
+        private readonly IConfiguration _configuration;
 
         public AdminStatsService(
             AppDbContext db,
             IUserRepository userRepository,
-            IOrganizationAssignmentRepository assignmentRepository)
+            IOrganizationAssignmentRepository assignmentRepository,
+            IConfiguration configuration)
         {
             _db = db;
             _userRepository = userRepository;
             _assignmentRepository = assignmentRepository;
+            _configuration = configuration;
         }
 
         public async Task<AdminStatsOverviewDto> GetOverviewAsync(Guid currentUserId)
@@ -96,6 +99,64 @@ namespace Explorea.Server.Services.Admin
                 .ToList();
         }
 
+        public async Task<List<AdminSystemStatusItemDto>> GetSystemStatusAsync(Guid currentUserId)
+        {
+            var user = await _userRepository.GetByIdWithRoleAsync(currentUserId)
+                ?? throw new UnauthorizedAccessException("Current user was not found.");
+
+            if (user.Role.Name != RoleNames.SuperAdmin && user.Role.Name != RoleNames.TouristOrganization)
+                throw new UnauthorizedAccessException("Access denied.");
+
+            var destinationQuery = await BuildDestinationScopeAsync(user, currentUserId);
+            var destinationIdsQuery = destinationQuery.Select(d => d.Id);
+
+            var pendingDestinations = await destinationQuery.CountAsync(d =>
+                d.Visibility == "pending" || d.Visibility == "draft");
+
+            var pendingSubmissions = await _db.SubmissionQueue.CountAsync(q =>
+                q.Status == "Pending" && destinationIdsQuery.Contains(q.DestinationId));
+
+            var openTickets = await BuildSupportTicketScope(user, destinationIdsQuery)
+                .CountAsync(t =>
+                    t.Status == SupportTicketStatuses.Open ||
+                    t.Status == SupportTicketStatuses.InProgress);
+
+            var databaseAvailable = await _db.Database.CanConnectAsync();
+            var storageConfigured = IsStorageConfigured();
+
+            return new List<AdminSystemStatusItemDto>
+            {
+                new()
+                {
+                    Label = "Baza podataka",
+                    Detail = databaseAvailable ? "Dostupna" : "Nedostupna",
+                    Level = databaseAvailable ? "ok" : "critical",
+                    Percentage = databaseAvailable ? 100 : 0
+                },
+                new()
+                {
+                    Label = "Storage",
+                    Detail = storageConfigured ? "Konfigurisan" : "Nije konfigurisan",
+                    Level = storageConfigured ? "ok" : "warning",
+                    Percentage = storageConfigured ? 100 : 0
+                },
+                new()
+                {
+                    Label = "Destinacije na cekanju",
+                    Detail = $"{pendingDestinations + pendingSubmissions} zahteva",
+                    Level = pendingDestinations + pendingSubmissions > 0 ? "warning" : "ok",
+                    Percentage = Math.Min(100, (pendingDestinations + pendingSubmissions) * 10)
+                },
+                new()
+                {
+                    Label = "Otvoreni tiketi",
+                    Detail = $"{openTickets} aktivnih",
+                    Level = openTickets > 10 ? "critical" : openTickets > 0 ? "warning" : "ok",
+                    Percentage = Math.Min(100, openTickets * 10)
+                }
+            };
+        }
+
         private async Task<IQueryable<Destination>> BuildDestinationScopeAsync(User user, Guid currentUserId)
         {
             var query = _db.Destinations
@@ -134,6 +195,32 @@ namespace Explorea.Server.Services.Admin
                 u.Role.Name != RoleNames.SuperAdmin &&
                 u.Role.Name != RoleNames.TouristOrganization &&
                 (u.ManagedRegionId == regionId || (u.CurrentCity != null && u.CurrentCity.RegionId == regionId)));
+        }
+
+        private IQueryable<SupportTicket> BuildSupportTicketScope(User user, IQueryable<Guid> destinationIdsQuery)
+        {
+            var query = _db.SupportTickets.AsQueryable();
+
+            if (user.Role.Name == RoleNames.SuperAdmin)
+                return query;
+
+            return query.Where(t =>
+                t.AssignedToUserId == user.Id ||
+                t.CreatedByAdminId == user.Id ||
+                (t.LinkedContextType == SupportLinkedContextTypes.Destination &&
+                 t.LinkedContextId.HasValue &&
+                 destinationIdsQuery.Contains(t.LinkedContextId.Value)));
+        }
+
+        private bool IsStorageConfigured()
+        {
+            var cloudName = _configuration["Cloudinary:CloudName"];
+            var apiKey = _configuration["Cloudinary:ApiKey"];
+            var apiSecret = _configuration["Cloudinary:ApiSecret"];
+
+            return !string.IsNullOrWhiteSpace(cloudName) &&
+                   !string.IsNullOrWhiteSpace(apiKey) &&
+                   !string.IsNullOrWhiteSpace(apiSecret);
         }
 
         private async Task<AdminPopularEntityDto?> GetMostPopularDestinationAsync(IQueryable<Guid> destinationIdsQuery)

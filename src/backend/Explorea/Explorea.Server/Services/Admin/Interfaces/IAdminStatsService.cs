@@ -6,5 +6,6 @@ namespace Explorea.Server.Services.Admin.Interfaces
     {
         Task<AdminStatsOverviewDto> GetOverviewAsync(Guid currentUserId);
         Task<List<AdminTrafficPointDto>> GetTrafficAsync(Guid currentUserId, int days);
+        Task<List<AdminSystemStatusItemDto>> GetSystemStatusAsync(Guid currentUserId);
     }
 }

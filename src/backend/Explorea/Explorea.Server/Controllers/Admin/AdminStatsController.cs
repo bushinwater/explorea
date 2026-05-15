@@ -47,6 +47,21 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpGet("system-status")]
+        public async Task<IActionResult> GetSystemStatus()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var status = await _service.GetSystemStatusAsync(userId);
+                return Ok(status);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
         private Guid GetCurrentUserId()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

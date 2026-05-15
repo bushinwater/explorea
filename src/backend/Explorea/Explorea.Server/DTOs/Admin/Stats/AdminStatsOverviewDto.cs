@@ -22,4 +22,12 @@ namespace Explorea.API.DTOs.Admin.Stats
         public string Date { get; set; } = string.Empty;
         public int Views { get; set; }
     }
+
+    public class AdminSystemStatusItemDto
+    {
+        public string Label { get; set; } = string.Empty;
+        public string Detail { get; set; } = string.Empty;
+        public string Level { get; set; } = "ok";
+        public int? Percentage { get; set; }
+    }
 }
