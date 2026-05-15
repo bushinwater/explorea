@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   AdminRole, DashboardData, TrafficPoint,
-  SystemStatusItem, AiInsight, StatCardData,
+  SystemStatusItem, AiInsight, StatCardData, ActivityItem, ActivityStatus,
 } from '../models/admin.models';
 import { Observable, map } from 'rxjs';
 
@@ -24,6 +24,14 @@ interface AdminStatsOverview {
 interface AdminTrafficPoint {
   date: string;
   views: number;
+}
+
+interface AdminRecentActivity {
+  id: string;
+  type: string;
+  description: string;
+  createdAt: string;
+  actorId: string | null;
 }
 
 function trafficData(): TrafficPoint[] {
@@ -178,6 +186,20 @@ export class DashboardService {
     );
   }
 
+  getRecentActivity(limit = 10): Observable<ActivityItem[]> {
+    return this.http.get<AdminRecentActivity[]>(`/api/admin/activity/recent?limit=${limit}`).pipe(
+      map((items) => items.map((item) => ({
+        id: item.id,
+        initials: this.activityInitials(item.type),
+        avatarColor: this.activityColor(item.type),
+        text: item.description,
+        timestamp: this.formatTimeAgo(item.createdAt),
+        actionLabel: 'Detalji',
+        status: this.activityStatus(item.type),
+      }))),
+    );
+  }
+
   private formatNumber(value: number): string {
     return value.toLocaleString('sr-RS');
   }
@@ -201,5 +223,50 @@ export class DashboardService {
       day: '2-digit',
       month: '2-digit',
     });
+  }
+
+  private formatTimeAgo(value: string): string {
+    const timestamp = new Date(value).getTime();
+    if (Number.isNaN(timestamp)) return '';
+
+    const minutes = Math.max(1, Math.floor((Date.now() - timestamp) / 60000));
+    if (minutes < 60) return `pre ${minutes} min`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `pre ${hours} h`;
+
+    const days = Math.floor(hours / 24);
+    return `pre ${days} dana`;
+  }
+
+  private activityStatus(type: string): ActivityStatus {
+    if (type.includes('reviewed')) return 'approved';
+    if (type.includes('created') || type.includes('registered')) return 'info';
+    if (type.includes('submission')) return 'pending';
+    return 'info';
+  }
+
+  private activityInitials(type: string): string {
+    const initials: Record<string, string> = {
+      destination_created: 'DE',
+      user_registered: 'KO',
+      submission_created: 'ZA',
+      submission_reviewed: 'OD',
+      review_created: 'RE',
+    };
+
+    return initials[type] ?? 'AK';
+  }
+
+  private activityColor(type: string): string {
+    const colors: Record<string, string> = {
+      destination_created: '#28694c',
+      user_registered: '#60a5fa',
+      submission_created: '#d9b26f',
+      submission_reviewed: '#34d399',
+      review_created: '#a78bfa',
+    };
+
+    return colors[type] ?? '#8fa896';
   }
 }

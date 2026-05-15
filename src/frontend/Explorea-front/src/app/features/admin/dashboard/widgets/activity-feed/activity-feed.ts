@@ -26,7 +26,7 @@ export class ActivityFeed {
   }
 
   get totalPages(): number {
-    return Math.ceil(this.items.length / this.itemsPerPage);
+    return Math.max(1, Math.ceil(this.items.length / this.itemsPerPage));
   }
 
   changePage(page: number): void {

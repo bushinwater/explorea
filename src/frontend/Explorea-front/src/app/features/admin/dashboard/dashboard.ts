@@ -59,6 +59,7 @@ export class Dashboard implements OnInit, OnDestroy {
   } | null = null;
   private statsSubscription?: Subscription;
   private trafficSubscription?: Subscription;
+  private activitySubscription?: Subscription;
 
   private readonly onMouseMove = this.handleResizeMove.bind(this);
   private readonly onMouseUp   = this.handleResizeEnd.bind(this);
@@ -76,6 +77,7 @@ export class Dashboard implements OnInit, OnDestroy {
       this.data.set(this.dashService.getData(role));
       this.loadOverviewStats(role);
       this.loadTraffic(role);
+      this.loadRecentActivity(role);
       this.widgets.set(this.widgetConfig.load(role));
       this.alertDismissed.set(false);
       this.layout.closeCustomize();
@@ -91,6 +93,7 @@ export class Dashboard implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.statsSubscription?.unsubscribe();
     this.trafficSubscription?.unsubscribe();
+    this.activitySubscription?.unsubscribe();
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup',   this.onMouseUp);
   }
@@ -219,6 +222,21 @@ export class Dashboard implements OnInit, OnDestroy {
     this.trafficSubscription = this.dashService.getTraffic(30).subscribe({
       next: (traffic) => {
         this.data.update((current) => current ? { ...current, traffic } : current);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private loadRecentActivity(role: AdminRole): void {
+    this.activitySubscription?.unsubscribe();
+
+    if (role !== 'super_admin' && role !== 'tourist_organization') {
+      return;
+    }
+
+    this.activitySubscription = this.dashService.getRecentActivity(10).subscribe({
+      next: (activity) => {
+        this.data.update((current) => current ? { ...current, activity } : current);
         this.cdr.markForCheck();
       },
     });
