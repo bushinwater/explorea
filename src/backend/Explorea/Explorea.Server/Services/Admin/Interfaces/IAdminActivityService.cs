@@ -12,6 +12,8 @@ namespace Explorea.Server.Services.Admin.Interfaces
             Guid id,
             Guid currentUserId);
 
+        Task<AdminActivityStatsDto> GetStatsAsync(Guid currentUserId);
+
         Task<AdminActivityDetailsDto> CreateAsync(
             AdminCreateActivityDto dto,
             Guid createdBy);

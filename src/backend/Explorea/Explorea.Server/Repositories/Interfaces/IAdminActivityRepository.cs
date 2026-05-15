@@ -1,3 +1,4 @@
+using Explorea.API.DTOs.Admin.Activity;
 using Explorea.API.Models;
 
 namespace Explorea.Server.Repositories.Admin.Interfaces
@@ -7,6 +8,8 @@ namespace Explorea.Server.Repositories.Admin.Interfaces
         IQueryable<Activity> Query();
 
         Task<Activity?> GetByIdAsync(Guid id);
+
+        Task<AdminActivityStatsDto> GetStatsAsync();
 
         Task AddAsync(Activity activity);
 
