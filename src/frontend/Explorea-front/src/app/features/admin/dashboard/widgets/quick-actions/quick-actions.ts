@@ -18,6 +18,6 @@ export class QuickActions {
   constructor(private router: Router, public ui: AdminUiPreferencesService) {}
 
   navigate(route: string): void {
-    console.log('Navigate to:', route);
+    void this.router.navigateByUrl(route);
   }
 }
