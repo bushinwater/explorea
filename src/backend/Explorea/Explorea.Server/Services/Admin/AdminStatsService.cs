@@ -1,0 +1,222 @@
+using Explorea.API.DTOs.Admin.Stats;
+using Explorea.API.Models;
+using Explorea.Server.Data;
+using Explorea.Server.Helpers;
+using Explorea.Server.Repositories.Interfaces;
+using Explorea.Server.Services.Admin.Interfaces;
+using Microsoft.EntityFrameworkCore;
+
+namespace Explorea.Server.Services.Admin
+{
+    public class AdminStatsService : IAdminStatsService
+    {
+        private readonly AppDbContext _db;
+        private readonly IUserRepository _userRepository;
+        private readonly IOrganizationAssignmentRepository _assignmentRepository;
+
+        public AdminStatsService(
+            AppDbContext db,
+            IUserRepository userRepository,
+            IOrganizationAssignmentRepository assignmentRepository)
+        {
+            _db = db;
+            _userRepository = userRepository;
+            _assignmentRepository = assignmentRepository;
+        }
+
+        public async Task<AdminStatsOverviewDto> GetOverviewAsync(Guid currentUserId)
+        {
+            var user = await _userRepository.GetByIdWithRoleAsync(currentUserId)
+                ?? throw new UnauthorizedAccessException("Current user was not found.");
+
+            if (user.Role.Name != RoleNames.SuperAdmin && user.Role.Name != RoleNames.TouristOrganization)
+                throw new UnauthorizedAccessException("Access denied.");
+
+            var now = DateTimeOffset.UtcNow;
+            var recentCutoff = now.AddDays(-30);
+
+            var destinationQuery = await BuildDestinationScopeAsync(user, currentUserId);
+            var destinationIdsQuery = destinationQuery.Select(d => d.Id);
+
+            var userQuery = BuildUserScope(user);
+
+            var mostPopularDestination = await GetMostPopularDestinationAsync(destinationIdsQuery);
+            var mostPopularEntity = await GetMostPopularEntityAsync(destinationIdsQuery);
+
+            return new AdminStatsOverviewDto
+            {
+                TotalUsers = await userQuery.CountAsync(),
+                NewUsersLast30Days = await userQuery.CountAsync(u => u.CreatedAt >= recentCutoff),
+                ActiveDestinations = await destinationQuery.CountAsync(d =>
+                    d.Visibility == "published" || d.Visibility == "active"),
+                MostPopularDestination = mostPopularDestination,
+                MostPopularEntity = mostPopularEntity
+            };
+        }
+
+        private async Task<IQueryable<Destination>> BuildDestinationScopeAsync(User user, Guid currentUserId)
+        {
+            var query = _db.Destinations
+                .IgnoreQueryFilters()
+                .Where(d => !d.IsDeleted);
+
+            if (user.Role.Name == RoleNames.SuperAdmin)
+                return query;
+
+            if (user.ManagedRegionId.HasValue)
+            {
+                var regionId = user.ManagedRegionId.Value;
+                return query.Where(d => d.City != null && d.City.RegionId == regionId);
+            }
+
+            var assignments = await _assignmentRepository.GetByUserIdAsync(currentUserId);
+            var destinationIds = assignments.Select(a => a.DestinationId).ToList();
+            return query.Where(d => destinationIds.Contains(d.Id));
+        }
+
+        private IQueryable<User> BuildUserScope(User user)
+        {
+            var query = _db.Users
+                .Include(u => u.Role)
+                .Include(u => u.CurrentCity)
+                .AsQueryable();
+
+            if (user.Role.Name == RoleNames.SuperAdmin)
+                return query;
+
+            if (!user.ManagedRegionId.HasValue)
+                return query.Where(u => u.Role.Name != RoleNames.SuperAdmin && u.Role.Name != RoleNames.TouristOrganization);
+
+            var regionId = user.ManagedRegionId.Value;
+            return query.Where(u =>
+                u.Role.Name != RoleNames.SuperAdmin &&
+                u.Role.Name != RoleNames.TouristOrganization &&
+                (u.ManagedRegionId == regionId || (u.CurrentCity != null && u.CurrentCity.RegionId == regionId)));
+        }
+
+        private async Task<AdminPopularEntityDto?> GetMostPopularDestinationAsync(IQueryable<Guid> destinationIdsQuery)
+        {
+            var top = await _db.PopularityLogs
+                .Where(l =>
+                    l.EntityType == "destination" &&
+                    l.Source == "click" &&
+                    destinationIdsQuery.Contains(l.EntityId))
+                .GroupBy(l => l.EntityId)
+                .Select(g => new { EntityId = g.Key, Views = g.Count() })
+                .OrderByDescending(x => x.Views)
+                .FirstOrDefaultAsync();
+
+            if (top == null)
+                return null;
+
+            var name = await _db.Destinations
+                .IgnoreQueryFilters()
+                .Where(d => d.Id == top.EntityId && !d.IsDeleted)
+                .Select(d => d.Name)
+                .FirstOrDefaultAsync();
+
+            return string.IsNullOrWhiteSpace(name)
+                ? null
+                : new AdminPopularEntityDto
+                {
+                    EntityType = "destination",
+                    EntityId = top.EntityId,
+                    Name = name,
+                    Views = top.Views
+                };
+        }
+
+        private async Task<AdminPopularEntityDto?> GetMostPopularEntityAsync(IQueryable<Guid> destinationIdsQuery)
+        {
+            var candidates = await _db.PopularityLogs
+                .Where(l =>
+                    l.Source == "click" &&
+                    (l.EntityType == "destination" ||
+                     l.EntityType == "place" ||
+                     l.EntityType == "event" ||
+                     l.EntityType == "activity"))
+                .GroupBy(l => new { l.EntityType, l.EntityId })
+                .Select(g => new
+                {
+                    g.Key.EntityType,
+                    g.Key.EntityId,
+                    Views = g.Count()
+                })
+                .OrderByDescending(x => x.Views)
+                .Take(20)
+                .ToListAsync();
+
+            foreach (var candidate in candidates)
+            {
+                var entity = await ResolvePopularEntityAsync(
+                    candidate.EntityType,
+                    candidate.EntityId,
+                    candidate.Views,
+                    destinationIdsQuery);
+
+                if (entity != null)
+                    return entity;
+            }
+
+            return null;
+        }
+
+        private async Task<AdminPopularEntityDto?> ResolvePopularEntityAsync(
+            string entityType,
+            Guid entityId,
+            int views,
+            IQueryable<Guid> destinationIdsQuery)
+        {
+            string? name = entityType switch
+            {
+                "destination" => await _db.Destinations
+                    .IgnoreQueryFilters()
+                    .Where(d => d.Id == entityId && !d.IsDeleted && destinationIdsQuery.Contains(d.Id))
+                    .Select(d => d.Name)
+                    .FirstOrDefaultAsync(),
+
+                "place" => await _db.Places
+                    .IgnoreQueryFilters()
+                    .Where(p =>
+                        p.Id == entityId &&
+                        !p.IsDeleted &&
+                        p.DestinationId.HasValue &&
+                        destinationIdsQuery.Contains(p.DestinationId.Value))
+                    .Select(p => p.Name)
+                    .FirstOrDefaultAsync(),
+
+                "event" => await _db.Events
+                    .IgnoreQueryFilters()
+                    .Where(e =>
+                        e.Id == entityId &&
+                        !e.IsDeleted &&
+                        e.DestinationId.HasValue &&
+                        destinationIdsQuery.Contains(e.DestinationId.Value))
+                    .Select(e => e.Name)
+                    .FirstOrDefaultAsync(),
+
+                "activity" => await _db.Activities
+                    .IgnoreQueryFilters()
+                    .Where(a =>
+                        a.Id == entityId &&
+                        !a.IsDeleted &&
+                        a.DestinationId.HasValue &&
+                        destinationIdsQuery.Contains(a.DestinationId.Value))
+                    .Select(a => a.Name)
+                    .FirstOrDefaultAsync(),
+
+                _ => null
+            };
+
+            return string.IsNullOrWhiteSpace(name)
+                ? null
+                : new AdminPopularEntityDto
+                {
+                    EntityType = entityType,
+                    EntityId = entityId,
+                    Name = name,
+                    Views = views
+                };
+        }
+    }
+}

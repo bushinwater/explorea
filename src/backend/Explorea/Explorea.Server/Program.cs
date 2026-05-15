@@ -145,6 +145,7 @@ builder.Services.AddScoped<ISuperAdminSupportService, SuperAdminSupportService>(
 builder.Services.AddScoped<IPopularityService, PopularityService>();
 builder.Services.AddScoped<IAdminReportRepository, AdminReportRepository>();
 builder.Services.AddScoped<IAdminReportService, AdminReportService>();
+builder.Services.AddScoped<IAdminStatsService, AdminStatsService>();
 
 builder.Services.AddHttpClient<IChatService, GeminiChatService>();
 
