@@ -44,10 +44,6 @@ export class TrafficChart implements AfterViewInit, OnChanges, OnDestroy {
     gradient1.addColorStop(0, 'rgba(40,105,76,0.35)');
     gradient1.addColorStop(1, 'rgba(40,105,76,0.01)');
 
-    const gradient2 = ctx.createLinearGradient(0, 0, 0, 220);
-    gradient2.addColorStop(0, 'rgba(217,178,111,0.25)');
-    gradient2.addColorStop(1, 'rgba(217,178,111,0.01)');
-
     this.chart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -61,19 +57,6 @@ export class TrafficChart implements AfterViewInit, OnChanges, OnDestroy {
             borderWidth: 2.5,
             pointRadius: 4,
             pointBackgroundColor: '#28694c',
-            pointBorderColor: '#0f1612',
-            pointBorderWidth: 2,
-            tension: 0.4,
-            fill: true,
-          },
-          {
-            label: 'Rezervacije',
-            data: this.data.map(d => d.reservations),
-            borderColor: '#d9b26f',
-            backgroundColor: gradient2,
-            borderWidth: 2.5,
-            pointRadius: 4,
-            pointBackgroundColor: '#d9b26f',
             pointBorderColor: '#0f1612',
             pointBorderWidth: 2,
             tension: 0.4,
@@ -137,7 +120,6 @@ export class TrafficChart implements AfterViewInit, OnChanges, OnDestroy {
     if (!this.chart) return;
     this.chart.data.labels = this.data.map(d => d.day);
     this.chart.data.datasets[0].data = this.data.map(d => d.views);
-    this.chart.data.datasets[1].data = this.data.map(d => d.reservations);
     this.chart.update();
   }
 }

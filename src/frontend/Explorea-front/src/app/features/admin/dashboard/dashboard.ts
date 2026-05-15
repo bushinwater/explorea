@@ -58,6 +58,7 @@ export class Dashboard implements OnInit, OnDestroy {
     startX: number; startCols: 1|2|3|4; widgetId: WidgetId;
   } | null = null;
   private statsSubscription?: Subscription;
+  private trafficSubscription?: Subscription;
 
   private readonly onMouseMove = this.handleResizeMove.bind(this);
   private readonly onMouseUp   = this.handleResizeEnd.bind(this);
@@ -74,6 +75,7 @@ export class Dashboard implements OnInit, OnDestroy {
       const role = this.auth.role();
       this.data.set(this.dashService.getData(role));
       this.loadOverviewStats(role);
+      this.loadTraffic(role);
       this.widgets.set(this.widgetConfig.load(role));
       this.alertDismissed.set(false);
       this.layout.closeCustomize();
@@ -88,6 +90,7 @@ export class Dashboard implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.statsSubscription?.unsubscribe();
+    this.trafficSubscription?.unsubscribe();
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup',   this.onMouseUp);
   }
@@ -201,6 +204,21 @@ export class Dashboard implements OnInit, OnDestroy {
     this.statsSubscription = this.dashService.getOverviewStats().subscribe({
       next: (stats) => {
         this.data.update((current) => current ? { ...current, stats } : current);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private loadTraffic(role: AdminRole): void {
+    this.trafficSubscription?.unsubscribe();
+
+    if (role !== 'super_admin' && role !== 'tourist_organization') {
+      return;
+    }
+
+    this.trafficSubscription = this.dashService.getTraffic(30).subscribe({
+      next: (traffic) => {
+        this.data.update((current) => current ? { ...current, traffic } : current);
         this.cdr.markForCheck();
       },
     });

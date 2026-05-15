@@ -21,11 +21,15 @@ interface AdminStatsOverview {
   mostPopularEntity: AdminPopularEntity | null;
 }
 
+interface AdminTrafficPoint {
+  date: string;
+  views: number;
+}
+
 function trafficData(): TrafficPoint[] {
   const days = ['Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned'];
   const views = [1840, 2210, 1960, 2580, 3120, 2740, 2480];
-  const res   = [240, 310, 280, 390, 520, 460, 380];
-  return days.map((day, i) => ({ day, views: views[i], reservations: res[i] }));
+  return days.map((day, i) => ({ day, views: views[i] }));
 }
 
 const SYSTEM_STATUS: SystemStatusItem[] = [
@@ -165,6 +169,15 @@ export class DashboardService {
     );
   }
 
+  getTraffic(days = 30): Observable<TrafficPoint[]> {
+    return this.http.get<AdminTrafficPoint[]>(`/api/admin/stats/traffic?days=${days}`).pipe(
+      map((points) => points.map((point) => ({
+        day: this.formatTrafficDate(point.date),
+        views: point.views,
+      }))),
+    );
+  }
+
   private formatNumber(value: number): string {
     return value.toLocaleString('sr-RS');
   }
@@ -178,5 +191,15 @@ export class DashboardService {
     };
 
     return labels[entityType] ?? entityType;
+  }
+
+  private formatTrafficDate(date: string): string {
+    const parsed = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) return date;
+
+    return parsed.toLocaleDateString('sr-RS', {
+      day: '2-digit',
+      month: '2-digit',
+    });
   }
 }

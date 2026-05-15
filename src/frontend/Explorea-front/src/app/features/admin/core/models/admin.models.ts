@@ -78,7 +78,6 @@ export interface QuickAction {
 export interface TrafficPoint {
   day: string;
   views: number;
-  reservations: number;
 }
 
 // ===== SYSTEM STATUS =====
