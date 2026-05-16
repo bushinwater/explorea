@@ -60,6 +60,7 @@ export class Dashboard implements OnInit, OnDestroy {
   private statsSubscription?: Subscription;
   private trafficSubscription?: Subscription;
   private activitySubscription?: Subscription;
+  private systemStatusSubscription?: Subscription;
 
   private readonly onMouseMove = this.handleResizeMove.bind(this);
   private readonly onMouseUp   = this.handleResizeEnd.bind(this);
@@ -78,6 +79,7 @@ export class Dashboard implements OnInit, OnDestroy {
       this.loadOverviewStats(role);
       this.loadTraffic(role);
       this.loadRecentActivity(role);
+      this.loadSystemStatus(role);
       this.widgets.set(this.widgetConfig.load(role));
       this.alertDismissed.set(false);
       this.layout.closeCustomize();
@@ -94,6 +96,7 @@ export class Dashboard implements OnInit, OnDestroy {
     this.statsSubscription?.unsubscribe();
     this.trafficSubscription?.unsubscribe();
     this.activitySubscription?.unsubscribe();
+    this.systemStatusSubscription?.unsubscribe();
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup',   this.onMouseUp);
   }
@@ -237,6 +240,21 @@ export class Dashboard implements OnInit, OnDestroy {
     this.activitySubscription = this.dashService.getRecentActivity(10).subscribe({
       next: (activity) => {
         this.data.update((current) => current ? { ...current, activity } : current);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private loadSystemStatus(role: AdminRole): void {
+    this.systemStatusSubscription?.unsubscribe();
+
+    if (role !== 'super_admin' && role !== 'tourist_organization') {
+      return;
+    }
+
+    this.systemStatusSubscription = this.dashService.getSystemStatus().subscribe({
+      next: (systemStatus) => {
+        this.data.update((current) => current ? { ...current, systemStatus } : current);
         this.cdr.markForCheck();
       },
     });

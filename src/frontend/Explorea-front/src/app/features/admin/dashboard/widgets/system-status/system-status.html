@@ -1,9 +1,9 @@
 <div class="status-widget">
   <div class="status-widget__header">
     <h3 class="status-widget__title">{{ ui.t('dashboard.status.title') }}</h3>
-    <span class="badge badge-success">
-      <span class="material-icons icon-sm">check_circle</span>
-      {{ ui.t('dashboard.status.ok') }}
+    <span class="badge" [class]="badgeClass(overallLevel)">
+      <span class="material-icons icon-sm">{{ overallIcon }}</span>
+      {{ overallLabel }}
     </span>
   </div>
 

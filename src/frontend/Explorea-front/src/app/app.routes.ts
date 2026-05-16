@@ -10,6 +10,7 @@ import { AdminEventsPageComponent } from './features/admin/events/admin-events-p
 import { AdminActivitiesPageComponent } from './features/admin/activities/admin-activities-page.component';
 import { AdminHomePageComponent } from './features/admin/home/admin-home-page.component';
 import { AdminMapViewComponent } from './features/admin/map-view/admin-map-view.component';
+import { AdminBroadcastNotificationPageComponent } from './features/admin/notifications/admin-broadcast-notification-page.component';
 import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-shell.component';
 import { AdminSupportPageComponent } from './features/admin/support/admin-support-page.component';
 import { AdminReviewsPageComponent } from './features/admin/reviews/admin-reviews-page.component';
@@ -65,6 +66,7 @@ export const routes: Routes = [
       { path: 'destinations', component: AdminDestinationsPageComponent },
       { path: 'events', component: AdminEventsPageComponent },
       { path: 'activities', component: AdminActivitiesPageComponent },
+      { path: 'notifications/broadcast', component: AdminBroadcastNotificationPageComponent },
       { path: 'reviews', component: AdminReviewsPageComponent },
       {
         path: 'object-requests/:id',

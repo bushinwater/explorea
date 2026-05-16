@@ -34,6 +34,13 @@ interface AdminRecentActivity {
   actorId: string | null;
 }
 
+interface AdminSystemStatusItem {
+  label: string;
+  detail: string;
+  level: 'ok' | 'warning' | 'critical';
+  percentage?: number | null;
+}
+
 function trafficData(): TrafficPoint[] {
   const days = ['Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned'];
   const views = [1840, 2210, 1960, 2580, 3120, 2740, 2480];
@@ -196,6 +203,17 @@ export class DashboardService {
         timestamp: this.formatTimeAgo(item.createdAt),
         actionLabel: 'Detalji',
         status: this.activityStatus(item.type),
+      }))),
+    );
+  }
+
+  getSystemStatus(): Observable<SystemStatusItem[]> {
+    return this.http.get<AdminSystemStatusItem[]>('/api/admin/stats/system-status').pipe(
+      map((items) => items.map((item) => ({
+        label: item.label,
+        detail: item.detail,
+        level: item.level,
+        percentage: item.percentage ?? undefined,
       }))),
     );
   }

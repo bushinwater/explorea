@@ -1,0 +1,99 @@
+<div class="broadcast-page">
+  <div class="broadcast-page__header">
+    <div>
+      <p class="broadcast-page__eyebrow">Notifications</p>
+      <h1 class="broadcast-page__title">Broadcast obavestenje</h1>
+      <p class="broadcast-page__subtitle">Posalji in-app ili push obavestenje odabranoj grupi korisnika.</p>
+    </div>
+
+    <a class="btn btn-ghost btn-sm" routerLink="/admin/dashboard">
+      <span class="material-icons">arrow_back</span>
+      Dashboard
+    </a>
+  </div>
+
+  @if (successMessage()) {
+    <div class="broadcast-alert broadcast-alert--success">
+      <span class="material-icons">check_circle</span>
+      {{ successMessage() }}
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="broadcast-alert broadcast-alert--error">
+      <span class="material-icons">error</span>
+      {{ errorMessage() }}
+    </div>
+  }
+
+  <form class="broadcast-form" (ngSubmit)="send()">
+    <section class="broadcast-section">
+      <h2 class="broadcast-section__title">Sadrzaj obavestenja</h2>
+
+      <label class="broadcast-field">
+        <span class="broadcast-field__label">Naslov</span>
+        <input
+          class="broadcast-input"
+          name="title"
+          type="text"
+          maxlength="140"
+          [(ngModel)]="title"
+          placeholder="Unesi naslov obavestenja"
+        />
+      </label>
+
+      <label class="broadcast-field">
+        <span class="broadcast-field__label">Poruka</span>
+        <textarea
+          class="broadcast-textarea"
+          name="message"
+          rows="7"
+          maxlength="1000"
+          [(ngModel)]="message"
+          placeholder="Unesi poruku za korisnike"
+        ></textarea>
+      </label>
+
+      <label class="broadcast-field">
+        <span class="broadcast-field__label">Link</span>
+        <input
+          class="broadcast-input"
+          name="linkUrl"
+          type="url"
+          [(ngModel)]="linkUrl"
+          placeholder="/admin/destinations ili https://..."
+        />
+      </label>
+    </section>
+
+    <section class="broadcast-section">
+      <h2 class="broadcast-section__title">Primaoci</h2>
+
+      <div class="recipient-list">
+        @for (option of recipients; track option.value) {
+          <label class="recipient-option" [class.recipient-option--selected]="recipient === option.value">
+            <input
+              class="recipient-option__input"
+              type="radio"
+              name="recipient"
+              [value]="option.value"
+              [(ngModel)]="recipient"
+            />
+            <span class="recipient-option__control"></span>
+            <span class="recipient-option__body">
+              <span class="recipient-option__label">{{ option.label }}</span>
+              <span class="recipient-option__description">{{ option.description }}</span>
+            </span>
+          </label>
+        }
+      </div>
+    </section>
+
+    <div class="broadcast-actions">
+      <button class="btn btn-primary" type="submit" [disabled]="!canSend">
+        <span class="material-icons">{{ isSending() ? 'hourglass_top' : 'send' }}</span>
+        {{ isSending() ? 'Slanje...' : 'Posalji' }}
+      </button>
+    </div>
+  </form>
+</div>
