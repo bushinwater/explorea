@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   AdminRole, DashboardData, TrafficPoint,
-  SystemStatusItem, AiInsight, StatCardData, ActivityItem, ActivityStatus,
+  SystemStatusItem, AiInsight, AiChatMessage, AiChatResponse, StatCardData, ActivityItem, ActivityStatus,
 } from '../models/admin.models';
 import { Observable, map } from 'rxjs';
 
@@ -39,6 +39,11 @@ interface AdminSystemStatusItem {
   detail: string;
   level: 'ok' | 'warning' | 'critical';
   percentage?: number | null;
+}
+
+interface AdminAiChatResponse {
+  message: string;
+  insights: AiInsight[];
 }
 
 function trafficData(): TrafficPoint[] {
@@ -215,6 +220,21 @@ export class DashboardService {
         level: item.level,
         percentage: item.percentage ?? undefined,
       }))),
+    );
+  }
+
+  sendAiMessage(message: string, history: AiChatMessage[]): Observable<AiChatResponse> {
+    return this.http.post<AdminAiChatResponse>('/api/admin/ai/chat', {
+      message,
+      history: history.map((item) => ({
+        role: item.role,
+        content: item.text,
+      })),
+    }).pipe(
+      map((response) => ({
+        message: response.message,
+        insights: response.insights ?? [],
+      })),
     );
   }
 

@@ -97,6 +97,16 @@ export interface AiInsight {
   type: 'positive' | 'warning' | 'neutral';
 }
 
+export interface AiChatMessage {
+  role: 'user' | 'ai';
+  text: string;
+}
+
+export interface AiChatResponse {
+  message: string;
+  insights: AiInsight[];
+}
+
 // ===== DASHBOARD DATA (all combined per role) =====
 export interface DashboardData {
   pendingCount: number;
