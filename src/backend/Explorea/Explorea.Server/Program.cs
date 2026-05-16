@@ -88,6 +88,7 @@ builder.Services.AddScoped<IAdminPlaceService, AdminPlaceService>();
 builder.Services.AddScoped<IAdminActivityRepository, AdminActivityRepository>();
 builder.Services.AddScoped<IAdminActivityService, AdminActivityService>();
 builder.Services.AddScoped<IAdminActivityFeedService, AdminActivityFeedService>();
+builder.Services.AddScoped<IAdminActivityLogService, AdminActivityLogService>();
 
 builder.Services.AddScoped<IOrganizationAssignmentRepository, OrganizationAssignmentRepository>();
 builder.Services.AddScoped<IOrganizationRegionAssignmentRepository, OrganizationRegionAssignmentRepository>();

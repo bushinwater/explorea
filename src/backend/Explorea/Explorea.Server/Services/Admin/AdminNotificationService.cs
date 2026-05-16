@@ -20,11 +20,16 @@ namespace Explorea.Server.Services.Admin
 
         private readonly AppDbContext _db;
         private readonly IUserRepository _userRepository;
+        private readonly IAdminActivityLogService _activityLogService;
 
-        public AdminNotificationService(AppDbContext db, IUserRepository userRepository)
+        public AdminNotificationService(
+            AppDbContext db,
+            IUserRepository userRepository,
+            IAdminActivityLogService activityLogService)
         {
             _db = db;
             _userRepository = userRepository;
+            _activityLogService = activityLogService;
         }
 
         public async Task<AdminBroadcastNotificationResponseDto> BroadcastAsync(
@@ -76,11 +81,25 @@ namespace Explorea.Server.Services.Admin
             _db.Notifications.AddRange(notifications);
             await _db.SaveChangesAsync();
 
+            await _activityLogService.LogAsync(
+                "notification_broadcast_sent",
+                $"Broadcast obavestenje poslato grupi {RecipientLabel(recipient)} ({recipientIds.Count} primalaca): {title}",
+                currentUserId);
+
             return new AdminBroadcastNotificationResponseDto
             {
                 SentCount = recipientIds.Count
             };
         }
+
+        private static string RecipientLabel(string recipient) => recipient.ToLowerInvariant() switch
+        {
+            "all_users" => "svi korisnici",
+            "super_admins" => "svi super admini",
+            "tourist_organizations" => "sve turisticke organizacije",
+            "place_owners" => "svi vlasnici objekata",
+            _ => recipient
+        };
 
         private IQueryable<User> BuildRecipientQuery(string recipient)
         {

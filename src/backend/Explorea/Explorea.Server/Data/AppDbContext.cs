@@ -51,6 +51,7 @@ namespace Explorea.Server.Data
         public DbSet<EventInterestTag> EventInterestTags { get; set; }
         public DbSet<ActivityInterestTag> ActivityInterestTags { get; set; }
         public DbSet<Country> Countries { get; set; }
+        public DbSet<AdminActivityLog> AdminActivityLogs { get; set; }
         public DbSet<OrganizationAssignment> OrganizationAssignments { get; set; }
         public DbSet<OrganizationRegionAssignment> OrganizationRegionAssignments { get; set; }
         public DbSet<SubmissionQueue> SubmissionQueue { get; set; }
@@ -88,6 +89,15 @@ namespace Explorea.Server.Data
                     .WithMany()
                     .HasForeignKey(n => n.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<AdminActivityLog>(entity =>
+            {
+                entity.HasIndex(log => log.CreatedAt);
+                entity.HasOne(log => log.Actor)
+                    .WithMany()
+                    .HasForeignKey(log => log.ActorId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             // ---- Composite primary keys ----

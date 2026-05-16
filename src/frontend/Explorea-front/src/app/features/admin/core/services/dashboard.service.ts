@@ -291,6 +291,7 @@ export class DashboardService {
       submission_created: 'ZA',
       submission_reviewed: 'OD',
       review_created: 'RE',
+      notification_broadcast_sent: 'OB',
     };
 
     return initials[type] ?? 'AK';
@@ -303,6 +304,7 @@ export class DashboardService {
       submission_created: '#d9b26f',
       submission_reviewed: '#34d399',
       review_created: '#a78bfa',
+      notification_broadcast_sent: '#60a5fa',
     };
 
     return colors[type] ?? '#8fa896';

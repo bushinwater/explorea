@@ -13,15 +13,18 @@ namespace Explorea.Server.Services.Admin
         private readonly AppDbContext _db;
         private readonly IUserRepository _userRepository;
         private readonly IOrganizationAssignmentRepository _assignmentRepository;
+        private readonly IAdminActivityLogService _activityLogService;
 
         public AdminActivityFeedService(
             AppDbContext db,
             IUserRepository userRepository,
-            IOrganizationAssignmentRepository assignmentRepository)
+            IOrganizationAssignmentRepository assignmentRepository,
+            IAdminActivityLogService activityLogService)
         {
             _db = db;
             _userRepository = userRepository;
             _assignmentRepository = assignmentRepository;
+            _activityLogService = activityLogService;
         }
 
         public async Task<List<AdminRecentActivityDto>> GetRecentAsync(Guid currentUserId, int limit)
@@ -37,6 +40,7 @@ namespace Explorea.Server.Services.Admin
             var destinationIds = await destinationQuery.Select(d => d.Id).ToListAsync();
 
             var events = new List<AdminRecentActivityDto>();
+            events.AddRange(await GetRecentAdminLogEventsAsync(take));
             events.AddRange(await GetRecentDestinationEventsAsync(destinationIds, take));
             events.AddRange(await GetRecentUserEventsAsync(user, take));
             events.AddRange(await GetRecentSubmissionEventsAsync(destinationIds, take));
@@ -46,6 +50,20 @@ namespace Explorea.Server.Services.Admin
                 .OrderByDescending(e => e.CreatedAt)
                 .Take(take)
                 .ToList();
+        }
+
+        private async Task<List<AdminRecentActivityDto>> GetRecentAdminLogEventsAsync(int take)
+        {
+            var logs = await _activityLogService.GetRecentAsync(take);
+
+            return logs.Select(log => new AdminRecentActivityDto
+            {
+                Id = $"admin-log-{log.Id}",
+                Type = log.Type,
+                Description = log.Description,
+                CreatedAt = log.CreatedAt,
+                ActorId = log.ActorId
+            }).ToList();
         }
 
         private async Task<IQueryable<Destination>> BuildDestinationScopeAsync(User user, Guid currentUserId)
