@@ -55,6 +55,7 @@ namespace Explorea.Server.Data
         public DbSet<OrganizationRegionAssignment> OrganizationRegionAssignments { get; set; }
         public DbSet<SubmissionQueue> SubmissionQueue { get; set; }
         public DbSet<Newsletter> Newsletters { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
         public DbSet<DestinationType>  DestinationTypes  { get; set; }
         public DbSet<FilterDefinition> FilterDefinitions { get; set; }
         public DbSet<FilterOption>     FilterOptions     { get; set; }
@@ -78,6 +79,15 @@ namespace Explorea.Server.Data
                       .HasColumnName("email")
                       .HasMaxLength(255)
                       .IsRequired();
+            });
+
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.HasIndex(n => new { n.UserId, n.CreatedAt });
+                entity.HasOne(n => n.User)
+                    .WithMany()
+                    .HasForeignKey(n => n.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // ---- Composite primary keys ----

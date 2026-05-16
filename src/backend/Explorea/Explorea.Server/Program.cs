@@ -143,6 +143,7 @@ builder.Services.AddScoped<IAdminReviewRepository, AdminReviewRepository>();
 builder.Services.AddScoped<IAdminReviewService, AdminReviewService>();
 builder.Services.AddScoped<IAdminSupportService, AdminSupportService>();
 builder.Services.AddScoped<ISuperAdminSupportService, SuperAdminSupportService>();
+builder.Services.AddScoped<IAdminNotificationService, AdminNotificationService>();
 builder.Services.AddScoped<IPopularityService, PopularityService>();
 builder.Services.AddScoped<IAdminReportRepository, AdminReportRepository>();
 builder.Services.AddScoped<IAdminReportService, AdminReportService>();
