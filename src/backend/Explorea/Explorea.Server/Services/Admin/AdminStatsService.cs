@@ -14,17 +14,20 @@ namespace Explorea.Server.Services.Admin
         private readonly IUserRepository _userRepository;
         private readonly IOrganizationAssignmentRepository _assignmentRepository;
         private readonly IConfiguration _configuration;
+        private readonly IAdminErrorLogService _errorLogService;
 
         public AdminStatsService(
             AppDbContext db,
             IUserRepository userRepository,
             IOrganizationAssignmentRepository assignmentRepository,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IAdminErrorLogService errorLogService)
         {
             _db = db;
             _userRepository = userRepository;
             _assignmentRepository = assignmentRepository;
             _configuration = configuration;
+            _errorLogService = errorLogService;
         }
 
         public async Task<AdminStatsOverviewDto> GetOverviewAsync(Guid currentUserId)
@@ -123,8 +126,9 @@ namespace Explorea.Server.Services.Admin
 
             var databaseAvailable = await _db.Database.CanConnectAsync();
             var storageConfigured = IsStorageConfigured();
+            var lastError = _errorLogService.GetLastError();
 
-            return new List<AdminSystemStatusItemDto>
+            var items = new List<AdminSystemStatusItemDto>
             {
                 new()
                 {
@@ -155,6 +159,24 @@ namespace Explorea.Server.Services.Admin
                     Percentage = Math.Min(100, openTickets * 10)
                 }
             };
+
+            items.Add(lastError == null
+                ? new AdminSystemStatusItemDto
+                {
+                    Label = "Poslednja serverska greska",
+                    Detail = "Nema zabelezenih 500 gresaka",
+                    Level = "ok",
+                    Percentage = 0
+                }
+                : new AdminSystemStatusItemDto
+                {
+                    Label = "Poslednja serverska greska",
+                    Detail = $"{lastError.Method} {lastError.Path} - {lastError.Message}",
+                    Level = "critical",
+                    Percentage = 100
+                });
+
+            return items;
         }
 
         private async Task<IQueryable<Destination>> BuildDestinationScopeAsync(User user, Guid currentUserId)

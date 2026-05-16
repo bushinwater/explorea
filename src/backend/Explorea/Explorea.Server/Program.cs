@@ -149,6 +149,7 @@ builder.Services.AddScoped<IPopularityService, PopularityService>();
 builder.Services.AddScoped<IAdminReportRepository, AdminReportRepository>();
 builder.Services.AddScoped<IAdminReportService, AdminReportService>();
 builder.Services.AddScoped<IAdminStatsService, AdminStatsService>();
+builder.Services.AddSingleton<IAdminErrorLogService, AdminErrorLogService>();
 
 builder.Services.AddHttpClient<IChatService, GeminiChatService>();
 
@@ -272,6 +273,19 @@ using (var scope = app.Services.CreateScope())
 
 app.UseCors("AllowAngular");
 //app.UseHttpsRedirection();
+
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        context.RequestServices.GetRequiredService<IAdminErrorLogService>().Record(context, ex);
+        throw;
+    }
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

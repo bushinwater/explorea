@@ -30,4 +30,13 @@ namespace Explorea.API.DTOs.Admin.Stats
         public string Level { get; set; } = "ok";
         public int? Percentage { get; set; }
     }
+
+    public class AdminLastServerErrorDto
+    {
+        public string Message { get; set; } = string.Empty;
+        public string ExceptionType { get; set; } = string.Empty;
+        public string Path { get; set; } = string.Empty;
+        public string Method { get; set; } = string.Empty;
+        public DateTimeOffset OccurredAt { get; set; }
+    }
 }
