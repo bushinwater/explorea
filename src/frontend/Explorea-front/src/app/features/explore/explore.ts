@@ -331,12 +331,12 @@ export class Explore implements AfterViewInit, OnDestroy {
     });
   }
 
-  loadFilterDefs(typeId: number): void {
+  loadFilterDefs(typeId: number, entityType: string = 'place'): void {
     if (this.filterDefsTypeId === typeId) return;
     this.filterDefsLoading = true;
     this.filterDefsTypeId  = typeId;
     this.cdr.detectChanges();
-    this.lookupService.getFilterDefinitions('place', typeId).subscribe({
+    this.lookupService.getFilterDefinitions(entityType, typeId).subscribe({
       next: defs => {
         this.filterDefs        = defs;
         this.filterDefsLoading = false;
@@ -387,7 +387,7 @@ export class Explore implements AfterViewInit, OnDestroy {
   }
 
   get showExtraFilters(): boolean {
-    return this.subcatEntityType === 'objekti' && this.selectedSubcatIds.length === 1;
+    return this.subcatEntityType !== null && this.selectedSubcatIds.length === 1;
   }
 
   isSubcatSelected(id: number): boolean {
@@ -405,9 +405,10 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.extraFilters = {};
     this.filterDefs = [];
     this.filterDefsTypeId = null;
-    // Load extra filter defs when exactly one place type selected
-    if (this.subcatEntityType === 'objekti' && this.selectedSubcatIds.length === 1) {
-      this.loadFilterDefs(this.selectedSubcatIds[0]);
+    // Load extra filter defs when exactly one subcat selected (any entity type)
+    if (this.subcatEntityType !== null && this.selectedSubcatIds.length === 1) {
+      const entityType = ENTITY_TYPE_BACKEND_MAP[this.subcatEntityType];
+      this.loadFilterDefs(this.selectedSubcatIds[0], entityType);
     }
     this.fetchMarkers();
   }
