@@ -59,8 +59,6 @@ namespace Explorea.Server.Services.Admin
             if (!AllowedRecipients.Contains(recipient))
                 throw new ArgumentException("Notification recipient is not supported.");
 
-            await EnsureNotificationTableAsync();
-
             var recipientIds = await BuildRecipientQuery(recipient)
                 .Select(u => u.Id)
                 .ToListAsync();
@@ -117,25 +115,6 @@ namespace Explorea.Server.Services.Admin
                 "place_owners" => query.Where(u => u.Role.Name == RoleNames.PlaceOwner),
                 _ => query.Where(_ => false)
             };
-        }
-
-        private async Task EnsureNotificationTableAsync()
-        {
-            await _db.Database.ExecuteSqlRawAsync("""
-                CREATE TABLE IF NOT EXISTS notifications (
-                    id uuid PRIMARY KEY,
-                    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                    title varchar(160) NOT NULL,
-                    message varchar(1200) NOT NULL,
-                    link_url varchar(1000) NULL,
-                    is_read boolean NOT NULL DEFAULT false,
-                    created_at timestamptz NOT NULL,
-                    created_by uuid NULL REFERENCES users(id) ON DELETE SET NULL
-                );
-
-                CREATE INDEX IF NOT EXISTS ix_notifications_user_id_created_at
-                ON notifications (user_id, created_at);
-                """);
         }
     }
 }
