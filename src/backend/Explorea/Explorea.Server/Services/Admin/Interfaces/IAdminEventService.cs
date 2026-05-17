@@ -5,6 +5,7 @@ namespace Explorea.Server.Services.Admin.Interfaces
     public interface IAdminEventService
     {
         Task<(List<AdminEventListDto> Items, int Total)> GetAllAsync(
+            string? search,
             Guid? destinationId, int? cityId, int? typeId,
             DateTimeOffset? startFrom, DateTimeOffset? startTo,
             int page, int pageSize, Guid currentUserId);

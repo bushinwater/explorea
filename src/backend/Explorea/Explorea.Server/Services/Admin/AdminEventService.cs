@@ -26,6 +26,7 @@ namespace Explorea.Server.Services.Admin
         }
 
         public async Task<(List<AdminEventListDto> Items, int Total)> GetAllAsync(
+            string? search,
             Guid? destinationId, int? cityId, int? typeId,
             DateTimeOffset? startFrom, DateTimeOffset? startTo,
             int page, int pageSize, Guid currentUserId)
@@ -47,6 +48,7 @@ namespace Explorea.Server.Services.Admin
             }
 
             var (items, total) = await _eventRepo.GetAdminPagedAsync(
+                search,
                 destinationId, cityId, typeId,
                 startFrom, startTo,
                 restrictToDestinationIds, restrictToCityIds,

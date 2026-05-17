@@ -10,6 +10,7 @@ namespace Explorea.Server.Repositories.Implementations
         public AdminEventRepository(AppDbContext db) : base(db) { }
 
         public async Task<(List<Event> Items, int Total)> GetAdminPagedAsync(
+            string? search,
             Guid? destinationId, int? cityId, int? typeId,
             DateTimeOffset? startFrom, DateTimeOffset? startTo,
             List<Guid>? restrictToDestinationIds, List<int>? restrictToCityIds,
@@ -24,6 +25,20 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(e => e.Images)
                 .Where(e => !e.IsDeleted)
                 .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+
+                query = query.Where(e =>
+                    e.Name.ToLower().Contains(term) ||
+                    (e.Description != null && e.Description.ToLower().Contains(term)) ||
+                    (e.Address != null && e.Address.ToLower().Contains(term)) ||
+                    (e.City != null && e.City.Name.ToLower().Contains(term)) ||
+                    (e.Destination != null && e.Destination.Name.ToLower().Contains(term)) ||
+                    (e.Type != null && e.Type.Name.ToLower().Contains(term))
+                );
+            }
 
             if (destinationId.HasValue)
                 query = query.Where(e => e.DestinationId == destinationId.Value);

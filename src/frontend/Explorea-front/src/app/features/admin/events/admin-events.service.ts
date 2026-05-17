@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, of } from 'rxjs';
+import { Observable, filter, map, of } from 'rxjs';
 import {
   EventFilters,
   EventPagedResponse,
@@ -100,28 +100,20 @@ export class AdminEventsService {
   }
 
   private fetchActiveEvents(filters: EventFilters): Observable<EventPagedResponse> {
-    let params = new HttpParams()
-      .set('page', filters.page)
-      .set('pageSize', filters.pageSize);
+    let params = new HttpParams().set('page', filters.page).set('pageSize', filters.pageSize);
+
+    if (filters.search.trim()) params = params.set('search', filters.search.trim());
 
     return this.http.get<ApiEventsResponse>('/api/admin/events', { params }).pipe(
-      map((res) => {
-        const items = res.items
-          .filter((e) => {
-            if (filters.search && !e.name.toLowerCase().includes(filters.search.toLowerCase()))
-              return false;
-            return true;
-          })
-          .map((e) => this.mapEventItem(e));
-        return { total: res.total, items };
-      }),
+      map((res) => ({
+        total: res.total,
+        items: res.items.map((e) => this.mapEventItem(e)),
+      })),
     );
   }
 
   private fetchQueueEvents(filters: EventFilters): Observable<EventPagedResponse> {
-    let params = new HttpParams()
-      .set('page', filters.page)
-      .set('pageSize', filters.pageSize);
+    let params = new HttpParams().set('page', filters.page).set('pageSize', filters.pageSize);
 
     if (filters.tab === 'pending') {
       params = params.set('status', 'Pending');
@@ -133,9 +125,12 @@ export class AdminEventsService {
           .filter((q) => q.entityType === 'Event')
           .filter((q) => {
             if (filters.tab === 'history') {
-              return ['RejectedByTO', 'ApprovedByOwner', 'RejectedByOwner', 'ApprovedByTO'].includes(
-                q.status,
-              );
+              return [
+                'RejectedByTO',
+                'ApprovedByOwner',
+                'RejectedByOwner',
+                'ApprovedByTO',
+              ].includes(q.status);
             }
             return true;
           })
