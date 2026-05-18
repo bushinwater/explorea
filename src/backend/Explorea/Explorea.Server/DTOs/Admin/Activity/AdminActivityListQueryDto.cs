@@ -2,9 +2,15 @@ namespace Explorea.API.DTOs.Admin.Activity
 {
     public class AdminActivityListQueryDto
     {
+        public string? Search { get; set; }
+
         public int? RegionId { get; set; }
         public int? CityId { get; set; }
         public int? CategoryId { get; set; }
+
+        // difficulty values:
+        // easy, medium, hard
+        public string? DifficultyLevel { get; set; }
 
         // duration values:
         // up_to_2h, from_2h_to_6h, multi_day
@@ -21,6 +27,6 @@ namespace Explorea.API.DTOs.Admin.Activity
         public decimal? MinAvgRating { get; set; }
 
         public int Page { get; set; } = 1;
-        public int PageSize { get; set; } = 20;
+        public int PageSize { get; set; } = 17;
     }
 }

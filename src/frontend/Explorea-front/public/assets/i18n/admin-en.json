@@ -391,6 +391,10 @@
   "activities.search.placeholder": "Search activities...",
 
   "activities.stats.totalActivities": "Total activities",
+  "activities.stats.mostPopular": "Most popular",
+  "activities.stats.inactive": "Inactive (30 days)",
+  "activities.stats.inactiveHint": "No visits in last 30 days",
+  "activities.stats.newest": "Newest",
   "activities.stats.pending": "Pending requests",
   "activities.stats.averageRating": "Average rating",
   "activities.stats.monthlyViews": "Monthly views",
@@ -416,6 +420,7 @@
   "activities.empty.description": "There are no activities for the selected filters.",
 
   "activities.actions.label": "Actions",
+  "activities.actions.view": "Details",
   "activities.actions.edit": "Edit",
   "activities.actions.delete": "Delete",
 

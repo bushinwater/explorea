@@ -9,17 +9,26 @@
 <div class="activity-page">
   <!-- ===== STATS ROW ===== -->
   <div class="activity-stats">
-    <app-stat-card [label]="ui.t('activities.stats.totalActivities')" [value]="stats()?.totalActivities ?? 0"
-      [trend]="stats()?.totalActivitiesTrend ?? ''" />
+    <app-stat-card
+      [label]="ui.t('activities.stats.totalActivities')"
+      [value]="stats()?.totalActivities ?? 0" />
 
-    <app-stat-card [label]="ui.t('activities.stats.pending')" [value]="stats()?.pendingCount ?? 0"
-      [hint]="stats()?.pendingHint ?? ''" tone="neutral" />
+    <app-stat-card
+      [label]="ui.t('activities.stats.mostPopular')"
+      [value]="stats()?.mostPopularName ?? '—'"
+      [hint]="stats() ? formatViews(stats()!.mostPopularViews) + ' pregleda' : ''"
+      tone="neutral" />
 
-    <app-stat-card [label]="ui.t('activities.stats.averageRating')" [value]="formatRating(stats()?.averageRating ?? 0)"
-      [hint]="stats()?.averageRatingHint ?? ''" />
+    <app-stat-card
+      [label]="ui.t('activities.stats.inactive')"
+      [value]="stats()?.inactiveCount ?? 0"
+      [hint]="ui.t('activities.stats.inactiveHint')"
+      tone="neutral" />
 
-    <app-stat-card [label]="ui.t('activities.stats.monthlyViews')" [value]="formatBigNumber(stats()?.monthlyViews ?? 0)"
-      [trend]="stats()?.monthlyViewsTrend ?? ''" />
+    <app-stat-card
+      [label]="ui.t('activities.stats.newest')"
+      [value]="stats()?.newestName ?? '—'"
+      [hint]="stats()?.newestCreatedAt ? formatDate(stats()!.newestCreatedAt) : ''" />
   </div>
 
   <!-- ===== MAIN TABLE CARD ===== -->
@@ -38,8 +47,10 @@
         <!-- Search -->
         <div class="activity-search-wrap">
           <span class="material-icons activity-search-wrap__icon">search</span>
-          <input class="activity-search" type="search" [placeholder]="ui.t('activities.search.placeholder')"
-            [value]="filters().search" (input)="updateSearch($any($event.target).value)" />
+          <input class="activity-search" type="search"
+            [placeholder]="ui.t('activities.search.placeholder')"
+            [value]="filters().search"
+            (input)="updateSearch($any($event.target).value)" />
         </div>
 
         <!-- Filter button -->
@@ -58,9 +69,7 @@
           @if (isFilterOpen()) {
           <div class="activity-filter-panel" (click)="$event.stopPropagation()">
             <div class="activity-filter-panel__header">
-              <span class="activity-filter-panel__title">{{
-                ui.t('activities.filter.title')
-                }}</span>
+              <span class="activity-filter-panel__title">{{ ui.t('activities.filter.title') }}</span>
               @if (activeFilterCount() > 0) {
               <button class="activity-filter-panel__reset" (click)="resetFilters()">
                 {{ ui.t('activities.filter.reset') }}
@@ -70,14 +79,16 @@
 
             <!-- Category filter -->
             <div class="activity-filter-section">
-              <label class="activity-filter-section__label">{{
-                ui.t('activities.filter.category')
-                }}</label>
+              <label class="activity-filter-section__label">{{ ui.t('activities.filter.category') }}</label>
               <div class="activity-filter-chips">
-                @for (cat of categories; track cat.value) {
-                <button class="activity-chip" [class.activity-chip--active]="filters().category === cat.value"
-                  (click)="applyCategory(cat.value)">
-                  {{ cat.label }}
+                <button class="activity-chip" [class.activity-chip--active]="filters().categoryId === 'all'"
+                  (click)="applyCategory('all')">
+                  Sve kategorije
+                </button>
+                @for (cat of categories(); track cat.id) {
+                <button class="activity-chip" [class.activity-chip--active]="filters().categoryId === cat.id"
+                  (click)="applyCategory(cat.id)">
+                  {{ cat.name }}
                 </button>
                 }
               </div>
@@ -85,9 +96,7 @@
 
             <!-- Status filter -->
             <div class="activity-filter-section">
-              <label class="activity-filter-section__label">{{
-                ui.t('activities.filter.status')
-                }}</label>
+              <label class="activity-filter-section__label">{{ ui.t('activities.filter.status') }}</label>
               <div class="activity-filter-chips">
                 @for (s of statuses; track s.value) {
                 <button class="activity-chip" [class.activity-chip--active]="filters().status === s.value"
@@ -100,15 +109,12 @@
 
             <!-- Difficulty filter -->
             <div class="activity-filter-section">
-              <label class="activity-filter-section__label">
-                {{ ui.t('activities.filter.difficulty') }}
-              </label>
-
+              <label class="activity-filter-section__label">{{ ui.t('activities.filter.difficulty') }}</label>
               <div class="activity-filter-chips">
-                @for (difficulty of difficulties; track difficulty.value) {
-                <button class="activity-chip" [class.activity-chip--active]="filters().difficulty === difficulty.value"
-                  (click)="applyDifficulty(difficulty.value)">
-                  {{ difficulty.label }}
+                @for (d of difficulties; track d.value) {
+                <button class="activity-chip" [class.activity-chip--active]="filters().difficulty === d.value"
+                  (click)="applyDifficulty(d.value)">
+                  {{ d.label }}
                 </button>
                 }
               </div>
@@ -116,15 +122,12 @@
 
             <!-- Rating filter -->
             <div class="activity-filter-section">
-              <label class="activity-filter-section__label">
-                {{ ui.t('activities.filter.rating') }}
-              </label>
-
+              <label class="activity-filter-section__label">{{ ui.t('activities.filter.rating') }}</label>
               <div class="activity-filter-chips">
-                @for (rating of ratingOptions; track rating.value) {
-                <button class="activity-chip" [class.activity-chip--active]="filters().minRating === rating.value"
-                  (click)="applyMinRating(rating.value)">
-                  {{ rating.label }}
+                @for (r of ratingOptions; track r.value) {
+                <button class="activity-chip" [class.activity-chip--active]="filters().minRating === r.value"
+                  (click)="applyMinRating(r.value)">
+                  {{ r.label }}
                 </button>
                 }
               </div>
@@ -133,31 +136,28 @@
             <!-- Region filter (super admin only) -->
             @if (isSuperAdmin()) {
             <div class="activity-filter-section">
-              <label class="activity-filter-section__label">{{
-                ui.t('activities.filter.region')
-                }}</label>
+              <label class="activity-filter-section__label">{{ ui.t('activities.filter.region') }}</label>
               <div class="activity-filter-chips">
-                <button class="activity-chip" [class.activity-chip--active]="filters().region === 'all'"
+                <button class="activity-chip" [class.activity-chip--active]="filters().regionId === 'all'"
                   (click)="applyRegion('all')">
                   {{ ui.t('activities.filter.allRegions') }}
                 </button>
-                @for (r of regions(); track r) {
-                <button class="activity-chip" [class.activity-chip--active]="filters().region === r"
-                  (click)="applyRegion(r)">
-                  {{ r }}
+                @for (r of regions(); track r.id) {
+                <button class="activity-chip" [class.activity-chip--active]="filters().regionId === r.id"
+                  (click)="applyRegion(r.id)">
+                  {{ r.name }}
                 </button>
                 }
               </div>
             </div>
             }
-
           </div>
           <div class="activity-filter-backdrop" (click)="isFilterOpen.set(false)"></div>
           }
         </div>
 
         <!-- Add new -->
-        <button class="btn btn-primary btn-sm">
+        <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
           <span class="material-icons">add</span>
           {{ ui.t('activities.addNew') }}
         </button>
@@ -167,39 +167,33 @@
     <!-- Active filters -->
     @if (activeFilterCount() > 0) {
     <div class="activity-active-filters">
-      <span class="activity-active-filters__label">
-        {{ ui.t('activities.activeFilters.label') }}
-      </span>
+      <span class="activity-active-filters__label">{{ ui.t('activities.activeFilters.label') }}</span>
 
-      @if (filters().category !== 'all') {
+      @if (filters().categoryId !== 'all') {
       <button class="activity-active-filter" type="button" (click)="applyCategory('all')">
         {{ selectedCategoryLabel() }}
         <span class="material-icons">close</span>
       </button>
       }
-
       @if (filters().status !== 'all') {
       <button class="activity-active-filter" type="button" (click)="applyStatus('all')">
         {{ selectedStatusLabel() }}
         <span class="material-icons">close</span>
       </button>
       }
-
       @if (filters().difficulty !== 'all') {
       <button class="activity-active-filter" type="button" (click)="applyDifficulty('all')">
         {{ selectedDifficultyLabel() }}
         <span class="material-icons">close</span>
       </button>
       }
-
       @if (filters().minRating !== 'all') {
       <button class="activity-active-filter" type="button" (click)="applyMinRating('all')">
         {{ selectedRatingLabel() }}
         <span class="material-icons">close</span>
       </button>
       }
-
-      @if (filters().region !== 'all') {
+      @if (filters().regionId !== 'all') {
       <button class="activity-active-filter" type="button" (click)="applyRegion('all')">
         {{ selectedRegionLabel() }}
         <span class="material-icons">close</span>
@@ -215,7 +209,7 @@
     <!-- Table -->
     <div class="activity-table-wrap">
       @if (isLoading()) {
-      <app-table-skeleton [rows]="7" />
+      <app-table-skeleton [rows]="17" />
       } @else if (!activities().length) {
       <app-empty-state [title]="ui.t('activities.empty.title')" [description]="ui.t('activities.empty.description')" />
       } @else {
@@ -233,14 +227,16 @@
         </thead>
         <tbody>
           @for (activity of activities(); track activity.id) {
-          <tr class="activity-row">
+          <tr class="activity-row" (click)="openDetailsPanel(activity)">
             <td class="activity-td">
               <div class="activity-name-cell">
+                @if (activity.previewImageUrl) {
+                <img class="activity-thumb activity-thumb--img" [src]="activity.previewImageUrl" [alt]="activity.name" />
+                } @else {
                 <div class="activity-thumb" [style.background-color]="thumbColor(activity.category)">
-                  <span class="material-icons activity-thumb__icon">
-                    {{ categoryIcon(activity.category) }}</span>
+                  <span class="material-icons activity-thumb__icon">{{ categoryIcon(activity.category) }}</span>
                 </div>
-
+                }
                 <div class="activity-name-info">
                   <span class="activity-name-info__name">{{ activity.name }}</span>
                   <span class="activity-name-info__location">
@@ -253,53 +249,53 @@
 
             <td class="activity-td">
               <div class="activity-category">
-                <span class="material-icons activity-category__icon">{{
-                  categoryIcon(activity.category)
-                  }}</span>
-                {{ categoryLabel(activity.category) }}
+                <span class="material-icons activity-category__icon">{{ categoryIcon(activity.category) }}</span>
+                {{ activity.category }}
               </div>
             </td>
 
             <td class="activity-td">
               <div class="activity-updated">
                 <span class="material-icons">location_on</span>
-                {{ activity.region }} / {{ activity.city }}
+                {{ activity.region ?? '—' }}{{ activity.city ? ' / ' + activity.city : '' }}
               </div>
             </td>
 
             <td class="activity-td activity-td--center">
               <div class="activity-rating">
                 <span class="material-icons">star</span>
-                {{ formatRating(activity.rating) }}
-                <span class="activity-rating__count">({{ activity.reviewCount }})</span>
+                {{ formatRating(activity.avgRating) }}
               </div>
             </td>
 
             <td class="activity-td">
-              <span class="activity-difficulty activity-difficulty--{{ activity.difficulty }}">
-                {{ difficultyLabel(activity.difficulty) }}
+              @if (activity.difficultyLevel) {
+              <span class="activity-difficulty activity-difficulty--{{ activity.difficultyLevel.toLowerCase() }}">
+                {{ difficultyLabel(activity.difficultyLevel) }}
               </span>
+              } @else {
+              <span class="activity-difficulty activity-difficulty--none">—</span>
+              }
             </td>
 
-            <!-- Status -->
             <td class="activity-td">
-              <span class="activity-status activity-status--{{ activity.status }}">
-                {{ statusLabel(activity.status) }}
+              <span class="activity-status activity-status--{{ statusKey(activity.isActive) }}">
+                {{ statusLabel(activity.isActive) }}
               </span>
             </td>
 
             <!-- Actions -->
-            <td class="activity-td activity-td--actions">
-              <div class="row-menu-wrap" (click)="$event.stopPropagation()">
+            <td class="activity-td activity-td--actions" (click)="$event.stopPropagation()">
+              <div class="row-menu-wrap">
                 <button class="activity-menu-btn" (click)="toggleMenu(activity.id, $event)"
                   [title]="ui.t('activities.actions.label')">
                   <span class="material-icons">more_vert</span>
                 </button>
                 @if (activeMenuId() === activity.id) {
                 <div class="activity-menu-dropdown">
-                  <button class="activity-menu-item">
-                    <span class="material-icons">edit</span>
-                    {{ ui.t('activities.actions.edit') }}
+                  <button class="activity-menu-item" (click)="openDetailsPanel(activity)">
+                    <span class="material-icons">visibility</span>
+                    {{ ui.t('activities.actions.view') }}
                   </button>
                   <button class="activity-menu-item activity-menu-item--danger" (click)="openDeleteDialog(activity)">
                     <span class="material-icons">delete</span>
@@ -342,157 +338,450 @@
     }
   </div>
 
+  <!-- ===== DETAILS PANEL ===== -->
   @if (isDetailsPanelOpen()) {
   <div class="activity-details-backdrop" (click)="closeDetailsPanel()"></div>
 
-  @if (selectedActivity(); as activity) {
   <aside class="activity-details-panel" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    @if (selectedActivity(); as activity) {
     <div class="activity-details-panel__header">
       <div class="activity-details-panel__title-group">
         <div class="activity-details-panel__icon" [style.background-color]="thumbColor(activity.category)">
           <span class="material-icons">{{ categoryIcon(activity.category) }}</span>
         </div>
-
         <div>
           <h3 class="activity-details-panel__title">{{ activity.name }}</h3>
           <p class="activity-details-panel__subtitle">
-            {{ activity.region }} / {{ activity.city }}
+            {{ activity.region ?? '' }}{{ (activity.region && activity.city) ? ' / ' : '' }}{{ activity.city ?? '' }}
           </p>
         </div>
       </div>
-
       <button class="activity-details-panel__close" type="button" (click)="closeDetailsPanel()">
         <span class="material-icons">close</span>
       </button>
     </div>
+    }
 
+    @if (isDetailLoading()) {
+    <div class="activity-details-loading">
+      <span class="material-icons activity-details-loading__icon">sync</span>
+      <span>Učitavanje...</span>
+    </div>
+    } @else if (selectedActivityDetail(); as detail) {
     <div class="activity-details-panel__body">
-      <div class="activity-details-hero">
-        @if (activity.thumbnailUrl) {
-        <img class="activity-details-hero__image" [src]="activity.thumbnailUrl" [alt]="activity.name" />
-        } @else {
-        <div class="activity-details-hero__placeholder" [style.background-color]="thumbColor(activity.category)">
-          <span class="material-icons">
-            {{ categoryIcon(activity.category) }}
-          </span>
+
+      <!-- Image gallery -->
+      @if (detail.imageUrls.length > 0) {
+      <div class="activity-details-gallery">
+        <img class="activity-details-gallery__main" [src]="detail.imageUrls[0]" [alt]="detail.name" />
+        @if (detail.imageUrls.length > 1) {
+        <div class="activity-details-gallery__thumbs">
+          @for (url of detail.imageUrls.slice(1, 4); track url) {
+          <img class="activity-details-gallery__thumb" [src]="url" [alt]="detail.name" />
+          }
         </div>
         }
       </div>
-
-      <div class="activity-details-panel__badges">
-        <span class="activity-status activity-status--{{ activity.status }}">
-          {{ statusLabel(activity.status) }}
-        </span>
-
-        <span class="activity-difficulty activity-difficulty--{{ activity.difficulty }}">
-          {{ difficultyLabel(activity.difficulty) }}
-        </span>
+      } @else {
+      <div class="activity-details-gallery">
+        <div class="activity-details-hero__placeholder" [style.background-color]="thumbColor(detail.categoryName)">
+          <span class="material-icons">{{ categoryIcon(detail.categoryName) }}</span>
+        </div>
       </div>
+      }
 
-      <div class="activity-details-description">
-        <p class="activity-details-panel__description">
-          {{ visibleDescription(activity.shortDescription) }}
-        </p>
-
-        @if (shouldShowDescriptionToggle(activity.shortDescription)) {
-        <button class="activity-details-description__toggle" type="button" (click)="toggleDescription()">
-          {{
-          isDescriptionExpanded()
-          ? ui.t('activities.details.showLess')
-          : ui.t('activities.details.showMore')
-          }}
-        </button>
+      <!-- Status + difficulty badges -->
+      <div class="activity-details-panel__badges">
+        <span class="activity-status activity-status--{{ statusKey(detail.isActive) }}">
+          {{ statusLabel(detail.isActive) }}
+        </span>
+        @if (detail.difficultyLevel) {
+        <span class="activity-difficulty activity-difficulty--{{ detail.difficultyLevel.toLowerCase() }}">
+          {{ difficultyLabel(detail.difficultyLevel) }}
+        </span>
         }
       </div>
 
+      <!-- Description -->
+      @if (detail.description) {
+      <div class="activity-details-description">
+        <p class="activity-details-panel__description">
+          {{ visibleDescription(detail.description) }}
+        </p>
+        @if (shouldShowDescriptionToggle(detail.description)) {
+        <button class="activity-details-description__toggle" type="button" (click)="toggleDescription()">
+          {{ isDescriptionExpanded() ? ui.t('activities.details.showLess') : ui.t('activities.details.showMore') }}
+        </button>
+        }
+      </div>
+      }
+
+      <!-- Info grid -->
       <div class="activity-details-grid">
         <div class="activity-details-item">
           <span class="activity-details-item__label">Kategorija</span>
-          <strong class="activity-details-item__value">
-            {{ categoryLabel(activity.category) }}
-          </strong>
+          <strong class="activity-details-item__value">{{ detail.categoryName }}</strong>
         </div>
 
         <div class="activity-details-item">
           <span class="activity-details-item__label">Ocena</span>
           <strong class="activity-details-item__value">
-            {{ formatRating(activity.rating) }} / 5
-            <span class="activity-details-item__muted">({{ activity.reviewCount }})</span>
+            {{ formatRating(detail.avgRating) }} / 5
           </strong>
         </div>
 
         <div class="activity-details-item">
           <span class="activity-details-item__label">Trajanje</span>
-          <strong class="activity-details-item__value">
-            {{ formatDuration(activity.durationMinutes) }}
-          </strong>
+          <strong class="activity-details-item__value">{{ formatDuration(detail.durationMinutes) }}</strong>
         </div>
 
         <div class="activity-details-item">
-          <span class="activity-details-item__label">Pregledi</span>
-          <strong class="activity-details-item__value">
-            {{ formatViews(activity.views) }}
-          </strong>
+          <span class="activity-details-item__label">Popularnost</span>
+          <strong class="activity-details-item__value">{{ formatViews(detail.popularity) }}</strong>
         </div>
 
         <div class="activity-details-item">
           <span class="activity-details-item__label">Cena</span>
-          <strong class="activity-details-item__value">
-            {{ activity.price === null ? 'Besplatno' : activity.price + ' RSD' }}
-          </strong>
+          <strong class="activity-details-item__value">{{ formatPrice(detail.price) }}</strong>
         </div>
 
+        @if (detail.distanceKm) {
         <div class="activity-details-item">
-          <span class="activity-details-item__label">Kapacitet</span>
-          <strong class="activity-details-item__value">
-            {{
-            activity.maxCapacity === null
-            ? 'Nije ograničeno'
-            : activity.maxCapacity + ' osoba'
-            }}
-          </strong>
+          <span class="activity-details-item__label">Distanca</span>
+          <strong class="activity-details-item__value">{{ detail.distanceKm }} km</strong>
         </div>
+        }
+
+        @if (detail.startPoint) {
+        <div class="activity-details-item">
+          <span class="activity-details-item__label">Polazna tačka</span>
+          <strong class="activity-details-item__value">{{ detail.startPoint }}</strong>
+        </div>
+        }
+
+        @if (detail.seasonName) {
+        <div class="activity-details-item">
+          <span class="activity-details-item__label">Sezona</span>
+          <strong class="activity-details-item__value">{{ detail.seasonName }}</strong>
+        </div>
+        }
+
+        @if (detail.organizerWebsite) {
+        <div class="activity-details-item activity-details-item--full">
+          <span class="activity-details-item__label">Sajt organizatora</span>
+          <a class="activity-details-item__value activity-details-item__link"
+            [href]="detail.organizerWebsite" target="_blank" rel="noopener">
+            {{ detail.organizerWebsite }}
+          </a>
+        </div>
+        }
+
+        @if (detail.latitude && detail.longitude) {
+        <div class="activity-details-item activity-details-item--full">
+          <span class="activity-details-item__label">Koordinate</span>
+          <a class="activity-details-item__value activity-details-item__link"
+            [href]="'https://www.google.com/maps?q=' + detail.latitude + ',' + detail.longitude"
+            target="_blank" rel="noopener">
+            {{ detail.latitude }}, {{ detail.longitude }}
+          </a>
+        </div>
+        }
 
         <div class="activity-details-item activity-details-item--full">
           <span class="activity-details-item__label">Poslednja izmena</span>
-          <strong class="activity-details-item__value">
-            {{ timeAgo(activity.lastUpdatedAt) }}
-          </strong>
+          <strong class="activity-details-item__value">{{ timeAgo(detail.updatedAt) }}</strong>
         </div>
+      </div>
+
+      <!-- Inclusions -->
+      @if (detail.inclusions.length > 0) {
+      <div class="activity-details-section">
+        <h4 class="activity-details-section__title">Uključeno</h4>
+        <ul class="activity-details-inclusions">
+          @for (item of detail.inclusions; track item) {
+          <li class="activity-details-inclusions__item">
+            <span class="material-icons">check_circle</span>
+            {{ item }}
+          </li>
+          }
+        </ul>
+      </div>
+      }
+
+      <!-- Reviews -->
+      <div class="activity-details-section">
+        <h4 class="activity-details-section__title">
+          Recenzije
+          @if (detail.reviews.length > 0) {
+          <span class="activity-details-section__count">({{ detail.reviews.length }})</span>
+          }
+        </h4>
+
+        @if (!detail.reviews.length) {
+        <p class="activity-details-empty">Nema recenzija za ovu aktivnost.</p>
+        } @else {
+        <div class="activity-reviews">
+          @for (review of detail.reviews; track review.createdAt) {
+          <div class="activity-review">
+            <div class="activity-review__header">
+              @if (review.authorAvatarUrl) {
+              <img class="activity-review__avatar" [src]="review.authorAvatarUrl" [alt]="review.authorName" />
+              } @else {
+              <div class="activity-review__avatar activity-review__avatar--placeholder">
+                {{ review.authorName[0] }}
+              </div>
+              }
+              <div class="activity-review__meta">
+                <span class="activity-review__author">{{ review.authorName }}</span>
+                <span class="activity-review__date">{{ formatDate(review.createdAt) }}</span>
+              </div>
+              <div class="activity-review__stars">
+                @for (star of starArray(review.rating); track star) {
+                <span class="material-icons activity-review__star"
+                  [class.activity-review__star--filled]="star <= review.rating">star</span>
+                }
+              </div>
+            </div>
+            @if (review.comment) {
+            <p class="activity-review__comment">{{ review.comment }}</p>
+            }
+          </div>
+          }
+        </div>
+        }
       </div>
     </div>
 
+    <!-- Footer actions -->
     <div class="activity-details-panel__footer">
-      @if (activity.status === 'pending' || activity.status === 'rejected') {
-      <button class="btn btn-primary btn-sm" type="button" [disabled]="isUpdatingStatus()"
-        (click)="approveSelectedActivity()">
+      @if (!detail.isActive) {
+      <button class="btn btn-primary btn-sm" type="button" (click)="activateSelectedActivity()">
         <span class="material-icons">check</span>
-        Odobri
+        Aktiviraj
       </button>
-      }
-
-      @if (activity.status === 'active') {
-      <button class="btn btn-ghost btn-sm activity-details-panel__danger" type="button" [disabled]="isUpdatingStatus()"
+      } @else {
+      <button class="btn btn-ghost btn-sm activity-details-panel__danger" type="button"
         (click)="deactivateSelectedActivity()">
         <span class="material-icons">block</span>
         Deaktiviraj
       </button>
       }
 
+      <button class="btn btn-secondary btn-sm" type="button" (click)="openEditModal()">
+        <span class="material-icons">edit</span>
+        Izmeni
+      </button>
+
+      @if (selectedActivity(); as activity) {
+      <button class="btn btn-ghost btn-sm activity-details-panel__danger" type="button"
+        (click)="openDeleteDialog(activity)">
+        <span class="material-icons">delete</span>
+        Obriši
+      </button>
+      }
+
       <button class="btn btn-ghost btn-sm" type="button" (click)="closeDetailsPanel()">
-        Otkaži
+        Zatvori
       </button>
     </div>
+    }
   </aside>
-  }
   }
 </div>
 
+<!-- ===== CREATE MODAL ===== -->
+@if (isCreateModalOpen()) {
+<div class="activity-modal-backdrop" (click)="closeCreateModal()"></div>
+<div class="activity-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+  <div class="activity-modal__header">
+    <h3 class="activity-modal__title">{{ isEditMode() ? 'Izmeni aktivnost' : 'Dodaj aktivnost' }}</h3>
+    <button class="activity-details-panel__close" type="button" (click)="closeCreateModal()">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+
+  <div class="activity-modal__body">
+    <div class="activity-form-group">
+      <label class="activity-form-label">Naziv <span class="activity-form-required">*</span></label>
+      <input class="activity-form-input" type="text"
+        [value]="createForm().name"
+        (input)="updateCreateField('name', $any($event.target).value)"
+        placeholder="Naziv aktivnosti" />
+    </div>
+
+    <div class="activity-form-group">
+      <label class="activity-form-label">Slug <span class="activity-form-required">*</span></label>
+      <input class="activity-form-input" type="text"
+        [value]="createForm().slug"
+        (input)="updateCreateField('slug', $any($event.target).value)"
+        placeholder="naziv-aktivnosti" />
+    </div>
+
+    <div class="activity-form-group">
+      <label class="activity-form-label">Kategorija <span class="activity-form-required">*</span></label>
+      <select class="activity-form-select"
+        [value]="createForm().categoryId"
+        (change)="updateCreateField('categoryId', +$any($event.target).value)">
+        <option value="0" disabled>Izaberi kategoriju</option>
+        @for (cat of categories(); track cat.id) {
+        <option [value]="cat.id">{{ cat.name }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="activity-form-group">
+      <label class="activity-form-label">Opis</label>
+      <textarea class="activity-form-textarea" rows="3"
+        [value]="createForm().description ?? ''"
+        (input)="updateCreateField('description', $any($event.target).value)"
+        placeholder="Kratak opis aktivnosti"></textarea>
+    </div>
+
+    <div class="activity-form-row">
+      <div class="activity-form-group">
+        <label class="activity-form-label">Cena (RSD)</label>
+        <input class="activity-form-input" type="number" min="0"
+          [value]="createForm().price ?? ''"
+          (input)="updateCreateField('price', $any($event.target).value ? +$any($event.target).value : undefined)"
+          placeholder="0" />
+      </div>
+
+      <div class="activity-form-group">
+        <label class="activity-form-label">Trajanje (min)</label>
+        <input class="activity-form-input" type="number" min="1"
+          [value]="createForm().durationMinutes ?? ''"
+          (input)="updateCreateField('durationMinutes', $any($event.target).value ? +$any($event.target).value : undefined)"
+          placeholder="90" />
+      </div>
+    </div>
+
+    <div class="activity-form-group">
+      <label class="activity-form-label">Težina</label>
+      <select class="activity-form-select"
+        [value]="createForm().difficultyLevel ?? ''"
+        (change)="updateCreateField('difficultyLevel', $any($event.target).value || undefined)">
+        <option value="">Nije definisano</option>
+        @for (d of difficulties.slice(1); track d.value) {
+        <option [value]="d.value">{{ d.label }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Region + Grad -->
+    @if (isSuperAdmin()) {
+    <div class="activity-form-group">
+      <label class="activity-form-label">Region</label>
+      <select class="activity-form-select"
+        [value]="modalRegionId()"
+        (change)="onModalRegionChange($any($event.target).value)">
+        <option value="all">Svi regioni</option>
+        @for (r of regions(); track r.id) {
+        <option [value]="r.id">{{ r.name }}</option>
+        }
+      </select>
+    </div>
+    }
+
+    <div class="activity-form-group">
+      <label class="activity-form-label">Grad</label>
+      <select class="activity-form-select"
+        [value]="createForm().cityId ?? ''"
+        (change)="updateCreateField('cityId', $any($event.target).value ? +$any($event.target).value : undefined)">
+        <option value="">Nije određeno</option>
+        @for (c of modalCities(); track c.id) {
+        <option [value]="c.id">{{ c.name }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Destinacija -->
+    <div class="activity-form-group">
+      <label class="activity-form-label">Destinacija (opciono)</label>
+      <input class="activity-form-input" type="text"
+        [value]="createForm().destinationId ?? ''"
+        (input)="updateCreateField('destinationId', $any($event.target).value || undefined)"
+        placeholder="UUID destinacije" />
+    </div>
+
+    <!-- Inclusions -->
+    <div class="activity-form-group">
+      <label class="activity-form-label">Šta je uključeno</label>
+      <div class="activity-form-inclusions">
+        @for (item of modalInclusions(); track $index) {
+        <div class="activity-inclusion-item">
+          <span class="activity-inclusion-item__text">{{ item }}</span>
+          <button type="button" class="activity-inclusion-item__remove" (click)="removeInclusion($index)">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        }
+        <div class="activity-inclusion-add">
+          <input class="activity-form-input" type="text"
+            [value]="newInclusionText()"
+            (input)="newInclusionText.set($any($event.target).value)"
+            (keydown.enter)="addInclusion(); $event.preventDefault()"
+            placeholder="Npr. Vodič, Oprema..." />
+          <button type="button" class="btn btn-ghost btn-sm" (click)="addInclusion()">
+            <span class="material-icons">add</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slike -->
+    <div class="activity-form-group">
+      <label class="activity-form-label">Slike</label>
+      <div class="activity-form-images">
+        @for (file of modalImageFiles(); track $index) {
+        <div class="activity-form-image-item">
+          <span class="material-icons">image</span>
+          <span class="activity-form-image-item__name">{{ file.name }}</span>
+          <button type="button" class="activity-inclusion-item__remove" (click)="removeImageFile($index)">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        }
+        <label class="activity-form-image-upload">
+          <span class="material-icons">upload</span>
+          Dodaj slike
+          <input type="file" accept="image/*" multiple (change)="onImageFilesSelect($event)" style="display:none" />
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="activity-modal__footer">
+    <button class="btn btn-ghost btn-sm" type="button" (click)="closeCreateModal()">
+      Otkaži
+    </button>
+    <button class="btn btn-primary btn-sm" type="button"
+      [disabled]="isSubmitting() || !createForm().name.trim() || !createForm().slug.trim() || !createForm().categoryId"
+      (click)="submitCreate()">
+      @if (isSubmitting()) {
+      <span class="material-icons">sync</span>
+      Čuvanje...
+      } @else if (isEditMode()) {
+      <span class="material-icons">save</span>
+      Sačuvaj izmene
+      } @else {
+      <span class="material-icons">add</span>
+      Dodaj aktivnost
+      }
+    </button>
+  </div>
+</div>
+}
+
 <!-- ===== DELETE CONFIRM DIALOG ===== -->
 @if (isDeleteDialogOpen()) {
-<app-confirm-dialog [title]="ui.t('activities.delete.title')"
-  [description]="ui.t('activities.delete.description', { name: selectedActivity()?.name ?? '' })"
-  [confirmLabel]="ui.t('activities.delete.confirm')" [cancelLabel]="ui.t('activities.delete.cancel')"
-  [loadingLabel]="ui.t('activities.delete.loading')" [isLoading]="isDeleting()" (cancel)="closeDeleteDialog()"
+<app-confirm-dialog
+  [title]="ui.t('activities.delete.title')"
+  [description]="ui.t('activities.delete.description', { name: activityToDelete()?.name ?? '' })"
+  [confirmLabel]="ui.t('activities.delete.confirm')"
+  [cancelLabel]="ui.t('activities.delete.cancel')"
+  [loadingLabel]="ui.t('activities.delete.loading')"
+  [isLoading]="isDeleting()"
+  (cancel)="closeDeleteDialog()"
   (confirm)="confirmDelete()"></app-confirm-dialog>
 }
