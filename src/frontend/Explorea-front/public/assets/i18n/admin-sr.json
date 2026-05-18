@@ -22,6 +22,7 @@
   "sidebar.settings": "Podešavanja",
   "sidebar.dark": "Tamni mod",
   "sidebar.light": "Svetli mod",
+  "sidebar.user_app": "Korisnička app",
   "sidebar.logout": "Odjavi se",
   "sidebar.profile": "Profil",
   "shell.title": "Explorea Admin",
