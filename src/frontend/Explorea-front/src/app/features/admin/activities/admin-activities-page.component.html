@@ -286,7 +286,17 @@
 
             <!-- Actions -->
             <td class="activity-td activity-td--actions" (click)="$event.stopPropagation()">
-              <div class="row-menu-wrap">
+              <div class="row-actions">
+                <a
+                  class="btn-icon"
+                  title="Otvori u aplikaciji"
+                  [href]="'/activities/' + activity.slug"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <span class="material-icons">open_in_new</span>
+                </a>
+                <div class="row-menu-wrap">
                 <button class="activity-menu-btn" (click)="toggleMenu(activity.id, $event)"
                   [title]="ui.t('activities.actions.label')">
                   <span class="material-icons">more_vert</span>
@@ -303,6 +313,7 @@
                   </button>
                 </div>
                 }
+                </div>
               </div>
             </td>
           </tr>
@@ -372,13 +383,13 @@
     <div class="activity-details-panel__body">
 
       <!-- Image gallery -->
-      @if (detail.imageUrls.length > 0) {
+      @if (detail.images.length > 0) {
       <div class="activity-details-gallery">
-        <img class="activity-details-gallery__main" [src]="detail.imageUrls[0]" [alt]="detail.name" />
-        @if (detail.imageUrls.length > 1) {
+        <img class="activity-details-gallery__main" [src]="detail.images[0].url" [alt]="detail.name" />
+        @if (detail.images.length > 1) {
         <div class="activity-details-gallery__thumbs">
-          @for (url of detail.imageUrls.slice(1, 4); track url) {
-          <img class="activity-details-gallery__thumb" [src]="url" [alt]="detail.name" />
+          @for (img of detail.images.slice(1, 4); track img.id) {
+          <img class="activity-details-gallery__thumb" [src]="img.url" [alt]="detail.name" />
           }
         </div>
         }
@@ -590,187 +601,318 @@
   }
 </div>
 
-<!-- ===== CREATE MODAL ===== -->
+<!-- ===== CREATE / EDIT MODAL ===== -->
 @if (isCreateModalOpen()) {
-<div class="activity-modal-backdrop" (click)="closeCreateModal()"></div>
-<div class="activity-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-  <div class="activity-modal__header">
-    <h3 class="activity-modal__title">{{ isEditMode() ? 'Izmeni aktivnost' : 'Dodaj aktivnost' }}</h3>
-    <button class="activity-details-panel__close" type="button" (click)="closeCreateModal()">
+<div class="edit-modal__backdrop" (click)="closeCreateModal()"></div>
+<aside class="edit-modal__panel" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+
+  <header class="edit-modal__header">
+    <div class="edit-modal__title-block">
+      <span class="material-icons edit-modal__title-icon">hiking</span>
+      <div>
+        <h2 class="edit-modal__title">{{ isEditMode() ? 'Izmeni aktivnost' : 'Nova aktivnost' }}</h2>
+        <p class="edit-modal__subtitle">{{ isEditMode() ? (selectedActivity()?.name ?? '') : 'Popuni sva polja i sačuvaj' }}</p>
+      </div>
+    </div>
+    <button class="edit-modal__close" type="button" (click)="closeCreateModal()">
       <span class="material-icons">close</span>
     </button>
-  </div>
+  </header>
 
-  <div class="activity-modal__body">
-    <div class="activity-form-group">
-      <label class="activity-form-label">Naziv <span class="activity-form-required">*</span></label>
-      <input class="activity-form-input" type="text"
-        [value]="createForm().name"
-        (input)="updateCreateField('name', $any($event.target).value)"
-        placeholder="Naziv aktivnosti" />
+  @if (errorMessage()) {
+    <div class="edit-modal__error">
+      <span class="material-icons">error_outline</span>
+      {{ errorMessage() }}
     </div>
+  }
 
-    <div class="activity-form-group">
-      <label class="activity-form-label">Slug <span class="activity-form-required">*</span></label>
-      <input class="activity-form-input" type="text"
-        [value]="createForm().slug"
-        (input)="updateCreateField('slug', $any($event.target).value)"
-        placeholder="naziv-aktivnosti" />
-    </div>
+  <div class="edit-modal__body">
 
-    <div class="activity-form-group">
-      <label class="activity-form-label">Kategorija <span class="activity-form-required">*</span></label>
-      <select class="activity-form-select"
-        [value]="createForm().categoryId"
-        (change)="updateCreateField('categoryId', +$any($event.target).value)">
-        <option value="0" disabled>Izaberi kategoriju</option>
-        @for (cat of categories(); track cat.id) {
-        <option [value]="cat.id">{{ cat.name }}</option>
-        }
-      </select>
-    </div>
+    <div class="edit-modal__cols">
 
-    <div class="activity-form-group">
-      <label class="activity-form-label">Opis</label>
-      <textarea class="activity-form-textarea" rows="3"
-        [value]="createForm().description ?? ''"
-        (input)="updateCreateField('description', $any($event.target).value)"
-        placeholder="Kratak opis aktivnosti"></textarea>
-    </div>
+      <!-- Left: main fields -->
+      <div class="edit-modal__form-col">
 
-    <div class="activity-form-row">
-      <div class="activity-form-group">
-        <label class="activity-form-label">Cena (RSD)</label>
-        <input class="activity-form-input" type="number" min="0"
-          [value]="createForm().price ?? ''"
-          (input)="updateCreateField('price', $any($event.target).value ? +$any($event.target).value : undefined)"
-          placeholder="0" />
+        <div class="edit-field">
+          <label class="edit-field__label">Naziv <span class="edit-field__required">*</span></label>
+          <input class="edit-field__input" type="text"
+            [value]="createForm().name"
+            (input)="updateCreateField('name', $any($event.target).value)"
+            placeholder="Naziv aktivnosti" />
+        </div>
+
+        <div class="edit-field">
+          <label class="edit-field__label">Slug <span class="edit-field__required">*</span></label>
+          <input class="edit-field__input" type="text"
+            [value]="createForm().slug"
+            (input)="updateCreateField('slug', $any($event.target).value)"
+            placeholder="naziv-aktivnosti" />
+        </div>
+
+        <div class="edit-field">
+          <label class="edit-field__label">Kategorija <span class="edit-field__required">*</span></label>
+          <select class="edit-field__select"
+            [value]="createForm().categoryId"
+            (change)="updateCreateField('categoryId', +$any($event.target).value)">
+            <option value="0" disabled>Izaberi kategoriju</option>
+            @for (cat of categories(); track cat.id) {
+              <option [value]="cat.id">{{ cat.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="edit-field">
+          <label class="edit-field__label">Opis</label>
+          <textarea class="edit-field__textarea" rows="4"
+            [value]="createForm().description ?? ''"
+            (input)="updateCreateField('description', $any($event.target).value)"
+            placeholder="Kratak opis aktivnosti"></textarea>
+        </div>
+
+        <div class="edit-field__row">
+          <div class="edit-field">
+            <label class="edit-field__label">Cena (RSD)</label>
+            <input class="edit-field__input" type="number" min="0"
+              [value]="createForm().price ?? ''"
+              (input)="updateCreateField('price', $any($event.target).value ? +$any($event.target).value : undefined)"
+              placeholder="0" />
+          </div>
+          <div class="edit-field">
+            <label class="edit-field__label">Trajanje (min)</label>
+            <input class="edit-field__input" type="number" min="1"
+              [value]="createForm().durationMinutes ?? ''"
+              (input)="updateCreateField('durationMinutes', $any($event.target).value ? +$any($event.target).value : undefined)"
+              placeholder="90" />
+          </div>
+        </div>
+
+        <div class="edit-field">
+          <label class="edit-field__label">Težina</label>
+          <select class="edit-field__select"
+            [value]="createForm().difficultyLevel ?? ''"
+            (change)="updateCreateField('difficultyLevel', $any($event.target).value || undefined)">
+            <option value="">Nije definisano</option>
+            @for (d of difficulties.slice(1); track d.value) {
+              <option [value]="d.value">{{ d.label }}</option>
+            }
+          </select>
+        </div>
+
       </div>
 
-      <div class="activity-form-group">
-        <label class="activity-form-label">Trajanje (min)</label>
-        <input class="activity-form-input" type="number" min="1"
-          [value]="createForm().durationMinutes ?? ''"
-          (input)="updateCreateField('durationMinutes', $any($event.target).value ? +$any($event.target).value : undefined)"
-          placeholder="90" />
+      <!-- Right: location + extras -->
+      <div class="edit-modal__map-col">
+
+        @if (isSuperAdmin()) {
+          <div class="edit-field">
+            <label class="edit-field__label">Region</label>
+            <select class="edit-field__select"
+              [value]="modalRegionId()"
+              (change)="onModalRegionChange($any($event.target).value)">
+              <option value="all">Svi regioni</option>
+              @for (r of regions(); track r.id) {
+                <option [value]="r.id">{{ r.name }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <div class="edit-field">
+          <label class="edit-field__label">Grad</label>
+          <select class="edit-field__select"
+            [value]="createForm().cityId ?? ''"
+            (change)="updateCreateField('cityId', $any($event.target).value ? +$any($event.target).value : undefined)">
+            <option value="">Nije određeno</option>
+            @for (c of modalCities(); track c.id) {
+              <option [value]="c.id">{{ c.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="edit-field">
+          <label class="edit-field__label">Destinacija (opciono)</label>
+          <div class="dest-search-wrap">
+            <input class="edit-field__input dest-search-input"
+              type="text"
+              [value]="destinationSearchText()"
+              (input)="updateDestinationSearch($any($event.target).value)"
+              (blur)="closeDestinationDropdownDelayed()"
+              (focus)="destinationDropdownOpen.set(destinationResults().length > 0)"
+              placeholder="Pretraži destinaciju po imenu..." />
+            @if (createForm().destinationId) {
+              <button class="dest-search-clear" type="button" title="Ukloni destinaciju" (click)="clearDestination()">
+                <span class="material-icons">close</span>
+              </button>
+            } @else if (isDestinationSearching()) {
+              <span class="material-icons dest-search-loading edit-modal__spin">sync</span>
+            }
+            @if (destinationDropdownOpen() && destinationResults().length > 0) {
+              <div class="dest-search-dropdown">
+                @for (d of destinationResults(); track d.id) {
+                  <button class="dest-search-item" type="button" (mousedown)="selectDestination(d)">
+                    <span class="dest-search-item__name">{{ d.name }}</span>
+                    @if (d.city) {
+                      <span class="dest-search-item__city">{{ d.city }}</span>
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </div>
+          @if (createForm().destinationId) {
+            <span class="dest-search-selected-id">ID: {{ createForm().destinationId }}</span>
+          }
+        </div>
+
+        <div class="edit-field">
+          <label class="edit-field__label">Šta je uključeno</label>
+          <div class="activity-form-inclusions">
+            @for (item of modalInclusions(); track $index) {
+              <div class="activity-inclusion-item">
+                <span class="activity-inclusion-item__text">{{ item }}</span>
+                <button type="button" class="activity-inclusion-item__remove" (click)="removeInclusion($index)">
+                  <span class="material-icons">close</span>
+                </button>
+              </div>
+            }
+            <div class="activity-inclusion-add">
+              <input class="edit-field__input" type="text"
+                [value]="newInclusionText()"
+                (input)="newInclusionText.set($any($event.target).value)"
+                (keydown.enter)="addInclusion(); $event.preventDefault()"
+                placeholder="Npr. Vodič, Oprema..." />
+              <button type="button" class="edit-modal__add-inclusion-btn" (click)="addInclusion()">
+                <span class="material-icons">add</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Map / lokacija -->
+        <div class="edit-field">
+          <label class="edit-field__label">Lokacija</label>
+        </div>
+
+        <div class="edit-modal__address-row">
+          <input class="edit-field__input edit-field__input--address"
+            type="text"
+            [value]="mapAddress()"
+            (input)="mapAddress.set($any($event.target).value)"
+            (keydown.enter)="$event.preventDefault(); geocode()"
+            placeholder="Unesi adresu..." />
+          <button class="edit-modal__geo-btn" type="button"
+            (click)="geocode()"
+            [disabled]="isGeocoding()"
+            title="Pronađi koordinate">
+            @if (isGeocoding()) {
+              <span class="material-icons edit-modal__spin">sync</span>
+            } @else {
+              <span class="material-icons">search</span>
+            }
+          </button>
+        </div>
+
+        <div #mapEl class="edit-modal__map"></div>
+        <p class="edit-modal__map-hint">Klikni na mapu ili prevuci pin da postaviš lokaciju.</p>
+
+        @if (mapLatitude() !== null) {
+          <div class="edit-field__coords">
+            <span class="edit-field__coords-label">Koordinate</span>
+            <span class="edit-field__coords-value">
+              {{ mapLatitude() | number:'1.5-5' }}, {{ mapLongitude() | number:'1.5-5' }}
+            </span>
+          </div>
+        }
+
       </div>
     </div>
 
-    <div class="activity-form-group">
-      <label class="activity-form-label">Težina</label>
-      <select class="activity-form-select"
-        [value]="createForm().difficultyLevel ?? ''"
-        (change)="updateCreateField('difficultyLevel', $any($event.target).value || undefined)">
-        <option value="">Nije definisano</option>
-        @for (d of difficulties.slice(1); track d.value) {
-        <option [value]="d.value">{{ d.label }}</option>
-        }
-      </select>
-    </div>
-
-    <!-- Region + Grad -->
-    @if (isSuperAdmin()) {
-    <div class="activity-form-group">
-      <label class="activity-form-label">Region</label>
-      <select class="activity-form-select"
-        [value]="modalRegionId()"
-        (change)="onModalRegionChange($any($event.target).value)">
-        <option value="all">Svi regioni</option>
-        @for (r of regions(); track r.id) {
-        <option [value]="r.id">{{ r.name }}</option>
-        }
-      </select>
-    </div>
-    }
-
-    <div class="activity-form-group">
-      <label class="activity-form-label">Grad</label>
-      <select class="activity-form-select"
-        [value]="createForm().cityId ?? ''"
-        (change)="updateCreateField('cityId', $any($event.target).value ? +$any($event.target).value : undefined)">
-        <option value="">Nije određeno</option>
-        @for (c of modalCities(); track c.id) {
-        <option [value]="c.id">{{ c.name }}</option>
-        }
-      </select>
-    </div>
-
-    <!-- Destinacija -->
-    <div class="activity-form-group">
-      <label class="activity-form-label">Destinacija (opciono)</label>
-      <input class="activity-form-input" type="text"
-        [value]="createForm().destinationId ?? ''"
-        (input)="updateCreateField('destinationId', $any($event.target).value || undefined)"
-        placeholder="UUID destinacije" />
-    </div>
-
-    <!-- Inclusions -->
-    <div class="activity-form-group">
-      <label class="activity-form-label">Šta je uključeno</label>
-      <div class="activity-form-inclusions">
-        @for (item of modalInclusions(); track $index) {
-        <div class="activity-inclusion-item">
-          <span class="activity-inclusion-item__text">{{ item }}</span>
-          <button type="button" class="activity-inclusion-item__remove" (click)="removeInclusion($index)">
-            <span class="material-icons">close</span>
-          </button>
-        </div>
-        }
-        <div class="activity-inclusion-add">
-          <input class="activity-form-input" type="text"
-            [value]="newInclusionText()"
-            (input)="newInclusionText.set($any($event.target).value)"
-            (keydown.enter)="addInclusion(); $event.preventDefault()"
-            placeholder="Npr. Vodič, Oprema..." />
-          <button type="button" class="btn btn-ghost btn-sm" (click)="addInclusion()">
-            <span class="material-icons">add</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Slike -->
-    <div class="activity-form-group">
-      <label class="activity-form-label">Slike</label>
-      <div class="activity-form-images">
-        @for (file of modalImageFiles(); track $index) {
-        <div class="activity-form-image-item">
-          <span class="material-icons">image</span>
-          <span class="activity-form-image-item__name">{{ file.name }}</span>
-          <button type="button" class="activity-inclusion-item__remove" (click)="removeImageFile($index)">
-            <span class="material-icons">close</span>
-          </button>
-        </div>
-        }
-        <label class="activity-form-image-upload">
-          <span class="material-icons">upload</span>
-          Dodaj slike
-          <input type="file" accept="image/*" multiple (change)="onImageFilesSelect($event)" style="display:none" />
+    <!-- Images section -->
+    <div class="edit-modal__images-section">
+      <div class="edit-modal__images-header">
+        <span class="edit-field__label">
+          Slike
+          <span class="edit-field__counter">{{ editExistingImages().length + modalImagePreviews().length }}</span>
+        </span>
+        <label class="edit-modal__add-img-btn" title="Dodaj sliku">
+          <span class="material-icons">add_photo_alternate</span>
+          Dodaj
+          <input type="file" accept="image/*" multiple hidden (change)="onImageFilesSelect($event)" />
         </label>
       </div>
+
+      <div class="edit-modal__images-grid">
+
+        <!-- Existing images (edit mode) -->
+        @for (img of editExistingImages(); track img.id) {
+          <div class="edit-modal__img-card" [class.edit-modal__img-card--hero]="editHeroImageId() === img.id">
+            <img [src]="img.url" [alt]="img.url" class="edit-modal__img" />
+            <button
+              class="edit-modal__img-hero"
+              type="button"
+              [title]="editHeroImageId() === img.id ? 'Hero slika' : 'Postavi kao hero'"
+              (click)="setExistingHero(img.id)"
+            >
+              <span class="material-icons">{{ editHeroImageId() === img.id ? 'star' : 'star_border' }}</span>
+            </button>
+            <button class="edit-modal__img-delete" type="button" title="Ukloni" (click)="deleteExistingImage(img.id)">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+        }
+
+        <!-- New pending images -->
+        @for (preview of modalImagePreviews(); track preview.url; let i = $index) {
+          <div class="edit-modal__img-card" [class.edit-modal__img-card--hero]="editExistingImages().length === 0 && modalHeroIndex() === i">
+            <img [src]="preview.url" [alt]="preview.file.name" class="edit-modal__img" />
+            @if (editExistingImages().length === 0) {
+              <button
+                class="edit-modal__img-hero"
+                type="button"
+                [title]="modalHeroIndex() === i ? 'Hero slika' : 'Postavi kao hero'"
+                (click)="setModalHero(i)"
+              >
+                <span class="material-icons">{{ modalHeroIndex() === i ? 'star' : 'star_border' }}</span>
+              </button>
+            }
+            <button class="edit-modal__img-delete" type="button" title="Ukloni" (click)="removeImageFile(i)">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+        }
+
+        @if (editExistingImages().length === 0 && modalImagePreviews().length === 0) {
+          <div class="edit-modal__images-empty">
+            <span class="material-icons">add_photo_alternate</span>
+            Dodaj slike aktivnosti
+          </div>
+        }
+      </div>
     </div>
+
   </div>
 
-  <div class="activity-modal__footer">
-    <button class="btn btn-ghost btn-sm" type="button" (click)="closeCreateModal()">
+  <footer class="edit-modal__footer">
+    <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="closeCreateModal()">
       Otkaži
     </button>
-    <button class="btn btn-primary btn-sm" type="button"
+    <button class="edit-modal__btn edit-modal__btn--save" type="button"
       [disabled]="isSubmitting() || !createForm().name.trim() || !createForm().slug.trim() || !createForm().categoryId"
       (click)="submitCreate()">
       @if (isSubmitting()) {
-      <span class="material-icons">sync</span>
-      Čuvanje...
+        <span class="material-icons edit-modal__spin">sync</span>
+        Čuvanje...
       } @else if (isEditMode()) {
-      <span class="material-icons">save</span>
-      Sačuvaj izmene
+        <span class="material-icons">save</span>
+        Sačuvaj izmene
       } @else {
-      <span class="material-icons">add</span>
-      Dodaj aktivnost
+        <span class="material-icons">add_circle_outline</span>
+        Dodaj aktivnost
       }
     </button>
-  </div>
-</div>
+  </footer>
+
+</aside>
 }
 
 <!-- ===== DELETE CONFIRM DIALOG ===== -->

@@ -4,6 +4,8 @@ namespace Explorea.API.DTOs.Admin.Activity
     {
         public string? Search { get; set; }
 
+        public List<Guid>? Ids { get; set; }
+
         public int? RegionId { get; set; }
         public int? CityId { get; set; }
         public int? CategoryId { get; set; }

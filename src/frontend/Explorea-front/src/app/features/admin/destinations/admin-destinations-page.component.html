@@ -251,15 +251,17 @@
           </thead>
           <tbody>
             @for (dest of destinations(); track dest.id) {
-              <tr class="dest-row">
+              <tr class="dest-row" (click)="openDetailsPanel(dest)">
                 <!-- Destination name + thumb -->
                 <td class="dest-td">
                   <div class="dest-name-cell">
-                    <div class="dest-thumb" [style.background-color]="thumbColor(dest.category)">
-                      <span class="material-icons dest-thumb__icon">{{
-                        categoryIcon(dest.category)
-                      }}</span>
-                    </div>
+                    @if (dest.thumbnailUrl) {
+                      <img class="dest-thumb dest-thumb--img" [src]="dest.thumbnailUrl" [alt]="dest.name" />
+                    } @else {
+                      <div class="dest-thumb" [style.background-color]="thumbColor(dest.category)">
+                        <span class="material-icons dest-thumb__icon">{{ categoryIcon(dest.category) }}</span>
+                      </div>
+                    }
                     <div class="dest-name-info">
                       <span class="dest-name-info__name">{{ dest.name }}</span>
                       <span class="dest-name-info__location">
@@ -304,7 +306,7 @@
                 </td>
 
                 <!-- Actions -->
-                <td class="dest-td dest-td--actions">
+                <td class="dest-td dest-td--actions" (click)="$event.stopPropagation()">
                   <div class="row-actions">
                     <a
                       class="btn-icon"
@@ -373,6 +375,140 @@
     }
   </div>
 </div>
+
+<!-- ===== DESTINATION DETAILS PANEL ===== -->
+@if (isDetailsPanelOpen() && detailsPanelRow(); as dest) {
+  <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
+  <aside class="ddp-panel" role="dialog" aria-modal="true">
+
+    <header class="ddp-header">
+      <div class="ddp-header__title-group">
+        @if (dest.thumbnailUrl) {
+          <img class="ddp-header__icon ddp-header__icon--img" [src]="dest.thumbnailUrl" [alt]="dest.name" />
+        } @else {
+          <div class="ddp-header__icon" [style.background-color]="thumbColor(dest.category)">
+            <span class="material-icons">{{ categoryIcon(dest.category) }}</span>
+          </div>
+        }
+        <div class="ddp-header__text">
+          <h2 class="ddp-header__name">{{ dest.name }}</h2>
+          <p class="ddp-header__location">
+            <span class="material-icons">location_on</span>
+            {{ dest.city }}@if (dest.region && dest.region !== dest.city) {, {{ dest.region }}}
+          </p>
+        </div>
+      </div>
+      <button class="ddp-close" type="button" (click)="closeDetailsPanel()">
+        <span class="material-icons">close</span>
+      </button>
+    </header>
+
+    <div class="ddp-body">
+
+      @if (isDetailLoading()) {
+        <div class="ddp-loading">
+          <span class="material-icons ddp-loading__icon">sync</span>
+          Učitavanje...
+        </div>
+      } @else {
+
+        <!-- Gallery -->
+        @if (detailsPanelDetail()?.images?.length) {
+          <div class="ddp-gallery">
+            <img class="ddp-gallery__main"
+              [src]="detailsPanelDetail()!.images[0].imageUrl"
+              [alt]="dest.name" />
+            @if (detailsPanelDetail()!.images.length > 1) {
+              <div class="ddp-gallery__thumbs">
+                @for (img of detailsPanelDetail()!.images.slice(1, 4); track img.id) {
+                  <img class="ddp-gallery__thumb" [src]="img.imageUrl" [alt]="dest.name" />
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="ddp-gallery">
+            <div class="ddp-gallery__placeholder" [style.background-color]="thumbColor(dest.category)">
+              <span class="material-icons">{{ categoryIcon(dest.category) }}</span>
+            </div>
+          </div>
+        }
+
+        <!-- Badges -->
+        <div class="ddp-badges">
+          <span class="dest-status dest-status--{{ dest.status }}">{{ statusLabel(dest.status) }}</span>
+          @if (dest.avgRating) {
+            <span class="ddp-rating">
+              <span class="material-icons">star</span>
+              {{ formatRating(dest.avgRating) }}
+            </span>
+          }
+        </div>
+
+        <!-- Description -->
+        @if (detailsPanelDetail()?.description) {
+          <div class="ddp-description-wrap">
+            <p class="ddp-description" [class.ddp-description--collapsed]="!descriptionExpanded()">
+              {{ detailsPanelDetail()!.description }}
+            </p>
+            @if ((detailsPanelDetail()!.description?.length ?? 0) > 160) {
+              <button class="ddp-description__toggle" type="button" (click)="descriptionExpanded.set(!descriptionExpanded())">
+                {{ descriptionExpanded() ? 'Prikaži manje' : 'Prikaži više' }}
+              </button>
+            }
+          </div>
+        }
+
+        <!-- Detail grid -->
+        <div class="ddp-grid">
+          <div class="ddp-grid__item">
+            <span class="ddp-grid__label">Kategorija</span>
+            <span class="ddp-grid__value">{{ dest.typeName || categoryLabel(dest.category) }}</span>
+          </div>
+          <div class="ddp-grid__item">
+            <span class="ddp-grid__label">Region</span>
+            <span class="ddp-grid__value">{{ dest.region || '—' }}</span>
+          </div>
+          <div class="ddp-grid__item">
+            <span class="ddp-grid__label">Pregleda</span>
+            <span class="ddp-grid__value">{{ formatViews(dest.views) }}</span>
+          </div>
+          <div class="ddp-grid__item">
+            <span class="ddp-grid__label">Ocena</span>
+            <span class="ddp-grid__value">{{ dest.avgRating ? formatRating(dest.avgRating) + ' / 5' : '—' }}</span>
+          </div>
+          @if (detailsPanelDetail()?.latitude != null) {
+            <div class="ddp-grid__item ddp-grid__item--full">
+              <span class="ddp-grid__label">Koordinate</span>
+              <span class="ddp-grid__value">
+                {{ detailsPanelDetail()!.latitude }}, {{ detailsPanelDetail()!.longitude }}
+              </span>
+            </div>
+          }
+        </div>
+
+      }
+    </div>
+
+    <footer class="ddp-footer">
+      <a class="btn btn-ghost btn-sm"
+        [href]="'/destinations/' + dest.slug"
+        target="_blank" rel="noopener">
+        <span class="material-icons">open_in_new</span>
+        Otvori
+      </a>
+      <button class="btn btn-ghost btn-sm" (click)="openEditFromPanel()">
+        <span class="material-icons">edit</span>
+        Izmeni
+      </button>
+      <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="openDeleteFromPanel()">
+        <span class="material-icons">delete</span>
+        Obriši
+      </button>
+    </footer>
+
+  </aside>
+}
 
 <!-- ===== DELETE CONFIRM DIALOG ===== -->
 @if (isDeleteDialogOpen()) {

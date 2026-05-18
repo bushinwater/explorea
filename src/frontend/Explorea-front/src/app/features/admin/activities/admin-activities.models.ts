@@ -1,4 +1,4 @@
-export type ActivityStatus = 'active' | 'pending' | 'inactive' | 'rejected';
+export type ActivityStatus = 'active' | 'inactive';
 
 export type ActivityDifficulty = 'easy' | 'medium' | 'hard';
 
@@ -36,8 +36,14 @@ export interface ActivityReview {
   createdAt: string;
 }
 
+export interface ActivityImageItem {
+  id: string;
+  url: string;
+  sortOrder: number;
+}
+
 export interface ActivityDetail extends ActivityRow {
-  imageUrls: string[];
+  images: ActivityImageItem[];
   inclusions: string[];
   reviews: ActivityReview[];
   cityName: string | null;
@@ -62,6 +68,7 @@ export interface ActivityStats {
 
 export interface ActivityFilters {
   search: string;
+  ids?: string[];
   categoryId: number | 'all';
   status: ActivityStatus | 'all';
   difficulty: ActivityDifficulty | 'all';
@@ -96,6 +103,8 @@ export interface CreateActivityDto {
   difficultyLevel?: string;
   cityId?: number;
   destinationId?: string;
+  latitude?: number;
+  longitude?: number;
   inclusions?: string[];
 }
 
@@ -110,9 +119,17 @@ export interface UpdateActivityDto {
   cityId?: number;
   destinationId?: string;
   isActive?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface CityOption {
   id: number;
   name: string;
+}
+
+export interface DestinationOption {
+  id: string;
+  name: string;
+  city: string | null;
 }

@@ -17,6 +17,7 @@ import { FeedbackBannerComponent } from '../shared/components/feedback-banner/fe
 import { TableSkeletonComponent } from '../shared/components/table-skeleton/table-skeleton.component';
 import {
   DestinationCategory,
+  DestinationDetail,
   DestinationFilters,
   DestinationRow,
   DestinationStats,
@@ -74,6 +75,12 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected readonly selectedDestination = signal<DestinationRow | null>(null);
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
+
+  protected readonly isDetailsPanelOpen = signal(false);
+  protected readonly isDetailLoading = signal(false);
+  protected readonly detailsPanelRow = signal<DestinationRow | null>(null);
+  protected readonly detailsPanelDetail = signal<DestinationDetail | null>(null);
+  protected readonly descriptionExpanded = signal(false);
 
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.total() / this.filters().pageSize)),
@@ -196,6 +203,27 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.isEditModalOpen.set(true);
   }
 
+  protected openEditFromPanel(): void {
+    const row = this.detailsPanelRow();
+    if (!row) return;
+    this.openEdit(row);
+  }
+
+  protected openDeleteFromPanel(): void {
+    const row = this.detailsPanelRow();
+    if (!row) return;
+    this.closeDetailsPanel();
+    this.openDeleteDialog(row);
+  }
+
+  protected formatRating(r: number): string {
+    return r.toFixed(1);
+  }
+
+  protected starArray(): number[] {
+    return [1, 2, 3, 4, 5];
+  }
+
   protected closeEditModal(): void {
     this.isEditModalOpen.set(false);
     this.selectedDestination.set(null);
@@ -228,6 +256,32 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       if (list.some(t => t.id === type.id)) return list;
       return [...list, type];
     });
+  }
+
+  protected openDetailsPanel(dest: DestinationRow): void {
+    this.detailsPanelRow.set(dest);
+    this.detailsPanelDetail.set(null);
+    this.isDetailsPanelOpen.set(true);
+    this.isDetailLoading.set(true);
+    this.descriptionExpanded.set(false);
+
+    this.subscription.add(
+      this.destinationsService.getDestinationById(dest.id).subscribe({
+        next: (detail) => {
+          this.detailsPanelDetail.set(detail);
+          this.isDetailLoading.set(false);
+        },
+        error: () => {
+          this.isDetailLoading.set(false);
+        },
+      }),
+    );
+  }
+
+  protected closeDetailsPanel(): void {
+    this.isDetailsPanelOpen.set(false);
+    this.detailsPanelRow.set(null);
+    this.detailsPanelDetail.set(null);
   }
 
   protected openDeleteDialog(dest: DestinationRow): void {

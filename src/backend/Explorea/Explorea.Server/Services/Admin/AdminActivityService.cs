@@ -24,7 +24,11 @@ namespace Explorea.Server.Services.Admin
 
       var activitiesQuery = _repository.Query();
 
-      if (!string.IsNullOrWhiteSpace(query.Search))
+      if (query.Ids?.Count > 0)
+      {
+        activitiesQuery = activitiesQuery.Where(a => query.Ids.Contains(a.Id));
+      }
+      else if (!string.IsNullOrWhiteSpace(query.Search))
       {
         var search = query.Search.Trim().ToLower();
         activitiesQuery = activitiesQuery.Where(a =>
@@ -240,9 +244,9 @@ namespace Explorea.Server.Services.Admin
           .Select(i => i.ImageUrl)
           .FirstOrDefault(),
 
-        ImageUrls  = activity.Images
+        Images = activity.Images
           .OrderBy(i => i.SortOrder)
-          .Select(i => i.ImageUrl)
+          .Select(i => new ActivityImageItemDto { Id = i.Id, Url = i.ImageUrl, SortOrder = i.SortOrder })
           .ToList(),
 
         Inclusions = activity.Inclusions
@@ -431,8 +435,8 @@ namespace Explorea.Server.Services.Admin
 
     private static void ValidatePagination(int page, int pageSize)
     {
-      if (page < 1)                    throw new ArgumentException("Page must be >= 1.");
-      if (pageSize < 1 || pageSize > 50) throw new ArgumentException("PageSize must be between 1 and 50.");
+      if (page < 1)                     throw new ArgumentException("Page must be >= 1.");
+      if (pageSize < 1 || pageSize > 500) throw new ArgumentException("PageSize must be between 1 and 500.");
     }
 
     private static string? GetDurationGroup(int? durationMinutes)

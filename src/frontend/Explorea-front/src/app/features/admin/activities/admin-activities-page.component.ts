@@ -1,15 +1,21 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
+  ElementRef,
   HostListener,
   OnDestroy,
   OnInit,
+  ViewChild,
   computed,
   signal,
 } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { DecimalPipe } from '@angular/common';
 import { StatCardComponent } from '@shared/components';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
+import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
@@ -20,21 +26,43 @@ import {
   ActivityDetail,
   ActivityDifficulty,
   ActivityFilters,
+  ActivityImageItem,
   ActivityRow,
   ActivityStats,
   ActivityStatus,
   CategoryOption,
   CityOption,
   CreateActivityDto,
+  DestinationOption,
   RegionOption,
 } from './admin-activities.models';
 import { AdminActivitiesService } from './admin-activities.service';
+
+const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+
+const DARK = {
+  land: '#1e2e24', water: '#102840', park: '#1e3228',
+  road_major: '#486858', road_minor: '#364e40', road_path: '#2c4436',
+  building: '#253828', building_outline: '#30503c', extrusion: '#5a9e78',
+  boundary: '#335244', text: '#c8d8cc', text_halo: '#182818',
+  sand: '#262614', pedestrian: '#283e30', surface: '#243a2c',
+  bridge: '#2e4c3a', icon: '#8aab96',
+};
+const LIGHT = {
+  land: '#eef1ec', water: '#6bb0d4', park: '#96c89c',
+  road_major: '#ffffff', road_minor: '#f5f8f4', road_path: '#deeadc',
+  building: '#ccd8c8', building_outline: '#b0c4ac', extrusion: '#a2dcad',
+  boundary: '#6b826b', text: '#1a3828', text_halo: '#eef1ec',
+  sand: '#e0d8b0', pedestrian: '#dce8d8', surface: '#e4eee0',
+  bridge: '#d8e4d4', icon: '#28694c',
+};
 
 @Component({
   selector: 'app-admin-activities-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DecimalPipe,
     StatCardComponent,
     FeedbackBannerComponent,
     ConfirmDialogComponent,
@@ -45,8 +73,17 @@ import { AdminActivitiesService } from './admin-activities.service';
   styleUrl: './admin-activities-page.component.css',
 })
 export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
+  @ViewChild('mapEl', { static: false }) private mapEl?: ElementRef<HTMLDivElement>;
+
   private readonly searchInput$ = new Subject<string>();
+  private readonly destinationSearch$ = new Subject<string>();
   private readonly subscription = new Subscription();
+
+  private map: MapLibreMap | null = null;
+  private marker: Marker | null = null;
+  private lightStyle: unknown;
+  private darkStyle: unknown;
+  private themeObserver?: MutationObserver;
 
   protected readonly filters = signal<ActivityFilters>({
     search: '',
@@ -86,7 +123,18 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly isEditMode = signal(false);
   protected readonly editingActivityId = signal<string | null>(null);
   protected readonly modalInclusions = signal<string[]>([]);
-  protected readonly modalImageFiles = signal<File[]>([]);
+  protected readonly modalImagePreviews = signal<{ file: File; url: string }[]>([]);
+  protected readonly modalHeroIndex = signal<number>(0);
+  protected readonly editExistingImages = signal<ActivityImageItem[]>([]);
+  protected readonly editHeroImageId = signal<string | null>(null);
+  protected readonly mapLatitude = signal<number | null>(null);
+  protected readonly mapLongitude = signal<number | null>(null);
+  protected readonly mapAddress = signal('');
+  protected readonly isGeocoding = signal(false);
+  protected readonly destinationSearchText = signal('');
+  protected readonly destinationResults = signal<DestinationOption[]>([]);
+  protected readonly destinationDropdownOpen = signal(false);
+  protected readonly isDestinationSearching = signal(false);
   protected readonly modalCities = signal<CityOption[]>([]);
   protected readonly modalRegionId = signal<number | 'all'>('all');
   protected readonly newInclusionText = signal('');
@@ -124,9 +172,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly statuses: Array<{ value: ActivityStatus | 'all'; label: string }> = [
     { value: 'all', label: 'Svi statusi' },
     { value: 'active', label: 'Aktivno' },
-    { value: 'pending', label: 'Na čekanju' },
     { value: 'inactive', label: 'Neaktivno' },
-    { value: 'rejected', label: 'Odbijeno' },
   ];
 
   protected readonly difficulties: Array<{ value: ActivityDifficulty | 'all'; label: string }> = [
@@ -147,6 +193,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     private readonly activitiesService: AdminActivitiesService,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
+    private readonly http: HttpClient,
+    private readonly cdr: ChangeDetectorRef,
     protected readonly authContext: AdminAuthContextService,
     protected readonly ui: AdminUiPreferencesService,
   ) {}
@@ -155,9 +203,37 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.hydrateFiltersFromQueryParams();
 
     this.subscription.add(
+      this.destinationSearch$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((q) => {
+        if (!q.trim()) {
+          this.destinationResults.set([]);
+          this.destinationDropdownOpen.set(false);
+          this.isDestinationSearching.set(false);
+          return;
+        }
+        this.isDestinationSearching.set(true);
+        this.subscription.add(
+          this.activitiesService.searchDestinations(q).subscribe({
+            next: (results) => {
+              this.destinationResults.set(results);
+              this.destinationDropdownOpen.set(results.length > 0);
+              this.isDestinationSearching.set(false);
+              this.cdr.detectChanges();
+            },
+            error: () => this.isDestinationSearching.set(false),
+          }),
+        );
+      }),
+    );
+
+    this.subscription.add(
       this.searchInput$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((value) => {
-        this.patchFilter({ search: value, page: 1 });
-        this.loadActivities();
+        const q = value.trim();
+        this.patchFilter({ search: value, ids: undefined, page: 1 });
+        if (!q) {
+          this.loadActivities();
+          return;
+        }
+        this.loadActivitiesFuzzy(q);
       }),
     );
 
@@ -169,6 +245,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
+    this.destroyMap();
   }
 
   protected updateSearch(value: string): void {
@@ -203,6 +280,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected resetFilters(): void {
     this.filters.update((f) => ({
       search: '',
+      ids: undefined,
       categoryId: 'all',
       status: 'all',
       difficulty: 'all',
@@ -296,10 +374,21 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   protected openCreateModal(): void {
+    this.destroyMap();
     this.isEditMode.set(false);
     this.editingActivityId.set(null);
     this.modalInclusions.set([]);
-    this.modalImageFiles.set([]);
+    this.modalImagePreviews().forEach(p => URL.revokeObjectURL(p.url));
+    this.modalImagePreviews.set([]);
+    this.modalHeroIndex.set(0);
+    this.editExistingImages.set([]);
+    this.editHeroImageId.set(null);
+    this.mapLatitude.set(null);
+    this.mapLongitude.set(null);
+    this.mapAddress.set('');
+    this.destinationSearchText.set('');
+    this.destinationResults.set([]);
+    this.destinationDropdownOpen.set(false);
     this.modalCities.set([]);
     this.modalRegionId.set('all');
     this.newInclusionText.set('');
@@ -313,9 +402,12 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       difficultyLevel: '',
       cityId: undefined,
       destinationId: undefined,
+      latitude: undefined,
+      longitude: undefined,
     });
     this.loadModalCities();
     this.isCreateModalOpen.set(true);
+    setTimeout(() => this.initMap(null, null), 50);
   }
 
   protected openEditModal(): void {
@@ -325,8 +417,27 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.isEditMode.set(true);
     this.editingActivityId.set(detail.id);
     this.modalInclusions.set([...detail.inclusions]);
-    this.modalImageFiles.set([]);
+    this.modalImagePreviews().forEach(p => URL.revokeObjectURL(p.url));
+    this.modalImagePreviews.set([]);
+    this.modalHeroIndex.set(0);
+    this.editExistingImages.set([...detail.images]);
+    this.editHeroImageId.set(detail.images[0]?.id ?? null);
+    this.mapLatitude.set(detail.latitude ?? null);
+    this.mapLongitude.set(detail.longitude ?? null);
+    this.mapAddress.set('');
+    this.destinationResults.set([]);
+    this.destinationDropdownOpen.set(false);
     this.newInclusionText.set('');
+
+    if (detail.destinationId) {
+      this.subscription.add(
+        this.activitiesService.getDestination(detail.destinationId).subscribe({
+          next: (d) => this.destinationSearchText.set(d.name),
+        }),
+      );
+    } else {
+      this.destinationSearchText.set('');
+    }
     this.createForm.set({
       name: detail.name,
       slug: detail.slug,
@@ -344,17 +455,65 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.loadModalCities(regionId ?? undefined);
 
     this.isCreateModalOpen.set(true);
+    setTimeout(() => this.initMap(detail.latitude ?? null, detail.longitude ?? null), 50);
   }
 
   protected closeCreateModal(): void {
+    this.destroyMap();
+    this.modalImagePreviews().forEach(p => URL.revokeObjectURL(p.url));
+    this.modalImagePreviews.set([]);
+    this.modalHeroIndex.set(0);
+    this.editExistingImages.set([]);
+    this.editHeroImageId.set(null);
+    this.mapLatitude.set(null);
+    this.mapLongitude.set(null);
+    this.mapAddress.set('');
+    this.destinationSearchText.set('');
+    this.destinationResults.set([]);
+    this.destinationDropdownOpen.set(false);
     this.isCreateModalOpen.set(false);
     this.isSubmitting.set(false);
     this.isEditMode.set(false);
     this.editingActivityId.set(null);
+    this.errorMessage.set('');
   }
 
   protected updateCreateField<K extends keyof CreateActivityDto>(key: K, value: CreateActivityDto[K]): void {
     this.createForm.update((f) => ({ ...f, [key]: value }));
+  }
+
+  protected updateDestinationSearch(value: string): void {
+    this.destinationSearchText.set(value);
+    this.createForm.update((f) => ({ ...f, destinationId: undefined }));
+    this.destinationSearch$.next(value);
+  }
+
+  protected selectDestination(dest: DestinationOption): void {
+    this.destinationSearchText.set(dest.name);
+    this.destinationDropdownOpen.set(false);
+    this.destinationResults.set([]);
+    this.createForm.update((f) => ({ ...f, destinationId: dest.id }));
+    this.subscription.add(
+      this.activitiesService.getDestination(dest.id).subscribe({
+        next: (d) => {
+          if (d.latitude != null && d.longitude != null) {
+            this.setMapCoords(d.latitude, d.longitude);
+            this.cdr.detectChanges();
+          }
+        },
+      }),
+    );
+  }
+
+  protected clearDestination(): void {
+    this.destinationSearchText.set('');
+    this.destinationDropdownOpen.set(false);
+    this.destinationResults.set([]);
+    this.createForm.update((f) => ({ ...f, destinationId: undefined }));
+  }
+
+  protected closeDestinationDropdownDelayed(): void {
+    setTimeout(() => this.destinationDropdownOpen.set(false), 150);
   }
 
   protected addInclusion(): void {
@@ -371,12 +530,60 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected onImageFilesSelect(event: Event): void {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
-    this.modalImageFiles.update((existing) => [...existing, ...files]);
+    const previews = files.map(file => ({ file, url: URL.createObjectURL(file) }));
+    this.modalImagePreviews.update(existing => [...existing, ...previews]);
     input.value = '';
   }
 
   protected removeImageFile(index: number): void {
-    this.modalImageFiles.update((files) => files.filter((_, i) => i !== index));
+    const previews = this.modalImagePreviews();
+    URL.revokeObjectURL(previews[index].url);
+    this.modalImagePreviews.update(list => list.filter((_, i) => i !== index));
+    const hero = this.modalHeroIndex();
+    if (hero === index) this.modalHeroIndex.set(0);
+    else if (hero > index) this.modalHeroIndex.update(h => h - 1);
+  }
+
+  protected setModalHero(index: number): void {
+    this.modalHeroIndex.set(index);
+  }
+
+  protected deleteExistingImage(imageId: string): void {
+    const activityId = this.editingActivityId();
+    if (!activityId) return;
+    this.subscription.add(
+      this.activitiesService.deleteImage(activityId, imageId).subscribe({
+        next: () => {
+          this.editExistingImages.update(list => list.filter(img => img.id !== imageId));
+          if (this.editHeroImageId() === imageId) {
+            this.editHeroImageId.set(this.editExistingImages()[0]?.id ?? null);
+          }
+        },
+        error: () => {
+          this.errorMessage.set('Greška pri brisanju slike.');
+        },
+      }),
+    );
+  }
+
+  protected setExistingHero(imageId: string): void {
+    const activityId = this.editingActivityId();
+    if (!activityId || this.editHeroImageId() === imageId) return;
+    this.editHeroImageId.set(imageId);
+    this.subscription.add(
+      this.activitiesService.setHeroImage(activityId, imageId).subscribe({
+        next: () => {
+          this.editExistingImages.update(list => {
+            const hero = list.find(img => img.id === imageId)!;
+            const rest = list.filter(img => img.id !== imageId);
+            return [hero, ...rest];
+          });
+        },
+        error: () => {
+          this.errorMessage.set('Greška pri postavljanju hero slike.');
+        },
+      }),
+    );
   }
 
   protected onModalRegionChange(value: string): void {
@@ -393,8 +600,12 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.isSubmitting.set(true);
 
     const inclusions = this.modalInclusions();
+    const lat = this.mapLatitude();
+    const lng = this.mapLongitude();
     const dto: CreateActivityDto = {
       ...form,
+      latitude: lat ?? undefined,
+      longitude: lng ?? undefined,
       inclusions: inclusions.length ? inclusions : undefined,
     };
 
@@ -695,6 +906,58 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     return Number.isInteger(parsed) && parsed >= 1 ? parsed : fallback;
   }
 
+  private loadActivitiesFuzzy(query: string): void {
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+
+    const allFilters = { ...this.filters(), search: '', ids: undefined, page: 1, pageSize: 500 };
+
+    this.subscription.add(
+      this.activitiesService.getActivities(allFilters).subscribe({
+        next: (response) => {
+          const q = query.toLowerCase();
+          const matched = response.items.filter(a =>
+            this.fuzzyMatch(a.name.toLowerCase(), q) ||
+            (a.city && this.fuzzyMatch(a.city.toLowerCase(), q)) ||
+            (a.region && this.fuzzyMatch(a.region.toLowerCase(), q)) ||
+            (a.category && this.fuzzyMatch(a.category.toLowerCase(), q)),
+          );
+          this.activities.set(matched);
+          this.total.set(matched.length);
+          this.isLoading.set(false);
+        },
+        error: () => {
+          this.activities.set([]);
+          this.total.set(0);
+          this.errorMessage.set('Greška pri učitavanju aktivnosti.');
+          this.isLoading.set(false);
+        },
+      }),
+    );
+  }
+
+  private fuzzyMatch(text: string, query: string): boolean {
+    if (text.includes(query)) return true;
+    if (query.length < 3) return false;
+
+    // transposition tolerance: swap each adjacent pair and check
+    for (let i = 0; i < query.length - 1; i++) {
+      const swapped =
+        query.slice(0, i) + query[i + 1] + query[i] + query.slice(i + 2);
+      if (text.includes(swapped)) return true;
+    }
+
+    // single insertion tolerance: check all substrings of length query.length-1
+    if (query.length >= 4) {
+      for (let i = 0; i < query.length; i++) {
+        const shortened = query.slice(0, i) + query.slice(i + 1);
+        if (text.includes(shortened)) return true;
+      }
+    }
+
+    return false;
+  }
+
   private loadActivities(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
@@ -745,6 +1008,175 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected geocode(): void {
+    const address = this.mapAddress().trim();
+    if (!address) return;
+    this.isGeocoding.set(true);
+    this.errorMessage.set('');
+    this.subscription.add(
+      this.http
+        .get<{ lat: string; lon: string }[]>(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+          { headers: { 'Accept-Language': 'sr,en' } },
+        )
+        .subscribe({
+          next: (results) => {
+            this.isGeocoding.set(false);
+            if (!results.length) {
+              this.errorMessage.set('Adresa nije pronađena.');
+              this.cdr.detectChanges();
+              return;
+            }
+            const lat = parseFloat(results[0].lat);
+            const lng = parseFloat(results[0].lon);
+            this.setMapCoords(lat, lng);
+            this.cdr.detectChanges();
+          },
+          error: () => {
+            this.isGeocoding.set(false);
+            this.errorMessage.set('Greška pri pretrazi adrese.');
+            this.cdr.detectChanges();
+          },
+        }),
+    );
+  }
+
+  private async initMap(lat: number | null, lng: number | null): Promise<void> {
+    if (!this.mapEl?.nativeElement) return;
+    this.destroyMap();
+
+    const base = await (await fetch(MAP_STYLE_URL)).json();
+    this.lightStyle = this.buildThemedStyle(base, LIGHT);
+    this.darkStyle  = this.buildThemedStyle(base, DARK);
+
+    const center: [number, number] = lat != null && lng != null ? [lng, lat] : [20.457, 44.017];
+    const zoom = lat != null ? 12 : 6;
+
+    this.map = new maplibregl.Map({
+      container: this.mapEl.nativeElement,
+      style: (this.isDark ? this.darkStyle : this.lightStyle) as string,
+      center,
+      zoom,
+      attributionControl: false,
+    });
+
+    this.map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+
+    if (lat != null && lng != null) {
+      this.marker = new maplibregl.Marker({ color: '#28694c', draggable: true })
+        .setLngLat([lng, lat])
+        .addTo(this.map);
+      this.marker.on('dragend', () => {
+        const pos = this.marker!.getLngLat();
+        this.mapLatitude.set(pos.lat);
+        this.mapLongitude.set(pos.lng);
+        this.cdr.detectChanges();
+      });
+    }
+
+    this.map.on('click', (e) => {
+      this.setMapCoords(e.lngLat.lat, e.lngLat.lng);
+      this.cdr.detectChanges();
+    });
+
+    this.themeObserver = new MutationObserver(() => {
+      const style = this.isDark ? this.darkStyle : this.lightStyle;
+      if (style) this.map?.setStyle(style as string);
+    });
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+  }
+
+  private setMapCoords(lat: number, lng: number): void {
+    this.mapLatitude.set(lat);
+    this.mapLongitude.set(lng);
+
+    if (!this.map) return;
+
+    if (this.marker) {
+      this.marker.setLngLat([lng, lat]);
+    } else {
+      this.marker = new maplibregl.Marker({ color: '#28694c', draggable: true })
+        .setLngLat([lng, lat])
+        .addTo(this.map);
+      this.marker.on('dragend', () => {
+        const pos = this.marker!.getLngLat();
+        this.mapLatitude.set(pos.lat);
+        this.mapLongitude.set(pos.lng);
+        this.cdr.detectChanges();
+      });
+    }
+
+    this.map.flyTo({ center: [lng, lat], zoom: 12, duration: 800 });
+  }
+
+  private destroyMap(): void {
+    this.themeObserver?.disconnect();
+    this.themeObserver = undefined;
+    this.marker?.remove();
+    this.marker = null;
+    this.map?.remove();
+    this.map = null;
+  }
+
+  private get isDark(): boolean {
+    return document.documentElement.getAttribute('data-theme') !== 'light';
+  }
+
+  private luminance(hex: string): number {
+    if (!hex?.startsWith('#') || hex.length < 7) return 0;
+    return parseInt(hex.slice(1, 3), 16) * 0.299
+         + parseInt(hex.slice(3, 5), 16) * 0.587
+         + parseInt(hex.slice(5, 7), 16) * 0.114;
+  }
+
+  private buildThemedStyle(base: unknown, p: typeof DARK): unknown {
+    const themed = JSON.parse(JSON.stringify(base)) as { layers: { id?: string; type?: string; paint?: Record<string, unknown> }[] };
+    themed.layers = themed.layers.map((layer) => {
+      const id: string = layer.id ?? '';
+      if (!layer.paint) return layer;
+      delete layer.paint['fill-pattern'];
+      switch (layer.type) {
+        case 'background':
+          layer.paint['background-color'] = p.land; break;
+        case 'fill': {
+          let c: string;
+          if (/building/.test(id)) { layer.paint['fill-opacity'] = 0; break; }
+          if (/water|ocean|sea|bay|lake|river|pond|reservoir/.test(id)) { c = p.water; layer.paint['fill-outline-color'] = p.water; }
+          else if (/forest|wood|scrub|grass|park|nature|garden|vegetation|landcover/.test(id)) { c = p.park; if (layer.paint['fill-outline-color']) layer.paint['fill-outline-color'] = p.park; }
+          else if (/landuse/.test(id)) { c = p.park; }
+          else if (/sand|beach|desert|bare/.test(id)) { c = p.sand; }
+          else if (/pedestrian|plaza|square|footway|paved|civic|commercial|retail|amenity|transit/.test(id)) { c = p.pedestrian; if (layer.paint['fill-outline-color']) layer.paint['fill-outline-color'] = p.pedestrian; }
+          else if (/bridge/.test(id)) { c = p.bridge; }
+          else { const orig = typeof layer.paint['fill-color'] === 'string' ? layer.paint['fill-color'] : ''; c = this.luminance(orig) > 128 ? p.surface : p.land; }
+          layer.paint['fill-color'] = c; break;
+        }
+        case 'line': {
+          let c: string;
+          if (/water|river|stream|canal/.test(id)) c = p.water;
+          else if (/boundary|border/.test(id)) c = p.boundary;
+          else if (/motorway|trunk|primary|major/.test(id)) c = p.road_major;
+          else if (/path|track|footway|cycleway|step/.test(id)) c = p.road_path;
+          else if (/bridge/.test(id)) c = p.bridge;
+          else if (/casing|outline/.test(id)) c = p.land;
+          else { const orig = typeof layer.paint['line-color'] === 'string' ? layer.paint['line-color'] : ''; c = this.luminance(orig) > 128 ? p.road_minor : p.land; }
+          layer.paint['line-color'] = c; break;
+        }
+        case 'fill-extrusion':
+          layer.paint['fill-extrusion-color'] = p.extrusion;
+          layer.paint['fill-extrusion-opacity'] = 1; break;
+        case 'symbol':
+          layer.paint['text-color'] = p.text;
+          if (layer.paint['text-halo-color']) layer.paint['text-halo-color'] = p.text_halo;
+          if (layer.paint['icon-color']) layer.paint['icon-color'] = p.icon; break;
+      }
+      return layer;
+    });
+    return themed;
+  }
+
   private loadModalCities(regionId?: number): void {
     this.subscription.add(
       this.activitiesService.getCities(regionId).subscribe({
@@ -754,19 +1186,26 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   private uploadPendingImages(activityId: string, activity: ActivityDetail): void {
-    const files = this.modalImageFiles();
-    if (!files.length) {
+    const previews = this.modalImagePreviews();
+    if (!previews.length) {
       this.finalizeSubmit(activityId, activity);
       return;
     }
 
+    const heroIdx = this.modalHeroIndex();
+    const ordered = [
+      previews[heroIdx],
+      ...previews.filter((_, i) => i !== heroIdx),
+    ].map(p => p.file);
+
     const uploadNext = (index: number) => {
-      if (index >= files.length) {
+      if (index >= ordered.length) {
+        previews.forEach(p => URL.revokeObjectURL(p.url));
         this.finalizeSubmit(activityId, activity);
         return;
       }
       this.subscription.add(
-        this.activitiesService.uploadImage(activityId, files[index]).subscribe({
+        this.activitiesService.uploadImage(activityId, ordered[index]).subscribe({
           next: () => uploadNext(index + 1),
           error: () => uploadNext(index + 1),
         }),

@@ -178,6 +178,54 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpPut("{id}/images/{imageId}/hero")]
+        public async Task<IActionResult> SetHeroImage(Guid id, Guid imageId)
+        {
+            try
+            {
+                var images = await _context.ActivityImages
+                    .Where(i => i.ActivityId == id)
+                    .OrderBy(i => i.SortOrder)
+                    .ToListAsync();
+
+                var hero = images.FirstOrDefault(i => i.Id == imageId);
+                if (hero == null) return NotFound();
+
+                hero.SortOrder = 0;
+                var others = images.Where(i => i.Id != imageId).ToList();
+                for (int i = 0; i < others.Count; i++)
+                    others[i].SortOrder = i + 1;
+
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.ToString() });
+            }
+        }
+
+        [HttpDelete("{id}/images/{imageId}")]
+        public async Task<IActionResult> DeleteImage(Guid id, Guid imageId)
+        {
+            try
+            {
+                var image = await _context.ActivityImages
+                    .FirstOrDefaultAsync(i => i.Id == imageId && i.ActivityId == id);
+
+                if (image == null) return NotFound();
+
+                _context.ActivityImages.Remove(image);
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.ToString() });
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {

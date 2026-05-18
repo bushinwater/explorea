@@ -1,5 +1,12 @@
 namespace Explorea.API.DTOs.Admin.Activity
 {
+    public class ActivityImageItemDto
+    {
+        public Guid Id { get; set; }
+        public string Url { get; set; } = null!;
+        public int SortOrder { get; set; }
+    }
+
     public class ActivityReviewDto
     {
         public string AuthorName { get; set; } = null!;
@@ -52,7 +59,7 @@ namespace Explorea.API.DTOs.Admin.Activity
         public string? OrganizerWebsite { get; set; }
         public string? PreviewImageUrl { get; set; }
 
-        public List<string> ImageUrls { get; set; } = new();
+        public List<ActivityImageItemDto> Images { get; set; } = new();
         public List<string> Inclusions { get; set; } = new();
         public List<ActivityReviewDto> Reviews { get; set; } = new();
 
