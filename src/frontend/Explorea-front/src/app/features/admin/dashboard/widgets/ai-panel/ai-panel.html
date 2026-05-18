@@ -13,7 +13,7 @@
 
   <!-- Insights -->
   <div class="ai__insights">
-    @for (insight of insights; track $index) {
+    @for (insight of displayInsights(); track $index) {
       <div class="ai__insight" [class]="'ai__insight--' + insight.type">
         <span class="material-icons ai__insight-icon" [style.color]="insightIconColor(insight.type)">{{ insight.icon }}</span>
         <p class="ai__insight-text">{{ insight.text }}</p>
@@ -43,6 +43,10 @@
     </div>
   }
 
+  @if (errorMessage()) {
+    <div class="ai__error">{{ errorMessage() }}</div>
+  }
+
   <!-- Input -->
   <div class="ai__input-wrap">
     <input
@@ -50,8 +54,9 @@
       type="text"
       [placeholder]="ui.t('dashboard.ai.placeholder')"
       [(ngModel)]="inputText"
-      (keydown)="onKeydown($event)" />
-    <button class="ai__send-btn" (click)="sendMessage()" [disabled]="!inputText.trim()">
+      (keydown)="onKeydown($event)"
+      [disabled]="isTyping()" />
+    <button class="ai__send-btn" (click)="sendMessage()" [disabled]="!inputText.trim() || isTyping()">
       <span class="material-icons">send</span>
     </button>
   </div>

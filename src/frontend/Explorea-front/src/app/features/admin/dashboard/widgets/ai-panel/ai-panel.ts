@@ -1,21 +1,10 @@
-import { ChangeDetectionStrategy, Component, Input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AiInsight } from '../../../core/models/admin.models';
+import { Subscription } from 'rxjs';
+import { AiChatMessage, AiInsight } from '../../../core/models/admin.models';
 import { AdminUiPreferencesService } from '../../../core/services/admin-ui-preferences.service';
-
-interface ChatMessage {
-  role: 'user' | 'ai';
-  text: string;
-}
-
-const AI_RESPONSES: string[] = [
-  'Na osnovu podataka, preporučujem fokus na vikend posete — tu je 35% veći promet.',
-  'Vidim 3 mesta sa ocenom ispod 3.5 ovog meseca. Preporučujem kontakt sa vlasnicima.',
-  'Rezervacije rastu 12% mesečno. Ako trend nastavi, premašićete cilj za Q3.',
-  'Korisnici iz Vojvodine imaju najmanji engagement. Razmotriti lokalizovani sadržaj.',
-  'Top 3 pretraživane destinacije ove nedelje: Golubac, Đavolja Varoš, Tara.',
-];
+import { DashboardService } from '../../../core/services/dashboard.service';
 
 @Component({
   selector: 'app-ai-panel',
@@ -25,14 +14,27 @@ const AI_RESPONSES: string[] = [
   templateUrl: './ai-panel.html',
   styleUrl: './ai-panel.css',
 })
-export class AiPanel {
-  @Input() insights: AiInsight[] = [];
+export class AiPanel implements OnDestroy {
+  @Input() set insights(value: AiInsight[]) {
+    this.displayInsights.set(value ?? []);
+  }
 
-  messages = signal<ChatMessage[]>([]);
+  displayInsights = signal<AiInsight[]>([]);
+  messages = signal<AiChatMessage[]>([]);
   inputText = '';
   isTyping = signal(false);
+  errorMessage = signal<string | null>(null);
 
-  constructor(public ui: AdminUiPreferencesService) {}
+  private chatSubscription?: Subscription;
+
+  constructor(
+    public ui: AdminUiPreferencesService,
+    private dashboardService: DashboardService,
+  ) {}
+
+  ngOnDestroy(): void {
+    this.chatSubscription?.unsubscribe();
+  }
 
   insightIconColor(type: AiInsight['type']): string {
     return { positive: 'var(--color-success)', warning: 'var(--color-warning)', neutral: 'var(--color-info)' }[type];
@@ -40,17 +42,28 @@ export class AiPanel {
 
   sendMessage(): void {
     const text = this.inputText.trim();
-    if (!text) return;
+    if (!text || this.isTyping()) return;
 
     this.messages.update(m => [...m, { role: 'user', text }]);
     this.inputText = '';
     this.isTyping.set(true);
+    this.errorMessage.set(null);
 
-    setTimeout(() => {
-      const response = AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)];
-      this.messages.update(m => [...m, { role: 'ai', text: response }]);
-      this.isTyping.set(false);
-    }, 900 + Math.random() * 600);
+    const history = this.messages().slice(-8);
+    this.chatSubscription?.unsubscribe();
+    this.chatSubscription = this.dashboardService.sendAiMessage(text, history).subscribe({
+      next: (response) => {
+        this.messages.update(m => [...m, { role: 'ai', text: response.message }]);
+        if (response.insights.length > 0) {
+          this.displayInsights.set(response.insights);
+        }
+        this.isTyping.set(false);
+      },
+      error: () => {
+        this.errorMessage.set('AI asistent trenutno nije dostupan.');
+        this.isTyping.set(false);
+      },
+    });
   }
 
   onKeydown(event: KeyboardEvent): void {

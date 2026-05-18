@@ -158,6 +158,13 @@
 
 .ai__input::placeholder { color: var(--color-text-muted); }
 .ai__input:focus { border-color: var(--color-primary); }
+.ai__input:disabled { opacity: 0.65; cursor: wait; }
+
+.ai__error {
+  margin: 10px var(--sp-5) 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-xs);
+}
 
 .ai__send-btn {
   width: 34px;

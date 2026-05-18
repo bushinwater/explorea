@@ -51,10 +51,12 @@ namespace Explorea.Server.Data
         public DbSet<EventInterestTag> EventInterestTags { get; set; }
         public DbSet<ActivityInterestTag> ActivityInterestTags { get; set; }
         public DbSet<Country> Countries { get; set; }
+        public DbSet<AdminActivityLog> AdminActivityLogs { get; set; }
         public DbSet<OrganizationAssignment> OrganizationAssignments { get; set; }
         public DbSet<OrganizationRegionAssignment> OrganizationRegionAssignments { get; set; }
         public DbSet<SubmissionQueue> SubmissionQueue { get; set; }
         public DbSet<Newsletter> Newsletters { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
         public DbSet<DestinationType>  DestinationTypes  { get; set; }
         public DbSet<FilterDefinition> FilterDefinitions { get; set; }
         public DbSet<FilterOption>     FilterOptions     { get; set; }
@@ -78,6 +80,24 @@ namespace Explorea.Server.Data
                       .HasColumnName("email")
                       .HasMaxLength(255)
                       .IsRequired();
+            });
+
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.HasIndex(n => new { n.UserId, n.CreatedAt });
+                entity.HasOne(n => n.User)
+                    .WithMany()
+                    .HasForeignKey(n => n.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<AdminActivityLog>(entity =>
+            {
+                entity.HasIndex(log => log.CreatedAt);
+                entity.HasOne(log => log.Actor)
+                    .WithMany()
+                    .HasForeignKey(log => log.ActorId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             // ---- Composite primary keys ----

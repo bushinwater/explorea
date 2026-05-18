@@ -78,7 +78,6 @@ export interface QuickAction {
 export interface TrafficPoint {
   day: string;
   views: number;
-  reservations: number;
 }
 
 // ===== SYSTEM STATUS =====
@@ -96,6 +95,16 @@ export interface AiInsight {
   icon: string;
   text: string;
   type: 'positive' | 'warning' | 'neutral';
+}
+
+export interface AiChatMessage {
+  role: 'user' | 'ai';
+  text: string;
+}
+
+export interface AiChatResponse {
+  message: string;
+  insights: AiInsight[];
 }
 
 // ===== DASHBOARD DATA (all combined per role) =====

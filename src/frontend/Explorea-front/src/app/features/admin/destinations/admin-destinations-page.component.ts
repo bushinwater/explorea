@@ -6,6 +6,7 @@ import {
   computed,
   signal,
 } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, interval } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
@@ -109,11 +110,21 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly destinationsService: AdminDestinationsService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
     protected readonly ui: AdminUiPreferencesService,
   ) {}
 
   ngOnInit(): void {
+    this.subscription.add(
+      this.route.queryParamMap.subscribe((params) => {
+        if (params.get('create') === 'true') {
+          this.openCreateModal();
+        }
+      }),
+    );
+
     this.subscription.add(
       this.searchInput$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((value) => {
         this.patchFilter({ search: value, page: 1 });
@@ -202,6 +213,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
 
   protected closeCreateModal(): void {
     this.isCreateModalOpen.set(false);
+    this.clearCreateQueryParam();
   }
 
   protected onDestinationCreated(row: DestinationRow): void {
@@ -349,6 +361,17 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   private patchFilter(patch: Partial<DestinationFilters>): void {
     this.filters.update((current) => ({ ...current, ...patch }));
     if (patch.page !== undefined) this.currentPage.set(patch.page);
+  }
+
+  private clearCreateQueryParam(): void {
+    if (this.route.snapshot.queryParamMap.get('create') !== 'true') return;
+
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { create: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   private loadDestinations(): void {

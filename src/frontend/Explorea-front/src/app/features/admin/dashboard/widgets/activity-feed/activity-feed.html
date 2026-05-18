@@ -30,14 +30,26 @@
           </button>
         </div>
       </div>
+    } @empty {
+      <div class="feed__item">
+        <div class="feed__avatar">
+          <span class="material-icons">info</span>
+        </div>
+        <div class="feed__body">
+          <p class="feed__text">Nema nedavnih aktivnosti.</p>
+          <span class="feed__time">-</span>
+        </div>
+      </div>
     }
   </div>
 
-  <div class="feed__pagination">
-    <button class="page-btn" (click)="changePage(currentPage - 1)">‹</button>
+  @if (items.length > itemsPerPage) {
+    <div class="feed__pagination">
+      <button class="page-btn" (click)="changePage(currentPage - 1)">&lsaquo;</button>
 
-    <span>{{ currentPage }} / {{ totalPages }}</span>
+      <span>{{ currentPage }} / {{ totalPages }}</span>
 
-    <button class="page-btn" (click)="changePage(currentPage + 1)">›</button>
-  </div>
+      <button class="page-btn" (click)="changePage(currentPage + 1)">&rsaquo;</button>
+    </div>
+  }
 </div>
