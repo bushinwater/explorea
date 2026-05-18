@@ -8,6 +8,7 @@ import {
   EventStats,
   EventStatus,
   EventType,
+  EventFilterOption,
 } from './admin-events.models';
 
 interface ApiEventsResponse {
@@ -53,6 +54,16 @@ interface ApiQueueItem {
   reviewedByOwnerAt: string | null;
 }
 
+interface ApiLookupItem {
+  id: number;
+  name: string;
+}
+
+interface ApiDestinationLookupItem {
+  id: string;
+  name: string;
+}
+
 const MOCK_STATS: EventStats = {
   activeRequests: 14,
   activeRequestsTrend: '+3 od juče',
@@ -76,8 +87,37 @@ export class AdminEventsService {
     return of(MOCK_STATS);
   }
 
-  getRegions(): Observable<string[]> {
-    return of(MOCK_REGIONS);
+  getEventTypes(): Observable<EventFilterOption<number>[]> {
+    return this.http.get<ApiLookupItem[]>('/api/event-types').pipe(
+      map((items) =>
+        items.map((item) => ({
+          value: item.id,
+          label: item.name,
+        })),
+      ),
+    );
+  }
+
+  getCities(): Observable<EventFilterOption<number>[]> {
+    return this.http.get<ApiLookupItem[]>('/api/cities').pipe(
+      map((items) =>
+        items.map((item) => ({
+          value: item.id,
+          label: item.name,
+        })),
+      ),
+    );
+  }
+
+  getDestinations(): Observable<EventFilterOption<string>[]> {
+    return this.http.get<ApiDestinationLookupItem[]>('/api/destinations').pipe(
+      map((items) =>
+        items.map((item) => ({
+          value: item.id,
+          label: item.name,
+        })),
+      ),
+    );
   }
 
   getEvents(filters: EventFilters): Observable<EventPagedResponse> {
@@ -103,6 +143,12 @@ export class AdminEventsService {
     let params = new HttpParams().set('page', filters.page).set('pageSize', filters.pageSize);
 
     if (filters.search.trim()) params = params.set('search', filters.search.trim());
+
+    if (filters.typeId !== null) params = params.set('typeId', filters.typeId);
+
+    if (filters.cityId !== null) params = params.set('cityId', filters.cityId);
+
+    if (filters.destinationId !== null) params = params.set('destinationId', filters.destinationId);
 
     return this.http.get<ApiEventsResponse>('/api/admin/events', { params }).pipe(
       map((res) => ({

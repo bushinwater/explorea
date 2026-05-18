@@ -15,6 +15,7 @@ import { EmptyStateComponent } from '../shared/components/empty-state/empty-stat
 import { FeedbackBannerComponent } from '../shared/components/feedback-banner/feedback-banner.component';
 import { TableSkeletonComponent } from '../shared/components/table-skeleton/table-skeleton.component';
 import {
+  EventFilterOption,
   EventFilters,
   EventPriority,
   EventRow,
@@ -44,8 +45,9 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
   protected readonly filters = signal<EventFilters>({
     search: '',
-    type: 'all',
-    region: 'all',
+    typeId: null,
+    cityId: null,
+    destinationId: null,
     tab: 'pending',
     page: 1,
     pageSize: 8,
@@ -53,7 +55,9 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
   protected readonly events = signal<EventRow[]>([]);
   protected readonly stats = signal<EventStats | null>(null);
-  protected readonly regions = signal<string[]>([]);
+  protected readonly eventTypeOptions = signal<EventFilterOption<number>[]>([]);
+  protected readonly cityOptions = signal<EventFilterOption<number>[]>([]);
+  protected readonly destinationOptions = signal<EventFilterOption<string>[]>([]);
   protected readonly total = signal(0);
   protected readonly currentPage = signal(1);
   protected readonly isLoading = signal(false);
@@ -75,7 +79,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   );
   protected readonly activeFilterCount = computed(() => {
     const f = this.filters();
-    return [f.type !== 'all', f.region !== 'all'].filter(Boolean).length;
+    return [f.typeId !== null, f.cityId !== null, f.destinationId !== null].filter(Boolean).length;
   });
   protected readonly confirmTitle = computed(() => {
     const a = this.confirmAction();
@@ -86,19 +90,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly confirmDesc = computed(() => {
     const a = this.confirmAction();
     if (a === 'approve') return 'Organizator će biti obavešten da je njihov događaj odobren.';
-    if (a === 'reject') return 'Ova akcija se ne može poništiti. Organizator će biti obavešten o odbijanju.';
+    if (a === 'reject')
+      return 'Ova akcija se ne može poništiti. Organizator će biti obavešten o odbijanju.';
     return 'Vlasnik objekta će dobiti zahtev za odobrenje.';
   });
-
-  protected readonly eventTypes: Array<{ value: EventType | 'all'; label: string }> = [
-    { value: 'all', label: 'Svi tipovi' },
-    { value: 'concert', label: 'Koncert' },
-    { value: 'tasting', label: 'Degustacija' },
-    { value: 'conference', label: 'Konferencija' },
-    { value: 'sport', label: 'Sport' },
-    { value: 'exhibition', label: 'Izložba' },
-    { value: 'other', label: 'Ostalo' },
-  ];
 
   constructor(
     private readonly eventsService: AdminEventsService,
@@ -114,7 +109,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     );
 
     this.loadStats();
-    this.loadRegions();
+    this.loadFilterOptions();
     this.loadEvents();
   }
 
@@ -132,21 +127,27 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.searchInput$.next(value);
   }
 
-  protected applyType(value: EventType | 'all'): void {
-    this.patchFilter({ type: value, page: 1 });
+  protected applyType(typeId: number | null): void {
+    this.patchFilter({ typeId, page: 1 });
     this.loadEvents();
   }
 
-  protected applyRegion(value: string | 'all'): void {
-    this.patchFilter({ region: value, page: 1 });
+  protected applyCity(cityId: number | null): void {
+    this.patchFilter({ cityId, page: 1 });
+    this.loadEvents();
+  }
+
+  protected applyDestination(destinationId: string | null): void {
+    this.patchFilter({ destinationId, page: 1 });
     this.loadEvents();
   }
 
   protected resetFilters(): void {
     this.filters.update((f) => ({
       search: '',
-      type: 'all',
-      region: 'all',
+      typeId: null,
+      cityId: null,
+      destinationId: null,
       tab: f.tab,
       page: 1,
       pageSize: f.pageSize,
@@ -346,10 +347,25 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     );
   }
 
-  private loadRegions(): void {
+  private loadFilterOptions(): void {
     this.subscription.add(
-      this.eventsService.getRegions().subscribe({
-        next: (regions) => this.regions.set(regions),
+      this.eventsService.getEventTypes().subscribe({
+        next: (regions) => this.eventTypeOptions.set(regions),
+        error: () => this.eventTypeOptions.set([]),
+      }),
+    );
+
+    this.subscription.add(
+      this.eventsService.getCities().subscribe({
+        next: (cities) => this.cityOptions.set(cities),
+        error: () => this.cityOptions.set([]),
+      }),
+    );
+
+    this.subscription.add(
+      this.eventsService.getDestinations().subscribe({
+        next: (destinations) => this.destinationOptions.set(destinations),
+        error: () => this.destinationOptions.set([]),
       }),
     );
   }
