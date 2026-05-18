@@ -168,7 +168,7 @@ export class AdminEventsService {
     return this.http.get<ApiQueueResponse>('/api/admin/queue', { params }).pipe(
       map((res) => {
         const items = res.items
-          .filter((q) => q.entityType === 'Event')
+          .filter((q) => q.entityType?.toLowerCase() === 'event')
           .filter((q) => {
             if (filters.tab === 'history') {
               return [
@@ -181,11 +181,13 @@ export class AdminEventsService {
             return true;
           })
           .filter((q) => {
-            if (!filters.search) return true;
-            const q2 = filters.search.toLowerCase();
+            const search = filters.search.trim().toLowerCase();
+
+            if (!search) return true;
+
             return (
-              q.submittedByName.toLowerCase().includes(q2) ||
-              q.destinationName.toLowerCase().includes(q2)
+              q.submittedByName?.toLowerCase().includes(search) ||
+              q.destinationName?.toLowerCase().includes(search)
             );
           })
           .map((q) => this.mapQueueItem(q));

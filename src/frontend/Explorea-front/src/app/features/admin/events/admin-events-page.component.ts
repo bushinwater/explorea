@@ -24,6 +24,7 @@ import {
   EventsTab,
 } from './admin-events.models';
 import { AdminEventsService } from './admin-events.service';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-admin-events-page',
@@ -323,19 +324,42 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.errorMessage.set('');
 
     this.subscription.add(
-      this.eventsService.getEvents(this.filters()).subscribe({
-        next: (response) => {
-          this.events.set(response.items);
-          this.total.set(response.total);
-          this.isLoading.set(false);
-        },
-        error: () => {
-          this.events.set([]);
-          this.total.set(0);
-          this.errorMessage.set('Učitavanje događaja nije uspelo.');
-          this.isLoading.set(false);
-        },
-      }),
+      this.eventsService
+        .getEvents(this.filters())
+        .pipe(
+          finalize(() => {
+            this.isLoading.set(false);
+          }),
+        )
+        .subscribe({
+          next: (response) => {
+            this.events.set(response.items);
+            this.total.set(response.total);
+
+            this.stats.update((stats) => {
+              if (!stats) return stats;
+
+              if (this.filters().tab === 'pending') {
+                return {
+                  ...stats,
+                  tabPendingCount: response.total,
+                  pendingApproval: response.total,
+                };
+              }
+
+              if (this.filters().tab === 'active') {
+                return { ...stats, tabActiveCount: response.total, activeRequests: response.total };
+              }
+
+              return stats;
+            });
+          },
+          error: () => {
+            this.events.set([]);
+            this.total.set(0);
+            this.errorMessage.set('Učitavanje događaja nije uspelo.');
+          },
+        }),
     );
   }
 
