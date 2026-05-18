@@ -17,6 +17,7 @@ namespace Explorea.Server.Repositories.Interfaces
             int pageSize);
 
         Task<(List<SupportTicket> Items, int Total)> GetSuperAdminTicketsAsync(
+            Guid currentUserId,
             string? status,
             string? priority,
             bool? isEscalated,
@@ -25,5 +26,7 @@ namespace Explorea.Server.Repositories.Interfaces
 
         Task<SupportTicket?> GetTicketDetailAsync(Guid ticketId, bool includeInternalMessages);
         Task AddMessageAsync(SupportMessage message);
+        Task<Guid?> FindLeastLoadedUserByRoleAsync(string roleName, int? regionId = null);
+        Task<Guid?> FindLeastLoadedAmongAsync(List<Guid> candidateUserIds);
     }
 }

@@ -128,6 +128,12 @@ namespace Explorea.Server.Services.Admin
             if (ticket.Status == SupportTicketStatuses.Closed)
                 throw new InvalidOperationException("Closed support tickets cannot be escalated.");
 
+            // Eskalacija je dozvoljena samo za tikete nevezane za objekat ili tikete koje je vlasnik već eskalirao
+            var isNonObjectRelated = ticket.LinkedContextType == null;
+            var wasEscalatedByOwner = ticket.IsEscalated && ticket.EscalatedByUserId != currentUserId;
+            if (!isNonObjectRelated && !wasEscalatedByOwner)
+                throw new InvalidOperationException("Only non-object-related tickets or tickets already escalated by the owner can be escalated to superadmin.");
+
             var now = DateTimeOffset.UtcNow;
             ticket.IsEscalated = true;
             ticket.EscalatedAt ??= now;
@@ -242,7 +248,21 @@ namespace Explorea.Server.Services.Admin
                 LastActivityAt = ticket.LastActivityAt,
                 MessageCount = includeInternalMessages
                     ? ticket.Messages.Count
-                    : ticket.Messages.Count(m => !m.IsInternal)
+                    : ticket.Messages.Count(m => !m.IsInternal),
+                LastMessage = ticket.Messages
+                    .Where(m => !m.IsInternal)
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Select(m => m.Content)
+                    .FirstOrDefault(),
+                LastMessageAt = ticket.Messages
+                    .Where(m => !m.IsInternal)
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Select(m => (DateTimeOffset?)m.CreatedAt)
+                    .FirstOrDefault(),
+                SenderRole = ticket.Messages
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Select(m => m.SenderType)
+                    .FirstOrDefault()
             };
         }
 

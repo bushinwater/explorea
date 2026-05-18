@@ -1,131 +1,255 @@
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, delay, of, throwError } from 'rxjs';
+import { Observable, catchError, forkJoin, of, switchMap } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { AuthService } from '../../../core/services/auth.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
-import { filterSupportTicketsByScope, MOCK_SUPPORT_TICKETS } from './admin-support.mock';
 import {
+  AiSupportMessage,
+  BackendMessageDto,
+  BackendPagedResult,
+  BackendTicketDetailDto,
+  BackendTicketListItemDto,
+  CreateTicketRequest,
+  MyPlaceOption,
   SendSupportMessageRequest,
   SupportConversation,
-  SupportRoleScope,
+  SupportMessage,
+  SupportMessageAuthor,
   SupportTicket,
   SupportTicketFilters,
+  SupportTicketPriority,
+  SupportTicketStatus,
 } from './admin-support.models';
 
 @Injectable({ providedIn: 'root' })
 export class AdminSupportService {
-  private readonly tickets = MOCK_SUPPORT_TICKETS.map((ticket) => this.cloneTicket(ticket));
-
-  constructor(private readonly auth: DashboardAuthService) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly auth: DashboardAuthService,
+    private readonly authService: AuthService,
+  ) {}
 
   getConversations(filters: SupportTicketFilters): Observable<SupportConversation[]> {
-    const search = filters.search.trim().toLowerCase();
-    let visibleTickets = filterSupportTicketsByScope(this.tickets, this.currentScope());
+    const jwtRole = this.authService.getRole();
+    let params = new HttpParams().set('page', 1).set('pageSize', 50);
+    if (filters.status) params = params.set('status', filters.status);
 
-    if (search) {
-      visibleTickets = visibleTickets.filter((ticket) => this.matchesSearch(ticket, search));
+    const fetchPage = (url: string) =>
+      this.http.get<BackendPagedResult<BackendTicketListItemDto>>(url, { params }).pipe(
+        map((r) => r.items.map((dto) => this.mapConversation(dto))),
+        catchError(() => of([] as SupportConversation[])),
+      );
+
+    let source$: Observable<SupportConversation[]>;
+
+    if (jwtRole === 'place_owner') {
+      source$ = fetchPage('/api/support/tickets/mine');
+    } else if (jwtRole === 'tourist_organization') {
+      // Tiketi dodeljeni TO + tiketi koje je TO sam kreirao (ka superadminu)
+      source$ = forkJoin([
+        fetchPage('/api/admin/support/tickets'),
+        fetchPage('/api/support/tickets/mine'),
+      ]).pipe(
+        map(([assigned, created]) => {
+          const merged = [...assigned, ...created];
+          const unique = merged.filter((c, i) => merged.findIndex((x) => x.id === c.id) === i);
+          return unique;
+        }),
+      );
+    } else {
+      source$ = fetchPage(this.resolveBaseUrl());
     }
 
-    const conversations = visibleTickets
-      .map((ticket) => this.toConversation(ticket))
-      .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
-
-    return of(conversations).pipe(delay(180));
-  }
-
-  getTicket(ticketId: string): Observable<SupportTicket> {
-    const ticket = this.findVisibleTicket(ticketId);
-
-    if (!ticket) {
-      return throwError(() => new Error('Support ticket was not found.'));
-    }
-
-    return of(this.cloneTicket(ticket)).pipe(delay(140));
-  }
-
-  sendMessage(request: SendSupportMessageRequest): Observable<SupportTicket> {
-    const ticket = this.findVisibleTicket(request.ticketId);
-    const content = request.content.trim();
-
-    if (!ticket || !content) {
-      return throwError(() => new Error('Support message could not be sent.'));
-    }
-
-    const createdAt = new Date().toISOString();
-    ticket.messages.push({
-      id: `msg-${ticket.id}-${ticket.messages.length + 1}`,
-      ticketId: ticket.id,
-      author: 'admin',
-      authorName: this.auth.userName,
-      content,
-      createdAt,
-      isInternal: request.isInternal,
-    });
-    ticket.lastMessage = content;
-    ticket.lastMessageAt = createdAt;
-    ticket.unreadCount = 0;
-
-    return of(this.cloneTicket(ticket)).pipe(delay(180));
-  }
-
-  resolveTicket(ticketId: string): Observable<SupportTicket> {
-    const ticket = this.findVisibleTicket(ticketId);
-
-    if (!ticket) {
-      return throwError(() => new Error('Support ticket was not found.'));
-    }
-
-    ticket.status = 'resolved';
-    ticket.unreadCount = 0;
-
-    return of(this.cloneTicket(ticket)).pipe(delay(160));
-  }
-
-  private findVisibleTicket(ticketId: string): SupportTicket | undefined {
-    return filterSupportTicketsByScope(this.tickets, this.currentScope()).find(
-      (ticket) => ticket.id === ticketId,
+    return source$.pipe(
+      map((items) => {
+        const search = filters.search.trim().toLowerCase();
+        const filtered = search
+          ? items.filter((c) =>
+              [c.ticketNumber, c.userName, c.subject, c.lastMessage].some((v) =>
+                v.toLowerCase().includes(search),
+              ),
+            )
+          : items;
+        return filtered.sort(
+          (a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime(),
+        );
+      }),
     );
   }
 
-  private currentScope(): SupportRoleScope {
-    const role = this.auth.role();
+  getTicket(ticketId: string): Observable<SupportTicket> {
+    const jwtRole = this.authService.getRole();
 
+    if (jwtRole === 'place_owner') {
+      return this.http
+        .get<BackendTicketDetailDto>(`/api/support/tickets/${ticketId}`)
+        .pipe(map((dto) => this.mapDetail(dto)));
+    }
+
+    if (jwtRole === 'tourist_organization') {
+      // Probaj admin endpoint (tiket dodeljen TO), pa user endpoint (tiket koji je TO kreirao)
+      return this.http
+        .get<BackendTicketDetailDto>(`/api/admin/support/tickets/${ticketId}`)
+        .pipe(
+          map((dto) => this.mapDetail(dto)),
+          catchError(() =>
+            this.http
+              .get<BackendTicketDetailDto>(`/api/support/tickets/${ticketId}`)
+              .pipe(map((dto) => this.mapDetail(dto))),
+          ),
+        );
+    }
+
+    return this.http
+      .get<BackendTicketDetailDto>(`/api/superadmin/support/tickets/${ticketId}`)
+      .pipe(map((dto) => this.mapDetail(dto)));
+  }
+
+  sendMessage(request: SendSupportMessageRequest): Observable<SupportTicket> {
+    const jwtRole = this.authService.getRole();
+
+    if (jwtRole === 'place_owner') {
+      return this.http
+        .post<BackendMessageDto>(`/api/support/tickets/${request.ticketId}/messages`, {
+          content: request.content,
+        })
+        .pipe(switchMap(() => this.getTicket(request.ticketId)));
+    }
+
+    if (jwtRole === 'tourist_organization') {
+      // Probaj admin endpoint, pa user endpoint kao fallback
+      const adminBody = { content: request.content, isInternal: request.isInternal };
+      return this.http
+        .post<BackendMessageDto>(`/api/admin/support/tickets/${request.ticketId}/messages`, adminBody)
+        .pipe(
+          catchError(() =>
+            this.http.post<BackendMessageDto>(
+              `/api/support/tickets/${request.ticketId}/messages`,
+              { content: request.content },
+            ),
+          ),
+          switchMap(() => this.getTicket(request.ticketId)),
+        );
+    }
+
+    const body = { content: request.content, isInternal: request.isInternal };
+    return this.http
+      .post<BackendMessageDto>(`/api/superadmin/support/tickets/${request.ticketId}/messages`, body)
+      .pipe(switchMap(() => this.getTicket(request.ticketId)));
+  }
+
+  resolveTicket(ticketId: string): Observable<SupportTicket> {
+    const jwtRole = this.authService.getRole();
+    if (jwtRole === 'super_admin') {
+      return this.http
+        .patch<BackendTicketDetailDto>(`/api/superadmin/support/tickets/${ticketId}`, { status: 'resolved' })
+        .pipe(map((dto) => this.mapDetail(dto)));
+    }
+    return this.http
+      .patch<BackendTicketDetailDto>(`/api/admin/support/tickets/${ticketId}/status`, { status: 'resolved' })
+      .pipe(map((dto) => this.mapDetail(dto)));
+  }
+
+  getMyPlaces(): Observable<MyPlaceOption[]> {
+    return this.http.get<{ id: string; name: string; previewImageUrl: string | null }[]>(
+      '/api/admin/places/my',
+    ).pipe(
+      map((items) => items.map((p) => ({ id: p.id, name: p.name, previewImageUrl: p.previewImageUrl }))),
+    );
+  }
+
+  createTicket(req: CreateTicketRequest): Observable<SupportTicket> {
+    return this.http
+      .post<BackendTicketDetailDto>('/api/support/tickets', {
+        title: req.title,
+        message: req.message,
+        linkedContextType: req.linkedContextType,
+        linkedContextId: req.linkedContextId,
+        isNonObjectRelated: req.isNonObjectRelated,
+      })
+      .pipe(map((dto) => this.mapDetail(dto)));
+  }
+
+  sendAiChat(message: string, sessionId: string, history: AiSupportMessage[]): Observable<{ reply: string }> {
+    return this.http.post<{ reply: string; sessionId: string }>('/api/support/ai-chat', {
+      message,
+      sessionId,
+      history: history.map((m) => ({ role: m.role, content: m.content })),
+    });
+  }
+
+  escalateTicket(ticketId: string): Observable<SupportTicket> {
+    return this.http
+      .post<BackendTicketDetailDto>(`/api/admin/support/tickets/${ticketId}/escalate`, {})
+      .pipe(map((dto) => this.mapDetail(dto)));
+  }
+
+  private resolveBaseUrl(): string {
+    const jwtRole = this.authService.getRole();
+    return jwtRole === 'super_admin'
+      ? '/api/superadmin/support/tickets'
+      : '/api/admin/support/tickets';
+  }
+
+  private mapConversation(dto: BackendTicketListItemDto): SupportConversation {
     return {
-      role,
-      region: role === 'tourist_organization' ? 'Sumadija' : role === 'place_owner' ? 'Beograd' : null,
-      placeOwnerId: role === 'place_owner' ? 'owner-belgrade-01' : null,
+      id: dto.id,
+      ticketNumber: '#' + dto.id.replace(/-/g, '').substring(0, 8).toUpperCase(),
+      userName: dto.ownerName ?? 'Nepoznat korisnik',
+      userInitials: this.getInitials(dto.ownerName),
+      subject: dto.title,
+      lastMessage: dto.lastMessage ?? '',
+      lastMessageAt: dto.lastMessageAt ?? dto.lastActivityAt,
+      unreadCount: 0,
+      status: this.mapStatus(dto.status),
+      priority: (dto.priority as SupportTicketPriority) ?? 'medium',
+      context: null,
+      isEscalated: dto.isEscalated,
+      senderRole: dto.senderRole ?? null,
     };
   }
 
-  private matchesSearch(ticket: SupportTicket, search: string): boolean {
-    return [
-      ticket.ticketNumber,
-      ticket.userName,
-      ticket.subject,
-      ticket.lastMessage,
-      ticket.context?.name ?? '',
-    ].some((value) => value.toLowerCase().includes(search));
-  }
-
-  private toConversation(ticket: SupportTicket): SupportConversation {
+  private mapDetail(dto: BackendTicketDetailDto): SupportTicket {
     return {
-      id: ticket.id,
-      ticketNumber: ticket.ticketNumber,
-      userName: ticket.userName,
-      userInitials: ticket.userInitials,
-      subject: ticket.subject,
-      lastMessage: ticket.lastMessage,
-      lastMessageAt: ticket.lastMessageAt,
-      unreadCount: ticket.unreadCount,
-      status: ticket.status,
-      priority: ticket.priority,
-      context: ticket.context ? { ...ticket.context } : null,
+      ...this.mapConversation(dto),
+      messages: dto.messages.map((m) => this.mapMessage(m)),
+      assignedToName: dto.assignedToName ?? null,
+      region: null,
+      placeOwnerId: null,
     };
   }
 
-  private cloneTicket(ticket: SupportTicket): SupportTicket {
+  private mapMessage(dto: BackendMessageDto): SupportMessage {
     return {
-      ...ticket,
-      context: ticket.context ? { ...ticket.context } : null,
-      messages: ticket.messages.map((message) => ({ ...message })),
+      id: dto.id,
+      ticketId: dto.ticketId,
+      author: this.mapSenderType(dto.senderType),
+      authorName: dto.senderName ?? '',
+      content: dto.content,
+      createdAt: dto.createdAt,
+      isInternal: dto.isInternal,
     };
+  }
+
+  private mapStatus(status: string): SupportTicketStatus {
+    const statusMap: Record<string, SupportTicketStatus> = {
+      open: 'open',
+      in_progress: 'in_progress',
+      resolved: 'resolved',
+      closed: 'closed',
+    };
+    return statusMap[status] ?? 'open';
+  }
+
+  private mapSenderType(senderType: string): SupportMessageAuthor {
+    return senderType === 'user' ? 'user' : 'admin';
+  }
+
+  private getInitials(name: string | null | undefined): string {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return parts[0][0]?.toUpperCase() ?? '?';
   }
 }

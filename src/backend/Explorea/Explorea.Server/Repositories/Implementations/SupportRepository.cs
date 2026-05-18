@@ -38,13 +38,16 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         public async Task<(List<SupportTicket> Items, int Total)> GetSuperAdminTicketsAsync(
+            Guid currentUserId,
             string? status,
             string? priority,
             bool? isEscalated,
             int page,
             int pageSize)
         {
-            var query = BuildTicketListQuery();
+            // Superadmin vidi samo eskalirane tikete i tikete direktno dodeljene njemu
+            var query = BuildTicketListQuery()
+                .Where(t => t.IsEscalated || t.AssignedToUserId == currentUserId);
 
             query = ApplyStatusFilter(query, status);
 
@@ -83,6 +86,46 @@ namespace Explorea.Server.Repositories.Implementations
         public async Task AddMessageAsync(SupportMessage message)
         {
             await _db.SupportMessages.AddAsync(message);
+        }
+
+        public async Task<Guid?> FindLeastLoadedUserByRoleAsync(string roleName, int? regionId = null)
+        {
+            var query = _db.Users
+                .Where(u => u.Role.Name == roleName && u.IsActive);
+
+            if (regionId.HasValue)
+                query = query.Where(u => u.ManagedRegionId == regionId.Value);
+
+            return await query
+                .Select(u => new
+                {
+                    u.Id,
+                    LoadCount = _db.SupportTickets.Count(t =>
+                        t.AssignedToUserId == u.Id &&
+                        (t.Status == SupportTicketStatuses.Open || t.Status == SupportTicketStatuses.InProgress))
+                })
+                .OrderBy(x => x.LoadCount)
+                .Select(x => (Guid?)x.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<Guid?> FindLeastLoadedAmongAsync(List<Guid> candidateUserIds)
+        {
+            if (candidateUserIds.Count == 0)
+                return null;
+
+            return await _db.Users
+                .Where(u => candidateUserIds.Contains(u.Id) && u.IsActive)
+                .Select(u => new
+                {
+                    u.Id,
+                    LoadCount = _db.SupportTickets.Count(t =>
+                        t.AssignedToUserId == u.Id &&
+                        (t.Status == SupportTicketStatuses.Open || t.Status == SupportTicketStatuses.InProgress))
+                })
+                .OrderBy(x => x.LoadCount)
+                .Select(x => (Guid?)x.Id)
+                .FirstOrDefaultAsync();
         }
 
         private IQueryable<SupportTicket> BuildTicketListQuery()

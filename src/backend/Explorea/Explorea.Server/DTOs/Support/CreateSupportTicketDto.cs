@@ -17,5 +17,7 @@ namespace Explorea.API.DTOs.Support
         public string? LinkedContextType { get; set; }
 
         public Guid? LinkedContextId { get; set; }
+
+        public bool IsNonObjectRelated { get; set; } = false;
     }
 }

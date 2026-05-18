@@ -4,6 +4,7 @@ import { AdminSidebar } from '../admin-sidebar/admin-sidebar';
 import { AdminHeader } from '../admin-header/admin-header';
 import { LayoutService } from '../../core/services/layout.service';
 import { AdminProfileService } from '../../core/services/admin-profile.service';
+import { DashboardAuthService } from '../../core/services/dashboard-auth.service';
 
 @Component({
   selector: 'app-admin-shell',
@@ -17,9 +18,11 @@ export class AdminShellComponent implements OnInit {
   constructor(
     public layout: LayoutService,
     private adminProfile: AdminProfileService,
+    private dashboardAuth: DashboardAuthService,
   ) {}
 
   ngOnInit(): void {
+    this.dashboardAuth.syncRoleFromJwt();
     this.adminProfile.load().subscribe();
   }
 }

@@ -147,6 +147,7 @@ builder.Services.AddScoped<IAdminReportRepository, AdminReportRepository>();
 builder.Services.AddScoped<IAdminReportService, AdminReportService>();
 
 builder.Services.AddHttpClient<IChatService, GeminiChatService>();
+builder.Services.AddHostedService<SupportRetentionService>();
 
 builder.Services.AddMcpServer()
     .WithHttpTransport()
