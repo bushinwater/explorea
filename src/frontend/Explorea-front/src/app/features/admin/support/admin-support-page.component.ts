@@ -1,11 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, Subscription, debounceTime, distinctUntilChanged, interval } from 'rxjs';
 import { ChatMessage, ChatService } from '../../../core/services/chat.service';
+import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { AdminSupportService } from './admin-support.service';
 import {
   AiSupportMessage,
+  CreateTicketRequest,
+  MyPlaceOption,
+  NewTicketStep,
   SupportConversation,
   SupportContextType,
   SupportMessage,
@@ -34,7 +38,18 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
   protected readonly isSendingReply = signal(false);
   protected readonly isResolvingTicket = signal(false);
   protected readonly isAiSending = signal(false);
+  protected readonly isEscalatingTicket = signal(false);
   protected readonly searchTerm = signal('');
+
+  // New ticket flow
+  protected readonly showNewTicketModal = signal(false);
+  protected readonly newTicketStep = signal<NewTicketStep>('place-select');
+  protected readonly myPlaces = signal<MyPlaceOption[]>([]);
+  protected readonly isLoadingPlaces = signal(false);
+  protected readonly selectedPlaceId = signal<string | null>(null);
+  protected readonly newTicketTitle = signal('');
+  protected readonly newTicketMessage = signal('');
+  protected readonly isCreatingTicket = signal(false);
   protected readonly replyText = signal('');
   protected readonly aiInputText = signal('');
   protected readonly isInternalNote = signal(false);
@@ -56,6 +71,7 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
   constructor(
     private readonly supportService: AdminSupportService,
     private readonly chatService: ChatService,
+    protected readonly auth: DashboardAuthService,
   ) {}
 
   ngOnInit(): void {
@@ -67,6 +83,10 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
     );
 
     this.loadConversations();
+
+    this.subscription.add(
+      interval(30_000).subscribe(() => this.loadConversations(false)),
+    );
   }
 
   ngOnDestroy(): void {
@@ -123,11 +143,12 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
   protected statusLabel(status: SupportTicketStatus): string {
     const labels: Record<SupportTicketStatus, string> = {
       open: 'Otvoren',
-      resolved: 'Resen',
-      pending: 'Na cekanju',
+      in_progress: 'U toku',
+      resolved: 'Rešen',
+      closed: 'Zatvoren',
     };
 
-    return labels[status];
+    return labels[status] ?? status;
   }
 
   protected priorityLabel(priority: SupportTicketPriority): string {
@@ -135,10 +156,9 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
       low: 'Nizak',
       medium: 'Srednji',
       high: 'Visok',
-      urgent: 'Hitan',
     };
 
-    return labels[priority];
+    return labels[priority] ?? priority;
   }
 
   protected contextTypeLabel(type: SupportContextType): string {
@@ -221,6 +241,110 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.isResolvingTicket.set(false);
+        },
+      }),
+    );
+  }
+
+  protected escalateTicket(): void {
+    const ticket = this.selectedTicket();
+    if (!ticket || ticket.isEscalated || this.isEscalatingTicket()) return;
+
+    this.isEscalatingTicket.set(true);
+
+    this.subscription.add(
+      this.supportService.escalateTicket(ticket.id).subscribe({
+        next: (updatedTicket) => {
+          this.selectedTicket.set(updatedTicket);
+          this.isEscalatingTicket.set(false);
+          this.loadConversations(false);
+        },
+        error: () => {
+          this.isEscalatingTicket.set(false);
+        },
+      }),
+    );
+  }
+
+  protected openNewTicket(): void {
+    this.showNewTicketModal.set(true);
+    this.newTicketTitle.set('');
+    this.newTicketMessage.set('');
+    this.selectedPlaceId.set(null);
+
+    if (this.auth.role() === 'place_owner') {
+      this.newTicketStep.set('place-select');
+      this.isLoadingPlaces.set(true);
+      this.subscription.add(
+        this.supportService.getMyPlaces().subscribe({
+          next: (places) => {
+            this.myPlaces.set(places);
+            this.isLoadingPlaces.set(false);
+            if (places.length === 0) {
+              this.newTicketStep.set('contact-type');
+            }
+          },
+          error: () => {
+            this.myPlaces.set([]);
+            this.isLoadingPlaces.set(false);
+            this.newTicketStep.set('contact-type');
+          },
+        }),
+      );
+    } else {
+      this.newTicketStep.set('form');
+    }
+  }
+
+  protected closeNewTicket(): void {
+    this.showNewTicketModal.set(false);
+  }
+
+  protected selectPlaceForTicket(placeId: string | null): void {
+    this.selectedPlaceId.set(placeId);
+    if (placeId === null) {
+      this.newTicketStep.set('contact-type');
+    } else {
+      this.newTicketStep.set('form');
+    }
+  }
+
+  protected chooseHuman(): void {
+    this.newTicketStep.set('form');
+  }
+
+  protected chooseAi(): void {
+    this.showNewTicketModal.set(false);
+    this.selectAiAssistant();
+  }
+
+  protected submitNewTicket(): void {
+    const title = this.newTicketTitle().trim();
+    const message = this.newTicketMessage().trim();
+    if (!title || !message || this.isCreatingTicket()) return;
+
+    const placeId = this.selectedPlaceId();
+    const isNonObjectRelated = placeId === null && this.auth.role() === 'place_owner';
+
+    const req: CreateTicketRequest = {
+      title,
+      message,
+      linkedContextType: placeId ? 'place' : null,
+      linkedContextId: placeId,
+      isNonObjectRelated,
+    };
+
+    this.isCreatingTicket.set(true);
+    this.subscription.add(
+      this.supportService.createTicket(req).subscribe({
+        next: (ticket) => {
+          this.isCreatingTicket.set(false);
+          this.showNewTicketModal.set(false);
+          this.loadConversations(false);
+          this.selectConversation(ticket.id);
+        },
+        error: () => {
+          this.isCreatingTicket.set(false);
         },
       }),
     );

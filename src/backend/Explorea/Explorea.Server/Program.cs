@@ -153,6 +153,7 @@ builder.Services.AddScoped<IAdminStatsService, AdminStatsService>();
 builder.Services.AddSingleton<IAdminErrorLogService, AdminErrorLogService>();
 
 builder.Services.AddHttpClient<IChatService, GeminiChatService>();
+builder.Services.AddHostedService<SupportRetentionService>();
 
 builder.Services.AddMcpServer()
     .WithHttpTransport()

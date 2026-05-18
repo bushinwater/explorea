@@ -16,5 +16,8 @@ namespace Explorea.API.DTOs.Support
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset LastActivityAt { get; set; }
         public int MessageCount { get; set; }
+        public string? LastMessage { get; set; }
+        public DateTimeOffset? LastMessageAt { get; set; }
+        public string? SenderRole { get; set; }
     }
 }

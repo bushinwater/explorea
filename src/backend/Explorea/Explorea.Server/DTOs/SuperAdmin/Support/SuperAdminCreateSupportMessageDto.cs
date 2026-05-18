@@ -6,5 +6,7 @@ namespace Explorea.API.DTOs.SuperAdmin.Support
     {
         [Required]
         public string Content { get; set; } = null!;
+
+        public bool IsInternal { get; set; } = false;
     }
 }

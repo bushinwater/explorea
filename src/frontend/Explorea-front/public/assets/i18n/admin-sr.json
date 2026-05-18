@@ -391,6 +391,10 @@
   "activities.search.placeholder": "Pretraži aktivnosti...",
 
   "activities.stats.totalActivities": "Ukupne aktivnosti",
+  "activities.stats.mostPopular": "Najpopularnija",
+  "activities.stats.inactive": "Neaktivne (30 dana)",
+  "activities.stats.inactiveHint": "Bez poseta u poslednjih 30 dana",
+  "activities.stats.newest": "Najnovija",
   "activities.stats.pending": "Zahtevi na čekanju",
   "activities.stats.averageRating": "Prosečna ocena",
   "activities.stats.monthlyViews": "Mesečni pregledi",
@@ -416,6 +420,7 @@
   "activities.empty.description": "Nema aktivnosti za zadate filtere.",
 
   "activities.actions.label": "Akcije",
+  "activities.actions.view": "Detalji",
   "activities.actions.edit": "Izmeni",
   "activities.actions.delete": "Obriši",
 

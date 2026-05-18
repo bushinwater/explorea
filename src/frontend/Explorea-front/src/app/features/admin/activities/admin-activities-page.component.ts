@@ -17,12 +17,16 @@ import { EmptyStateComponent } from '../shared/components/empty-state/empty-stat
 import { FeedbackBannerComponent } from '../shared/components/feedback-banner/feedback-banner.component';
 import { TableSkeletonComponent } from '../shared/components/table-skeleton/table-skeleton.component';
 import {
-  ActivityCategory,
+  ActivityDetail,
   ActivityDifficulty,
   ActivityFilters,
   ActivityRow,
   ActivityStats,
   ActivityStatus,
+  CategoryOption,
+  CityOption,
+  CreateActivityDto,
+  RegionOption,
 } from './admin-activities.models';
 import { AdminActivitiesService } from './admin-activities.service';
 
@@ -46,18 +50,19 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected readonly filters = signal<ActivityFilters>({
     search: '',
-    category: 'all',
+    categoryId: 'all',
     status: 'all',
     difficulty: 'all',
     minRating: 'all',
-    region: 'all',
+    regionId: 'all',
     page: 1,
-    pageSize: 7,
+    pageSize: 17,
   });
 
   protected readonly activities = signal<ActivityRow[]>([]);
   protected readonly stats = signal<ActivityStats | null>(null);
-  protected readonly regions = signal<string[]>([]);
+  protected readonly categories = signal<CategoryOption[]>([]);
+  protected readonly regions = signal<RegionOption[]>([]);
   protected readonly total = signal(0);
   protected readonly currentPage = signal(1);
   protected readonly isLoading = signal(false);
@@ -66,13 +71,36 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly activeMenuId = signal<string | null>(null);
   protected readonly isDeleteDialogOpen = signal(false);
   protected readonly isDeleting = signal(false);
-  protected readonly selectedActivity = signal<ActivityRow | null>(null);
+  protected readonly activityToDelete = signal<ActivityRow | null>(null);
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
-  protected readonly activityToDelete = signal<ActivityRow | null>(null);
+
   protected readonly isDetailsPanelOpen = signal(false);
-  protected readonly isUpdatingStatus = signal(false);
+  protected readonly isDetailLoading = signal(false);
+  protected readonly selectedActivity = signal<ActivityRow | null>(null);
+  protected readonly selectedActivityDetail = signal<ActivityDetail | null>(null);
   protected readonly isDescriptionExpanded = signal(false);
+
+  protected readonly isCreateModalOpen = signal(false);
+  protected readonly isSubmitting = signal(false);
+  protected readonly isEditMode = signal(false);
+  protected readonly editingActivityId = signal<string | null>(null);
+  protected readonly modalInclusions = signal<string[]>([]);
+  protected readonly modalImageFiles = signal<File[]>([]);
+  protected readonly modalCities = signal<CityOption[]>([]);
+  protected readonly modalRegionId = signal<number | 'all'>('all');
+  protected readonly newInclusionText = signal('');
+  protected readonly createForm = signal<CreateActivityDto>({
+    name: '',
+    slug: '',
+    categoryId: 0,
+    description: '',
+    price: undefined,
+    durationMinutes: undefined,
+    difficultyLevel: '',
+    cityId: undefined,
+    destinationId: undefined,
+  });
 
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.total() / this.filters().pageSize)),
@@ -84,25 +112,14 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected readonly activeFilterCount = computed(() => {
     const f = this.filters();
-
     return [
-      f.category !== 'all',
+      f.categoryId !== 'all',
       f.status !== 'all',
       f.difficulty !== 'all',
       f.minRating !== 'all',
-      f.region !== 'all',
+      f.regionId !== 'all',
     ].filter(Boolean).length;
   });
-
-  protected readonly categories: Array<{ value: ActivityCategory | 'all'; label: string }> = [
-    { value: 'all', label: 'Sve kategorije' },
-    { value: 'hiking', label: 'Planinarenje' },
-    { value: 'water_sports', label: 'Vodeni sportovi' },
-    { value: 'culture', label: 'Kultura' },
-    { value: 'gastronomy', label: 'Gastronomija' },
-    { value: 'adventure', label: 'Avantura' },
-    { value: 'wellness', label: 'Wellness' },
-  ];
 
   protected readonly statuses: Array<{ value: ActivityStatus | 'all'; label: string }> = [
     { value: 'all', label: 'Svi statusi' },
@@ -145,6 +162,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     );
 
     this.loadStats();
+    this.loadCategories();
     this.loadRegions();
     this.loadActivities();
   }
@@ -157,8 +175,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.searchInput$.next(value);
   }
 
-  protected applyCategory(value: ActivityCategory | 'all'): void {
-    this.patchFilter({ category: value, page: 1 });
+  protected applyCategory(categoryId: number | 'all'): void {
+    this.patchFilter({ categoryId, page: 1 });
     this.loadActivities();
   }
 
@@ -172,8 +190,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.loadActivities();
   }
 
-  protected applyRegion(value: string | 'all'): void {
-    this.patchFilter({ region: value, page: 1 });
+  protected applyRegion(regionId: number | 'all'): void {
+    this.patchFilter({ regionId, page: 1 });
     this.loadActivities();
   }
 
@@ -185,15 +203,14 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected resetFilters(): void {
     this.filters.update((f) => ({
       search: '',
-      category: 'all',
+      categoryId: 'all',
       status: 'all',
       difficulty: 'all',
       minRating: 'all',
-      region: 'all',
+      regionId: 'all',
       page: 1,
       pageSize: f.pageSize,
     }));
-
     this.currentPage.set(1);
     this.syncFiltersToQueryParams();
     this.loadActivities();
@@ -230,17 +247,216 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.isDeleting.set(true);
 
     this.subscription.add(
-      this.activitiesService.deleteActivity(activity.id).subscribe({
+      this.activitiesService.delete(activity.id).subscribe({
         next: () => {
           this.isDeleting.set(false);
           this.isDeleteDialogOpen.set(false);
           this.activityToDelete.set(null);
           this.successMessage.set(`„${activity.name}" je uspešno uklonjena.`);
+          if (this.selectedActivity()?.id === activity.id) {
+            this.closeDetailsPanel();
+          }
           this.loadActivities();
         },
         error: () => {
           this.isDeleting.set(false);
           this.errorMessage.set('Greška pri brisanju aktivnosti.');
+        },
+      }),
+    );
+  }
+
+  protected openDetailsPanel(activity: ActivityRow): void {
+    this.activeMenuId.set(null);
+    this.selectedActivity.set(activity);
+    this.selectedActivityDetail.set(null);
+    this.isDetailsPanelOpen.set(true);
+    this.isDetailLoading.set(true);
+    this.isDescriptionExpanded.set(false);
+
+    this.subscription.add(
+      this.activitiesService.getById(activity.id).subscribe({
+        next: (detail) => {
+          this.selectedActivityDetail.set(detail);
+          this.isDetailLoading.set(false);
+        },
+        error: () => {
+          this.isDetailLoading.set(false);
+          this.errorMessage.set('Greška pri učitavanju detalja aktivnosti.');
+        },
+      }),
+    );
+  }
+
+  protected closeDetailsPanel(): void {
+    this.isDetailsPanelOpen.set(false);
+    this.selectedActivity.set(null);
+    this.selectedActivityDetail.set(null);
+    this.isDescriptionExpanded.set(false);
+  }
+
+  protected openCreateModal(): void {
+    this.isEditMode.set(false);
+    this.editingActivityId.set(null);
+    this.modalInclusions.set([]);
+    this.modalImageFiles.set([]);
+    this.modalCities.set([]);
+    this.modalRegionId.set('all');
+    this.newInclusionText.set('');
+    this.createForm.set({
+      name: '',
+      slug: '',
+      categoryId: this.categories()[0]?.id ?? 0,
+      description: '',
+      price: undefined,
+      durationMinutes: undefined,
+      difficultyLevel: '',
+      cityId: undefined,
+      destinationId: undefined,
+    });
+    this.loadModalCities();
+    this.isCreateModalOpen.set(true);
+  }
+
+  protected openEditModal(): void {
+    const detail = this.selectedActivityDetail();
+    if (!detail) return;
+
+    this.isEditMode.set(true);
+    this.editingActivityId.set(detail.id);
+    this.modalInclusions.set([...detail.inclusions]);
+    this.modalImageFiles.set([]);
+    this.newInclusionText.set('');
+    this.createForm.set({
+      name: detail.name,
+      slug: detail.slug,
+      categoryId: detail.categoryId,
+      description: detail.description ?? '',
+      price: detail.price ?? undefined,
+      durationMinutes: detail.durationMinutes ?? undefined,
+      difficultyLevel: detail.difficultyLevel ?? '',
+      cityId: detail.cityId ?? undefined,
+      destinationId: detail.destinationId ?? undefined,
+    });
+
+    const regionId = detail.regionId ?? null;
+    this.modalRegionId.set(regionId ?? 'all');
+    this.loadModalCities(regionId ?? undefined);
+
+    this.isCreateModalOpen.set(true);
+  }
+
+  protected closeCreateModal(): void {
+    this.isCreateModalOpen.set(false);
+    this.isSubmitting.set(false);
+    this.isEditMode.set(false);
+    this.editingActivityId.set(null);
+  }
+
+  protected updateCreateField<K extends keyof CreateActivityDto>(key: K, value: CreateActivityDto[K]): void {
+    this.createForm.update((f) => ({ ...f, [key]: value }));
+  }
+
+  protected addInclusion(): void {
+    const text = this.newInclusionText().trim();
+    if (!text) return;
+    this.modalInclusions.update((list) => [...list, text]);
+    this.newInclusionText.set('');
+  }
+
+  protected removeInclusion(index: number): void {
+    this.modalInclusions.update((list) => list.filter((_, i) => i !== index));
+  }
+
+  protected onImageFilesSelect(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    this.modalImageFiles.update((existing) => [...existing, ...files]);
+    input.value = '';
+  }
+
+  protected removeImageFile(index: number): void {
+    this.modalImageFiles.update((files) => files.filter((_, i) => i !== index));
+  }
+
+  protected onModalRegionChange(value: string): void {
+    const regionId = value === 'all' ? 'all' : +value;
+    this.modalRegionId.set(regionId);
+    this.updateCreateField('cityId', undefined);
+    this.loadModalCities(regionId === 'all' ? undefined : regionId);
+  }
+
+  protected submitCreate(): void {
+    const form = this.createForm();
+    if (!form.name.trim() || !form.slug.trim() || !form.categoryId) return;
+
+    this.isSubmitting.set(true);
+
+    const inclusions = this.modalInclusions();
+    const dto: CreateActivityDto = {
+      ...form,
+      inclusions: inclusions.length ? inclusions : undefined,
+    };
+
+    if (this.isEditMode()) {
+      const id = this.editingActivityId()!;
+      this.subscription.add(
+        this.activitiesService.update(id, dto).subscribe({
+          next: (updated) => this.uploadPendingImages(id, updated),
+          error: () => {
+            this.isSubmitting.set(false);
+            this.errorMessage.set('Greška pri izmeni aktivnosti.');
+          },
+        }),
+      );
+    } else {
+      this.subscription.add(
+        this.activitiesService.create(dto).subscribe({
+          next: (created) => this.uploadPendingImages(created.id, created),
+          error: () => {
+            this.isSubmitting.set(false);
+            this.errorMessage.set('Greška pri dodavanju aktivnosti.');
+          },
+        }),
+      );
+    }
+  }
+
+  protected deactivateSelectedActivity(): void {
+    const detail = this.selectedActivityDetail();
+    if (!detail) return;
+
+    this.subscription.add(
+      this.activitiesService.update(detail.id, { isActive: false }).subscribe({
+        next: (updated) => {
+          this.selectedActivityDetail.set(updated);
+          this.activities.update((items) =>
+            items.map((item) => (item.id === updated.id ? updated : item)),
+          );
+          this.successMessage.set(`„${updated.name}" je deaktivirana.`);
+        },
+        error: () => {
+          this.errorMessage.set('Greška pri promeni statusa aktivnosti.');
+        },
+      }),
+    );
+  }
+
+  protected activateSelectedActivity(): void {
+    const detail = this.selectedActivityDetail();
+    if (!detail) return;
+
+    this.subscription.add(
+      this.activitiesService.update(detail.id, { isActive: true }).subscribe({
+        next: (updated) => {
+          this.selectedActivityDetail.set(updated);
+          this.activities.update((items) =>
+            items.map((item) => (item.id === updated.id ? updated : item)),
+          );
+          this.successMessage.set(`„${updated.name}" je aktivirana.`);
+        },
+        error: () => {
+          this.errorMessage.set('Greška pri promeni statusa aktivnosti.');
         },
       }),
     );
@@ -256,6 +472,14 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     return `pre ${days} dana`;
   }
 
+  protected formatDate(isoDate: string): string {
+    return new Date(isoDate).toLocaleDateString('sr-Latn-RS', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
+
   protected formatBigNumber(n: number): string {
     return n.toLocaleString('en-US');
   }
@@ -266,53 +490,44 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     return views.toString();
   }
 
-  protected categoryLabel(cat: ActivityCategory): string {
-    const map: Record<ActivityCategory, string> = {
-      hiking: 'Planinarenje',
-      water_sports: 'Vodeni sportovi',
-      culture: 'Kultura',
-      gastronomy: 'Gastronomija',
-      adventure: 'Avantura',
-      wellness: 'Wellness',
+  protected difficultyLabel(difficulty: string | null): string {
+    if (!difficulty) return '';
+    const map: Record<string, string> = {
+      easy: 'Easy',
+      medium: 'Medium',
+      hard: 'Hard',
     };
-
-    return map[cat];
+    return map[difficulty.toLowerCase()] ?? difficulty;
   }
 
-  protected categoryIcon(cat: ActivityCategory): string {
-    const map: Record<ActivityCategory, string> = {
-      hiking: 'hiking',
-      water_sports: 'kayaking',
-      culture: 'account_balance',
-      gastronomy: 'restaurant',
-      adventure: 'landscape',
-      wellness: 'spa',
-    };
-
-    return map[cat];
+  protected statusLabel(isActive: boolean): string {
+    return isActive ? 'Aktivno' : 'Neaktivno';
   }
 
-  protected statusLabel(status: ActivityStatus): string {
-    const map: Record<ActivityStatus, string> = {
-      active: 'Aktivno',
-      pending: 'Na čekanju',
-      inactive: 'Neaktivno',
-      rejected: 'Odbijeno',
-    };
-    return map[status];
+  protected statusKey(isActive: boolean): string {
+    return isActive ? 'active' : 'inactive';
   }
 
-  protected thumbColor(category: ActivityCategory): string {
-    const map: Record<ActivityCategory, string> = {
-      hiking: '#1f5c3a',
-      water_sports: '#1e4d7b',
-      culture: '#7c5c2e',
-      gastronomy: '#8b3a2a',
-      adventure: '#4a3060',
-      wellness: '#2d6b6b',
-    };
+  protected categoryIcon(categoryName: string): string {
+    const lower = categoryName.toLowerCase();
+    if (lower.includes('pešač') || lower.includes('planinaren') || lower.includes('hiking')) return 'hiking';
+    if (lower.includes('vod') || lower.includes('kajak') || lower.includes('water')) return 'kayaking';
+    if (lower.includes('kultura') || lower.includes('culture')) return 'account_balance';
+    if (lower.includes('gastro') || lower.includes('hrana')) return 'restaurant';
+    if (lower.includes('avantura') || lower.includes('adventure')) return 'landscape';
+    if (lower.includes('wellness') || lower.includes('spa')) return 'spa';
+    return 'directions_run';
+  }
 
-    return map[category];
+  protected thumbColor(categoryName: string): string {
+    const lower = categoryName.toLowerCase();
+    if (lower.includes('pešač') || lower.includes('planinaren') || lower.includes('hiking')) return '#1f5c3a';
+    if (lower.includes('vod') || lower.includes('kajak') || lower.includes('water')) return '#1e4d7b';
+    if (lower.includes('kultura') || lower.includes('culture')) return '#7c5c2e';
+    if (lower.includes('gastro') || lower.includes('hrana')) return '#8b3a2a';
+    if (lower.includes('avantura') || lower.includes('adventure')) return '#4a3060';
+    if (lower.includes('wellness') || lower.includes('spa')) return '#2d6b6b';
+    return '#3a5a6b';
   }
 
   protected thumbInitials(name: string): string {
@@ -324,27 +539,20 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       .toUpperCase();
   }
 
-  protected difficultyLabel(difficulty: ActivityDifficulty): string {
-    const map: Record<ActivityDifficulty, string> = {
-      easy: 'Easy',
-      medium: 'Medium',
-      hard: 'Hard',
-    };
-
-    return map[difficulty];
-  }
-
   protected formatRating(rating: number): string {
     return rating.toFixed(1);
   }
 
-  protected formatDuration(minutes: number): string {
+  protected formatDuration(minutes: number | null): string {
+    if (!minutes) return '—';
     if (minutes < 60) return `${minutes} min`;
-
     const hours = Math.floor(minutes / 60);
     const rest = minutes % 60;
-
     return rest ? `${hours}h ${rest}min` : `${hours}h`;
+  }
+
+  protected formatPrice(price: number | null): string {
+    return price === null ? 'Besplatno' : `${price.toLocaleString('sr-Latn-RS')} RSD`;
   }
 
   protected visibleRangeText(): string {
@@ -365,6 +573,55 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     return [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
   }
 
+  protected selectedCategoryLabel(): string {
+    const id = this.filters().categoryId;
+    if (id === 'all') return '';
+    return this.categories().find((c) => c.id === id)?.name ?? String(id);
+  }
+
+  protected selectedStatusLabel(): string {
+    const value = this.filters().status;
+    if (value === 'all') return '';
+    return this.statuses.find((s) => s.value === value)?.label ?? value;
+  }
+
+  protected selectedDifficultyLabel(): string {
+    const value = this.filters().difficulty;
+    if (value === 'all') return '';
+    return this.difficulties.find((d) => d.value === value)?.label ?? value;
+  }
+
+  protected selectedRatingLabel(): string {
+    const value = this.filters().minRating;
+    if (value === 'all') return '';
+    return this.ratingOptions.find((r) => r.value === value)?.label ?? `${value}+`;
+  }
+
+  protected selectedRegionLabel(): string {
+    const id = this.filters().regionId;
+    if (id === 'all') return '';
+    return this.regions().find((r) => r.id === id)?.name ?? String(id);
+  }
+
+  protected toggleDescription(): void {
+    this.isDescriptionExpanded.update((current) => !current);
+  }
+
+  protected shouldShowDescriptionToggle(description: string): boolean {
+    return description.length > 140;
+  }
+
+  protected visibleDescription(description: string): string {
+    if (this.isDescriptionExpanded() || description.length <= 140) {
+      return description;
+    }
+    return `${description.slice(0, 140).trimEnd()}...`;
+  }
+
+  protected starArray(rating: number): number[] {
+    return Array.from({ length: 5 }, (_, i) => i + 1);
+  }
+
   @HostListener('document:click')
   onDocumentClick(): void {
     this.activeMenuId.set(null);
@@ -377,18 +634,17 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   private hydrateFiltersFromQueryParams(): void {
-    const queryParamMap = this.route.snapshot.queryParamMap;
-
-    const page = this.parsePositiveInt(queryParamMap.get('page'), 1);
-    const pageSize = this.parsePositiveInt(queryParamMap.get('pageSize'), this.filters().pageSize);
+    const qp = this.route.snapshot.queryParamMap;
+    const page = this.parsePositiveInt(qp.get('page'), 1);
+    const pageSize = this.parsePositiveInt(qp.get('pageSize'), this.filters().pageSize);
 
     this.filters.set({
-      search: queryParamMap.get('search')?.trim() ?? '',
-      category: this.parseCategory(queryParamMap.get('category')),
-      status: this.parseStatus(queryParamMap.get('status')),
-      difficulty: this.parseDifficulty(queryParamMap.get('difficulty')),
-      minRating: this.parseMinRating(queryParamMap.get('minRating')),
-      region: queryParamMap.get('region')?.trim() || 'all',
+      search: qp.get('search')?.trim() ?? '',
+      categoryId: this.parsePositiveInt(qp.get('categoryId'), 0) || 'all',
+      status: this.parseStatus(qp.get('status')),
+      difficulty: this.parseDifficulty(qp.get('difficulty')),
+      minRating: this.parseMinRating(qp.get('minRating')),
+      regionId: this.parsePositiveInt(qp.get('regionId'), 0) || 'all',
       page,
       pageSize,
     });
@@ -405,82 +661,38 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   private buildQueryParams(): Record<string, string | number> {
-    const filters = this.filters();
-    const queryParams: Record<string, string | number> = {};
+    const f = this.filters();
+    const qp: Record<string, string | number> = {};
 
-    if (filters.search.trim()) {
-      queryParams['search'] = filters.search.trim();
-    }
+    if (f.search.trim())      qp['search']     = f.search.trim();
+    if (f.categoryId !== 'all') qp['categoryId'] = f.categoryId;
+    if (f.status !== 'all')   qp['status']     = f.status;
+    if (f.difficulty !== 'all') qp['difficulty'] = f.difficulty;
+    if (f.minRating !== 'all')  qp['minRating']  = f.minRating;
+    if (f.regionId !== 'all')   qp['regionId']   = f.regionId;
+    if (f.page > 1)           qp['page']       = f.page;
+    if (f.pageSize !== 17)    qp['pageSize']   = f.pageSize;
 
-    if (filters.category !== 'all') {
-      queryParams['category'] = filters.category;
-    }
-
-    if (filters.status !== 'all') {
-      queryParams['status'] = filters.status;
-    }
-
-    if (filters.difficulty !== 'all') {
-      queryParams['difficulty'] = filters.difficulty;
-    }
-
-    if (filters.minRating !== 'all') {
-      queryParams['minRating'] = filters.minRating;
-    }
-
-    if (filters.region !== 'all') {
-      queryParams['region'] = filters.region;
-    }
-
-    if (filters.page > 1) {
-      queryParams['page'] = filters.page;
-    }
-
-    if (filters.pageSize !== 7) {
-      queryParams['pageSize'] = filters.pageSize;
-    }
-
-    return queryParams;
-  }
-
-  private parseCategory(value: string | null): ActivityCategory | 'all' {
-    return this.categories.some((category) => category.value === value)
-      ? (value as ActivityCategory | 'all')
-      : 'all';
+    return qp;
   }
 
   private parseStatus(value: string | null): ActivityStatus | 'all' {
-    return this.statuses.some((status) => status.value === value)
-      ? (value as ActivityStatus | 'all')
-      : 'all';
+    return this.statuses.some((s) => s.value === value) ? (value as ActivityStatus | 'all') : 'all';
   }
 
   private parseDifficulty(value: string | null): ActivityDifficulty | 'all' {
-    return this.difficulties.some((difficulty) => difficulty.value === value)
-      ? (value as ActivityDifficulty | 'all')
-      : 'all';
+    return this.difficulties.some((d) => d.value === value) ? (value as ActivityDifficulty | 'all') : 'all';
   }
 
   private parseMinRating(value: string | null): number | 'all' {
-    if (!value || value === 'all') {
-      return 'all';
-    }
-
-    const numericValue = Number(value);
-
-    return this.ratingOptions.some((rating) => rating.value === numericValue)
-      ? numericValue
-      : 'all';
+    if (!value || value === 'all') return 'all';
+    const n = Number(value);
+    return this.ratingOptions.some((r) => r.value === n) ? n : 'all';
   }
 
   private parsePositiveInt(value: string | null, fallback: number): number {
     const parsed = Number(value);
-
-    if (!Number.isInteger(parsed) || parsed < 1) {
-      return fallback;
-    }
-
-    return parsed;
+    return Number.isInteger(parsed) && parsed >= 1 ? parsed : fallback;
   }
 
   private loadActivities(): void {
@@ -517,6 +729,14 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  private loadCategories(): void {
+    this.subscription.add(
+      this.activitiesService.getCategories().subscribe({
+        next: (cats) => this.categories.set(cats),
+      }),
+    );
+  }
+
   private loadRegions(): void {
     this.subscription.add(
       this.activitiesService.getRegions().subscribe({
@@ -525,106 +745,57 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     );
   }
 
-  protected openDetailsPanel(activity: ActivityRow): void {
-    this.activeMenuId.set(null);
-    this.selectedActivity.set(activity);
-    this.isDetailsPanelOpen.set(true);
-    this.isDescriptionExpanded.set(false);
-  }
-
-  protected closeDetailsPanel(): void {
-    this.isDetailsPanelOpen.set(false);
-    this.selectedActivity.set(null);
-    this.isDescriptionExpanded.set(false);
-  }
-
-  protected approveSelectedActivity(): void {
-    this.updateSelectedActivityStatus('active', 'odobrena');
-  }
-
-  protected deactivateSelectedActivity(): void {
-    this.updateSelectedActivityStatus('inactive', 'deaktivirana');
-  }
-
-  private updateSelectedActivityStatus(status: ActivityStatus, actionLabel: string): void {
-    const activity = this.selectedActivity();
-    if (!activity) return;
-
-    this.isUpdatingStatus.set(true);
-    this.errorMessage.set('');
-
+  private loadModalCities(regionId?: number): void {
     this.subscription.add(
-      this.activitiesService.updateActivityStatus(activity.id, status).subscribe({
-        next: (updatedActivity) => {
-          this.activities.update((items) =>
-            items.map((item) => (item.id === updatedActivity.id ? updatedActivity : item)),
-          );
-
-          this.selectedActivity.set(updatedActivity);
-          this.isUpdatingStatus.set(false);
-          this.successMessage.set(`„${updatedActivity.name}" je ${actionLabel}.`);
-        },
-        error: () => {
-          this.isUpdatingStatus.set(false);
-          this.errorMessage.set('Greška pri promeni statusa aktivnosti.');
-        },
+      this.activitiesService.getCities(regionId).subscribe({
+        next: (cities) => this.modalCities.set(cities),
       }),
     );
   }
 
-  protected selectedCategoryLabel(): string {
-    const value = this.filters().category;
-
-    if (value === 'all') return '';
-
-    return this.categories.find((category) => category.value === value)?.label ?? value;
-  }
-
-  protected selectedStatusLabel(): string {
-    const value = this.filters().status;
-
-    if (value === 'all') return '';
-
-    return this.statuses.find((status) => status.value === value)?.label ?? value;
-  }
-
-  protected selectedDifficultyLabel(): string {
-    const value = this.filters().difficulty;
-
-    if (value === 'all') return '';
-
-    return this.difficulties.find((difficulty) => difficulty.value === value)?.label ?? value;
-  }
-
-  protected selectedRatingLabel(): string {
-    const value = this.filters().minRating;
-
-    if (value === 'all') return '';
-
-    return this.ratingOptions.find((rating) => rating.value === value)?.label ?? `${value}+`;
-  }
-
-  protected selectedRegionLabel(): string {
-    const value = this.filters().region;
-
-    if (value === 'all') return '';
-
-    return value;
-  }
-
-  protected toggleDescription(): void {
-    this.isDescriptionExpanded.update((current) => !current);
-  }
-
-  protected shouldShowDescriptionToggle(description: string): boolean {
-    return description.length > 140;
-  }
-
-  protected visibleDescription(description: string): string {
-    if (this.isDescriptionExpanded() || description.length <= 140) {
-      return description;
+  private uploadPendingImages(activityId: string, activity: ActivityDetail): void {
+    const files = this.modalImageFiles();
+    if (!files.length) {
+      this.finalizeSubmit(activityId, activity);
+      return;
     }
 
-    return `${description.slice(0, 140).trimEnd()}...`;
+    const uploadNext = (index: number) => {
+      if (index >= files.length) {
+        this.finalizeSubmit(activityId, activity);
+        return;
+      }
+      this.subscription.add(
+        this.activitiesService.uploadImage(activityId, files[index]).subscribe({
+          next: () => uploadNext(index + 1),
+          error: () => uploadNext(index + 1),
+        }),
+      );
+    };
+    uploadNext(0);
+  }
+
+  private finalizeSubmit(activityId: string, activity: ActivityDetail): void {
+    const isEdit = this.isEditMode();
+    this.isSubmitting.set(false);
+    this.isCreateModalOpen.set(false);
+    this.isEditMode.set(false);
+    this.editingActivityId.set(null);
+
+    if (isEdit) {
+      this.successMessage.set(`„${activity.name}" je uspešno izmenjena.`);
+      if (this.isDetailsPanelOpen()) {
+        this.subscription.add(
+          this.activitiesService.getById(activityId).subscribe({
+            next: (detail) => this.selectedActivityDetail.set(detail),
+          }),
+        );
+      }
+    } else {
+      this.successMessage.set(`„${activity.name}" je uspešno dodata.`);
+    }
+
+    this.loadActivities();
+    this.loadStats();
   }
 }

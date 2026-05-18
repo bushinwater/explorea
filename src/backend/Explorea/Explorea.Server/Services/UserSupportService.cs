@@ -2,6 +2,7 @@ using Explorea.API.DTOs.Common;
 using Explorea.API.DTOs.Support;
 using Explorea.API.Models;
 using Explorea.Server.Data;
+using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -25,7 +26,7 @@ namespace Explorea.Server.Services
             var messageContent = RequireText(dto.Message, "Message");
             var priority = NormalizePriority(dto.Priority);
             var linkedContextType = NormalizeLinkedContext(dto.LinkedContextType, dto.LinkedContextId);
-            var assignedToUserId = await ResolveAssignedToUserIdAsync(userId, linkedContextType, dto.LinkedContextId);
+            var assignedToUserId = await ResolveAssignedToUserIdAsync(userId, linkedContextType, dto.LinkedContextId, dto.IsNonObjectRelated);
             var now = DateTimeOffset.UtcNow;
 
             var ticket = new SupportTicket
@@ -136,16 +137,34 @@ namespace Explorea.Server.Services
         private async Task<Guid?> ResolveAssignedToUserIdAsync(
             Guid userId,
             string? linkedContextType,
-            Guid? linkedContextId)
+            Guid? linkedContextId,
+            bool isNonObjectRelated = false)
         {
+            var creatorRole = await _db.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.Role.Name)
+                .FirstOrDefaultAsync();
+
+            // TO šalje tiket → ide superadminu sa najmanje tiketa
+            if (creatorRole == RoleNames.TouristOrganization)
+                return await _supportRepository.FindLeastLoadedUserByRoleAsync(RoleNames.SuperAdmin);
+
+            // Tiket nevezan za objekat → ide TO-u sa najmanje tiketa globalno
+            if (isNonObjectRelated || linkedContextType == null)
+                return await _supportRepository.FindLeastLoadedUserByRoleAsync(RoleNames.TouristOrganization);
+
+            // Tiket vezan za destinaciju/mesto/event/aktivnost → rutiranje po regiji
             var destinationId = await ResolveDestinationIdAsync(linkedContextType, linkedContextId);
             if (destinationId.HasValue)
             {
-                return await _db.OrganizationAssignments
+                var destinationCandidates = await _db.OrganizationAssignments
                     .Where(a => a.DestinationId == destinationId.Value)
-                    .OrderBy(a => a.AssignedAt)
-                    .Select(a => (Guid?)a.OrganizationUserId)
-                    .FirstOrDefaultAsync();
+                    .Select(a => a.OrganizationUserId)
+                    .ToListAsync();
+
+                var assignedFromDestination = await _supportRepository.FindLeastLoadedAmongAsync(destinationCandidates);
+                if (assignedFromDestination.HasValue)
+                    return assignedFromDestination;
             }
 
             var userRegionId = await _db.Users
@@ -153,14 +172,19 @@ namespace Explorea.Server.Services
                 .Select(u => u.ManagedRegionId ?? u.CurrentCity!.RegionId)
                 .FirstOrDefaultAsync();
 
-            if (!userRegionId.HasValue)
-                return null;
+            if (userRegionId.HasValue)
+            {
+                var regionCandidates = await _db.OrganizationRegionAssignments
+                    .Where(a => a.RegionId == userRegionId.Value)
+                    .Select(a => a.OrganizationUserId)
+                    .ToListAsync();
 
-            return await _db.OrganizationRegionAssignments
-                .Where(a => a.RegionId == userRegionId.Value)
-                .OrderBy(a => a.AssignedAt)
-                .Select(a => (Guid?)a.OrganizationUserId)
-                .FirstOrDefaultAsync();
+                var assignedFromRegion = await _supportRepository.FindLeastLoadedAmongAsync(regionCandidates);
+                if (assignedFromRegion.HasValue)
+                    return assignedFromRegion;
+            }
+
+            return await _supportRepository.FindLeastLoadedUserByRoleAsync(RoleNames.TouristOrganization);
         }
 
         private async Task<Guid?> ResolveDestinationIdAsync(string? linkedContextType, Guid? linkedContextId)
@@ -308,7 +332,21 @@ namespace Explorea.Server.Services
                 LastActivityAt = ticket.LastActivityAt,
                 MessageCount = includeInternalMessages
                     ? ticket.Messages.Count
-                    : ticket.Messages.Count(m => !m.IsInternal)
+                    : ticket.Messages.Count(m => !m.IsInternal),
+                LastMessage = ticket.Messages
+                    .Where(m => !m.IsInternal)
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Select(m => m.Content)
+                    .FirstOrDefault(),
+                LastMessageAt = ticket.Messages
+                    .Where(m => !m.IsInternal)
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Select(m => (DateTimeOffset?)m.CreatedAt)
+                    .FirstOrDefault(),
+                SenderRole = ticket.Messages
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Select(m => m.SenderType)
+                    .FirstOrDefault()
             };
         }
 
