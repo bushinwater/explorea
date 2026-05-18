@@ -10,6 +10,8 @@ namespace Explorea.Server.Services.Admin.Interfaces
             DateTimeOffset? startFrom, DateTimeOffset? startTo,
             int page, int pageSize, Guid currentUserId);
 
+        Task<AdminEventStatsDto> GetStatsDtoAsync(Guid currentUserId);
+
         Task<AdminEventDetailDto?> GetByIdAsync(Guid id, Guid currentUserId);
 
         Task<AdminEventDetailDto> CreateAsync(AdminCreateEventDto dto, Guid createdBy);

@@ -56,10 +56,8 @@ namespace Explorea.Server.Repositories.Implementations
                 query = query.Where(e => e.StartDatetime <= startTo.Value);
 
             if (restrictToDestinationIds != null && restrictToCityIds != null)
-                query = query.Where(e =>
-                    (e.DestinationId.HasValue && restrictToDestinationIds.Contains(e.DestinationId.Value)) ||
-                    (e.CityId.HasValue && restrictToCityIds.Contains(e.CityId.Value)));
-
+                query = query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
+                
             var total = await query.CountAsync();
             var items = await query
                 .OrderByDescending(e => e.StartDatetime)
@@ -68,6 +66,60 @@ namespace Explorea.Server.Repositories.Implementations
                 .ToListAsync();
 
             return (items, total);
+        }
+
+        public async Task<int> CountActiveAsync(
+            List<Guid>? restrictToDestinationIds,
+            List<int>? restrictToCityIds
+        )
+        {
+            var query = _db.Events
+                .IgnoreQueryFilters()
+                .Where(e => !e.IsDeleted);
+
+            query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
+
+            return await query.CountAsync();
+        }
+        public async Task<int> CountApprovedThisMonthAsync(
+            List<Guid>? restrictToDestinationIds,
+            List<int>? restrictToCityIds
+        )
+        {
+            var now = DateTimeOffset.UtcNow;
+            var monthStart = new DateTimeOffset(
+                now.Year,
+                now.Month,
+                1,
+                0,
+                0,
+                0,
+                0,
+                TimeSpan.Zero
+            );
+
+            var query = _db.Events
+                .IgnoreQueryFilters()
+                .Where(e => !e.IsDeleted && e.CreatedAt >= monthStart);
+
+            query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
+
+            return await query.CountAsync();
+        }
+
+        private static IQueryable<Event> ApplyAccessRestrictions(
+            IQueryable<Event> query,
+            List<Guid>? restrictToDestinationIds,
+            List<int>? restrictToCityIds
+        )
+        {
+            if(restrictToDestinationIds != null && restrictToCityIds != null)
+                query = query.Where(e =>
+                    (e.DestinationId.HasValue && restrictToDestinationIds.Contains(e.DestinationId.Value))
+                    || (e.CityId.HasValue && restrictToCityIds.Contains(e.CityId.Value))
+                );
+            
+            return query;
         }
 
         public async Task<Event?> GetAdminByIdAsync(Guid id)

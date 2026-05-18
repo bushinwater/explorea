@@ -366,7 +366,13 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   private loadStats(): void {
     this.subscription.add(
       this.eventsService.getStats().subscribe({
-        next: (stats) => this.stats.set(stats),
+        next: (stats) => {
+          console.log('loadStats response: ', stats);
+          this.stats.set(stats);
+        },
+        error: (err) => {
+          console.error('loadStats pao', err);
+        },
       }),
     );
   }

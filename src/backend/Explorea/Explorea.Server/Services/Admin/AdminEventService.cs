@@ -25,28 +25,75 @@ namespace Explorea.Server.Services.Admin
             _userRepo        = userRepo;
         }
 
+        public async Task<AdminEventStatsDto> GetStatsDtoAsync(Guid currentUserId)
+        {
+            var (restrictToDestinationIds, restrictToCityIds) =
+                await GetAccessRestrictionsAsync(currentUserId);
+            
+            var activeCount = await _eventRepo.CountActiveAsync(
+                restrictToDestinationIds,
+                restrictToCityIds
+            );
+
+            var approvedThisMonth = await _eventRepo.CountApprovedThisMonthAsync(
+                restrictToDestinationIds,
+                restrictToCityIds
+            );
+
+            return new AdminEventStatsDto
+            {
+                ActiveRequests = activeCount,
+                ActiveRequestsTrend = string.Empty,
+
+                PendingApproval = 0,
+                PendingApprovalHint = "Zahtevi na čekanju",
+
+                ApprovedThisMonth = approvedThisMonth,
+                ApprovedThisMonthTrend = "Odobreno ovog meseca",
+
+                Rejected = 0,
+                RejectedNote = "Odbijeni zahtevi",
+
+                TabPendingCount = 0,
+                TabActiveCount = activeCount
+            };
+        }
+
+        private async Task<(List<Guid>? RestrictToDestinationIds, List<int>? RestrictToCityIds)>
+            GetAccessRestrictionsAsync(Guid currentUserId)
+        {
+            List<Guid>? restrictToDestinationIds = null;
+            List<int>? restrictToCityIds = null;
+
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+
+            if(user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
+
+                restrictToDestinationIds = assignments
+                    .Select(a => a.DestinationId)
+                    .ToList();
+
+                restrictToCityIds = await _destinationRepo
+                    .GetCityIdsByDestinationsAsync(restrictToDestinationIds);
+            } else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            return (restrictToDestinationIds, restrictToCityIds);
+        }
+
         public async Task<(List<AdminEventListDto> Items, int Total)> GetAllAsync(
             string? search,
             Guid? destinationId, int? cityId, int? typeId,
             DateTimeOffset? startFrom, DateTimeOffset? startTo,
             int page, int pageSize, Guid currentUserId)
         {
-            List<Guid>? restrictToDestinationIds = null;
-            List<int>?  restrictToCityIds        = null;
-
-            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
-
-            if (user?.Role.Name == RoleNames.TouristOrganization)
-            {
-                var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
-                restrictToDestinationIds = assignments.Select(a => a.DestinationId).ToList();
-                restrictToCityIds = await _destinationRepo.GetCityIdsByDestinationsAsync(restrictToDestinationIds);
-            }
-            else if (user?.Role.Name != RoleNames.SuperAdmin)
-            {
-                throw new UnauthorizedAccessException("Access denied.");
-            }
-
+            var (restrictToDestinationIds, restrictToCityIds) =
+                await GetAccessRestrictionsAsync(currentUserId);
+                
             var (items, total) = await _eventRepo.GetAdminPagedAsync(
                 search,
                 destinationId, cityId, typeId,
@@ -254,5 +301,6 @@ namespace Explorea.Server.Services.Admin
             CreatedAt      = e.CreatedAt,
             UpdatedAt      = e.UpdatedAt
         };
-    }
+
+  }
 }

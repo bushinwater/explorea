@@ -84,7 +84,7 @@ export class AdminEventsService {
   private readonly http = inject(HttpClient);
 
   getStats(): Observable<EventStats> {
-    return of(MOCK_STATS);
+    return this.http.get<EventStats>('/api/admin/events/stats');
   }
 
   getEventTypes(): Observable<EventFilterOption<number>[]> {

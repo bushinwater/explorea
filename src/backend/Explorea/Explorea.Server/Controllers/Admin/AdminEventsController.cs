@@ -144,6 +144,16 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetStats()
+        {
+            var userId = GetCurrentUserId();
+
+            var stats = await _service.GetStatsDtoAsync(userId);
+
+            return Ok(stats);
+        }
+
         private Guid GetCurrentUserId()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
