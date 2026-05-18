@@ -1,0 +1,84 @@
+<div class="al-page">
+
+  <div class="al-header">
+    <button class="al-back" (click)="goBack()">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <div>
+      <h1 class="al-title">Sve aktivnosti</h1>
+      @if (!isLoading()) {
+        <p class="al-sub">{{ totalCount() }} ukupno, sortirano od najnovijih</p>
+      }
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="al-state">
+      <span class="material-icons al-spin">sync</span>
+      <span>Učitavanje...</span>
+    </div>
+  } @else if (error()) {
+    <div class="al-state al-state--error">
+      <span class="material-icons">error_outline</span>
+      <span>{{ error() }}</span>
+    </div>
+  } @else {
+
+    <div class="al-list">
+      @for (item of items(); track item.id) {
+        <div class="al-item">
+          <div class="al-avatar" [style.background]="item.avatarColor">
+            {{ item.initials }}
+          </div>
+          <div class="al-body">
+            <p class="al-text">{{ item.text }}</p>
+            <span class="al-time">{{ item.timestamp }}</span>
+          </div>
+          <span class="badge" [class]="statusClass(item.status)">
+            {{ statusLabel(item.status) }}
+          </span>
+        </div>
+      } @empty {
+        <div class="al-state">
+          <span class="material-icons">inbox</span>
+          <span>Nema aktivnosti.</span>
+        </div>
+      }
+    </div>
+
+    @if (totalPages > 1) {
+      <div class="al-pagination">
+        <button class="al-page-btn" [disabled]="currentPage() === 1" (click)="load(currentPage() - 1)">
+          <span class="material-icons">chevron_left</span>
+        </button>
+
+        @if (pageNumbers[0] > 1) {
+          <button class="al-page-btn" (click)="load(1)">1</button>
+          @if (pageNumbers[0] > 2) {
+            <span class="al-ellipsis">…</span>
+          }
+        }
+
+        @for (p of pageNumbers; track p) {
+          <button class="al-page-btn" [class.al-page-btn--active]="p === currentPage()" (click)="load(p)">
+            {{ p }}
+          </button>
+        }
+
+        @if (pageNumbers[pageNumbers.length - 1] < totalPages) {
+          @if (pageNumbers[pageNumbers.length - 1] < totalPages - 1) {
+            <span class="al-ellipsis">…</span>
+          }
+          <button class="al-page-btn" (click)="load(totalPages)">{{ totalPages }}</button>
+        }
+
+        <button class="al-page-btn" [disabled]="currentPage() === totalPages" (click)="load(currentPage() + 1)">
+          <span class="material-icons">chevron_right</span>
+        </button>
+
+        <span class="al-page-info">{{ currentPage() }} / {{ totalPages }}</span>
+      </div>
+    }
+
+  }
+</div>

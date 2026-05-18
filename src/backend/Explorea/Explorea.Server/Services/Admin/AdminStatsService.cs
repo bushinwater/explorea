@@ -69,7 +69,7 @@ namespace Explorea.Server.Services.Admin
                 throw new UnauthorizedAccessException("Access denied.");
 
             var clampedDays = Math.Clamp(days, 1, 90);
-            var today = DateTimeOffset.UtcNow.Date;
+            var today = DateTime.UtcNow.Date;
             var startDate = today.AddDays(-(clampedDays - 1));
 
             var destinationQuery = await BuildDestinationScopeAsync(user, currentUserId);

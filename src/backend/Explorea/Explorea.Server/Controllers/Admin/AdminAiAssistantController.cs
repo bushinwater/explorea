@@ -8,7 +8,7 @@ namespace Explorea.Server.Controllers.Admin
 {
     [ApiController]
     [Route("api/admin/ai")]
-    [Authorize]
+    [Authorize(Roles = "super_admin,tourist_organization")]
     public class AdminAiAssistantController : ControllerBase
     {
         private readonly IAdminAiAssistantService _service;
@@ -16,6 +16,21 @@ namespace Explorea.Server.Controllers.Admin
         public AdminAiAssistantController(IAdminAiAssistantService service)
         {
             _service = service;
+        }
+
+        [HttpGet("insights")]
+        public async Task<IActionResult> GetInsights()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var insights = await _service.GetInsightsAsync(userId);
+                return Ok(insights);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
         }
 
         [HttpPost("chat")]

@@ -17,6 +17,21 @@ namespace Explorea.Server.Controllers.Admin
             _service = service;
         }
 
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var result = await _service.GetAllPagedAsync(userId, page, pageSize);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
         [HttpGet("recent")]
         public async Task<IActionResult> GetRecent([FromQuery] int limit = 10)
         {

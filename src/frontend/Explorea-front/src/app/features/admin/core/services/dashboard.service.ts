@@ -223,6 +223,16 @@ export class DashboardService {
     );
   }
 
+  getAiInsights(): Observable<AiInsight[]> {
+    return this.http.get<{ type: string; icon: string; text: string }[]>('/api/admin/ai/insights').pipe(
+      map(items => items.map(item => ({
+        type: item.type as AiInsight['type'],
+        icon: item.icon,
+        text: item.text,
+      })))
+    );
+  }
+
   sendAiMessage(message: string, history: AiChatMessage[]): Observable<AiChatResponse> {
     return this.http.post<AdminAiChatResponse>('/api/admin/ai/chat', {
       message,
@@ -261,6 +271,10 @@ export class DashboardService {
       day: '2-digit',
       month: '2-digit',
     });
+  }
+
+  formatTimeAgoPublic(value: string): string {
+    return this.formatTimeAgo(value);
   }
 
   private formatTimeAgo(value: string): string {

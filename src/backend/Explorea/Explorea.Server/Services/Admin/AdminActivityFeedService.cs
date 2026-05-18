@@ -27,6 +27,41 @@ namespace Explorea.Server.Services.Admin
             _activityLogService = activityLogService;
         }
 
+        public async Task<AdminActivityPageDto> GetAllPagedAsync(Guid currentUserId, int page, int pageSize)
+        {
+            var user = await _userRepository.GetByIdWithRoleAsync(currentUserId)
+                ?? throw new UnauthorizedAccessException("Current user was not found.");
+
+            if (user.Role.Name != RoleNames.SuperAdmin && user.Role.Name != RoleNames.TouristOrganization)
+                throw new UnauthorizedAccessException("Access denied.");
+
+            var clampedPage = Math.Max(1, page);
+            var clampedSize = Math.Clamp(pageSize, 5, 50);
+            const int maxFetch = 500;
+
+            var destinationQuery = await BuildDestinationScopeAsync(user, currentUserId);
+            var destinationIds = await destinationQuery.Select(d => d.Id).ToListAsync();
+
+            var all = new List<AdminRecentActivityDto>();
+            all.AddRange(await GetRecentAdminLogEventsAsync(maxFetch));
+            all.AddRange(await GetRecentDestinationEventsAsync(destinationIds, maxFetch));
+            all.AddRange(await GetRecentUserEventsAsync(user, maxFetch));
+            all.AddRange(await GetRecentSubmissionEventsAsync(destinationIds, maxFetch));
+            all.AddRange(await GetRecentReviewEventsAsync(destinationIds, maxFetch));
+
+            var sorted = all.OrderByDescending(e => e.CreatedAt).ToList();
+            var totalCount = sorted.Count;
+            var items = sorted.Skip((clampedPage - 1) * clampedSize).Take(clampedSize).ToList();
+
+            return new AdminActivityPageDto
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = clampedPage,
+                PageSize = clampedSize
+            };
+        }
+
         public async Task<List<AdminRecentActivityDto>> GetRecentAsync(Guid currentUserId, int limit)
         {
             var user = await _userRepository.GetByIdWithRoleAsync(currentUserId)

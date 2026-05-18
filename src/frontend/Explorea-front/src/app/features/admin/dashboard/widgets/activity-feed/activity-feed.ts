@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { ActivityItem } from '../../../core/models/admin.models';
 import { AdminUiPreferencesService } from '../../../core/services/admin-ui-preferences.service';
@@ -7,7 +8,7 @@ import { AdminUiPreferencesService } from '../../../core/services/admin-ui-prefe
   selector: 'app-activity-feed',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './activity-feed.html',
   styleUrl: './activity-feed.css',
 })
@@ -15,18 +16,18 @@ export class ActivityFeed {
   @Input() items: ActivityItem[] = [];
 
   currentPage = 1;
-  itemsPerPage = 3;
+  readonly itemsPerPage = 3;
+  readonly maxPages = 5;
 
   constructor(public ui: AdminUiPreferencesService) {}
 
   get paginatedItems(): ActivityItem[] {
     const start = (this.currentPage - 1) * this.itemsPerPage;
-    const end = start + this.itemsPerPage;
-    return this.items.slice(start, end);
+    return this.items.slice(start, start + this.itemsPerPage);
   }
 
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.items.length / this.itemsPerPage));
+    return Math.min(this.maxPages, Math.max(1, Math.ceil(this.items.length / this.itemsPerPage)));
   }
 
   changePage(page: number): void {

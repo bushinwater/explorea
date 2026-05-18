@@ -61,6 +61,7 @@ export class Dashboard implements OnInit, OnDestroy {
   private trafficSubscription?: Subscription;
   private activitySubscription?: Subscription;
   private systemStatusSubscription?: Subscription;
+  private aiInsightsSubscription?: Subscription;
 
   private readonly onMouseMove = this.handleResizeMove.bind(this);
   private readonly onMouseUp   = this.handleResizeEnd.bind(this);
@@ -80,6 +81,7 @@ export class Dashboard implements OnInit, OnDestroy {
       this.loadTraffic(role);
       this.loadRecentActivity(role);
       this.loadSystemStatus(role);
+      this.loadAiInsights(role);
       this.widgets.set(this.widgetConfig.load(role));
       this.alertDismissed.set(false);
       this.layout.closeCustomize();
@@ -97,6 +99,7 @@ export class Dashboard implements OnInit, OnDestroy {
     this.trafficSubscription?.unsubscribe();
     this.activitySubscription?.unsubscribe();
     this.systemStatusSubscription?.unsubscribe();
+    this.aiInsightsSubscription?.unsubscribe();
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup',   this.onMouseUp);
   }
@@ -237,7 +240,7 @@ export class Dashboard implements OnInit, OnDestroy {
       return;
     }
 
-    this.activitySubscription = this.dashService.getRecentActivity(10).subscribe({
+    this.activitySubscription = this.dashService.getRecentActivity(15).subscribe({
       next: (activity) => {
         this.data.update((current) => current ? { ...current, activity } : current);
         this.cdr.markForCheck();
@@ -255,6 +258,21 @@ export class Dashboard implements OnInit, OnDestroy {
     this.systemStatusSubscription = this.dashService.getSystemStatus().subscribe({
       next: (systemStatus) => {
         this.data.update((current) => current ? { ...current, systemStatus } : current);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private loadAiInsights(role: AdminRole): void {
+    this.aiInsightsSubscription?.unsubscribe();
+
+    if (role !== 'super_admin' && role !== 'tourist_organization') {
+      return;
+    }
+
+    this.aiInsightsSubscription = this.dashService.getAiInsights().subscribe({
+      next: (aiInsights) => {
+        this.data.update((current) => current ? { ...current, aiInsights } : current);
         this.cdr.markForCheck();
       },
     });

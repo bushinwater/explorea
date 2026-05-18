@@ -2,10 +2,10 @@
   <div class="feed__header">
     <h3 class="feed__title">{{ ui.t('dashboard.feed.title') }}</h3>
 
-    <button class="btn btn-ghost btn-sm">
+    <a class="btn btn-ghost btn-sm" [routerLink]="['/admin/activity-log']">
       <span class="material-icons">open_in_new</span>
       {{ ui.t('dashboard.feed.all') }}
-    </button>
+    </a>
   </div>
 
   <div class="feed__list">
@@ -25,9 +25,6 @@
             {{ statusLabel(item.status) }}
           </span>
 
-          <button class="btn btn-ghost btn-sm">
-            {{ item.actionLabel }}
-          </button>
         </div>
       </div>
     } @empty {

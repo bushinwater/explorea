@@ -5,5 +5,6 @@ namespace Explorea.Server.Services.Admin.Interfaces
     public interface IAdminActivityFeedService
     {
         Task<List<AdminRecentActivityDto>> GetRecentAsync(Guid currentUserId, int limit);
+        Task<AdminActivityPageDto> GetAllPagedAsync(Guid currentUserId, int page, int pageSize);
     }
 }
