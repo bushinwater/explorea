@@ -5,6 +5,17 @@ namespace Explorea.Server.Services.Admin.Interfaces
     public interface IAdminReportService
     {
         Task<ReportInsightsDto> GetInsightsAsync(Guid currentUserId);
+        Task<List<AggregatePointDto>> GetAggregateAsync(string entity, string groupBy, string metric, DateOnly? dateFrom, DateOnly? dateTo, Guid currentUserId);
+        Task<List<DestinationsTableItemDto>> GetDestinationsTableAsync(
+            string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
+            Guid currentUserId);
+        Task<List<EntityTableRowDto>> GetEntityTableAsync(
+            string entity, string? sortBy,
+            string? filterSubType, string? filterRegion, decimal? filterMinRating,
+            string? filterPriceRange, string? filterAmenity,
+            string? filterDifficulty, string? filterPriceCat,
+            Guid currentUserId);
+        Task<List<string>> GetFilterOptionsAsync(string entity, string field, Guid currentUserId);
         Task<List<ReportDataPointDto>> GetPreviewAsync(List<string> metrics, List<string> dimensions, DateOnly? dateFrom, DateOnly? dateTo, Guid currentUserId);
         Task<(byte[] Data, string FileName)> ExportCsvAsync(List<string> metrics, List<string> dimensions, DateOnly? dateFrom, DateOnly? dateTo, Guid currentUserId);
         Task<(byte[] Data, string FileName)> ExportPdfAsync(List<string> metrics, List<string> dimensions, DateOnly? dateFrom, DateOnly? dateTo, Guid currentUserId);

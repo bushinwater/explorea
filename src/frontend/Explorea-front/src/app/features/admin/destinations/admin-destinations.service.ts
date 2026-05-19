@@ -106,7 +106,7 @@ export class AdminDestinationsService {
   createDestination(dto: {
     name: string; slug: string; description: string;
     latitude: number; longitude: number; visibility: string;
-    typeId?: number | null;
+    typeId?: number | null; regionId?: number | null;
   }): Observable<DestinationRow> {
     return this.http.post<ApiDestinationItem>('/api/admin/destinations', dto).pipe(
       map((item) => this.mapToRow(item)),
@@ -131,6 +131,7 @@ export class AdminDestinationsService {
         visibility: item.visibility,
         previewImageUrl: item.previewImageUrl ?? null,
         typeId: item.typeId ?? null,
+        regionId: item.regionId ?? null,
         images: ((item as any).images ?? []).map((img: any) => ({
           id: img.id,
           imageUrl: img.imageUrl,
@@ -146,7 +147,7 @@ export class AdminDestinationsService {
     );
   }
 
-  updateDestination(id: string, dto: Partial<{ name: string; description: string; latitude: number; longitude: number; visibility: string; typeId: number | null; clearTypeId: boolean }>): Observable<DestinationRow> {
+  updateDestination(id: string, dto: Partial<{ name: string; description: string; latitude: number; longitude: number; visibility: string; typeId: number | null; clearTypeId: boolean; regionId: number | null; clearRegionId: boolean }>): Observable<DestinationRow> {
     return this.http.put<ApiDestinationItem>(`/api/admin/destinations/${id}`, dto).pipe(
       map((item) => this.mapToRow(item)),
     );

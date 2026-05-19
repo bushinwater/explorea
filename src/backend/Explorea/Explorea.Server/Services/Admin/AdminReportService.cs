@@ -30,16 +30,49 @@ namespace Explorea.Server.Services.Admin
         {
             var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
 
-            var traffic     = await _repo.GetMonthlyTrafficAsync(destIds, placeOwnerUserId);
-            var mostPopular = await _repo.GetMostPopularEntityNameAsync(destIds, placeOwnerUserId);
-            var avgRating   = await _repo.GetAvgRatingAsync(destIds, placeOwnerUserId);
+            var topRegion    = await _repo.GetTopRegionAsync(destIds, placeOwnerUserId);
+            var newUsers     = await _repo.GetNewUsersThisMonthAsync();
+            var topEntityType = await _repo.GetTopEntityTypeAsync();
 
             return new ReportInsightsDto
             {
-                MonthlyTraffic        = traffic,
-                MostPopularDestination = mostPopular,
-                AvgRating              = Math.Round(avgRating, 1)
+                TopRegion         = topRegion,
+                NewUsersThisMonth = newUsers,
+                TopEntityType     = topEntityType,
             };
+        }
+
+        public async Task<List<DestinationsTableItemDto>> GetDestinationsTableAsync(
+            string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
+            Guid currentUserId)
+        {
+            var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
+            return await _repo.GetDestinationsTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, destIds, placeOwnerUserId);
+        }
+
+        public async Task<List<EntityTableRowDto>> GetEntityTableAsync(
+            string entity, string? sortBy,
+            string? filterSubType, string? filterRegion, decimal? filterMinRating,
+            string? filterPriceRange, string? filterAmenity,
+            string? filterDifficulty, string? filterPriceCat,
+            Guid currentUserId)
+        {
+            var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
+            return await _repo.GetEntityTableAsync(entity, sortBy, filterSubType, filterRegion, filterMinRating, filterPriceRange, filterAmenity, filterDifficulty, filterPriceCat, destIds, placeOwnerUserId);
+        }
+
+        public async Task<List<string>> GetFilterOptionsAsync(string entity, string field, Guid currentUserId)
+        {
+            var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
+            return await _repo.GetFilterOptionsAsync(entity, field, destIds, placeOwnerUserId);
+        }
+
+        public async Task<List<AggregatePointDto>> GetAggregateAsync(
+            string entity, string groupBy, string metric,
+            DateOnly? dateFrom, DateOnly? dateTo, Guid currentUserId)
+        {
+            var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
+            return await _repo.GetAggregateAsync(entity, groupBy, metric, dateFrom, dateTo, destIds, placeOwnerUserId);
         }
 
         public async Task<List<ReportDataPointDto>> GetPreviewAsync(
