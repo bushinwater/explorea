@@ -389,24 +389,26 @@
           </section>
         }
 
-        <section class="support-internal-notes">
-          <p class="support-details__eyebrow">Interne napomene</p>
-          @if (internalMessages().length) {
-            <div class="support-internal-notes__list">
-              @for (note of internalMessages(); track note.id) {
-                <article class="support-internal-note">
-                  <div class="support-internal-note__meta">
-                    <span>{{ note.authorName }}</span>
-                    <span>{{ messageTime(note.createdAt) }}</span>
-                  </div>
-                  <p>{{ note.content }}</p>
-                </article>
-              }
-            </div>
-          } @else {
-            <p class="support-internal-notes__empty">Nema internih napomena.</p>
-          }
-        </section>
+        @if (auth.role() !== 'place_owner' && ticket.isAssignedToMe) {
+          <section class="support-internal-notes">
+            <p class="support-details__eyebrow">Interne napomene</p>
+            @if (internalMessages().length) {
+              <div class="support-internal-notes__list">
+                @for (note of internalMessages(); track note.id) {
+                  <article class="support-internal-note">
+                    <div class="support-internal-note__meta">
+                      <span>{{ note.authorName }}</span>
+                      <span>{{ messageTime(note.createdAt) }}</span>
+                    </div>
+                    <p>{{ note.content }}</p>
+                  </article>
+                }
+              </div>
+            } @else {
+              <p class="support-internal-notes__empty">Nema internih napomena.</p>
+            }
+          </section>
+        }
       </section>
     } @else {
       <div class="support-page__placeholder support-page__placeholder--details">

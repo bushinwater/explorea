@@ -84,23 +84,23 @@ export class AdminSupportService {
     if (jwtRole === 'place_owner') {
       return this.http
         .get<BackendTicketDetailDto>(`/api/support/tickets/${ticketId}`)
-        .pipe(map((dto) => this.mapDetail(dto)));
+        .pipe(map((dto) => this.mapDetail(dto, false)));
     }
 
     if (jwtRole === 'tourist_organization') {
       if (!isAssignedToMe) {
         return this.http
           .get<BackendTicketDetailDto>(`/api/support/tickets/${ticketId}`)
-          .pipe(map((dto) => this.mapDetail(dto)));
+          .pipe(map((dto) => this.mapDetail(dto, false)));
       }
       return this.http
         .get<BackendTicketDetailDto>(`/api/admin/support/tickets/${ticketId}`)
-        .pipe(map((dto) => this.mapDetail(dto)));
+        .pipe(map((dto) => this.mapDetail(dto, true)));
     }
 
     return this.http
       .get<BackendTicketDetailDto>(`/api/superadmin/support/tickets/${ticketId}`)
-      .pipe(map((dto) => this.mapDetail(dto)));
+      .pipe(map((dto) => this.mapDetail(dto, true)));
   }
 
   sendMessage(request: SendSupportMessageRequest): Observable<SupportTicket> {
@@ -205,9 +205,9 @@ export class AdminSupportService {
     };
   }
 
-  private mapDetail(dto: BackendTicketDetailDto): SupportTicket {
+  private mapDetail(dto: BackendTicketDetailDto, isAssignedToMe = true): SupportTicket {
     return {
-      ...this.mapConversation(dto),
+      ...this.mapConversation(dto, isAssignedToMe),
       messages: dto.messages.map((m) => this.mapMessage(m)),
       assignedToName: dto.assignedToName ?? null,
       region: null,
