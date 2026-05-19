@@ -25,7 +25,7 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         public async Task<(List<SubmissionQueue> Items, int Total)> GetPagedAsync(
-            Guid? destinationId, string? status, int page, int pageSize)
+            Guid? destinationId, string? status, string? entityType, int page, int pageSize)
         {
             var query = _db.SubmissionQueue
                 .Include(q => q.Destination)
@@ -37,6 +37,15 @@ namespace Explorea.Server.Repositories.Implementations
 
             if (!string.IsNullOrWhiteSpace(status))
                 query = query.Where(q => q.Status == status);
+
+            if (!string.IsNullOrWhiteSpace(entityType))
+            {
+                var normalizedEntityType = entityType.Trim().ToLower();
+
+                query = query.Where(q =>
+                    q.EntityType.ToLower() == normalizedEntityType
+                );
+            }
 
             var total = await query.CountAsync();
             var items = await query

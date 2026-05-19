@@ -287,6 +287,20 @@
           <!-- Scrollable body -->
           <div class="evts-panel__body">
             <h3 class="evts-panel__name">{{ selectedEvent()!.name }}</h3>
+            <div class="evts-panel__badges">
+              <span class="evts-status evts-status--{{ selectedEvent()!.status }}">
+                {{ statusLabel(selectedEvent()!.status) }}
+              </span>
+
+              @if (selectedEvent()!.type) {
+              <span class="evts-type-label">
+                <span class="material-icons evts-type-label__icon">
+                  {{ typeIcon(selectedEvent()!.type) }}
+                </span>
+                {{ typeLabel(selectedEvent()!.type) }}
+              </span>
+              }
+            </div>
             <p class="evts-panel__organizer">
               <span class="material-icons">business</span>
               {{ selectedEvent()!.organizer }}

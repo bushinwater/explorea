@@ -131,8 +131,11 @@ export class AdminEventsService {
     return this.http.put<void>(`/api/admin/events/${queueId}/approve`, {});
   }
 
-  rejectEvent(queueId: string): Observable<void> {
-    return this.http.put<void>(`/api/admin/events/${queueId}/reject`, { reason: '' });
+  rejectEvent(
+    queueId: string,
+    reason = 'Zahtev je odbijen od strane administratora.',
+  ): Observable<void> {
+    return this.http.put<void>(`/api/admin/events/${queueId}/reject`, { reason });
   }
 
   forwardToOwner(queueId: string): Observable<void> {
@@ -159,7 +162,10 @@ export class AdminEventsService {
   }
 
   private fetchQueueEvents(filters: EventFilters): Observable<EventPagedResponse> {
-    let params = new HttpParams().set('page', filters.page).set('pageSize', filters.pageSize);
+    let params = new HttpParams()
+      .set('page', filters.page)
+      .set('pageSize', filters.pageSize)
+      .set('entityType', 'event');
 
     if (filters.tab === 'pending') {
       params = params.set('status', 'Pending');
@@ -168,7 +174,6 @@ export class AdminEventsService {
     return this.http.get<ApiQueueResponse>('/api/admin/queue', { params }).pipe(
       map((res) => {
         const items = res.items
-          .filter((q) => q.entityType?.toLowerCase() === 'event')
           .filter((q) => {
             if (filters.tab === 'history') {
               return [
@@ -191,7 +196,7 @@ export class AdminEventsService {
             );
           })
           .map((q) => this.mapQueueItem(q));
-        return { total: res.total, items };
+        return { total: items.length, items };
       }),
     );
   }

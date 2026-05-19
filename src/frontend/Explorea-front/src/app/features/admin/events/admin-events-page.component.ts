@@ -70,6 +70,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly isActioning = signal(false);
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
+  protected readonly rejectReason = signal('');
 
   protected readonly isPanelOpen = computed(() => !!this.selectedEvent());
   protected readonly isSuperAdmin = computed(
@@ -180,6 +181,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
   protected initiateAction(action: 'approve' | 'reject' | 'forward'): void {
     this.confirmAction.set(action);
+    this.rejectReason.set('');
     this.isConfirmOpen.set(true);
   }
 
@@ -199,7 +201,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       action === 'approve'
         ? this.eventsService.approveEvent(targetId)
         : action === 'reject'
-          ? this.eventsService.rejectEvent(targetId)
+          ? this.eventsService.rejectEvent(
+              targetId,
+              this.rejectReason().trim() || 'Zahtev je odbijen od strane administratora.',
+            )
           : this.eventsService.forwardToOwner(targetId);
 
     this.subscription.add(

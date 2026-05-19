@@ -982,6 +982,13 @@
   font-size: 16px;
 }
 
+.evts-panel__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+
 /* Panel actions */
 .evts-panel__actions {
   display: flex;
@@ -989,6 +996,7 @@
   padding: var(--sp-3) var(--sp-4);
   border-top: 1px solid var(--color-border);
   flex-shrink: 0;
+  background: rgba(15, 23, 42, 0.96);
 }
 
 .evts-panel__approve-btn {

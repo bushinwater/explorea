@@ -46,7 +46,7 @@ namespace Explorea.Server.Controllers.Admin
         }
 
         // GET /api/admin/events/{id}
-        [HttpGet("{id}")]
+        [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
             try
