@@ -29,11 +29,13 @@ export interface AdminUpdateProfileDto {
 export interface AdminAppPreferencesDto {
   theme: string;
   language: string;
+  defaultAdminPage: string;
 }
 
 export interface AdminUpdateAppPreferencesDto {
   theme: string;
   language: string;
+  defaultAdminPage: string;
 }
 
 export interface AdminNotificationsDto {

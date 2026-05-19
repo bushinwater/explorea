@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminUsersAccessGuard } from './core/guards/admin-users-access.guard';
+import { adminDefaultLandingGuard } from './core/guards/admin-default-landing.guard';
 import { adminGuard } from './core/guards/admin.guard';
 import { authGuard } from './core/guards/auth-guard';
 import { guestGuard } from './core/guards/guest-guard';
@@ -61,7 +62,7 @@ export const routes: Routes = [
     component: AdminShellComponent,
     canActivate: [adminGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      { path: '', pathMatch: 'full', component: Dashboard, canActivate: [adminDefaultLandingGuard] },
       { path: 'dashboard', component: Dashboard },
       { path: 'map-view', component: AdminMapViewComponent },
       { path: 'destinations', component: AdminDestinationsPageComponent },

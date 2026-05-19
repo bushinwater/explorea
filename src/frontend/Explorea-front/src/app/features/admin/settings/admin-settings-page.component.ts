@@ -15,6 +15,10 @@ import {
   AdminTheme,
   AdminUiPreferencesService,
 } from '../core/services/admin-ui-preferences.service';
+import {
+  adminLandingPagesForRole,
+  normalizeAdminLandingPage,
+} from '../core/admin-landing-pages';
 
 type SettingsTab = 'profile' | 'preferences' | 'notifications' | 'administration';
 
@@ -42,6 +46,7 @@ interface SettingsTabItem {
 interface AppPreferencesFormState {
   theme: string;
   language: string;
+  defaultAdminPage: string;
 }
 
 interface NotificationsFormState {
@@ -130,11 +135,6 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     profileImageUrl: null,
     bio: null,
   });
-
-  readonly appPreferences = {
-    landingPage: 'Dashboard',
-  };
-
 
   readonly notificationChannels = [
     {
@@ -279,6 +279,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   readonly preferencesForm = signal<AppPreferencesFormState>({
     theme: 'dark',
     language: 'sr',
+    defaultAdminPage: 'dashboard',
   });
 
   readonly notificationsForm = signal<NotificationsFormState>({
@@ -312,6 +313,10 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           this.preferencesForm.set({
             theme: preferences.theme,
             language: preferences.language,
+            defaultAdminPage: normalizeAdminLandingPage(
+              preferences.defaultAdminPage,
+              this.auth.role(),
+            ).value,
           });
 
           this.ui.setTheme(preferences.theme as AdminTheme);
@@ -359,12 +364,17 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
         .updatePreferences({
           theme: form.theme,
           language: form.language,
+          defaultAdminPage: form.defaultAdminPage,
         })
         .subscribe({
           next: (preferences) => {
             this.preferencesForm.set({
               theme: preferences.theme,
               language: preferences.language,
+              defaultAdminPage: normalizeAdminLandingPage(
+                preferences.defaultAdminPage,
+                this.auth.role(),
+              ).value,
             });
 
             this.ui.setTheme(preferences.theme as AdminTheme);
@@ -463,6 +473,14 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       default:
         return value;
     }
+  }
+
+  protected landingPageOptions() {
+    return adminLandingPagesForRole(this.auth.role());
+  }
+
+  protected landingPageLabel(value: string): string {
+    return normalizeAdminLandingPage(value, this.auth.role()).label;
   }
 
   private loadAdministration(): void {

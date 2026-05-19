@@ -214,15 +214,15 @@
 
           <div class="preference-card__content">
             <span>Početna admin stranica</span>
-            <strong>{{ appPreferences.landingPage }}</strong>
+            <strong>{{ landingPageLabel(preferencesForm().defaultAdminPage) }}</strong>
             <p>Stranica koja se otvara nakon ulaska u admin panel.</p>
           </div>
 
-          <select class="preference-select" [value]="appPreferences.landingPage">
-            <option>Dashboard</option>
-            <option>Korisnici</option>
-            <option>Destinacije</option>
-            <option>Recenzije</option>
+          <select #landingPageSelect class="preference-select" [value]="preferencesForm().defaultAdminPage"
+            [disabled]="isPreferencesSaving()" (change)="updatePreferencesField('defaultAdminPage', landingPageSelect.value)">
+            @for (option of landingPageOptions(); track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+            }
           </select>
         </article>
 

@@ -161,12 +161,19 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
       var userId = TryGetCurrentUserId();
       if(userId == null) return Unauthorized();
 
+      var role = await GetCurrentUserRole(userId.Value);
+      if(role == null) return NotFound(new { message = "User not found." });
+
       var preferences = await GetOrCreatePreferences(userId.Value);
+      var defaultAdminPage = IsAdminPageAllowedForRole(preferences.DefaultAdminPage, role)
+        ? preferences.DefaultAdminPage
+        : "dashboard";
 
       return Ok(new AdminAppPreferencesDto
       {
         Theme = preferences.Theme,
-        Language = preferences.Language
+        Language = preferences.Language,
+        DefaultAdminPage = defaultAdminPage
       });
     }
 
@@ -178,10 +185,20 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
       var userId = TryGetCurrentUserId();
       if(userId == null) return Unauthorized();
 
+      var role = await GetCurrentUserRole(userId.Value);
+      if(role == null) return NotFound(new { message = "User not found." });
+
       var preferences = await GetOrCreatePreferences(userId.Value);
+      var defaultAdminPage = NormalizeDefaultAdminPage(dto.DefaultAdminPage);
+
+      if(!IsAdminPageAllowedForRole(defaultAdminPage, role))
+      {
+        return BadRequest(new { message = "Selected admin landing page is not available for this role." });
+      }
 
       preferences.Theme = dto.Theme.Trim();
       preferences.Language = dto.Language.Trim();
+      preferences.DefaultAdminPage = defaultAdminPage;
       preferences.UpdatedAt = DateTimeOffset.UtcNow;
 
       await _db.SaveChangesAsync();
@@ -189,7 +206,8 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
       return Ok(new AdminAppPreferencesDto
       {
         Theme = preferences.Theme,
-        Language = preferences.Language
+        Language = preferences.Language,
+        DefaultAdminPage = preferences.DefaultAdminPage
       });
     }
 
@@ -361,6 +379,7 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
           UserId = userId,
           Theme = "system",
           Language = "sr",
+          DefaultAdminPage = "dashboard",
           NotificationsEnabled = true,
           CreatedAt = DateTimeOffset.UtcNow,
           UpdatedAt = DateTimeOffset.UtcNow
@@ -411,6 +430,64 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
     private static string NormalizeRole(string role)
     {
       return role.Trim().ToLowerInvariant().Replace(" ", "_");
+    }
+
+    private static string NormalizeDefaultAdminPage(string value)
+    {
+      if(string.IsNullOrWhiteSpace(value)) return "dashboard";
+
+      var normalized = value.Trim().ToLowerInvariant();
+
+      return normalized switch
+      {
+          "dashboard" or
+          "map-view" or
+          "destinations" or
+          "events" or
+          "activities" or
+          "reviews" or
+          "users" or
+          "reports" or
+          "support" or
+          "settings" => normalized,
+          _ => "dashboard"
+      };
+    }
+
+    private async Task<string?> GetCurrentUserRole(Guid userId)
+    {
+      var role = await _db.Users
+        .AsNoTracking()
+        .Include(u => u.Role)
+        .Where(u => u.Id == userId)
+        .Select(u => u.Role.Name)
+        .FirstOrDefaultAsync();
+
+      return role == null ? null : NormalizeRole(role);
+    }
+
+    private static bool IsAdminPageAllowedForRole(string page, string role)
+    {
+      return role switch
+      {
+          "super_admin" => true,
+          "tourist_organization" => page is
+            "dashboard" or
+            "map-view" or
+            "destinations" or
+            "events" or
+            "activities" or
+            "reviews" or
+            "reports" or
+            "support" or
+            "settings",
+          "place_owner" => page is
+            "dashboard" or
+            "reviews" or
+            "support" or
+            "settings",
+          _ => page == "dashboard"
+      };
     }
 
     private static string GetInitials(string firstName, string lastName)

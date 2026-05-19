@@ -42,6 +42,7 @@ namespace Explorea.API.DTOs.Admin.Settings
     {
         public string Theme { get; set; } = "system";
         public string Language { get; set; } = "sr";
+        public string DefaultAdminPage { get; set; } = "dashboard";
     }
 
     public class AdminUpdateAppPreferencesDto
@@ -51,6 +52,9 @@ namespace Explorea.API.DTOs.Admin.Settings
 
         [Required, MaxLength(10)]
         public string Language { get; set; } = "sr";
+
+        [Required, MaxLength(80)]
+        public string DefaultAdminPage { get; set; } = "dashboard";
     }
 
     public class AdminNotificationsDto
