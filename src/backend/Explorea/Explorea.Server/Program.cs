@@ -99,7 +99,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "http://softeng.pmf.kg.ac.rs:10112")
+        policy.WithOrigins("http://localhost:4200", "http://softeng.pmf.kg.ac.rs:10112", "https://softeng.pmf.kg.ac.rs:10112")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });

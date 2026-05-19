@@ -62,7 +62,16 @@ export class Home implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.locationService.requestIfFirstTime();
+    this.locationService.requestIfFirstTime(() => {
+      this.loadHomeData(this.activeCityId);
+      const loc = this.locationService.getCached();
+      this.homeService.getRecommendations(loc?.lat, loc?.lng).subscribe((recs) => {
+        this.recommendedDestinations = recs?.destinations ?? [];
+        this.recommendedEvents = recs?.events ?? [];
+        this.recommendedActivities = recs?.activities ?? [];
+        this.cdr.detectChanges();
+      });
+    });
     this.cityFilters = [{ id: null, name: 'Popularne' }];
     this.lookupService.getCities().subscribe(cities => {
       this.cityFilters = [{ id: null, name: 'Popularne' }, ...cities.slice(0, 6).map(c => ({ id: c.id, name: c.name }))];

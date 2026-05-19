@@ -77,7 +77,7 @@ export class LocationService {
    * the first time the user visits. If granted, tracking is enabled automatically.
    * Requires a secure context (HTTPS or localhost) — silently skipped otherwise.
    */
-  requestIfFirstTime(): void {
+  requestIfFirstTime(onGranted?: () => void): void {
     if (this.isEnabled()) {
       this.fetchAndStore();
       return;
@@ -88,7 +88,12 @@ export class LocationService {
 
     localStorage.setItem(LOCATION_ASKED_KEY, 'true');
     navigator.geolocation.getCurrentPosition(
-      () => { this.enable(); },
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        localStorage.setItem(LOCATION_KEY, JSON.stringify({ lat, lng }));
+        this.enable();
+        onGranted?.();
+      },
       () => { /* denied or unavailable — don't enable */ },
       { timeout: 10000, maximumAge: 60_000 },
     );
