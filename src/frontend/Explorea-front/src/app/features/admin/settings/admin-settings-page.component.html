@@ -69,7 +69,7 @@
 
         <div class="profile-card__actions">
           <input #profilePhotoInput class="profile-card__file-input" type="file" accept="image/*"
-            (change)="uploadProfilePhoto(profilePhotoInput.files); profilePhotoInput.value = ''" />
+            (change)="onProfilePhotoSelected($event); profilePhotoInput.value = ''" />
           <button class="btn btn-secondary" type="button"
             [disabled]="isProfilePhotoUploading() || isProfilePhotoDeleting()" (click)="profilePhotoInput.click()">
             <span class="material-icons">photo_camera</span>
@@ -522,6 +522,45 @@
     }
     }
   </section>
+
+  @if (isProfilePhotoCropperOpen()) {
+  <div class="profile-photo-cropper-backdrop">
+    <section class="profile-photo-cropper" role="dialog" aria-modal="true" aria-labelledby="profile-photo-cropper-title">
+      <header class="profile-photo-cropper__header">
+        <div>
+          <p class="section-eyebrow">Profilna slika</p>
+          <h2 id="profile-photo-cropper-title">Podesi izgled slike</h2>
+        </div>
+
+        <button class="profile-photo-cropper__close" type="button" (click)="cancelProfilePhotoCrop()" aria-label="Close cropper">
+          <span class="material-icons">close</span>
+        </button>
+      </header>
+
+      <div class="profile-photo-cropper__body">
+        <image-cropper
+          [imageChangedEvent]="profilePhotoChangedEvent()"
+          [maintainAspectRatio]="true"
+          [aspectRatio]="1"
+          [roundCropper]="true"
+          format="jpeg"
+          (imageCropped)="onProfilePhotoCropped($event)"
+        />
+      </div>
+
+      <footer class="profile-photo-cropper__actions">
+        <button class="btn btn-secondary" type="button" (click)="cancelProfilePhotoCrop()">
+          Otkaži
+        </button>
+
+        <button class="btn btn-primary" type="button" [disabled]="isProfilePhotoUploading()" (click)="confirmProfilePhotoCrop()">
+          <span class="material-icons">check</span>
+          {{ isProfilePhotoUploading() ? 'Uploading...' : 'Primeni' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+  }
 
   @if (toast()) {
   <div class="settings-toast" [class.settings-toast--error]="toast()?.type === 'error'">

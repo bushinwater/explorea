@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@
 import { CommonModule } from '@angular/common';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { Subscription } from 'rxjs';
+import { ImageCropperComponent, ImageCroppedEvent } from 'ngx-image-cropper';
 import {
   AdminAdministrationSettingDto,
   AdminAdministrationStatDto,
@@ -50,7 +51,7 @@ interface NotificationsFormState {
 @Component({
   selector: 'app-admin-settings-page',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ImageCropperComponent],
   templateUrl: './admin-settings-page.component.html',
   styleUrl: './admin-settings-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -68,6 +69,9 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
   readonly isProfilePhotoUploading = signal(false);
   readonly isProfilePhotoDeleting = signal(false);
+  readonly isProfilePhotoCropperOpen = signal(false);
+  readonly profilePhotoChangedEvent = signal<Event | null>(null);
+  private lastProfilePhotoCrop: ImageCroppedEvent | null = null;
 
   readonly isPreferencesLoading = signal(false);
   readonly isPreferencesSaving = signal(false);
@@ -587,13 +591,15 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     }).format(new Date(value));
   }
 
-  protected uploadProfilePhoto(files: FileList | null): void {
-    const file = files?.item(0);
+  protected onProfilePhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.item(0);
 
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
       this.showToast('error', 'Možeš okačiti samo sliku.');
+      input.value = '';
       return;
     }
 
@@ -601,8 +607,56 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
     if (file.size > maxFileSize) {
       this.showToast('error', 'Slika mora biti manje od 5MB.');
+      input.value = '';
       return;
     }
+
+    this.profilePhotoChangedEvent.set(event);
+    this.lastProfilePhotoCrop = null;
+    this.isProfilePhotoCropperOpen.set(true);
+  }
+
+  protected onProfilePhotoCropped(event: ImageCroppedEvent): void {
+    this.lastProfilePhotoCrop = event;
+  }
+
+  protected cancelProfilePhotoCrop(): void {
+    this.isProfilePhotoCropperOpen.set(false);
+    this.profilePhotoChangedEvent.set(null);
+    this.lastProfilePhotoCrop = null;
+  }
+
+  protected confirmProfilePhotoCrop(): void {
+    const crop = this.lastProfilePhotoCrop;
+
+    if (!crop) {
+      this.showToast('error', 'Sacekaj da se slika pripremi za cuvanje.');
+      return;
+    }
+
+    if (crop.blob) {
+      this.uploadProfilePhoto(new File([crop.blob], 'admin-avatar.jpg', { type: 'image/jpeg' }));
+      return;
+    }
+
+    if (crop.base64) {
+      const base64 = crop.base64.split(',')[1] ?? crop.base64;
+      const bytes = atob(base64);
+      const buffer = new ArrayBuffer(bytes.length);
+      const view = new Uint8Array(buffer);
+
+      for (let index = 0; index < bytes.length; index += 1) {
+        view[index] = bytes.charCodeAt(index);
+      }
+
+      this.uploadProfilePhoto(new File([buffer], 'admin-avatar.jpg', { type: 'image/jpeg' }));
+    }
+  }
+
+  private uploadProfilePhoto(file: File): void {
+    this.isProfilePhotoCropperOpen.set(false);
+    this.profilePhotoChangedEvent.set(null);
+    this.lastProfilePhotoCrop = null;
 
     this.isProfilePhotoUploading.set(true);
     this.profileErrorMessage.set('');
