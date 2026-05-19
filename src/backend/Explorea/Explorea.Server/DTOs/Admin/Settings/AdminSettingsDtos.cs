@@ -60,11 +60,34 @@ namespace Explorea.API.DTOs.Admin.Settings
     public class AdminNotificationsDto
     {
         public bool NotificationsEnabled { get; set; }
+        public bool EmailNotificationsEnabled { get; set; }
+        public bool MarketingEmailsEnabled { get; set; }
+        public List<string> ReportTopics { get; set; } = new();
+        public string Priority { get; set; } = "all";
+        public int DeliveryFrequencyDays { get; set; } = 7;
+        public int DeliveryHour { get; set; } = 9;
     }
 
     public class AdminUpdateNotificationsDto
     {
         public bool NotificationsEnabled { get; set; }
+        public bool EmailNotificationsEnabled { get; set; }
+        public bool MarketingEmailsEnabled { get; set; }
+        public List<string> ReportTopics { get; set; } = new();
+
+        [Required, MaxLength(30)]
+        public string Priority { get; set; } = "all";
+
+        [Range(1, 30)]
+        public int DeliveryFrequencyDays { get; set; } = 7;
+
+        [Range(0, 23)]
+        public int DeliveryHour { get; set; } = 9;
+    }
+
+    public class AdminNotificationReportDispatchDto
+    {
+        public int SentCount { get; set; }
     }
 
     public class AdminAdministrationOverviewDto

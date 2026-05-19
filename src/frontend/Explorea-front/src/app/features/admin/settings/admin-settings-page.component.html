@@ -280,10 +280,10 @@
           </div>
 
           <button class="toggle" type="button"
-            [class.toggle--active]="channel.title === 'Push obaveštenja' ? notificationsForm().notificationsEnabled : channel.enabled"
-            [attr.aria-pressed]="channel.title === 'Push obaveštenja' ? notificationsForm().notificationsEnabled : channel.enabled"
+            [class.toggle--active]="notificationsForm()[channel.key]"
+            [attr.aria-pressed]="notificationsForm()[channel.key]"
             [disabled]="isNotificationsSaving()"
-            (click)="channel.title === 'Push obaveštenja' && updateNotificationsEnabled(!notificationsForm().notificationsEnabled)">
+            (click)="updateNotificationChannel(channel.key, !notificationsForm()[channel.key])">
             <span></span>
           </button>
         </article>
@@ -311,8 +311,10 @@
               <p>{{ notification.description }}</p>
             </div>
 
-            <button class="toggle" type="button" [class.toggle--active]="notification.enabled"
-              [attr.aria-pressed]="notification.enabled">
+            <button class="toggle" type="button" [class.toggle--active]="isReportTopicSelected(notification.value)"
+              [attr.aria-pressed]="isReportTopicSelected(notification.value)"
+              [disabled]="isNotificationsSaving() || notificationsForm().priority === 'important'"
+              (click)="toggleReportTopic(notification.value)">
               <span></span>
             </button>
           </article>
@@ -325,37 +327,40 @@
           <div>
             <p class="section-eyebrow">Raspored slanja</p>
             <h3>Učestalost i prioritet</h3>
-            <p>Podesi koliko često se šalju obaveštenja i da li se poštuju mirni sati.</p>
+            <p>Podesi koliko često se šalju obaveštenja i u koliko sati stižu izveštaji.</p>
           </div>
         </header>
 
         <div class="delivery-grid">
           <label class="delivery-field">
-            <span>Učestalost sažetka</span>
-            <select [value]="notificationDelivery.digestFrequency">
-              <option>Dnevno</option>
-              <option>Nedeljno</option>
-              <option>Odmah</option>
-              <option>Isključeno</option>
+            <span>Učestalost izveštaja</span>
+            <select [value]="notificationsForm().deliveryFrequencyDays"
+              [disabled]="isNotificationsSaving()"
+              (change)="updateDeliveryFrequency($any($event.target).value)">
+              @for (option of notificationFrequencyOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+              }
             </select>
           </label>
 
           <label class="delivery-field">
-            <span>Mirni sati</span>
-            <select [value]="notificationDelivery.quietHours">
-              <option>22:00 - 08:00</option>
-              <option>23:00 - 07:00</option>
-              <option>00:00 - 06:00</option>
-              <option>Bez mirnih sati</option>
+            <span>Sat dostave</span>
+            <select [value]="notificationsForm().deliveryHour"
+              [disabled]="isNotificationsSaving()"
+              (change)="updateDeliveryHour($any($event.target).value)">
+              @for (option of notificationHourOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+              }
             </select>
           </label>
 
           <label class="delivery-field">
             <span>Prioritet obaveštenja</span>
-            <select [value]="notificationDelivery.priority">
-              <option>Samo važno</option>
-              <option>Sva obaveštenja</option>
-              <option>Samo sistemska upozorenja</option>
+            <select [value]="notificationsForm().priority"
+              [disabled]="isNotificationsSaving()"
+              (change)="updateNotificationPriority($any($event.target).value)">
+              <option value="important">Samo važno</option>
+              <option value="all">Sva obaveštenja</option>
             </select>
           </label>
         </div>

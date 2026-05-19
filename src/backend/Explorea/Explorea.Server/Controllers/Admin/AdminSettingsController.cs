@@ -1,6 +1,7 @@
 using Explorea.API.DTOs.Admin.Settings;
 using Explorea.API.Models;
 using Explorea.Server.Data;
+using Explorea.Server.Services.Admin.Interfaces;
 using Explorea.Server.Services;
 using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -20,11 +21,16 @@ namespace Explorea.Server.Controllers.Admin
     private readonly AppDbContext _db;
 
     private readonly ICloudinaryService _cloudinaryService;
+    private readonly IAdminNotificationReportService _notificationReportService;
 
-    public AdminSettingsController(AppDbContext db, ICloudinaryService CloudinaryService) 
+    public AdminSettingsController(
+      AppDbContext db,
+      ICloudinaryService CloudinaryService,
+      IAdminNotificationReportService notificationReportService)
     {
       _db = db;
       _cloudinaryService = CloudinaryService;
+      _notificationReportService = notificationReportService;
     }
     
     [HttpGet("profile")]
@@ -221,7 +227,13 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
 
       return Ok(new AdminNotificationsDto
       {
-        NotificationsEnabled = preferences.NotificationsEnabled
+        NotificationsEnabled = preferences.NotificationsEnabled,
+        EmailNotificationsEnabled = preferences.EmailNotificationsEnabled,
+        MarketingEmailsEnabled = preferences.MarketingEmailsEnabled,
+        ReportTopics = ParseNotificationReportTopics(preferences.NotificationReportTopics),
+        Priority = NormalizeNotificationPriority(preferences.NotificationPriority),
+        DeliveryFrequencyDays = NormalizeDeliveryFrequencyDays(preferences.NotificationDeliveryFrequencyDays),
+        DeliveryHour = NormalizeDeliveryHour(preferences.NotificationDeliveryHour)
       });
     }
 
@@ -234,13 +246,42 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
       var preferences = await GetOrCreatePreferences(userId.Value);
 
       preferences.NotificationsEnabled = dto.NotificationsEnabled;
+      preferences.EmailNotificationsEnabled = dto.EmailNotificationsEnabled;
+      preferences.MarketingEmailsEnabled = dto.MarketingEmailsEnabled;
+      preferences.NotificationReportTopics = string.Join(",", NormalizeNotificationReportTopics(dto.ReportTopics));
+      preferences.NotificationPriority = NormalizeNotificationPriority(dto.Priority);
+      preferences.NotificationDeliveryFrequencyDays = NormalizeDeliveryFrequencyDays(dto.DeliveryFrequencyDays);
+      preferences.NotificationDeliveryHour = NormalizeDeliveryHour(dto.DeliveryHour);
       preferences.UpdatedAt = DateTimeOffset.UtcNow;
 
       await _db.SaveChangesAsync();
 
       return Ok(new AdminNotificationsDto
       {
-        NotificationsEnabled = preferences.NotificationsEnabled
+        NotificationsEnabled = preferences.NotificationsEnabled,
+        EmailNotificationsEnabled = preferences.EmailNotificationsEnabled,
+        MarketingEmailsEnabled = preferences.MarketingEmailsEnabled,
+        ReportTopics = ParseNotificationReportTopics(preferences.NotificationReportTopics),
+        Priority = preferences.NotificationPriority,
+        DeliveryFrequencyDays = preferences.NotificationDeliveryFrequencyDays,
+        DeliveryHour = preferences.NotificationDeliveryHour
+      });
+    }
+
+    [HttpPost("notifications/reports/send-due")]
+    public async Task<IActionResult> SendDueNotificationReports()
+    {
+      var userId = TryGetCurrentUserId();
+      if(userId == null) return Unauthorized();
+
+      var role = await GetCurrentUserRole(userId.Value);
+      if(role != "super_admin" && role != "admin") return Forbid();
+
+      var sentCount = await _notificationReportService.SendDueReportsAsync(DateTimeOffset.UtcNow);
+
+      return Ok(new AdminNotificationReportDispatchDto
+      {
+        SentCount = sentCount
       });
     }
 
@@ -261,30 +302,26 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
 
       if(currentRole != "super_admin" && currentRole != "admin") return Forbid();
 
-      var adminRoles = new[]
-      {
-        "admin",
-        "super_admin",
-        "tourist_organization",
-        "place_owner"
-      };
+      var now = DateTimeOffset.UtcNow;
 
-      var activeAdminsCount = await _db.Users
-        .Include(u => u.Role)
-        .CountAsync(u => 
-          u.IsActive &&
-        (
-            u.Role.Name.ToLower() == "admin" ||
-            u.Role.Name.ToLower() == "super_admin" ||
-            u.Role.Name.ToLower() == "tourist_organization" ||
-            u.Role.Name.ToLower() == "place_owner"
-        ));
-      
-      var pendingRequestsCount = await _db.Set<SubmissionQueue>()
-        .CountAsync(q => q.Status == "Pending");
+      var onlineAdminsCount = await _db.RefreshTokens
+        .AsNoTracking()
+        .Where(token => !token.IsRevoked && token.ExpiresAt > now)
+        .Where(token =>
+          token.User.IsActive &&
+          (
+            token.User.Role.Name.ToLower() == "admin" ||
+            token.User.Role.Name.ToLower() == "super_admin" ||
+            token.User.Role.Name.ToLower() == "tourist_organization" ||
+            token.User.Role.Name.ToLower() == "place_owner"
+          ))
+        .Select(token => token.UserId)
+        .Distinct()
+        .CountAsync();
 
-      var hiddenReviewsCount = await _db.Reviews
-        .CountAsync(r => r.IsHidden && !r.IsDeleted);
+      var pendingPlaceRequestsCount = await _db.Places
+        .AsNoTracking()
+        .CountAsync(place => !place.IsDeleted && place.ApprovalStatus.ToLower() == "pending");
 
       var response = new AdminAdministrationOverviewDto
       {
@@ -293,25 +330,16 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
           new()
           {
               Icon = "verified_user",
-              Label = "Aktivni admini",
-              Value = activeAdminsCount.ToString(),
-              Description = "Nalozi sa aktivnim pristupom admin panelu."
+              Label = "Admini trenutno na mrezi",
+              Value = onlineAdminsCount.ToString(),
+              Description = "Admin nalozi sa aktivnom sesijom u admin panelu."
           },
           new()
           {
               Icon = "pending_actions",
-              Label = "Zahtevi na čekanju",
-              Value = pendingRequestsCount.ToString(),
-              Description = "Objekti, aktivnosti i događaji koji čekaju proveru."
-          },
-          new()
-          {
-              Icon = "security",
-              Label = "Bezbednosni status",
-              Value = hiddenReviewsCount > 0 ? "Potrebna provera" : "Stabilno",
-              Description = hiddenReviewsCount > 0
-                  ? $"{hiddenReviewsCount} sakrivenih recenzija zahteva dodatnu proveru."
-                  : "Nema kritičnih upozorenja u poslednja 24h."
+              Label = "Zahtevi na cekanju",
+              Value = pendingPlaceRequestsCount.ToString(),
+              Description = "Objekti iz places tabele koji cekaju odobravanje."
           }
         },
         Settings = new List<AdminAdministrationSettingDto>
@@ -360,6 +388,12 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
           Language = "sr",
           DefaultAdminPage = "dashboard",
           NotificationsEnabled = true,
+          EmailNotificationsEnabled = true,
+          MarketingEmailsEnabled = false,
+          NotificationReportTopics = "reviews,events,system",
+          NotificationPriority = "all",
+          NotificationDeliveryFrequencyDays = 7,
+          NotificationDeliveryHour = 9,
           CreatedAt = DateTimeOffset.UtcNow,
           UpdatedAt = DateTimeOffset.UtcNow
       };
@@ -431,6 +465,51 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
           "settings" => normalized,
           _ => "dashboard"
       };
+    }
+
+    private static List<string> ParseNotificationReportTopics(string topics)
+    {
+      return NormalizeNotificationReportTopics(
+        topics.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+    }
+
+    private static List<string> NormalizeNotificationReportTopics(IEnumerable<string>? topics)
+    {
+      var normalized = (topics ?? Array.Empty<string>())
+        .Select(topic => topic.Trim().ToLowerInvariant())
+        .Where(topic => topic is "reviews" or "events" or "system" or "weekly_summary")
+        .Distinct()
+        .ToList();
+
+      return normalized.Contains("weekly_summary")
+        ? new List<string> { "weekly_summary" }
+        : normalized;
+    }
+
+    private static string NormalizeNotificationPriority(string value)
+    {
+      if(string.IsNullOrWhiteSpace(value)) return "all";
+
+      return value.Trim().ToLowerInvariant() switch
+      {
+          "important" => "important",
+          "all" => "all",
+          _ => "all"
+      };
+    }
+
+    private static int NormalizeDeliveryFrequencyDays(int value)
+    {
+      return value switch
+      {
+          1 or 7 or 14 or 30 => value,
+          _ => 7
+      };
+    }
+
+    private static int NormalizeDeliveryHour(int value)
+    {
+      return value is >= 0 and <= 23 ? value : 9;
     }
 
     private async Task<string?> GetCurrentUserRole(Guid userId)

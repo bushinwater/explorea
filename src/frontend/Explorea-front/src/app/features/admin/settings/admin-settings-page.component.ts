@@ -51,7 +51,18 @@ interface AppPreferencesFormState {
 
 interface NotificationsFormState {
   notificationsEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+  marketingEmailsEnabled: boolean;
+  reportTopics: string[];
+  priority: string;
+  deliveryFrequencyDays: number;
+  deliveryHour: number;
 }
+
+type NotificationChannelKey =
+  | 'notificationsEnabled'
+  | 'emailNotificationsEnabled'
+  | 'marketingEmailsEnabled';
 
 @Component({
   selector: 'app-admin-settings-page',
@@ -138,76 +149,76 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
   readonly notificationChannels = [
     {
+      key: 'notificationsEnabled' as NotificationChannelKey,
       icon: 'notifications_active',
       title: 'Push obaveštenja',
       description: 'Primaj obaveštenja o važnim promenama direktno u browseru.',
-      enabled: true,
     },
     {
+      key: 'emailNotificationsEnabled' as NotificationChannelKey,
       icon: 'mail',
       title: 'Email obaveštenja',
       description: 'Dobijaj sažetke, potvrde i sistemske poruke putem emaila.',
-      enabled: true,
     },
     {
+      key: 'marketingEmailsEnabled' as NotificationChannelKey,
       icon: 'campaign',
       title: 'Marketing emailovi',
       description: 'Specijalne ponude, preporuke i novosti vezane za Explorea platformu.',
-      enabled: false,
     },
   ];
 
   readonly notificationTypes = [
     {
+      value: 'reviews',
       icon: 'rate_review',
       title: 'Recenzije i moderacija',
       description: 'Nove recenzije, prijave korisnika i sadržaj koji čeka proveru.',
-      enabled: true,
     },
     {
+      value: 'events',
       icon: 'event_available',
       title: 'Događaji i aktivnosti',
       description: 'Promene statusa događaja, aktivnosti i novih zahteva organizatora.',
-      enabled: true,
     },
     {
+      value: 'system',
       icon: 'admin_panel_settings',
       title: 'Sistemska upozorenja',
       description: 'Bezbednosna upozorenja, promene privilegija i administrativne akcije.',
-      enabled: true,
     },
     {
+      value: 'weekly_summary',
       icon: 'analytics',
       title: 'Nedeljni izveštaji',
       description: 'Kratak pregled performansi, aktivnosti korisnika i popularnog sadržaja.',
-      enabled: false,
     },
   ];
 
-  readonly notificationDelivery = {
-    digestFrequency: 'Dnevno',
-    quietHours: '22:00 - 08:00',
-    priority: 'Samo važno',
-  };
+  readonly notificationFrequencyOptions = [
+    { value: 1, label: 'Dnevno' },
+    { value: 7, label: 'Nedeljno' },
+    { value: 14, label: 'Na 14 dana' },
+    { value: 30, label: 'Mesecno' },
+  ];
+
+  readonly notificationHourOptions = Array.from({ length: 24 }, (_, hour) => ({
+    value: hour,
+    label: `${hour.toString().padStart(2, '0')}:00`,
+  }));
 
   readonly administrationStats = signal<AdminAdministrationStatDto[]>([
     {
       icon: 'verified_user',
-      label: 'Aktivni admini',
+      label: 'Admini trenutno na mrezi',
       value: '0',
-      description: 'Nalozi sa aktivnim pristupom admin panelu.',
+      description: 'Admin nalozi sa aktivnom sesijom u admin panelu.',
     },
     {
       icon: 'pending_actions',
-      label: 'Zahtevi na čekanju',
+      label: 'Zahtevi na cekanju',
       value: '0',
-      description: 'Objekti, recenzije i izmene koje čekaju proveru.',
-    },
-    {
-      icon: 'security',
-      label: 'Bezbednosni status',
-      value: 'Učitavanje',
-      description: 'Provera sistemskog statusa je u toku.',
+      description: 'Objekti iz places tabele koji cekaju odobravanje.',
     },
   ]);
 
@@ -252,6 +263,12 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
   readonly notificationsForm = signal<NotificationsFormState>({
     notificationsEnabled: true,
+    emailNotificationsEnabled: true,
+    marketingEmailsEnabled: false,
+    reportTopics: ['reviews', 'events', 'system'],
+    priority: 'all',
+    deliveryFrequencyDays: 7,
+    deliveryHour: 9,
   });
 
   constructor(
@@ -368,6 +385,14 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
         next: (notifications) => {
           this.notificationsForm.set({
             notificationsEnabled: notifications.notificationsEnabled,
+            emailNotificationsEnabled: notifications.emailNotificationsEnabled,
+            marketingEmailsEnabled: notifications.marketingEmailsEnabled,
+            reportTopics: this.normalizeReportTopics(notifications.reportTopics),
+            priority: this.normalizeNotificationPriority(notifications.priority),
+            deliveryFrequencyDays: this.normalizeDeliveryFrequencyDays(
+              notifications.deliveryFrequencyDays,
+            ),
+            deliveryHour: this.normalizeDeliveryHour(notifications.deliveryHour),
           });
           this.isNotificationsLoading.set(false);
         },
@@ -380,7 +405,72 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   }
 
   protected updateNotificationsEnabled(enabled: boolean): void {
-    this.notificationsForm.set({ notificationsEnabled: enabled });
+    this.updateNotificationChannel('notificationsEnabled', enabled);
+  }
+
+  protected updateNotificationChannel(field: NotificationChannelKey, enabled: boolean): void {
+    this.notificationsForm.update((current) => ({
+      ...current,
+      [field]: enabled,
+    }));
+    this.notificationsSuccessMessage.set('');
+    this.notificationsErrorMessage.set('');
+  }
+
+  protected isReportTopicSelected(topic: string): boolean {
+    return this.notificationsForm().priority !== 'important'
+      && this.notificationsForm().reportTopics.includes(topic);
+  }
+
+  protected toggleReportTopic(topic: string): void {
+    if (this.notificationsForm().priority === 'important') return;
+
+    this.notificationsForm.update((current) => {
+      const isSelected = current.reportTopics.includes(topic);
+      let reportTopics = isSelected
+        ? current.reportTopics.filter((item) => item !== topic)
+        : [...current.reportTopics.filter((item) => item !== 'weekly_summary'), topic];
+
+      if (topic === 'weekly_summary' && !isSelected) {
+        reportTopics = ['weekly_summary'];
+      }
+
+      return {
+        ...current,
+        reportTopics: this.normalizeReportTopics(reportTopics),
+      };
+    });
+
+    this.notificationsSuccessMessage.set('');
+    this.notificationsErrorMessage.set('');
+  }
+
+  protected updateNotificationPriority(priority: string): void {
+    this.notificationsForm.update((current) => ({
+      ...current,
+      priority: this.normalizeNotificationPriority(priority),
+    }));
+
+    this.notificationsSuccessMessage.set('');
+    this.notificationsErrorMessage.set('');
+  }
+
+  protected updateDeliveryFrequency(days: string): void {
+    this.notificationsForm.update((current) => ({
+      ...current,
+      deliveryFrequencyDays: this.normalizeDeliveryFrequencyDays(Number(days)),
+    }));
+
+    this.notificationsSuccessMessage.set('');
+    this.notificationsErrorMessage.set('');
+  }
+
+  protected updateDeliveryHour(hour: string): void {
+    this.notificationsForm.update((current) => ({
+      ...current,
+      deliveryHour: this.normalizeDeliveryHour(Number(hour)),
+    }));
+
     this.notificationsSuccessMessage.set('');
     this.notificationsErrorMessage.set('');
   }
@@ -402,11 +492,25 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       this.adminSettingsService
         .updateNotifications({
           notificationsEnabled: form.notificationsEnabled,
+          emailNotificationsEnabled: form.emailNotificationsEnabled,
+          marketingEmailsEnabled: form.marketingEmailsEnabled,
+          reportTopics: this.normalizeReportTopics(form.reportTopics),
+          priority: this.normalizeNotificationPriority(form.priority),
+          deliveryFrequencyDays: this.normalizeDeliveryFrequencyDays(form.deliveryFrequencyDays),
+          deliveryHour: this.normalizeDeliveryHour(form.deliveryHour),
         })
         .subscribe({
           next: (notifications) => {
             this.notificationsForm.set({
               notificationsEnabled: notifications.notificationsEnabled,
+              emailNotificationsEnabled: notifications.emailNotificationsEnabled,
+              marketingEmailsEnabled: notifications.marketingEmailsEnabled,
+              reportTopics: this.normalizeReportTopics(notifications.reportTopics),
+              priority: this.normalizeNotificationPriority(notifications.priority),
+              deliveryFrequencyDays: this.normalizeDeliveryFrequencyDays(
+                notifications.deliveryFrequencyDays,
+              ),
+              deliveryHour: this.normalizeDeliveryHour(notifications.deliveryHour),
             });
             this.showToast('success', 'Podešavanja obaveštenja su uspešno sačuvana.');
             this.isNotificationsSaving.set(false);
@@ -449,6 +553,26 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
   protected landingPageLabel(value: string): string {
     return normalizeAdminLandingPage(value, this.auth.role()).label;
+  }
+
+  private normalizeReportTopics(topics: string[]): string[] {
+    const allowedTopics = ['reviews', 'events', 'system', 'weekly_summary'];
+    const normalized = topics.filter((topic, index) =>
+      allowedTopics.includes(topic) && topics.indexOf(topic) === index);
+
+    return normalized.includes('weekly_summary') ? ['weekly_summary'] : normalized;
+  }
+
+  private normalizeNotificationPriority(priority: string): string {
+    return priority === 'important' ? 'important' : 'all';
+  }
+
+  private normalizeDeliveryFrequencyDays(days: number): number {
+    return [1, 7, 14, 30].includes(days) ? days : 7;
+  }
+
+  private normalizeDeliveryHour(hour: number): number {
+    return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : 9;
   }
 
   private loadAdministration(): void {

@@ -40,10 +40,22 @@ export interface AdminUpdateAppPreferencesDto {
 
 export interface AdminNotificationsDto {
   notificationsEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+  marketingEmailsEnabled: boolean;
+  reportTopics: string[];
+  priority: string;
+  deliveryFrequencyDays: number;
+  deliveryHour: number;
 }
 
 export interface AdminUpdateNotificationsDto {
   notificationsEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+  marketingEmailsEnabled: boolean;
+  reportTopics: string[];
+  priority: string;
+  deliveryFrequencyDays: number;
+  deliveryHour: number;
 }
 
 export interface AdminAdministrationOverviewDto {
