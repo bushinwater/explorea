@@ -1,0 +1,240 @@
+<div class="edit-modal__backdrop" (click)="cancel.emit()"></div>
+
+<div class="edit-modal__panel" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+
+  <!-- Header -->
+  <div class="edit-modal__header">
+    <div class="edit-modal__title-block">
+      <span class="material-icons edit-modal__title-icon">edit_location</span>
+      <div>
+        <h2 class="edit-modal__title">Izmeni objekat</h2>
+        <p class="edit-modal__subtitle">{{ row.name }}</p>
+      </div>
+    </div>
+    <button class="edit-modal__close" type="button" (click)="cancel.emit()">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="edit-modal__error">
+      <span class="material-icons" style="font-size:18px">error_outline</span>
+      {{ error() }}
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="edit-modal__loading">
+      <span class="material-icons edit-modal__spin" style="font-size:32px">sync</span>
+      Učitavanje...
+    </div>
+  } @else {
+
+    <!-- Body -->
+    <div class="edit-modal__body">
+      <div class="edit-modal__cols">
+
+        <!-- Left: fields -->
+        <div>
+          <div class="edit-field">
+            <label class="edit-field__label">
+              Naziv <span class="edit-field__required">*</span>
+            </label>
+            <input class="edit-field__input" type="text" [formControl]="form.controls.name"
+              placeholder="Naziv objekta" />
+            @if (form.controls.name.touched && form.controls.name.errors?.['required']) {
+              <span class="edit-field__error">Naziv je obavezan.</span>
+            }
+          </div>
+
+          <div class="edit-field">
+            <label class="edit-field__label">
+              Slug <span class="edit-field__required">*</span>
+            </label>
+            <input class="edit-field__input" type="text" [formControl]="form.controls.slug" />
+          </div>
+
+          <div class="edit-modal__row">
+            <div class="edit-field">
+              <label class="edit-field__label">Tip objekta</label>
+              <select class="edit-field__select" [formControl]="form.controls.typeId">
+                <option value="">Nije određeno</option>
+                @for (t of types; track t.id) {
+                  <option [value]="t.id">{{ t.name }}</option>
+                }
+              </select>
+            </div>
+            <div class="edit-field">
+              <label class="edit-field__label">Status</label>
+              <select class="edit-field__select" [formControl]="form.controls.approvalStatus">
+                @for (s of statusOptions; track s.value) {
+                  <option [value]="s.value">{{ s.label }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="edit-field">
+            <label class="edit-field__label">
+              Opis
+              <span class="edit-field__counter">{{ descLength }} / {{ MAX_DESC }}</span>
+            </label>
+            <textarea class="edit-field__textarea" rows="4" [formControl]="form.controls.description"
+              placeholder="Kratak opis objekta..."></textarea>
+          </div>
+
+          <div class="edit-modal__row">
+            <div class="edit-field">
+              <label class="edit-field__label">Region</label>
+              <select class="edit-field__select" [formControl]="form.controls.regionId"
+                (change)="onRegionChange()">
+                <option value="">Svi regioni</option>
+                @for (r of regions; track r.id) {
+                  <option [value]="r.id">{{ r.name }}</option>
+                }
+              </select>
+            </div>
+            <div class="edit-field">
+              <label class="edit-field__label">Grad</label>
+              <select class="edit-field__select" [formControl]="form.controls.cityId">
+                <option value="">Nije određeno</option>
+                @for (c of cities(); track c.id) {
+                  <option [value]="c.id">{{ c.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="edit-modal__row">
+            <div class="edit-field">
+              <label class="edit-field__label">Cena (raspon)</label>
+              <input class="edit-field__input" type="text" [formControl]="form.controls.priceRange"
+                placeholder="Npr. 500–1200 RSD" />
+            </div>
+            <div class="edit-field">
+              <label class="edit-field__label">Telefon</label>
+              <input class="edit-field__input" type="text" [formControl]="form.controls.phone"
+                placeholder="+381 11 000 0000" />
+            </div>
+          </div>
+
+          <div class="edit-field">
+            <label class="edit-field__label">Website</label>
+            <input class="edit-field__input" type="url" [formControl]="form.controls.websiteUrl"
+              placeholder="https://..." />
+          </div>
+
+          <div class="edit-field">
+            <label class="edit-field__label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" [formControl]="form.controls.isFeatured" />
+              Istaknuti objekat
+            </label>
+          </div>
+        </div>
+
+        <!-- Right: map + address -->
+        <div class="edit-modal__map-col">
+          <div class="edit-field">
+            <label class="edit-field__label">Adresa</label>
+            <div class="edit-modal__address-row">
+              <input class="edit-field__input edit-field__input--address" type="text"
+                [formControl]="form.controls.address"
+                placeholder="Upiši adresu pa klikni loupe" />
+              <button class="edit-modal__geo-btn" type="button" title="Pronađi na mapi"
+                [disabled]="isGeocoding()" (click)="geocode()">
+                @if (isGeocoding()) {
+                  <span class="material-icons edit-modal__spin" style="font-size:18px">sync</span>
+                } @else {
+                  <span class="material-icons" style="font-size:18px">search</span>
+                }
+              </button>
+            </div>
+          </div>
+
+          <div #mapEl class="edit-modal__map"></div>
+
+          <div class="edit-field__coords">
+            <span class="edit-field__coords-label">Koordinate</span>
+            @if (form.value.latitude != null && form.value.longitude != null) {
+              <span class="edit-field__coords-value">
+                {{ form.value.latitude | number:'1.5-5' }},
+                {{ form.value.longitude | number:'1.5-5' }}
+              </span>
+            } @else {
+              <span class="edit-field__coords-value edit-field__coords-value--missing">
+                Klikni na mapu da postavi koordinate
+              </span>
+            }
+          </div>
+          <p class="edit-modal__map-hint">
+            Klikni na mapu ili prevuci marker za tačnu lokaciju.
+          </p>
+        </div>
+      </div>
+
+      <!-- Images section -->
+      <div class="edit-modal__images-section">
+        <div class="edit-modal__images-header">
+          <h3 style="margin:0;font-size:var(--font-size-base);font-weight:600;color:var(--color-text-primary)">
+            Slike
+            @if (images().length > 0) {
+              <span style="font-weight:400;color:var(--color-text-muted)">({{ images().length }})</span>
+            }
+          </h3>
+          <label class="edit-modal__add-img-btn">
+            <span class="material-icons">add_photo_alternate</span>
+            Dodaj slike
+            <input type="file" accept="image/*" multiple style="display:none"
+              (change)="onFilesSelected($event)" />
+          </label>
+        </div>
+
+        <div class="edit-modal__images-grid">
+          @for (img of images(); track img.id) {
+            <div class="edit-modal__img-card"
+              [class.edit-modal__img-card--hero]="heroImageId() === img.id">
+              <img class="edit-modal__img" [src]="img.imageUrl" [alt]="row.name" />
+              <button class="edit-modal__img-hero" type="button" title="Postavi kao naslovnu"
+                (click)="setHero(img.id)">
+                <span class="material-icons">star</span>
+              </button>
+              <button class="edit-modal__img-delete" type="button" title="Obriši sliku"
+                (click)="removeImage(img.id)">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+          }
+          @for (n of [].constructor(uploadingCount()); track n) {
+            <div class="edit-modal__img-card edit-modal__img-card--uploading">
+              <span class="material-icons edit-modal__spin">sync</span>
+            </div>
+          }
+          @if (!images().length && !uploadingCount()) {
+            <div class="edit-modal__images-empty">
+              <span class="material-icons">image_not_supported</span>
+              Nema otpremljenih slika. Klikni „Dodaj slike" da ih dobaviš.
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="edit-modal__footer">
+      <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="cancel.emit()">
+        Otkaži
+      </button>
+      <button class="edit-modal__btn edit-modal__btn--save" type="button"
+        [disabled]="form.invalid || isSaving()" (click)="save()">
+        @if (isSaving()) {
+          <span class="material-icons edit-modal__spin">sync</span>
+          Čuvanje...
+        } @else {
+          <span class="material-icons">save</span>
+          Sačuvaj izmene
+        }
+      </button>
+    </div>
+
+  }
+</div>

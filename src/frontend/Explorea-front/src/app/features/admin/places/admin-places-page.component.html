@@ -1,0 +1,582 @@
+<!-- ===== FEEDBACK BANNERS ===== -->
+@if (successMessage()) {
+  <app-feedback-banner variant="info" [title]="successMessage()" />
+}
+@if (errorMessage()) {
+  <app-feedback-banner variant="error" [title]="errorMessage()" />
+}
+
+@if (isEditModalOpen() && selectedPlace()) {
+  <app-place-edit-modal
+    [row]="selectedPlace()!"
+    [types]="types()"
+    [regions]="regions()"
+    (cancel)="closeEditModal()"
+    (saved)="onEditSaved($event)"
+  />
+}
+
+@if (isCreateModalOpen()) {
+  <app-place-create-modal
+    [types]="types()"
+    [regions]="regions()"
+    (cancel)="closeCreateModal()"
+    (created)="onPlaceCreated($event)"
+  />
+}
+
+<div class="place-page">
+
+  <!-- ===== STATS ROW ===== -->
+  <div class="place-stats">
+    <app-stat-card
+      [label]="ui.t('places.stats.total')"
+      [value]="stats()?.totalCount ?? 0"
+      tone="neutral"
+    />
+    <app-stat-card
+      [label]="ui.t('places.stats.active')"
+      [value]="stats()?.activeCount ?? 0"
+      tone="success"
+    />
+    <app-stat-card
+      [label]="ui.t('places.stats.pending')"
+      [value]="stats()?.pendingCount ?? 0"
+      tone="neutral"
+    />
+    <app-stat-card
+      [label]="ui.t('places.stats.inactive')"
+      [value]="stats()?.inactiveCount ?? 0"
+      tone="danger"
+    />
+    <app-stat-card
+      [label]="ui.t('places.stats.added30Days')"
+      [value]="stats()?.addedLast30Days ?? 0"
+      tone="neutral"
+    />
+  </div>
+
+  <!-- ===== MAIN TABLE CARD ===== -->
+  <div class="place-card">
+
+    <!-- Card header -->
+    <div class="place-card__header">
+      <div class="place-card__title-group">
+        <div class="place-card__title-row">
+          <span class="material-icons place-card__title-icon">storefront</span>
+          <h2 class="place-card__title">{{ ui.t('places.title') }}</h2>
+        </div>
+        <p class="place-card__subtitle">{{ ui.t('places.subtitle') }}</p>
+      </div>
+
+      <div class="place-card__actions">
+        <!-- Search -->
+        <div class="place-search-wrap">
+          <span class="material-icons place-search-wrap__icon">search</span>
+          <input
+            class="place-search"
+            type="search"
+            [placeholder]="ui.t('places.search.placeholder')"
+            [value]="filters().search"
+            (input)="updateSearch($any($event.target).value)"
+          />
+        </div>
+
+        <!-- Filter button -->
+        <div class="place-filter-wrap">
+          <button
+            class="btn btn-ghost btn-sm place-filter-btn"
+            [class.place-filter-btn--active]="activeFilterCount() > 0"
+            (click)="isFilterOpen.set(!isFilterOpen()); $event.stopPropagation()"
+          >
+            <span class="material-icons">filter_list</span>
+            {{ ui.t('places.filter.btn') }}
+            @if (activeFilterCount() > 0) {
+              <span class="place-filter-badge">{{ activeFilterCount() }}</span>
+            }
+          </button>
+
+          <!-- Filter panel -->
+          @if (isFilterOpen()) {
+            <div class="place-filter-panel" (click)="$event.stopPropagation()">
+              <div class="place-filter-panel__header">
+                <span class="place-filter-panel__title">{{ ui.t('places.filter.title') }}</span>
+                @if (activeFilterCount() > 0) {
+                  <button class="place-filter-panel__reset" (click)="resetFilters()">{{ ui.t('places.filter.reset') }}</button>
+                }
+              </div>
+
+              <!-- Type filter -->
+              <div class="place-filter-section">
+                <label class="place-filter-section__label">{{ ui.t('places.filter.type') }}</label>
+                <div class="place-filter-chips">
+                  <button
+                    class="place-chip"
+                    [class.place-chip--active]="filters().typeId === 'all'"
+                    (click)="applyType('all')"
+                  >
+                    {{ ui.t('places.filter.allTypes') }}
+                  </button>
+                  @for (type of types(); track type.id) {
+                    <button
+                      class="place-chip"
+                      [class.place-chip--active]="filters().typeId === type.id"
+                      (click)="applyType(type.id)"
+                    >
+                      {{ type.name }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Status filter -->
+              <div class="place-filter-section">
+                <label class="place-filter-section__label">{{ ui.t('places.filter.status') }}</label>
+                <div class="place-filter-chips">
+                  @for (s of statuses; track s.value) {
+                    <button
+                      class="place-chip"
+                      [class.place-chip--active]="filters().status === s.value"
+                      (click)="applyStatus(s.value)"
+                    >
+                      {{ s.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Region filter (role-gated) -->
+              @if (canSeeRegionFilter()) {
+                <div class="place-filter-section">
+                  <label class="place-filter-section__label">{{ ui.t('places.filter.region') }}</label>
+                  <div class="place-filter-chips">
+                    <button
+                      class="place-chip"
+                      [class.place-chip--active]="filters().regionId === 'all'"
+                      (click)="applyRegion('all')"
+                    >
+                      {{ ui.t('places.filter.allRegions') }}
+                    </button>
+                    @for (r of regions(); track r.id) {
+                      <button
+                        class="place-chip"
+                        [class.place-chip--active]="filters().regionId === r.id"
+                        (click)="applyRegion(r.id)"
+                      >
+                        {{ r.name }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Rating filter -->
+              <div class="place-filter-section">
+                <label class="place-filter-section__label">{{ ui.t('places.filter.rating') }}</label>
+                <div class="place-filter-chips">
+                  @for (rating of ratingFilters; track rating.label) {
+                    <button
+                      class="place-chip"
+                      [class.place-chip--active]="filters().minRating === rating.value"
+                      (click)="applyMinRating(rating.value)"
+                    >
+                      {{ rating.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+            <div class="place-filter-backdrop" (click)="isFilterOpen.set(false)"></div>
+          }
+        </div>
+
+        <!-- Add new -->
+        <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
+          <span class="material-icons">add</span>
+          {{ ui.t('places.addNew') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="place-table-wrap">
+      @if (isLoading()) {
+        <app-table-skeleton [rows]="17" />
+      } @else if (!places().length) {
+        <app-empty-state
+          [title]="ui.t('places.empty.title')"
+          [description]="ui.t('places.empty.description')"
+        />
+      } @else {
+        <table class="place-table">
+          <thead>
+            <tr>
+              <th class="place-th">{{ ui.t('places.table.place') }}</th>
+              <th class="place-th">{{ ui.t('places.table.type') }}</th>
+              <th class="place-th">{{ ui.t('places.table.location') }}</th>
+              <th class="place-th">{{ ui.t('places.table.rating') }}</th>
+              <th class="place-th">{{ ui.t('places.table.status') }}</th>
+              <th class="place-th">{{ ui.t('places.table.updated') }}</th>
+              <th class="place-th"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (place of places(); track place.id) {
+              <tr class="place-row" (click)="openDetailsPanel(place)">
+
+                <!-- Name + address + thumb -->
+                <td class="place-td">
+                  <div class="place-name-cell">
+                    @if (place.previewImageUrl) {
+                      <img
+                        class="place-thumb place-thumb--img"
+                        [src]="place.previewImageUrl"
+                        [alt]="place.name"
+                      />
+                    } @else {
+                      <div
+                        class="place-thumb"
+                        [style.background-color]="placeThumbColor(place.type)"
+                      >
+                        <span class="material-icons place-thumb__icon">{{ placeIcon(place.type) }}</span>
+                      </div>
+                    }
+                    <div class="place-name-info">
+                      <span class="place-name-info__name">{{ place.name }}</span>
+                      @if (place.address) {
+                        <span class="place-name-info__address">
+                          <span class="material-icons">location_on</span>
+                          {{ place.address }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Type -->
+                <td class="place-td">
+                  <div class="place-type">
+                    <span class="material-icons place-type__icon">{{ placeIcon(place.type) }}</span>
+                    {{ place.type || '—' }}
+                  </div>
+                </td>
+
+                <!-- Region / City -->
+                <td class="place-td">
+                  <div class="place-location">
+                    @if (place.region) {
+                      <span class="place-location__region">{{ place.region }}</span>
+                    }
+                    @if (place.city) {
+                      <span class="place-location__city">{{ place.city }}</span>
+                    }
+                    @if (!place.region && !place.city) {
+                      <span>—</span>
+                    }
+                  </div>
+                </td>
+
+                <!-- Rating -->
+                <td class="place-td">
+                  @if (place.avgRating) {
+                    <div class="place-rating">
+                      <span class="material-icons">star</span>
+                      {{ formatRating(place.avgRating) }}
+                    </div>
+                  } @else {
+                    <span class="place-rating--empty">—</span>
+                  }
+                </td>
+
+                <!-- Status -->
+                <td class="place-td">
+                  <span class="place-status place-status--{{ place.status }}">
+                    {{ statusLabel(place.status) }}
+                  </span>
+                </td>
+
+                <!-- Last updated -->
+                <td class="place-td">
+                  <div class="place-updated">
+                    <span class="material-icons">calendar_today</span>
+                    {{ timeAgo(place.updatedAt) }}
+                  </div>
+                </td>
+
+                <!-- Actions -->
+                <td class="place-td place-td--actions" (click)="$event.stopPropagation()">
+                  <div class="row-actions">
+                    <a
+                      class="btn-icon"
+                      title="Otvori u aplikaciji"
+                      [href]="'/places/' + place.slug"
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      <span class="material-icons">open_in_new</span>
+                    </a>
+                    <button class="btn-icon" title="Izmeni" (click)="openEdit(place)">
+                      <span class="material-icons">edit</span>
+                    </button>
+                    <button
+                      class="btn-icon btn-icon--danger"
+                      title="Obriši"
+                      (click)="openDeleteDialog(place)"
+                    >
+                      <span class="material-icons">delete</span>
+                    </button>
+                  </div>
+                </td>
+
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1 || total() > 0) {
+      <div class="place-pagination">
+        <span class="place-pagination__info">{{ visibleRangeText() }}</span>
+        <div class="place-pagination__pages">
+          <button
+            class="place-page-btn place-page-btn--nav"
+            [disabled]="currentPage() <= 1"
+            (click)="goToPage(currentPage() - 1)"
+          >
+            <span class="material-icons">chevron_left</span>
+          </button>
+
+          @for (page of pageNumbers(); track page) {
+            <button
+              class="place-page-btn"
+              [class.place-page-btn--active]="page === currentPage()"
+              (click)="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          }
+
+          <button
+            class="place-page-btn place-page-btn--nav"
+            [disabled]="currentPage() >= totalPages()"
+            (click)="goToPage(currentPage() + 1)"
+          >
+            <span class="material-icons">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    }
+
+  </div>
+</div>
+
+<!-- ===== PLACE DETAILS PANEL ===== -->
+@if (isDetailsPanelOpen() && detailsPanelRow(); as place) {
+  <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
+  <aside class="ddp-panel" role="dialog" aria-modal="true">
+
+    <header class="ddp-header">
+      <div class="ddp-header__title-group">
+        @if (place.previewImageUrl) {
+          <img
+            class="ddp-header__icon ddp-header__icon--img"
+            [src]="place.previewImageUrl"
+            [alt]="place.name"
+          />
+        } @else {
+          <div class="ddp-header__icon" [style.background-color]="placeThumbColor(place.type)">
+            <span class="material-icons">{{ placeIcon(place.type) }}</span>
+          </div>
+        }
+        <div class="ddp-header__text">
+          <h2 class="ddp-header__name">{{ place.name }}</h2>
+          <p class="ddp-header__location">
+            <span class="material-icons">location_on</span>
+            {{ place.city || place.region || place.address || 'Nepoznata lokacija' }}
+          </p>
+        </div>
+      </div>
+      <button class="ddp-close" type="button" (click)="closeDetailsPanel()">
+        <span class="material-icons">close</span>
+      </button>
+    </header>
+
+    <div class="ddp-body">
+      @if (isDetailLoading()) {
+        <div class="ddp-loading">
+          <span class="material-icons ddp-loading__icon">sync</span>
+          Učitavanje...
+        </div>
+      } @else {
+
+        <!-- Gallery -->
+        @if (detailsPanelDetail()?.images?.length) {
+          <div class="ddp-gallery">
+            <img
+              class="ddp-gallery__main"
+              [src]="detailsPanelDetail()!.images[0].imageUrl"
+              [alt]="place.name"
+            />
+            @if (detailsPanelDetail()!.images.length > 1) {
+              <div class="ddp-gallery__thumbs">
+                @for (img of detailsPanelDetail()!.images.slice(1, 4); track img.id) {
+                  <img class="ddp-gallery__thumb" [src]="img.imageUrl" [alt]="place.name" />
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="ddp-gallery">
+            <div
+              class="ddp-gallery__placeholder"
+              [style.background-color]="placeThumbColor(place.type)"
+            >
+              <span class="material-icons">{{ placeIcon(place.type) }}</span>
+            </div>
+          </div>
+        }
+
+        <!-- Badges -->
+        <div class="ddp-badges">
+          <span class="place-status place-status--{{ place.status }}">
+            {{ statusLabel(place.status) }}
+          </span>
+          @if (place.avgRating) {
+            <span class="ddp-rating">
+              <span class="material-icons">star</span>
+              {{ formatRating(place.avgRating) }}
+            </span>
+          }
+          @if (place.isFeatured) {
+            <span class="place-badge-featured">
+              <span class="material-icons">stars</span>
+              Istaknuto
+            </span>
+          }
+        </div>
+
+        <!-- Description -->
+        @if (detailsPanelDetail()?.description) {
+          <div class="ddp-description-wrap">
+            <p
+              class="ddp-description"
+              [class.ddp-description--collapsed]="!descriptionExpanded()"
+            >
+              {{ detailsPanelDetail()!.description }}
+            </p>
+            @if ((detailsPanelDetail()!.description?.length ?? 0) > 160) {
+              <button
+                class="ddp-description__toggle"
+                type="button"
+                (click)="descriptionExpanded.set(!descriptionExpanded())"
+              >
+                {{ descriptionExpanded() ? 'Prikaži manje' : 'Prikaži više' }}
+              </button>
+            }
+          </div>
+        }
+
+        <!-- Detail grid -->
+        <div class="ddp-grid">
+          <div class="ddp-grid__item">
+            <span class="ddp-grid__label">Tip</span>
+            <span class="ddp-grid__value">{{ place.type || '—' }}</span>
+          </div>
+          <div class="ddp-grid__item">
+            <span class="ddp-grid__label">Region</span>
+            <span class="ddp-grid__value">{{ place.region || '—' }}</span>
+          </div>
+          <div class="ddp-grid__item">
+            <span class="ddp-grid__label">Grad</span>
+            <span class="ddp-grid__value">{{ place.city || '—' }}</span>
+          </div>
+          <div class="ddp-grid__item">
+            <span class="ddp-grid__label">Ocena</span>
+            <span class="ddp-grid__value">
+              {{ place.avgRating ? formatRating(place.avgRating) + ' / 5' : '—' }}
+            </span>
+          </div>
+          @if (detailsPanelDetail()?.address) {
+            <div class="ddp-grid__item ddp-grid__item--full">
+              <span class="ddp-grid__label">Adresa</span>
+              <span class="ddp-grid__value">{{ detailsPanelDetail()!.address }}</span>
+            </div>
+          }
+          @if (detailsPanelDetail()?.phone) {
+            <div class="ddp-grid__item">
+              <span class="ddp-grid__label">Telefon</span>
+              <span class="ddp-grid__value">{{ detailsPanelDetail()!.phone }}</span>
+            </div>
+          }
+          @if (detailsPanelDetail()?.websiteUrl) {
+            <div class="ddp-grid__item">
+              <span class="ddp-grid__label">Website</span>
+              <span class="ddp-grid__value">
+                <a
+                  [href]="detailsPanelDetail()!.websiteUrl!"
+                  target="_blank"
+                  rel="noopener"
+                  class="ddp-link"
+                >
+                  {{ detailsPanelDetail()!.websiteUrl }}
+                </a>
+              </span>
+            </div>
+          }
+          @if (detailsPanelDetail()?.priceRange) {
+            <div class="ddp-grid__item">
+              <span class="ddp-grid__label">Cena</span>
+              <span class="ddp-grid__value">{{ detailsPanelDetail()!.priceRange }}</span>
+            </div>
+          }
+          @if (detailsPanelDetail()?.latitude != null) {
+            <div class="ddp-grid__item ddp-grid__item--full">
+              <span class="ddp-grid__label">Koordinate</span>
+              <span class="ddp-grid__value">
+                {{ detailsPanelDetail()!.latitude }}, {{ detailsPanelDetail()!.longitude }}
+              </span>
+            </div>
+          }
+        </div>
+
+      }
+    </div>
+
+    <footer class="ddp-footer">
+      <a
+        class="btn btn-ghost btn-sm"
+        [href]="'/places/' + place.slug"
+        target="_blank"
+        rel="noopener"
+      >
+        <span class="material-icons">open_in_new</span>
+        Otvori
+      </a>
+      <button class="btn btn-ghost btn-sm" (click)="openEditFromPanel()">
+        <span class="material-icons">edit</span>
+        Izmeni
+      </button>
+      <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="openDeleteFromPanel()">
+        <span class="material-icons">delete</span>
+        Obriši
+      </button>
+    </footer>
+
+  </aside>
+}
+
+<!-- ===== DELETE CONFIRM DIALOG ===== -->
+@if (isDeleteDialogOpen()) {
+  <app-confirm-dialog
+    [title]="ui.t('places.delete.title')"
+    [description]="ui.t('places.delete.description', { name: selectedPlace()?.name ?? '' })"
+    [confirmLabel]="ui.t('places.delete.confirm')"
+    [cancelLabel]="ui.t('places.delete.cancel')"
+    [loadingLabel]="ui.t('places.delete.loading')"
+    [isLoading]="isDeleting()"
+    (cancel)="closeDeleteDialog()"
+    (confirm)="confirmDelete()"
+  ></app-confirm-dialog>
+}

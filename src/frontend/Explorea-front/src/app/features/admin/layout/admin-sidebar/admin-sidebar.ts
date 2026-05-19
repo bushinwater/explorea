@@ -20,6 +20,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: 'location_on',    labelKey: 'sidebar.destinations', route: '/admin/destinations', roles: ['super_admin', 'tourist_organization'] },
   { icon: 'event',          labelKey: 'sidebar.events',       route: '/admin/events',       roles: ['super_admin', 'tourist_organization'] },
   { icon: 'hiking',         labelKey: 'sidebar.activities',   route: '/admin/activities',   roles: ['super_admin', 'tourist_organization'] },
+  { icon: 'storefront',    labelKey: 'sidebar.places',       route: '/admin/places',       roles: ['super_admin', 'tourist_organization', 'place_owner'] },
   { icon: 'star',           labelKey: 'sidebar.reviews',      route: '/admin/reviews',      roles: ['super_admin', 'tourist_organization', 'place_owner'] },
   { icon: 'people',         labelKey: 'sidebar.users',        route: '/admin/users',        roles: ['super_admin'] },
   { icon: 'bar_chart',      labelKey: 'sidebar.reports',      route: '/admin/reports',      roles: ['super_admin', 'tourist_organization'] },
