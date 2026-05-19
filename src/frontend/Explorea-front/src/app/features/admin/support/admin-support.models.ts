@@ -40,6 +40,7 @@ export interface SupportConversation {
   context: SupportTicketContext | null;
   isEscalated: boolean;
   senderRole: string | null;
+  isAssignedToMe: boolean;
 }
 
 export interface SupportTicket extends SupportConversation {
@@ -64,6 +65,7 @@ export interface SendSupportMessageRequest {
   ticketId: string;
   content: string;
   isInternal: boolean;
+  isAssignedToMe?: boolean;
 }
 
 export interface AiSupportMessage {

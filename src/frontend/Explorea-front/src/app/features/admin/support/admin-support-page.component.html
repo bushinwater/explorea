@@ -197,7 +197,7 @@
           </div>
 
           <div class="support-chat__actions">
-            @if (auth.role() !== 'place_owner' && conversation.status !== 'resolved' && conversation.status !== 'closed') {
+            @if (auth.role() !== 'place_owner' && conversation.isAssignedToMe && conversation.status !== 'resolved' && conversation.status !== 'closed') {
               <button
                 class="btn btn-primary btn-sm"
                 type="button"
@@ -208,7 +208,7 @@
                 {{ isResolvingTicket() ? 'Rešavanje...' : 'Reši tiket' }}
               </button>
             }
-            @if (auth.role() === 'tourist_organization' && !conversation.isEscalated) {
+            @if (auth.role() === 'tourist_organization' && !conversation.isEscalated && conversation.isAssignedToMe) {
               <button
                 class="btn btn-secondary btn-sm"
                 type="button"
@@ -270,15 +270,17 @@
             ></textarea>
 
             <div class="support-reply__footer">
-              <label class="support-reply__toggle">
-                <input
-                  type="checkbox"
-                  [checked]="isInternalNote()"
-                  [disabled]="ticket.status === 'resolved' || isSendingReply()"
-                  (change)="toggleInternalNote($any($event.target).checked)"
-                />
-                <span>Interna napomena</span>
-              </label>
+              @if (auth.role() !== 'place_owner' && conversation.isAssignedToMe) {
+                <label class="support-reply__toggle">
+                  <input
+                    type="checkbox"
+                    [checked]="isInternalNote()"
+                    [disabled]="ticket.status === 'resolved' || isSendingReply()"
+                    (change)="toggleInternalNote($any($event.target).checked)"
+                  />
+                  <span>Interna napomena</span>
+                </label>
+              }
 
               <button
                 class="btn btn-primary support-reply__send"

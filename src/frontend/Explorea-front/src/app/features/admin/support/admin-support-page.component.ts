@@ -206,11 +206,14 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
 
     this.isSendingReply.set(true);
 
+    const isAssignedToMe = this.conversations().find(c => c.id === ticket.id)?.isAssignedToMe ?? true;
+
     this.subscription.add(
       this.supportService.sendMessage({
         ticketId: ticket.id,
         content,
         isInternal: this.isInternalNote(),
+        isAssignedToMe,
       }).subscribe({
         next: (updatedTicket) => {
           this.selectedTicket.set(updatedTicket);
@@ -427,8 +430,10 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
     this.isResolvingTicket.set(false);
     this.selectedTicket.set(null);
 
+    const isAssignedToMe = this.conversations().find(c => c.id === ticketId)?.isAssignedToMe ?? true;
+
     this.subscription.add(
-      this.supportService.getTicket(ticketId).subscribe({
+      this.supportService.getTicket(ticketId, isAssignedToMe).subscribe({
         next: (ticket) => {
           this.selectedTicket.set(ticket);
           this.isTicketLoading.set(false);

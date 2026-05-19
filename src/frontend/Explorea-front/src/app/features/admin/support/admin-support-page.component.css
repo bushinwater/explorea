@@ -7,7 +7,7 @@
   display: grid;
   grid-template-columns: minmax(260px, 320px) minmax(380px, 1fr) minmax(260px, 340px);
   gap: var(--sp-4);
-  min-height: calc(100vh - 120px);
+  height: calc(100vh - 120px);
   padding: var(--sp-6);
 }
 
@@ -283,6 +283,7 @@
 .support-chat {
   display: flex;
   width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   flex-direction: column;
@@ -392,6 +393,25 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 160px),
     var(--color-surface);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.support-messages::-webkit-scrollbar {
+  width: 5px;
+}
+
+.support-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.support-messages::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+}
+
+.support-messages::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
 }
 
 .support-messages--ai {
@@ -794,6 +814,25 @@
   flex-direction: column;
   overflow-y: auto;
   border-top: 1px solid var(--color-border);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.support-conversations::-webkit-scrollbar {
+  width: 5px;
+}
+
+.support-conversations::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.support-conversations::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+}
+
+.support-conversations::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
 }
 
 .support-conversation {
@@ -1076,13 +1115,13 @@
 @media (max-width: 760px) {
   .support-page {
     display: block;
-    min-height: calc(100vh - 96px);
+    height: calc(100dvh - 96px);
     padding: var(--sp-4);
   }
 
   .support-page__panel {
     display: none;
-    min-height: calc(100vh - 128px);
+    height: calc(100dvh - 128px);
   }
 
   .support-page__panel--mobile-active {
@@ -1112,7 +1151,7 @@
   .support-list,
   .support-chat,
   .support-details {
-    min-height: calc(100vh - 128px);
+    height: 100%;
   }
 
   .support-list__header {

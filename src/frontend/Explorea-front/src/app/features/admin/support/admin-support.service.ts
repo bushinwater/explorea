@@ -35,9 +35,9 @@ export class AdminSupportService {
     let params = new HttpParams().set('page', 1).set('pageSize', 50);
     if (filters.status) params = params.set('status', filters.status);
 
-    const fetchPage = (url: string) =>
+    const fetchPage = (url: string, isAssignedToMe = true) =>
       this.http.get<BackendPagedResult<BackendTicketListItemDto>>(url, { params }).pipe(
-        map((r) => r.items.map((dto) => this.mapConversation(dto))),
+        map((r) => r.items.map((dto) => this.mapConversation(dto, isAssignedToMe))),
         catchError(() => of([] as SupportConversation[])),
       );
 
@@ -48,8 +48,8 @@ export class AdminSupportService {
     } else if (jwtRole === 'tourist_organization') {
       // Tiketi dodeljeni TO + tiketi koje je TO sam kreirao (ka superadminu)
       source$ = forkJoin([
-        fetchPage('/api/admin/support/tickets'),
-        fetchPage('/api/support/tickets/mine'),
+        fetchPage('/api/admin/support/tickets', true),
+        fetchPage('/api/support/tickets/mine', false),
       ]).pipe(
         map(([assigned, created]) => {
           const merged = [...assigned, ...created];
@@ -78,7 +78,7 @@ export class AdminSupportService {
     );
   }
 
-  getTicket(ticketId: string): Observable<SupportTicket> {
+  getTicket(ticketId: string, isAssignedToMe = true): Observable<SupportTicket> {
     const jwtRole = this.authService.getRole();
 
     if (jwtRole === 'place_owner') {
@@ -88,17 +88,14 @@ export class AdminSupportService {
     }
 
     if (jwtRole === 'tourist_organization') {
-      // Probaj admin endpoint (tiket dodeljen TO), pa user endpoint (tiket koji je TO kreirao)
+      if (!isAssignedToMe) {
+        return this.http
+          .get<BackendTicketDetailDto>(`/api/support/tickets/${ticketId}`)
+          .pipe(map((dto) => this.mapDetail(dto)));
+      }
       return this.http
         .get<BackendTicketDetailDto>(`/api/admin/support/tickets/${ticketId}`)
-        .pipe(
-          map((dto) => this.mapDetail(dto)),
-          catchError(() =>
-            this.http
-              .get<BackendTicketDetailDto>(`/api/support/tickets/${ticketId}`)
-              .pipe(map((dto) => this.mapDetail(dto))),
-          ),
-        );
+        .pipe(map((dto) => this.mapDetail(dto)));
     }
 
     return this.http
@@ -118,19 +115,16 @@ export class AdminSupportService {
     }
 
     if (jwtRole === 'tourist_organization') {
-      // Probaj admin endpoint, pa user endpoint kao fallback
+      const isAssignedToMe = request.isAssignedToMe ?? true;
+      if (!isAssignedToMe) {
+        return this.http
+          .post<BackendMessageDto>(`/api/support/tickets/${request.ticketId}/messages`, { content: request.content })
+          .pipe(switchMap(() => this.getTicket(request.ticketId, false)));
+      }
       const adminBody = { content: request.content, isInternal: request.isInternal };
       return this.http
         .post<BackendMessageDto>(`/api/admin/support/tickets/${request.ticketId}/messages`, adminBody)
-        .pipe(
-          catchError(() =>
-            this.http.post<BackendMessageDto>(
-              `/api/support/tickets/${request.ticketId}/messages`,
-              { content: request.content },
-            ),
-          ),
-          switchMap(() => this.getTicket(request.ticketId)),
-        );
+        .pipe(switchMap(() => this.getTicket(request.ticketId, true)));
     }
 
     const body = { content: request.content, isInternal: request.isInternal };
@@ -192,7 +186,7 @@ export class AdminSupportService {
       : '/api/admin/support/tickets';
   }
 
-  private mapConversation(dto: BackendTicketListItemDto): SupportConversation {
+  private mapConversation(dto: BackendTicketListItemDto, isAssignedToMe = true): SupportConversation {
     return {
       id: dto.id,
       ticketNumber: '#' + dto.id.replace(/-/g, '').substring(0, 8).toUpperCase(),
@@ -207,6 +201,7 @@ export class AdminSupportService {
       context: null,
       isEscalated: dto.isEscalated,
       senderRole: dto.senderRole ?? null,
+      isAssignedToMe,
     };
   }
 
