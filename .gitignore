@@ -41,6 +41,13 @@ desktop.ini
 # ===== CLAUDE =====
 .claude/
 
+# ===== CERTIFICATES =====
+*.pfx
+*.pem
+*.key
+*.crt
+*.cer
+
 # === Fitlogger (Demo app) ===
 sandbox/Stefan Mirkovic/fitlogger/backend/FitLogger/appsettings.json
 # app settings (secrets)
