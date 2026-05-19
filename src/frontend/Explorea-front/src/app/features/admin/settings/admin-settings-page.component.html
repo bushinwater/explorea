@@ -226,54 +226,8 @@
           </select>
         </article>
 
-        <article class="preference-card">
-          <div class="preference-card__icon">
-            <span class="material-icons">calendar_month</span>
-          </div>
-
-          <div class="preference-card__content">
-            <span>Format datuma</span>
-            <strong>{{ appPreferences.dateFormat }}</strong>
-            <p>Način prikaza datuma u tabelama, karticama i izveštajima.</p>
-          </div>
-
-          <select class="preference-select" [value]="appPreferences.dateFormat">
-            <option>DD.MM.YYYY.</option>
-            <option>YYYY-MM-DD</option>
-            <option>MM/DD/YYYY</option>
-          </select>
-        </article>
       </section>
 
-      <section class="behavior-panel">
-        <header class="behavior-panel__header">
-          <div>
-            <p class="section-eyebrow">Ponašanje aplikacije</p>
-            <h3>Radni tok admin panela</h3>
-            <p>Opcije koje utiču na navigaciju, prikaz tabela i brzinu rada.</p>
-          </div>
-        </header>
-
-        <div class="behavior-list">
-          @for (preference of behaviorPreferences; track preference.title) {
-          <article class="behavior-item">
-            <div class="behavior-item__icon">
-              <span class="material-icons">{{ preference.icon }}</span>
-            </div>
-
-            <div class="behavior-item__content">
-              <h4>{{ preference.title }}</h4>
-              <p>{{ preference.description }}</p>
-            </div>
-
-            <button class="toggle" type="button" [class.toggle--active]="preference.enabled"
-              [attr.aria-pressed]="preference.enabled">
-              <span></span>
-            </button>
-          </article>
-          }
-        </div>
-      </section>
 
       <footer class="preferences-actions">
         <button class="btn btn-secondary" type="button" [disabled]="isPreferencesSaving()"
