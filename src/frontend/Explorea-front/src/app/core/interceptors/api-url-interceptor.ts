@@ -1,6 +1,6 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 
-const BACKEND_URL = 'http://softeng.pmf.kg.ac.rs:10111';
+const BACKEND_URL = 'https://softeng.pmf.kg.ac.rs:10111';
 
 export const apiUrlInterceptor: HttpInterceptorFn = (req, next) => {
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
