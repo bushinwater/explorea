@@ -71,8 +71,7 @@
 .settings-tab:focus-visible,
 .toggle:focus-visible,
 .preference-select:focus-visible,
-.delivery-field select:focus-visible,
-.danger-zone__button:focus-visible {
+.delivery-field select:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--color-primary) 60%, transparent);
   outline-offset: 3px;
 }
@@ -986,7 +985,6 @@
 .administration-hero,
 .administration-panel,
 .system-toggle-panel,
-.danger-zone,
 .administration-actions {
   border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
   border-radius: 22px;
@@ -1008,8 +1006,7 @@
 
 .administration-hero h2,
 .administration-panel__header h3,
-.system-toggle-panel__header h3,
-.danger-zone__header h3 {
+.system-toggle-panel__header h3 {
   margin: 0;
   color: var(--color-text-primary);
   font-size: 1.55rem;
@@ -1017,15 +1014,13 @@
 }
 
 .administration-panel__header h3,
-.system-toggle-panel__header h3,
-.danger-zone__header h3 {
+.system-toggle-panel__header h3 {
   font-size: 1.35rem;
 }
 
 .administration-hero p:not(.section-eyebrow),
 .administration-panel__header p:not(.section-eyebrow),
-.system-toggle-panel__header p:not(.section-eyebrow),
-.danger-zone__header p:not(.section-eyebrow) {
+.system-toggle-panel__header p:not(.section-eyebrow) {
   margin: 8px 0 0;
   color: var(--color-text-secondary);
 }
@@ -1086,8 +1081,7 @@
 }
 
 .administration-panel,
-.system-toggle-panel,
-.danger-zone {
+.system-toggle-panel {
   display: grid;
   gap: 22px;
   padding: 28px 30px;
@@ -1116,16 +1110,14 @@
 }
 
 .administration-control-card__content h4,
-.system-toggle-item__content h4,
-.danger-zone__item h4 {
+.system-toggle-item__content h4 {
   margin: 0;
   color: var(--color-text-primary);
   font-size: 1rem;
 }
 
 .administration-control-card__content p,
-.system-toggle-item__content p,
-.danger-zone__item p {
+.system-toggle-item__content p {
   margin: 0;
   color: var(--color-text-secondary);
   line-height: 1.45;
@@ -1156,57 +1148,6 @@
 .system-toggle-item__content {
   display: grid;
   gap: 5px;
-}
-
-.danger-zone {
-  border-color: color-mix(in srgb, var(--color-danger) 28%, var(--color-border));
-}
-
-.danger-zone .section-eyebrow {
-  color: var(--color-danger);
-}
-
-.danger-zone__list {
-  display: grid;
-  gap: 14px;
-}
-
-.danger-zone__item {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  padding: 18px;
-  border: 1px solid color-mix(in srgb, var(--color-danger) 24%, transparent);
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--color-danger) 7%, transparent);
-}
-
-.danger-zone__icon {
-  display: grid;
-  place-items: center;
-  width: 50px;
-  height: 50px;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
-  color: var(--color-danger);
-  flex-shrink: 0;
-}
-
-.danger-zone__button {
-  min-height: 40px;
-  padding: 0 16px;
-  border: 1px solid color-mix(in srgb, var(--color-danger) 36%, transparent);
-  border-radius: 12px;
-  background: transparent;
-  color: var(--color-danger);
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.18s ease;
-}
-
-.danger-zone__button:hover {
-  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
 }
 
 .administration-actions {
@@ -1314,8 +1255,7 @@
     flex-direction: column;
   }
 
-  .system-toggle-item,
-  .danger-zone__item {
+  .system-toggle-item {
     grid-template-columns: 1fr;
     justify-items: start;
   }
@@ -1336,8 +1276,7 @@
 
   .profile-card__meta div,
   .notification-type-item,
-  .system-toggle-item,
-  .danger-zone__item {
+  .system-toggle-item {
     align-items: flex-start;
   }
 }

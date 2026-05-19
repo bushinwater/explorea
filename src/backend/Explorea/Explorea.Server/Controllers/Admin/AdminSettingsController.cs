@@ -329,31 +329,10 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
               Title = "Pravila moderacije",
               Description = "Pregled pravila za odobravanje destinacija, mesta, događaja i aktivnosti.",
               ActionLabel = "Pregledaj pravila"
-          },
-          new()
-          {
-              Icon = "database",
-              Title = "Sistemski podaci",
-              Description = "Pregled osnovnih sistemskih parametara i administrativnih podešavanja.",
-              ActionLabel = "Pregledaj sistem"
           }
         },
         SystemToggles = new List<AdminSystemToggleDto>
         {
-          new()
-          {
-              Icon = "admin_panel_settings",
-              Title = "Dozvoli registraciju novih admina",
-              Description = "Kada je uključeno, novi admin nalozi mogu biti kreirani kroz admin panel.",
-              Enabled = false
-          },
-          new()
-          {
-              Icon = "fact_check",
-              Title = "Obavezna ručna moderacija",
-              Description = "Novi korisnički sadržaj mora biti ručno odobren pre prikaza na platformi.",
-              Enabled = true
-          },
           new()
           {
               Icon = "history",

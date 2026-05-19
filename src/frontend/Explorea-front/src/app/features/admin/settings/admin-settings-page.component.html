@@ -472,35 +472,6 @@
         </div>
       </section>
 
-      <section class="danger-zone">
-        <header class="danger-zone__header">
-          <div>
-            <p class="section-eyebrow">Danger zone</p>
-            <h3>Osetljive akcije</h3>
-            <p>Ove opcije su prikazane kao frontend placeholder i nisu povezane sa backendom.</p>
-          </div>
-        </header>
-
-        <div class="danger-zone__list">
-          @for (action of dangerousActions; track action.title) {
-          <article class="danger-zone__item">
-            <div class="danger-zone__icon">
-              <span class="material-icons">{{ action.icon }}</span>
-            </div>
-
-            <div>
-              <h4>{{ action.title }}</h4>
-              <p>{{ action.description }}</p>
-            </div>
-
-            <button class="danger-zone__button" type="button">
-              Pokreni
-            </button>
-          </article>
-          }
-        </div>
-      </section>
-
       <footer class="administration-actions">
         <button class="btn btn-secondary" type="button">
           Reset Changes

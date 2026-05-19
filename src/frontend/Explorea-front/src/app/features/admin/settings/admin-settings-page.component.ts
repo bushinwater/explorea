@@ -225,28 +225,9 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
         'Podesi osnovna pravila za odobravanje destinacija, mesta, događaja i aktivnosti.',
       actionLabel: 'Podesi pravila',
     },
-    {
-      icon: 'database',
-      title: 'Sistemski podaci',
-      description:
-        'Pregled osnovnih sistemskih parametara, seed podataka i administrativnih podešavanja.',
-      actionLabel: 'Pregledaj sistem',
-    },
   ]);
 
   readonly systemToggles = signal<AdminSystemToggleDto[]>([
-    {
-      icon: 'admin_panel_settings',
-      title: 'Dozvoli registraciju novih admina',
-      description: 'Kada je uključeno, novi admin nalozi mogu biti kreirani kroz admin panel.',
-      enabled: false,
-    },
-    {
-      icon: 'fact_check',
-      title: 'Obavezna ručna moderacija',
-      description: 'Novi korisnički sadržaj mora biti ručno odobren pre prikaza na platformi.',
-      enabled: true,
-    },
     {
       icon: 'history',
       title: 'Detaljan audit log',
@@ -254,19 +235,6 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       enabled: true,
     },
   ]);
-
-  readonly dangerousActions = [
-    {
-      icon: 'restart_alt',
-      title: 'Resetuj mock podešavanja',
-      description: 'Vrati sva frontend mock podešavanja na početne vrednosti.',
-    },
-    {
-      icon: 'delete_forever',
-      title: 'Obriši test podatke',
-      description: 'Akcija je prikazana samo kao UI placeholder i nije povezana sa backendom.',
-    },
-  ];
 
   readonly profileForm = signal<AdminProfileFormState>({
     firstName: '',
