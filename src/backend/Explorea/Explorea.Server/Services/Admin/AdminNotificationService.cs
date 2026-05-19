@@ -90,6 +90,69 @@ namespace Explorea.Server.Services.Admin
             };
         }
 
+        public async Task<AdminNotificationInboxDto> GetInboxAsync(Guid currentUserId, int take)
+        {
+            var normalizedTake = Math.Clamp(take, 1, 20);
+
+            var unreadCount = await _db.Notifications
+                .AsNoTracking()
+                .CountAsync(notification => notification.UserId == currentUserId && !notification.IsRead);
+
+            var items = await _db.Notifications
+                .AsNoTracking()
+                .Where(notification => notification.UserId == currentUserId)
+                .OrderByDescending(notification => notification.CreatedAt)
+                .Take(normalizedTake)
+                .Select(notification => new AdminNotificationItemDto
+                {
+                    Id = notification.Id,
+                    Title = notification.Title,
+                    Message = notification.Message,
+                    LinkUrl = notification.LinkUrl,
+                    IsRead = notification.IsRead,
+                    CreatedAt = notification.CreatedAt
+                })
+                .ToListAsync();
+
+            return new AdminNotificationInboxDto
+            {
+                UnreadCount = unreadCount,
+                Items = items
+            };
+        }
+
+        public async Task MarkAsReadAsync(Guid currentUserId, Guid notificationId)
+        {
+            var notification = await _db.Notifications
+                .FirstOrDefaultAsync(item => item.Id == notificationId && item.UserId == currentUserId);
+
+            if (notification == null)
+                throw new KeyNotFoundException("Notification was not found.");
+
+            if (notification.IsRead)
+                return;
+
+            notification.IsRead = true;
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task MarkAllAsReadAsync(Guid currentUserId)
+        {
+            var notifications = await _db.Notifications
+                .Where(notification => notification.UserId == currentUserId && !notification.IsRead)
+                .ToListAsync();
+
+            foreach (var notification in notifications)
+            {
+                notification.IsRead = true;
+            }
+
+            if (notifications.Count > 0)
+            {
+                await _db.SaveChangesAsync();
+            }
+        }
+
         private static string RecipientLabel(string recipient) => recipient.ToLowerInvariant() switch
         {
             "all_users" => "svi korisnici",

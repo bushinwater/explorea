@@ -18,6 +18,14 @@ namespace Explorea.Server.Controllers.Admin
             _service = service;
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetInbox([FromQuery] int take = 10)
+        {
+            var userId = GetCurrentUserId();
+            var inbox = await _service.GetInboxAsync(userId, take);
+            return Ok(inbox);
+        }
+
         [HttpPost("broadcast")]
         public async Task<IActionResult> Broadcast([FromBody] AdminBroadcastNotificationRequestDto dto)
         {
@@ -35,6 +43,29 @@ namespace Explorea.Server.Controllers.Admin
             {
                 return StatusCode(403, new { message = ex.Message });
             }
+        }
+
+        [HttpPatch("{id:guid}/read")]
+        public async Task<IActionResult> MarkAsRead(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _service.MarkAsReadAsync(userId, id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        [HttpPatch("read-all")]
+        public async Task<IActionResult> MarkAllAsRead()
+        {
+            var userId = GetCurrentUserId();
+            await _service.MarkAllAsReadAsync(userId);
+            return NoContent();
         }
 
         private Guid GetCurrentUserId()
