@@ -1,294 +1,372 @@
 using System.Text.Json;
 using Explorea.API.DTOs.Admin.Place;
 using Explorea.API.Models;
+using Explorea.Server.Data;
 using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Admin.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
 namespace Explorea.Server.Services.Admin
 {
-  public class AdminPlaceService : IAdminPlaceService
-  {
-    private readonly IAdminPlaceRepository _placeRepo;
-    private readonly IOrganizationAssignmentRepository _assignmentRepo;
-    private readonly IUserRepository _userRepo;
-    private readonly ISubmissionQueueRepository _queueRepo;
-  
-    private static readonly GeometryFactory _geometryFactory =
-        new GeometryFactory(new PrecisionModel(), 4326);
-  
-    public AdminPlaceService(
-        IAdminPlaceRepository placeRepo,
-        IOrganizationAssignmentRepository assignmentRepo,
-        IUserRepository userRepo,
-        ISubmissionQueueRepository queueRepo)
+    public class AdminPlaceService : IAdminPlaceService
     {
-        _placeRepo = placeRepo;
-        _assignmentRepo = assignmentRepo;
-        _userRepo = userRepo;
-        _queueRepo = queueRepo;
-    }
-  
-    public async Task<(List<AdminPlaceListDto> Items, int Total)> GetAllAsync(
-        Guid? destinationId,
-        int? cityId,
-        int? typeId,
-        string? visibility,
-        bool? isFeatured,
-        int page,
-        int pageSize,
-        Guid currentUserId)
-    {
-      var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
-  
-      List<Guid>? restrictToDestinationIds = null;
-  
-      if (user?.Role.Name == RoleNames.TouristOrganization)
-      {
-          var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
-          restrictToDestinationIds = assignments.Select(a => a.DestinationId).ToList();
-      }
-      else if (user?.Role.Name != RoleNames.SuperAdmin)
-      {
-          throw new UnauthorizedAccessException("Access denied.");
-      }
-  
-      // NOTE:
-      // Place model trenutno nema Visibility kolonu.
-      // visibility parametar zadržavamo radi buduće kompatibilnosti API-ja,
-      // ali ga sada nije moguće primeniti na query bez izmene modela.
-      var (items, total) = await _placeRepo.GetAdminPagedAsync(
-          destinationId,
-          cityId,
-          typeId,
-          isFeatured,
-          restrictToDestinationIds,
-          page,
-          pageSize);
-  
-      return (items.Select(MapToListDto).ToList(), total);
-    }
-  
-    public async Task<AdminPlaceDetailDto?> GetByIdAsync(Guid id, Guid currentUserId)
-    {
-        var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
-  
-        var place = await _placeRepo.GetAdminByIdAsync(id);
-        if (place == null) return null;
-  
-        if (user?.Role.Name == RoleNames.TouristOrganization)
+        private readonly IAdminPlaceRepository _placeRepo;
+        private readonly IUserRepository _userRepo;
+        private readonly ISubmissionQueueRepository _queueRepo;
+        private readonly AppDbContext _context;
+
+        private static readonly GeometryFactory _geometryFactory =
+            new GeometryFactory(new PrecisionModel(), 4326);
+
+        public AdminPlaceService(
+            IAdminPlaceRepository placeRepo,
+            IUserRepository userRepo,
+            ISubmissionQueueRepository queueRepo,
+            AppDbContext context)
         {
-            if (!place.DestinationId.HasValue)
-                return null;
-  
-            var hasAccess = await _assignmentRepo.ExistsAsync(currentUserId, place.DestinationId.Value);
-            if (!hasAccess) return null;
+            _placeRepo = placeRepo;
+            _userRepo = userRepo;
+            _queueRepo = queueRepo;
+            _context = context;
         }
-        else if (user?.Role.Name != RoleNames.SuperAdmin)
+
+        public async Task<(List<AdminPlaceListDto> Items, int Total)> GetAllAsync(
+            AdminPlaceListQueryDto query, Guid currentUserId)
         {
-            throw new UnauthorizedAccessException("Access denied.");
-        }
-  
-        return MapToDetailDto(place);
-    }
-  
-    public async Task<AdminPlaceDetailDto> CreateAsync(AdminCreatePlaceDto dto, Guid createdBy)
-    {
-        var user = await _userRepo.GetByIdWithRoleAsync(createdBy);
-  
-          if (user?.Role.Name == RoleNames.TouristOrganization)
-          {
-              if (!dto.DestinationId.HasValue)
-                  throw new UnauthorizedAccessException("DestinationId is required for Tourist Organization users.");
-  
-              var hasAccess = await _assignmentRepo.ExistsAsync(createdBy, dto.DestinationId.Value);
-              if (!hasAccess)
-                  throw new UnauthorizedAccessException("You do not have access to this destination.");
-          }
-          else if (user?.Role.Name != RoleNames.SuperAdmin)
-          {
-              throw new UnauthorizedAccessException("Only SuperAdmin or TouristOrganization can create places.");
-          }
-  
-          var now = DateTimeOffset.UtcNow;
-  
-          var place = new Place
-          {
-              Id = Guid.NewGuid(),
-              DestinationId = dto.DestinationId,
-              CityId = dto.CityId,
-              CountryId = dto.CountryId,
-              TypeId = dto.TypeId,
-              Name = dto.Name,
-              Slug = dto.Slug,
-              Description = dto.Description,
-              Address = dto.Address,
-              Latitude = dto.Latitude,
-              Longitude = dto.Longitude,
-              Location = CreatePoint(dto.Latitude, dto.Longitude),
-              PriceRange = dto.PriceRange,
-              Phone = dto.Phone,
-              WebsiteUrl = dto.WebsiteUrl,
-              IsFeatured = dto.IsFeatured,
-              CreatedAt = now,
-              UpdatedAt = now,
-              CreatedBy = createdBy,
-              UpdatedBy = createdBy
-          };
-  
-          foreach (var image in dto.Images)
-          {
-              place.Images.Add(new PlaceImage
-              {
-                  Id = Guid.NewGuid(),
-                  PlaceId = place.Id,
-                  ImageUrl = image.ImageUrl,
-                  Caption = image.Caption,
-                  SortOrder = image.SortOrder,
-                  CreatedAt = now,
-                  CreatedBy = createdBy,
-                  UpdatedBy = createdBy
-              });
-          }
-  
-          foreach (var amenityId in dto.AmenityIds.Distinct())
-          {
-              place.AmenityLinks.Add(new PlaceAmenityLink
-              {
-                  PlaceId = place.Id,
-                  AmenityId = amenityId
-              });
-          }
-  
-          foreach (var workingDay in dto.WorkingDays)
-          {
-              var workingDayEntity = new PlaceWorkingDay
-              {
-                  Id = Guid.NewGuid(),
-                  PlaceId = place.Id,
-                  DayOfWeek = workingDay.DayOfWeek,
-                  IsClosed = workingDay.IsClosed,
-                  Note = workingDay.Note,
-                  CreatedAt = now,
-                  UpdatedAt = now,
-                  CreatedBy = createdBy,
-                  UpdatedBy = createdBy
-              };
-  
-          foreach (var interval in workingDay.Intervals)
-          {
-            workingDayEntity.Intervals.Add(new PlaceWorkingHourInterval
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+
+            Guid? restrictToOwner = null;
+            int? restrictToRegionId = null;
+
+            if (user?.Role.Name == RoleNames.PlaceOwner)
             {
-              Id = Guid.NewGuid(),
-              WorkingDayId = workingDayEntity.Id,
-              OpensAt = interval.OpensAt,
-              ClosesAt = interval.ClosesAt,
-              CreatedAt = now,
-              CreatedBy = createdBy,
-              UpdatedBy = createdBy
-            });
-          }
-  
-          place.WorkingDays.Add(workingDayEntity);
+                restrictToOwner = currentUserId;
+            }
+            else if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (!user.ManagedRegionId.HasValue)
+                    return (new List<AdminPlaceListDto>(), 0);
+                restrictToRegionId = user.ManagedRegionId.Value;
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            var filterRegionId = (user?.Role.Name == RoleNames.PlaceOwner) ? null : query.Region;
+
+            var (items, total) = await _placeRepo.GetAdminPagedAsync(
+                query.Search,
+                query.TypeId,
+                query.Status,
+                filterRegionId,
+                query.MinRating,
+                query.DestinationId,
+                restrictToOwner,
+                restrictToRegionId,
+                query.Page,
+                query.PageSize);
+
+            return (items.Select(MapToListDto).ToList(), total);
         }
-  
-        await _placeRepo.AddAsync(place);
-        await _placeRepo.SaveChangesAsync();
-  
-        var created = await _placeRepo.GetAdminByIdAsync(place.Id);
-        return MapToDetailDto(created!);
-    }
-  
-    public async Task<AdminPlaceDetailDto?> UpdateAsync(Guid id, AdminUpdatePlaceDto dto, Guid updatedBy)
-    {
-        var user = await _userRepo.GetByIdWithRoleAsync(updatedBy);
-        var place = await _placeRepo.GetAdminByIdAsync(id);
-  
-        if (place == null) return null;
-  
-        if (user?.Role.Name == RoleNames.TouristOrganization)
+
+        public async Task<AdminPlaceStatsDto> GetStatsAsync(Guid currentUserId)
         {
-            if (!place.DestinationId.HasValue)
-                throw new UnauthorizedAccessException("Place has no destination assigned.");
-  
-          var hasAccess = await _assignmentRepo.ExistsAsync(updatedBy, place.DestinationId.Value);
-          if (!hasAccess)
-              throw new UnauthorizedAccessException("You do not have access to this place.");
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+
+            var query = _context.Places.AsQueryable();
+
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                query = query.Where(p => p.CreatedBy == currentUserId);
+            }
+            else if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (!user.ManagedRegionId.HasValue)
+                    return new AdminPlaceStatsDto();
+                query = query.Where(p => p.City != null && p.City.RegionId == user.ManagedRegionId.Value);
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            var thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30);
+
+            var totalCount = await query.CountAsync();
+            var activeCount = await query.CountAsync(p => p.ApprovalStatus == "approved");
+            var pendingCount = await query.CountAsync(p => p.ApprovalStatus == "pending");
+            var inactiveCount = await query.CountAsync(p => p.ApprovalStatus == "rejected");
+            var addedLast30Days = await query.CountAsync(p => p.CreatedAt >= thirtyDaysAgo);
+
+            var topPlaces = await query
+                .OrderByDescending(p => p.AvgRating)
+                .Take(5)
+                .Select(p => new { p.Id, p.Name, p.AvgRating })
+                .ToListAsync();
+
+            var placeIds = topPlaces.Select(p => p.Id).ToList();
+            var reviewCounts = await _context.Reviews
+                .Where(r => r.EntityType == "place" && placeIds.Contains(r.EntityId) && !r.IsDeleted)
+                .GroupBy(r => r.EntityId)
+                .Select(g => new { EntityId = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var reviewCountDict = reviewCounts.ToDictionary(r => r.EntityId, r => r.Count);
+
+            return new AdminPlaceStatsDto
+            {
+                TotalCount = totalCount,
+                ActiveCount = activeCount,
+                PendingCount = pendingCount,
+                InactiveCount = inactiveCount,
+                AddedLast30Days = addedLast30Days,
+                TopPlaces = topPlaces.Select(p => new AdminPlaceTopItemDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    AvgRating = p.AvgRating,
+                    ReviewCount = reviewCountDict.GetValueOrDefault(p.Id, 0)
+                }).ToList()
+            };
         }
-        else if (user?.Role.Name != RoleNames.SuperAdmin)
+
+        public async Task<AdminPlaceDetailDto?> GetByIdAsync(Guid id, Guid currentUserId)
         {
-          throw new UnauthorizedAccessException("Only SuperAdmin or TouristOrganization can update places.");
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            var place = await _placeRepo.GetAdminByIdAsync(id);
+
+            if (place == null) return null;
+
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                if (place.CreatedBy != currentUserId)
+                    throw new UnauthorizedAccessException("Access denied.");
+            }
+            else if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (!user.ManagedRegionId.HasValue ||
+                    place.City?.RegionId != user.ManagedRegionId.Value)
+                    return null;
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            return MapToDetailDto(place);
         }
-  
-        if (dto.DestinationId.HasValue && user?.Role.Name == RoleNames.TouristOrganization)
+
+        public async Task<AdminPlaceDetailDto> CreateAsync(AdminCreatePlaceDto dto, Guid createdBy)
         {
-            var hasAccess = await _assignmentRepo.ExistsAsync(updatedBy, dto.DestinationId.Value);
-            if (!hasAccess)
-                throw new UnauthorizedAccessException("You do not have access to the target destination.");
-        }
-  
-        if (dto.Name != null) place.Name = dto.Name;
-        if (dto.Slug != null) place.Slug = dto.Slug;
-        if (dto.Description != null) place.Description = dto.Description;
-        if (dto.Address != null) place.Address = dto.Address;
-        if (dto.DestinationId.HasValue) place.DestinationId = dto.DestinationId.Value;
-        if (dto.CityId.HasValue) place.CityId = dto.CityId.Value;
-        if (dto.CountryId.HasValue) place.CountryId = dto.CountryId.Value;
-        if (dto.TypeId.HasValue) place.TypeId = dto.TypeId.Value;
-        if (dto.PriceRange != null) place.PriceRange = dto.PriceRange;
-        if (dto.Phone != null) place.Phone = dto.Phone;
-        if (dto.WebsiteUrl != null) place.WebsiteUrl = dto.WebsiteUrl;
-        if (dto.IsFeatured.HasValue) place.IsFeatured = dto.IsFeatured.Value;
-  
-        if (dto.Latitude.HasValue && dto.Longitude.HasValue)
-        {
-            place.Latitude = dto.Latitude.Value;
-            place.Longitude = dto.Longitude.Value;
-            place.Location = CreatePoint(dto.Latitude, dto.Longitude);
-        }
-  
-        if (dto.Images != null)
-        {
-            _placeRepo.RemoveImages(place.Images);
-  
+            var user = await _userRepo.GetByIdWithRoleAsync(createdBy);
+
+            string approvalStatus;
+
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                approvalStatus = "pending";
+            }
+            else if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (!user.ManagedRegionId.HasValue)
+                    throw new UnauthorizedAccessException("Tourist Organization has no managed region.");
+                approvalStatus = "approved";
+            }
+            else if (user?.Role.Name == RoleNames.SuperAdmin)
+            {
+                approvalStatus = "approved";
+            }
+            else
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
             var now = DateTimeOffset.UtcNow;
-            place.Images = dto.Images.Select(x => new PlaceImage
+
+            var place = new Place
             {
                 Id = Guid.NewGuid(),
-                PlaceId = place.Id,
-                ImageUrl = x.ImageUrl,
-                Caption = x.Caption,
-                SortOrder = x.SortOrder,
+                DestinationId = dto.DestinationId,
+                CityId = dto.CityId,
+                CountryId = dto.CountryId,
+                TypeId = dto.TypeId,
+                Name = dto.Name,
+                Slug = dto.Slug,
+                Description = dto.Description,
+                Address = dto.Address,
+                Latitude = dto.Latitude,
+                Longitude = dto.Longitude,
+                Location = CreatePoint(dto.Latitude, dto.Longitude),
+                PriceRange = dto.PriceRange,
+                Phone = dto.Phone,
+                WebsiteUrl = dto.WebsiteUrl,
+                IsFeatured = dto.IsFeatured,
+                ApprovalStatus = approvalStatus,
                 CreatedAt = now,
-                CreatedBy = place.CreatedBy,
-                UpdatedBy = updatedBy
-            }).ToList();
-        }
-  
-        if (dto.AmenityIds != null)
-        {
-            _placeRepo.RemoveAmenityLinks(place.AmenityLinks);
-  
-            place.AmenityLinks = dto.AmenityIds
-                .Distinct()
-                .Select(id => new PlaceAmenityLink
+                UpdatedAt = now,
+                CreatedBy = createdBy,
+                UpdatedBy = createdBy
+            };
+
+            foreach (var image in dto.Images)
+            {
+                place.Images.Add(new PlaceImage
+                {
+                    Id = Guid.NewGuid(),
+                    PlaceId = place.Id,
+                    ImageUrl = image.ImageUrl,
+                    Caption = image.Caption,
+                    SortOrder = image.SortOrder,
+                    CreatedAt = now,
+                    CreatedBy = createdBy,
+                    UpdatedBy = createdBy
+                });
+            }
+
+            foreach (var amenityId in dto.AmenityIds.Distinct())
+            {
+                place.AmenityLinks.Add(new PlaceAmenityLink
                 {
                     PlaceId = place.Id,
-                    AmenityId = id
-                })
-                .ToList();
+                    AmenityId = amenityId
+                });
+            }
+
+            foreach (var workingDay in dto.WorkingDays)
+            {
+                var workingDayEntity = new PlaceWorkingDay
+                {
+                    Id = Guid.NewGuid(),
+                    PlaceId = place.Id,
+                    DayOfWeek = workingDay.DayOfWeek,
+                    IsClosed = workingDay.IsClosed,
+                    Note = workingDay.Note,
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                    CreatedBy = createdBy,
+                    UpdatedBy = createdBy
+                };
+
+                foreach (var interval in workingDay.Intervals)
+                {
+                    workingDayEntity.Intervals.Add(new PlaceWorkingHourInterval
+                    {
+                        Id = Guid.NewGuid(),
+                        WorkingDayId = workingDayEntity.Id,
+                        OpensAt = interval.OpensAt,
+                        ClosesAt = interval.ClosesAt,
+                        CreatedAt = now,
+                        CreatedBy = createdBy,
+                        UpdatedBy = createdBy
+                    });
+                }
+
+                place.WorkingDays.Add(workingDayEntity);
+            }
+
+            await _placeRepo.AddAsync(place);
+            await _placeRepo.SaveChangesAsync();
+
+            var created = await _placeRepo.GetAdminByIdAsync(place.Id);
+            return MapToDetailDto(created!);
         }
-  
-        if (dto.WorkingDays != null)
+
+        public async Task<AdminPlaceDetailDto?> UpdateAsync(Guid id, AdminUpdatePlaceDto dto, Guid updatedBy)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(updatedBy);
+            var place = await _placeRepo.GetAdminByIdAsync(id);
+
+            if (place == null) return null;
+
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                if (place.CreatedBy != updatedBy)
+                    throw new UnauthorizedAccessException("Access denied.");
+            }
+            else if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (!user.ManagedRegionId.HasValue ||
+                    place.City?.RegionId != user.ManagedRegionId.Value)
+                    throw new UnauthorizedAccessException("Access denied.");
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            if (dto.Name != null) place.Name = dto.Name;
+            if (dto.Slug != null) place.Slug = dto.Slug;
+            if (dto.Description != null) place.Description = dto.Description;
+            if (dto.Address != null) place.Address = dto.Address;
+            if (dto.DestinationId.HasValue) place.DestinationId = dto.DestinationId.Value;
+            if (dto.CityId.HasValue) place.CityId = dto.CityId.Value;
+            if (dto.CountryId.HasValue) place.CountryId = dto.CountryId.Value;
+            if (dto.TypeId.HasValue) place.TypeId = dto.TypeId.Value;
+            if (dto.PriceRange != null) place.PriceRange = dto.PriceRange;
+            if (dto.Phone != null) place.Phone = dto.Phone;
+            if (dto.WebsiteUrl != null) place.WebsiteUrl = dto.WebsiteUrl;
+            if (dto.IsFeatured.HasValue) place.IsFeatured = dto.IsFeatured.Value;
+
+            // Only SA and TO can change approval status
+            if (dto.ApprovalStatus != null &&
+                user?.Role.Name != RoleNames.PlaceOwner)
+            {
+                var validStatuses = new[] { "approved", "pending", "rejected" };
+                if (validStatuses.Contains(dto.ApprovalStatus.ToLowerInvariant()))
+                    place.ApprovalStatus = dto.ApprovalStatus.ToLowerInvariant();
+            }
+
+            if (dto.Latitude.HasValue && dto.Longitude.HasValue)
+            {
+                place.Latitude = dto.Latitude.Value;
+                place.Longitude = dto.Longitude.Value;
+                place.Location = CreatePoint(dto.Latitude, dto.Longitude);
+            }
+
+            if (dto.Images != null)
+            {
+                _placeRepo.RemoveImages(place.Images);
+
+                var now = DateTimeOffset.UtcNow;
+                place.Images = dto.Images.Select(x => new PlaceImage
+                {
+                    Id = Guid.NewGuid(),
+                    PlaceId = place.Id,
+                    ImageUrl = x.ImageUrl,
+                    Caption = x.Caption,
+                    SortOrder = x.SortOrder,
+                    CreatedAt = now,
+                    CreatedBy = place.CreatedBy,
+                    UpdatedBy = updatedBy
+                }).ToList();
+            }
+
+            if (dto.AmenityIds != null)
+            {
+                _placeRepo.RemoveAmenityLinks(place.AmenityLinks);
+
+                place.AmenityLinks = dto.AmenityIds
+                    .Distinct()
+                    .Select(amenityId => new PlaceAmenityLink
+                    {
+                        PlaceId = place.Id,
+                        AmenityId = amenityId
+                    })
+                    .ToList();
+            }
+
+            if (dto.WorkingDays != null)
             {
                 var newWorkingDays = new List<PlaceWorkingDay>();
                 var now = DateTimeOffset.UtcNow;
-            
+
                 foreach (var wd in dto.WorkingDays)
                 {
                     var dayId = Guid.NewGuid();
-            
+
                     var day = new PlaceWorkingDay
                     {
                         Id = dayId,
@@ -301,7 +379,7 @@ namespace Explorea.Server.Services.Admin
                         CreatedBy = place.CreatedBy,
                         UpdatedBy = updatedBy
                     };
-            
+
                     foreach (var interval in wd.Intervals)
                     {
                         day.Intervals.Add(new PlaceWorkingHourInterval
@@ -315,188 +393,199 @@ namespace Explorea.Server.Services.Admin
                             UpdatedBy = updatedBy
                         });
                     }
-            
+
                     newWorkingDays.Add(day);
                 }
-            
+
                 await _placeRepo.ReplaceWorkingDaysAsync(place.Id, newWorkingDays);
             }
-  
-        place.UpdatedAt = DateTimeOffset.UtcNow;
-        place.UpdatedBy = updatedBy;
-  
-        _placeRepo.Update(place);
-        await _placeRepo.SaveChangesAsync();
-  
-        var updated = await _placeRepo.GetAdminByIdAsync(id);
-        return MapToDetailDto(updated!);
-      }
-  
-      public async Task<bool> DeleteAsync(Guid id, Guid currentUserId)
-      {
-        var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
-        var place = await _placeRepo.GetAdminByIdAsync(id);
-  
-        if (place == null) return false;
-  
-        if (user?.Role.Name == RoleNames.TouristOrganization)
-        {
-            if (!place.DestinationId.HasValue)
-                throw new UnauthorizedAccessException("Place has no destination assigned.");
-  
-            var hasAccess = await _assignmentRepo.ExistsAsync(currentUserId, place.DestinationId.Value);
-            if (!hasAccess)
-                throw new UnauthorizedAccessException("You do not have access to this place.");
+
+            place.UpdatedAt = DateTimeOffset.UtcNow;
+            place.UpdatedBy = updatedBy;
+
+            _placeRepo.Update(place);
+            await _placeRepo.SaveChangesAsync();
+
+            var updated = await _placeRepo.GetAdminByIdAsync(id);
+            return MapToDetailDto(updated!);
         }
-        else if (user?.Role.Name != RoleNames.SuperAdmin)
+
+        public async Task<bool> DeleteAsync(Guid id, Guid currentUserId)
         {
-            throw new UnauthorizedAccessException("Access denied.");
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            var place = await _placeRepo.GetAdminByIdAsync(id);
+
+            if (place == null) return false;
+
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                if (place.CreatedBy != currentUserId)
+                    throw new UnauthorizedAccessException("Access denied.");
+            }
+            else if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (!user.ManagedRegionId.HasValue ||
+                    place.City?.RegionId != user.ManagedRegionId.Value)
+                    throw new UnauthorizedAccessException("Access denied.");
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            place.IsDeleted = true;
+            place.DeletedAt = DateTimeOffset.UtcNow;
+            place.UpdatedAt = DateTimeOffset.UtcNow;
+            place.UpdatedBy = currentUserId;
+
+            _placeRepo.Update(place);
+            await _placeRepo.SaveChangesAsync();
+
+            return true;
         }
-  
-        place.IsDeleted = true;
-        place.DeletedAt = DateTimeOffset.UtcNow;
-        place.UpdatedAt = DateTimeOffset.UtcNow;
-        place.UpdatedBy = currentUserId;
-  
-        _placeRepo.Update(place);
-        await _placeRepo.SaveChangesAsync();
-  
-        return true;
-      }
-  
-      public async Task<List<AdminMyPlaceDto>> GetMyPlacesAsync(Guid currentUserId)
-      {
-        var places = await _placeRepo.GetMyPlacesAsync(currentUserId);
-  
-        return places.Select(p => new AdminMyPlaceDto
+
+        public async Task<List<AdminMyPlaceDto>> GetMyPlacesAsync(Guid currentUserId)
+        {
+            var places = await _placeRepo.GetMyPlacesAsync(currentUserId);
+
+            return places.Select(p => new AdminMyPlaceDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                PreviewImageUrl = p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
+                AvgRating = p.AvgRating,
+                Status = p.ApprovalStatus
+            }).ToList();
+        }
+
+        public async Task SubmitPlaceRequestAsync(SubmitPlaceRequestDto dto, Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+
+            if (user?.Role.Name == RoleNames.SuperAdmin || user?.Role.Name == RoleNames.TouristOrganization)
+                throw new UnauthorizedAccessException("Admins should create places directly, not through queue requests.");
+
+            var payload = new PlaceRequestPayloadDto
+            {
+                Name = dto.Name,
+                Description = dto.Description,
+                Address = dto.Address,
+                Latitude = dto.Latitude,
+                Longitude = dto.Longitude,
+                Images = dto.Images ?? new List<string>(),
+                Documents = dto.Documents ?? new List<string>(),
+                TypeId = dto.TypeId,
+                CityId = dto.CityId
+            };
+
+            var queueItem = new SubmissionQueue
+            {
+                Id = Guid.NewGuid(),
+                EntityType = "place",
+                EntityId = Guid.NewGuid(),
+                DestinationId = dto.DestinationId,
+                Status = "Pending",
+                SubmittedByUserId = currentUserId,
+                SubmittedAt = DateTimeOffset.UtcNow,
+                RequestPayload = JsonSerializer.Serialize(payload)
+            };
+
+            await _queueRepo.AddAsync(queueItem);
+            await _queueRepo.SaveChangesAsync();
+        }
+
+        private static Point CreatePoint(double? latitude, double? longitude)
+        {
+            var lng = longitude ?? 0;
+            var lat = latitude ?? 0;
+            return _geometryFactory.CreatePoint(new Coordinate(lng, lat));
+        }
+
+        private static AdminPlaceListDto MapToListDto(Place p) => new()
         {
             Id = p.Id,
             Name = p.Name,
+            Slug = p.Slug,
             PreviewImageUrl = p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
+            TypeId = p.TypeId,
+            Type = p.Type?.Name,
+            City = p.City?.Name,
+            Region = p.City?.Region?.Name,
+            Destination = p.Destination?.Name,
             AvgRating = p.AvgRating,
-            Status = p.IsDeleted ? "deleted" : "active"
-        }).ToList();
-      }
-  
-    public async Task SubmitPlaceRequestAsync(SubmitPlaceRequestDto dto, Guid currentUserId)
-    {
-        var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
-  
-        if (user?.Role.Name == RoleNames.SuperAdmin || user?.Role.Name == RoleNames.TouristOrganization)
-          throw new UnauthorizedAccessException("Admins should create places directly, not through queue requests.");
-    
-        var payload = new PlaceRequestPayloadDto
-        {
-            Name = dto.Name,
-            Description = dto.Description,
-            Address = dto.Address,
-            Latitude = dto.Latitude,
-            Longitude = dto.Longitude,
-            Images = dto.Images ?? new List<string>(),
-            Documents = dto.Documents ?? new List<string>(),
-            TypeId = dto.TypeId,
-            CityId = dto.CityId
+            IsFeatured = p.IsFeatured,
+            Address = p.Address,
+            Status = p.ApprovalStatus,
+            CreatedBy = p.CreatedBy,
+            CreatedAt = p.CreatedAt,
+            UpdatedAt = p.UpdatedAt
         };
 
-        var queueItem = new SubmissionQueue
+        private static AdminPlaceDetailDto MapToDetailDto(Place p) => new()
         {
-            Id = Guid.NewGuid(),
-            EntityType = "place",
-            EntityId = Guid.NewGuid(),
-            DestinationId = dto.DestinationId,
-            Status = "Pending",
-            SubmittedByUserId = currentUserId,
-            SubmittedAt = DateTimeOffset.UtcNow,
-            RequestPayload = JsonSerializer.Serialize(payload)
+            Id = p.Id,
+            DestinationId = p.DestinationId,
+            CityId = p.CityId,
+            CountryId = p.CountryId,
+            TypeId = p.TypeId,
+            Name = p.Name,
+            Slug = p.Slug,
+            Description = p.Description,
+            Address = p.Address,
+            Latitude = p.Latitude,
+            Longitude = p.Longitude,
+            PriceRange = p.PriceRange,
+            PricePerNight = p.PricePerNight,
+            Phone = p.Phone,
+            WebsiteUrl = p.WebsiteUrl,
+            AvgRating = p.AvgRating,
+            IsFeatured = p.IsFeatured,
+            Status = p.ApprovalStatus,
+            Type = p.Type?.Name,
+            City = p.City?.Name,
+            Region = p.City?.Region?.Name,
+            Destination = p.Destination?.Name,
+            Country = p.Country?.Name,
+            ExtraFilters = p.ExtraFilters,
+            CreatedBy = p.CreatedBy,
+            Images = p.Images
+                .OrderBy(i => i.SortOrder)
+                .Select(i => new AdminPlaceImageDto
+                {
+                    Id = i.Id,
+                    ImageUrl = i.ImageUrl,
+                    Caption = i.Caption,
+                    SortOrder = i.SortOrder
+                })
+                .ToList(),
+            Amenities = p.AmenityLinks
+                .Select(al => new AdminPlaceAmenityDto
+                {
+                    Id = al.AmenityId,
+                    Name = al.Amenity.Name
+                })
+                .ToList(),
+            WorkingDays = p.WorkingDays
+                .OrderBy(wd => wd.DayOfWeek)
+                .Select(wd => new AdminPlaceWorkingDayDto
+                {
+                    Id = wd.Id,
+                    DayOfWeek = wd.DayOfWeek,
+                    IsClosed = wd.IsClosed,
+                    Note = wd.Note,
+                    Intervals = wd.Intervals
+                        .OrderBy(i => i.OpensAt)
+                        .Select(i => new AdminPlaceWorkingHourIntervalDto
+                        {
+                            Id = i.Id,
+                            OpensAt = i.OpensAt,
+                            ClosesAt = i.ClosesAt
+                        })
+                        .ToList()
+                })
+                .ToList(),
+            CreatedAt = p.CreatedAt,
+            UpdatedAt = p.UpdatedAt
         };
-
-        await _queueRepo.AddAsync(queueItem);
-        await _queueRepo.SaveChangesAsync();
     }
-  
-      private static Point CreatePoint(double? latitude, double? longitude)
-      {
-        var lng = longitude ?? 0;
-        var lat = latitude ?? 0;
-        return _geometryFactory.CreatePoint(new Coordinate(lng, lat));
-      }
-  
-      private static AdminPlaceListDto MapToListDto(Place p) => new()
-      {
-        Id = p.Id,
-        Name = p.Name,
-        Slug = p.Slug,
-        PreviewImageUrl = p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
-        Type = p.Type?.Name,
-        City = p.City?.Name,
-        Destination = p.Destination?.Name,
-        AvgRating = p.AvgRating,
-        IsFeatured = p.IsFeatured,
-        Address = p.Address,
-        CreatedAt = p.CreatedAt,
-        UpdatedAt = p.UpdatedAt
-      };
-  
-      private static AdminPlaceDetailDto MapToDetailDto(Place p) => new()
-      {
-          Id = p.Id,
-          DestinationId = p.DestinationId,
-          CityId = p.CityId,
-          CountryId = p.CountryId,
-          TypeId = p.TypeId,
-          Name = p.Name,
-          Slug = p.Slug,
-          Description = p.Description,
-          Address = p.Address,
-          Latitude = p.Latitude,
-          Longitude = p.Longitude,
-          PriceRange = p.PriceRange,
-          Phone = p.Phone,
-          WebsiteUrl = p.WebsiteUrl,
-          AvgRating = p.AvgRating,
-          IsFeatured = p.IsFeatured,
-          Type = p.Type?.Name,
-          City = p.City?.Name,
-          Destination = p.Destination?.Name,
-          Country = p.Country?.Name,
-          Images = p.Images
-              .OrderBy(i => i.SortOrder)
-              .Select(i => new AdminPlaceImageDto
-              {
-                  Id = i.Id,
-                  ImageUrl = i.ImageUrl,
-                  Caption = i.Caption,
-                  SortOrder = i.SortOrder
-              })
-              .ToList(),
-          Amenities = p.AmenityLinks
-              .Select(al => new AdminPlaceAmenityDto
-              {
-                  Id = al.AmenityId,
-                  Name = al.Amenity.Name
-              })
-              .ToList(),
-          WorkingDays = p.WorkingDays
-            .OrderBy(wd => wd.DayOfWeek)
-            .Select(wd => new AdminPlaceWorkingDayDto
-            {
-                Id = wd.Id,
-                DayOfWeek = wd.DayOfWeek,
-                IsClosed = wd.IsClosed,
-                Note = wd.Note,
-                Intervals = wd.Intervals
-                  .OrderBy(i => i.OpensAt)
-                  .Select(i => new AdminPlaceWorkingHourIntervalDto
-                  {
-                      Id = i.Id,
-                      OpensAt = i.OpensAt,
-                      ClosesAt = i.ClosesAt
-                  })
-                  .ToList()
-            })
-            .ToList(),
-          CreatedAt = p.CreatedAt,
-          UpdatedAt = p.UpdatedAt
-      };
-    }
-} 
+}

@@ -5,11 +5,14 @@ namespace Explorea.Server.Repositories.Interfaces
     public interface IAdminPlaceRepository
     {
         Task<(List<Place> Items, int Total)> GetAdminPagedAsync(
-            Guid? destinationId,
-            int? cityId,
+            string? search,
             int? typeId,
-            bool? isFeatured,
-            List<Guid>? restrictToDestinationIds,
+            string? status,
+            int? filterRegionId,
+            decimal? minRating,
+            Guid? destinationId,
+            Guid? restrictToOwner,
+            int? restrictToRegionId,
             int page,
             int pageSize);
 
