@@ -53,7 +53,7 @@
       <span class="nav-label">{{ ui.isDark() ? ui.t('sidebar.light') : ui.t('sidebar.dark') }}</span>
     </button>
 
-    <button class="nav-item danger" type="button">
+    <button class="nav-item danger" type="button" (click)="logout()">
       <span class="material-icons nav-icon">logout</span>
       <span class="nav-label">{{ ui.t('sidebar.logout') }}</span>
     </button>

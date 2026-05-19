@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, HostListener } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { DashboardAuthService } from '../../core/services/dashboard-auth.service';
 import { AdminUiPreferencesService } from '../../core/services/admin-ui-preferences.service';
 import { LayoutService } from '../../core/services/layout.service';
+import { AuthService } from '../../../../core/services/auth.service';
 import { AdminRole } from '../../core/models/admin.models';
 
 interface NavItem {
@@ -40,9 +41,11 @@ export class AdminSidebar {
   languagePopupLeft   = 0;
 
   constructor(
-    public auth:   DashboardAuthService,
-    public ui:     AdminUiPreferencesService,
-    public layout: LayoutService,
+    public auth:    DashboardAuthService,
+    public ui:      AdminUiPreferencesService,
+    public layout:  LayoutService,
+    private authService: AuthService,
+    private router: Router,
   ) {}
 
   get visibleItems(): NavItem[] {
@@ -80,6 +83,20 @@ export class AdminSidebar {
 
   languageLabel(): string {
     return this.ui.t(this.ui.language() === 'sr' ? 'language.sr' : 'language.en');
+  }
+
+  logout(): void {
+    const refreshToken = this.authService.getRefreshToken();
+    const doLogout = () => {
+      this.authService.clearTokens();
+      this.router.navigate(['/login']);
+    };
+
+    if (refreshToken) {
+      this.authService.logout({ refreshToken }).subscribe({ next: doLogout, error: doLogout });
+    } else {
+      doLogout();
+    }
   }
 
   @HostListener('window:resize')
