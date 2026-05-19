@@ -47,6 +47,10 @@ namespace Explorea.API.Models
 
         [Column("extra_filters", TypeName = "jsonb")]
         public string? ExtraFilters { get; set; }
+
+        [MaxLength(20), Column("approval_status")]
+        public string ApprovalStatus { get; set; } = "approved";
+
         [Column("is_deleted")]  public bool    IsDeleted  { get; set; } = false;
         [Column("deleted_at")]  public DateTimeOffset? DeletedAt { get; set; }
 
