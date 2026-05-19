@@ -192,7 +192,18 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
 
   protected messageClass(message: SupportMessage): string {
     if (message.isInternal) return 'support-message--internal';
-    return `support-message--${message.author}`;
+    const alignment = this.isMyMessage(message) ? 'support-message--outgoing' : 'support-message--incoming';
+    return `support-message--${message.author} ${alignment}`;
+  }
+
+  private isMyMessage(message: SupportMessage): boolean {
+    const role = this.auth.role();
+    if (role === 'place_owner') return message.author === 'user';
+    if (role === 'tourist_organization') {
+      const ticket = this.selectedTicket();
+      return ticket && !ticket.isAssignedToMe ? message.author === 'user' : message.author === 'admin';
+    }
+    return message.author === 'admin';
   }
 
   protected aiMessageClass(message: AiSupportMessage): string {

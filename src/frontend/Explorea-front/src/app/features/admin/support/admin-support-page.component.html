@@ -269,7 +269,7 @@
               (keydown)="onReplyKeydown($event)"
             ></textarea>
 
-            <div class="support-reply__footer">
+            <div class="support-reply__footer" [class.support-reply__footer--end]="auth.role() === 'place_owner' || !conversation.isAssignedToMe">
               @if (auth.role() !== 'place_owner' && conversation.isAssignedToMe) {
                 <label class="support-reply__toggle">
                   <input
@@ -289,7 +289,7 @@
                 (click)="sendReply()"
               >
                 <span class="material-icons">send</span>
-                {{ isSendingReply() ? 'Slanje...' : 'Posalji odgovor' }}
+                {{ isSendingReply() ? 'Slanje...' : 'Posalji' }}
               </button>
             </div>
           </div>
