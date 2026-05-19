@@ -15,16 +15,21 @@ namespace Explorea.API.DTOs.Admin.Place
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         public string? PriceRange { get; set; }
+        public decimal? PricePerNight { get; set; }
         public string? Phone { get; set; }
         public string? WebsiteUrl { get; set; }
 
         public decimal AvgRating { get; set; }
         public bool IsFeatured { get; set; }
+        public string Status { get; set; } = "approved";
 
         public string? Type { get; set; }
         public string? City { get; set; }
+        public string? Region { get; set; }
         public string? Destination { get; set; }
         public string? Country { get; set; }
+        public string? ExtraFilters { get; set; }
+        public Guid? CreatedBy { get; set; }
 
         public List<AdminPlaceImageDto> Images { get; set; } = new();
         public List<AdminPlaceAmenityDto> Amenities { get; set; } = new();

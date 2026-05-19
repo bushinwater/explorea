@@ -1,0 +1,1 @@
+ALTER TABLE places ADD COLUMN IF NOT EXISTS approval_status varchar(20) NOT NULL DEFAULT 'approved';

@@ -15,11 +15,14 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         public async Task<(List<Place> Items, int Total)> GetAdminPagedAsync(
-            Guid? destinationId,
-            int? cityId,
+            string? search,
             int? typeId,
-            bool? isFeatured,
-            List<Guid>? restrictToDestinationIds,
+            string? status,
+            int? filterRegionId,
+            decimal? minRating,
+            Guid? destinationId,
+            Guid? restrictToOwner,
+            int? restrictToRegionId,
             int page,
             int pageSize)
         {
@@ -27,29 +30,43 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(p => p.Images)
                 .Include(p => p.Type)
                 .Include(p => p.City)
+                    .ThenInclude(c => c!.Region)
                 .Include(p => p.Destination)
                 .AsQueryable();
 
-            if (restrictToDestinationIds != null)
+            if (restrictToOwner.HasValue)
+                query = query.Where(p => p.CreatedBy == restrictToOwner.Value);
+            else if (restrictToRegionId.HasValue)
+                query = query.Where(p => p.City != null && p.City.RegionId == restrictToRegionId.Value);
+
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                if (restrictToDestinationIds.Count == 0)
-                    return (new List<Place>(), 0);
-
-                query = query.Where(p => p.DestinationId.HasValue &&
-                                         restrictToDestinationIds.Contains(p.DestinationId.Value));
+                var s = search.Trim().ToLower();
+                query = query.Where(p => p.Name.ToLower().Contains(s));
             }
-
-            if (destinationId.HasValue)
-                query = query.Where(p => p.DestinationId == destinationId.Value);
-
-            if (cityId.HasValue)
-                query = query.Where(p => p.CityId == cityId.Value);
 
             if (typeId.HasValue)
                 query = query.Where(p => p.TypeId == typeId.Value);
 
-            if (isFeatured.HasValue)
-                query = query.Where(p => p.IsFeatured == isFeatured.Value);
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                query = status.Trim().ToLowerInvariant() switch
+                {
+                    "active"   => query.Where(p => p.ApprovalStatus == "approved"),
+                    "inactive" => query.Where(p => p.ApprovalStatus == "rejected"),
+                    "pending"  => query.Where(p => p.ApprovalStatus == "pending"),
+                    _ => query
+                };
+            }
+
+            if (filterRegionId.HasValue)
+                query = query.Where(p => p.City != null && p.City.RegionId == filterRegionId.Value);
+
+            if (minRating.HasValue)
+                query = query.Where(p => p.AvgRating >= minRating.Value);
+
+            if (destinationId.HasValue)
+                query = query.Where(p => p.DestinationId == destinationId.Value);
 
             var total = await query.CountAsync();
 
@@ -62,34 +79,13 @@ namespace Explorea.Server.Repositories.Implementations
             return (items, total);
         }
 
-        public async Task ReplaceWorkingDaysAsync(Guid placeId, List<PlaceWorkingDay> workingDays)
-        {
-            var existingDays = await _db.PlaceWorkingDays
-                .Include(wd => wd.Intervals)
-                .Where(wd => wd.PlaceId == placeId)
-                .ToListAsync();
-        
-            if (existingDays.Count > 0)
-            {
-                var existingIntervals = existingDays
-                    .SelectMany(wd => wd.Intervals)
-                    .ToList();
-        
-                if (existingIntervals.Count > 0)
-                    _db.PlaceWorkingHourIntervals.RemoveRange(existingIntervals);
-        
-                _db.PlaceWorkingDays.RemoveRange(existingDays);
-            }
-        
-            if (workingDays.Count > 0)
-                await _db.PlaceWorkingDays.AddRangeAsync(workingDays);
-        }
         public async Task<Place?> GetAdminByIdAsync(Guid id)
         {
             return await _db.Places
                 .Include(p => p.Images.OrderBy(i => i.SortOrder))
                 .Include(p => p.Type)
                 .Include(p => p.City)
+                    .ThenInclude(c => c!.Region)
                 .Include(p => p.Destination)
                 .Include(p => p.Country)
                 .Include(p => p.AmenityLinks)
@@ -106,6 +102,25 @@ namespace Explorea.Server.Repositories.Implementations
                 .Where(p => p.CreatedBy == ownerId)
                 .OrderByDescending(p => p.UpdatedAt)
                 .ToListAsync();
+        }
+
+        public async Task ReplaceWorkingDaysAsync(Guid placeId, List<PlaceWorkingDay> workingDays)
+        {
+            var existingDays = await _db.PlaceWorkingDays
+                .Include(wd => wd.Intervals)
+                .Where(wd => wd.PlaceId == placeId)
+                .ToListAsync();
+
+            if (existingDays.Count > 0)
+            {
+                var existingIntervals = existingDays.SelectMany(wd => wd.Intervals).ToList();
+                if (existingIntervals.Count > 0)
+                    _db.PlaceWorkingHourIntervals.RemoveRange(existingIntervals);
+                _db.PlaceWorkingDays.RemoveRange(existingDays);
+            }
+
+            if (workingDays.Count > 0)
+                await _db.PlaceWorkingDays.AddRangeAsync(workingDays);
         }
 
         public async Task AddAsync(Place place)
