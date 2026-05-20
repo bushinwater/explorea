@@ -13,19 +13,22 @@ namespace Explorea.Server.Services.Admin
         private readonly IDestinationRepository _destinationRepo;
         private readonly IUserRepository _userRepo;
         private readonly ISubmissionQueueRepository _queueRepo;
+        private readonly ILookupRepository _lookupRepo;
 
         public AdminEventService(
             IAdminEventRepository eventRepo,
             IOrganizationAssignmentRepository assignmentRepo,
             IDestinationRepository destinationRepo,
             ISubmissionQueueRepository queueRepo,
-            IUserRepository userRepo)
+            IUserRepository userRepo,
+            ILookupRepository lookupRepo)
         {
             _eventRepo       = eventRepo;
             _assignmentRepo  = assignmentRepo;
             _destinationRepo = destinationRepo;
             _queueRepo       = queueRepo;
             _userRepo        = userRepo;
+            _lookupRepo      = lookupRepo;
         }
 
         public async Task<AdminEventStatsDto> GetStatsDtoAsync(Guid currentUserId)
@@ -95,17 +98,22 @@ namespace Explorea.Server.Services.Admin
 
             var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
 
-            if(user?.Role.Name == RoleNames.TouristOrganization)
+            if (user?.Role.Name == RoleNames.TouristOrganization)
             {
-                var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
-
-                restrictToDestinationIds = assignments
-                    .Select(a => a.DestinationId)
-                    .ToList();
-
-                restrictToCityIds = await _destinationRepo
-                    .GetCityIdsByDestinationsAsync(restrictToDestinationIds);
-            } else if (user?.Role.Name != RoleNames.SuperAdmin)
+                if (user.ManagedRegionId.HasValue)
+                {
+                    var cities = await _lookupRepo.GetCitiesAsync(user.ManagedRegionId);
+                    restrictToCityIds = cities.Select(c => c.Id).ToList();
+                }
+                else
+                {
+                    var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
+                    restrictToDestinationIds = assignments.Select(a => a.DestinationId).ToList();
+                    restrictToCityIds = await _destinationRepo
+                        .GetCityIdsByDestinationsAsync(restrictToDestinationIds);
+                }
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
             {
                 throw new UnauthorizedAccessException("Access denied.");
             }
@@ -117,15 +125,17 @@ namespace Explorea.Server.Services.Admin
             string? search,
             Guid? destinationId, int? cityId, int? typeId,
             DateTimeOffset? startFrom, DateTimeOffset? startTo,
+            List<string>? extraFilters,
             int page, int pageSize, Guid currentUserId)
         {
             var (restrictToDestinationIds, restrictToCityIds) =
                 await GetAccessRestrictionsAsync(currentUserId);
-                
+
             var (items, total) = await _eventRepo.GetAdminPagedAsync(
                 search,
                 destinationId, cityId, typeId,
                 startFrom, startTo,
+                extraFilters,
                 restrictToDestinationIds, restrictToCityIds,
                 page, pageSize);
 
@@ -325,7 +335,9 @@ namespace Explorea.Server.Services.Admin
             AvgRating      = e.AvgRating,
             Popularity     = e.Popularity,
             IsFeatured     = e.IsFeatured,
-            Images         = e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList(),
+            Images         = e.Images.OrderBy(i => i.SortOrder)
+                                .Select(i => new AdminEventImageDto { Id = i.Id, ImageUrl = i.ImageUrl, SortOrder = i.SortOrder })
+                                .ToList(),
             CreatedAt      = e.CreatedAt,
             UpdatedAt      = e.UpdatedAt
         };

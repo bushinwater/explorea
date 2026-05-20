@@ -1,0 +1,191 @@
+<div class="edit-modal__backdrop" (click)="cancel.emit()"></div>
+
+<aside class="edit-modal__panel">
+  <header class="edit-modal__header">
+    <div class="edit-modal__title-block">
+      <span class="material-icons edit-modal__title-icon">event</span>
+      <div>
+        <h2 class="edit-modal__title">Izmeni događaj</h2>
+        <p class="edit-modal__subtitle">{{ event.name }}</p>
+      </div>
+    </div>
+    <button class="edit-modal__close" type="button" (click)="cancel.emit()">
+      <span class="material-icons">close</span>
+    </button>
+  </header>
+
+  @if (errors().length) {
+    <div class="edit-modal__error">
+      <span class="material-icons">error_outline</span>
+      <span>@for (e of errors(); track e) { {{ e }} }</span>
+    </div>
+  }
+
+  <div class="edit-modal__body">
+    <div class="ev-form-grid">
+
+      <div class="edit-field ev-field--full">
+        <label class="edit-field__label" for="ev-e-name">Naziv *</label>
+        <input id="ev-e-name" class="edit-field__input" type="text" [value]="form().name"
+          (input)="updateText('name', $any($event.target).value)" />
+      </div>
+
+      <div class="edit-field">
+        <label class="edit-field__label" for="ev-e-type">Tip *</label>
+        <select id="ev-e-type" class="edit-field__select" [value]="form().typeId ?? ''"
+          (change)="updateNumber('typeId', $any($event.target).value)">
+          <option value="">Izaberi tip</option>
+          @for (t of eventTypeOptions; track t.value) {
+            <option [value]="t.value">{{ t.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="edit-field">
+        <label class="edit-field__label" for="ev-e-price">Cena (RSD)</label>
+        <input id="ev-e-price" class="edit-field__input" type="number" min="0" step="0.01"
+          [value]="form().price"
+          (input)="updateText('price', $any($event.target).value)" />
+      </div>
+
+      <div class="edit-field">
+        <label class="edit-field__label" for="ev-e-start">Početak *</label>
+        <input id="ev-e-start" class="edit-field__input" type="datetime-local" [value]="form().startDatetime"
+          (input)="updateText('startDatetime', $any($event.target).value)" />
+      </div>
+
+      <div class="edit-field">
+        <label class="edit-field__label" for="ev-e-end">Završetak *</label>
+        <input id="ev-e-end" class="edit-field__input" type="datetime-local" [value]="form().endDatetime"
+          (input)="updateText('endDatetime', $any($event.target).value)" />
+      </div>
+
+      <div class="edit-field">
+        <label class="edit-field__label" for="ev-e-city">Grad</label>
+        <select id="ev-e-city" class="edit-field__select" [value]="form().cityId ?? ''"
+          (change)="updateNumber('cityId', $any($event.target).value)">
+          <option value="">Bez grada</option>
+          @for (c of cityOptions; track c.value) {
+            <option [value]="c.value">{{ c.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="edit-field">
+        <label class="edit-field__label" for="ev-e-dest">Destinacija</label>
+        <select id="ev-e-dest" class="edit-field__select" [value]="form().destinationId ?? ''"
+          (change)="updateDestination($any($event.target).value)">
+          <option value="">Bez destinacije</option>
+          @for (d of destinationOptions; track d.value) {
+            <option [value]="d.value">{{ d.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="edit-field ev-field--full">
+        <label class="edit-field__label">Lokacija</label>
+        <div class="edit-modal__address-row">
+          <input class="edit-field__input" type="text" [value]="form().address"
+            (input)="updateText('address', $any($event.target).value)"
+            (keydown.enter)="$event.preventDefault(); geocode()"
+            placeholder="Unesi adresu za pretragu..." />
+          <button class="edit-modal__geo-btn" type="button" (click)="geocode()" [disabled]="isGeocoding()" title="Pronađi koordinate">
+            @if (isGeocoding()) {
+              <span class="material-icons edit-modal__spin">sync</span>
+            } @else {
+              <span class="material-icons">search</span>
+            }
+          </button>
+        </div>
+        @if (mapLatitude() != null) {
+          <span class="edit-modal__coords">
+            {{ mapLatitude() | number: '1.5-5' }}, {{ mapLongitude() | number: '1.5-5' }}
+          </span>
+        }
+      </div>
+
+      <div class="ev-field--full">
+        <div #mapEl class="edit-modal__map"></div>
+        <p class="edit-modal__map-hint">Klikni na mapu ili prevuci pin da postaviš lokaciju.</p>
+      </div>
+
+      <div class="edit-field ev-field--full">
+        <label class="edit-field__label" for="ev-e-ticket">Ticket URL</label>
+        <input id="ev-e-ticket" class="edit-field__input" type="url" [value]="form().ticketUrl"
+          (input)="updateText('ticketUrl', $any($event.target).value)" />
+      </div>
+
+      <div class="edit-field ev-field--full">
+        <label class="edit-field__label" for="ev-e-desc">Opis</label>
+        <textarea id="ev-e-desc" class="edit-field__textarea" rows="4" [value]="form().description"
+          (input)="updateText('description', $any($event.target).value)"></textarea>
+      </div>
+
+      <label class="ev-checkbox ev-field--full">
+        <input type="checkbox" [checked]="form().isFeatured"
+          (change)="updateFeatured($any($event.target).checked)" />
+        <span>Istaknut događaj</span>
+      </label>
+
+    </div>
+
+    <div class="edit-modal__images-section">
+      <div class="edit-modal__images-header">
+        <span class="edit-field__label">
+          Slike
+          <span class="edit-field__counter">{{ images().length }} / {{ MAX_IMAGES }}</span>
+        </span>
+        @if (images().length < MAX_IMAGES) {
+          <label class="edit-modal__add-img-btn" title="Dodaj sliku">
+            <span class="material-icons">add_photo_alternate</span>
+            Dodaj
+            <input type="file" accept="image/*" multiple hidden (change)="onFilesSelected($event)" />
+          </label>
+        }
+      </div>
+
+      <div class="edit-modal__images-grid">
+        @for (img of images(); track img.id) {
+          <div class="edit-modal__img-card" [class.edit-modal__img-card--hero]="heroImageId() === img.id">
+            <img [src]="img.imageUrl" alt="Slika događaja" class="edit-modal__img" />
+            <button class="edit-modal__img-hero" type="button"
+              [title]="heroImageId() === img.id ? 'Hero slika' : 'Postavi kao hero'"
+              (click)="setHero(img.id)" [disabled]="isSettingHero()">
+              <span class="material-icons">{{ heroImageId() === img.id ? 'star' : 'star_border' }}</span>
+            </button>
+            <button class="edit-modal__img-delete" type="button" title="Ukloni sliku" (click)="removeImage(img.id)">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+        }
+
+        @for (i of [].constructor(uploadingCount()); track $index) {
+          <div class="edit-modal__img-card edit-modal__img-card--uploading">
+            <span class="material-icons edit-modal__spin">sync</span>
+          </div>
+        }
+
+        @if (images().length === 0 && uploadingCount() === 0) {
+          <div class="edit-modal__images-empty">
+            <span class="material-icons">image_not_supported</span>
+            Nema slika
+          </div>
+        }
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="edit-modal__footer">
+    <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="cancel.emit()">Otkaži</button>
+    <button class="edit-modal__btn edit-modal__btn--save" type="button" [disabled]="isSaving()" (click)="submit()">
+      @if (isSaving()) {
+        <span class="material-icons edit-modal__spin">sync</span>
+        Čuvanje...
+      } @else {
+        <span class="material-icons">save</span>
+        Sačuvaj izmene
+      }
+    </button>
+  </footer>
+</aside>

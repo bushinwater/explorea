@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import {
   EventFilters,
+  EventImageItem,
   EventPagedResponse,
   EventRow,
   EventStats,
@@ -10,6 +11,7 @@ import {
   EventType,
   EventFilterOption,
   CreateEventPayload,
+  UpdateEventPayload,
 } from './admin-events.models';
 
 interface ApiEventsResponse {
@@ -90,7 +92,7 @@ interface ApiEventDetailItem {
   avgRating: number;
   popularity: number;
   isFeatured: boolean;
-  images: string[];
+  images: { id: string; imageUrl: string; sortOrder: number }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -170,6 +172,30 @@ export class AdminEventsService {
       .pipe(map((event) => this.mapEventDetail(event)));
   }
 
+  updateEvent(id: string, payload: UpdateEventPayload): Observable<EventRow> {
+    return this.http
+      .put<ApiEventDetailItem>(`/api/admin/events/${id}`, payload)
+      .pipe(map((event) => this.mapEventDetail(event)));
+  }
+
+  deleteEvent(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/admin/events/${id}`);
+  }
+
+  uploadEventImage(id: string, file: File): Observable<EventImageItem> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<EventImageItem>(`/api/admin/events/${id}/images`, form);
+  }
+
+  setHeroEventImage(id: string, imageId: string): Observable<void> {
+    return this.http.put<void>(`/api/admin/events/${id}/images/${imageId}/hero`, {});
+  }
+
+  deleteEventImage(id: string, imageId: string): Observable<void> {
+    return this.http.delete<void>(`/api/admin/events/${id}/images/${imageId}`);
+  }
+
   private fetchActiveEvents(filters: EventFilters): Observable<EventPagedResponse> {
     let params = new HttpParams().set('page', filters.page).set('pageSize', filters.pageSize);
 
@@ -180,6 +206,10 @@ export class AdminEventsService {
     if (filters.cityId !== null) params = params.set('cityId', filters.cityId);
 
     if (filters.destinationId !== null) params = params.set('destinationId', filters.destinationId);
+
+    for (const [key, value] of Object.entries(filters.extraFilters ?? {})) {
+      params = params.append('extraFilters', `${key}:${value}`);
+    }
 
     return this.http.get<ApiEventsResponse>('/api/admin/events', { params }).pipe(
       map((res) => ({
@@ -295,17 +325,29 @@ export class AdminEventsService {
       id: e.id,
       queueId: null,
       eventNumber: `EV-${e.id.substring(0, 6).toUpperCase()}`,
+      slug: e.slug,
       name: e.name,
       organizer: '—',
       type: this.mapType(e.type),
+      typeId: null,
       city: e.city,
+      cityId: null,
+      destinationId: null,
       venue: e.destination,
       startDate: e.startDatetime,
+      endDate: e.endDatetime,
       priority: null,
       status: 'active',
       heroImageUrl: e.previewImageUrl,
+      imageItems: [],
       expectedGuests: null,
       description: null,
+      price: e.price,
+      address: null,
+      latitude: null,
+      longitude: null,
+      ticketUrl: null,
+      isFeatured: e.isFeatured,
       documents: [],
       ownerName: null,
       region: e.city,
@@ -318,17 +360,29 @@ export class AdminEventsService {
       id: q.entityId,
       queueId: q.id,
       eventNumber: `Q-${q.id.substring(0, 6).toUpperCase()}`,
+      slug: '',
       name: q.destinationName,
       organizer: q.submittedByName,
       type: null,
+      typeId: null,
       city: null,
+      cityId: null,
+      destinationId: q.destinationId ?? null,
       venue: q.destinationName,
       startDate: q.submittedAt,
+      endDate: null,
       priority: null,
       status: this.mapQueueStatus(q.status),
       heroImageUrl: null,
+      imageItems: [],
       expectedGuests: null,
       description: null,
+      price: null,
+      address: null,
+      latitude: null,
+      longitude: null,
+      ticketUrl: null,
+      isFeatured: false,
       documents: [],
       ownerName: q.linkedPlaceId ? 'Vlasnik objekta' : null,
       region: null,
@@ -337,21 +391,34 @@ export class AdminEventsService {
   }
 
   private mapEventDetail(e: ApiEventDetailItem, base?: EventRow): EventRow {
+    const imgs = e.images ?? [];
     return {
       id: e.id,
       queueId: base?.queueId ?? null,
       eventNumber: base?.eventNumber ?? `EV-${e.id.substring(0, 6).toUpperCase()}`,
+      slug: e.slug,
       name: e.name,
       organizer: base?.organizer ?? '—',
       type: this.mapType(e.type),
+      typeId: e.typeId ?? null,
       city: e.city,
+      cityId: e.cityId ?? null,
+      destinationId: e.destinationId ?? null,
       venue: e.place ?? e.destination ?? e.address,
       startDate: e.startDatetime,
+      endDate: e.endDatetime,
       priority: base?.priority ?? null,
       status: base?.status ?? 'active',
-      heroImageUrl: e.images?.[0] ?? base?.heroImageUrl ?? null,
+      heroImageUrl: imgs[0]?.imageUrl ?? base?.heroImageUrl ?? null,
+      imageItems: imgs,
       expectedGuests: base?.expectedGuests ?? null,
       description: e.description,
+      price: e.price ?? null,
+      address: e.address ?? null,
+      latitude: e.latitude ?? null,
+      longitude: e.longitude ?? null,
+      ticketUrl: e.ticketUrl ?? null,
+      isFeatured: e.isFeatured ?? false,
       documents: base?.documents ?? [],
       ownerName: base?.ownerName ?? (e.placeId ? 'Vlasnik objekta' : null),
       region: e.city,

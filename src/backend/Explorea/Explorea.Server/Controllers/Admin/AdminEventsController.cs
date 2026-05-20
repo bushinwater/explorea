@@ -1,7 +1,11 @@
 using Explorea.API.DTOs.Admin.Event;
+using Explorea.API.Models;
+using Explorea.Server.Data;
 using Explorea.Server.Services.Admin.Interfaces;
+using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Explorea.Server.Controllers.Admin
@@ -13,11 +17,19 @@ namespace Explorea.Server.Controllers.Admin
     {
         private readonly IAdminEventService _service;
         private readonly IAdminQueueService _queueService;
+        private readonly AppDbContext _context;
+        private readonly ICloudinaryService _cloudinary;
 
-        public AdminEventsController(IAdminEventService service, IAdminQueueService queueService)
+        public AdminEventsController(
+            IAdminEventService service,
+            IAdminQueueService queueService,
+            AppDbContext context,
+            ICloudinaryService cloudinary)
         {
             _service      = service;
             _queueService = queueService;
+            _context      = context;
+            _cloudinary   = cloudinary;
         }
 
         // GET /api/admin/events
@@ -29,6 +41,7 @@ namespace Explorea.Server.Controllers.Admin
             [FromQuery] int? typeId,
             [FromQuery] DateTimeOffset? startFrom,
             [FromQuery] DateTimeOffset? startTo,
+            [FromQuery] List<string>? extraFilters,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
@@ -36,7 +49,7 @@ namespace Explorea.Server.Controllers.Admin
             {
                 var userId = GetCurrentUserId();
                 var (items, total) = await _service.GetAllAsync(
-                    search, destinationId, cityId, typeId, startFrom, startTo, page, pageSize, userId);
+                    search, destinationId, cityId, typeId, startFrom, startTo, extraFilters, page, pageSize, userId);
                 return Ok(new { total, items });
             }
             catch (UnauthorizedAccessException ex)
@@ -148,10 +161,96 @@ namespace Explorea.Server.Controllers.Admin
         public async Task<IActionResult> GetStats()
         {
             var userId = GetCurrentUserId();
-
             var stats = await _service.GetStatsDtoAsync(userId);
-
             return Ok(stats);
+        }
+
+        // POST /api/admin/events/{id}/images
+        [HttpPost("{id}/images")]
+        public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
+        {
+            try
+            {
+                var exists = await _context.Events
+                    .IgnoreQueryFilters()
+                    .AnyAsync(e => e.Id == id);
+
+                if (!exists) return NotFound();
+
+                var url = await _cloudinary.UploadLandscapeAsync(file, "explorea/events");
+
+                var sortOrder = await _context.EventImages
+                    .CountAsync(img => img.EventId == id);
+
+                var image = new EventImage
+                {
+                    Id        = Guid.NewGuid(),
+                    EventId   = id,
+                    ImageUrl  = url,
+                    SortOrder = sortOrder,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    CreatedBy = GetCurrentUserId(),
+                };
+
+                await _context.EventImages.AddAsync(image);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { id = image.Id, imageUrl = url, sortOrder = image.SortOrder });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.ToString() });
+            }
+        }
+
+        // PUT /api/admin/events/{id}/images/{imageId}/hero
+        [HttpPut("{id}/images/{imageId}/hero")]
+        public async Task<IActionResult> SetHeroImage(Guid id, Guid imageId)
+        {
+            try
+            {
+                var images = await _context.EventImages
+                    .Where(i => i.EventId == id)
+                    .OrderBy(i => i.SortOrder)
+                    .ToListAsync();
+
+                var hero = images.FirstOrDefault(i => i.Id == imageId);
+                if (hero == null) return NotFound();
+
+                hero.SortOrder = 0;
+                var others = images.Where(i => i.Id != imageId).ToList();
+                for (int i = 0; i < others.Count; i++)
+                    others[i].SortOrder = i + 1;
+
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.ToString() });
+            }
+        }
+
+        // DELETE /api/admin/events/{id}/images/{imageId}
+        [HttpDelete("{id}/images/{imageId}")]
+        public async Task<IActionResult> DeleteImage(Guid id, Guid imageId)
+        {
+            try
+            {
+                var image = await _context.EventImages
+                    .FirstOrDefaultAsync(i => i.Id == imageId && i.EventId == id);
+
+                if (image == null) return NotFound();
+
+                _context.EventImages.Remove(image);
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.ToString() });
+            }
         }
 
         private Guid GetCurrentUserId()

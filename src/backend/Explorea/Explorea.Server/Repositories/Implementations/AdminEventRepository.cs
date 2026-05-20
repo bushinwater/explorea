@@ -13,6 +13,7 @@ namespace Explorea.Server.Repositories.Implementations
             string? search,
             Guid? destinationId, int? cityId, int? typeId,
             DateTimeOffset? startFrom, DateTimeOffset? startTo,
+            List<string>? extraFilters,
             List<Guid>? restrictToDestinationIds, List<int>? restrictToCityIds,
             int page, int pageSize)
         {
@@ -55,8 +56,18 @@ namespace Explorea.Server.Repositories.Implementations
             if (startTo.HasValue)
                 query = query.Where(e => e.StartDatetime <= startTo.Value);
 
+            if (extraFilters?.Count > 0)
+            {
+                var efDict = ParseExtraFilters(extraFilters);
+                foreach (var (key, value) in efDict)
+                {
+                    var snippet = $"{{\"{key}\": {value.ToLower()}}}";
+                    query = query.Where(e => e.ExtraFilters != null && EF.Functions.JsonContains(e.ExtraFilters, snippet));
+                }
+            }
+
             if (restrictToDestinationIds != null && restrictToCityIds != null)
-                query = query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
+                query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
                 
             var total = await query.CountAsync();
             var items = await query
@@ -107,6 +118,19 @@ namespace Explorea.Server.Repositories.Implementations
             query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
 
             return await query.CountAsync();
+        }
+
+        private static Dictionary<string, string> ParseExtraFilters(List<string>? raw)
+        {
+            var dict = new Dictionary<string, string>();
+            if (raw == null) return dict;
+            foreach (var entry in raw)
+            {
+                var idx = entry.IndexOf(':');
+                if (idx > 0)
+                    dict[entry[..idx]] = entry[(idx + 1)..];
+            }
+            return dict;
         }
 
         private static IQueryable<Event> ApplyAccessRestrictions(

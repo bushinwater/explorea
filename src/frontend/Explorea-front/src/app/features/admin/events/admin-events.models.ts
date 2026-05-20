@@ -14,21 +14,39 @@ export interface EventDocument {
   url: string;
 }
 
+export interface EventImageItem {
+  id: string;
+  imageUrl: string;
+  sortOrder: number;
+}
+
 export interface EventRow {
   id: string;
   queueId: string | null;
   eventNumber: string;
+  slug: string;
   name: string;
   organizer: string;
   type: EventType | null;
+  typeId: number | null;
   city: string | null;
+  cityId: number | null;
+  destinationId: string | null;
   venue: string | null;
   startDate: string;
+  endDate: string | null;
   priority: EventPriority | null;
   status: EventStatus;
   heroImageUrl: string | null;
+  imageItems: EventImageItem[];
   expectedGuests: number | null;
   description: string | null;
+  price: number | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  ticketUrl: string | null;
+  isFeatured: boolean;
   documents: EventDocument[];
   ownerName: string | null;
   region: string | null;
@@ -53,6 +71,7 @@ export interface EventFilters {
   typeId: number | null;
   cityId: number | null;
   destinationId: string | null;
+  extraFilters: Record<string, string>;
   tab: EventsTab;
   page: number;
   pageSize: number;
@@ -80,4 +99,21 @@ export interface CreateEventPayload {
   longitude: number | null;
   ticketUrl: string | null;
   isFeatured: boolean;
+}
+
+export interface UpdateEventPayload {
+  name?: string;
+  slug?: string;
+  description?: string | null;
+  typeId?: number;
+  startDatetime?: string;
+  endDatetime?: string;
+  price?: number | null;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  cityId?: number | null;
+  destinationId?: string | null;
+  ticketUrl?: string | null;
+  isFeatured?: boolean;
 }

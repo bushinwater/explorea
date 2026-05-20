@@ -8,6 +8,7 @@ namespace Explorea.Server.Services.Admin.Interfaces
             string? search,
             Guid? destinationId, int? cityId, int? typeId,
             DateTimeOffset? startFrom, DateTimeOffset? startTo,
+            List<string>? extraFilters,
             int page, int pageSize, Guid currentUserId);
 
         Task<AdminEventStatsDto> GetStatsDtoAsync(Guid currentUserId);

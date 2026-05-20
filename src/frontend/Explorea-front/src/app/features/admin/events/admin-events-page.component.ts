@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { StatCardComponent } from '@shared/components';
-import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
@@ -22,24 +22,11 @@ import {
   EventStats,
   EventType,
   EventsTab,
-  CreateEventPayload,
 } from './admin-events.models';
 import { AdminEventsService } from './admin-events.service';
-import { finalize } from 'rxjs';
-
-interface CreateEventForm {
-  name: string;
-  description: string;
-  typeId: number | null;
-  startDatetime: string;
-  endDatetime: string;
-  price: string;
-  address: string;
-  cityId: number | null;
-  destinationId: string | null;
-  ticketUrl: string;
-  isFeatured: boolean;
-}
+import { EventCreateModalComponent } from './admin-event-create-modal.component';
+import { EventEditModalComponent } from './admin-event-edit-modal.component';
+import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 
 @Component({
   selector: 'app-admin-events-page',
@@ -51,6 +38,8 @@ interface CreateEventForm {
     ConfirmDialogComponent,
     EmptyStateComponent,
     TableSkeletonComponent,
+    EventCreateModalComponent,
+    EventEditModalComponent,
   ],
   templateUrl: './admin-events-page.component.html',
   styleUrl: './admin-events-page.component.css',
@@ -64,10 +53,13 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     typeId: null,
     cityId: null,
     destinationId: null,
-    tab: 'pending',
+    extraFilters: {},
+    tab: 'active',
     page: 1,
     pageSize: 8,
   });
+
+  protected readonly filterDefs = signal<FilterDefinition[]>([]);
 
   protected readonly events = signal<EventRow[]>([]);
   protected readonly stats = signal<EventStats | null>(null);
@@ -79,19 +71,23 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly isLoading = signal(false);
   protected readonly isFilterOpen = signal(false);
   protected readonly activeMenuId = signal<string | null>(null);
+
   protected readonly selectedEvent = signal<EventRow | null>(null);
-  protected readonly confirmAction = signal<'approve' | 'reject' | 'forward' | null>(null);
+  protected readonly isPanelOpen = computed(() => !!this.selectedEvent());
+
+  protected readonly isCreateOpen = signal(false);
+  protected readonly isEditOpen = signal(false);
+
+  protected readonly confirmAction = signal<'approve' | 'reject' | 'forward' | 'delete' | null>(null);
   protected readonly isConfirmOpen = signal(false);
   protected readonly isActioning = signal(false);
+  protected readonly rejectReason = signal('');
+
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
-  protected readonly rejectReason = signal('');
-  protected readonly isCreateOpen = signal(false);
-  protected readonly isCreating = signal(false);
-  protected readonly createForm = signal<CreateEventForm>(this.emptyCreateForm());
-  protected readonly createErrors = signal<string[]>([]);
 
-  protected readonly isPanelOpen = computed(() => !!this.selectedEvent());
+  protected readonly descriptionExpanded = signal(false);
+
   protected readonly isSuperAdmin = computed(
     () => this.authContext.context().role === 'super_admin',
   );
@@ -100,24 +96,35 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   );
   protected readonly activeFilterCount = computed(() => {
     const f = this.filters();
-    return [f.typeId !== null, f.cityId !== null, f.destinationId !== null].filter(Boolean).length;
+    return [
+      f.typeId !== null,
+      f.cityId !== null,
+      f.destinationId !== null,
+      ...Object.keys(f.extraFilters).map(() => true),
+    ].filter(Boolean).length;
   });
+
+  protected readonly extraFilterEntries = computed(() =>
+    Object.entries(this.filters().extraFilters).map(([key, value]) => ({ key, value }))
+  );
   protected readonly confirmTitle = computed(() => {
     const a = this.confirmAction();
     if (a === 'approve') return 'Odobriti zahtev za događaj?';
     if (a === 'reject') return 'Odbiti zahtev?';
+    if (a === 'delete') return 'Obrisati događaj?';
     return 'Prosleđuj vlasniku?';
   });
   protected readonly confirmDesc = computed(() => {
     const a = this.confirmAction();
     if (a === 'approve') return 'Organizator će biti obavešten da je njihov događaj odobren.';
-    if (a === 'reject')
-      return 'Ova akcija se ne može poništiti. Organizator će biti obavešten o odbijanju.';
+    if (a === 'reject') return 'Ova akcija se ne može poništiti. Organizator će biti obavešten o odbijanju.';
+    if (a === 'delete') return `Događaj "${this.selectedEvent()?.name ?? ''}" će biti trajno obrisan.`;
     return 'Vlasnik objekta će dobiti zahtev za odobrenje.';
   });
 
   constructor(
     private readonly eventsService: AdminEventsService,
+    private readonly lookupService: LookupService,
     protected readonly authContext: AdminAuthContextService,
   ) {}
 
@@ -128,7 +135,6 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
         this.loadEvents();
       }),
     );
-
     this.loadStats();
     this.loadFilterOptions();
     this.loadEvents();
@@ -149,7 +155,24 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   }
 
   protected applyType(typeId: number | null): void {
-    this.patchFilter({ typeId, page: 1 });
+    this.patchFilter({ typeId, extraFilters: {}, page: 1 });
+    if (typeId !== null) {
+      this.loadFilterDefs(typeId);
+    } else {
+      this.filterDefs.set([]);
+    }
+    this.loadEvents();
+  }
+
+  protected applyExtraFilter(key: string, value: string): void {
+    const current = this.filters().extraFilters;
+    const updated = { ...current };
+    if (updated[key] === value) {
+      delete updated[key];
+    } else {
+      updated[key] = value;
+    }
+    this.patchFilter({ extraFilters: updated, page: 1 });
     this.loadEvents();
   }
 
@@ -169,10 +192,12 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       typeId: null,
       cityId: null,
       destinationId: null,
+      extraFilters: {},
       tab: f.tab,
       page: 1,
       pageSize: f.pageSize,
     }));
+    this.filterDefs.set([]);
     this.currentPage.set(1);
     this.loadEvents();
   }
@@ -184,21 +209,20 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.loadEvents();
   }
 
-  protected selectEvent(event: EventRow): void {
+  protected openDetailsPanel(event: EventRow): void {
     this.activeMenuId.set(null);
-
+    this.descriptionExpanded.set(false);
     this.selectedEvent.set(event);
 
     this.subscription.add(
       this.eventsService.getEventDetail(event.id, event).subscribe({
         next: (detailedEvent) => {
           const current = this.selectedEvent();
-
           if (current?.id === event.id && current?.queueId === event.queueId) {
             this.selectedEvent.set(detailedEvent);
           }
         },
-        error: (err) => {
+        error: () => {
           this.errorMessage.set('Nije moguće učitati detalje događaja.');
           setTimeout(() => this.errorMessage.set(''), 4000);
         },
@@ -206,7 +230,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     );
   }
 
-  protected closePanel(): void {
+  protected closeDetailsPanel(): void {
     this.selectedEvent.set(null);
   }
 
@@ -216,191 +240,35 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   }
 
   protected openCreateDialog(): void {
-    this.createForm.set(this.emptyCreateForm());
-    this.createErrors.set([]);
     this.isCreateOpen.set(true);
   }
 
-  protected closeCreateDialog(): void {
-    if (this.isCreating()) return;
-
+  protected onEventCreated(row: EventRow): void {
     this.isCreateOpen.set(false);
-    this.createErrors.set([]);
+    this.successMessage.set('Interni događaj je uspešno kreiran.');
+    this.patchFilter({ tab: 'active', search: '', typeId: null, cityId: null, destinationId: null, extraFilters: {}, page: 1 });
+    this.filterDefs.set([]);
+    this.currentPage.set(1);
+    this.selectedEvent.set(row);
+    this.loadStats();
+    this.loadEvents();
+    setTimeout(() => this.successMessage.set(''), 4000);
   }
 
-  protected updateCreateTextField(
-    field:
-      | 'name'
-      | 'description'
-      | 'startDatetime'
-      | 'endDatetime'
-      | 'price'
-      | 'address'
-      | 'ticketUrl',
-    value: string,
-  ): void {
-    this.createForm.update((form) => ({
-      ...form,
-      [field]: value,
-    }));
+  protected openEdit(): void {
+    if (!this.selectedEvent()) return;
+    this.isEditOpen.set(true);
   }
 
-  protected updateCreateNumberField(field: 'typeId' | 'cityId', value: string): void {
-    this.createForm.update((form) => ({
-      ...form,
-      [field]: value ? Number(value) : null,
-    }));
+  protected onEditSaved(row: EventRow): void {
+    this.isEditOpen.set(false);
+    this.selectedEvent.set(row);
+    this.successMessage.set('Izmene su sačuvane.');
+    this.loadEvents();
+    setTimeout(() => this.successMessage.set(''), 4000);
   }
 
-  protected updateCreateDestination(value: string): void {
-    this.createForm.update((form) => ({
-      ...form,
-      destinationId: value || null,
-    }));
-  }
-
-  protected updateCreateFeatured(value: boolean): void {
-    this.createForm.update((form) => ({
-      ...form,
-      isFeatured: value,
-    }));
-  }
-
-  protected submitCreateEvent(): void {
-    const form = this.createForm();
-    const errors: string[] = [];
-
-    const name = form.name.trim();
-    const description = this.emptyToNull(form.description);
-    const address = this.emptyToNull(form.address);
-    const ticketUrl = this.emptyToNull(form.ticketUrl);
-    const price = this.parseNullableNumber(form.price);
-
-    if (!name) errors.push('Naziv događaja je obavezan.');
-    if (form.typeId === null) errors.push('Tip događaja je obavezan.');
-    if (!form.startDatetime) errors.push('Datum i vreme početka su obavezni.');
-    if (!form.endDatetime) errors.push('Datum i vreme završetka su obavezni.');
-
-    const startDate = form.startDatetime ? new Date(form.startDatetime) : null;
-    const endDate = form.endDatetime ? new Date(form.endDatetime) : null;
-
-    if (startDate && Number.isNaN(startDate.getTime())) {
-      errors.push('Datum početka nije validan.');
-    }
-
-    if (endDate && Number.isNaN(endDate.getTime())) {
-      errors.push('Datum završetka nije validan.');
-    }
-
-    if (startDate && endDate && endDate <= startDate) {
-      errors.push('Datum završetka mora biti posle datuma početka.');
-    }
-
-    if (price !== null && (Number.isNaN(price) || price < 0)) {
-      errors.push('Cena mora biti pozitivan broj.');
-    }
-
-    if (errors.length) {
-      this.createErrors.set(errors);
-      return;
-    }
-
-    const payload: CreateEventPayload = {
-      name,
-      slug: this.generateSlug(name),
-      description,
-      typeId: form.typeId!,
-      startDatetime: startDate!.toISOString(),
-      endDatetime: endDate!.toISOString(),
-      price,
-      address,
-      cityId: form.cityId,
-      countryId: null,
-      destinationId: form.destinationId,
-      placeId: null,
-      latitude: null,
-      longitude: null,
-      ticketUrl,
-      isFeatured: form.isFeatured,
-    };
-
-    this.isCreating.set(true);
-    this.createErrors.set([]);
-
-    this.subscription.add(
-      this.eventsService
-        .createEvent(payload)
-        .pipe(finalize(() => this.isCreating.set(false)))
-        .subscribe({
-          next: (createdEvent) => {
-            this.isCreateOpen.set(false);
-            this.successMessage.set('Interni događaj je uspešno kreiran.');
-
-            this.patchFilter({
-              tab: 'active',
-              search: '',
-              typeId: null,
-              cityId: null,
-              destinationId: null,
-              page: 1,
-            });
-
-            this.currentPage.set(1);
-            this.selectedEvent.set(createdEvent);
-            this.loadStats();
-            this.loadEvents();
-
-            setTimeout(() => this.successMessage.set(''), 4000);
-          },
-          error: () => {
-            this.createErrors.set([
-              'Kreiranje događaja nije uspelo. Proverite podatke i pokušajte ponovo.',
-            ]);
-          },
-        }),
-    );
-  }
-
-  private emptyCreateForm(): CreateEventForm {
-    return {
-      name: '',
-      description: '',
-      typeId: null,
-      startDatetime: '',
-      endDatetime: '',
-      price: '',
-      address: '',
-      cityId: null,
-      destinationId: null,
-      ticketUrl: '',
-      isFeatured: false,
-    };
-  }
-
-  private emptyToNull(value: string): string | null {
-    const trimmed = value.trim();
-    return trimmed ? trimmed : null;
-  }
-
-  private parseNullableNumber(value: string): number | null {
-    const trimmed = value.trim().replace(',', '.');
-    return trimmed ? Number(trimmed) : null;
-  }
-
-  private generateSlug(value: string): string {
-    const base = value
-      .trim()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'dj')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-    return `${base || 'event'}-${Date.now().toString(36)}`;
-  }
-
-  protected initiateAction(action: 'approve' | 'reject' | 'forward'): void {
+  protected initiateAction(action: 'approve' | 'reject' | 'forward' | 'delete'): void {
     this.confirmAction.set(action);
     this.rejectReason.set('');
     this.isConfirmOpen.set(true);
@@ -416,38 +284,54 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     const ev = this.selectedEvent();
     if (!action || !ev) return;
 
+    if (action === 'delete') {
+      this.isActioning.set(true);
+      this.subscription.add(
+        this.eventsService.deleteEvent(ev.id)
+          .pipe(finalize(() => this.isActioning.set(false)))
+          .subscribe({
+            next: () => {
+              this.isConfirmOpen.set(false);
+              this.confirmAction.set(null);
+              this.selectedEvent.set(null);
+              this.successMessage.set('Događaj je obrisan.');
+              this.loadStats();
+              this.loadEvents();
+              setTimeout(() => this.successMessage.set(''), 4000);
+            },
+            error: () => {
+              this.errorMessage.set('Brisanje nije uspelo.');
+              setTimeout(() => this.errorMessage.set(''), 4000);
+            },
+          }),
+      );
+      return;
+    }
+
     this.isActioning.set(true);
     const targetId = ev.queueId ?? ev.id;
     const obs =
       action === 'approve'
         ? this.eventsService.approveEvent(targetId)
         : action === 'reject'
-          ? this.eventsService.rejectEvent(
-              targetId,
-              this.rejectReason().trim() || 'Zahtev je odbijen od strane administratora.',
-            )
+          ? this.eventsService.rejectEvent(targetId, this.rejectReason().trim() || 'Zahtev je odbijen od strane administratora.')
           : this.eventsService.forwardToOwner(targetId);
 
     this.subscription.add(
-      obs.subscribe({
+      obs.pipe(finalize(() => this.isActioning.set(false))).subscribe({
         next: () => {
-          this.isActioning.set(false);
           this.isConfirmOpen.set(false);
           this.confirmAction.set(null);
           this.selectedEvent.set(null);
-          const msg =
-            action === 'approve'
-              ? 'Događaj je uspešno odobren.'
-              : action === 'reject'
-                ? 'Zahtev za događaj je odbijen.'
-                : 'Zahtev je prosleđen vlasniku.';
+          const msg = action === 'approve' ? 'Događaj je uspešno odobren.'
+            : action === 'reject' ? 'Zahtev za događaj je odbijen.'
+            : 'Zahtev je prosleđen vlasniku.';
           this.successMessage.set(msg);
           this.loadStats();
           this.loadEvents();
           setTimeout(() => this.successMessage.set(''), 4000);
         },
         error: () => {
-          this.isActioning.set(false);
           this.errorMessage.set('Došlo je do greške. Pokušajte ponovo.');
           setTimeout(() => this.errorMessage.set(''), 4000);
         },
@@ -473,12 +357,8 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected typeLabel(t: EventType | null): string {
     if (!t) return '—';
     const map: Record<EventType, string> = {
-      concert: 'Koncert',
-      tasting: 'Degustacija',
-      conference: 'Konferencija',
-      sport: 'Sport',
-      exhibition: 'Izložba',
-      other: 'Ostalo',
+      concert: 'Koncert', tasting: 'Degustacija', conference: 'Konferencija',
+      sport: 'Sport', exhibition: 'Izložba', other: 'Ostalo',
     };
     return map[t];
   }
@@ -486,22 +366,23 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected typeIcon(t: EventType | null): string {
     if (!t) return 'event';
     const map: Record<EventType, string> = {
-      concert: 'music_note',
-      tasting: 'wine_bar',
-      conference: 'business_center',
-      sport: 'sports',
-      exhibition: 'palette',
-      other: 'event',
+      concert: 'music_note', tasting: 'wine_bar', conference: 'business_center',
+      sport: 'sports', exhibition: 'palette', other: 'event',
     };
     return map[t];
   }
 
+  protected thumbColor(t: EventType | null): string {
+    const map: Record<string, string> = {
+      concert: '#7c3aed', tasting: '#b45309', conference: '#1d4ed8',
+      sport: '#065f46', exhibition: '#9d174d', other: '#374151',
+    };
+    return map[t ?? 'other'] ?? '#374151';
+  }
+
   protected statusLabel(s: string): string {
     const map: Record<string, string> = {
-      pending: 'Čeka',
-      active: 'Odobreno',
-      rejected: 'Odbijeno',
-      forwarded: 'Prosleđeno',
+      pending: 'Čeka', active: 'Odobreno', rejected: 'Odbijeno', forwarded: 'Prosleđeno',
     };
     return map[s] ?? s;
   }
@@ -511,17 +392,29 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     return parts.length ? parts.join(', ') : '—';
   }
 
-  protected formatDate(isoDate: string): string {
+  protected formatDate(isoDate: string | null): string {
+    if (!isoDate) return '—';
     return new Date(isoDate).toLocaleDateString('sr-RS', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
+      day: '2-digit', month: 'short', year: 'numeric',
     });
+  }
+
+  protected formatDateRange(start: string | null, end: string | null): string {
+    if (!start) return '—';
+    const s = new Date(start).toLocaleDateString('sr-RS', { day: '2-digit', month: 'short' });
+    if (!end) return s;
+    const e = new Date(end).toLocaleDateString('sr-RS', { day: '2-digit', month: 'short', year: 'numeric' });
+    return `${s} – ${e}`;
   }
 
   protected formatNumber(n: number | null): string {
     if (n === null) return '—';
     return n.toLocaleString('sr-RS');
+  }
+
+  protected formatPrice(n: number | null): string {
+    if (n === null || n === 0) return 'Besplatno';
+    return `${n.toLocaleString('sr-RS')} RSD`;
   }
 
   protected visibleRangeText(): string {
@@ -551,13 +444,9 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.isConfirmOpen()) return;
-
-    if (this.isCreateOpen()) {
-      this.closeCreateDialog();
-      return;
-    }
-
-    this.closePanel();
+    if (this.isEditOpen()) { this.isEditOpen.set(false); return; }
+    if (this.isCreateOpen()) { this.isCreateOpen.set(false); return; }
+    if (this.isPanelOpen()) { this.closeDetailsPanel(); return; }
   }
 
   private patchFilter(patch: Partial<EventFilters>): void {
@@ -572,11 +461,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.eventsService
         .getEvents(this.filters())
-        .pipe(
-          finalize(() => {
-            this.isLoading.set(false);
-          }),
-        )
+        .pipe(finalize(() => this.isLoading.set(false)))
         .subscribe({
           next: (response) => {
             this.events.set(response.items);
@@ -594,10 +479,17 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   private loadStats(): void {
     this.subscription.add(
       this.eventsService.getStats().subscribe({
-        next: (stats) => {
-          this.stats.set(stats);
-        },
-        error: (err) => {},
+        next: (stats) => this.stats.set(stats),
+        error: () => {},
+      }),
+    );
+  }
+
+  private loadFilterDefs(typeId: number): void {
+    this.subscription.add(
+      this.lookupService.getFilterDefinitions('event', typeId).subscribe({
+        next: (defs) => this.filterDefs.set(defs),
+        error: () => this.filterDefs.set([]),
       }),
     );
   }
@@ -605,21 +497,19 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   private loadFilterOptions(): void {
     this.subscription.add(
       this.eventsService.getEventTypes().subscribe({
-        next: (regions) => this.eventTypeOptions.set(regions),
+        next: (r) => this.eventTypeOptions.set(r),
         error: () => this.eventTypeOptions.set([]),
       }),
     );
-
     this.subscription.add(
       this.eventsService.getCities().subscribe({
-        next: (cities) => this.cityOptions.set(cities),
+        next: (c) => this.cityOptions.set(c),
         error: () => this.cityOptions.set([]),
       }),
     );
-
     this.subscription.add(
       this.eventsService.getDestinations().subscribe({
-        next: (destinations) => this.destinationOptions.set(destinations),
+        next: (d) => this.destinationOptions.set(d),
         error: () => this.destinationOptions.set([]),
       }),
     );

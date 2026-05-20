@@ -1,8 +1,29 @@
 @if (successMessage()) {
-<app-feedback-banner variant="info" [title]="successMessage()" />
+  <app-feedback-banner variant="info" [title]="successMessage()" />
 }
 @if (errorMessage()) {
-<app-feedback-banner variant="error" [title]="errorMessage()" />
+  <app-feedback-banner variant="error" [title]="errorMessage()" />
+}
+
+@if (isCreateOpen()) {
+  <app-event-create-modal
+    [eventTypeOptions]="eventTypeOptions()"
+    [cityOptions]="cityOptions()"
+    [destinationOptions]="destinationOptions()"
+    (cancel)="isCreateOpen.set(false)"
+    (created)="onEventCreated($event)"
+  />
+}
+
+@if (isEditOpen() && selectedEvent()) {
+  <app-event-edit-modal
+    [event]="selectedEvent()!"
+    [eventTypeOptions]="eventTypeOptions()"
+    [cityOptions]="cityOptions()"
+    [destinationOptions]="destinationOptions()"
+    (cancel)="isEditOpen.set(false)"
+    (saved)="onEditSaved($event)"
+  />
 }
 
 <div class="evts-page">
@@ -19,180 +40,199 @@
       tone="danger" />
   </div>
 
-  <!-- ===== MAIN AREA (table + panel) ===== -->
-  <div class="evts-main" [class.evts-main--split]="isPanelOpen()">
+  <!-- ===== TABLE CARD ===== -->
+  <div class="evts-card">
 
-    <!-- TABLE CARD -->
-    <div class="evts-card">
+    <!-- Header -->
+    <div class="evts-card__header">
+      <div class="evts-card__title-group">
+        <div class="evts-card__title-row">
+          <span class="material-icons evts-card__title-icon">event</span>
+          <h2 class="evts-card__title">Upravljanje Događajima</h2>
+        </div>
+        <p class="evts-card__subtitle">Pregledajte zahteve organizacija, odobrite termine i komunicirajte sa vlasnicima.</p>
+      </div>
 
-      <!-- Header -->
-      <div class="evts-card__header">
-        <div class="evts-card__title-group">
-          <div class="evts-card__title-row">
-            <span class="material-icons evts-card__title-icon">event</span>
-            <h2 class="evts-card__title">Upravljanje Događajima</h2>
-          </div>
-          <p class="evts-card__subtitle">Pregledajte zahteve organizacija, odobrite termine i komunicirajte sa
-            vlasnicima.</p>
+      <div class="evts-card__actions">
+        <div class="evts-search-wrap">
+          <span class="material-icons evts-search-wrap__icon">search</span>
+          <input class="evts-search" type="search" placeholder="Filtriraj po imenu..."
+            [value]="filters().search"
+            (input)="updateSearch($any($event.target).value)" />
         </div>
 
-        <div class="evts-card__actions">
-          <div class="evts-search-wrap">
-            <span class="material-icons evts-search-wrap__icon">search</span>
-            <input class="evts-search" type="search" placeholder="Filtriraj po imenu..." [value]="filters().search"
-              (input)="updateSearch($any($event.target).value)" />
-          </div>
-
-          <div class="evts-filter-wrap" (click)="$event.stopPropagation()">
-            <button class="evts-filter-btn" [class.evts-filter-btn--active]="activeFilterCount() > 0"
-              (click)="isFilterOpen.set(!isFilterOpen())">
-              <span class="material-icons">filter_list</span>
-              Filter
-
-              @if (activeFilterCount() > 0) {
+        <div class="evts-filter-wrap">
+          <button class="evts-filter-btn" [class.evts-filter-btn--active]="activeFilterCount() > 0"
+            (click)="isFilterOpen.set(!isFilterOpen()); $event.stopPropagation()">
+            <span class="material-icons">filter_list</span>
+            Filter
+            @if (activeFilterCount() > 0) {
               <span class="evts-filter-badge">{{ activeFilterCount() }}</span>
-              }
-            </button>
+            }
+          </button>
 
-            @if (isFilterOpen()) {
-            <div class="evts-filter-panel">
+          @if (isFilterOpen()) {
+            <div class="evts-filter-panel" (click)="$event.stopPropagation()">
               <div class="evts-filter-panel__header">
                 <span class="evts-filter-panel__title">Filteri</span>
-
                 @if (activeFilterCount() > 0) {
-                <button class="evts-filter-panel__reset" (click)="resetFilters()">
-                  Resetuj sve
-                </button>
+                  <button class="evts-filter-panel__reset" (click)="resetFilters()">Resetuj sve</button>
                 }
               </div>
 
-              @if (filters().tab === 'active') {
               <div class="evts-filter-section">
                 <label class="evts-filter-section__label">Tip</label>
-
                 <div class="evts-filter-chips">
                   <button class="evts-chip" [class.evts-chip--active]="filters().typeId === null"
-                    (click)="applyType(null)">
-                    Svi tipovi
-                  </button>
-
+                    (click)="applyType(null)">Svi tipovi</button>
                   @for (type of eventTypeOptions(); track type.value) {
-                  <button class="evts-chip" [class.evts-chip--active]="filters().typeId === type.value"
-                    (click)="applyType(type.value)">
-                    {{ type.label }}
-                  </button>
+                    <button class="evts-chip" [class.evts-chip--active]="filters().typeId === type.value"
+                      (click)="applyType(type.value)">{{ type.label }}</button>
                   }
                 </div>
               </div>
 
               <div class="evts-filter-section">
                 <label class="evts-filter-section__label">Grad</label>
-
                 <div class="evts-filter-chips">
                   <button class="evts-chip" [class.evts-chip--active]="filters().cityId === null"
-                    (click)="applyCity(null)">
-                    Svi gradovi
-                  </button>
-
+                    (click)="applyCity(null)">Svi gradovi</button>
                   @for (city of cityOptions(); track city.value) {
-                  <button class="evts-chip" [class.evts-chip--active]="filters().cityId === city.value"
-                    (click)="applyCity(city.value)">
-                    {{ city.label }}
-                  </button>
+                    <button class="evts-chip" [class.evts-chip--active]="filters().cityId === city.value"
+                      (click)="applyCity(city.value)">{{ city.label }}</button>
                   }
                 </div>
               </div>
 
               <div class="evts-filter-section">
                 <label class="evts-filter-section__label">Destinacija</label>
-
                 <div class="evts-filter-chips">
                   <button class="evts-chip" [class.evts-chip--active]="filters().destinationId === null"
-                    (click)="applyDestination(null)">
-                    Sve destinacije
-                  </button>
-
+                    (click)="applyDestination(null)">Sve destinacije</button>
                   @for (destination of destinationOptions(); track destination.value) {
-                  <button class="evts-chip" [class.evts-chip--active]="filters().destinationId === destination.value"
-                    (click)="applyDestination(destination.value)">
-                    {{ destination.label }}
-                  </button>
+                    <button class="evts-chip" [class.evts-chip--active]="filters().destinationId === destination.value"
+                      (click)="applyDestination(destination.value)">{{ destination.label }}</button>
                   }
                 </div>
               </div>
-              } @else {
-              <p class="evts-filter-panel__hint">
-                Filteri po tipu, gradu i destinaciji dostupni su za aktivne događaje.
-              </p>
+
+              @if (filterDefs().length > 0) {
+                <div class="evts-filter-section evts-filter-section--extra">
+                  <label class="evts-filter-section__label">Dodatni filteri</label>
+                  <div class="evts-extra-list">
+                    @for (def of filterDefs(); track def.id) {
+                      @if (def.filterType === 'boolean') {
+                        <label class="evts-extra-item">
+                          <span class="evts-extra-item__label">{{ def.filterLabel }}</span>
+                          <button
+                            class="evts-toggle-btn"
+                            [class.evts-toggle-btn--on]="filters().extraFilters[def.filterKey] === 'true'"
+                            type="button"
+                            (click)="applyExtraFilter(def.filterKey, 'true')">
+                            <span class="evts-toggle-track">
+                              <span class="evts-toggle-thumb"></span>
+                            </span>
+                          </button>
+                        </label>
+                      } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
+                        <div class="evts-extra-select-group">
+                          <span class="evts-extra-item__label">{{ def.filterLabel }}</span>
+                          <div class="evts-filter-chips">
+                            @for (opt of def.options; track opt.optionValue) {
+                              <button class="evts-chip"
+                                [class.evts-chip--active]="filters().extraFilters[def.filterKey] === opt.optionValue"
+                                (click)="applyExtraFilter(def.filterKey, opt.optionValue)">
+                                {{ opt.optionLabel }}
+                              </button>
+                            }
+                          </div>
+                        </div>
+                      }
+                    }
+                  </div>
+                </div>
               }
             </div>
-            }
-          </div>
+            <div class="evts-filter-backdrop" (click)="isFilterOpen.set(false)"></div>
+          }
+        </div>
 
+        @if (isSuperAdmin()) {
           <button class="evts-btn-primary" type="button" (click)="openCreateDialog()">
             <span class="material-icons">add</span>
-            Kreiraj interni događaj
+            Novi događaj
           </button>
-        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="evts-card__body">
+
+      <!-- Tabs -->
+      <div class="evts-tabs">
+        <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'active'" (click)="setTab('active')">
+          Aktivni događaji
+          @if (stats()?.tabActiveCount) {
+            <span class="evts-tab__badge evts-tab__badge--green">{{ stats()!.tabActiveCount }}</span>
+          }
+        </button>
+        <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'pending'" (click)="setTab('pending')">
+          Zahtevi na čekanju
+          @if (stats()?.tabPendingCount) {
+            <span class="evts-tab__badge">{{ stats()!.tabPendingCount }}</span>
+          }
+        </button>
+        <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'history'" (click)="setTab('history')">
+          Istorija
+        </button>
       </div>
 
-      <div class="evts-card__body">
-        <div class="evts-list-column">
-
-          <div class="evts-tabs">
-            <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'pending'" (click)="setTab('pending')">
-              Zahtevi na čekanju
-
-              @if (stats()?.tabPendingCount) {
-              <span class="evts-tab__badge">{{ stats()!.tabPendingCount }}</span>
-              }
-            </button>
-
-            <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'active'" (click)="setTab('active')">
-              Aktivni događaji
-
-              @if (stats()?.tabActiveCount) {
-              <span class="evts-tab__badge evts-tab__badge--green">
-                {{ stats()!.tabActiveCount }}
-              </span>
-              }
-            </button>
-
-            <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'history'" (click)="setTab('history')">
-              Istorija
-            </button>
-          </div>
-
-          <!-- TABLE -->
-          <div class="evts-table-wrap">
-            @if (isLoading()) {
-            <app-table-skeleton [rows]="6" />
-            } @else if (!events().length) {
-            <app-empty-state title="Nema događaja" description="Nema događaja koji odgovaraju trenutnim filterima." />
-            } @else {
-            <table class="evts-table">
-              <thead>
-                <tr>
-                  <th class="evts-th">Događaj / Organizator</th>
-                  <th class="evts-th evts-th--hide-sm">Tip</th>
-                  <th class="evts-th evts-th--hide-md">Lokacija</th>
-                  <th class="evts-th evts-th--hide-sm">Datum</th>
-                  <th class="evts-th">Prioritet</th>
+      <!-- TABLE -->
+      <div class="evts-table-wrap">
+        @if (isLoading()) {
+          <app-table-skeleton [rows]="6" />
+        } @else if (!events().length) {
+          <app-empty-state title="Nema događaja" description="Nema događaja koji odgovaraju trenutnim filterima." />
+        } @else {
+          <table class="evts-table">
+            <thead>
+              <tr>
+                <th class="evts-th">Događaj</th>
+                <th class="evts-th evts-th--hide-sm">Tip</th>
+                <th class="evts-th evts-th--hide-md">Lokacija</th>
+                <th class="evts-th evts-th--hide-sm">Datum</th>
+                @if (filters().tab !== 'active') {
                   <th class="evts-th">Status</th>
-                  <th class="evts-th evts-th--actions"></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (ev of events(); track rowKey(ev)) {
-                <tr class="evts-row" [class.evts-row--selected]="isSelected(ev)" (click)="selectEvent(ev)">
+                }
+                <th class="evts-th evts-th--actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (ev of events(); track rowKey(ev)) {
+                <tr class="evts-row" [class.evts-row--selected]="isSelected(ev)" (click)="openDetailsPanel(ev)">
                   <td class="evts-td">
                     <div class="evts-name-cell">
-                      <div class="evts-thumb evts-thumb--{{ ev.type }}">
-                        <span class="material-icons">{{ typeIcon(ev.type) }}</span>
-                      </div>
+                      @if (ev.heroImageUrl) {
+                        <img class="evts-thumb evts-thumb--img" [src]="ev.heroImageUrl" [alt]="ev.name" />
+                      } @else {
+                        <div class="evts-thumb" [style.background-color]="thumbColor(ev.type)">
+                          <span class="material-icons">{{ typeIcon(ev.type) }}</span>
+                        </div>
+                      }
                       <div class="evts-name-info">
                         <span class="evts-name-info__name">{{ ev.name }}</span>
-                        <span class="evts-name-info__org">{{ ev.organizer }}</span>
+                        @if (ev.organizer && ev.organizer !== '—') {
+                          <span class="evts-name-info__sub">
+                            <span class="material-icons">business</span>
+                            {{ ev.organizer }}
+                          </span>
+                        } @else if (ev.city) {
+                          <span class="evts-name-info__sub">
+                            <span class="material-icons">location_on</span>
+                            {{ ev.city }}
+                          </span>
+                        }
                       </div>
                     </div>
                   </td>
@@ -214,304 +254,220 @@
                       {{ formatDate(ev.startDate) }}
                     </span>
                   </td>
-                  <td class="evts-td">
-                    <span class="evts-priority evts-priority--{{ ev.priority }}">
-                      {{ priorityLabel(ev.priority) }}
-                    </span>
-                  </td>
-                  <td class="evts-td">
-                    <span class="evts-status evts-status--{{ ev.status }}">
-                      {{ statusLabel(ev.status) }}
-                    </span>
-                  </td>
+                  @if (filters().tab !== 'active') {
+                    <td class="evts-td">
+                      <span class="evts-status evts-status--{{ ev.status }}">{{ statusLabel(ev.status) }}</span>
+                    </td>
+                  }
                   <td class="evts-td evts-td--actions" (click)="$event.stopPropagation()">
-                    <div class="evts-menu-wrap">
-                      <button class="evts-menu-btn" (click)="toggleMenu(rowKey(ev), $event)">
-                        <span class="material-icons">more_vert</span>
+                    <div class="row-actions">
+                      <button class="btn-icon" title="Detalji" (click)="openDetailsPanel(ev)">
+                        <span class="material-icons">chevron_right</span>
                       </button>
-                      @if (activeMenuId() === rowKey(ev)) {
-                      <div class="evts-menu-dropdown">
-                        <button class="evts-menu-item" (click)="selectEvent(ev)">
-                          <span class="material-icons">open_in_new</span>
-                          Detalji
-                        </button>
-                      </div>
-                      }
                     </div>
                   </td>
                 </tr>
-                }
-              </tbody>
-            </table>
-            }
-          </div>
-
-          <!-- Pagination -->
-          @if (total() > 0) {
-          <div class="evts-pagination">
-            <span class="evts-pagination__info">{{ visibleRangeText() }}</span>
-            <div class="evts-pagination__pages">
-              <button class="evts-page-btn evts-page-btn--nav" [disabled]="currentPage() <= 1"
-                (click)="goToPage(currentPage() - 1)">
-                <span class="material-icons">chevron_left</span>
-              </button>
-              @for (page of pageNumbers(); track page) {
-              <button class="evts-page-btn" [class.evts-page-btn--active]="page === currentPage()"
-                (click)="goToPage(page)">{{ page }}</button>
               }
-              <button class="evts-page-btn evts-page-btn--nav" [disabled]="currentPage() >= totalPages()"
-                (click)="goToPage(currentPage() + 1)">
-                <span class="material-icons">chevron_right</span>
-              </button>
-            </div>
-          </div>
-          }
-        </div>
-
-        <!-- ===== SIDE PANEL ===== -->
-        @if (isPanelOpen()) {
-        <aside class="evts-panel" (click)="$event.stopPropagation()">
-          <button class="evts-panel__close" (click)="closePanel()" title="Zatvori">
-            <span class="material-icons">close</span>
-          </button>
-
-          <!-- Hero image -->
-          <div class="evts-panel__hero">
-            @if (selectedEvent()!.heroImageUrl) {
-            <img class="evts-panel__hero-img" [src]="selectedEvent()!.heroImageUrl" [alt]="selectedEvent()!.name" />
-            }
-            <div class="evts-panel__hero-overlay"></div>
-            <span class="evts-panel__event-number">{{ selectedEvent()!.eventNumber }}</span>
-          </div>
-
-          <!-- Scrollable body -->
-          <div class="evts-panel__body">
-            <h3 class="evts-panel__name">{{ selectedEvent()!.name }}</h3>
-            <div class="evts-panel__badges">
-              <span class="evts-status evts-status--{{ selectedEvent()!.status }}">
-                {{ statusLabel(selectedEvent()!.status) }}
-              </span>
-
-              @if (selectedEvent()!.type) {
-              <span class="evts-type-label">
-                <span class="material-icons evts-type-label__icon">
-                  {{ typeIcon(selectedEvent()!.type) }}
-                </span>
-                {{ typeLabel(selectedEvent()!.type) }}
-              </span>
-              }
-            </div>
-            <p class="evts-panel__organizer">
-              <span class="material-icons">business</span>
-              {{ selectedEvent()!.organizer }}
-            </p>
-
-            <!-- Key data grid -->
-            <div class="evts-panel__kv-grid">
-              <div class="evts-panel__kv">
-                <span class="evts-panel__kv-label">Datum</span>
-                <span class="evts-panel__kv-value">{{ formatDate(selectedEvent()!.startDate) }}</span>
-              </div>
-              <div class="evts-panel__kv">
-                <span class="evts-panel__kv-label">Očekivano ljudi</span>
-                <span class="evts-panel__kv-value">{{ formatNumber(selectedEvent()!.expectedGuests) }}</span>
-              </div>
-              <div class="evts-panel__kv evts-panel__kv--full">
-                <span class="evts-panel__kv-label">Lokacija</span>
-                <span class="evts-panel__kv-value">
-                  <span class="material-icons">location_on</span>
-                  {{ selectedEvent()!.venue }}, {{ selectedEvent()!.city }}
-                </span>
-              </div>
-            </div>
-
-            <hr class="evts-panel__divider" />
-
-            <!-- Description -->
-            <div class="evts-panel__section">
-              <h4 class="evts-panel__section-title">Opis zahteva</h4>
-              <p class="evts-panel__description">{{ selectedEvent()!.description }}</p>
-            </div>
-
-            <!-- Documents -->
-            @if (selectedEvent()!.documents.length > 0) {
-            <div class="evts-panel__docs">
-              @for (doc of selectedEvent()!.documents; track doc.id) {
-              <a class="evts-panel__doc" [href]="doc.url" target="_blank">
-                <span class="material-icons">picture_as_pdf</span>
-                {{ doc.name }}
-              </a>
-              }
-            </div>
-            }
-
-            <!-- Coordination section — only for private venues with pending status -->
-            @if (selectedEvent()!.ownerName && selectedEvent()!.status === 'pending') {
-            <hr class="evts-panel__divider" />
-            <div class="evts-panel__coordination">
-              <h4 class="evts-panel__section-title">
-                <span class="material-icons">send</span>
-                Koordinacija sa vlasnikom
-              </h4>
-              <p class="evts-panel__coordination-hint">
-                Ovaj lokalitet je u privatnom vlasništvu. Pre odobrenja, prosledite zahtev vlasniku na uvid.
-              </p>
-              <button class="evts-panel__forward-btn" (click)="initiateAction('forward')">
-                <span class="material-icons">send</span>
-                Prosleđuj vlasniku ({{ selectedEvent()!.ownerName }})
-              </button>
-            </div>
-            }
-          </div>
-
-          <!-- Actions -->
-          @if (selectedEvent()!.status === 'pending') {
-          <div class="evts-panel__actions">
-            <button class="evts-panel__approve-btn" (click)="initiateAction('approve')">
-              <span class="material-icons">check_circle</span>
-              Odobri
-            </button>
-            <button class="evts-panel__reject-btn" (click)="initiateAction('reject')">
-              <span class="material-icons">cancel</span>
-              Odbij
-            </button>
-          </div>
-          }
-        </aside>
+            </tbody>
+          </table>
         }
       </div>
 
-      @if (isConfirmOpen()) {
-      <app-confirm-dialog [title]="confirmTitle()" [description]="confirmDesc()" [isLoading]="isActioning()"
-        (confirm)="confirmActionSubmit()" (cancel)="cancelAction()"></app-confirm-dialog>
-      }
-
-      @if (isCreateOpen()){
-      @if (isCreateOpen()) {
-      <div class="evts-modal-backdrop" (click)="closeCreateDialog()">
-        <section class="evts-create-modal" (click)="$event.stopPropagation()">
-          <div class="evts-create-modal__header">
-            <div>
-              <h3 class="evts-create-modal__title">Kreiraj interni događaj</h3>
-              <p class="evts-create-modal__subtitle">
-                Događaj će biti odmah dodat kao aktivan događaj.
-              </p>
-            </div>
-
-            <button class="evts-create-modal__close" type="button" (click)="closeCreateDialog()">
-              <span class="material-icons">close</span>
+      <!-- Pagination -->
+      @if (total() > 0) {
+        <div class="evts-pagination">
+          <span class="evts-pagination__info">{{ visibleRangeText() }}</span>
+          <div class="evts-pagination__pages">
+            <button class="evts-page-btn evts-page-btn--nav" [disabled]="currentPage() <= 1"
+              (click)="goToPage(currentPage() - 1)">
+              <span class="material-icons">chevron_left</span>
             </button>
-          </div>
-
-          @if (createErrors().length) {
-          <div class="evts-create-errors">
-            @for (error of createErrors(); track error) {
-            <p>{{ error }}</p>
+            @for (page of pageNumbers(); track page) {
+              <button class="evts-page-btn" [class.evts-page-btn--active]="page === currentPage()"
+                (click)="goToPage(page)">{{ page }}</button>
             }
-          </div>
-          }
-
-          <div class="evts-create-form">
-            <label class="evts-create-field evts-create-field--full">
-              <span>Naziv događaja *</span>
-              <input type="text" [value]="createForm().name"
-                (input)="updateCreateTextField('name', $any($event.target).value)"
-                placeholder="npr. Letnji koncert 2026" />
-            </label>
-
-            <label class="evts-create-field">
-              <span>Tip *</span>
-              <select [value]="createForm().typeId ?? ''"
-                (change)="updateCreateNumberField('typeId', $any($event.target).value)">
-                <option value="">Izaberi tip</option>
-                @for (type of eventTypeOptions(); track type.value) {
-                <option [value]="type.value">{{ type.label }}</option>
-                }
-              </select>
-            </label>
-
-            <label class="evts-create-field">
-              <span>Cena</span>
-              <input type="number" min="0" step="0.01" [value]="createForm().price"
-                (input)="updateCreateTextField('price', $any($event.target).value)" placeholder="0" />
-            </label>
-
-            <label class="evts-create-field">
-              <span>Početak *</span>
-              <input type="datetime-local" [value]="createForm().startDatetime"
-                (input)="updateCreateTextField('startDatetime', $any($event.target).value)" />
-            </label>
-
-            <label class="evts-create-field">
-              <span>Završetak *</span>
-              <input type="datetime-local" [value]="createForm().endDatetime"
-                (input)="updateCreateTextField('endDatetime', $any($event.target).value)" />
-            </label>
-
-            <label class="evts-create-field">
-              <span>Grad</span>
-              <select [value]="createForm().cityId ?? ''"
-                (change)="updateCreateNumberField('cityId', $any($event.target).value)">
-                <option value="">Bez grada</option>
-                @for (city of cityOptions(); track city.value) {
-                <option [value]="city.value">{{ city.label }}</option>
-                }
-              </select>
-            </label>
-
-            <label class="evts-create-field">
-              <span>Destinacija</span>
-              <select [value]="createForm().destinationId ?? ''"
-                (change)="updateCreateDestination($any($event.target).value)">
-                <option value="">Bez destinacije</option>
-                @for (destination of destinationOptions(); track destination.value) {
-                <option [value]="destination.value">{{ destination.label }}</option>
-                }
-              </select>
-            </label>
-
-            <label class="evts-create-field evts-create-field--full">
-              <span>Adresa / lokacija</span>
-              <input type="text" [value]="createForm().address"
-                (input)="updateCreateTextField('address', $any($event.target).value)"
-                placeholder="npr. Trg slobode 1" />
-            </label>
-
-            <label class="evts-create-field evts-create-field--full">
-              <span>Ticket URL</span>
-              <input type="url" [value]="createForm().ticketUrl"
-                (input)="updateCreateTextField('ticketUrl', $any($event.target).value)" placeholder="https://..." />
-            </label>
-
-            <label class="evts-create-field evts-create-field--full">
-              <span>Opis</span>
-              <textarea rows="4" [value]="createForm().description"
-                (input)="updateCreateTextField('description', $any($event.target).value)"
-                placeholder="Kratak opis događaja..."></textarea>
-            </label>
-
-            <label class="evts-create-checkbox">
-              <input type="checkbox" [checked]="createForm().isFeatured"
-                (change)="updateCreateFeatured($any($event.target).checked)" />
-              <span>Istaknut događaj</span>
-            </label>
-          </div>
-
-          <div class="evts-create-modal__actions">
-            <button class="evts-create-btn evts-create-btn--secondary" type="button" (click)="closeCreateDialog()">
-              Otkaži
-            </button>
-
-            <button class="evts-create-btn evts-create-btn--primary" type="button" [disabled]="isCreating()"
-              (click)="submitCreateEvent()">
-              @if (isCreating()) {
-              Kreiranje...
-              } @else {
-              Kreiraj događaj
-              }
+            <button class="evts-page-btn evts-page-btn--nav" [disabled]="currentPage() >= totalPages()"
+              (click)="goToPage(currentPage() + 1)">
+              <span class="material-icons">chevron_right</span>
             </button>
           </div>
-        </section>
+        </div>
+      }
+
+    </div>
+
+    @if (isConfirmOpen()) {
+      <app-confirm-dialog [title]="confirmTitle()" [description]="confirmDesc()" [isLoading]="isActioning()"
+        (confirm)="confirmActionSubmit()" (cancel)="cancelAction()" />
+    }
+
+  </div>
+</div>
+
+<!-- ===== EVENT DETAILS PANEL (ddp-panel style) ===== -->
+@if (isPanelOpen() && selectedEvent(); as ev) {
+  <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
+  <aside class="ddp-panel" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+
+    <header class="ddp-header">
+      <div class="ddp-header__title-group">
+        @if (ev.heroImageUrl) {
+          <img class="ddp-header__icon ddp-header__icon--img" [src]="ev.heroImageUrl" [alt]="ev.name" />
+        } @else {
+          <div class="ddp-header__icon" [style.background-color]="thumbColor(ev.type)">
+            <span class="material-icons">{{ typeIcon(ev.type) }}</span>
+          </div>
+        }
+        <div class="ddp-header__text">
+          <h2 class="ddp-header__name">{{ ev.name }}</h2>
+          <p class="ddp-header__location">
+            <span class="material-icons">location_on</span>
+            {{ locationLabel(ev) }}
+          </p>
+        </div>
       </div>
+      <button class="ddp-close" type="button" (click)="closeDetailsPanel()">
+        <span class="material-icons">close</span>
+      </button>
+    </header>
+
+    <div class="ddp-body">
+
+      <!-- Badges -->
+      <div class="ddp-badges">
+        <span class="evts-status evts-status--{{ ev.status }}">{{ statusLabel(ev.status) }}</span>
+        @if (ev.type) {
+          <span class="evts-type-label">
+            <span class="material-icons evts-type-label__icon">{{ typeIcon(ev.type) }}</span>
+            {{ typeLabel(ev.type) }}
+          </span>
+        }
+        @if (ev.isFeatured) {
+          <span class="ddp-badge-featured">
+            <span class="material-icons">star</span>
+            Istaknuto
+          </span>
+        }
+      </div>
+
+      <!-- Organizer -->
+      @if (ev.organizer && ev.organizer !== '—') {
+        <p class="ddp-organizer">
+          <span class="material-icons">business</span>
+          {{ ev.organizer }}
+        </p>
       }
+
+      <!-- Detail grid -->
+      <div class="ddp-grid">
+        <div class="ddp-grid__item">
+          <span class="ddp-grid__label">Početak</span>
+          <span class="ddp-grid__value">{{ formatDate(ev.startDate) }}</span>
+        </div>
+        <div class="ddp-grid__item">
+          <span class="ddp-grid__label">Završetak</span>
+          <span class="ddp-grid__value">{{ formatDate(ev.endDate) }}</span>
+        </div>
+        <div class="ddp-grid__item">
+          <span class="ddp-grid__label">Cena</span>
+          <span class="ddp-grid__value">{{ formatPrice(ev.price) }}</span>
+        </div>
+        @if (ev.expectedGuests) {
+          <div class="ddp-grid__item">
+            <span class="ddp-grid__label">Očekivano gostiju</span>
+            <span class="ddp-grid__value">{{ formatNumber(ev.expectedGuests) }}</span>
+          </div>
+        }
+        @if (ev.address) {
+          <div class="ddp-grid__item ddp-grid__item--full">
+            <span class="ddp-grid__label">Adresa</span>
+            <span class="ddp-grid__value">{{ ev.address }}</span>
+          </div>
+        }
+        @if (ev.ticketUrl) {
+          <div class="ddp-grid__item ddp-grid__item--full">
+            <span class="ddp-grid__label">Kupovina karata</span>
+            <span class="ddp-grid__value">
+              <a [href]="ev.ticketUrl" target="_blank" rel="noopener" class="ddp-link">{{ ev.ticketUrl }}</a>
+            </span>
+          </div>
+        }
+      </div>
+
+      <!-- Description -->
+      @if (ev.description) {
+        <div class="ddp-description-wrap">
+          <p class="ddp-description" [class.ddp-description--collapsed]="!descriptionExpanded()">
+            {{ ev.description }}
+          </p>
+          @if (ev.description.length > 160) {
+            <button class="ddp-description__toggle" type="button"
+              (click)="descriptionExpanded.set(!descriptionExpanded())">
+              {{ descriptionExpanded() ? 'Prikaži manje' : 'Prikaži više' }}
+            </button>
+          }
+        </div>
       }
+
+      <!-- Documents -->
+      @if (ev.documents.length > 0) {
+        <div class="ddp-docs">
+          @for (doc of ev.documents; track doc.id) {
+            <a class="ddp-doc" [href]="doc.url" target="_blank">
+              <span class="material-icons">picture_as_pdf</span>
+              {{ doc.name }}
+            </a>
+          }
+        </div>
+      }
+
+      <!-- Coordination for pending events with private venue -->
+      @if (ev.ownerName && ev.status === 'pending') {
+        <div class="ddp-coordination">
+          <h4 class="ddp-section-title">
+            <span class="material-icons">send</span>
+            Koordinacija sa vlasnikom
+          </h4>
+          <p class="ddp-coordination__hint">
+            Ovaj lokalitet je u privatnom vlasništvu. Pre odobrenja, prosledite zahtev vlasniku na uvid.
+          </p>
+          <button class="ddp-forward-btn" (click)="initiateAction('forward')">
+            <span class="material-icons">send</span>
+            Prosleđuj vlasniku ({{ ev.ownerName }})
+          </button>
+        </div>
+      }
+
+    </div>
+
+    <footer class="ddp-footer">
+      @if (ev.slug) {
+        <a class="btn btn-ghost btn-sm" [href]="'/events/' + ev.slug" target="_blank" rel="noopener">
+          <span class="material-icons">open_in_new</span>
+          Otvori
+        </a>
+      }
+      @if (isSuperAdmin() && ev.status === 'active') {
+        <button class="btn btn-ghost btn-sm" (click)="openEdit()">
+          <span class="material-icons">edit</span>
+          Izmeni
+        </button>
+        <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="initiateAction('delete')">
+          <span class="material-icons">delete</span>
+          Obriši
+        </button>
+      }
+      @if (ev.status === 'pending') {
+        <button class="ddp-approve-btn" (click)="initiateAction('approve')">
+          <span class="material-icons">check_circle</span>
+          Odobri
+        </button>
+        <button class="ddp-reject-btn" (click)="initiateAction('reject')">
+          <span class="material-icons">cancel</span>
+          Odbij
+        </button>
+      }
+    </footer>
+
+  </aside>
+}

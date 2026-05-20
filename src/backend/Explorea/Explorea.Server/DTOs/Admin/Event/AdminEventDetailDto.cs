@@ -26,7 +26,7 @@ namespace Explorea.API.DTOs.Admin.Event
         public decimal         AvgRating      { get; set; }
         public int             Popularity     { get; set; }
         public bool            IsFeatured     { get; set; }
-        public List<string>    Images         { get; set; } = new();
+        public List<AdminEventImageDto> Images { get; set; } = new();
         public DateTimeOffset  CreatedAt      { get; set; }
         public DateTimeOffset  UpdatedAt      { get; set; }
     }
