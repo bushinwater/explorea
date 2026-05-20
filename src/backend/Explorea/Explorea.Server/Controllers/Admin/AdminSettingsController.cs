@@ -458,6 +458,8 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
           "destinations" or
           "events" or
           "activities" or
+          "activity-log" or
+          "notifications-broadcast" or
           "reviews" or
           "users" or
           "reports" or
@@ -535,6 +537,7 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
             "destinations" or
             "events" or
             "activities" or
+            "notifications-broadcast" or
             "reviews" or
             "reports" or
             "support" or

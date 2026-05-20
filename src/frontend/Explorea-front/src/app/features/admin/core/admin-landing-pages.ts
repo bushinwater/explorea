@@ -39,6 +39,18 @@ export const ADMIN_LANDING_PAGE_OPTIONS: AdminLandingPageOption[] = [
     roles: ['super_admin', 'tourist_organization'],
   },
   {
+    value: 'activity-log',
+    label: 'Audit log',
+    route: '/admin/activity-log',
+    roles: ['super_admin'],
+  },
+  {
+    value: 'notifications-broadcast',
+    label: 'Broadcast obavestenje',
+    route: '/admin/notifications/broadcast',
+    roles: ['super_admin', 'tourist_organization'],
+  },
+  {
     value: 'reviews',
     label: 'Recenzije',
     route: '/admin/reviews',
@@ -78,4 +90,3 @@ export function normalizeAdminLandingPage(value: string, role: AdminRole): Admin
   const options = adminLandingPagesForRole(role);
   return options.find((option) => option.value === value) ?? options[0];
 }
-
