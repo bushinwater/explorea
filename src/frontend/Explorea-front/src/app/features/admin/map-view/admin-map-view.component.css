@@ -309,26 +309,33 @@
 
 .toggle-switch.on .toggle-thumb { transform: translateX(16px); }
 
-/* Rating chips */
-.rating-chips { display: flex; gap: 6px; }
-
-.rating-chip {
+/* Star picker */
+.map-star-picker {
   display: flex;
   align-items: center;
-  gap: 3px;
-  padding: 5px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 20px;
-  background: none;
-  color: var(--color-text-secondary);
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-  font-family: var(--font-primary);
+  gap: 2px;
 }
 
-.rating-chip .material-icons { font-size: 14px; color: var(--color-accent); }
-.rating-chip.active { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-dark); }
+.map-star-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--color-border);
+  line-height: 1;
+  transition: color 0.12s;
+}
+
+.map-star-btn .material-icons { font-size: 22px; }
+
+.map-star-btn--on { color: var(--color-warning, #f59e0b); }
+
+.map-star-label {
+  margin-left: 8px;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
 
 /* Subcategory chips */
 .filter-chips {

@@ -170,19 +170,50 @@
                 </div>
               }
 
-              <!-- Rating filter -->
+              <!-- Additional filters (amenities — only when a type is selected) -->
+              @if (filters().typeId !== 'all' && amenities().length > 0) {
+              <div class="place-filter-section place-filter-section--extra">
+                <label class="place-filter-section__label">Dodatni filteri</label>
+                <div class="place-extra-list">
+                  @for (a of amenities(); track a.id) {
+                    <label class="place-extra-item">
+                      <span class="place-extra-item__label">{{ a.name }}</span>
+                      <button
+                        class="place-toggle-btn"
+                        [class.place-toggle-btn--on]="filters().amenityId === a.id"
+                        type="button"
+                        (click)="applyAmenity(a.id)"
+                      >
+                        <span class="place-toggle-track">
+                          <span class="place-toggle-thumb"></span>
+                        </span>
+                      </button>
+                    </label>
+                  }
+                </div>
+              </div>
+              }
+
+              <!-- Rating filter — star picker -->
               <div class="place-filter-section">
                 <label class="place-filter-section__label">{{ ui.t('places.filter.rating') }}</label>
-                <div class="place-filter-chips">
-                  @for (rating of ratingFilters; track rating.label) {
+                <div class="place-star-picker">
+                  @for (star of stars; track star) {
                     <button
-                      class="place-chip"
-                      [class.place-chip--active]="filters().minRating === rating.value"
-                      (click)="applyMinRating(rating.value)"
+                      class="place-star-btn"
+                      [class.place-star-btn--on]="star <= (hoverRating() ?? filters().minRating ?? 0)"
+                      (mouseenter)="hoverRating.set(star)"
+                      (mouseleave)="hoverRating.set(null)"
+                      (click)="applyMinRating(star)"
+                      [title]="star + '+ zvezdice'"
                     >
-                      {{ rating.label }}
+                      <span class="material-icons">star</span>
                     </button>
                   }
+                  <span class="place-star-label">
+                    @if (filters().minRating) { {{ filters().minRating }}+ ★ }
+                    @else { Sve ocene }
+                  </span>
                 </div>
               </div>
             </div>

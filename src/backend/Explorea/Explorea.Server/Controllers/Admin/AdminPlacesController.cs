@@ -67,6 +67,18 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpGet("amenities")]
+        public async Task<IActionResult> GetAmenities([FromQuery] int? typeId)
+        {
+            var amenities = await _context.PlaceAmenities
+                .AsNoTracking()
+                .OrderBy(a => a.Name)
+                .Select(a => new { id = a.Id, name = a.Name })
+                .ToListAsync();
+
+            return Ok(amenities);
+        }
+
         [HttpGet("my")]
         public async Task<IActionResult> GetMyPlaces()
         {

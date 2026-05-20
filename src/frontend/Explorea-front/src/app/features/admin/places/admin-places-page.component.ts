@@ -16,6 +16,7 @@ import { EmptyStateComponent } from '../shared/components/empty-state/empty-stat
 import { FeedbackBannerComponent } from '../shared/components/feedback-banner/feedback-banner.component';
 import { TableSkeletonComponent } from '../shared/components/table-skeleton/table-skeleton.component';
 import {
+  AmenityOption,
   PlaceDetail,
   PlaceFilters,
   PlaceRow,
@@ -54,6 +55,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     status: 'all',
     regionId: 'all',
     minRating: null,
+    amenityId: null,
     page: 1,
     pageSize: 17,
   });
@@ -62,6 +64,8 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   protected readonly stats     = signal<PlaceStats | null>(null);
   protected readonly types     = signal<PlaceTypeOption[]>([]);
   protected readonly regions   = signal<RegionOption[]>([]);
+  protected readonly amenities = signal<AmenityOption[]>([]);
+  protected readonly hoverRating = signal<number | null>(null);
   protected readonly total     = signal(0);
   protected readonly currentPage = signal(1);
   protected readonly isLoading    = signal(false);
@@ -101,6 +105,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
       f.status !== 'all',
       f.regionId !== 'all',
       f.minRating !== null,
+      f.amenityId !== null,
     ].filter(Boolean).length;
   });
 
@@ -112,12 +117,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     { value: 'rejected', label: 'Odbijeno' },
   ];
 
-  protected readonly ratingFilters: Array<{ value: number | null; label: string }> = [
-    { value: null, label: 'Sve ocene' },
-    { value: 4,    label: '★ 4+' },
-    { value: 3,    label: '★ 3+' },
-    { value: 2,    label: '★ 2+' },
-  ];
+  protected readonly stars = [1, 2, 3, 4, 5];
 
   constructor(
     private readonly placesService: AdminPlacesService,
@@ -150,7 +150,15 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   }
 
   protected applyType(typeId: number | 'all'): void {
-    this.patchFilter({ typeId, page: 1 });
+    this.amenities.set([]);
+    this.patchFilter({ typeId, amenityId: null, page: 1 });
+    this.loadPlaces();
+    if (typeId !== 'all') this.loadAmenities(typeId);
+  }
+
+  protected applyAmenity(amenityId: number | null): void {
+    const current = this.filters().amenityId;
+    this.patchFilter({ amenityId: amenityId === current ? null : amenityId, page: 1 });
     this.loadPlaces();
   }
 
@@ -164,18 +172,22 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.loadPlaces();
   }
 
-  protected applyMinRating(value: number | null): void {
-    this.patchFilter({ minRating: value, page: 1 });
+  protected applyMinRating(value: number): void {
+    const current = this.filters().minRating;
+    this.patchFilter({ minRating: current === value ? null : value, page: 1 });
     this.loadPlaces();
   }
 
   protected resetFilters(): void {
+    this.amenities.set([]);
+    this.hoverRating.set(null);
     this.filters.update((f) => ({
       search: '',
       typeId: 'all',
       status: 'all',
       regionId: 'all',
       minRating: null,
+      amenityId: null,
       page: 1,
       pageSize: f.pageSize,
     }));
@@ -428,6 +440,14 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.placesService.getRegions().subscribe({
         next: (regions) => this.regions.set(regions),
+      }),
+    );
+  }
+
+  private loadAmenities(typeId: number): void {
+    this.subscription.add(
+      this.placesService.getAmenities(typeId).subscribe({
+        next: (amenities) => this.amenities.set(amenities),
       }),
     );
   }

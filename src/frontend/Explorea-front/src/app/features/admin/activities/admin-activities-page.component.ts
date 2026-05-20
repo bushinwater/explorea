@@ -184,14 +184,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     { value: 'all', label: 'Sve težine' },
   ]);
 
-  protected readonly ratingOptions: Array<{ value: number | 'all'; label: string }> = [
-    { value: 'all', label: 'Sve ocene' },
-    { value: 3, label: 'Sve 3+' },
-    { value: 4, label: 'Sve 4+' },
-    { value: 4.5, label: 'Sve 4.5+' },
-  ];
-
   protected readonly managedRegion = signal<{ id: number; name: string } | null>(null);
+  protected readonly hoverRating = signal<number | null>(null);
 
   constructor(
     private readonly activitiesService: AdminActivitiesService,
@@ -810,7 +804,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected selectedRatingLabel(): string {
     const value = this.filters().minRating;
     if (value === 'all') return '';
-    return this.ratingOptions.find((r) => r.value === value)?.label ?? `${value}+`;
+    return `${value}+ ★`;
   }
 
   protected selectedRegionLabel(): string {
@@ -836,6 +830,11 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected starArray(rating: number): number[] {
     return Array.from({ length: 5 }, (_, i) => i + 1);
+  }
+
+  protected ratingNumeric(): number {
+    const v = this.filters().minRating;
+    return v === 'all' ? 0 : v;
   }
 
   @HostListener('document:click')
@@ -904,7 +903,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   private parseMinRating(value: string | null): number | 'all' {
     if (!value || value === 'all') return 'all';
     const n = Number(value);
-    return this.ratingOptions.some((r) => r.value === n) ? n : 'all';
+    return n >= 1 && n <= 5 ? n : 'all';
   }
 
   private parsePositiveInt(value: string | null, fallback: number): number {

@@ -11,6 +11,7 @@ namespace Explorea.Server.Repositories.Interfaces
             int? filterRegionId,
             decimal? minRating,
             Guid? destinationId,
+            int? amenityId,
             Guid? restrictToOwner,
             int? restrictToRegionId,
             int page,

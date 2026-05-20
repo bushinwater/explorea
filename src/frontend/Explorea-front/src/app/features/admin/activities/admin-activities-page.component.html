@@ -124,19 +124,6 @@
             </div>
             }
 
-            <!-- Rating filter -->
-            <div class="activity-filter-section">
-              <label class="activity-filter-section__label">{{ ui.t('activities.filter.rating') }}</label>
-              <div class="activity-filter-chips">
-                @for (r of ratingOptions; track r.value) {
-                <button class="activity-chip" [class.activity-chip--active]="filters().minRating === r.value"
-                  (click)="applyMinRating(r.value)">
-                  {{ r.label }}
-                </button>
-                }
-              </div>
-            </div>
-
             <!-- Region filter -->
             @if (isTouristOrganization() && managedRegion(); as mr) {
             <div class="activity-filter-section">
@@ -165,6 +152,29 @@
               </div>
             </div>
             }
+
+            <!-- Rating filter — star picker -->
+            <div class="activity-filter-section">
+              <label class="activity-filter-section__label">{{ ui.t('activities.filter.rating') }}</label>
+              <div class="activity-star-picker">
+                @for (star of [1,2,3,4,5]; track star) {
+                <button
+                  class="activity-star-btn"
+                  [class.activity-star-btn--on]="star <= (hoverRating() ?? ratingNumeric())"
+                  (mouseenter)="hoverRating.set(star)"
+                  (mouseleave)="hoverRating.set(null)"
+                  (click)="applyMinRating(ratingNumeric() === star ? 'all' : star)"
+                  [title]="star + '+ zvezdice'"
+                >
+                  <span class="material-icons">star</span>
+                </button>
+                }
+                <span class="activity-star-label">
+                  @if (filters().minRating !== 'all') { {{ filters().minRating }}+ ★ }
+                  @else { Sve ocene }
+                </span>
+              </div>
+            </div>
           </div>
           <div class="activity-filter-backdrop" (click)="isFilterOpen.set(false)"></div>
           }

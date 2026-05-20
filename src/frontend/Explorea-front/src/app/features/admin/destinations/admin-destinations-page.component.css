@@ -350,6 +350,37 @@
   font-weight: 600;
 }
 
+.dest-star-picker {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.dest-star-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--color-border);
+  line-height: 1;
+  transition: color 0.12s;
+}
+
+.dest-star-btn .material-icons {
+  font-size: 22px;
+}
+
+.dest-star-btn--on {
+  color: var(--color-warning, #f59e0b);
+}
+
+.dest-star-label {
+  margin-left: 8px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
 .dest-filter-backdrop {
   position: fixed;
   inset: 0;

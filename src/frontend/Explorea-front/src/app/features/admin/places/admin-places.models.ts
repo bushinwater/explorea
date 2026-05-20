@@ -98,8 +98,14 @@ export interface PlaceFilters {
   status: PlaceStatus | 'all';
   regionId: number | 'all';
   minRating: number | null;
+  amenityId: number | null;
   page: number;
   pageSize: number;
+}
+
+export interface AmenityOption {
+  id: number;
+  name: string;
 }
 
 export interface PlacePagedResponse {

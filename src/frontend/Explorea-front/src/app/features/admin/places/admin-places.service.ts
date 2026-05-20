@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  AmenityOption,
   CreatePlaceDto,
   PlaceDetail,
   PlaceFilters,
@@ -39,6 +40,9 @@ export class AdminPlacesService {
     if (filters.minRating !== null) {
       params = params.set('minRating', filters.minRating);
     }
+    if (filters.amenityId !== null) {
+      params = params.set('amenityId', filters.amenityId);
+    }
 
     return this.http.get<PlacePagedResponse>(this.base, { params });
   }
@@ -49,6 +53,12 @@ export class AdminPlacesService {
 
   getTypes(): Observable<PlaceTypeOption[]> {
     return this.http.get<PlaceTypeOption[]>('/api/admin/place-types');
+  }
+
+  getAmenities(typeId?: number): Observable<AmenityOption[]> {
+    let params = new HttpParams();
+    if (typeId !== undefined) params = params.set('typeId', typeId);
+    return this.http.get<AmenityOption[]>(`${this.base}/amenities`, { params });
   }
 
   getRegions(): Observable<RegionOption[]> {
