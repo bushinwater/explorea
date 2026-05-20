@@ -62,3 +62,22 @@ export interface EventPagedResponse {
   items: EventRow[];
   total: number;
 }
+
+export interface CreateEventPayload {
+  name: string;
+  slug: string;
+  description: string | null;
+  typeId: number;
+  startDatetime: string;
+  endDatetime: string;
+  price: number | null;
+  address: string | null;
+  cityId: number | null;
+  countryId: number | null;
+  destinationId: string | null;
+  placeId: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  ticketUrl: string | null;
+  isFeatured: boolean;
+}

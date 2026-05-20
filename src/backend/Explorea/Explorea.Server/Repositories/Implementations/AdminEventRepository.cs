@@ -23,7 +23,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(e => e.Country)
                 .Include(e => e.Destination)
                 .Include(e => e.Images)
-                .Where(e => !e.IsDeleted)
+                .Where(e => !e.IsDeleted && e.Visibility == "published")
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
@@ -75,7 +75,7 @@ namespace Explorea.Server.Repositories.Implementations
         {
             var query = _db.Events
                 .IgnoreQueryFilters()
-                .Where(e => !e.IsDeleted);
+                .Where(e => !e.IsDeleted && e.Visibility == "published");
 
             query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
 
@@ -100,7 +100,9 @@ namespace Explorea.Server.Repositories.Implementations
 
             var query = _db.Events
                 .IgnoreQueryFilters()
-                .Where(e => !e.IsDeleted && e.CreatedAt >= monthStart);
+                .Where(e => !e.IsDeleted 
+                    && e.CreatedAt >= monthStart
+                    && e.Visibility == "published");
 
             query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
 

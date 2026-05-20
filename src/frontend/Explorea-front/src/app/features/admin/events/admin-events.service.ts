@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, filter, map, of } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import {
   EventFilters,
   EventPagedResponse,
@@ -9,6 +9,7 @@ import {
   EventStatus,
   EventType,
   EventFilterOption,
+  CreateEventPayload,
 } from './admin-events.models';
 
 interface ApiEventsResponse {
@@ -64,20 +65,35 @@ interface ApiDestinationLookupItem {
   name: string;
 }
 
-const MOCK_STATS: EventStats = {
-  activeRequests: 14,
-  activeRequestsTrend: '+3 od juče',
-  pendingApproval: 8,
-  pendingApprovalHint: 'Hitno rešavanje',
-  approvedThisMonth: 42,
-  approvedThisMonthTrend: '12% više nego prošli',
-  rejected: 3,
-  rejectedNote: 'Godišnji prosek 5%',
-  tabPendingCount: 8,
-  tabActiveCount: 24,
-};
-
-const MOCK_REGIONS = ['Beograd', 'Vojvodina', 'Zlatibor', 'Šumadija'];
+interface ApiEventDetailItem {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  typeId: number;
+  type: string | null;
+  cityId: number | null;
+  city: string | null;
+  countryId: number | null;
+  country: string | null;
+  destinationId: string | null;
+  destination: string | null;
+  placeId: string | null;
+  place: string | null;
+  startDatetime: string;
+  endDatetime: string;
+  price: number | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  ticketUrl: string | null;
+  avgRating: number;
+  popularity: number;
+  isFeatured: boolean;
+  images: string[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AdminEventsService {
@@ -131,6 +147,12 @@ export class AdminEventsService {
     return this.http.put<void>(`/api/admin/events/${queueId}/approve`, {});
   }
 
+  getEventDetail(eventId: string, base?: EventRow): Observable<EventRow> {
+    return this.http
+      .get<ApiEventDetailItem>(`/api/admin/events/${eventId}`)
+      .pipe(map((event) => this.mapEventDetail(event, base)));
+  }
+
   rejectEvent(
     queueId: string,
     reason = 'Zahtev je odbijen od strane administratora.',
@@ -140,6 +162,12 @@ export class AdminEventsService {
 
   forwardToOwner(queueId: string): Observable<void> {
     return this.http.post<void>(`/api/admin/queue/${queueId}/approve`, {});
+  }
+
+  createEvent(payload: CreateEventPayload): Observable<EventRow> {
+    return this.http
+      .post<ApiEventDetailItem>('/api/admin/events', payload)
+      .pipe(map((event) => this.mapEventDetail(event)));
   }
 
   private fetchActiveEvents(filters: EventFilters): Observable<EventPagedResponse> {
@@ -162,9 +190,13 @@ export class AdminEventsService {
   }
 
   private fetchQueueEvents(filters: EventFilters): Observable<EventPagedResponse> {
+    const search = filters.search.trim();
+
+    const shouldClientFilterAndPaginate = !!search || filters.tab === 'history';
+
     let params = new HttpParams()
-      .set('page', filters.page)
-      .set('pageSize', filters.pageSize)
+      .set('page', shouldClientFilterAndPaginate ? 1 : filters.page)
+      .set('pageSize', shouldClientFilterAndPaginate ? 500 : filters.pageSize)
       .set('entityType', 'event');
 
     if (filters.tab === 'pending') {
@@ -173,7 +205,7 @@ export class AdminEventsService {
 
     return this.http.get<ApiQueueResponse>('/api/admin/queue', { params }).pipe(
       map((res) => {
-        const items = res.items
+        const rows = res.items
           .filter((q) => {
             if (filters.tab === 'history') {
               return [
@@ -183,22 +215,79 @@ export class AdminEventsService {
                 'ApprovedByTO',
               ].includes(q.status);
             }
+
             return true;
           })
-          .filter((q) => {
-            const search = filters.search.trim().toLowerCase();
-
-            if (!search) return true;
-
-            return (
-              q.submittedByName?.toLowerCase().includes(search) ||
-              q.destinationName?.toLowerCase().includes(search)
-            );
-          })
           .map((q) => this.mapQueueItem(q));
-        return { total: items.length, items };
+
+        return {
+          total: res.total,
+          rows,
+        };
+      }),
+      switchMap(({ total, rows }) => {
+        if (!rows.length) {
+          return of({
+            total: 0,
+            items: [],
+          });
+        }
+
+        return forkJoin(
+          rows.map((row) => this.getEventDetail(row.id, row).pipe(catchError(() => of(row)))),
+        ).pipe(
+          map((detailedRows) => {
+            const filteredRows = detailedRows.filter((row) => this.matchesQueueSearch(row, search));
+
+            if (!shouldClientFilterAndPaginate) {
+              return {
+                total,
+                items: detailedRows,
+              };
+            }
+
+            const start = (filters.page - 1) * filters.pageSize;
+            const end = start + filters.pageSize;
+
+            return {
+              total: filteredRows.length,
+              items: filteredRows.slice(start, end),
+            };
+          }),
+        );
       }),
     );
+  }
+
+  private matchesQueueSearch(row: EventRow, search: string): boolean {
+    const term = search.trim().toLowerCase();
+
+    if (!term) return true;
+
+    return [
+      row.name,
+      row.organizer,
+      row.type ? this.typeLabelForSearch(row.type) : null,
+      row.city,
+      row.venue,
+      row.description,
+      row.rejectionReason,
+    ]
+      .filter(Boolean)
+      .some((value) => value!.toLowerCase().includes(term));
+  }
+
+  private typeLabelForSearch(type: EventType): string {
+    const map: Record<EventType, string> = {
+      concert: 'koncert',
+      tasting: 'degustacija',
+      conference: 'konferencija',
+      sport: 'sport',
+      exhibition: 'izložba',
+      other: 'ostalo',
+    };
+
+    return map[type];
   }
 
   private mapEventItem(e: ApiEventItem): EventRow {
@@ -247,24 +336,58 @@ export class AdminEventsService {
     };
   }
 
+  private mapEventDetail(e: ApiEventDetailItem, base?: EventRow): EventRow {
+    return {
+      id: e.id,
+      queueId: base?.queueId ?? null,
+      eventNumber: base?.eventNumber ?? `EV-${e.id.substring(0, 6).toUpperCase()}`,
+      name: e.name,
+      organizer: base?.organizer ?? '—',
+      type: this.mapType(e.type),
+      city: e.city,
+      venue: e.place ?? e.destination ?? e.address,
+      startDate: e.startDatetime,
+      priority: base?.priority ?? null,
+      status: base?.status ?? 'active',
+      heroImageUrl: e.images?.[0] ?? base?.heroImageUrl ?? null,
+      expectedGuests: base?.expectedGuests ?? null,
+      description: e.description,
+      documents: base?.documents ?? [],
+      ownerName: base?.ownerName ?? (e.placeId ? 'Vlasnik objekta' : null),
+      region: e.city,
+      rejectionReason: base?.rejectionReason ?? null,
+    };
+  }
+
   private mapType(type: string | null): EventType | null {
     if (!type) return null;
+
     const map: Record<string, EventType> = {
       Concert: 'concert',
+      Koncert: 'concert',
+
       Tasting: 'tasting',
+      Degustacija: 'tasting',
+
       Conference: 'conference',
+      Konferencija: 'conference',
+
       Sport: 'sport',
+
       Exhibition: 'exhibition',
+      Izložba: 'exhibition',
+      Izlozba: 'exhibition',
     };
+
     return map[type] ?? 'other';
   }
 
   private mapQueueStatus(status: string): EventStatus {
     const map: Record<string, EventStatus> = {
       Pending: 'pending',
-      ApprovedByTO: 'forwarded',
-      RejectedByTO: 'rejected',
+      ApprovedByTO: 'active',
       ApprovedByOwner: 'active',
+      RejectedByTO: 'rejected',
       RejectedByOwner: 'rejected',
     };
     return map[status] ?? 'pending';

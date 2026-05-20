@@ -12,16 +12,19 @@ namespace Explorea.Server.Services.Admin
         private readonly IOrganizationAssignmentRepository _assignmentRepo;
         private readonly IDestinationRepository _destinationRepo;
         private readonly IUserRepository _userRepo;
+        private readonly ISubmissionQueueRepository _queueRepo;
 
         public AdminEventService(
             IAdminEventRepository eventRepo,
             IOrganizationAssignmentRepository assignmentRepo,
             IDestinationRepository destinationRepo,
+            ISubmissionQueueRepository queueRepo,
             IUserRepository userRepo)
         {
             _eventRepo       = eventRepo;
             _assignmentRepo  = assignmentRepo;
             _destinationRepo = destinationRepo;
+            _queueRepo       = queueRepo;
             _userRepo        = userRepo;
         }
 
@@ -35,9 +38,34 @@ namespace Explorea.Server.Services.Admin
                 restrictToCityIds
             );
 
-            var approvedThisMonth = await _eventRepo.CountApprovedThisMonthAsync(
-                restrictToDestinationIds,
-                restrictToCityIds
+            var pendingCount = await _queueRepo.CountAsync(
+                entityType: "event",
+                statuses: new[] { "Pending" },
+                restrictToDestinationIds: restrictToDestinationIds
+            );
+
+            var rejectedCount = await _queueRepo.CountAsync(
+                entityType: "event",
+                statuses: new[] { "RejectedByTO", "RejectedByOwner" },
+                restrictToDestinationIds: restrictToDestinationIds
+            );
+
+            var now = DateTimeOffset.UtcNow;
+            var monthStart = new DateTimeOffset(
+                now.Year,
+                now.Month,
+                1,
+                0,
+                0,
+                0,
+                TimeSpan.Zero
+            );
+
+            var approvedThisMonth = await _queueRepo.CountAsync(
+                entityType: "event",
+                statuses: new[] { "ApprovedByTO", "ApprovedByOwner" },
+                restrictToDestinationIds: restrictToDestinationIds,
+                reviewedByTOFrom: monthStart
             );
 
             return new AdminEventStatsDto
@@ -45,16 +73,16 @@ namespace Explorea.Server.Services.Admin
                 ActiveRequests = activeCount,
                 ActiveRequestsTrend = string.Empty,
 
-                PendingApproval = 0,
+                PendingApproval = pendingCount,
                 PendingApprovalHint = "Zahtevi na čekanju",
 
                 ApprovedThisMonth = approvedThisMonth,
                 ApprovedThisMonthTrend = "Odobreno ovog meseca",
 
-                Rejected = 0,
+                Rejected = rejectedCount,
                 RejectedNote = "Odbijeni zahtevi",
 
-                TabPendingCount = 0,
+                TabPendingCount = pendingCount,
                 TabActiveCount = activeCount
             };
         }

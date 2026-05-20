@@ -10,5 +10,12 @@ namespace Explorea.Server.Repositories.Interfaces
         Task<List<SubmissionQueue>> GetPendingOwnerReviewAsync(Guid ownerId);
         Task AddAsync(SubmissionQueue item);
         Task<int> SaveChangesAsync();
+
+        Task<int> CountAsync(
+            string? entityType,
+            IReadOnlyCollection<string>? statuses,
+            List<Guid>? restrictToDestinationIds,
+            DateTimeOffset? reviewedByTOFrom = null,
+            DateTimeOffset? reviewedByTOTo = null);
     }
 }
