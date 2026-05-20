@@ -70,5 +70,8 @@ namespace Explorea.API.Models
         // events table has no preview_image_url column — images live in event_images.
         [NotMapped]
         public string? PreviewImageUrl { get; set; }
+
+        [MaxLength(20), Column("visibility")]
+        public string Visibility { get; set; } = "published";
   }
 }

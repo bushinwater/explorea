@@ -23,12 +23,13 @@ namespace Explorea.Server.Controllers.Admin
         public async Task<IActionResult> GetQueue(
             [FromQuery] Guid? destinationId,
             [FromQuery] string? status,
+            [FromQuery] string? entityType,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
             var userId = GetCurrentUserId();
             var (items, total) = await _service.GetQueueAsync(
-                destinationId, status, page, pageSize, userId);
+                destinationId, status, entityType, page, pageSize, userId);
             return Ok(new { total, items });
         }
 

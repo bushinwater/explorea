@@ -25,7 +25,7 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         public async Task<(List<SubmissionQueue> Items, int Total)> GetPagedAsync(
-            Guid? destinationId, string? status, int page, int pageSize)
+            Guid? destinationId, string? status, string? entityType, int page, int pageSize)
         {
             var query = _db.SubmissionQueue
                 .Include(q => q.Destination)
@@ -37,6 +37,15 @@ namespace Explorea.Server.Repositories.Implementations
 
             if (!string.IsNullOrWhiteSpace(status))
                 query = query.Where(q => q.Status == status);
+
+            if (!string.IsNullOrWhiteSpace(entityType))
+            {
+                var normalizedEntityType = entityType.Trim().ToLower();
+
+                query = query.Where(q =>
+                    q.EntityType.ToLower() == normalizedEntityType
+                );
+            }
 
             var total = await query.CountAsync();
             var items = await query
@@ -76,5 +85,46 @@ namespace Explorea.Server.Repositories.Implementations
         {
             return await _db.SaveChangesAsync();
         }
+
+    public async Task<int> CountAsync(string? entityType, IReadOnlyCollection<string>? statuses, List<Guid>? restrictToDestinationIds, DateTimeOffset? reviewedByTOFrom = null, DateTimeOffset? reviewedByTOTo = null)
+    {
+        var query = _db.SubmissionQueue.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(entityType))
+        {
+            var normalizedEntityType = entityType.Trim().ToLower();
+
+            query = query.Where(q =>
+                q.EntityType.ToLower() == normalizedEntityType
+            );    
+        }    
+
+        if(statuses != null && statuses.Count > 0) query = query.Where(q => statuses.Contains(q.Status));
+
+        if(restrictToDestinationIds != null)
+        {
+            if(restrictToDestinationIds.Count == 0) return 0;
+
+            query = query.Where(q => restrictToDestinationIds.Contains(q.DestinationId));
+        }
+
+      if (reviewedByTOFrom.HasValue)
+      {
+        query = query.Where(q =>
+            q.ReviewedByTOAt.HasValue &&
+            q.ReviewedByTOAt.Value >= reviewedByTOFrom.Value
+        );
+      }
+      
+      if (reviewedByTOTo.HasValue)
+      {
+        query = query.Where(q =>
+            q.ReviewedByTOAt.HasValue &&
+            q.ReviewedByTOAt.Value >= reviewedByTOTo.Value
+        );
+      }
+
+      return await query.CountAsync();
     }
+  }
 }

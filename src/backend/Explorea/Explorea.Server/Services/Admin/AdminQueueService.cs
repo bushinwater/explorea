@@ -8,17 +8,19 @@ namespace Explorea.Server.Services.Admin
     {
         private readonly ISubmissionQueueRepository _queueRepo;
         private readonly IOrganizationAssignmentRepository _assignmentRepo;
-
+        private readonly IAdminEventRepository _eventRepo;
         public AdminQueueService(
             ISubmissionQueueRepository queueRepo,
-            IOrganizationAssignmentRepository assignmentRepo)
+            IOrganizationAssignmentRepository assignmentRepo,
+            IAdminEventRepository eventRepo)
         {
             _queueRepo      = queueRepo;
             _assignmentRepo = assignmentRepo;
+            _eventRepo = eventRepo;
         }
 
         public async Task<(List<QueueItemDto> Items, int Total)> GetQueueAsync(
-            Guid? destinationId, string? status, int page, int pageSize, Guid currentUserId)
+            Guid? destinationId, string? status, string? entityType, int page, int pageSize, Guid currentUserId)
         {
             // Ako je TO, može da vidi samo stavke za svoje destinacije
             if (destinationId.HasValue)
@@ -28,7 +30,7 @@ namespace Explorea.Server.Services.Admin
                     return (new List<QueueItemDto>(), 0);
             }
 
-            var (items, total) = await _queueRepo.GetPagedAsync(destinationId, status, page, pageSize);
+            var (items, total) = await _queueRepo.GetPagedAsync(destinationId, status, entityType, page, pageSize);
             return (items.Select(MapToDto).ToList(), total);
         }
 
@@ -54,6 +56,15 @@ namespace Explorea.Server.Services.Admin
             item.ReviewedByTOUserId = reviewerId;
             item.ReviewedByTOAt     = DateTimeOffset.UtcNow;
 
+            var eventEntity = await _eventRepo.GetAdminByIdAsync(item.EntityId);
+
+            if (eventEntity != null)
+            {
+                eventEntity.Visibility = "published";
+                eventEntity.UpdatedAt = DateTimeOffset.UtcNow;
+                eventEntity.UpdatedBy = reviewerId;
+            }
+
             await _queueRepo.SaveChangesAsync();
         }
 
@@ -73,6 +84,15 @@ namespace Explorea.Server.Services.Admin
             item.ReviewedByTOUserId = reviewerId;
             item.ReviewedByTOAt     = DateTimeOffset.UtcNow;
             item.RejectionReason    = reason;
+
+            var eventEntity = await _eventRepo.GetAdminByIdAsync(item.EntityId);
+
+            if (eventEntity != null)
+            {
+                eventEntity.Visibility = "rejected";
+                eventEntity.UpdatedAt = DateTimeOffset.UtcNow;
+                eventEntity.UpdatedBy = reviewerId;
+            }
 
             await _queueRepo.SaveChangesAsync();
         }

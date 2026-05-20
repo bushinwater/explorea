@@ -10,6 +10,7 @@ namespace Explorea.Server.Repositories.Implementations
         public AdminEventRepository(AppDbContext db) : base(db) { }
 
         public async Task<(List<Event> Items, int Total)> GetAdminPagedAsync(
+            string? search,
             Guid? destinationId, int? cityId, int? typeId,
             DateTimeOffset? startFrom, DateTimeOffset? startTo,
             List<Guid>? restrictToDestinationIds, List<int>? restrictToCityIds,
@@ -22,8 +23,22 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(e => e.Country)
                 .Include(e => e.Destination)
                 .Include(e => e.Images)
-                .Where(e => !e.IsDeleted)
+                .Where(e => !e.IsDeleted && e.Visibility == "published")
                 .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+
+                query = query.Where(e =>
+                    e.Name.ToLower().Contains(term) ||
+                    (e.Description != null && e.Description.ToLower().Contains(term)) ||
+                    (e.Address != null && e.Address.ToLower().Contains(term)) ||
+                    (e.City != null && e.City.Name.ToLower().Contains(term)) ||
+                    (e.Destination != null && e.Destination.Name.ToLower().Contains(term)) ||
+                    (e.Type != null && e.Type.Name.ToLower().Contains(term))
+                );
+            }
 
             if (destinationId.HasValue)
                 query = query.Where(e => e.DestinationId == destinationId.Value);
@@ -41,10 +56,8 @@ namespace Explorea.Server.Repositories.Implementations
                 query = query.Where(e => e.StartDatetime <= startTo.Value);
 
             if (restrictToDestinationIds != null && restrictToCityIds != null)
-                query = query.Where(e =>
-                    (e.DestinationId.HasValue && restrictToDestinationIds.Contains(e.DestinationId.Value)) ||
-                    (e.CityId.HasValue && restrictToCityIds.Contains(e.CityId.Value)));
-
+                query = query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
+                
             var total = await query.CountAsync();
             var items = await query
                 .OrderByDescending(e => e.StartDatetime)
@@ -53,6 +66,62 @@ namespace Explorea.Server.Repositories.Implementations
                 .ToListAsync();
 
             return (items, total);
+        }
+
+        public async Task<int> CountActiveAsync(
+            List<Guid>? restrictToDestinationIds,
+            List<int>? restrictToCityIds
+        )
+        {
+            var query = _db.Events
+                .IgnoreQueryFilters()
+                .Where(e => !e.IsDeleted && e.Visibility == "published");
+
+            query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
+
+            return await query.CountAsync();
+        }
+        public async Task<int> CountApprovedThisMonthAsync(
+            List<Guid>? restrictToDestinationIds,
+            List<int>? restrictToCityIds
+        )
+        {
+            var now = DateTimeOffset.UtcNow;
+            var monthStart = new DateTimeOffset(
+                now.Year,
+                now.Month,
+                1,
+                0,
+                0,
+                0,
+                0,
+                TimeSpan.Zero
+            );
+
+            var query = _db.Events
+                .IgnoreQueryFilters()
+                .Where(e => !e.IsDeleted 
+                    && e.CreatedAt >= monthStart
+                    && e.Visibility == "published");
+
+            query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
+
+            return await query.CountAsync();
+        }
+
+        private static IQueryable<Event> ApplyAccessRestrictions(
+            IQueryable<Event> query,
+            List<Guid>? restrictToDestinationIds,
+            List<int>? restrictToCityIds
+        )
+        {
+            if(restrictToDestinationIds != null && restrictToCityIds != null)
+                query = query.Where(e =>
+                    (e.DestinationId.HasValue && restrictToDestinationIds.Contains(e.DestinationId.Value))
+                    || (e.CityId.HasValue && restrictToCityIds.Contains(e.CityId.Value))
+                );
+            
+            return query;
         }
 
         public async Task<Event?> GetAdminByIdAsync(Guid id)

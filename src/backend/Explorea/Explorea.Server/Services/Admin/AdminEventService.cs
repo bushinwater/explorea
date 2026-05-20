@@ -12,41 +12,118 @@ namespace Explorea.Server.Services.Admin
         private readonly IOrganizationAssignmentRepository _assignmentRepo;
         private readonly IDestinationRepository _destinationRepo;
         private readonly IUserRepository _userRepo;
+        private readonly ISubmissionQueueRepository _queueRepo;
 
         public AdminEventService(
             IAdminEventRepository eventRepo,
             IOrganizationAssignmentRepository assignmentRepo,
             IDestinationRepository destinationRepo,
+            ISubmissionQueueRepository queueRepo,
             IUserRepository userRepo)
         {
             _eventRepo       = eventRepo;
             _assignmentRepo  = assignmentRepo;
             _destinationRepo = destinationRepo;
+            _queueRepo       = queueRepo;
             _userRepo        = userRepo;
         }
 
-        public async Task<(List<AdminEventListDto> Items, int Total)> GetAllAsync(
-            Guid? destinationId, int? cityId, int? typeId,
-            DateTimeOffset? startFrom, DateTimeOffset? startTo,
-            int page, int pageSize, Guid currentUserId)
+        public async Task<AdminEventStatsDto> GetStatsDtoAsync(Guid currentUserId)
+        {
+            var (restrictToDestinationIds, restrictToCityIds) =
+                await GetAccessRestrictionsAsync(currentUserId);
+            
+            var activeCount = await _eventRepo.CountActiveAsync(
+                restrictToDestinationIds,
+                restrictToCityIds
+            );
+
+            var pendingCount = await _queueRepo.CountAsync(
+                entityType: "event",
+                statuses: new[] { "Pending" },
+                restrictToDestinationIds: restrictToDestinationIds
+            );
+
+            var rejectedCount = await _queueRepo.CountAsync(
+                entityType: "event",
+                statuses: new[] { "RejectedByTO", "RejectedByOwner" },
+                restrictToDestinationIds: restrictToDestinationIds
+            );
+
+            var now = DateTimeOffset.UtcNow;
+            var monthStart = new DateTimeOffset(
+                now.Year,
+                now.Month,
+                1,
+                0,
+                0,
+                0,
+                TimeSpan.Zero
+            );
+
+            var approvedThisMonth = await _queueRepo.CountAsync(
+                entityType: "event",
+                statuses: new[] { "ApprovedByTO", "ApprovedByOwner" },
+                restrictToDestinationIds: restrictToDestinationIds,
+                reviewedByTOFrom: monthStart
+            );
+
+            return new AdminEventStatsDto
+            {
+                ActiveRequests = activeCount,
+                ActiveRequestsTrend = string.Empty,
+
+                PendingApproval = pendingCount,
+                PendingApprovalHint = "Zahtevi na čekanju",
+
+                ApprovedThisMonth = approvedThisMonth,
+                ApprovedThisMonthTrend = "Odobreno ovog meseca",
+
+                Rejected = rejectedCount,
+                RejectedNote = "Odbijeni zahtevi",
+
+                TabPendingCount = pendingCount,
+                TabActiveCount = activeCount
+            };
+        }
+
+        private async Task<(List<Guid>? RestrictToDestinationIds, List<int>? RestrictToCityIds)>
+            GetAccessRestrictionsAsync(Guid currentUserId)
         {
             List<Guid>? restrictToDestinationIds = null;
-            List<int>?  restrictToCityIds        = null;
+            List<int>? restrictToCityIds = null;
 
             var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
 
-            if (user?.Role.Name == RoleNames.TouristOrganization)
+            if(user?.Role.Name == RoleNames.TouristOrganization)
             {
                 var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
-                restrictToDestinationIds = assignments.Select(a => a.DestinationId).ToList();
-                restrictToCityIds = await _destinationRepo.GetCityIdsByDestinationsAsync(restrictToDestinationIds);
-            }
-            else if (user?.Role.Name != RoleNames.SuperAdmin)
+
+                restrictToDestinationIds = assignments
+                    .Select(a => a.DestinationId)
+                    .ToList();
+
+                restrictToCityIds = await _destinationRepo
+                    .GetCityIdsByDestinationsAsync(restrictToDestinationIds);
+            } else if (user?.Role.Name != RoleNames.SuperAdmin)
             {
                 throw new UnauthorizedAccessException("Access denied.");
             }
 
+            return (restrictToDestinationIds, restrictToCityIds);
+        }
+
+        public async Task<(List<AdminEventListDto> Items, int Total)> GetAllAsync(
+            string? search,
+            Guid? destinationId, int? cityId, int? typeId,
+            DateTimeOffset? startFrom, DateTimeOffset? startTo,
+            int page, int pageSize, Guid currentUserId)
+        {
+            var (restrictToDestinationIds, restrictToCityIds) =
+                await GetAccessRestrictionsAsync(currentUserId);
+                
             var (items, total) = await _eventRepo.GetAdminPagedAsync(
+                search,
                 destinationId, cityId, typeId,
                 startFrom, startTo,
                 restrictToDestinationIds, restrictToCityIds,
@@ -252,5 +329,6 @@ namespace Explorea.Server.Services.Admin
             CreatedAt      = e.CreatedAt,
             UpdatedAt      = e.UpdatedAt
         };
-    }
+
+  }
 }
