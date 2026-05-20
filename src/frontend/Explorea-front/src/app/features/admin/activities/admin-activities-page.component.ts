@@ -158,6 +158,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     () => this.authContext.context().role === 'super_admin',
   );
 
+  protected readonly isTouristOrganization = computed(
+    () => this.authContext.context().role === 'tourist_organization',
+  );
+
   protected readonly activeFilterCount = computed(() => {
     const f = this.filters();
     return [
@@ -165,7 +169,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       f.status !== 'all',
       f.difficulty !== 'all',
       f.minRating !== 'all',
-      f.regionId !== 'all',
+      // Don't count region for TO — it's always locked to their region
+      !this.managedRegion() && f.regionId !== 'all',
     ].filter(Boolean).length;
   });
 
@@ -175,12 +180,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     { value: 'inactive', label: 'Neaktivno' },
   ];
 
-  protected readonly difficulties: Array<{ value: ActivityDifficulty | 'all'; label: string }> = [
+  protected readonly difficulties = signal<Array<{ value: ActivityDifficulty | 'all'; label: string }>>([
     { value: 'all', label: 'Sve težine' },
-    { value: 'easy', label: 'Easy' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'hard', label: 'Hard' },
-  ];
+  ]);
 
   protected readonly ratingOptions: Array<{ value: number | 'all'; label: string }> = [
     { value: 'all', label: 'Sve ocene' },
@@ -188,6 +190,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     { value: 4, label: 'Sve 4+' },
     { value: 4.5, label: 'Sve 4.5+' },
   ];
+
+  protected readonly managedRegion = signal<{ id: number; name: string } | null>(null);
 
   constructor(
     private readonly activitiesService: AdminActivitiesService,
@@ -238,7 +242,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     );
 
     this.loadStats();
-    this.loadCategories();
+    this.loadFilterOptions();
     this.loadRegions();
     this.loadActivities();
   }
@@ -278,6 +282,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   protected resetFilters(): void {
+    const mr = this.managedRegion();
     this.filters.update((f) => ({
       search: '',
       ids: undefined,
@@ -285,7 +290,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       status: 'all',
       difficulty: 'all',
       minRating: 'all',
-      regionId: 'all',
+      regionId: mr ? mr.id : 'all',
       page: 1,
       pageSize: f.pageSize,
     }));
@@ -799,7 +804,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected selectedDifficultyLabel(): string {
     const value = this.filters().difficulty;
     if (value === 'all') return '';
-    return this.difficulties.find((d) => d.value === value)?.label ?? value;
+    return this.difficulties().find((d) => d.value === value)?.label ?? value;
   }
 
   protected selectedRatingLabel(): string {
@@ -892,7 +897,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   private parseDifficulty(value: string | null): ActivityDifficulty | 'all' {
-    return this.difficulties.some((d) => d.value === value) ? (value as ActivityDifficulty | 'all') : 'all';
+    const known: ActivityDifficulty[] = ['easy', 'medium', 'hard'];
+    return known.includes(value as ActivityDifficulty) ? (value as ActivityDifficulty) : 'all';
   }
 
   private parseMinRating(value: string | null): number | 'all' {
@@ -992,10 +998,31 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     );
   }
 
-  private loadCategories(): void {
+  private readonly difficultyLabelMap: Record<string, string> = {
+    easy: 'Easy', medium: 'Medium', hard: 'Hard',
+  };
+
+  private loadFilterOptions(): void {
     this.subscription.add(
-      this.activitiesService.getCategories().subscribe({
-        next: (cats) => this.categories.set(cats),
+      this.activitiesService.getFilterOptions().subscribe({
+        next: (opts) => {
+          this.categories.set(opts.categories);
+
+          this.difficulties.set([
+            { value: 'all', label: 'Sve težine' },
+            ...opts.difficulties.map(d => ({
+              value: d as ActivityDifficulty,
+              label: this.difficultyLabelMap[d] ?? d,
+            })),
+          ]);
+
+          const mr = opts.managedRegion ?? null;
+          this.managedRegion.set(mr);
+          if (mr) {
+            this.filters.update(f => ({ ...f, regionId: mr.id }));
+            this.syncFiltersToQueryParams();
+          }
+        },
       }),
     );
   }

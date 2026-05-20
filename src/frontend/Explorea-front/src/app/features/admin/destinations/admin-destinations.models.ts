@@ -16,6 +16,7 @@ export interface DestinationDetail {
   visibility: string;
   previewImageUrl: string | null;
   typeId: number | null;
+  regionId: number | null;
   images: DestinationImage[];
 }
 

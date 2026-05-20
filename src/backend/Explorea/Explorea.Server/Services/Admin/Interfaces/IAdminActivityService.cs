@@ -26,5 +26,7 @@ namespace Explorea.Server.Services.Admin.Interfaces
         Task<bool> DeleteAsync(
             Guid id,
             Guid currentUserId);
+
+        Task<AdminActivityFilterOptionsDto> GetFilterOptionsAsync(Guid currentUserId);
     }
 }

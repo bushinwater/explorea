@@ -107,6 +107,16 @@
           </div>
 
           <div class="edit-field">
+            <label class="edit-field__label" for="new-dest-region">Regija</label>
+            <select id="new-dest-region" class="edit-field__select" formControlName="regionId">
+              <option [ngValue]="null">— Bez regije —</option>
+              @for (r of localRegions(); track r.id) {
+                <option [ngValue]="r.id.toString()">{{ r.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="edit-field">
             <label class="edit-field__label" for="new-dest-vis">Status <span class="edit-field__required">*</span></label>
             <select id="new-dest-vis" class="edit-field__select" formControlName="visibility">
               @for (opt of visibilityOptions; track opt.value) {

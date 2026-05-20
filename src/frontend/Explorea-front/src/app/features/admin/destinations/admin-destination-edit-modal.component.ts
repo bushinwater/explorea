@@ -17,7 +17,7 @@ import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminDestinationsService } from './admin-destinations.service';
-import { DestinationDetail, DestinationImage, DestinationRow, TypeOption } from './admin-destinations.models';
+import { DestinationDetail, DestinationImage, DestinationRow, RegionOption, TypeOption } from './admin-destinations.models';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
@@ -63,6 +63,7 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
     description: new FormControl('', [Validators.maxLength(MAX_DESC)]),
     visibility:  new FormControl('published'),
     typeId:      new FormControl<string | null>(null),
+    regionId:    new FormControl<string | null>(null),
     address:     new FormControl(''),
     latitude:    new FormControl<number | null>(null),
     longitude:   new FormControl<number | null>(null),
@@ -79,6 +80,7 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
   protected readonly uploadingCount = signal(0);
   protected readonly heroImageId      = signal<string | null>(null);
   protected readonly localTypes       = signal<TypeOption[]>([]);
+  protected readonly localRegions     = signal<RegionOption[]>([]);
 
   private originalHeroImageId: string | null = null;
   protected readonly showNewTypeInput = signal(false);
@@ -108,6 +110,7 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.localTypes.set([...this.types]);
+    this.svc.getRegions().subscribe(r => { this.localRegions.set(r); this.cdr.detectChanges(); });
     this.sub.add(
       this.svc.getDestinationById(this.row.id).subscribe({
         next: (detail) => {
@@ -115,7 +118,8 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
             name:        detail.name,
             description: detail.description ?? '',
             visibility:  detail.visibility,
-            typeId:      detail.typeId?.toString() ?? null,
+            typeId:      detail.typeId?.toString()   ?? null,
+            regionId:    detail.regionId?.toString() ?? null,
             latitude:    detail.latitude,
             longitude:   detail.longitude,
           });
@@ -282,13 +286,15 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
     this.sub.add(
       this.svc
         .updateDestination(this.row.id, {
-          name:        v.name ?? undefined,
-          description: v.description ?? undefined,
-          visibility:  v.visibility ?? undefined,
-          latitude:    v.latitude ?? undefined,
-          longitude:   v.longitude ?? undefined,
-          typeId:      v.typeId ? parseInt(v.typeId) : undefined,
-          clearTypeId: v.typeId === null,
+          name:          v.name ?? undefined,
+          description:   v.description ?? undefined,
+          visibility:    v.visibility ?? undefined,
+          latitude:      v.latitude ?? undefined,
+          longitude:     v.longitude ?? undefined,
+          typeId:        v.typeId   ? parseInt(v.typeId)   : undefined,
+          clearTypeId:   v.typeId   === null,
+          regionId:      v.regionId ? parseInt(v.regionId) : undefined,
+          clearRegionId: v.regionId === null,
         })
         .subscribe({
           next: (updated) => {

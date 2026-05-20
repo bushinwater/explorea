@@ -17,7 +17,7 @@ import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminDestinationsService } from './admin-destinations.service';
-import { DestinationImage, DestinationRow, TypeOption } from './admin-destinations.models';
+import { DestinationImage, DestinationRow, RegionOption, TypeOption } from './admin-destinations.models';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
@@ -62,6 +62,7 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
     description: new FormControl('', [Validators.required, Validators.maxLength(MAX_DESC)]),
     visibility:  new FormControl('published', [Validators.required]),
     typeId:      new FormControl<string | null>(null),
+    regionId:    new FormControl<string | null>(null),
     address:     new FormControl(''),
     latitude:    new FormControl<number | null>(null, [Validators.required]),
     longitude:   new FormControl<number | null>(null, [Validators.required]),
@@ -79,6 +80,7 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
   protected readonly heroImageId      = signal<string | null>(null);
   protected readonly isSettingHero    = signal(false);
   protected readonly localTypes       = signal<TypeOption[]>([]);
+  protected readonly localRegions     = signal<RegionOption[]>([]);
   protected readonly showNewTypeInput = signal(false);
   protected readonly newTypeName      = signal('');
   protected readonly isCreatingType   = signal(false);
@@ -106,6 +108,7 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.localTypes.set([...this.types]);
+    this.svc.getRegions().subscribe(r => { this.localRegions.set(r); this.cdr.detectChanges(); });
     setTimeout(() => this.initMap(), 50);
   }
 
@@ -167,7 +170,8 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
         latitude:    v.latitude!,
         longitude:   v.longitude!,
         visibility:  v.visibility!,
-        typeId:      v.typeId ? parseInt(v.typeId) : null,
+        typeId:      v.typeId   ? parseInt(v.typeId)   : null,
+        regionId:    v.regionId ? parseInt(v.regionId) : null,
       }).subscribe({
         next: (row) => {
           this.isSaving.set(false);

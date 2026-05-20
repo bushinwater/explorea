@@ -30,6 +30,106 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        // GET /api/admin/reports/destinations-table
+        [HttpGet("destinations-table")]
+        public async Task<IActionResult> GetDestinationsTable(
+            [FromQuery] string?  sortBy,
+            [FromQuery] string?  filterSubType,
+            [FromQuery] string?  filterRegion,
+            [FromQuery] decimal? filterMinRating)
+        {
+            try
+            {
+                var data = await _service.GetDestinationsTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, GetCurrentUserId());
+                return Ok(data);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
+        // GET /api/admin/reports/entity-table
+        [HttpGet("entity-table")]
+        public async Task<IActionResult> GetEntityTable(
+            [FromQuery] string        entity,
+            [FromQuery] string?       sortBy,
+            [FromQuery] string?       filterSubType,
+            [FromQuery] string?       filterRegion,
+            [FromQuery] decimal?      filterMinRating,
+            [FromQuery] string?       filterDifficulty,
+            [FromQuery] decimal?      filterMinPrice,
+            [FromQuery] decimal?      filterMaxPrice,
+            [FromQuery] List<string>? filterExtraFilters)
+        {
+            try
+            {
+                var data = await _service.GetEntityTableAsync(
+                    entity, sortBy,
+                    filterSubType, filterRegion, filterMinRating,
+                    filterDifficulty, filterMinPrice, filterMaxPrice,
+                    filterExtraFilters,
+                    GetCurrentUserId());
+                return Ok(data);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
+        // GET /api/admin/reports/subtype-options?entity=places
+        [HttpGet("subtype-options")]
+        public async Task<IActionResult> GetSubtypeOptions([FromQuery] string entity)
+        {
+            try
+            {
+                return Ok(await _service.GetSubtypeOptionsAsync(entity, GetCurrentUserId()));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
+        // GET /api/admin/reports/filter-options?entity=activities&field=subType
+        [HttpGet("filter-options")]
+        public async Task<IActionResult> GetFilterOptions([FromQuery] string entity, [FromQuery] string field)
+        {
+            try
+            {
+                return Ok(await _service.GetFilterOptionsAsync(entity, field, GetCurrentUserId()));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
+        // GET /api/admin/reports/aggregate?entity=destinations&groupBy=region&metric=count&dateFrom=2024-01-01&dateTo=2024-12-31
+        [HttpGet("aggregate")]
+        public async Task<IActionResult> GetAggregate(
+            [FromQuery] string entity,
+            [FromQuery] string groupBy,
+            [FromQuery] string metric,
+            [FromQuery] DateOnly? dateFrom,
+            [FromQuery] DateOnly? dateTo)
+        {
+            try
+            {
+                var data = await _service.GetAggregateAsync(entity, groupBy, metric, dateFrom, dateTo, GetCurrentUserId());
+                return Ok(data);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (NotSupportedException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         // GET /api/admin/reports/preview?metrics=traffic,userGrowth&dimensions=reviews,requests&dateFrom=2024-01-01&dateTo=2024-01-31
         [HttpGet("preview")]
         public async Task<IActionResult> GetPreview(
