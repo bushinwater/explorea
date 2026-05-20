@@ -125,16 +125,43 @@ namespace Explorea.Server.Repositories.Implementations
         public async Task<List<EntityTableRowDto>> GetEntityTableAsync(
             string entity, string? sortBy,
             string? filterSubType, string? filterRegion, decimal? filterMinRating,
-            string? filterPriceRange, string? filterAmenity,
-            string? filterDifficulty, string? filterPriceCat,
+            string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
+            List<string>? filterExtraFilters,
             List<Guid>? destIds, Guid? placeOwnerUserId)
         {
             return entity switch
             {
-                "activities" => await GetActivitiesTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterDifficulty, filterPriceCat, destIds, placeOwnerUserId),
-                "events"     => await GetEventsTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterPriceCat, destIds, placeOwnerUserId),
-                "places"     => await GetPlacesTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterPriceRange, filterAmenity, destIds, placeOwnerUserId),
+                "activities" => await GetActivitiesTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterDifficulty, filterMinPrice, filterMaxPrice, destIds, placeOwnerUserId),
+                "events"     => await GetEventsTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterMinPrice, filterMaxPrice, filterExtraFilters, destIds, placeOwnerUserId),
+                "places"     => await GetPlacesTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterExtraFilters, destIds, placeOwnerUserId),
                 _            => [],
+            };
+        }
+
+        public async Task<List<SubtypeOptionDto>> GetSubtypeOptionsAsync(
+            string entity, List<Guid>? destIds, Guid? placeOwnerUserId)
+        {
+            return entity switch
+            {
+                "places" => (await ScopePlaces(destIds, placeOwnerUserId)
+                    .Where(p => p.Type != null)
+                    .Select(p => new { Id = p.Type!.Id, Name = p.Type!.Name })
+                    .Distinct()
+                    .OrderBy(x => x.Name)
+                    .ToListAsync())
+                    .Select(x => new SubtypeOptionDto { Id = x.Id, Name = x.Name })
+                    .ToList(),
+
+                "events" => (await ScopeEvents(destIds, placeOwnerUserId)
+                    .Where(e => e.Type != null)
+                    .Select(e => new { Id = e.Type!.Id, Name = e.Type!.Name })
+                    .Distinct()
+                    .OrderBy(x => x.Name)
+                    .ToListAsync())
+                    .Select(x => new SubtypeOptionDto { Id = x.Id, Name = x.Name })
+                    .ToList(),
+
+                _ => [],
             };
         }
 
@@ -143,9 +170,10 @@ namespace Explorea.Server.Repositories.Implementations
         {
             return (entity, field) switch
             {
-                ("destinations", "subType") => await _db.Destinations
-                    .Where(d => !d.IsDeleted && d.Type != null)
-                    .Select(d => d.Type!.Name).Distinct().OrderBy(x => x).ToListAsync(),
+                ("destinations", "subType") => await _db.DestinationTypes
+                    .OrderBy(t => t.Name)
+                    .Select(t => t.Name)
+                    .ToListAsync(),
 
                 ("destinations", "region") => await _db.Destinations
                     .Where(d => !d.IsDeleted && d.City != null && d.City.Region != null)
@@ -163,9 +191,6 @@ namespace Explorea.Server.Repositories.Implementations
                     .Where(a => !string.IsNullOrEmpty(a.DifficultyLevel))
                     .Select(a => a.DifficultyLevel!).Distinct().OrderBy(x => x).ToListAsync(),
 
-                ("activities", "priceCat") => await BuildPriceCatAsync(
-                    ScopeActivities(destIds, placeOwnerUserId).Select(a => (decimal?)a.Price)),
-
                 ("events", "subType") => await ScopeEvents(destIds, placeOwnerUserId)
                     .Where(e => e.Type != null)
                     .Select(e => e.Type!.Name).Distinct().OrderBy(x => x).ToListAsync(),
@@ -173,9 +198,6 @@ namespace Explorea.Server.Repositories.Implementations
                 ("events", "region") => await ScopeEvents(destIds, placeOwnerUserId)
                     .Where(e => e.City != null && e.City.Region != null)
                     .Select(e => e.City!.Region!.Name).Distinct().OrderBy(x => x).ToListAsync(),
-
-                ("events", "priceCat") => await BuildPriceCatAsync(
-                    ScopeEvents(destIds, placeOwnerUserId).Select(e => (decimal?)e.Price)),
 
                 ("places", "subType") => await ScopePlaces(destIds, placeOwnerUserId)
                     .Where(p => p.Type != null)
@@ -185,31 +207,13 @@ namespace Explorea.Server.Repositories.Implementations
                     .Where(p => p.City != null && p.City.Region != null)
                     .Select(p => p.City!.Region!.Name).Distinct().OrderBy(x => x).ToListAsync(),
 
-                ("places", "priceRange") => await ScopePlaces(destIds, placeOwnerUserId)
-                    .Where(p => !string.IsNullOrEmpty(p.PriceRange))
-                    .Select(p => p.PriceRange!).Distinct().OrderBy(x => x).ToListAsync(),
-
-                ("places", "amenity") => await ScopePlaces(destIds, placeOwnerUserId)
-                    .SelectMany(p => p.AmenityLinks)
-                    .Select(l => l.Amenity.Name).Distinct().OrderBy(x => x).ToListAsync(),
-
                 _ => [],
             };
         }
 
-        private static async Task<List<string>> BuildPriceCatAsync(IQueryable<decimal?> prices)
-        {
-            var hasFree = await prices.AnyAsync(p => p == null || p == 0);
-            var hasPaid = await prices.AnyAsync(p => p != null && p > 0);
-            var result  = new List<string>();
-            if (hasFree) result.Add("Besplatno");
-            if (hasPaid) result.Add("Placeno");
-            return result;
-        }
-
         private async Task<List<EntityTableRowDto>> GetActivitiesTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
-            string? filterDifficulty, string? filterPriceCat,
+            string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
             List<Guid>? destIds, Guid? placeOwnerUserId)
         {
             var q = ScopeActivities(destIds, placeOwnerUserId);
@@ -221,8 +225,8 @@ namespace Explorea.Server.Repositories.Implementations
                 q = q.Where(a => (double)a.AvgRating >= (double)filterMinRating.Value);
             if (!string.IsNullOrEmpty(filterDifficulty))
                 q = q.Where(a => a.DifficultyLevel == filterDifficulty);
-            if (filterPriceCat == "Besplatno") q = q.Where(a => a.Price == null || a.Price == 0);
-            if (filterPriceCat == "Placeno")   q = q.Where(a => a.Price != null && a.Price > 0);
+            if (filterMinPrice.HasValue) q = q.Where(a => a.Price != null && a.Price >= filterMinPrice.Value);
+            if (filterMaxPrice.HasValue) q = q.Where(a => a.Price != null && a.Price <= filterMaxPrice.Value);
 
             var proj = q.Select(a => new EntityTableRowDto
             {
@@ -246,7 +250,7 @@ namespace Explorea.Server.Repositories.Implementations
 
         private async Task<List<EntityTableRowDto>> GetEventsTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
-            string? filterPriceCat,
+            decimal? filterMinPrice, decimal? filterMaxPrice, List<string>? filterExtraFilters,
             List<Guid>? destIds, Guid? placeOwnerUserId)
         {
             var q = ScopeEvents(destIds, placeOwnerUserId);
@@ -256,8 +260,17 @@ namespace Explorea.Server.Repositories.Implementations
                 q = q.Where(e => e.City != null && e.City.Region != null && e.City.Region.Name == filterRegion);
             if (filterMinRating.HasValue)
                 q = q.Where(e => (double)e.AvgRating >= (double)filterMinRating.Value);
-            if (filterPriceCat == "Besplatno") q = q.Where(e => e.Price == null || e.Price == 0);
-            if (filterPriceCat == "Placeno")   q = q.Where(e => e.Price != null && e.Price > 0);
+            if (filterMinPrice.HasValue) q = q.Where(e => e.Price != null && e.Price >= filterMinPrice.Value);
+            if (filterMaxPrice.HasValue) q = q.Where(e => e.Price != null && e.Price <= filterMaxPrice.Value);
+            if (filterExtraFilters?.Count > 0)
+            {
+                var dict = ParseExtraFilters(filterExtraFilters);
+                foreach (var kvp in dict)
+                {
+                    var snippet = $"{{\"{kvp.Key}\": {kvp.Value.ToLower()}}}";
+                    q = q.Where(e => e.ExtraFilters != null && EF.Functions.JsonContains(e.ExtraFilters, snippet));
+                }
+            }
 
             var proj = q.Select(e => new EntityTableRowDto
             {
@@ -281,7 +294,7 @@ namespace Explorea.Server.Repositories.Implementations
 
         private async Task<List<EntityTableRowDto>> GetPlacesTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
-            string? filterPriceRange, string? filterAmenity,
+            List<string>? filterExtraFilters,
             List<Guid>? destIds, Guid? placeOwnerUserId)
         {
             var q = ScopePlaces(destIds, placeOwnerUserId);
@@ -291,10 +304,15 @@ namespace Explorea.Server.Repositories.Implementations
                 q = q.Where(p => p.City != null && p.City.Region != null && p.City.Region.Name == filterRegion);
             if (filterMinRating.HasValue)
                 q = q.Where(p => (double)p.AvgRating >= (double)filterMinRating.Value);
-            if (!string.IsNullOrEmpty(filterPriceRange))
-                q = q.Where(p => p.PriceRange == filterPriceRange);
-            if (!string.IsNullOrEmpty(filterAmenity))
-                q = q.Where(p => p.AmenityLinks.Any(l => l.Amenity.Name == filterAmenity));
+            if (filterExtraFilters?.Count > 0)
+            {
+                var dict = ParseExtraFilters(filterExtraFilters);
+                foreach (var kvp in dict)
+                {
+                    var snippet = $"{{\"{kvp.Key}\": {kvp.Value.ToLower()}}}";
+                    q = q.Where(p => p.ExtraFilters != null && EF.Functions.JsonContains(p.ExtraFilters, snippet));
+                }
+            }
 
             var proj = q.Select(p => new EntityTableRowDto
             {
@@ -926,6 +944,18 @@ namespace Explorea.Server.Repositories.Implementations
                 return query.Where(r => r.EntityType == "place" && placeIds.Contains(r.EntityId));
             }
             return query;
+        }
+
+        private static Dictionary<string, string> ParseExtraFilters(List<string>? raw)
+        {
+            if (raw == null || raw.Count == 0) return new Dictionary<string, string>();
+            var dict = new Dictionary<string, string>();
+            foreach (var entry in raw)
+            {
+                var idx = entry.IndexOf(':');
+                if (idx > 0) dict[entry[..idx]] = entry[(idx + 1)..];
+            }
+            return dict;
         }
 
         // Groups a DateTimeOffset sequence by year-month and returns ordered AggregatePoints

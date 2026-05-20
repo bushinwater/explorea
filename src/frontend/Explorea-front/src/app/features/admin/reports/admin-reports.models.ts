@@ -193,6 +193,25 @@ export interface SavedReportConfig {
   dateTo:    string | null;
 }
 
+export interface SubtypeOption {
+  id:   number;
+  name: string;
+}
+
+export interface FilterOption {
+  optionValue: string;
+  optionLabel: string;
+}
+
+export interface FilterDefinition {
+  id:          number;
+  filterKey:   string;
+  filterLabel: string;
+  filterType:  'boolean' | 'range_int' | 'range_decimal' | 'select' | 'multi_select';
+  sortOrder:   number;
+  options:     FilterOption[];
+}
+
 export const METRIC_COLORS: Record<ReportMetricId, string> = {
   count:     '#d9b26f',
   traffic:   '#28694c',

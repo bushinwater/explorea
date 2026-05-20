@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   AggregatePoint, CreateReportTemplateDto, DestinationsTableItem,
-  EntityTableRow, ReportInsights, ReportTemplateDto,
+  EntityTableRow, FilterDefinition, ReportInsights, ReportTemplateDto, SubtypeOption,
 } from './admin-reports.models';
 
 @Injectable({ providedIn: 'root' })
@@ -45,22 +45,24 @@ export class AdminReportsService {
   getEntityTable(
     entity: string,
     sortBy: string,
-    filterSubType?:   string | null,
-    filterRegion?:    string | null,
-    filterMinRating?: string | null,
-    filterPriceRange?: string | null,
-    filterAmenity?:   string | null,
-    filterDifficulty?: string | null,
-    filterPriceCat?:  string | null,
+    filterSubType?:      string | null,
+    filterRegion?:       string | null,
+    filterMinRating?:    string | null,
+    filterDifficulty?:   string | null,
+    filterMinPrice?:     number | null,
+    filterMaxPrice?:     number | null,
+    filterExtraFilters?: string[] | null,
   ): Observable<EntityTableRow[]> {
     let params = new HttpParams().set('entity', entity).set('sortBy', sortBy);
     if (filterSubType)    params = params.set('filterSubType',    filterSubType);
     if (filterRegion)     params = params.set('filterRegion',     filterRegion);
     if (filterMinRating)  params = params.set('filterMinRating',  filterMinRating);
-    if (filterPriceRange) params = params.set('filterPriceRange', filterPriceRange);
-    if (filterAmenity)    params = params.set('filterAmenity',    filterAmenity);
     if (filterDifficulty) params = params.set('filterDifficulty', filterDifficulty);
-    if (filterPriceCat)   params = params.set('filterPriceCat',   filterPriceCat);
+    if (filterMinPrice != null) params = params.set('filterMinPrice', String(filterMinPrice));
+    if (filterMaxPrice != null) params = params.set('filterMaxPrice', String(filterMaxPrice));
+    if (filterExtraFilters?.length) {
+      filterExtraFilters.forEach(f => { params = params.append('filterExtraFilters', f); });
+    }
     return this.http.get<EntityTableRow[]>(`${this.base}/entity-table`, { params });
   }
 
@@ -69,6 +71,19 @@ export class AdminReportsService {
       `${this.base}/filter-options`,
       { params: new HttpParams().set('entity', entity).set('field', field) },
     );
+  }
+
+  getSubtypeOptions(entity: string): Observable<SubtypeOption[]> {
+    return this.http.get<SubtypeOption[]>(
+      `${this.base}/subtype-options`,
+      { params: new HttpParams().set('entity', entity) },
+    );
+  }
+
+  getFilterDefinitions(entityType: string, typeId: number): Observable<FilterDefinition[]> {
+    return this.http.get<FilterDefinition[]>('/api/filter-definitions', {
+      params: new HttpParams().set('entityType', entityType).set('typeId', String(typeId)),
+    });
   }
 
   getTemplates(): Observable<ReportTemplateDto[]> {

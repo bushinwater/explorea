@@ -221,6 +221,113 @@
   min-width: 80px;
 }
 
+/* ===== FILTER EXTRA LIST (appears when a subtype is selected) ===== */
+.rp-filter-extra-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3) var(--sp-5);
+  padding: var(--sp-3) var(--sp-4);
+  margin: 0 var(--sp-2);
+  background: rgba(28, 50, 35, 0.25);
+  border-left: 2px solid var(--color-primary);
+  border-radius: 0 6px 6px 0;
+}
+
+.rp-filter-extra-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  cursor: pointer;
+}
+
+.rp-filter-extra-item__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.rp-filter-extra-select {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.rp-filter-extra-select__label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Toggle button */
+.rp-toggle-btn {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--color-surface-3, #2a3a2d);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.18s, border-color 0.18s;
+}
+
+.rp-toggle-btn--on {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.rp-toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+}
+
+.rp-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.18s;
+}
+
+.rp-toggle-btn--on .rp-toggle-thumb {
+  transform: translateX(16px);
+}
+
+/* Price od-do row */
+.rp-price-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.rp-price-input {
+  width: 88px;
+  padding: 4px 8px;
+  background: var(--color-surface-2, #1e2b20);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.rp-price-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.rp-price-sep {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
 /* Pills (dimension / metric) */
 .rp-pills {
   display: flex;

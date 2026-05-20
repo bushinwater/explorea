@@ -16,10 +16,10 @@ import { FeedbackBannerComponent, StatCardComponent } from '@shared/components';
 import {
   AggregatePoint, DEST_SORT_OPTIONS, DIMENSION_CONFIGS, DestTableSortBy,
   DestinationsTableItem, ENTITY_CONFIGS, EntityTableRow, FLAT_TABLE_COLS,
-  FLAT_TABLE_ENTITIES, FLAT_TABLE_SORT_OPTIONS, FlatTableEntity,
+  FLAT_TABLE_ENTITIES, FLAT_TABLE_SORT_OPTIONS, FilterDefinition, FlatTableEntity,
   METRIC_COLORS, METRIC_CONFIGS, PIE_COLORS, ReportDimensionId, ReportEntity,
   ReportInsights, ReportMetricId, ReportQueueItem, ReportTemplateDto,
-  SavedReportConfig, VIZ_BY_DIM, VIZ_ICONS, VIZ_LABELS, VizType,
+  SavedReportConfig, SubtypeOption, VIZ_BY_DIM, VIZ_ICONS, VIZ_LABELS, VizType,
 } from './admin-reports.models';
 import { AdminReportsService } from './admin-reports.service';
 
@@ -72,14 +72,14 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   readonly filterSubType         = signal<string | null>(null);
   readonly filterRegion          = signal<string | null>(null);
   readonly filterMinRating       = signal<string | null>(null);
-  readonly filterPriceRangeOpts  = signal<string[]>([]);
-  readonly filterPriceRange      = signal<string | null>(null);
-  readonly filterAmenityOpts     = signal<string[]>([]);
-  readonly filterAmenity         = signal<string | null>(null);
   readonly filterDifficultyOpts  = signal<string[]>([]);
   readonly filterDifficulty      = signal<string | null>(null);
-  readonly filterPriceCatOpts    = signal<string[]>([]);
-  readonly filterPriceCat        = signal<string | null>(null);
+  readonly filterMinPrice        = signal<number | null>(null);
+  readonly filterMaxPrice        = signal<number | null>(null);
+  readonly subtypeOptionsWithId  = signal<SubtypeOption[]>([]);
+  readonly filterDefs            = signal<FilterDefinition[]>([]);
+  readonly filterDefsLoading     = signal(false);
+  readonly extraFilters          = signal<Record<string, string>>({});
   readonly filterOptionsLoading  = signal(false);
 
   // ─── PDF Queue ───────────────────────────────────────────────────────────
@@ -309,71 +309,118 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     this.filterSubType.set(null);
     this.filterRegion.set(null);
     this.filterMinRating.set(null);
-    this.filterPriceRange.set(null);
-    this.filterAmenity.set(null);
     this.filterDifficulty.set(null);
-    this.filterPriceCat.set(null);
+    this.filterMinPrice.set(null);
+    this.filterMaxPrice.set(null);
+    this.filterDefs.set([]);
+    this.extraFilters.set({});
+    this.subtypeOptionsWithId.set([]);
     this.loadFilterOptions(e);
+  }
+
+  clearSubType(): void {
+    this.filterSubType.set(null);
+    this.extraFilters.set({});
+    this.filterDefs.set([]);
   }
 
   toggleFilter(field: string, value: string): void {
     switch (field) {
-      case 'subType':    this.filterSubType.update(v => v === value ? null : value);    break;
-      case 'region':     this.filterRegion.update(v => v === value ? null : value);     break;
-      case 'minRating':  this.filterMinRating.update(v => v === value ? null : value);  break;
-      case 'priceRange': this.filterPriceRange.update(v => v === value ? null : value); break;
-      case 'amenity':    this.filterAmenity.update(v => v === value ? null : value);    break;
+      case 'subType':
+        this.filterSubType.update(v => v === value ? null : value);
+        this.extraFilters.set({});
+        this.filterDefs.set([]);
+        const next = this.filterSubType();
+        if (next && (this.flatEntity() === 'places' || this.flatEntity() === 'events')) {
+          this.loadFilterDefs(next);
+        }
+        break;
+      case 'region':     this.filterRegion.update(v => v === value ? null : value);    break;
+      case 'minRating':  this.filterMinRating.update(v => v === value ? null : value); break;
       case 'difficulty': this.filterDifficulty.update(v => v === value ? null : value); break;
-      case 'priceCat':   this.filterPriceCat.update(v => v === value ? null : value);   break;
     }
+  }
+
+  toggleExtraFilter(key: string, value: string = 'true'): void {
+    this.extraFilters.update(curr => {
+      const copy = { ...curr };
+      if (copy[key] === value) delete copy[key];
+      else copy[key] = value;
+      return copy;
+    });
+  }
+
+  isExtraFilterActive(key: string, value: string = 'true'): boolean {
+    return this.extraFilters()[key] === value;
+  }
+
+  private loadFilterDefs(subtypeName: string): void {
+    const entity = this.flatEntity();
+    const entityType = entity === 'places' ? 'place' : entity === 'events' ? 'event' : null;
+    if (!entityType) return;
+    const found = this.subtypeOptionsWithId().find(s => s.name === subtypeName);
+    if (!found) return;
+    this.filterDefsLoading.set(true);
+    this.cdr.detectChanges();
+    this.svc.getFilterDefinitions(entityType, found.id).subscribe({
+      next: defs => {
+        this.filterDefs.set(defs);
+        this.filterDefsLoading.set(false);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.filterDefs.set([]);
+        this.filterDefsLoading.set(false);
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   private loadFilterOptions(entity: FlatTableEntity): void {
     this.filterOptionsLoading.set(true);
     this.filterSubTypeOptions.set([]);
     this.filterRegionOptions.set([]);
-    this.filterPriceRangeOpts.set([]);
-    this.filterAmenityOpts.set([]);
     this.filterDifficultyOpts.set([]);
-    this.filterPriceCatOpts.set([]);
 
-    const base$ = [
-      this.svc.getFilterOptions(entity, 'subType'),
-      this.svc.getFilterOptions(entity, 'region'),
-    ];
+    const region$ = this.svc.getFilterOptions(entity, 'region');
 
-    const extra$: ReturnType<typeof this.svc.getFilterOptions>[] = [];
-    const extraKeys: string[] = [];
-
-    if (entity === 'places') {
-      extra$.push(this.svc.getFilterOptions(entity, 'priceRange'));
-      extra$.push(this.svc.getFilterOptions(entity, 'amenity'));
-      extraKeys.push('priceRange', 'amenity');
+    if (entity === 'places' || entity === 'events') {
+      forkJoin([this.svc.getSubtypeOptions(entity), region$]).subscribe({
+        next: ([subtypes, regions]) => {
+          this.subtypeOptionsWithId.set(subtypes);
+          this.filterSubTypeOptions.set(subtypes.map(s => s.name));
+          this.filterRegionOptions.set(regions);
+          this.filterOptionsLoading.set(false);
+          this.cdr.detectChanges();
+        },
+        error: () => { this.filterOptionsLoading.set(false); this.cdr.detectChanges(); },
+      });
     } else if (entity === 'activities') {
-      extra$.push(this.svc.getFilterOptions(entity, 'difficulty'));
-      extra$.push(this.svc.getFilterOptions(entity, 'priceCat'));
-      extraKeys.push('difficulty', 'priceCat');
-    } else if (entity === 'events') {
-      extra$.push(this.svc.getFilterOptions(entity, 'priceCat'));
-      extraKeys.push('priceCat');
+      forkJoin([
+        this.svc.getFilterOptions(entity, 'subType'),
+        region$,
+        this.svc.getFilterOptions(entity, 'difficulty'),
+      ]).subscribe({
+        next: ([subTypes, regions, difficulties]) => {
+          this.filterSubTypeOptions.set(subTypes);
+          this.filterRegionOptions.set(regions);
+          this.filterDifficultyOpts.set(difficulties);
+          this.filterOptionsLoading.set(false);
+          this.cdr.detectChanges();
+        },
+        error: () => { this.filterOptionsLoading.set(false); this.cdr.detectChanges(); },
+      });
+    } else {
+      forkJoin([this.svc.getFilterOptions(entity, 'subType'), region$]).subscribe({
+        next: ([subTypes, regions]) => {
+          this.filterSubTypeOptions.set(subTypes);
+          this.filterRegionOptions.set(regions);
+          this.filterOptionsLoading.set(false);
+          this.cdr.detectChanges();
+        },
+        error: () => { this.filterOptionsLoading.set(false); this.cdr.detectChanges(); },
+      });
     }
-
-    forkJoin([...base$, ...extra$]).subscribe({
-      next: results => {
-        this.filterSubTypeOptions.set(results[0]);
-        this.filterRegionOptions.set(results[1]);
-        extraKeys.forEach((key, i) => {
-          const vals = results[2 + i];
-          if (key === 'priceRange')  this.filterPriceRangeOpts.set(vals);
-          if (key === 'amenity')     this.filterAmenityOpts.set(vals);
-          if (key === 'difficulty')  this.filterDifficultyOpts.set(vals);
-          if (key === 'priceCat')    this.filterPriceCatOpts.set(vals);
-        });
-        this.filterOptionsLoading.set(false);
-        this.cdr.detectChanges();
-      },
-      error: () => { this.filterOptionsLoading.set(false); this.cdr.detectChanges(); },
-    });
   }
 
   generateFlatTable(): void {
@@ -389,11 +436,13 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
         error: () => { this.destTableLoading.set(false); this.destTableError.set('Greška pri učitavanju.'); this.cdr.detectChanges(); },
       });
     } else {
+      const extraArr = Object.entries(this.extraFilters()).map(([k, v]) => `${k}:${v}`);
       this.svc.getEntityTable(
         entity, this.flatSortBy(),
         this.filterSubType(), this.filterRegion(), this.filterMinRating(),
-        this.filterPriceRange(), this.filterAmenity(),
-        this.filterDifficulty(), this.filterPriceCat(),
+        this.filterDifficulty(),
+        this.filterMinPrice(), this.filterMaxPrice(),
+        extraArr.length ? extraArr : null,
       ).subscribe({
         next: data => { this.destTableLoading.set(false); this.flatTableData.set(data); this.cdr.detectChanges(); },
         error: () => { this.destTableLoading.set(false); this.destTableError.set('Greška pri učitavanju.'); this.cdr.detectChanges(); },

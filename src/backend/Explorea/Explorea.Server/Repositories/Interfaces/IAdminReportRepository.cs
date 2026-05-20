@@ -20,10 +20,11 @@ namespace Explorea.Server.Repositories.Interfaces
         Task<List<EntityTableRowDto>> GetEntityTableAsync(
             string entity, string? sortBy,
             string? filterSubType, string? filterRegion, decimal? filterMinRating,
-            string? filterPriceRange, string? filterAmenity,
-            string? filterDifficulty, string? filterPriceCat,
+            string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
+            List<string>? filterExtraFilters,
             List<Guid>? destIds, Guid? placeOwnerUserId);
         Task<List<string>> GetFilterOptionsAsync(string entity, string field, List<Guid>? destIds, Guid? placeOwnerUserId);
+        Task<List<SubtypeOptionDto>> GetSubtypeOptionsAsync(string entity, List<Guid>? destIds, Guid? placeOwnerUserId);
 
         // Aggregate (categorical + time-series)
         Task<List<AggregatePointDto>> GetAggregateAsync(

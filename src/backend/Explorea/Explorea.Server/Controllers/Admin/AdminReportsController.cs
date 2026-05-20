@@ -52,25 +52,39 @@ namespace Explorea.Server.Controllers.Admin
         // GET /api/admin/reports/entity-table
         [HttpGet("entity-table")]
         public async Task<IActionResult> GetEntityTable(
-            [FromQuery] string   entity,
-            [FromQuery] string?  sortBy,
-            [FromQuery] string?  filterSubType,
-            [FromQuery] string?  filterRegion,
-            [FromQuery] decimal? filterMinRating,
-            [FromQuery] string?  filterPriceRange,
-            [FromQuery] string?  filterAmenity,
-            [FromQuery] string?  filterDifficulty,
-            [FromQuery] string?  filterPriceCat)
+            [FromQuery] string        entity,
+            [FromQuery] string?       sortBy,
+            [FromQuery] string?       filterSubType,
+            [FromQuery] string?       filterRegion,
+            [FromQuery] decimal?      filterMinRating,
+            [FromQuery] string?       filterDifficulty,
+            [FromQuery] decimal?      filterMinPrice,
+            [FromQuery] decimal?      filterMaxPrice,
+            [FromQuery] List<string>? filterExtraFilters)
         {
             try
             {
                 var data = await _service.GetEntityTableAsync(
                     entity, sortBy,
                     filterSubType, filterRegion, filterMinRating,
-                    filterPriceRange, filterAmenity,
-                    filterDifficulty, filterPriceCat,
+                    filterDifficulty, filterMinPrice, filterMaxPrice,
+                    filterExtraFilters,
                     GetCurrentUserId());
                 return Ok(data);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
+        // GET /api/admin/reports/subtype-options?entity=places
+        [HttpGet("subtype-options")]
+        public async Task<IActionResult> GetSubtypeOptions([FromQuery] string entity)
+        {
+            try
+            {
+                return Ok(await _service.GetSubtypeOptionsAsync(entity, GetCurrentUserId()));
             }
             catch (UnauthorizedAccessException ex)
             {

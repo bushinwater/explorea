@@ -53,12 +53,18 @@ namespace Explorea.Server.Services.Admin
         public async Task<List<EntityTableRowDto>> GetEntityTableAsync(
             string entity, string? sortBy,
             string? filterSubType, string? filterRegion, decimal? filterMinRating,
-            string? filterPriceRange, string? filterAmenity,
-            string? filterDifficulty, string? filterPriceCat,
+            string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
+            List<string>? filterExtraFilters,
             Guid currentUserId)
         {
             var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
-            return await _repo.GetEntityTableAsync(entity, sortBy, filterSubType, filterRegion, filterMinRating, filterPriceRange, filterAmenity, filterDifficulty, filterPriceCat, destIds, placeOwnerUserId);
+            return await _repo.GetEntityTableAsync(entity, sortBy, filterSubType, filterRegion, filterMinRating, filterDifficulty, filterMinPrice, filterMaxPrice, filterExtraFilters, destIds, placeOwnerUserId);
+        }
+
+        public async Task<List<SubtypeOptionDto>> GetSubtypeOptionsAsync(string entity, Guid currentUserId)
+        {
+            var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
+            return await _repo.GetSubtypeOptionsAsync(entity, destIds, placeOwnerUserId);
         }
 
         public async Task<List<string>> GetFilterOptionsAsync(string entity, string field, Guid currentUserId)

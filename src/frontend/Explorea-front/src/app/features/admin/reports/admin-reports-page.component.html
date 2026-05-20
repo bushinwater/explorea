@@ -264,7 +264,7 @@
           <div class="rp-filter-row">
             <span class="rp-filter-label">{{ subTypeLabel() }}</span>
             <div class="rp-pills">
-              <button class="rp-pill" [class.rp-pill--active]="filterSubType() === null" (click)="filterSubType.set(null)">Svi</button>
+              <button class="rp-pill" [class.rp-pill--active]="filterSubType() === null" (click)="clearSubType()">Svi</button>
               @for (opt of filterSubTypeOptions(); track opt) {
                 <button class="rp-pill" [class.rp-pill--active]="filterSubType() === opt" (click)="toggleFilter('subType', opt)">{{ opt }}</button>
               }
@@ -284,80 +284,83 @@
           </div>
         }
 
-        <!-- Ocena filter (all entities) -->
         <div class="rp-filter-row">
           <span class="rp-filter-label">Ocena</span>
           <div class="rp-pills">
-            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === null" (click)="filterMinRating.set(null)">Sve</button>
-            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '3'"  (click)="toggleFilter('minRating', '3')">≥ 3 ★</button>
-            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '4'"  (click)="toggleFilter('minRating', '4')">≥ 4 ★</button>
+            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === null"  (click)="filterMinRating.set(null)">Sve</button>
+            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '3'"   (click)="toggleFilter('minRating', '3')">≥ 3 ★</button>
+            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '4'"   (click)="toggleFilter('minRating', '4')">≥ 4 ★</button>
             <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '4.5'" (click)="toggleFilter('minRating', '4.5')">≥ 4.5 ★</button>
           </div>
         </div>
 
-        <!-- Places: PriceRange + Amenity -->
-        @if (flatEntity() === 'places') {
-          @if (filterPriceRangeOpts().length) {
-            <div class="rp-filter-row">
-              <span class="rp-filter-label">Cena</span>
-              <div class="rp-pills">
-                <button class="rp-pill" [class.rp-pill--active]="filterPriceRange() === null" (click)="filterPriceRange.set(null)">Sve</button>
-                @for (opt of filterPriceRangeOpts(); track opt) {
-                  <button class="rp-pill" [class.rp-pill--active]="filterPriceRange() === opt" (click)="toggleFilter('priceRange', opt)">{{ opt }}</button>
-                }
-              </div>
-            </div>
-          }
-          @if (filterAmenityOpts().length) {
-            <div class="rp-filter-row">
-              <span class="rp-filter-label">Pogodnosti</span>
-              <div class="rp-pills">
-                <button class="rp-pill" [class.rp-pill--active]="filterAmenity() === null" (click)="filterAmenity.set(null)">Sve</button>
-                @for (opt of filterAmenityOpts(); track opt) {
-                  <button class="rp-pill" [class.rp-pill--active]="filterAmenity() === opt" (click)="toggleFilter('amenity', opt)">{{ opt }}</button>
-                }
-              </div>
-            </div>
-          }
-        }
-
-        <!-- Activities: Difficulty + Price category -->
-        @if (flatEntity() === 'activities') {
-          @if (filterDifficultyOpts().length) {
-            <div class="rp-filter-row">
-              <span class="rp-filter-label">Tezina</span>
-              <div class="rp-pills">
-                <button class="rp-pill" [class.rp-pill--active]="filterDifficulty() === null" (click)="filterDifficulty.set(null)">Sve</button>
-                @for (opt of filterDifficultyOpts(); track opt) {
-                  <button class="rp-pill" [class.rp-pill--active]="filterDifficulty() === opt" (click)="toggleFilter('difficulty', opt)">{{ opt }}</button>
-                }
-              </div>
-            </div>
-          }
-          @if (filterPriceCatOpts().length) {
-            <div class="rp-filter-row">
-              <span class="rp-filter-label">Cena</span>
-              <div class="rp-pills">
-                <button class="rp-pill" [class.rp-pill--active]="filterPriceCat() === null" (click)="filterPriceCat.set(null)">Sve</button>
-                @for (opt of filterPriceCatOpts(); track opt) {
-                  <button class="rp-pill" [class.rp-pill--active]="filterPriceCat() === opt" (click)="toggleFilter('priceCat', opt)">{{ opt }}</button>
-                }
-              </div>
-            </div>
-          }
-        }
-
-        <!-- Events: Price category -->
-        @if (flatEntity() === 'events' && filterPriceCatOpts().length) {
+        <!-- Activities: Difficulty -->
+        @if (flatEntity() === 'activities' && filterDifficultyOpts().length) {
           <div class="rp-filter-row">
-            <span class="rp-filter-label">Cena</span>
+            <span class="rp-filter-label">Tezina</span>
             <div class="rp-pills">
-              <button class="rp-pill" [class.rp-pill--active]="filterPriceCat() === null" (click)="filterPriceCat.set(null)">Sve</button>
-              @for (opt of filterPriceCatOpts(); track opt) {
-                <button class="rp-pill" [class.rp-pill--active]="filterPriceCat() === opt" (click)="toggleFilter('priceCat', opt)">{{ opt }}</button>
+              <button class="rp-pill" [class.rp-pill--active]="filterDifficulty() === null" (click)="filterDifficulty.set(null)">Sve</button>
+              @for (opt of filterDifficultyOpts(); track opt) {
+                <button class="rp-pill" [class.rp-pill--active]="filterDifficulty() === opt" (click)="toggleFilter('difficulty', opt)">{{ opt }}</button>
               }
             </div>
           </div>
+        }
+
+        <!-- Activities / Events: price od-do -->
+        @if (flatEntity() === 'activities' || flatEntity() === 'events') {
+          <div class="rp-filter-row">
+            <span class="rp-filter-label">Cena</span>
+            <div class="rp-price-row">
+              <input type="number" class="rp-price-input" placeholder="Od" min="0"
+                [value]="filterMinPrice() ?? ''"
+                (input)="filterMinPrice.set($any($event.target).value !== '' ? +$any($event.target).value : null)" />
+              <span class="rp-price-sep">—</span>
+              <input type="number" class="rp-price-input" placeholder="Do" min="0"
+                [value]="filterMaxPrice() ?? ''"
+                (input)="filterMaxPrice.set($any($event.target).value !== '' ? +$any($event.target).value : null)" />
+            </div>
+          </div>
+        }
+
+        <!-- Places / Events: filter-extra-list when a subtype is selected -->
+        @if ((flatEntity() === 'places' || flatEntity() === 'events') && filterSubType() !== null) {
+          @if (filterDefsLoading()) {
+            <div class="rp-filter-row">
+              <span class="rp-spinner"></span>
+            </div>
+          } @else if (filterDefs().length) {
+            <div class="rp-filter-extra-list">
+              @for (def of filterDefs(); track def.filterKey) {
+                @if (def.filterType === 'boolean') {
+                  <label class="rp-filter-extra-item rp-filter-extra-item--toggle">
+                    <span class="rp-filter-extra-item__label">{{ def.filterLabel }}</span>
+                    <button
+                      class="rp-toggle-btn"
+                      [class.rp-toggle-btn--on]="isExtraFilterActive(def.filterKey)"
+                      (click)="toggleExtraFilter(def.filterKey)"
+                      type="button"
+                    >
+                      <span class="rp-toggle-track"><span class="rp-toggle-thumb"></span></span>
+                    </button>
+                  </label>
+                } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
+                  <div class="rp-filter-extra-select">
+                    <span class="rp-filter-extra-select__label">{{ def.filterLabel }}</span>
+                    <div class="rp-pills">
+                      @for (opt of def.options; track opt.optionValue) {
+                        <button
+                          class="rp-pill"
+                          [class.rp-pill--active]="isExtraFilterActive(def.filterKey, opt.optionValue)"
+                          (click)="toggleExtraFilter(def.filterKey, opt.optionValue)"
+                        >{{ opt.optionLabel }}</button>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          }
         }
 
       </div>
