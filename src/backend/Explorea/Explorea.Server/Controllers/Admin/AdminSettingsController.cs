@@ -281,7 +281,8 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
 
       return Ok(new AdminNotificationReportDispatchDto
       {
-        SentCount = sentCount
+        SentCount = sentCount,
+        SentAt = DateTimeOffset.UtcNow
       });
     }
 

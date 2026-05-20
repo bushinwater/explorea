@@ -271,6 +271,8 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     deliveryHour: 9,
   });
 
+  private lastAllNotificationsReportTopics: string[] = ['reviews', 'events', 'system'];
+
   constructor(
     public auth: DashboardAuthService,
     private readonly adminSettingsService: AdminSettingsService,
@@ -394,6 +396,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
             ),
             deliveryHour: this.normalizeDeliveryHour(notifications.deliveryHour),
           });
+          this.rememberAllNotificationsReportTopics(this.notificationsForm().reportTopics);
           this.isNotificationsLoading.set(false);
         },
         error: () => {
@@ -441,15 +444,31 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       };
     });
 
+    this.rememberAllNotificationsReportTopics(this.notificationsForm().reportTopics);
     this.notificationsSuccessMessage.set('');
     this.notificationsErrorMessage.set('');
   }
 
   protected updateNotificationPriority(priority: string): void {
-    this.notificationsForm.update((current) => ({
-      ...current,
-      priority: this.normalizeNotificationPriority(priority),
-    }));
+    const normalizedPriority = this.normalizeNotificationPriority(priority);
+
+    this.notificationsForm.update((current) => {
+      if (normalizedPriority === 'important') {
+        this.rememberAllNotificationsReportTopics(current.reportTopics);
+
+        return {
+          ...current,
+          priority: normalizedPriority,
+          reportTopics: [],
+        };
+      }
+
+      return {
+        ...current,
+        priority: normalizedPriority,
+        reportTopics: this.lastAllNotificationsReportTopics,
+      };
+    });
 
     this.notificationsSuccessMessage.set('');
     this.notificationsErrorMessage.set('');
@@ -483,6 +502,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
   protected saveNotifications(): void {
     const form = this.notificationsForm();
+    const priority = this.normalizeNotificationPriority(form.priority);
 
     this.isNotificationsSaving.set(true);
     this.notificationsSuccessMessage.set('');
@@ -494,8 +514,10 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           notificationsEnabled: form.notificationsEnabled,
           emailNotificationsEnabled: form.emailNotificationsEnabled,
           marketingEmailsEnabled: form.marketingEmailsEnabled,
-          reportTopics: this.normalizeReportTopics(form.reportTopics),
-          priority: this.normalizeNotificationPriority(form.priority),
+          reportTopics: priority === 'important'
+            ? this.lastAllNotificationsReportTopics
+            : this.normalizeReportTopics(form.reportTopics),
+          priority,
           deliveryFrequencyDays: this.normalizeDeliveryFrequencyDays(form.deliveryFrequencyDays),
           deliveryHour: this.normalizeDeliveryHour(form.deliveryHour),
         })
@@ -512,6 +534,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
               ),
               deliveryHour: this.normalizeDeliveryHour(notifications.deliveryHour),
             });
+            this.rememberAllNotificationsReportTopics(this.notificationsForm().reportTopics);
             this.showToast('success', 'Podešavanja obaveštenja su uspešno sačuvana.');
             this.isNotificationsSaving.set(false);
           },
@@ -561,6 +584,14 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       allowedTopics.includes(topic) && topics.indexOf(topic) === index);
 
     return normalized.includes('weekly_summary') ? ['weekly_summary'] : normalized;
+  }
+
+  private rememberAllNotificationsReportTopics(topics: string[]): void {
+    const normalizedTopics = this.normalizeReportTopics(topics);
+
+    if (normalizedTopics.length > 0) {
+      this.lastAllNotificationsReportTopics = normalizedTopics;
+    }
   }
 
   private normalizeNotificationPriority(priority: string): string {

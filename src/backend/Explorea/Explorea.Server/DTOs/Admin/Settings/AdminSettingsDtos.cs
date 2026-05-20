@@ -88,6 +88,7 @@ namespace Explorea.API.DTOs.Admin.Settings
     public class AdminNotificationReportDispatchDto
     {
         public int SentCount { get; set; }
+        public DateTimeOffset SentAt { get; set; }
     }
 
     public class AdminAdministrationOverviewDto

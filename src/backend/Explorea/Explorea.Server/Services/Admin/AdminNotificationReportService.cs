@@ -22,17 +22,21 @@ namespace Explorea.Server.Services.Admin
                 .Include(user => user.Preferences)
                 .Where(user => user.IsActive)
                 .Where(user => user.Preferences != null)
+                .Where(user => user.Preferences!.NotificationsEnabled)
                 .Where(user => user.Preferences!.EmailNotificationsEnabled)
                 .Where(user => user.Preferences!.NotificationPriority == "all")
-                .Where(user => user.Preferences!.NotificationDeliveryHour <= now.Hour)
                 .ToListAsync();
 
             var sentCount = 0;
+            var localNow = ToBelgradeTime(now);
 
             foreach (var user in users)
             {
                 var preferences = user.Preferences!;
                 var topics = ParseTopics(preferences.NotificationReportTopics);
+
+                if (preferences.NotificationDeliveryHour > localNow.Hour)
+                    continue;
 
                 if (topics.Count == 0 || !IsDue(preferences.NotificationReportsLastSentAt, preferences.NotificationDeliveryFrequencyDays, now))
                     continue;
@@ -50,6 +54,23 @@ namespace Explorea.Server.Services.Admin
             }
 
             return sentCount;
+        }
+
+        private static DateTimeOffset ToBelgradeTime(DateTimeOffset now)
+        {
+            try
+            {
+                var timezone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+                return TimeZoneInfo.ConvertTime(now, timezone);
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                return now.ToOffset(TimeSpan.FromHours(1));
+            }
+            catch (InvalidTimeZoneException)
+            {
+                return now.ToOffset(TimeSpan.FromHours(1));
+            }
         }
 
         private static bool IsDue(DateTimeOffset? lastSentAt, int frequencyDays, DateTimeOffset now)
