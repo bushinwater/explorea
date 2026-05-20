@@ -14,6 +14,7 @@ import { AdminUiPreferencesService } from '../../../core/services/admin-ui-prefe
 })
 export class ActivityFeed {
   @Input() items: ActivityItem[] = [];
+  @Input() showAllLink = true;
 
   currentPage = 1;
   readonly itemsPerPage = 3;

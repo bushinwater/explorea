@@ -78,7 +78,7 @@
                 <app-traffic-chart [data]="data()?.traffic ?? []" />
               }
               @case ('activity-feed') {
-                <app-activity-feed [items]="data()?.activity ?? []" />
+                <app-activity-feed [items]="data()?.activity ?? []" [showAllLink]="auth.role() === 'super_admin'" />
               }
               @case ('quick-actions') {
                 <app-quick-actions [actions]="data()?.quickActions ?? []" />
