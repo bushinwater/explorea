@@ -4,132 +4,135 @@
 
 <div class="rp-page">
 
-  <!-- ===== PERFORMANCE INSIGHTS ===== -->
+  <!-- ===== INSIGHTS ===== -->
   <section class="rp-insights">
     <div class="rp-insights__header">
-      <div class="rp-insights__heading">
-        <h1 class="rp-insights__title">{{ ui.t('reports.insights.title') }}</h1>
-        <p class="rp-insights__subtitle">{{ ui.t('reports.insights.subtitle') }}</p>
+      <div>
+        <h1 class="rp-insights__title">Pregled performansi</h1>
+        <p class="rp-insights__subtitle">Kljucni pokazatelji za tekuci mesec</p>
       </div>
-      <a class="rp-view-all" routerLink="/admin/dashboard">
-        {{ ui.t('reports.insights.viewAll') }}
-        <span class="material-icons">north_east</span>
-      </a>
     </div>
     <div class="rp-insights__cards">
-      @for (stat of performanceStats; track stat.labelKey) {
+      @for (card of insightCards(); track card.label) {
         <app-stat-card
-          [label]="ui.t(stat.labelKey)"
-          [value]="stat.value"
-          [trend]="stat.trend"
-          [hint]="ui.t(stat.hintKey)"
-          [tone]="stat.tone"
+          [label]="card.label"
+          [value]="card.value"
+          [trend]="card.trend"
+          [hint]="card.hint"
+          [tone]="card.tone"
         />
       }
     </div>
   </section>
 
-  <!-- ===== REPORT BUILDER ===== -->
+  <!-- ===== AGGREGATE BUILDER ===== -->
   <section class="rp-builder-card">
-
     <div class="rp-builder-card__header">
       <div class="rp-builder-card__title-row">
         <span class="material-icons rp-builder-card__icon">bar_chart</span>
         <div>
-          <h2 class="rp-builder-card__title">{{ ui.t('reports.builder.title') }}</h2>
-          <p class="rp-builder-card__subtitle">{{ ui.t('reports.builder.subtitle') }}</p>
+          <h2 class="rp-builder-card__title">Graditelj izvestaja</h2>
+          <p class="rp-builder-card__subtitle">Izaberite entitet, grupisanje i metriku</p>
         </div>
       </div>
     </div>
 
     <div class="rp-builder-body">
 
-      <!-- ===== LEFT: CONFIG ===== -->
+      <!-- LEFT: CONFIG WATERFALL -->
       <div class="rp-config">
 
-        <!-- Data Source -->
         <div class="rp-config-section">
-          <span class="rp-config-section__label">{{ ui.t('reports.source.title') }}</span>
+          <span class="rp-config-section__label">Entitet</span>
           <div class="rp-source-tabs">
-            @for (src of dataSources; track src.id) {
+            @for (ec of entityConfigs; track ec.id) {
               <button
                 class="rp-source-tab"
-                [class.rp-source-tab--active]="dataSource() === src.id"
-                (click)="selectDataSource(src.id)"
-              >{{ ui.t(src.labelKey) }}</button>
+                [class.rp-source-tab--active]="entity() === ec.id"
+                (click)="selectEntity(ec.id)"
+              >{{ ec.label }}</button>
             }
           </div>
         </div>
 
-        <!-- Metrics -->
         <div class="rp-config-section">
-          <span class="rp-config-section__label">{{ ui.t('reports.metrics.title') }}</span>
-          <div class="rp-metrics">
-            @for (m of metrics; track m.id) {
-              <label class="rp-metric">
-                <input
-                  type="checkbox"
-                  class="rp-metric__check"
-                  [checked]="selectedMetrics().has(m.id)"
-                  (change)="toggleMetric(m.id)"
-                />
-                <span class="rp-metric__dot" [style.background]="m.color"></span>
-                <span class="rp-metric__name">{{ ui.t(m.labelKey) }}</span>
-              </label>
+          <span class="rp-config-section__label">Grupisanje</span>
+          <div class="rp-pills">
+            @for (dim of availableDimensions(); track dim.id) {
+              <button
+                class="rp-pill"
+                [class.rp-pill--active]="dimension() === dim.id"
+                (click)="selectDimension(dim.id)"
+              >{{ dim.label }}</button>
             }
           </div>
         </div>
 
-        <!-- Visualization -->
         <div class="rp-config-section">
-          <span class="rp-config-section__label">{{ ui.t('reports.viz.title') }}</span>
+          <span class="rp-config-section__label">Metrika</span>
+          <div class="rp-pills">
+            @for (m of availableMetrics(); track m.id) {
+              <button
+                class="rp-pill"
+                [class.rp-pill--active]="metric() === m.id"
+                (click)="selectMetric(m.id)"
+              >{{ m.label }}</button>
+            }
+          </div>
+        </div>
+
+        <div class="rp-config-section">
+          <span class="rp-config-section__label">Tip prikaza</span>
           <div class="rp-viz-grid">
-            @for (vt of vizTypes; track vt.id) {
+            @for (vt of availableVizTypes(); track vt) {
               <button
                 class="rp-viz-btn"
-                [class.rp-viz-btn--active]="vizType() === vt.id"
-                (click)="selectVizType(vt.id)"
+                [class.rp-viz-btn--active]="vizType() === vt"
+                (click)="selectVizType(vt)"
               >
-                <span class="material-icons">{{ vt.icon }}</span>
-                <span class="rp-viz-btn__label">{{ ui.t(vt.labelKey) }}</span>
+                <span class="material-icons">{{ vizIcons[vt] }}</span>
+                <span class="rp-viz-btn__label">{{ vizLabels[vt] }}</span>
               </button>
             }
           </div>
         </div>
 
-        <!-- Time Frame -->
-        <div class="rp-config-section">
-          <span class="rp-config-section__label">{{ ui.t('reports.timeframe.title') }}</span>
-          <div class="rp-tf-wrap">
-            <span class="material-icons rp-tf-icon">schedule</span>
-            <select
-              class="rp-tf-select"
-              [value]="timeFrame()"
-              (change)="selectTimeFrame($any($event.target).value)"
-            >
-              @for (tf of timeFrames; track tf.id) {
-                <option [value]="tf.id">{{ ui.t(tf.labelKey) }}</option>
-              }
-            </select>
-            <span class="material-icons rp-tf-chevron">expand_more</span>
+        @if (isTimeDimension()) {
+          <div class="rp-config-section">
+            <span class="rp-config-section__label">Vremenski period</span>
+            <div class="rp-date-range">
+              <div class="rp-date-field">
+                <label class="rp-date-field__label">Od</label>
+                <input type="date" class="rp-date-input" [value]="dateFrom()" (change)="dateFrom.set($any($event.target).value)" />
+              </div>
+              <div class="rp-date-field">
+                <label class="rp-date-field__label">Do</label>
+                <input type="date" class="rp-date-input" [value]="dateTo()" (change)="dateTo.set($any($event.target).value)" />
+              </div>
+            </div>
           </div>
-        </div>
+        }
 
-        <!-- Saved Templates -->
+        <button class="btn btn-primary rp-generate-btn" [disabled]="loading()" (click)="generate()">
+          @if (loading()) {
+            <span class="rp-spinner"></span> Ucitavanje...
+          } @else {
+            <span class="material-icons">play_arrow</span> Generisi
+          }
+        </button>
+
+        <!-- Templates -->
         <div class="rp-config-section">
           <button class="rp-templates-toggle" (click)="toggleTemplates()">
-            <span class="rp-templates-toggle__text">{{ ui.t('reports.templates.title') }}</span>
-            <span
-              class="material-icons rp-templates-chevron"
-              [class.rp-templates-chevron--open]="isTemplatesOpen()"
-            >expand_more</span>
+            <span class="rp-templates-toggle__text">Sacuvani sabloni</span>
+            <span class="material-icons rp-templates-chevron" [class.rp-templates-chevron--open]="isTemplatesOpen()">expand_more</span>
           </button>
           @if (isTemplatesOpen()) {
             <div class="rp-templates-list">
-              @if (!savedTemplates().length) {
-                <p class="rp-templates-empty">{{ ui.t('reports.templates.empty') }}</p>
+              @if (!templates().length) {
+                <p class="rp-templates-empty">Nema sacuvanih sablona</p>
               }
-              @for (tpl of savedTemplates(); track tpl.id) {
+              @for (tpl of templates(); track tpl.id) {
                 <div class="rp-template-item" (click)="loadTemplate(tpl)">
                   <span class="material-icons rp-template-item__icon">description</span>
                   <span class="rp-template-item__name">{{ tpl.name }}</span>
@@ -144,74 +147,68 @@
 
       </div>
 
-      <!-- ===== RIGHT: PREVIEW ===== -->
+      <!-- RIGHT: PREVIEW -->
       <div class="rp-preview">
 
-        <!-- Toolbar -->
         <div class="rp-preview__toolbar">
-          <span class="rp-preview__view-label">
-            {{ ui.t('reports.builder.currentView') }} {{ currentViewLabel() }}
-          </span>
+          <span class="rp-preview__view-label">{{ chartTitle() }}</span>
           <div class="rp-preview__toolbar-actions">
-            <button class="btn btn-ghost btn-sm" (click)="exportPdf()">
-              <span class="material-icons">picture_as_pdf</span>
-              {{ ui.t('reports.builder.export.pdf') }}
+            <button class="btn btn-ghost btn-sm" [disabled]="!chartData()" (click)="exportCsv()">
+              <span class="material-icons">download</span> Izvezi CSV
             </button>
-            <button class="btn btn-ghost btn-sm" (click)="exportCsv()">
-              <span class="material-icons">download</span>
-              {{ ui.t('reports.builder.export.csv') }}
+            <button class="btn btn-ghost btn-sm" [disabled]="!chartData()" (click)="openSave()">
+              <span class="material-icons">bookmark_add</span> Sablon
             </button>
-            <button class="btn btn-primary btn-sm" (click)="openSave()">
-              <span class="material-icons">bookmark_add</span>
-              {{ ui.t('reports.builder.saveTemplate') }}
-            </button>
+            @if (chartData() && vizType() !== 'table') {
+              <button class="btn btn-primary btn-sm" (click)="promptAddToQueue('chart')">
+                <span class="material-icons">add_chart</span> Dodaj grafik
+              </button>
+            }
+            @if (chartData() && vizType() === 'table') {
+              <button class="btn btn-primary btn-sm" (click)="promptAddToQueue('table')">
+                <span class="material-icons">playlist_add</span> Dodaj tabelu
+              </button>
+            }
           </div>
         </div>
 
-        <!-- Chart area -->
         <div class="rp-chart-area">
-          <div class="rp-chart-area__header">
-            <div>
-              <h3 class="rp-chart-area__title">{{ chartTitle() }}</h3>
-              <p class="rp-chart-area__sub">{{ chartSubtitle() }}</p>
-            </div>
-            <span class="material-icons rp-chart-area__more">more_vert</span>
-          </div>
-
           <div class="rp-chart-wrap">
-            <!-- Canvas always in DOM so @ViewChild resolves immediately -->
             <canvas
               #chartCanvas
               class="rp-chart-canvas"
-              [class.rp-hidden]="vizType() === 'table' || activeMetrics().length === 0"
+              [class.rp-hidden]="vizType() === 'table' || !chartData() || loading()"
             ></canvas>
 
-            @if (activeMetrics().length === 0) {
+            @if (loading()) {
+              <div class="rp-chart-empty">
+                <span class="rp-spinner rp-spinner--lg"></span>
+                <p>Ucitavanje podataka...</p>
+              </div>
+            } @else if (error()) {
+              <div class="rp-chart-empty rp-chart-empty--error">
+                <span class="material-icons">error_outline</span>
+                <p>{{ error() }}</p>
+              </div>
+            } @else if (!chartData()) {
               <div class="rp-chart-empty">
                 <span class="material-icons">stacked_line_chart</span>
-                <p>{{ ui.t('reports.chart.noMetrics') }}</p>
+                <p>Podesite parametre i kliknite <strong>Generisi</strong></p>
               </div>
             } @else if (vizType() === 'table') {
               <div class="rp-data-table-wrap">
                 <table class="rp-data-table">
                   <thead>
                     <tr>
-                      <th class="rp-dt-th">{{ ui.t('reports.table.period') }}</th>
-                      @for (m of activeMetrics(); track m.id) {
-                        <th class="rp-dt-th">
-                          <span class="rp-dt-dot" [style.background]="m.color"></span>
-                          {{ ui.t(m.labelKey) }}
-                        </th>
-                      }
+                      <th class="rp-dt-th">{{ dimensionConfig().label }}</th>
+                      <th class="rp-dt-th">{{ availableMetrics()[0]?.label }}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    @for (row of tableData(); track row.label) {
+                    @for (row of chartData()!; track row.label) {
                       <tr class="rp-dt-row">
                         <td class="rp-dt-td rp-dt-td--period">{{ row.label }}</td>
-                        @for (val of row.values; track $index) {
-                          <td class="rp-dt-td">{{ formatNum(val) }}</td>
-                        }
+                        <td class="rp-dt-td">{{ formatNum(row.value) }}</td>
                       </tr>
                     }
                   </tbody>
@@ -220,15 +217,13 @@
             }
           </div>
 
-          @if (vizType() !== 'table' && activeMetrics().length > 0) {
+          @if (chartData() && vizType() !== 'table' && !loading()) {
             <div class="rp-chart-footer">
-              @for (m of activeMetrics(); track m.id) {
-                <span class="rp-chart-stat">
-                  <span class="rp-chart-stat__dot" [style.background]="m.color"></span>
-                  {{ ui.t('reports.chart.maxLabel') }} {{ ui.t(m.labelKey) }}: {{ metricSummary(m.id) }}
-                </span>
-              }
-              <span class="rp-chart-sync">{{ ui.t('reports.builder.synced') }}</span>
+              <span class="rp-chart-stat">
+                <span class="rp-chart-stat__dot" [style.background]="'var(--color-primary)'"></span>
+                {{ chartData()!.length }} kategorija
+              </span>
+              <span class="rp-chart-sync">Podaci su azurni</span>
             </div>
           }
         </div>
@@ -236,28 +231,411 @@
       </div>
     </div>
   </section>
+
+  <!-- ===== FLAT TABLE ===== -->
+  <section class="rp-builder-card">
+    <div class="rp-builder-card__header">
+      <div class="rp-builder-card__title-row">
+        <span class="material-icons rp-builder-card__icon">table_view</span>
+        <div>
+          <h2 class="rp-builder-card__title">Tabele entiteta</h2>
+          <p class="rp-builder-card__subtitle">Pregled destinacija, aktivnosti, dogadjaja i objekata</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="rp-config-section" style="padding: var(--sp-4) var(--sp-6) var(--sp-3)">
+      <span class="rp-config-section__label">Entitet</span>
+      <div class="rp-source-tabs--row">
+        @for (e of flatTableEntities; track e.id) {
+          <button
+            class="rp-source-tab"
+            [class.rp-source-tab--active]="flatEntity() === e.id"
+            (click)="selectFlatEntity(e.id)"
+          >{{ e.label }}</button>
+        }
+      </div>
+    </div>
+
+    @if (filterSubTypeOptions().length || filterRegionOptions().length || filterOptionsLoading() || scopeRegion()) {
+      <div class="rp-filter-section">
+
+        @if (filterSubTypeOptions().length) {
+          <div class="rp-filter-row">
+            <span class="rp-filter-label">{{ subTypeLabel() }}</span>
+            <div class="rp-pills">
+              <button class="rp-pill" [class.rp-pill--active]="filterSubType() === null" (click)="clearSubType()">Svi</button>
+              @for (opt of filterSubTypeOptions(); track opt) {
+                <button class="rp-pill" [class.rp-pill--active]="filterSubType() === opt" (click)="toggleFilter('subType', opt)">{{ opt }}</button>
+              }
+            </div>
+          </div>
+        }
+
+        @if (scopeRegion()) {
+          <div class="rp-filter-row">
+            <span class="rp-filter-label">Regija</span>
+            <div class="rp-region-locked">
+              <span class="material-icons rp-region-locked__icon">lock</span>
+              <span class="rp-region-locked__name">{{ scopeRegion() }}</span>
+            </div>
+          </div>
+        } @else if (filterRegionOptions().length) {
+          <div class="rp-filter-row">
+            <span class="rp-filter-label">Regija</span>
+            <div class="rp-pills">
+              <button class="rp-pill" [class.rp-pill--active]="filterRegion() === null" (click)="filterRegion.set(null)">Sve</button>
+              @for (opt of filterRegionOptions(); track opt) {
+                <button class="rp-pill" [class.rp-pill--active]="filterRegion() === opt" (click)="toggleFilter('region', opt)">{{ opt }}</button>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="rp-filter-row">
+          <span class="rp-filter-label">Ocena</span>
+          <div class="rp-pills">
+            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === null"  (click)="filterMinRating.set(null)">Sve</button>
+            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '3'"   (click)="toggleFilter('minRating', '3')">≥ 3 ★</button>
+            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '4'"   (click)="toggleFilter('minRating', '4')">≥ 4 ★</button>
+            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '4.5'" (click)="toggleFilter('minRating', '4.5')">≥ 4.5 ★</button>
+          </div>
+        </div>
+
+        <!-- Activities: Difficulty -->
+        @if (flatEntity() === 'activities' && filterDifficultyOpts().length) {
+          <div class="rp-filter-row">
+            <span class="rp-filter-label">Tezina</span>
+            <div class="rp-pills">
+              <button class="rp-pill" [class.rp-pill--active]="filterDifficulty() === null" (click)="filterDifficulty.set(null)">Sve</button>
+              @for (opt of filterDifficultyOpts(); track opt) {
+                <button class="rp-pill" [class.rp-pill--active]="filterDifficulty() === opt" (click)="toggleFilter('difficulty', opt)">{{ opt }}</button>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Activities / Events: price od-do -->
+        @if (flatEntity() === 'activities' || flatEntity() === 'events') {
+          <div class="rp-filter-row">
+            <span class="rp-filter-label">Cena</span>
+            <div class="rp-price-row">
+              <input type="number" class="rp-price-input" placeholder="Od" min="0"
+                [value]="filterMinPrice() ?? ''"
+                (input)="filterMinPrice.set($any($event.target).value !== '' ? +$any($event.target).value : null)" />
+              <span class="rp-price-sep">—</span>
+              <input type="number" class="rp-price-input" placeholder="Do" min="0"
+                [value]="filterMaxPrice() ?? ''"
+                (input)="filterMaxPrice.set($any($event.target).value !== '' ? +$any($event.target).value : null)" />
+            </div>
+          </div>
+        }
+
+        <!-- Places / Events: filter-extra-list when a subtype is selected -->
+        @if ((flatEntity() === 'places' || flatEntity() === 'events') && filterSubType() !== null) {
+          @if (filterDefsLoading()) {
+            <div class="rp-filter-row">
+              <span class="rp-spinner"></span>
+            </div>
+          } @else if (filterDefs().length) {
+            <div class="rp-filter-extra-list">
+              @for (def of filterDefs(); track def.filterKey) {
+                @if (def.filterType === 'boolean') {
+                  <label class="rp-filter-extra-item rp-filter-extra-item--toggle">
+                    <span class="rp-filter-extra-item__label">{{ def.filterLabel }}</span>
+                    <button
+                      class="rp-toggle-btn"
+                      [class.rp-toggle-btn--on]="isExtraFilterActive(def.filterKey)"
+                      (click)="toggleExtraFilter(def.filterKey)"
+                      type="button"
+                    >
+                      <span class="rp-toggle-track"><span class="rp-toggle-thumb"></span></span>
+                    </button>
+                  </label>
+                } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
+                  <div class="rp-filter-extra-select">
+                    <span class="rp-filter-extra-select__label">{{ def.filterLabel }}</span>
+                    <div class="rp-pills">
+                      @for (opt of def.options; track opt.optionValue) {
+                        <button
+                          class="rp-pill"
+                          [class.rp-pill--active]="isExtraFilterActive(def.filterKey, opt.optionValue)"
+                          (click)="toggleExtraFilter(def.filterKey, opt.optionValue)"
+                        >{{ opt.optionLabel }}</button>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          }
+        }
+
+      </div>
+    }
+
+    <div class="rp-dest-toolbar">
+      <div class="rp-dest-sort">
+        <span class="rp-config-section__label" style="margin-bottom: 0">Sortiraj po</span>
+        <div class="rp-pills">
+          @if (flatEntity() === 'destinations') {
+            @for (opt of destSortOptions; track opt.id) {
+              <button
+                class="rp-pill"
+                [class.rp-pill--active]="destSortBy() === opt.id"
+                (click)="destSortBy.set(opt.id)"
+              >{{ opt.label }}</button>
+            }
+          } @else {
+            @for (opt of flatTableSortOpts; track opt.id) {
+              <button
+                class="rp-pill"
+                [class.rp-pill--active]="flatSortBy() === opt.id"
+                (click)="flatSortBy.set(opt.id)"
+              >{{ opt.label }}</button>
+            }
+          }
+        </div>
+      </div>
+      <div class="rp-dest-actions">
+        <button class="btn btn-ghost btn-sm"
+          [disabled]="flatEntity() === 'destinations' ? !destTableData() : !flatTableData()"
+          (click)="exportFlatTableCsv()">
+          <span class="material-icons">download</span> CSV
+        </button>
+        @if (flatEntity() === 'destinations' && destTableData()) {
+          <button class="btn btn-ghost btn-sm" (click)="promptAddToQueue('dest-table')">
+            <span class="material-icons">playlist_add</span> Dodaj u izvestaj
+          </button>
+        }
+        @if (flatEntity() !== 'destinations' && flatTableData()) {
+          <button class="btn btn-ghost btn-sm" (click)="promptAddToQueue('entity-table')">
+            <span class="material-icons">playlist_add</span> Dodaj u izvestaj
+          </button>
+        }
+        <button class="btn btn-primary btn-sm" [disabled]="destTableLoading()" (click)="generateFlatTable()">
+          @if (destTableLoading()) {
+            <span class="rp-spinner"></span>
+          } @else {
+            <span class="material-icons">play_arrow</span>
+          }
+          Generisi
+        </button>
+      </div>
+    </div>
+
+    @if (destTableError()) {
+      <div class="rp-dest-error">
+        <span class="material-icons">error_outline</span> {{ destTableError() }}
+      </div>
+    }
+
+    @if (flatEntity() === 'destinations') {
+      @if (destTableData() && !destTableLoading()) {
+        <div class="rp-dest-table-wrap">
+          @if (destTableGrouped(); as groups) {
+            @for (group of groups; track group.region) {
+              <div class="rp-dest-group">
+                <div class="rp-dest-group__header">
+                  <span class="material-icons">place</span>
+                  {{ group.region }} <span class="rp-dest-group__count">({{ group.items.length }})</span>
+                </div>
+                <table class="rp-data-table">
+                  <thead>
+                    <tr>
+                      <th class="rp-dt-th">Naziv</th>
+                      <th class="rp-dt-th">Grad</th>
+                      <th class="rp-dt-th">Tip</th>
+                      <th class="rp-dt-th">Ocena</th>
+                      <th class="rp-dt-th">Posete</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (d of group.items; track d.name) {
+                      <tr class="rp-dt-row">
+                        <td class="rp-dt-td rp-dt-td--period">{{ d.name }}</td>
+                        <td class="rp-dt-td">{{ d.city ?? '—' }}</td>
+                        <td class="rp-dt-td">{{ d.type ?? '—' }}</td>
+                        <td class="rp-dt-td">{{ d.avgRating.toFixed(1) }}</td>
+                        <td class="rp-dt-td">{{ formatNum(d.popularity) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          } @else {
+            <table class="rp-data-table">
+              <thead>
+                <tr>
+                  <th class="rp-dt-th">Naziv</th>
+                  <th class="rp-dt-th">Grad</th>
+                  <th class="rp-dt-th">Regija</th>
+                  <th class="rp-dt-th">Tip</th>
+                  <th class="rp-dt-th">Ocena</th>
+                  <th class="rp-dt-th">Posete</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (d of destTableData()!; track d.name) {
+                  <tr class="rp-dt-row">
+                    <td class="rp-dt-td rp-dt-td--period">{{ d.name }}</td>
+                    <td class="rp-dt-td">{{ d.city ?? '—' }}</td>
+                    <td class="rp-dt-td">{{ d.region ?? '—' }}</td>
+                    <td class="rp-dt-td">{{ d.type ?? '—' }}</td>
+                    <td class="rp-dt-td">{{ d.avgRating.toFixed(1) }}</td>
+                    <td class="rp-dt-td">{{ formatNum(d.popularity) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      } @else if (destTableLoading()) {
+        <div class="rp-chart-empty" style="padding: var(--sp-6)">
+          <span class="rp-spinner rp-spinner--lg"></span>
+          <p>Ucitavanje...</p>
+        </div>
+      } @else {
+        <div class="rp-chart-empty" style="padding: var(--sp-6)">
+          <span class="material-icons">table_view</span>
+          <p>Odaberite sortiranje i kliknite <strong>Generisi</strong></p>
+        </div>
+      }
+    } @else {
+      @if (flatTableData() && !destTableLoading()) {
+        <div class="rp-dest-table-wrap">
+          <table class="rp-data-table">
+            <thead>
+              <tr>
+                @for (col of flatCols(); track col.key) {
+                  <th class="rp-dt-th">{{ col.header }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of flatTableData()!; track row.name) {
+                <tr class="rp-dt-row">
+                  @for (col of flatCols(); track col.key) {
+                    @if (col.key === 'avgRating') {
+                      <td class="rp-dt-td">{{ $any(row)[col.key]?.toFixed(1) ?? '—' }}</td>
+                    } @else if (col.key === 'popularity') {
+                      <td class="rp-dt-td">{{ formatNum($any(row)[col.key] ?? 0) }}</td>
+                    } @else {
+                      <td class="rp-dt-td" [class.rp-dt-td--period]="col.key === 'name'">{{ $any(row)[col.key] ?? '—' }}</td>
+                    }
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (destTableLoading()) {
+        <div class="rp-chart-empty" style="padding: var(--sp-6)">
+          <span class="rp-spinner rp-spinner--lg"></span>
+          <p>Ucitavanje...</p>
+        </div>
+      } @else {
+        <div class="rp-chart-empty" style="padding: var(--sp-6)">
+          <span class="material-icons">table_view</span>
+          <p>Odaberite sortiranje i kliknite <strong>Generisi</strong></p>
+        </div>
+      }
+    }
+  </section>
+
+  <!-- ===== REPORT QUEUE ===== -->
+  <section class="rp-builder-card">
+    <div class="rp-builder-card__header">
+      <div class="rp-builder-card__title-row">
+        <span class="material-icons rp-builder-card__icon">picture_as_pdf</span>
+        <div>
+          <h2 class="rp-builder-card__title">Red za izvestaj</h2>
+          <p class="rp-builder-card__subtitle">Dodajte grafike i tabele, zatim generišite PDF</p>
+        </div>
+      </div>
+      <button
+        class="btn btn-primary"
+        [disabled]="!reportQueue().length || pdfGenerating()"
+        (click)="generateQueuePdf()"
+      >
+        @if (pdfGenerating()) {
+          <span class="rp-spinner"></span> Generisanje...
+        } @else {
+          <span class="material-icons">picture_as_pdf</span> Generisi PDF
+        }
+      </button>
+    </div>
+
+    <div class="rp-queue-body">
+      @if (!reportQueue().length) {
+        <div class="rp-queue-empty">
+          <span class="material-icons">playlist_add</span>
+          <p>Red je prazan. Generišite grafike ili tabele i dodajte ih ovde.</p>
+        </div>
+      }
+
+      @for (item of reportQueue(); track item.id; let i = $index; let last = $last) {
+        <div class="rp-queue-item">
+          <div class="rp-queue-item__order">{{ i + 1 }}</div>
+          <span class="material-icons rp-queue-item__icon">{{ queueIcon(item.qtype) }}</span>
+          <span class="rp-queue-item__title">{{ item.title }}</span>
+          <div class="rp-queue-item__actions">
+            <button class="rp-queue-btn" [disabled]="i === 0" (click)="moveUp(item.id)" title="Gore">
+              <span class="material-icons">arrow_upward</span>
+            </button>
+            <button class="rp-queue-btn" [disabled]="last" (click)="moveDown(item.id)" title="Dole">
+              <span class="material-icons">arrow_downward</span>
+            </button>
+            <button class="rp-queue-btn rp-queue-btn--del" (click)="removeFromQueue(item.id)" title="Ukloni">
+              <span class="material-icons">delete_outline</span>
+            </button>
+          </div>
+        </div>
+        @if (!last) { <div class="rp-queue-divider"></div> }
+      }
+    </div>
+  </section>
+
 </div>
 
 <!-- ===== SAVE TEMPLATE DIALOG ===== -->
 @if (isSaveOpen()) {
   <div class="rp-save-backdrop" (click)="closeSave()">
     <div class="rp-save-dialog" (click)="$event.stopPropagation()">
-      <h3 class="rp-save-dialog__title">{{ ui.t('reports.templates.save.title') }}</h3>
+      <h3 class="rp-save-dialog__title">Sacuvaj sablon</h3>
       <input
         class="rp-save-dialog__input"
         type="text"
         [value]="templateName()"
         (input)="templateName.set($any($event.target).value)"
-        [placeholder]="ui.t('reports.templates.save.placeholder')"
+        placeholder="Naziv sablona"
         (keydown.enter)="confirmSave()"
       />
       <div class="rp-save-dialog__actions">
-        <button class="btn btn-ghost btn-sm" (click)="closeSave()">
-          {{ ui.t('reports.templates.save.cancel') }}
-        </button>
-        <button class="btn btn-primary btn-sm" [disabled]="!templateName().trim()" (click)="confirmSave()">
-          {{ ui.t('reports.templates.save.confirm') }}
-        </button>
+        <button class="btn btn-ghost btn-sm" (click)="closeSave()">Otkazi</button>
+        <button class="btn btn-primary btn-sm" [disabled]="!templateName().trim()" (click)="confirmSave()">Sacuvaj</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ===== ADD TO QUEUE DIALOG ===== -->
+@if (isAddQueueOpen()) {
+  <div class="rp-save-backdrop" (click)="cancelAddToQueue()">
+    <div class="rp-save-dialog" (click)="$event.stopPropagation()">
+      <h3 class="rp-save-dialog__title">Dodaj u red za izvestaj</h3>
+      <input
+        class="rp-save-dialog__input"
+        type="text"
+        [value]="queueItemTitle()"
+        (input)="queueItemTitle.set($any($event.target).value)"
+        placeholder="Naziv stavke"
+        (keydown.enter)="confirmAddToQueue()"
+      />
+      <div class="rp-save-dialog__actions">
+        <button class="btn btn-ghost btn-sm" (click)="cancelAddToQueue()">Otkazi</button>
+        <button class="btn btn-primary btn-sm" (click)="confirmAddToQueue()">Dodaj</button>
       </div>
     </div>
   </div>

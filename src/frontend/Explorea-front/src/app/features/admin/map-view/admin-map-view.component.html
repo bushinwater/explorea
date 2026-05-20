@@ -108,16 +108,24 @@
   <!-- Minimalna ocena -->
   <div class="filter-group">
     <span class="filter-group__label">Minimalna ocena</span>
-    <div class="rating-chips">
-      <button class="rating-chip" [class.active]="minRating === 3"   type="button" (click)="setMinRating(3)">
-        <span class="material-icons">star</span> 3+
-      </button>
-      <button class="rating-chip" [class.active]="minRating === 4"   type="button" (click)="setMinRating(4)">
-        <span class="material-icons">star</span> 4+
-      </button>
-      <button class="rating-chip" [class.active]="minRating === 4.5" type="button" (click)="setMinRating(4.5)">
-        <span class="material-icons">star</span> 4.5+
-      </button>
+    <div class="map-star-picker">
+      @for (star of [1,2,3,4,5]; track star) {
+        <button
+          class="map-star-btn"
+          [class.map-star-btn--on]="star <= (hoverRating ?? (minRating ?? 0))"
+          type="button"
+          (mouseenter)="hoverRating = star"
+          (mouseleave)="hoverRating = null"
+          (click)="setMinRating(star)"
+          [title]="star + '+ zvezdice'"
+        >
+          <span class="material-icons">star</span>
+        </button>
+      }
+      <span class="map-star-label">
+        @if (minRating) { {{ minRating }}+ ★ }
+        @else { Sve ocene }
+      </span>
     </div>
   </div>
 

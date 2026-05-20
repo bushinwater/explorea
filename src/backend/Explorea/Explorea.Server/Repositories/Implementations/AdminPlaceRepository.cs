@@ -21,6 +21,7 @@ namespace Explorea.Server.Repositories.Implementations
             int? filterRegionId,
             decimal? minRating,
             Guid? destinationId,
+            int? amenityId,
             Guid? restrictToOwner,
             int? restrictToRegionId,
             int page,
@@ -52,9 +53,10 @@ namespace Explorea.Server.Repositories.Implementations
             {
                 query = status.Trim().ToLowerInvariant() switch
                 {
-                    "active"   => query.Where(p => p.ApprovalStatus == "approved"),
-                    "inactive" => query.Where(p => p.ApprovalStatus == "rejected"),
-                    "pending"  => query.Where(p => p.ApprovalStatus == "pending"),
+                    "approved" or "active" => query.Where(p => p.ApprovalStatus == "approved"),
+                    "pending"              => query.Where(p => p.ApprovalStatus == "pending"),
+                    "rejected"             => query.Where(p => p.ApprovalStatus == "rejected"),
+                    "inactive"             => query.Where(p => p.ApprovalStatus == "inactive"),
                     _ => query
                 };
             }
@@ -67,6 +69,9 @@ namespace Explorea.Server.Repositories.Implementations
 
             if (destinationId.HasValue)
                 query = query.Where(p => p.DestinationId == destinationId.Value);
+
+            if (amenityId.HasValue)
+                query = query.Where(p => p.AmenityLinks.Any(al => al.AmenityId == amenityId.Value));
 
             var total = await query.CountAsync();
 

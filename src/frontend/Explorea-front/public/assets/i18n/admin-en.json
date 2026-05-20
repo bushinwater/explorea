@@ -494,5 +494,44 @@
   "reports.templates.save.title": "Save Template",
   "reports.templates.save.placeholder": "Template name...",
   "reports.templates.save.confirm": "Save",
-  "reports.templates.save.cancel": "Cancel"
+  "reports.templates.save.cancel": "Cancel",
+
+  "sidebar.places": "Places",
+
+  "places.title": "Places",
+  "places.subtitle": "Browse and manage tourist locations",
+  "places.addNew": "Add place",
+  "places.search.placeholder": "Search places...",
+
+  "places.stats.total": "Total places",
+  "places.stats.active": "Active",
+  "places.stats.pending": "Pending",
+  "places.stats.inactive": "Inactive",
+  "places.stats.added30Days": "Added — last 30 days",
+
+  "places.filter.btn": "Filter",
+  "places.filter.title": "Filters",
+  "places.filter.reset": "Reset all",
+  "places.filter.type": "Place type",
+  "places.filter.allTypes": "All types",
+  "places.filter.status": "Status",
+  "places.filter.region": "Region",
+  "places.filter.allRegions": "All regions",
+  "places.filter.rating": "Average rating",
+
+  "places.table.place": "Place",
+  "places.table.type": "Type",
+  "places.table.location": "Region / City",
+  "places.table.rating": "Rating",
+  "places.table.status": "Status",
+  "places.table.updated": "Updated",
+
+  "places.empty.title": "No places found",
+  "places.empty.description": "No places match the current filters.",
+
+  "places.delete.title": "Remove place",
+  "places.delete.description": "Are you sure you want to remove {name}? This action cannot be undone.",
+  "places.delete.confirm": "Remove",
+  "places.delete.cancel": "Cancel",
+  "places.delete.loading": "Removing..."
 }

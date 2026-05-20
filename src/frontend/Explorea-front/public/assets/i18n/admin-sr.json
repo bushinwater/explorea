@@ -494,5 +494,44 @@
   "reports.templates.save.title": "Sačuvaj šablon",
   "reports.templates.save.placeholder": "Naziv šablona...",
   "reports.templates.save.confirm": "Sačuvaj",
-  "reports.templates.save.cancel": "Otkaži"
+  "reports.templates.save.cancel": "Otkaži",
+
+  "sidebar.places": "Objekti",
+
+  "places.title": "Objekti",
+  "places.subtitle": "Pregled i upravljanje turističkim objektima",
+  "places.addNew": "Dodaj objekat",
+  "places.search.placeholder": "Pretraži objekte...",
+
+  "places.stats.total": "Ukupno objekata",
+  "places.stats.active": "Aktivnih",
+  "places.stats.pending": "Na čekanju",
+  "places.stats.inactive": "Neaktivnih",
+  "places.stats.added30Days": "Dodato — poslednjih 30 dana",
+
+  "places.filter.btn": "Filter",
+  "places.filter.title": "Filteri",
+  "places.filter.reset": "Resetuj sve",
+  "places.filter.type": "Tip objekta",
+  "places.filter.allTypes": "Svi tipovi",
+  "places.filter.status": "Status",
+  "places.filter.region": "Region",
+  "places.filter.allRegions": "Svi regioni",
+  "places.filter.rating": "Prosečna ocena",
+
+  "places.table.place": "Objekat",
+  "places.table.type": "Tip",
+  "places.table.location": "Region / Grad",
+  "places.table.rating": "Ocena",
+  "places.table.status": "Status",
+  "places.table.updated": "Ažurirano",
+
+  "places.empty.title": "Nema objekata",
+  "places.empty.description": "Nismo pronašli objekte koji odgovaraju trenutnim filterima.",
+
+  "places.delete.title": "Ukloni objekat",
+  "places.delete.description": "Da li ste sigurni da želite da uklonite {name}? Ova akcija se ne može poništiti.",
+  "places.delete.confirm": "Ukloni",
+  "places.delete.cancel": "Otkaži",
+  "places.delete.loading": "Uklanjanje..."
 }

@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
   ActivityDetail,
+  ActivityFilterOptions,
   ActivityFilters,
   ActivityPagedResponse,
   ActivityStats,
@@ -51,6 +52,10 @@ export class AdminActivitiesService {
 
   getStats(): Observable<ActivityStats> {
     return this.http.get<ActivityStats>(`${this.base}/stats`);
+  }
+
+  getFilterOptions(): Observable<ActivityFilterOptions> {
+    return this.http.get<ActivityFilterOptions>(`${this.base}/filter-options`);
   }
 
   getCategories(): Observable<CategoryOption[]> {

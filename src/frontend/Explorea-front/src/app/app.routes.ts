@@ -7,14 +7,14 @@ import { authGuard } from './core/guards/auth-guard';
 import { guestGuard } from './core/guards/guest-guard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
 import { AdminActivitiesPageComponent } from './features/admin/activities/admin-activities-page.component';
+import { AdminActivityLogPageComponent } from './features/admin/activity-log/admin-activity-log-page.component';
 import { Dashboard } from './features/admin/dashboard/dashboard';
 import { AdminDestinationsPageComponent } from './features/admin/destinations/admin-destinations-page.component';
 import { AdminEventsPageComponent } from './features/admin/events/admin-events-page.component';
-import { AdminHomePageComponent } from './features/admin/home/admin-home-page.component';
-import { AdminBroadcastNotificationPageComponent } from './features/admin/notifications/admin-broadcast-notification-page.component';
-import { AdminActivityLogPageComponent } from './features/admin/activity-log/admin-activity-log-page.component';
 import { AdminShellComponent } from './features/admin/layout/admin-shell/admin-shell.component';
 import { AdminMapViewComponent } from './features/admin/map-view/admin-map-view.component';
+import { AdminBroadcastNotificationPageComponent } from './features/admin/notifications/admin-broadcast-notification-page.component';
+import { AdminPlacesPageComponent } from './features/admin/places/admin-places-page.component';
 import { AdminReportsPageComponent } from './features/admin/reports/admin-reports-page.component';
 import { AdminReviewsPageComponent } from './features/admin/reviews/admin-reviews-page.component';
 import { AdminSettingsPageComponent } from './features/admin/settings/admin-settings-page.component';
@@ -69,6 +69,7 @@ export const routes: Routes = [
       { path: 'destinations', component: AdminDestinationsPageComponent, canActivate: [adminPageAccessGuard] },
       { path: 'events', component: AdminEventsPageComponent, canActivate: [adminPageAccessGuard] },
       { path: 'activities', component: AdminActivitiesPageComponent, canActivate: [adminPageAccessGuard] },
+      { path: 'places', component: AdminPlacesPageComponent, canActivate: [adminPageAccessGuard] },
       { path: 'activity-log', component: AdminActivityLogPageComponent, canActivate: [adminPageAccessGuard] },
       { path: 'notifications/broadcast', component: AdminBroadcastNotificationPageComponent, canActivate: [adminPageAccessGuard] },
       { path: 'reviews', component: AdminReviewsPageComponent, canActivate: [adminPageAccessGuard] },

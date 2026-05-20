@@ -78,6 +78,7 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
   selectedEntityTypes: string[] = [];   // backend types: 'destination'|'place'|'activity'|'event'
   openNowOnly = false;
   minRating: number | null = null;
+  hoverRating: number | null = null;
   minPrice: number | null = null;
   maxPrice: number | null = null;
   selectedSubcatIds: number[] = [];

@@ -64,6 +64,7 @@ namespace Explorea.Server.Services.Admin
                 filterRegionId,
                 query.MinRating,
                 query.DestinationId,
+                query.AmenityId,
                 restrictToOwner,
                 restrictToRegionId,
                 query.Page,

@@ -240,6 +240,43 @@
   font-weight: 600;
 }
 
+.activity-chip--locked {
+  opacity: 0.85;
+  cursor: default;
+  pointer-events: none;
+}
+
+.activity-star-picker {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.activity-star-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--color-border);
+  line-height: 1;
+  transition: color 0.12s;
+}
+
+.activity-star-btn .material-icons {
+  font-size: 22px;
+}
+
+.activity-star-btn--on {
+  color: var(--color-warning, #f59e0b);
+}
+
+.activity-star-label {
+  margin-left: 8px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
 .activity-filter-backdrop {
   position: fixed;
   inset: 0;

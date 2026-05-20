@@ -8,6 +8,7 @@ namespace Explorea.API.DTOs.Admin.Place
         public int? Region { get; set; }
         public decimal? MinRating { get; set; }
         public Guid? DestinationId { get; set; }
+        public int? AmenityId { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 20;
     }

@@ -23,6 +23,7 @@ namespace Explorea.Server.Controllers.Admin
         // GET /api/admin/events
         [HttpGet]
         public async Task<IActionResult> GetAll(
+            [FromQuery] string? search,
             [FromQuery] Guid? destinationId,
             [FromQuery] int? cityId,
             [FromQuery] int? typeId,
@@ -35,7 +36,7 @@ namespace Explorea.Server.Controllers.Admin
             {
                 var userId = GetCurrentUserId();
                 var (items, total) = await _service.GetAllAsync(
-                    destinationId, cityId, typeId, startFrom, startTo, page, pageSize, userId);
+                    search, destinationId, cityId, typeId, startFrom, startTo, page, pageSize, userId);
                 return Ok(new { total, items });
             }
             catch (UnauthorizedAccessException ex)
@@ -45,7 +46,7 @@ namespace Explorea.Server.Controllers.Admin
         }
 
         // GET /api/admin/events/{id}
-        [HttpGet("{id}")]
+        [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
             try
@@ -141,6 +142,16 @@ namespace Explorea.Server.Controllers.Admin
             {
                 return StatusCode(403, new { message = ex.Message });
             }
+        }
+
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetStats()
+        {
+            var userId = GetCurrentUserId();
+
+            var stats = await _service.GetStatsDtoAsync(userId);
+
+            return Ok(stats);
         }
 
         private Guid GetCurrentUserId()

@@ -108,12 +108,8 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     { value: 'rejected', label: 'Odbijeno' },
   ];
 
-  protected readonly ratingFilters: Array<{ value: number | null; label: string }> = [
-    { value: null, label: 'Sve ocene' },
-    { value: 4, label: '★ 4+' },
-    { value: 3, label: '★ 3+' },
-    { value: 2, label: '★ 2+' },
-  ];
+  protected readonly stars = [1, 2, 3, 4, 5];
+  protected readonly hoverRating = signal<number | null>(null);
 
   constructor(
     private readonly destinationsService: AdminDestinationsService,
@@ -172,8 +168,9 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.loadDestinations();
   }
 
-  protected applyMinRating(value: number | null): void {
-    this.patchFilter({ minRating: value, page: 1 });
+  protected applyMinRating(value: number): void {
+    const current = this.filters().minRating;
+    this.patchFilter({ minRating: current === value ? null : value, page: 1 });
     this.loadDestinations();
   }
 

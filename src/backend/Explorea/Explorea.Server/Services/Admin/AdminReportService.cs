@@ -30,16 +30,62 @@ namespace Explorea.Server.Services.Admin
         {
             var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
 
-            var traffic     = await _repo.GetMonthlyTrafficAsync(destIds, placeOwnerUserId);
-            var mostPopular = await _repo.GetMostPopularEntityNameAsync(destIds, placeOwnerUserId);
-            var avgRating   = await _repo.GetAvgRatingAsync(destIds, placeOwnerUserId);
+            var topRegion     = await _repo.GetTopRegionAsync(destIds, placeOwnerUserId);
+            var newUsers      = await _repo.GetNewUsersThisMonthAsync();
+            var topEntityType = await _repo.GetTopEntityTypeAsync();
+            var countryName   = await _repo.GetCountryNameAsync();
+            var currentUser   = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            var scopeRegion   = currentUser?.Role.Name == RoleNames.TouristOrganization
+                ? currentUser.ManagedRegion?.Name
+                : null;
 
             return new ReportInsightsDto
             {
-                MonthlyTraffic        = traffic,
-                MostPopularDestination = mostPopular,
-                AvgRating              = Math.Round(avgRating, 1)
+                TopRegion         = topRegion,
+                NewUsersThisMonth = newUsers,
+                TopEntityType     = topEntityType,
+                CountryName       = countryName,
+                ScopeRegion       = scopeRegion,
             };
+        }
+
+        public async Task<List<DestinationsTableItemDto>> GetDestinationsTableAsync(
+            string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
+            Guid currentUserId)
+        {
+            var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
+            return await _repo.GetDestinationsTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, destIds, placeOwnerUserId);
+        }
+
+        public async Task<List<EntityTableRowDto>> GetEntityTableAsync(
+            string entity, string? sortBy,
+            string? filterSubType, string? filterRegion, decimal? filterMinRating,
+            string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
+            List<string>? filterExtraFilters,
+            Guid currentUserId)
+        {
+            var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
+            return await _repo.GetEntityTableAsync(entity, sortBy, filterSubType, filterRegion, filterMinRating, filterDifficulty, filterMinPrice, filterMaxPrice, filterExtraFilters, destIds, placeOwnerUserId);
+        }
+
+        public async Task<List<SubtypeOptionDto>> GetSubtypeOptionsAsync(string entity, Guid currentUserId)
+        {
+            var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
+            return await _repo.GetSubtypeOptionsAsync(entity, destIds, placeOwnerUserId);
+        }
+
+        public async Task<List<string>> GetFilterOptionsAsync(string entity, string field, Guid currentUserId)
+        {
+            var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
+            return await _repo.GetFilterOptionsAsync(entity, field, destIds, placeOwnerUserId);
+        }
+
+        public async Task<List<AggregatePointDto>> GetAggregateAsync(
+            string entity, string groupBy, string metric,
+            DateOnly? dateFrom, DateOnly? dateTo, Guid currentUserId)
+        {
+            var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
+            return await _repo.GetAggregateAsync(entity, groupBy, metric, dateFrom, dateTo, destIds, placeOwnerUserId);
         }
 
         public async Task<List<ReportDataPointDto>> GetPreviewAsync(
@@ -184,9 +230,14 @@ namespace Explorea.Server.Services.Admin
 
             if (user?.Role.Name == RoleNames.TouristOrganization)
             {
+                if (user.ManagedRegionId.HasValue)
+                {
+                    var destIds = await _repo.GetDestinationIdsByRegionAsync(user.ManagedRegionId.Value);
+                    return (destIds, null);
+                }
+                // Fallback when no region set: use assignment-based scope
                 var assignments = await _assignmentRepo.GetByUserIdAsync(userId);
-                var destIds = assignments.Select(a => a.DestinationId).ToList();
-                return (destIds, null);
+                return (assignments.Select(a => a.DestinationId).ToList(), null);
             }
 
             if (user?.Role.Name == RoleNames.PlaceOwner)

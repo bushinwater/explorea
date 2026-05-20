@@ -77,7 +77,8 @@
               }
             </div>
 
-            <!-- Category filter -->
+            <!-- Category filter (only categories that have activities in scope) -->
+            @if (categories().length > 0) {
             <div class="activity-filter-section">
               <label class="activity-filter-section__label">{{ ui.t('activities.filter.category') }}</label>
               <div class="activity-filter-chips">
@@ -93,6 +94,7 @@
                 }
               </div>
             </div>
+            }
 
             <!-- Status filter -->
             <div class="activity-filter-section">
@@ -107,11 +109,12 @@
               </div>
             </div>
 
-            <!-- Difficulty filter -->
+            <!-- Difficulty filter (only shown if any difficulties exist in scope) -->
+            @if (difficulties().length > 1) {
             <div class="activity-filter-section">
               <label class="activity-filter-section__label">{{ ui.t('activities.filter.difficulty') }}</label>
               <div class="activity-filter-chips">
-                @for (d of difficulties; track d.value) {
+                @for (d of difficulties(); track d.value) {
                 <button class="activity-chip" [class.activity-chip--active]="filters().difficulty === d.value"
                   (click)="applyDifficulty(d.value)">
                   {{ d.label }}
@@ -119,22 +122,20 @@
                 }
               </div>
             </div>
+            }
 
-            <!-- Rating filter -->
+            <!-- Region filter -->
+            @if (isTouristOrganization() && managedRegion(); as mr) {
             <div class="activity-filter-section">
-              <label class="activity-filter-section__label">{{ ui.t('activities.filter.rating') }}</label>
+              <label class="activity-filter-section__label">{{ ui.t('activities.filter.region') }}</label>
               <div class="activity-filter-chips">
-                @for (r of ratingOptions; track r.value) {
-                <button class="activity-chip" [class.activity-chip--active]="filters().minRating === r.value"
-                  (click)="applyMinRating(r.value)">
-                  {{ r.label }}
+                <button class="activity-chip activity-chip--active activity-chip--locked" disabled>
+                  <span class="material-icons" style="font-size:14px;vertical-align:middle;margin-right:3px">lock</span>
+                  {{ mr.name }}
                 </button>
-                }
               </div>
             </div>
-
-            <!-- Region filter (super admin only) -->
-            @if (isSuperAdmin()) {
+            } @else if (isSuperAdmin()) {
             <div class="activity-filter-section">
               <label class="activity-filter-section__label">{{ ui.t('activities.filter.region') }}</label>
               <div class="activity-filter-chips">
@@ -151,6 +152,29 @@
               </div>
             </div>
             }
+
+            <!-- Rating filter — star picker -->
+            <div class="activity-filter-section">
+              <label class="activity-filter-section__label">{{ ui.t('activities.filter.rating') }}</label>
+              <div class="activity-star-picker">
+                @for (star of [1,2,3,4,5]; track star) {
+                <button
+                  class="activity-star-btn"
+                  [class.activity-star-btn--on]="star <= (hoverRating() ?? ratingNumeric())"
+                  (mouseenter)="hoverRating.set(star)"
+                  (mouseleave)="hoverRating.set(null)"
+                  (click)="applyMinRating(ratingNumeric() === star ? 'all' : star)"
+                  [title]="star + '+ zvezdice'"
+                >
+                  <span class="material-icons">star</span>
+                </button>
+                }
+                <span class="activity-star-label">
+                  @if (filters().minRating !== 'all') { {{ filters().minRating }}+ ★ }
+                  @else { Sve ocene }
+                </span>
+              </div>
+            </div>
           </div>
           <div class="activity-filter-backdrop" (click)="isFilterOpen.set(false)"></div>
           }
@@ -193,7 +217,7 @@
         <span class="material-icons">close</span>
       </button>
       }
-      @if (filters().regionId !== 'all') {
+      @if (filters().regionId !== 'all' && !managedRegion()) {
       <button class="activity-active-filter" type="button" (click)="applyRegion('all')">
         {{ selectedRegionLabel() }}
         <span class="material-icons">close</span>
@@ -692,7 +716,7 @@
             [value]="createForm().difficultyLevel ?? ''"
             (change)="updateCreateField('difficultyLevel', $any($event.target).value || undefined)">
             <option value="">Nije definisano</option>
-            @for (d of difficulties.slice(1); track d.value) {
+            @for (d of difficulties().slice(1); track d.value) {
               <option [value]="d.value">{{ d.label }}</option>
             }
           </select>

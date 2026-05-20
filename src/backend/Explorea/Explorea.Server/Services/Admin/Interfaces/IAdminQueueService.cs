@@ -5,7 +5,7 @@ namespace Explorea.Server.Services.Admin.Interfaces
     public interface IAdminQueueService
     {
         Task<(List<QueueItemDto> Items, int Total)> GetQueueAsync(
-            Guid? destinationId, string? status, int page, int pageSize, Guid currentUserId);
+            Guid? destinationId, string? status, string? entityType, int page, int pageSize, Guid currentUserId);
 
         Task<List<QueueItemDto>> GetOwnerQueueAsync(Guid currentUserId);
 
