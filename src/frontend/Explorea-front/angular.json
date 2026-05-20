@@ -29,6 +29,13 @@
             "styles": [
               "src/styles.css",
               "node_modules/maplibre-gl/dist/maplibre-gl.css"
+            ],
+            "allowedCommonJsDependencies": [
+              "maplibre-gl",
+              "html2canvas",
+              "canvg",
+              "rgbcolor",
+              "core-js"
             ]
           },
           "configurations": {
