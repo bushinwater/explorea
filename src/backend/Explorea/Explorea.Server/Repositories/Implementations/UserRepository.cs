@@ -21,6 +21,7 @@ namespace Explorea.Server.Repositories.Implementations
         {
             return await _set
                 .Include(u => u.Role)
+                .Include(u => u.ManagedRegion)
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 

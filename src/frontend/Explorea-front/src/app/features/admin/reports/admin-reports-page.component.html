@@ -257,7 +257,7 @@
       </div>
     </div>
 
-    @if (filterSubTypeOptions().length || filterRegionOptions().length || filterOptionsLoading()) {
+    @if (filterSubTypeOptions().length || filterRegionOptions().length || filterOptionsLoading() || scopeRegion()) {
       <div class="rp-filter-section">
 
         @if (filterSubTypeOptions().length) {
@@ -272,7 +272,15 @@
           </div>
         }
 
-        @if (filterRegionOptions().length) {
+        @if (scopeRegion()) {
+          <div class="rp-filter-row">
+            <span class="rp-filter-label">Regija</span>
+            <div class="rp-region-locked">
+              <span class="material-icons rp-region-locked__icon">lock</span>
+              <span class="rp-region-locked__name">{{ scopeRegion() }}</span>
+            </div>
+          </div>
+        } @else if (filterRegionOptions().length) {
           <div class="rp-filter-row">
             <span class="rp-filter-label">Regija</span>
             <div class="rp-pills">

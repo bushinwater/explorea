@@ -30,15 +30,22 @@ namespace Explorea.Server.Services.Admin
         {
             var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
 
-            var topRegion    = await _repo.GetTopRegionAsync(destIds, placeOwnerUserId);
-            var newUsers     = await _repo.GetNewUsersThisMonthAsync();
+            var topRegion     = await _repo.GetTopRegionAsync(destIds, placeOwnerUserId);
+            var newUsers      = await _repo.GetNewUsersThisMonthAsync();
             var topEntityType = await _repo.GetTopEntityTypeAsync();
+            var countryName   = await _repo.GetCountryNameAsync();
+            var currentUser   = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            var scopeRegion   = currentUser?.Role.Name == RoleNames.TouristOrganization
+                ? currentUser.ManagedRegion?.Name
+                : null;
 
             return new ReportInsightsDto
             {
                 TopRegion         = topRegion,
                 NewUsersThisMonth = newUsers,
                 TopEntityType     = topEntityType,
+                CountryName       = countryName,
+                ScopeRegion       = scopeRegion,
             };
         }
 
@@ -223,9 +230,14 @@ namespace Explorea.Server.Services.Admin
 
             if (user?.Role.Name == RoleNames.TouristOrganization)
             {
+                if (user.ManagedRegionId.HasValue)
+                {
+                    var destIds = await _repo.GetDestinationIdsByRegionAsync(user.ManagedRegionId.Value);
+                    return (destIds, null);
+                }
+                // Fallback when no region set: use assignment-based scope
                 var assignments = await _assignmentRepo.GetByUserIdAsync(userId);
-                var destIds = assignments.Select(a => a.DestinationId).ToList();
-                return (destIds, null);
+                return (assignments.Select(a => a.DestinationId).ToList(), null);
             }
 
             if (user?.Role.Name == RoleNames.PlaceOwner)

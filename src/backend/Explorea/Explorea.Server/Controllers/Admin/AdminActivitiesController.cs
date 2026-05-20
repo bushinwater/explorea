@@ -66,6 +66,21 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpGet("filter-options")]
+        public async Task<IActionResult> GetFilterOptions()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var options = await _service.GetFilterOptionsAsync(userId);
+                return Ok(options);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.ToString() });
+            }
+        }
+
         [HttpGet("categories")]
         public async Task<IActionResult> GetCategories()
         {

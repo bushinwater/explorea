@@ -148,6 +148,8 @@ export interface ReportInsights {
   topRegion:         string | null;
   newUsersThisMonth: number;
   topEntityType:     string | null;
+  countryName:       string | null;
+  scopeRegion:       string | null;
 }
 
 export interface DestinationsTableItem {

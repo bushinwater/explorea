@@ -299,6 +299,28 @@
   transform: translateX(16px);
 }
 
+/* Locked region badge (TO users) */
+.rp-region-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px 3px 7px;
+  background: rgba(40, 105, 76, 0.18);
+  border: 1px solid var(--color-primary);
+  border-radius: 20px;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.rp-region-locked__icon {
+  font-size: 13px;
+}
+
+.rp-region-locked__name {
+  line-height: 1;
+}
+
 /* Price od-do row */
 .rp-price-row {
   display: flex;

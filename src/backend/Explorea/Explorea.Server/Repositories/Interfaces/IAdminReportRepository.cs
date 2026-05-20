@@ -12,6 +12,9 @@ namespace Explorea.Server.Repositories.Interfaces
         Task<string?> GetTopRegionAsync(List<Guid>? restrictToDestinationIds, Guid? placeOwnerUserId);
         Task<long>    GetNewUsersThisMonthAsync();
         Task<string?> GetTopEntityTypeAsync();
+        Task<string?> GetCountryNameAsync();
+        Task<string?> GetScopeRegionAsync(List<Guid> destIds);
+        Task<List<Guid>> GetDestinationIdsByRegionAsync(int regionId);
 
         // Flat tables
         Task<List<DestinationsTableItemDto>> GetDestinationsTableAsync(

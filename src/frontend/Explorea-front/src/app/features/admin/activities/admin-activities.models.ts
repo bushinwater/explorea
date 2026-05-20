@@ -133,3 +133,9 @@ export interface DestinationOption {
   name: string;
   city: string | null;
 }
+
+export interface ActivityFilterOptions {
+  difficulties: string[];
+  categories: CategoryOption[];
+  managedRegion: { id: number; name: string } | null;
+}

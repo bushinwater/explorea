@@ -69,6 +69,18 @@ namespace Explorea.Server.Repositories.Implementations
             return await _db.Users.LongCountAsync(u => u.CreatedAt >= cutoff);
         }
 
+        public async Task<string?> GetCountryNameAsync()
+            => await _db.Countries.OrderBy(c => c.Id).Select(c => c.Name).FirstOrDefaultAsync();
+
+        public async Task<string?> GetScopeRegionAsync(List<Guid> destIds)
+            => null; // kept for interface compat — not used
+
+        public async Task<List<Guid>> GetDestinationIdsByRegionAsync(int regionId)
+            => await _db.Destinations
+                .Where(d => !d.IsDeleted && d.City != null && d.City.RegionId == regionId)
+                .Select(d => d.Id)
+                .ToListAsync();
+
         public async Task<string?> GetTopEntityTypeAsync()
         {
             var cutoff = DateTimeOffset.UtcNow.AddDays(-30);

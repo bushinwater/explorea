@@ -173,11 +173,19 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     return e === 'activities' ? 'Kategorija' : 'Tip';
   });
 
+  readonly scopeRegion = computed(() => this.insights()?.scopeRegion ?? null);
+
   constructor(
     private readonly svc: AdminReportsService,
     private readonly cdr: ChangeDetectorRef,
   ) {
-    this.svc.getInsights().subscribe({ next: d => { this.insights.set(d); this.cdr.detectChanges(); } });
+    this.svc.getInsights().subscribe({
+      next: d => {
+        this.insights.set(d);
+        if (d.scopeRegion) this.filterRegion.set(d.scopeRegion);
+        this.cdr.detectChanges();
+      },
+    });
     this.svc.getTemplates().subscribe({ next: d => { this.templates.set(d); this.cdr.detectChanges(); } });
     this.loadFilterOptions('destinations');
   }
@@ -307,7 +315,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     this.flatTableData.set(null);
     this.destTableError.set(null);
     this.filterSubType.set(null);
-    this.filterRegion.set(null);
+    this.filterRegion.set(this.scopeRegion());
     this.filterMinRating.set(null);
     this.filterDifficulty.set(null);
     this.filterMinPrice.set(null);
@@ -384,6 +392,11 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
 
     const region$ = this.svc.getFilterOptions(entity, 'region');
 
+    const applyScope = () => {
+      const locked = this.scopeRegion();
+      if (locked) this.filterRegion.set(locked);
+    };
+
     if (entity === 'places' || entity === 'events') {
       forkJoin([this.svc.getSubtypeOptions(entity), region$]).subscribe({
         next: ([subtypes, regions]) => {
@@ -391,6 +404,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
           this.filterSubTypeOptions.set(subtypes.map(s => s.name));
           this.filterRegionOptions.set(regions);
           this.filterOptionsLoading.set(false);
+          applyScope();
           this.cdr.detectChanges();
         },
         error: () => { this.filterOptionsLoading.set(false); this.cdr.detectChanges(); },
@@ -406,6 +420,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
           this.filterRegionOptions.set(regions);
           this.filterDifficultyOpts.set(difficulties);
           this.filterOptionsLoading.set(false);
+          applyScope();
           this.cdr.detectChanges();
         },
         error: () => { this.filterOptionsLoading.set(false); this.cdr.detectChanges(); },
@@ -416,6 +431,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
           this.filterSubTypeOptions.set(subTypes);
           this.filterRegionOptions.set(regions);
           this.filterOptionsLoading.set(false);
+          applyScope();
           this.cdr.detectChanges();
         },
         error: () => { this.filterOptionsLoading.set(false); this.cdr.detectChanges(); },
@@ -717,7 +733,13 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
         pdf.text(`${p} / ${totalPages}`, pageW - margin, pageH - 8, { align: 'right' });
       }
 
-      pdf.save('explorea_izvestaj.pdf');
+      const now     = new Date();
+      const dd      = String(now.getDate()).padStart(2, '0');
+      const mm      = String(now.getMonth() + 1).padStart(2, '0');
+      const yyyy    = String(now.getFullYear());
+      const country = this.sanitizePdfText(this.insights()?.countryName ?? 'izvestaj')
+        .toLowerCase().replace(/\s+/g, '_');
+      pdf.save(`explorea_${country}_${dd}${mm}${yyyy}.pdf`);
     } finally {
       this.pdfGenerating.set(false);
       this.cdr.detectChanges();

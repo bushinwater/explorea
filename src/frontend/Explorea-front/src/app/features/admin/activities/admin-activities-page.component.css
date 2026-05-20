@@ -240,6 +240,12 @@
   font-weight: 600;
 }
 
+.activity-chip--locked {
+  opacity: 0.85;
+  cursor: default;
+  pointer-events: none;
+}
+
 .activity-filter-backdrop {
   position: fixed;
   inset: 0;

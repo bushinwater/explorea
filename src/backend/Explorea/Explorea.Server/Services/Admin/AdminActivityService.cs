@@ -1,6 +1,8 @@
 using Explorea.API.DTOs.Admin.Activity;
 using Explorea.Server.Data;
+using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Admin.Interfaces;
+using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Admin.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
@@ -11,11 +13,13 @@ namespace Explorea.Server.Services.Admin
   {
     private readonly IAdminActivityRepository _repository;
     private readonly AppDbContext _context;
+    private readonly IUserRepository _userRepo;
 
-    public AdminActivityService(IAdminActivityRepository repository, AppDbContext context)
+    public AdminActivityService(IAdminActivityRepository repository, AppDbContext context, IUserRepository userRepo)
     {
       _repository = repository;
       _context = context;
+      _userRepo = userRepo;
     }
 
     public async Task<(List<AdminActivityListDto> Items, int Total)> GetAllAsync(AdminActivityListQueryDto query, Guid currentUserId)
@@ -23,6 +27,13 @@ namespace Explorea.Server.Services.Admin
       ValidatePagination(query.Page, query.PageSize);
 
       var activitiesQuery = _repository.Query();
+
+      var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+      if (user?.Role.Name == RoleNames.TouristOrganization && user.ManagedRegionId.HasValue)
+      {
+        var regionId = user.ManagedRegionId.Value;
+        activitiesQuery = activitiesQuery.Where(a => a.City != null && a.City.RegionId == regionId);
+      }
 
       if (query.Ids?.Count > 0)
       {
@@ -263,6 +274,42 @@ namespace Explorea.Server.Services.Admin
     public async Task<AdminActivityStatsDto> GetStatsAsync(Guid currentUserId)
     {
       return await _repository.GetStatsAsync();
+    }
+
+    public async Task<AdminActivityFilterOptionsDto> GetFilterOptionsAsync(Guid currentUserId)
+    {
+      var baseQuery = _repository.Query();
+
+      AdminActivityFilterOptionsDto.RegionItem? managedRegion = null;
+      var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+      if (user?.Role.Name == RoleNames.TouristOrganization && user.ManagedRegionId.HasValue)
+      {
+        var regionId = user.ManagedRegionId.Value;
+        baseQuery = baseQuery.Where(a => a.City != null && a.City.RegionId == regionId);
+        managedRegion = new AdminActivityFilterOptionsDto.RegionItem(
+          user.ManagedRegionId.Value,
+          user.ManagedRegion?.Name ?? "");
+      }
+
+      var difficulties = await baseQuery
+        .Where(a => a.DifficultyLevel != null)
+        .Select(a => a.DifficultyLevel!)
+        .Distinct()
+        .OrderBy(d => d)
+        .ToListAsync();
+
+      var categoryData = await baseQuery
+        .Select(a => new { a.CategoryId, CategoryName = a.Category.Name })
+        .Distinct()
+        .OrderBy(c => c.CategoryName)
+        .ToListAsync();
+
+      return new AdminActivityFilterOptionsDto
+      {
+        Difficulties = difficulties,
+        Categories = categoryData.Select(c => new AdminActivityFilterOptionsDto.CategoryItem(c.CategoryId, c.CategoryName)).ToList(),
+        ManagedRegion = managedRegion,
+      };
     }
 
     public async Task<AdminActivityDetailsDto> CreateAsync(AdminCreateActivityDto dto, Guid createdBy)
