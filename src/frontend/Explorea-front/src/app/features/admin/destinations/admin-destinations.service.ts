@@ -83,6 +83,10 @@ export class AdminDestinationsService {
       params = params.set('minRating', filters.minRating);
     }
 
+    for (const [key, value] of Object.entries(filters.extraFilters)) {
+      params = params.append('extraFilters', `${key}:${value}`);
+    }
+
     if (filters.status !== 'all') {
       params = params.set('visibility', filters.status);
     }

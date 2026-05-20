@@ -53,10 +53,12 @@ namespace Explorea.Server.Repositories.Implementations
             int? typeId,
             decimal? minRating,
             decimal? maxRating,
+            bool? isFeatured,
             List<Guid>? restrictToIds,
             int? restrictToRegionId,
             int page,
-            int pageSize)
+            int pageSize,
+            List<string>? extraFilters = null)
         {
             var query = _db.Destinations
                 .IgnoreQueryFilters() // admin vidi i soft-deleted
@@ -93,6 +95,9 @@ namespace Explorea.Server.Repositories.Implementations
             if (typeId.HasValue)
                 query = query.Where(d => d.TypeId == typeId.Value);
 
+            if (isFeatured.HasValue)
+                query = query.Where(d => d.IsFeatured == isFeatured.Value);
+
             if (minRating.HasValue)
                 query = query.Where(d => d.AvgRating >= minRating.Value);
 
@@ -104,6 +109,16 @@ namespace Explorea.Server.Repositories.Implementations
 
             if (restrictToRegionId.HasValue)
                 query = query.Where(d => d.City != null && d.City.RegionId == restrictToRegionId.Value);
+
+            if (extraFilters?.Count > 0)
+            {
+                var efDict = ParseExtraFilters(extraFilters);
+                foreach (var (key, value) in efDict)
+                {
+                    var snippet = $"{{\"{key}\": {value.ToLower()}}}";
+                    query = query.Where(d => d.ExtraFilters != null && EF.Functions.JsonContains(d.ExtraFilters, snippet));
+                }
+            }
 
             var total = await query.CountAsync();
             var items = await query
@@ -135,6 +150,18 @@ namespace Explorea.Server.Repositories.Implementations
                 .Select(d => d.CityId!.Value)
                 .Distinct()
                 .ToListAsync();
+        }
+
+        private static Dictionary<string, string> ParseExtraFilters(List<string>? raw)
+        {
+            if (raw == null || raw.Count == 0) return new Dictionary<string, string>();
+            var result = new Dictionary<string, string>();
+            foreach (var item in raw)
+            {
+                var idx = item.IndexOf(':');
+                if (idx > 0) result[item[..idx]] = item[(idx + 1)..];
+            }
+            return result;
         }
 
         private static List<string> NormalizeVisibilityValues(string visibility)

@@ -28,6 +28,8 @@ namespace Explorea.Server.Controllers.Admin
             [FromQuery] int? typeId,
             [FromQuery] decimal? minRating,
             [FromQuery] decimal? maxRating,
+            [FromQuery] bool? isFeatured,
+            [FromQuery] List<string>? extraFilters,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 15)
         {
@@ -42,9 +44,11 @@ namespace Explorea.Server.Controllers.Admin
                     typeId,
                     minRating,
                     maxRating,
+                    isFeatured,
                     page,
                     pageSize,
-                    userId);
+                    userId,
+                    extraFilters);
                 return Ok(new { total, items });
             }
             catch (UnauthorizedAccessException ex)

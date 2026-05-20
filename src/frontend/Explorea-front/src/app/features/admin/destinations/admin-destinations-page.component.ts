@@ -28,6 +28,7 @@ import {
 import { AdminDestinationsService } from './admin-destinations.service';
 import { DestinationEditModalComponent } from './admin-destination-edit-modal.component';
 import { DestinationCreateModalComponent } from './admin-destination-create-modal.component';
+import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 
 @Component({
   selector: 'app-admin-destinations-page',
@@ -55,9 +56,12 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     status: 'all',
     region: 'all',
     minRating: null,
+    extraFilters: {},
     page: 1,
     pageSize: 17,
   });
+
+  protected readonly filterDefs = signal<FilterDefinition[]>([]);
 
   protected readonly destinations = signal<DestinationRow[]>([]);
   protected readonly stats = signal<DestinationStats | null>(null);
@@ -97,6 +101,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       f.status !== 'all',
       f.region !== 'all',
       f.minRating !== null,
+      ...Object.keys(f.extraFilters).map(() => true),
     ].filter(Boolean).length;
   });
 
@@ -113,6 +118,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly destinationsService: AdminDestinationsService,
+    private readonly lookupService: LookupService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
@@ -154,8 +160,39 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected applyCategory(value: string | 'all'): void {
-    this.patchFilter({ category: value, page: 1 });
+    this.patchFilter({ category: value, extraFilters: {}, page: 1 });
+    if (value !== 'all') {
+      const typeId = Number(value);
+      if (typeId > 0) {
+        this.subscription.add(
+          this.lookupService.getFilterDefinitions('destination', typeId).subscribe({
+            next: (defs) => this.filterDefs.set(defs),
+            error: () => this.filterDefs.set([]),
+          }),
+        );
+      } else {
+        this.filterDefs.set([]);
+      }
+    } else {
+      this.filterDefs.set([]);
+    }
     this.loadDestinations();
+  }
+
+  protected applyExtraFilter(key: string, value: string): void {
+    const current = this.filters().extraFilters;
+    const updated = { ...current };
+    if (updated[key] === value) {
+      delete updated[key];
+    } else {
+      updated[key] = value;
+    }
+    this.patchFilter({ extraFilters: updated, page: 1 });
+    this.loadDestinations();
+  }
+
+  protected filterDefLabel(key: string): string {
+    return this.filterDefs().find(d => d.filterKey === key)?.filterLabel ?? key;
   }
 
   protected applyStatus(value: DestinationStatus | 'all'): void {
@@ -181,9 +218,11 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       status: 'all',
       region: 'all',
       minRating: null,
+      extraFilters: {},
       page: 1,
       pageSize: f.pageSize,
     }));
+    this.filterDefs.set([]);
     this.currentPage.set(1);
     this.loadDestinations();
   }

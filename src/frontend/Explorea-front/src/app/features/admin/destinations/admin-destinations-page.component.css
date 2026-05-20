@@ -381,6 +381,56 @@
   white-space: nowrap;
 }
 
+/* ===== ADDITIONAL FILTERS (toggles) ===== */
+.dest-filter-section--extra {
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.dest-extra-list { display: flex; flex-direction: column; gap: 6px; }
+
+.dest-extra-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  padding: 3px 0;
+}
+
+.dest-extra-item__label { font-size: 0.83rem; color: var(--color-text-primary); }
+
+.dest-toggle-btn { background: none; border: none; cursor: pointer; padding: 0; flex-shrink: 0; }
+
+.dest-toggle-track {
+  display: inline-flex;
+  align-items: center;
+  width: 36px; height: 20px;
+  background: var(--color-border);
+  border-radius: 10px;
+  padding: 2px;
+  transition: background 0.2s;
+}
+
+.dest-toggle-btn--on .dest-toggle-track { background: var(--color-primary); }
+
+.dest-toggle-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+
+.dest-toggle-btn--on .dest-toggle-thumb { transform: translateX(16px); }
+
+.dest-extra-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .dest-filter-backdrop {
   position: fixed;
   inset: 0;

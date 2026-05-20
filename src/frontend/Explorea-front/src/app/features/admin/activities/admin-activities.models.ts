@@ -74,6 +74,7 @@ export interface ActivityFilters {
   difficulty: ActivityDifficulty | 'all';
   minRating: number | 'all';
   regionId: number | 'all';
+  extraFilters: Record<string, string>;
   page: number;
   pageSize: number;
 }

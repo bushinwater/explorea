@@ -37,6 +37,7 @@ import {
   RegionOption,
 } from './admin-activities.models';
 import { AdminActivitiesService } from './admin-activities.service';
+import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
@@ -92,9 +93,12 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     difficulty: 'all',
     minRating: 'all',
     regionId: 'all',
+    extraFilters: {},
     page: 1,
     pageSize: 17,
   });
+
+  protected readonly filterDefs = signal<FilterDefinition[]>([]);
 
   protected readonly activities = signal<ActivityRow[]>([]);
   protected readonly stats = signal<ActivityStats | null>(null);
@@ -169,10 +173,14 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       f.status !== 'all',
       f.difficulty !== 'all',
       f.minRating !== 'all',
-      // Don't count region for TO — it's always locked to their region
       !this.managedRegion() && f.regionId !== 'all',
+      ...Object.keys(f.extraFilters).map(() => true),
     ].filter(Boolean).length;
   });
+
+  protected readonly extraFilterEntries = computed(() =>
+    Object.entries(this.filters().extraFilters).map(([key, value]) => ({ key, value }))
+  );
 
   protected readonly statuses: Array<{ value: ActivityStatus | 'all'; label: string }> = [
     { value: 'all', label: 'Svi statusi' },
@@ -189,6 +197,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly activitiesService: AdminActivitiesService,
+    private readonly lookupService: LookupService,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
     private readonly http: HttpClient,
@@ -199,6 +208,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.hydrateFiltersFromQueryParams();
+    const initialCatId = this.filters().categoryId;
+    if (initialCatId !== 'all') this.loadFilterDefs(initialCatId);
 
     this.subscription.add(
       this.destinationSearch$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((q) => {
@@ -251,8 +262,29 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   protected applyCategory(categoryId: number | 'all'): void {
-    this.patchFilter({ categoryId, page: 1 });
+    this.patchFilter({ categoryId, extraFilters: {}, page: 1 });
+    if (categoryId !== 'all') {
+      this.loadFilterDefs(categoryId);
+    } else {
+      this.filterDefs.set([]);
+    }
     this.loadActivities();
+  }
+
+  protected applyExtraFilter(key: string, value: string): void {
+    const current = this.filters().extraFilters;
+    const updated = { ...current };
+    if (updated[key] === value) {
+      delete updated[key];
+    } else {
+      updated[key] = value;
+    }
+    this.patchFilter({ extraFilters: updated, page: 1 });
+    this.loadActivities();
+  }
+
+  protected filterDefLabel(key: string): string {
+    return this.filterDefs().find(d => d.filterKey === key)?.filterLabel ?? key;
   }
 
   protected applyStatus(value: ActivityStatus | 'all'): void {
@@ -285,9 +317,11 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       difficulty: 'all',
       minRating: 'all',
       regionId: mr ? mr.id : 'all',
+      extraFilters: {},
       page: 1,
       pageSize: f.pageSize,
     }));
+    this.filterDefs.set([]);
     this.currentPage.set(1);
     this.syncFiltersToQueryParams();
     this.loadActivities();
@@ -853,6 +887,12 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     const page = this.parsePositiveInt(qp.get('page'), 1);
     const pageSize = this.parsePositiveInt(qp.get('pageSize'), this.filters().pageSize);
 
+    const extraFilters: Record<string, string> = {};
+    for (const raw of qp.getAll('extraFilters')) {
+      const idx = raw.indexOf(':');
+      if (idx > 0) extraFilters[raw.slice(0, idx)] = raw.slice(idx + 1);
+    }
+
     this.filters.set({
       search: qp.get('search')?.trim() ?? '',
       categoryId: this.parsePositiveInt(qp.get('categoryId'), 0) || 'all',
@@ -860,6 +900,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       difficulty: this.parseDifficulty(qp.get('difficulty')),
       minRating: this.parseMinRating(qp.get('minRating')),
       regionId: this.parsePositiveInt(qp.get('regionId'), 0) || 'all',
+      extraFilters,
       page,
       pageSize,
     });
@@ -875,18 +916,20 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  private buildQueryParams(): Record<string, string | number> {
+  private buildQueryParams(): Record<string, unknown> {
     const f = this.filters();
-    const qp: Record<string, string | number> = {};
+    const qp: Record<string, unknown> = {};
 
-    if (f.search.trim())      qp['search']     = f.search.trim();
+    if (f.search.trim())        qp['search']     = f.search.trim();
     if (f.categoryId !== 'all') qp['categoryId'] = f.categoryId;
-    if (f.status !== 'all')   qp['status']     = f.status;
+    if (f.status !== 'all')     qp['status']     = f.status;
     if (f.difficulty !== 'all') qp['difficulty'] = f.difficulty;
     if (f.minRating !== 'all')  qp['minRating']  = f.minRating;
     if (f.regionId !== 'all')   qp['regionId']   = f.regionId;
-    if (f.page > 1)           qp['page']       = f.page;
-    if (f.pageSize !== 17)    qp['pageSize']   = f.pageSize;
+    const efEntries = Object.entries(f.extraFilters);
+    if (efEntries.length)       qp['extraFilters'] = efEntries.map(([k, v]) => `${k}:${v}`);
+    if (f.page > 1)             qp['page']       = f.page;
+    if (f.pageSize !== 17)      qp['pageSize']   = f.pageSize;
 
     return qp;
   }
@@ -909,6 +952,15 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   private parsePositiveInt(value: string | null, fallback: number): number {
     const parsed = Number(value);
     return Number.isInteger(parsed) && parsed >= 1 ? parsed : fallback;
+  }
+
+  private loadFilterDefs(categoryId: number): void {
+    this.subscription.add(
+      this.lookupService.getFilterDefinitions('activity', categoryId).subscribe({
+        next: (defs) => this.filterDefs.set(defs),
+        error: () => this.filterDefs.set([]),
+      }),
+    );
   }
 
   private loadActivitiesFuzzy(query: string): void {

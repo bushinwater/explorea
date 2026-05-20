@@ -65,6 +65,7 @@ export interface DestinationFilters {
   status: DestinationStatus | 'all';
   region: string | 'all';
   minRating: number | null;
+  extraFilters: Record<string, string>;
   page: number;
   pageSize: number;
 }

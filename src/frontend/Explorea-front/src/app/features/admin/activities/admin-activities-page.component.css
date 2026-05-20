@@ -277,6 +277,56 @@
   white-space: nowrap;
 }
 
+/* ===== ADDITIONAL FILTERS (toggles) ===== */
+.activity-filter-section--extra {
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.activity-extra-list { display: flex; flex-direction: column; gap: 6px; }
+
+.activity-extra-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  padding: 3px 0;
+}
+
+.activity-extra-item__label { font-size: 0.83rem; color: var(--color-text-primary); }
+
+.activity-toggle-btn { background: none; border: none; cursor: pointer; padding: 0; flex-shrink: 0; }
+
+.activity-toggle-track {
+  display: inline-flex;
+  align-items: center;
+  width: 36px; height: 20px;
+  background: var(--color-border);
+  border-radius: 10px;
+  padding: 2px;
+  transition: background 0.2s;
+}
+
+.activity-toggle-btn--on .activity-toggle-track { background: var(--color-primary); }
+
+.activity-toggle-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+
+.activity-toggle-btn--on .activity-toggle-thumb { transform: translateX(16px); }
+
+.activity-extra-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .activity-filter-backdrop {
   position: fixed;
   inset: 0;

@@ -12,9 +12,11 @@ namespace Explorea.Server.Services.Admin.Interfaces
             int? typeId,
             decimal? minRating,
             decimal? maxRating,
+            bool? isFeatured,
             int page,
             int pageSize,
-            Guid currentUserId);
+            Guid currentUserId,
+            List<string>? extraFilters = null);
 
         Task<AdminDestinationStatsDto> GetStatsAsync(Guid currentUserId);
 

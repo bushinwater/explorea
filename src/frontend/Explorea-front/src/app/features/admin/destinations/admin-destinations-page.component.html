@@ -200,6 +200,45 @@
                 </div>
               }
 
+              <!-- Dynamic extra filters (loaded when a specific type is selected) -->
+              @if (filterDefs().length > 0) {
+              <div class="dest-filter-section dest-filter-section--extra">
+                <label class="dest-filter-section__label">Dodatni filteri</label>
+                <div class="dest-extra-list">
+                  @for (def of filterDefs(); track def.id) {
+                    @if (def.filterType === 'boolean') {
+                    <label class="dest-extra-item">
+                      <span class="dest-extra-item__label">{{ def.filterLabel }}</span>
+                      <button
+                        class="dest-toggle-btn"
+                        [class.dest-toggle-btn--on]="filters().extraFilters[def.filterKey] === 'true'"
+                        type="button"
+                        (click)="applyExtraFilter(def.filterKey, 'true')"
+                      >
+                        <span class="dest-toggle-track">
+                          <span class="dest-toggle-thumb"></span>
+                        </span>
+                      </button>
+                    </label>
+                    } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
+                    <div class="dest-extra-select-group">
+                      <span class="dest-extra-item__label">{{ def.filterLabel }}</span>
+                      <div class="dest-filter-chips">
+                        @for (opt of def.options; track opt.optionValue) {
+                        <button class="dest-chip"
+                          [class.dest-chip--active]="filters().extraFilters[def.filterKey] === opt.optionValue"
+                          (click)="applyExtraFilter(def.filterKey, opt.optionValue)">
+                          {{ opt.optionLabel }}
+                        </button>
+                        }
+                      </div>
+                    </div>
+                    }
+                  }
+                </div>
+              </div>
+              }
+
               <!-- Rating filter — star picker -->
               <div class="dest-filter-section">
                 <label class="dest-filter-section__label">Prosečna ocena</label>

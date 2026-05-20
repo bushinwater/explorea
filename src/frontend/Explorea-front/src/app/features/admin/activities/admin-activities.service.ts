@@ -46,6 +46,9 @@ export class AdminActivitiesService {
     if (filters.regionId !== 'all') {
       params = params.set('regionId', filters.regionId);
     }
+    for (const [key, value] of Object.entries(filters.extraFilters)) {
+      params = params.append('extraFilters', `${key}:${value}`);
+    }
 
     return this.http.get<ActivityPagedResponse>(this.base, { params });
   }

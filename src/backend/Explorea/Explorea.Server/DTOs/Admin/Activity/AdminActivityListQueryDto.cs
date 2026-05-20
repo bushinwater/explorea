@@ -28,6 +28,14 @@ namespace Explorea.API.DTOs.Admin.Activity
 
         public decimal? MinAvgRating { get; set; }
 
+        public bool? IsFeatured { get; set; }
+
+        // true = only free (price IS NULL), null = all
+        public bool? IsFree { get; set; }
+
+        // "key:value" pairs applied as JSONB contains on ExtraData
+        public List<string>? ExtraFilters { get; set; }
+
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 17;
     }

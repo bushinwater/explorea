@@ -134,6 +134,22 @@ namespace Explorea.Server.Services.Admin
         activitiesQuery = activitiesQuery.Where(a => a.AvgRating >= query.MinAvgRating.Value);
       }
 
+      if (query.IsFeatured.HasValue)
+        activitiesQuery = activitiesQuery.Where(a => a.IsFeatured == query.IsFeatured.Value);
+
+      if (query.IsFree == true)
+        activitiesQuery = activitiesQuery.Where(a => a.Price == null);
+
+      if (query.ExtraFilters?.Count > 0)
+      {
+        var efDict = ParseExtraFilters(query.ExtraFilters);
+        foreach (var (key, value) in efDict)
+        {
+          var snippet = $"{{\"{key}\": {value.ToLower()}}}";
+          activitiesQuery = activitiesQuery.Where(a => a.ExtraData != null && EF.Functions.JsonContains(a.ExtraData, snippet));
+        }
+      }
+
       activitiesQuery = activitiesQuery.OrderByDescending(a => a.CreatedAt);
 
       var total = await activitiesQuery.CountAsync();
@@ -492,6 +508,18 @@ namespace Explorea.Server.Services.Admin
       if (durationMinutes.Value <= 120)      return "up_to_2h";
       if (durationMinutes.Value <= 360)      return "from_2h_to_6h";
       return "multi_day";
+    }
+
+    private static Dictionary<string, string> ParseExtraFilters(List<string>? raw)
+    {
+      if (raw == null || raw.Count == 0) return new Dictionary<string, string>();
+      var result = new Dictionary<string, string>();
+      foreach (var item in raw)
+      {
+        var idx = item.IndexOf(':');
+        if (idx > 0) result[item[..idx]] = item[(idx + 1)..];
+      }
+      return result;
     }
   }
 }

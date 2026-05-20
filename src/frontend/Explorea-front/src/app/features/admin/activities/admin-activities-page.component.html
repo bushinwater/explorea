@@ -153,6 +153,45 @@
             </div>
             }
 
+            <!-- Dynamic extra filters (loaded when a specific category is selected) -->
+            @if (filterDefs().length > 0) {
+            <div class="activity-filter-section activity-filter-section--extra">
+              <label class="activity-filter-section__label">Dodatni filteri</label>
+              <div class="activity-extra-list">
+                @for (def of filterDefs(); track def.id) {
+                  @if (def.filterType === 'boolean') {
+                  <label class="activity-extra-item">
+                    <span class="activity-extra-item__label">{{ def.filterLabel }}</span>
+                    <button
+                      class="activity-toggle-btn"
+                      [class.activity-toggle-btn--on]="filters().extraFilters[def.filterKey] === 'true'"
+                      type="button"
+                      (click)="applyExtraFilter(def.filterKey, 'true')"
+                    >
+                      <span class="activity-toggle-track">
+                        <span class="activity-toggle-thumb"></span>
+                      </span>
+                    </button>
+                  </label>
+                  } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
+                  <div class="activity-extra-select-group">
+                    <span class="activity-extra-item__label">{{ def.filterLabel }}</span>
+                    <div class="activity-filter-chips">
+                      @for (opt of def.options; track opt.optionValue) {
+                      <button class="activity-chip"
+                        [class.activity-chip--active]="filters().extraFilters[def.filterKey] === opt.optionValue"
+                        (click)="applyExtraFilter(def.filterKey, opt.optionValue)">
+                        {{ opt.optionLabel }}
+                      </button>
+                      }
+                    </div>
+                  </div>
+                  }
+                }
+              </div>
+            </div>
+            }
+
             <!-- Rating filter — star picker -->
             <div class="activity-filter-section">
               <label class="activity-filter-section__label">{{ ui.t('activities.filter.rating') }}</label>
@@ -220,6 +259,12 @@
       @if (filters().regionId !== 'all' && !managedRegion()) {
       <button class="activity-active-filter" type="button" (click)="applyRegion('all')">
         {{ selectedRegionLabel() }}
+        <span class="material-icons">close</span>
+      </button>
+      }
+      @for (ef of extraFilterEntries(); track ef.key) {
+      <button class="activity-active-filter" type="button" (click)="applyExtraFilter(ef.key, ef.value)">
+        {{ filterDefLabel(ef.key) }}
         <span class="material-icons">close</span>
       </button>
       }

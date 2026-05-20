@@ -46,9 +46,11 @@ namespace Explorea.Server.Services.Admin
             int? typeId,
             decimal? minRating,
             decimal? maxRating,
+            bool? isFeatured,
             int page,
             int pageSize,
-            Guid currentUserId)
+            Guid currentUserId,
+            List<string>? extraFilters = null)
         {
             List<Guid>? restrictToIds = null;
             int? restrictToRegionId = null;
@@ -99,10 +101,12 @@ namespace Explorea.Server.Services.Admin
                 typeId,
                 minRating,
                 maxRating,
+                isFeatured,
                 restrictToIds,
                 restrictToRegionId,
                 page,
-                pageSize);
+                pageSize,
+                extraFilters);
 
             var viewCounts = await GetViewCountsAsync(items);
             return (items.Select(d => MapToListDto(d, viewCounts)).ToList(), total);

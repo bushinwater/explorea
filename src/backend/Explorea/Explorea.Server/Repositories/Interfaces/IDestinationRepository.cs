@@ -17,10 +17,12 @@ namespace Explorea.Server.Repositories.Interfaces
             int? typeId,
             decimal? minRating,
             decimal? maxRating,
+            bool? isFeatured,
             List<Guid>? restrictToIds,
             int? restrictToRegionId,
             int page,
-            int pageSize);
+            int pageSize,
+            List<string>? extraFilters = null);
         Task<Destination?> GetAdminByIdAsync(Guid id);
         Task<List<int>> GetCityIdsByDestinationsAsync(List<Guid> destinationIds);
     }
