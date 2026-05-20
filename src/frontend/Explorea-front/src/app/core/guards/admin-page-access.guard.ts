@@ -9,6 +9,7 @@ const ADMIN_PAGE_ROLES: Record<string, AdminRole[]> = {
   destinations: ['super_admin', 'tourist_organization'],
   events: ['super_admin', 'tourist_organization'],
   activities: ['super_admin', 'tourist_organization'],
+  places: ['super_admin', 'tourist_organization', 'place_owner'],
   'activity-log': ['super_admin'],
   'notifications/broadcast': ['super_admin', 'tourist_organization'],
   reviews: ['super_admin', 'tourist_organization', 'place_owner'],

@@ -459,6 +459,7 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
           "destinations" or
           "events" or
           "activities" or
+          "places" or
           "activity-log" or
           "notifications-broadcast" or
           "reviews" or
@@ -538,6 +539,7 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
             "destinations" or
             "events" or
             "activities" or
+            "places" or
             "notifications-broadcast" or
             "reviews" or
             "reports" or
@@ -545,6 +547,7 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
             "settings",
           "place_owner" => page is
             "dashboard" or
+            "places" or
             "reviews" or
             "support" or
             "settings",

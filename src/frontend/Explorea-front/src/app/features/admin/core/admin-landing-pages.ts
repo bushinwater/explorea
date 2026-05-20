@@ -39,6 +39,12 @@ export const ADMIN_LANDING_PAGE_OPTIONS: AdminLandingPageOption[] = [
     roles: ['super_admin', 'tourist_organization'],
   },
   {
+    value: 'places',
+    label: 'Objekti',
+    route: '/admin/places',
+    roles: ['super_admin', 'tourist_organization', 'place_owner'],
+  },
+  {
     value: 'activity-log',
     label: 'Audit log',
     route: '/admin/activity-log',
