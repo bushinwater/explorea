@@ -29,6 +29,7 @@ import { AdminDestinationsService } from './admin-destinations.service';
 import { DestinationEditModalComponent } from './admin-destination-edit-modal.component';
 import { DestinationCreateModalComponent } from './admin-destination-create-modal.component';
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
+import { MapPreviewComponent } from '../shared/components/map-preview/map-preview.component';
 
 @Component({
   selector: 'app-admin-destinations-page',
@@ -39,6 +40,7 @@ import { FilterDefinition, LookupService } from '../../../core/services/lookup.s
     FeedbackBannerComponent,
     ConfirmDialogComponent,
     EmptyStateComponent,
+    MapPreviewComponent,
     TableSkeletonComponent,
     DestinationEditModalComponent,
     DestinationCreateModalComponent,

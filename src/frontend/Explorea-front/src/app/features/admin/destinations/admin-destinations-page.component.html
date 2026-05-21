@@ -525,10 +525,11 @@
           </div>
           @if (detailsPanelDetail()?.latitude != null) {
             <div class="ddp-grid__item ddp-grid__item--full">
-              <span class="ddp-grid__label">Koordinate</span>
-              <span class="ddp-grid__value">
-                {{ detailsPanelDetail()!.latitude }}, {{ detailsPanelDetail()!.longitude }}
-              </span>
+              <span class="ddp-grid__label">Lokacija</span>
+              <app-admin-map-preview
+                [latitude]="detailsPanelDetail()!.latitude"
+                [longitude]="detailsPanelDetail()!.longitude"
+              />
             </div>
           }
         </div>

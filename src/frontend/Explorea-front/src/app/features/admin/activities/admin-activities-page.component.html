@@ -559,12 +559,11 @@
 
         @if (detail.latitude && detail.longitude) {
         <div class="activity-details-item activity-details-item--full">
-          <span class="activity-details-item__label">Koordinate</span>
-          <a class="activity-details-item__value activity-details-item__link"
-            [href]="'https://www.google.com/maps?q=' + detail.latitude + ',' + detail.longitude"
-            target="_blank" rel="noopener">
-            {{ detail.latitude }}, {{ detail.longitude }}
-          </a>
+          <span class="activity-details-item__label">Lokacija</span>
+          <app-admin-map-preview
+            [latitude]="detail.latitude"
+            [longitude]="detail.longitude"
+          />
         </div>
         }
 

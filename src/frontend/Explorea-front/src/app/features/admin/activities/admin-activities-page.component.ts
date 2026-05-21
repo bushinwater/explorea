@@ -38,6 +38,7 @@ import {
 } from './admin-activities.models';
 import { AdminActivitiesService } from './admin-activities.service';
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
+import { MapPreviewComponent } from '../shared/components/map-preview/map-preview.component';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
@@ -68,6 +69,7 @@ const LIGHT = {
     FeedbackBannerComponent,
     ConfirmDialogComponent,
     EmptyStateComponent,
+    MapPreviewComponent,
     TableSkeletonComponent,
   ],
   templateUrl: './admin-activities-page.component.html',

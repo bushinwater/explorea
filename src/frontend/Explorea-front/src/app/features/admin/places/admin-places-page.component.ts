@@ -28,6 +28,7 @@ import {
 import { AdminPlacesService } from './admin-places.service';
 import { PlaceCreateModalComponent } from './admin-place-create-modal.component';
 import { PlaceEditModalComponent } from './admin-place-edit-modal.component';
+import { MapPreviewComponent } from '../shared/components/map-preview/map-preview.component';
 
 @Component({
   selector: 'app-admin-places-page',
@@ -38,6 +39,7 @@ import { PlaceEditModalComponent } from './admin-place-edit-modal.component';
     FeedbackBannerComponent,
     ConfirmDialogComponent,
     EmptyStateComponent,
+    MapPreviewComponent,
     TableSkeletonComponent,
     PlaceCreateModalComponent,
     PlaceEditModalComponent,
