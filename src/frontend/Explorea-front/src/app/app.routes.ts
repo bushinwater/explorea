@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { adminUsersAccessGuard } from './core/guards/admin-users-access.guard';
+import { adminDefaultLandingGuard } from './core/guards/admin-default-landing.guard';
 import { adminGuard } from './core/guards/admin.guard';
+import { adminPageAccessGuard } from './core/guards/admin-page-access.guard';
 import { authGuard } from './core/guards/auth-guard';
 import { guestGuard } from './core/guards/guest-guard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
@@ -61,30 +63,31 @@ export const routes: Routes = [
     component: AdminShellComponent,
     canActivate: [adminGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
-      { path: 'dashboard', component: Dashboard },
-      { path: 'map-view', component: AdminMapViewComponent },
-      { path: 'destinations', component: AdminDestinationsPageComponent },
-      { path: 'events', component: AdminEventsPageComponent },
-      { path: 'activities', component: AdminActivitiesPageComponent },
-      { path: 'places', component: AdminPlacesPageComponent },
-      { path: 'activity-log', component: AdminActivityLogPageComponent },
-      { path: 'notifications/broadcast', component: AdminBroadcastNotificationPageComponent },
-      { path: 'reviews', component: AdminReviewsPageComponent },
+      { path: '', pathMatch: 'full', component: Dashboard, canActivate: [adminDefaultLandingGuard] },
+      { path: 'dashboard', component: Dashboard, canActivate: [adminPageAccessGuard] },
+      { path: 'map-view', component: AdminMapViewComponent, canActivate: [adminPageAccessGuard] },
+      { path: 'destinations', component: AdminDestinationsPageComponent, canActivate: [adminPageAccessGuard] },
+      { path: 'events', component: AdminEventsPageComponent, canActivate: [adminPageAccessGuard] },
+      { path: 'activities', component: AdminActivitiesPageComponent, canActivate: [adminPageAccessGuard] },
+      { path: 'places', component: AdminPlacesPageComponent, canActivate: [adminPageAccessGuard] },
+      { path: 'activity-log', component: AdminActivityLogPageComponent, canActivate: [adminPageAccessGuard] },
+      { path: 'notifications/broadcast', component: AdminBroadcastNotificationPageComponent, canActivate: [adminPageAccessGuard] },
+      { path: 'reviews', component: AdminReviewsPageComponent, canActivate: [adminPageAccessGuard] },
       {
         path: 'object-requests/:id',
         loadComponent: () =>
           import('./features/admin/object-requests/pages/object-request-detail/object-request-detail').then(
             (m) => m.AdminObjectRequestDetailComponent,
           ),
+        canActivate: [adminPageAccessGuard],
       },
-      { path: 'reports', component: AdminReportsPageComponent },
-      { path: 'settings', component: AdminSettingsPageComponent },
-      { path: 'support', component: AdminSupportPageComponent },
+      { path: 'reports', component: AdminReportsPageComponent, canActivate: [adminPageAccessGuard] },
+      { path: 'settings', component: AdminSettingsPageComponent, canActivate: [adminPageAccessGuard] },
+      { path: 'support', component: AdminSupportPageComponent, canActivate: [adminPageAccessGuard] },
       {
         path: 'users',
         component: UserDirectoryPageComponent,
-        canActivate: [adminUsersAccessGuard],
+        canActivate: [adminPageAccessGuard, adminUsersAccessGuard],
       },
       { path: '**', redirectTo: 'dashboard' },
     ],

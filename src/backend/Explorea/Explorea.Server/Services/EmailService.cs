@@ -171,5 +171,32 @@ namespace Explorea.Server.Services
                 await client.SendMailAsync(message);
             }
         }
+
+        public async Task SendAdminReportEmailAsync(string toEmail, string firstName, IEnumerable<string> topics)
+        {
+            var topicList = topics
+                .Where(topic => !string.IsNullOrWhiteSpace(topic))
+                .Select(topic => topic.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (topicList.Count == 0)
+                return;
+
+            var subject = "Explorea admin izvestaj";
+            var htmlBody = $@"
+                <html>
+                    <body>
+                        <p>Zdravo, {WebUtility.HtmlEncode(firstName)}!</p>
+                        <p>Ovo je zakazani admin izvestaj za teme koje si izabrao/la u podesavanjima.</p>
+                        <ul>
+                            {string.Join("", topicList.Select(topic => $"<li>{WebUtility.HtmlEncode(topic)}</li>"))}
+                        </ul>
+                        <p>Detaljna logika za generisanje izvestaja se povezuje odvojeno.</p>
+                    </body>
+                </html>";
+
+            await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
+        }
     }
 }

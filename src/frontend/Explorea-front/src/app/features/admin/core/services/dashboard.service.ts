@@ -110,9 +110,9 @@ const MOCK: Record<AdminRole, DashboardData> = {
       { id: '5', initials: 'BN', avatarColor: '#34d399', text: 'Bojan Nikolić dodao 5 novih slika za "Vodopad Tupavica"', timestamp: 'pre 3 h', actionLabel: 'Pogledaj', status: 'info' },
     ],
     quickActions: [
-      { id: 'add-event',  icon: 'event_available', label: 'Dodaj događaj',    route: '/admin/events/new',   colorClass: 'primary' },
+      { id: 'add-event',  icon: 'event_available', label: 'Dodaj događaj',    route: '/admin/events?create=true', colorClass: 'primary' },
       { id: 'region',     icon: 'tune',            label: 'Region podešavanja',route: '/admin/settings',    colorClass: 'muted'   },
-      { id: 'queue',      icon: 'queue',           label: 'Red čekanja',       route: '/admin/queue',       colorClass: 'warning' },
+      { id: 'reviews',    icon: 'rate_review',     label: 'Pregled recenzija', route: '/admin/reviews',     colorClass: 'warning' },
       { id: 'report',     icon: 'assessment',      label: 'Mesečni izveštaj',  route: '/admin/reports',     colorClass: 'info'    },
     ],
     traffic: trafficData(),
@@ -134,10 +134,10 @@ const MOCK: Record<AdminRole, DashboardData> = {
       { id: '4', initials: 'LJ', avatarColor: '#e57373', text: 'Recenzija sa komentarom — preporučen odgovor vlasnika', timestamp: 'pre 1 d', actionLabel: 'Odgovori', status: 'warning' },
     ],
     quickActions: [
-      { id: 'request',  icon: 'post_add',    label: 'Pošalji zahtev',  route: '/admin/queue/new',  colorClass: 'primary' },
-      { id: 'places',   icon: 'storefront',  label: 'Moja mesta',      route: '/admin/places',     colorClass: 'info'    },
-      { id: 'reviews',  icon: 'rate_review', label: 'Moje recenzije',  route: '/admin/reviews',    colorClass: 'accent'  },
-      { id: 'support',  icon: 'support',     label: 'Podrška',         route: '/admin/support',    colorClass: 'muted'   },
+      { id: 'dashboard', icon: 'dashboard',   label: 'Pregled naloga',  route: '/admin/dashboard', colorClass: 'primary' },
+      { id: 'settings',  icon: 'settings',    label: 'Podesavanja',     route: '/admin/settings',  colorClass: 'info'    },
+      { id: 'reviews',   icon: 'rate_review', label: 'Moje recenzije',  route: '/admin/reviews',   colorClass: 'accent'  },
+      { id: 'support',   icon: 'support',     label: 'Podrska',         route: '/admin/support',   colorClass: 'muted'   },
     ],
   },
 };

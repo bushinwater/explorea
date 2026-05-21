@@ -28,15 +28,56 @@
   <div class="header__right">
 
     <!-- Notifications -->
-    <button class="header__icon-btn" [title]="ui.t('shell.notifications')">
+    <button class="header__icon-btn" type="button" [title]="ui.t('shell.notifications')"
+      [attr.aria-expanded]="showNotifications" (click)="toggleNotifications()">
       <span class="material-icons">notifications</span>
-      @if (notifCount > 0) {
-        <span class="header__notif-badge">{{ notifCount }}</span>
+      @if (unreadCount() > 0) {
+        <span class="header__notif-badge">{{ unreadCount() }}</span>
       }
     </button>
 
     <!-- User block — click to switch role (demo) -->
-    <div class="header__user-wrap" (click)="showRolePicker = !showRolePicker">
+    @if (showNotifications) {
+      <section class="header__notifications-dropdown">
+        <header class="header__notifications-header">
+          <div>
+            <strong>Obavestenja</strong>
+            <span>{{ unreadCount() }} neprocitanih</span>
+          </div>
+
+          <button type="button" [disabled]="unreadCount() === 0" (click)="markAllNotificationsAsRead()">
+            Oznaci sve
+          </button>
+        </header>
+
+        @if (isNotificationsLoading()) {
+          <p class="header__notifications-state">Ucitavanje...</p>
+        } @else if (notificationsError()) {
+          <p class="header__notifications-state header__notifications-state--error">{{ notificationsError() }}</p>
+        } @else if (notifications().length === 0) {
+          <p class="header__notifications-state">Nema obavestenja.</p>
+        } @else {
+          <div class="header__notifications-list">
+            @for (notification of notifications(); track notification.id) {
+              <button class="header__notification-item" type="button"
+                [class.header__notification-item--unread]="!notification.isRead"
+                (click)="openNotification(notification)">
+                <span class="header__notification-dot"></span>
+
+                <span class="header__notification-content">
+                  <strong>{{ notification.title }}</strong>
+                  <small>{{ notification.message }}</small>
+                  <time>{{ formatNotificationTime(notification.createdAt) }}</time>
+                </span>
+              </button>
+            }
+          </div>
+        }
+      </section>
+      <div class="header__backdrop" (click)="showNotifications = false"></div>
+    }
+
+    <div class="header__user-wrap" (click)="showRolePicker = !showRolePicker; showNotifications = false">
       <div class="header__user-info">
         <span class="header__user-name">{{ auth.userName }}</span>
         <span class="header__user-role">{{ ui.t('shell.role.' + auth.role()) }}</span>

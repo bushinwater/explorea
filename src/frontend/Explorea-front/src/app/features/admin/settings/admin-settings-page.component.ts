@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@
 import { CommonModule } from '@angular/common';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { Subscription } from 'rxjs';
+import { ImageCropperComponent, ImageCroppedEvent } from 'ngx-image-cropper';
 import {
   AdminAdministrationSettingDto,
   AdminAdministrationStatDto,
@@ -14,6 +15,10 @@ import {
   AdminTheme,
   AdminUiPreferencesService,
 } from '../core/services/admin-ui-preferences.service';
+import {
+  adminLandingPagesForRole,
+  normalizeAdminLandingPage,
+} from '../core/admin-landing-pages';
 
 type SettingsTab = 'profile' | 'preferences' | 'notifications' | 'administration';
 
@@ -41,16 +46,28 @@ interface SettingsTabItem {
 interface AppPreferencesFormState {
   theme: string;
   language: string;
+  defaultAdminPage: string;
 }
 
 interface NotificationsFormState {
   notificationsEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+  marketingEmailsEnabled: boolean;
+  reportTopics: string[];
+  priority: string;
+  deliveryFrequencyDays: number;
+  deliveryHour: number;
 }
+
+type NotificationChannelKey =
+  | 'notificationsEnabled'
+  | 'emailNotificationsEnabled'
+  | 'marketingEmailsEnabled';
 
 @Component({
   selector: 'app-admin-settings-page',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ImageCropperComponent],
   templateUrl: './admin-settings-page.component.html',
   styleUrl: './admin-settings-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -68,6 +85,9 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
   readonly isProfilePhotoUploading = signal(false);
   readonly isProfilePhotoDeleting = signal(false);
+  readonly isProfilePhotoCropperOpen = signal(false);
+  readonly profilePhotoChangedEvent = signal<Event | null>(null);
+  private lastProfilePhotoCrop: ImageCroppedEvent | null = null;
 
   readonly isPreferencesLoading = signal(false);
   readonly isPreferencesSaving = signal(false);
@@ -127,108 +147,78 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     bio: null,
   });
 
-  readonly appPreferences = {
-    language: 'Srpski (SR)',
-    theme: 'Tamna tema',
-    landingPage: 'Dashboard',
-    sidebarMode: 'Kompaktan prikaz',
-    dateFormat: 'DD.MM.YYYY',
-    accentColor: 'Explorea zelena',
-  };
-
-  readonly behaviorPreferences = [
-    {
-      icon: 'dashboard_customize',
-      title: 'Kompaktan sidebar',
-      description: 'Prikaži samo ikonice dok se navigacija ne proširi.',
-      enabled: true,
-    },
-    {
-      icon: 'table_rows',
-      title: 'Gusti prikaz tabela',
-      description: 'Prikaži više redova u admin tabelama sa manjim razmacima.',
-      enabled: false,
-    },
-    {
-      icon: 'bolt',
-      title: 'Brze akcije',
-      description: 'Prikaži najčešće admin akcije odmah na vrhu stranica.',
-      enabled: true,
-    },
-  ];
-
   readonly notificationChannels = [
     {
+      key: 'notificationsEnabled' as NotificationChannelKey,
       icon: 'notifications_active',
       title: 'Push obaveštenja',
       description: 'Primaj obaveštenja o važnim promenama direktno u browseru.',
-      enabled: true,
     },
     {
+      key: 'emailNotificationsEnabled' as NotificationChannelKey,
       icon: 'mail',
       title: 'Email obaveštenja',
       description: 'Dobijaj sažetke, potvrde i sistemske poruke putem emaila.',
-      enabled: true,
     },
     {
+      key: 'marketingEmailsEnabled' as NotificationChannelKey,
       icon: 'campaign',
       title: 'Marketing emailovi',
       description: 'Specijalne ponude, preporuke i novosti vezane za Explorea platformu.',
-      enabled: false,
     },
   ];
 
   readonly notificationTypes = [
     {
+      value: 'reviews',
       icon: 'rate_review',
       title: 'Recenzije i moderacija',
       description: 'Nove recenzije, prijave korisnika i sadržaj koji čeka proveru.',
-      enabled: true,
     },
     {
+      value: 'events',
       icon: 'event_available',
       title: 'Događaji i aktivnosti',
       description: 'Promene statusa događaja, aktivnosti i novih zahteva organizatora.',
-      enabled: true,
     },
     {
+      value: 'system',
       icon: 'admin_panel_settings',
       title: 'Sistemska upozorenja',
       description: 'Bezbednosna upozorenja, promene privilegija i administrativne akcije.',
-      enabled: true,
     },
     {
+      value: 'weekly_summary',
       icon: 'analytics',
       title: 'Nedeljni izveštaji',
       description: 'Kratak pregled performansi, aktivnosti korisnika i popularnog sadržaja.',
-      enabled: false,
     },
   ];
 
-  readonly notificationDelivery = {
-    digestFrequency: 'Dnevno',
-    quietHours: '22:00 - 08:00',
-    priority: 'Samo važno',
-  };
+  readonly notificationFrequencyOptions = [
+    { value: 1, label: 'Dnevno' },
+    { value: 7, label: 'Nedeljno' },
+    { value: 14, label: 'Na 14 dana' },
+    { value: 30, label: 'Mesecno' },
+  ];
+
+  readonly notificationHourOptions = Array.from({ length: 24 }, (_, hour) => ({
+    value: hour,
+    label: `${hour.toString().padStart(2, '0')}:00`,
+  }));
 
   readonly administrationStats = signal<AdminAdministrationStatDto[]>([
     {
       icon: 'verified_user',
-      label: 'Aktivni admini',
+      label: 'Admini trenutno na mrezi',
       value: '0',
-      description: 'Nalozi sa aktivnim pristupom admin panelu.',
+      description: 'Admin nalozi sa aktivnom sesijom u admin panelu.',
     },
     {
       icon: 'pending_actions',
-      label: 'Zahtevi na čekanju',
+      label: 'Zahtevi na cekanju',
       value: '0',
-      description: 'Objekti, recenzije i izmene koje čekaju proveru.',
-    },
-    {
-      icon: 'security',
-      label: 'Bezbednosni status',
-      value: 'Učitavanje',
-      description: 'Provera sistemskog statusa je u toku.',
+      description: 'Objekti iz places tabele koji cekaju odobravanje.',
     },
   ]);
 
@@ -246,28 +236,9 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
         'Podesi osnovna pravila za odobravanje destinacija, mesta, događaja i aktivnosti.',
       actionLabel: 'Podesi pravila',
     },
-    {
-      icon: 'database',
-      title: 'Sistemski podaci',
-      description:
-        'Pregled osnovnih sistemskih parametara, seed podataka i administrativnih podešavanja.',
-      actionLabel: 'Pregledaj sistem',
-    },
   ]);
 
   readonly systemToggles = signal<AdminSystemToggleDto[]>([
-    {
-      icon: 'admin_panel_settings',
-      title: 'Dozvoli registraciju novih admina',
-      description: 'Kada je uključeno, novi admin nalozi mogu biti kreirani kroz admin panel.',
-      enabled: false,
-    },
-    {
-      icon: 'fact_check',
-      title: 'Obavezna ručna moderacija',
-      description: 'Novi korisnički sadržaj mora biti ručno odobren pre prikaza na platformi.',
-      enabled: true,
-    },
     {
       icon: 'history',
       title: 'Detaljan audit log',
@@ -275,19 +246,6 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       enabled: true,
     },
   ]);
-
-  readonly dangerousActions = [
-    {
-      icon: 'restart_alt',
-      title: 'Resetuj mock podešavanja',
-      description: 'Vrati sva frontend mock podešavanja na početne vrednosti.',
-    },
-    {
-      icon: 'delete_forever',
-      title: 'Obriši test podatke',
-      description: 'Akcija je prikazana samo kao UI placeholder i nije povezana sa backendom.',
-    },
-  ];
 
   readonly profileForm = signal<AdminProfileFormState>({
     firstName: '',
@@ -300,11 +258,20 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   readonly preferencesForm = signal<AppPreferencesFormState>({
     theme: 'dark',
     language: 'sr',
+    defaultAdminPage: 'dashboard',
   });
 
   readonly notificationsForm = signal<NotificationsFormState>({
     notificationsEnabled: true,
+    emailNotificationsEnabled: true,
+    marketingEmailsEnabled: false,
+    reportTopics: ['reviews', 'events', 'system'],
+    priority: 'all',
+    deliveryFrequencyDays: 7,
+    deliveryHour: 9,
   });
+
+  private lastAllNotificationsReportTopics: string[] = ['reviews', 'events', 'system'];
 
   constructor(
     public auth: DashboardAuthService,
@@ -333,6 +300,10 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           this.preferencesForm.set({
             theme: preferences.theme,
             language: preferences.language,
+            defaultAdminPage: normalizeAdminLandingPage(
+              preferences.defaultAdminPage,
+              this.auth.role(),
+            ).value,
           });
 
           this.ui.setTheme(preferences.theme as AdminTheme);
@@ -380,12 +351,17 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
         .updatePreferences({
           theme: form.theme,
           language: form.language,
+          defaultAdminPage: form.defaultAdminPage,
         })
         .subscribe({
           next: (preferences) => {
             this.preferencesForm.set({
               theme: preferences.theme,
               language: preferences.language,
+              defaultAdminPage: normalizeAdminLandingPage(
+                preferences.defaultAdminPage,
+                this.auth.role(),
+              ).value,
             });
 
             this.ui.setTheme(preferences.theme as AdminTheme);
@@ -411,7 +387,16 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
         next: (notifications) => {
           this.notificationsForm.set({
             notificationsEnabled: notifications.notificationsEnabled,
+            emailNotificationsEnabled: notifications.emailNotificationsEnabled,
+            marketingEmailsEnabled: notifications.marketingEmailsEnabled,
+            reportTopics: this.normalizeReportTopics(notifications.reportTopics),
+            priority: this.normalizeNotificationPriority(notifications.priority),
+            deliveryFrequencyDays: this.normalizeDeliveryFrequencyDays(
+              notifications.deliveryFrequencyDays,
+            ),
+            deliveryHour: this.normalizeDeliveryHour(notifications.deliveryHour),
           });
+          this.rememberAllNotificationsReportTopics(this.notificationsForm().reportTopics);
           this.isNotificationsLoading.set(false);
         },
         error: () => {
@@ -423,7 +408,88 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   }
 
   protected updateNotificationsEnabled(enabled: boolean): void {
-    this.notificationsForm.set({ notificationsEnabled: enabled });
+    this.updateNotificationChannel('notificationsEnabled', enabled);
+  }
+
+  protected updateNotificationChannel(field: NotificationChannelKey, enabled: boolean): void {
+    this.notificationsForm.update((current) => ({
+      ...current,
+      [field]: enabled,
+    }));
+    this.notificationsSuccessMessage.set('');
+    this.notificationsErrorMessage.set('');
+  }
+
+  protected isReportTopicSelected(topic: string): boolean {
+    return this.notificationsForm().priority !== 'important'
+      && this.notificationsForm().reportTopics.includes(topic);
+  }
+
+  protected toggleReportTopic(topic: string): void {
+    if (this.notificationsForm().priority === 'important') return;
+
+    this.notificationsForm.update((current) => {
+      const isSelected = current.reportTopics.includes(topic);
+      let reportTopics = isSelected
+        ? current.reportTopics.filter((item) => item !== topic)
+        : [...current.reportTopics.filter((item) => item !== 'weekly_summary'), topic];
+
+      if (topic === 'weekly_summary' && !isSelected) {
+        reportTopics = ['weekly_summary'];
+      }
+
+      return {
+        ...current,
+        reportTopics: this.normalizeReportTopics(reportTopics),
+      };
+    });
+
+    this.rememberAllNotificationsReportTopics(this.notificationsForm().reportTopics);
+    this.notificationsSuccessMessage.set('');
+    this.notificationsErrorMessage.set('');
+  }
+
+  protected updateNotificationPriority(priority: string): void {
+    const normalizedPriority = this.normalizeNotificationPriority(priority);
+
+    this.notificationsForm.update((current) => {
+      if (normalizedPriority === 'important') {
+        this.rememberAllNotificationsReportTopics(current.reportTopics);
+
+        return {
+          ...current,
+          priority: normalizedPriority,
+          reportTopics: [],
+        };
+      }
+
+      return {
+        ...current,
+        priority: normalizedPriority,
+        reportTopics: this.lastAllNotificationsReportTopics,
+      };
+    });
+
+    this.notificationsSuccessMessage.set('');
+    this.notificationsErrorMessage.set('');
+  }
+
+  protected updateDeliveryFrequency(days: string): void {
+    this.notificationsForm.update((current) => ({
+      ...current,
+      deliveryFrequencyDays: this.normalizeDeliveryFrequencyDays(Number(days)),
+    }));
+
+    this.notificationsSuccessMessage.set('');
+    this.notificationsErrorMessage.set('');
+  }
+
+  protected updateDeliveryHour(hour: string): void {
+    this.notificationsForm.update((current) => ({
+      ...current,
+      deliveryHour: this.normalizeDeliveryHour(Number(hour)),
+    }));
+
     this.notificationsSuccessMessage.set('');
     this.notificationsErrorMessage.set('');
   }
@@ -436,6 +502,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
   protected saveNotifications(): void {
     const form = this.notificationsForm();
+    const priority = this.normalizeNotificationPriority(form.priority);
 
     this.isNotificationsSaving.set(true);
     this.notificationsSuccessMessage.set('');
@@ -445,12 +512,29 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       this.adminSettingsService
         .updateNotifications({
           notificationsEnabled: form.notificationsEnabled,
+          emailNotificationsEnabled: form.emailNotificationsEnabled,
+          marketingEmailsEnabled: form.marketingEmailsEnabled,
+          reportTopics: priority === 'important'
+            ? this.lastAllNotificationsReportTopics
+            : this.normalizeReportTopics(form.reportTopics),
+          priority,
+          deliveryFrequencyDays: this.normalizeDeliveryFrequencyDays(form.deliveryFrequencyDays),
+          deliveryHour: this.normalizeDeliveryHour(form.deliveryHour),
         })
         .subscribe({
           next: (notifications) => {
             this.notificationsForm.set({
               notificationsEnabled: notifications.notificationsEnabled,
+              emailNotificationsEnabled: notifications.emailNotificationsEnabled,
+              marketingEmailsEnabled: notifications.marketingEmailsEnabled,
+              reportTopics: this.normalizeReportTopics(notifications.reportTopics),
+              priority: this.normalizeNotificationPriority(notifications.priority),
+              deliveryFrequencyDays: this.normalizeDeliveryFrequencyDays(
+                notifications.deliveryFrequencyDays,
+              ),
+              deliveryHour: this.normalizeDeliveryHour(notifications.deliveryHour),
             });
+            this.rememberAllNotificationsReportTopics(this.notificationsForm().reportTopics);
             this.showToast('success', 'Podešavanja obaveštenja su uspešno sačuvana.');
             this.isNotificationsSaving.set(false);
           },
@@ -484,6 +568,42 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       default:
         return value;
     }
+  }
+
+  protected landingPageOptions() {
+    return adminLandingPagesForRole(this.auth.role());
+  }
+
+  protected landingPageLabel(value: string): string {
+    return normalizeAdminLandingPage(value, this.auth.role()).label;
+  }
+
+  private normalizeReportTopics(topics: string[]): string[] {
+    const allowedTopics = ['reviews', 'events', 'system', 'weekly_summary'];
+    const normalized = topics.filter((topic, index) =>
+      allowedTopics.includes(topic) && topics.indexOf(topic) === index);
+
+    return normalized.includes('weekly_summary') ? ['weekly_summary'] : normalized;
+  }
+
+  private rememberAllNotificationsReportTopics(topics: string[]): void {
+    const normalizedTopics = this.normalizeReportTopics(topics);
+
+    if (normalizedTopics.length > 0) {
+      this.lastAllNotificationsReportTopics = normalizedTopics;
+    }
+  }
+
+  private normalizeNotificationPriority(priority: string): string {
+    return priority === 'important' ? 'important' : 'all';
+  }
+
+  private normalizeDeliveryFrequencyDays(days: number): number {
+    return [1, 7, 14, 30].includes(days) ? days : 7;
+  }
+
+  private normalizeDeliveryHour(hour: number): number {
+    return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : 9;
   }
 
   private loadAdministration(): void {
@@ -612,13 +732,15 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     }).format(new Date(value));
   }
 
-  protected uploadProfilePhoto(files: FileList | null): void {
-    const file = files?.item(0);
+  protected onProfilePhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.item(0);
 
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
       this.showToast('error', 'Možeš okačiti samo sliku.');
+      input.value = '';
       return;
     }
 
@@ -626,8 +748,56 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
     if (file.size > maxFileSize) {
       this.showToast('error', 'Slika mora biti manje od 5MB.');
+      input.value = '';
       return;
     }
+
+    this.profilePhotoChangedEvent.set(event);
+    this.lastProfilePhotoCrop = null;
+    this.isProfilePhotoCropperOpen.set(true);
+  }
+
+  protected onProfilePhotoCropped(event: ImageCroppedEvent): void {
+    this.lastProfilePhotoCrop = event;
+  }
+
+  protected cancelProfilePhotoCrop(): void {
+    this.isProfilePhotoCropperOpen.set(false);
+    this.profilePhotoChangedEvent.set(null);
+    this.lastProfilePhotoCrop = null;
+  }
+
+  protected confirmProfilePhotoCrop(): void {
+    const crop = this.lastProfilePhotoCrop;
+
+    if (!crop) {
+      this.showToast('error', 'Sacekaj da se slika pripremi za cuvanje.');
+      return;
+    }
+
+    if (crop.blob) {
+      this.uploadProfilePhoto(new File([crop.blob], 'admin-avatar.jpg', { type: 'image/jpeg' }));
+      return;
+    }
+
+    if (crop.base64) {
+      const base64 = crop.base64.split(',')[1] ?? crop.base64;
+      const bytes = atob(base64);
+      const buffer = new ArrayBuffer(bytes.length);
+      const view = new Uint8Array(buffer);
+
+      for (let index = 0; index < bytes.length; index += 1) {
+        view[index] = bytes.charCodeAt(index);
+      }
+
+      this.uploadProfilePhoto(new File([buffer], 'admin-avatar.jpg', { type: 'image/jpeg' }));
+    }
+  }
+
+  private uploadProfilePhoto(file: File): void {
+    this.isProfilePhotoCropperOpen.set(false);
+    this.profilePhotoChangedEvent.set(null);
+    this.lastProfilePhotoCrop = null;
 
     this.isProfilePhotoUploading.set(true);
     this.profileErrorMessage.set('');

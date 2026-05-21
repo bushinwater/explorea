@@ -69,7 +69,7 @@
 
         <div class="profile-card__actions">
           <input #profilePhotoInput class="profile-card__file-input" type="file" accept="image/*"
-            (change)="uploadProfilePhoto(profilePhotoInput.files); profilePhotoInput.value = ''" />
+            (change)="onProfilePhotoSelected($event); profilePhotoInput.value = ''" />
           <button class="btn btn-secondary" type="button"
             [disabled]="isProfilePhotoUploading() || isProfilePhotoDeleting()" (click)="profilePhotoInput.click()">
             <span class="material-icons">photo_camera</span>
@@ -214,66 +214,20 @@
 
           <div class="preference-card__content">
             <span>Početna admin stranica</span>
-            <strong>{{ appPreferences.landingPage }}</strong>
+            <strong>{{ landingPageLabel(preferencesForm().defaultAdminPage) }}</strong>
             <p>Stranica koja se otvara nakon ulaska u admin panel.</p>
           </div>
 
-          <select class="preference-select" [value]="appPreferences.landingPage">
-            <option>Dashboard</option>
-            <option>Korisnici</option>
-            <option>Destinacije</option>
-            <option>Recenzije</option>
+          <select #landingPageSelect class="preference-select" [value]="preferencesForm().defaultAdminPage"
+            [disabled]="isPreferencesSaving()" (change)="updatePreferencesField('defaultAdminPage', landingPageSelect.value)">
+            @for (option of landingPageOptions(); track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+            }
           </select>
         </article>
 
-        <article class="preference-card">
-          <div class="preference-card__icon">
-            <span class="material-icons">calendar_month</span>
-          </div>
-
-          <div class="preference-card__content">
-            <span>Format datuma</span>
-            <strong>{{ appPreferences.dateFormat }}</strong>
-            <p>Način prikaza datuma u tabelama, karticama i izveštajima.</p>
-          </div>
-
-          <select class="preference-select" [value]="appPreferences.dateFormat">
-            <option>DD.MM.YYYY.</option>
-            <option>YYYY-MM-DD</option>
-            <option>MM/DD/YYYY</option>
-          </select>
-        </article>
       </section>
 
-      <section class="behavior-panel">
-        <header class="behavior-panel__header">
-          <div>
-            <p class="section-eyebrow">Ponašanje aplikacije</p>
-            <h3>Radni tok admin panela</h3>
-            <p>Opcije koje utiču na navigaciju, prikaz tabela i brzinu rada.</p>
-          </div>
-        </header>
-
-        <div class="behavior-list">
-          @for (preference of behaviorPreferences; track preference.title) {
-          <article class="behavior-item">
-            <div class="behavior-item__icon">
-              <span class="material-icons">{{ preference.icon }}</span>
-            </div>
-
-            <div class="behavior-item__content">
-              <h4>{{ preference.title }}</h4>
-              <p>{{ preference.description }}</p>
-            </div>
-
-            <button class="toggle" type="button" [class.toggle--active]="preference.enabled"
-              [attr.aria-pressed]="preference.enabled">
-              <span></span>
-            </button>
-          </article>
-          }
-        </div>
-      </section>
 
       <footer class="preferences-actions">
         <button class="btn btn-secondary" type="button" [disabled]="isPreferencesSaving()"
@@ -326,10 +280,10 @@
           </div>
 
           <button class="toggle" type="button"
-            [class.toggle--active]="channel.title === 'Push obaveštenja' ? notificationsForm().notificationsEnabled : channel.enabled"
-            [attr.aria-pressed]="channel.title === 'Push obaveštenja' ? notificationsForm().notificationsEnabled : channel.enabled"
+            [class.toggle--active]="notificationsForm()[channel.key]"
+            [attr.aria-pressed]="notificationsForm()[channel.key]"
             [disabled]="isNotificationsSaving()"
-            (click)="channel.title === 'Push obaveštenja' && updateNotificationsEnabled(!notificationsForm().notificationsEnabled)">
+            (click)="updateNotificationChannel(channel.key, !notificationsForm()[channel.key])">
             <span></span>
           </button>
         </article>
@@ -357,8 +311,10 @@
               <p>{{ notification.description }}</p>
             </div>
 
-            <button class="toggle" type="button" [class.toggle--active]="notification.enabled"
-              [attr.aria-pressed]="notification.enabled">
+            <button class="toggle" type="button" [class.toggle--active]="isReportTopicSelected(notification.value)"
+              [attr.aria-pressed]="isReportTopicSelected(notification.value)"
+              [disabled]="isNotificationsSaving() || notificationsForm().priority === 'important'"
+              (click)="toggleReportTopic(notification.value)">
               <span></span>
             </button>
           </article>
@@ -371,37 +327,40 @@
           <div>
             <p class="section-eyebrow">Raspored slanja</p>
             <h3>Učestalost i prioritet</h3>
-            <p>Podesi koliko često se šalju obaveštenja i da li se poštuju mirni sati.</p>
+            <p>Podesi koliko često se šalju obaveštenja i u koliko sati stižu izveštaji.</p>
           </div>
         </header>
 
         <div class="delivery-grid">
           <label class="delivery-field">
-            <span>Učestalost sažetka</span>
-            <select [value]="notificationDelivery.digestFrequency">
-              <option>Dnevno</option>
-              <option>Nedeljno</option>
-              <option>Odmah</option>
-              <option>Isključeno</option>
+            <span>Učestalost izveštaja</span>
+            <select [value]="notificationsForm().deliveryFrequencyDays"
+              [disabled]="isNotificationsSaving()"
+              (change)="updateDeliveryFrequency($any($event.target).value)">
+              @for (option of notificationFrequencyOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+              }
             </select>
           </label>
 
           <label class="delivery-field">
-            <span>Mirni sati</span>
-            <select [value]="notificationDelivery.quietHours">
-              <option>22:00 - 08:00</option>
-              <option>23:00 - 07:00</option>
-              <option>00:00 - 06:00</option>
-              <option>Bez mirnih sati</option>
+            <span>Sat dostave</span>
+            <select [value]="notificationsForm().deliveryHour"
+              [disabled]="isNotificationsSaving()"
+              (change)="updateDeliveryHour($any($event.target).value)">
+              @for (option of notificationHourOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+              }
             </select>
           </label>
 
           <label class="delivery-field">
             <span>Prioritet obaveštenja</span>
-            <select [value]="notificationDelivery.priority">
-              <option>Samo važno</option>
-              <option>Sva obaveštenja</option>
-              <option>Samo sistemska upozorenja</option>
+            <select [value]="notificationsForm().priority"
+              [disabled]="isNotificationsSaving()"
+              (change)="updateNotificationPriority($any($event.target).value)">
+              <option value="important">Samo važno</option>
+              <option value="all">Sva obaveštenja</option>
             </select>
           </label>
         </div>
@@ -518,35 +477,6 @@
         </div>
       </section>
 
-      <section class="danger-zone">
-        <header class="danger-zone__header">
-          <div>
-            <p class="section-eyebrow">Danger zone</p>
-            <h3>Osetljive akcije</h3>
-            <p>Ove opcije su prikazane kao frontend placeholder i nisu povezane sa backendom.</p>
-          </div>
-        </header>
-
-        <div class="danger-zone__list">
-          @for (action of dangerousActions; track action.title) {
-          <article class="danger-zone__item">
-            <div class="danger-zone__icon">
-              <span class="material-icons">{{ action.icon }}</span>
-            </div>
-
-            <div>
-              <h4>{{ action.title }}</h4>
-              <p>{{ action.description }}</p>
-            </div>
-
-            <button class="danger-zone__button" type="button">
-              Pokreni
-            </button>
-          </article>
-          }
-        </div>
-      </section>
-
       <footer class="administration-actions">
         <button class="btn btn-secondary" type="button">
           Reset Changes
@@ -568,6 +498,45 @@
     }
     }
   </section>
+
+  @if (isProfilePhotoCropperOpen()) {
+  <div class="profile-photo-cropper-backdrop">
+    <section class="profile-photo-cropper" role="dialog" aria-modal="true" aria-labelledby="profile-photo-cropper-title">
+      <header class="profile-photo-cropper__header">
+        <div>
+          <p class="section-eyebrow">Profilna slika</p>
+          <h2 id="profile-photo-cropper-title">Podesi izgled slike</h2>
+        </div>
+
+        <button class="profile-photo-cropper__close" type="button" (click)="cancelProfilePhotoCrop()" aria-label="Close cropper">
+          <span class="material-icons">close</span>
+        </button>
+      </header>
+
+      <div class="profile-photo-cropper__body">
+        <image-cropper
+          [imageChangedEvent]="profilePhotoChangedEvent()"
+          [maintainAspectRatio]="true"
+          [aspectRatio]="1"
+          [roundCropper]="true"
+          format="jpeg"
+          (imageCropped)="onProfilePhotoCropped($event)"
+        />
+      </div>
+
+      <footer class="profile-photo-cropper__actions">
+        <button class="btn btn-secondary" type="button" (click)="cancelProfilePhotoCrop()">
+          Otkaži
+        </button>
+
+        <button class="btn btn-primary" type="button" [disabled]="isProfilePhotoUploading()" (click)="confirmProfilePhotoCrop()">
+          <span class="material-icons">check</span>
+          {{ isProfilePhotoUploading() ? 'Uploading...' : 'Primeni' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+  }
 
   @if (toast()) {
   <div class="settings-toast" [class.settings-toast--error]="toast()?.type === 'error'">
