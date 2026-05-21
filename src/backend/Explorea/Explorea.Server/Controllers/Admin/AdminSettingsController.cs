@@ -312,9 +312,7 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
           token.User.IsActive &&
           (
             token.User.Role.Name.ToLower() == "admin" ||
-            token.User.Role.Name.ToLower() == "super_admin" ||
-            token.User.Role.Name.ToLower() == "tourist_organization" ||
-            token.User.Role.Name.ToLower() == "place_owner"
+            token.User.Role.Name.ToLower() == "super_admin"
           ))
         .Select(token => token.UserId)
         .Distinct()

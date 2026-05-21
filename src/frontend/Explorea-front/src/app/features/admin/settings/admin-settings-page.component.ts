@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { Subscription } from 'rxjs';
@@ -73,6 +73,8 @@ type NotificationChannelKey =
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminSettingsPageComponent implements OnInit, OnDestroy {
+  @ViewChild('profilePhotoInput') private profilePhotoInputRef!: ElementRef<HTMLInputElement>;
+
   activeTab = signal<SettingsTab>('profile');
 
   private readonly subscription = new Subscription();
@@ -765,6 +767,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     this.isProfilePhotoCropperOpen.set(false);
     this.profilePhotoChangedEvent.set(null);
     this.lastProfilePhotoCrop = null;
+    this.profilePhotoInputRef.nativeElement.value = '';
   }
 
   protected confirmProfilePhotoCrop(): void {
@@ -798,6 +801,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     this.isProfilePhotoCropperOpen.set(false);
     this.profilePhotoChangedEvent.set(null);
     this.lastProfilePhotoCrop = null;
+    this.profilePhotoInputRef.nativeElement.value = '';
 
     this.isProfilePhotoUploading.set(true);
     this.profileErrorMessage.set('');
