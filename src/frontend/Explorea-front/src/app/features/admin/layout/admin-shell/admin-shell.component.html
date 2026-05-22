@@ -1,7 +1,3 @@
-@if (layout.sidebarExpanded()) {
-  <div class="overlay desktop-overlay" (click)="layout.toggleDesktopSidebar()"></div>
-}
-
 @if (layout.mobileMenuOpen()) {
   <div class="overlay mobile-overlay" (click)="layout.closeMobileSidebar()"></div>
 }
