@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { AuthResponseDto } from '../models/auth.model';
 import {
   ForYouItemDto,
   ProfileReviewDto,
@@ -46,5 +47,9 @@ export class ProfileService {
 
   updateNewsletter(newsletter: boolean): Observable<{ newsletter: boolean }> {
     return this.http.patch<{ newsletter: boolean }>(`${this.api}/newsletter`, { newsletter });
+  }
+
+  upgradeToPartner(): Observable<AuthResponseDto> {
+    return this.http.post<AuthResponseDto>(`${this.api}/upgrade-to-partner`, {});
   }
 }

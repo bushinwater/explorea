@@ -2,10 +2,14 @@ using System.Security.Claims;
 using Explorea.API.DTOs.Auth;
 using Explorea.API.DTOs.Review;
 using Explorea.API.DTOs.User;
+using Explorea.API.Models;
+using Explorea.Server.Data;
+using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Explorea.Server.Controllers
 {
@@ -16,11 +20,15 @@ namespace Explorea.Server.Controllers
     {
         private readonly IProfileService _profileService;
         private readonly IUserRepository _userRepository;
+        private readonly AppDbContext _db;
+        private readonly JwtHelper _jwt;
 
-        public ProfileController(IProfileService profileService, IUserRepository userRepository)
+        public ProfileController(IProfileService profileService, IUserRepository userRepository, AppDbContext db, JwtHelper jwt)
         {
             _profileService = profileService;
             _userRepository = userRepository;
+            _db = db;
+            _jwt = jwt;
         }
 
         [HttpGet("saved")]
@@ -153,6 +161,54 @@ namespace Explorea.Server.Controllers
             var userId = await GetCurrentUserId();
             var result = await _profileService.GetStatsAsync(userId);
             return Ok(result);
+        }
+
+        [HttpPost("upgrade-to-partner")]
+        public async Task<IActionResult> UpgradeToPartner()
+        {
+            var userId = await GetCurrentUserId();
+            var user = await _db.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null) return NotFound();
+
+            if (user.Role?.Name != "traveler")
+                return BadRequest(new { message = "Only traveler accounts can be upgraded to partner." });
+
+            var partnerRole = await _db.Roles.FirstOrDefaultAsync(r => r.Name == "place_owner");
+            if (partnerRole == null) return StatusCode(500, new { message = "Partner role not configured." });
+
+            user.RoleId  = partnerRole.Id;
+            user.Role    = partnerRole;
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+            await _db.SaveChangesAsync();
+
+            var accessToken  = _jwt.GenerateAccessToken(user);
+            var rawRefresh   = _jwt.GenerateRefreshToken();
+            var hashedRefresh = _jwt.HashToken(rawRefresh);
+
+            var refreshExpiry = int.TryParse(
+                System.Environment.GetEnvironmentVariable("JWT_REFRESH_EXPIRY_DAYS") ?? "30",
+                out var days) ? days : 30;
+
+            _db.RefreshTokens.Add(new RefreshToken
+            {
+                Id         = Guid.NewGuid(),
+                UserId     = user.Id,
+                TokenHash  = hashedRefresh,
+                ExpiresAt  = DateTimeOffset.UtcNow.AddDays(refreshExpiry),
+                CreatedAt  = DateTimeOffset.UtcNow,
+                CreatedByIp = HttpContext.Connection.RemoteIpAddress,
+                DeviceInfo  = Request.Headers.UserAgent.ToString() is { Length: > 0 } ua ? ua : null,
+            });
+            await _db.SaveChangesAsync();
+
+            return Ok(new AuthResponseDto
+            {
+                AccessToken  = accessToken,
+                RefreshToken = rawRefresh,
+            });
         }
 
         private async Task<Guid> GetCurrentUserId()

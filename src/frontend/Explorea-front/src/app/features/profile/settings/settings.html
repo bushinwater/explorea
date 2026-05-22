@@ -73,6 +73,35 @@
           <span class="material-icons nav-arrow">chevron_right</span>
         </a>
 
+        <!-- Postani partner (samo za traveler korisnike) -->
+        <div class="nav-card nav-card--partner" [class.open-below]="openSection === 'partner'"
+          (click)="toggleSection('partner')" *ngIf="!isAdminUser">
+          <div class="accordion-icon accordion-icon--partner">
+            <span class="material-icons">business_center</span>
+          </div>
+          <div class="accordion-info">
+            <strong>Postani partner</strong>
+            <span>Upravljaj mestima i aktivnostima</span>
+          </div>
+          <span class="material-icons nav-arrow" [class.rotated]="openSection === 'partner'">expand_more</span>
+        </div>
+
+        <div class="reviews-dropdown" *ngIf="openSection === 'partner'">
+          <div class="partner-upgrade-info">
+            <span class="material-icons partner-upgrade-info__icon">storefront</span>
+            <p>Kao partner dobijas pristup panelu u kome mozes da podneses zahtev za oglasavanja svojih objekata ili organizacije dogadjaja.</p>
+          </div>
+          <p class="error-msg" *ngIf="partnerUpgradeError">{{ partnerUpgradeError }}</p>
+          <div class="accordion-actions">
+            <button class="btn btn-primary"
+              [disabled]="partnerUpgradeLoading"
+              (click)="upgradeToPartner(); $event.stopPropagation()">
+              <span class="material-icons pwd-spin" *ngIf="partnerUpgradeLoading">refresh</span>
+              <span *ngIf="!partnerUpgradeLoading">Prebaci na partner nalog</span>
+            </button>
+          </div>
+        </div>
+
         <a class="nav-card" routerLink="/saved">
           <div class="accordion-icon">
             <span class="material-icons">bookmark</span>

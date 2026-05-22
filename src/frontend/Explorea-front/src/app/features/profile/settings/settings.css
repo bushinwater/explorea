@@ -190,6 +190,55 @@ a.nav-card {
   color: #fff;
 }
 
+.nav-card--partner {
+  border-color: color-mix(in srgb, #16a34a 40%, transparent);
+  background: color-mix(in srgb, #16a34a 5%, var(--color-surface));
+}
+
+.nav-card--partner:hover {
+  border-color: #16a34a;
+  background: color-mix(in srgb, #16a34a 10%, var(--color-surface));
+}
+
+.nav-card--partner.open-below {
+  border-color: #16a34a;
+  border-bottom-color: transparent;
+}
+
+.nav-card--partner.open-below + .reviews-dropdown {
+  border-color: #16a34a;
+}
+
+.accordion-icon--partner {
+  background: #16a34a;
+  color: #fff;
+}
+
+.partner-upgrade-info {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: flex-start;
+  padding: var(--sp-4);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, #16a34a 8%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, #16a34a 25%, transparent);
+  margin-bottom: var(--sp-4);
+}
+
+.partner-upgrade-info__icon {
+  color: #16a34a;
+  font-size: 24px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.partner-upgrade-info p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
 .nav-arrow {
   color: var(--color-text-secondary);
   flex-shrink: 0;

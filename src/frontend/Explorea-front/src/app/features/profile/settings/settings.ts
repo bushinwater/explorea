@@ -65,8 +65,10 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
   imageChangedEvent: Event | null = null;
   private lastCropEvent: ImageCroppedEvent | null = null;
 
-  openSection: 'profile' | 'app' | 'reviews' | null = null;
+  openSection: 'profile' | 'app' | 'reviews' | 'partner' | null = null;
   bugReportOpen = false;
+  partnerUpgradeLoading = false;
+  partnerUpgradeError = '';
   reviewDtos: ReviewDto[] = [];
   reviewsLoaded = false;
   reviewsLoading = false;
@@ -205,7 +207,7 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  toggleSection(section: 'profile' | 'app' | 'reviews') {
+  toggleSection(section: 'profile' | 'app' | 'reviews' | 'partner') {
     this.openSection = this.openSection === section ? null : section;
     if (section === 'profile') {
       this.passwordChangeRequested = false;
@@ -444,6 +446,27 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
         this.lastName = updated.lastName;
         this.firstNameError = '';
         this.lastNameError  = '';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  upgradeToPartner() {
+    if (this.partnerUpgradeLoading) return;
+    this.partnerUpgradeLoading = true;
+    this.partnerUpgradeError = '';
+    this.cdr.detectChanges();
+
+    this.profileService.upgradeToPartner().subscribe({
+      next: (response) => {
+        this.authService.saveTokens(response);
+        this.partnerUpgradeLoading = false;
+        this.openSection = null;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.partnerUpgradeLoading = false;
+        this.partnerUpgradeError = 'Doslo je do greske. Pokusajte ponovo.';
         this.cdr.detectChanges();
       },
     });
