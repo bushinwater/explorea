@@ -25,6 +25,10 @@ export class PlannerService {
     return this.http.post<{ id: string }>(`${this.base}/add`, { eventId, plannedAt, note });
   }
 
+  addGenericEntry(entityType: string, entityId: string, plannedAt: string, note: string): Observable<{ id: string }> {
+    return this.http.post<{ id: string }>(`${this.base}/add-entity`, { entityType, entityId, plannedAt, note });
+  }
+
   removeEntry(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/items/${id}`);
   }

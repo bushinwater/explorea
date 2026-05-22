@@ -132,92 +132,116 @@
 
       <!-- ─── CALENDAR VIEW ─── -->
       <ng-container *ngIf="mobileView === 'calendar'">
-        <div class="calendar-card">
-          <div class="calendar-header">
-            <button class="calendar-nav" (click)="prevMonth()">
-              <span class="material-icons">chevron_left</span>
-            </button>
-            <span class="calendar-month">{{ monthLabel }}</span>
-            <button class="calendar-nav" (click)="nextMonth()">
-              <span class="material-icons">chevron_right</span>
-            </button>
-          </div>
-          <div class="calendar-grid">
-            <div class="calendar-day-label" *ngFor="let d of DAY_LABELS">{{ d }}</div>
-            <button
-              *ngFor="let cell of calendarGrid; trackBy: trackByCell"
-              class="calendar-cell"
-              [class.other-month]="!cell.isCurrentMonth"
-              [class.today]="isToday(cell.date)"
-              [class.selected]="isSelected(cell.date)"
-              [class.has-events]="cell.count > 0"
-              (click)="selectDate(cell)"
-            >
-              {{ cell.date.getDate() }}
-              <span class="cell-dot" *ngIf="cell.isCurrentMonth && cell.count > 0"></span>
-            </button>
-          </div>
+
+        <!-- Kalendar / Moj planer tab switcher -->
+        <div class="calendar-tab-switcher mobile-tab-switcher">
+          <button class="calendar-tab-switcher__btn" [class.active]="desktopCalendarTab === 'filter'" (click)="desktopCalendarTab = 'filter'" type="button">
+            <span class="material-icons">calendar_month</span>
+            Kalendar
+          </button>
+          <button class="calendar-tab-switcher__btn" [class.active]="desktopCalendarTab === 'planner'" (click)="desktopCalendarTab = 'planner'" type="button">
+            <span class="material-icons">event_note</span>
+            Moj planer
+          </button>
         </div>
 
-        <div class="planner-panel" *ngIf="isLoggedIn && showPlannerSection">
+        <!-- ── KALENDAR TAB ── -->
+        <ng-container *ngIf="desktopCalendarTab === 'filter'">
           <div class="calendar-card">
             <div class="calendar-header">
-              <button class="calendar-nav" (click)="prevPlannerMonth()">
+              <button class="calendar-nav" (click)="prevMonth()">
                 <span class="material-icons">chevron_left</span>
               </button>
-              <span class="calendar-month">{{ plannerMonthLabel }}</span>
-              <button class="calendar-nav" (click)="nextPlannerMonth()">
+              <span class="calendar-month">{{ monthLabel }}</span>
+              <button class="calendar-nav" (click)="nextMonth()">
                 <span class="material-icons">chevron_right</span>
               </button>
             </div>
             <div class="calendar-grid">
               <div class="calendar-day-label" *ngFor="let d of DAY_LABELS">{{ d }}</div>
               <button
-                *ngFor="let cell of plannerGrid; trackBy: trackByCell"
+                *ngFor="let cell of calendarGrid; trackBy: trackByCell"
                 class="calendar-cell"
                 [class.other-month]="!cell.isCurrentMonth"
                 [class.today]="isToday(cell.date)"
-                [class.selected]="isPlannerSelected(cell.date)"
-                [class.has-planner]="cell.isCurrentMonth && cell.count > 0"
-                (click)="selectPlannerDate(cell)"
+                [class.selected]="isSelected(cell.date)"
+                [class.has-events]="cell.count > 0"
+                (click)="selectDate(cell)"
               >
                 {{ cell.date.getDate() }}
-                <span class="cell-dot planner-dot" *ngIf="cell.isCurrentMonth && cell.count > 0"></span>
+                <span class="cell-dot" *ngIf="cell.isCurrentMonth && cell.count > 0"></span>
               </button>
             </div>
           </div>
+        </ng-container>
 
-          <ng-container *ngIf="plannerSelectedDate">
-            <div class="planner-entries-header">
-              <span class="material-icons">event</span>
-              <span>{{ plannerSelectedDateLabel }}</span>
-            </div>
-            <div *ngIf="plannerEntriesLoading" class="loading-more">
-              <span class="material-icons spin">sync</span>
-            </div>
-            <div class="planner-entries" *ngIf="!plannerEntriesLoading">
-              <div *ngIf="plannerEntries.length === 0" class="planner-empty">
-                Nema događaja za ovaj dan.
+        <!-- ── MOJ PLANER TAB ── -->
+        <ng-container *ngIf="desktopCalendarTab === 'planner'">
+          <div class="planner-login-prompt" *ngIf="!isLoggedIn">
+            <span class="material-icons planner-login-prompt__icon">lock</span>
+            <p class="planner-login-prompt__text">Prijavite se da biste koristili planer.</p>
+            <a class="planner-login-prompt__btn" [routerLink]="['/login']" [queryParams]="{ returnUrl: '/events?tab=planner' }">Prijavi se</a>
+          </div>
+
+          <div class="planner-panel" *ngIf="isLoggedIn">
+            <div class="calendar-card">
+              <div class="calendar-header">
+                <button class="calendar-nav" (click)="prevPlannerMonth()">
+                  <span class="material-icons">chevron_left</span>
+                </button>
+                <span class="calendar-month">{{ plannerMonthLabel }}</span>
+                <button class="calendar-nav" (click)="nextPlannerMonth()">
+                  <span class="material-icons">chevron_right</span>
+                </button>
               </div>
-              <div class="planner-entry" *ngFor="let entry of plannerEntries">
-                <div class="planner-entry__body">
-                  <a class="planner-entry__name" [routerLink]="['/events', entry.eventSlug]">{{ entry.eventName }}</a>
-                  <p class="planner-entry__note" *ngIf="entry.note">{{ entry.note }}</p>
-                </div>
-                <button class="planner-entry__remove" (click)="removeEntry(entry.id)" title="Ukloni">
-                  <span class="material-icons">delete_outline</span>
+              <div class="calendar-grid">
+                <div class="calendar-day-label" *ngFor="let d of DAY_LABELS">{{ d }}</div>
+                <button
+                  *ngFor="let cell of plannerGrid; trackBy: trackByCell"
+                  class="calendar-cell"
+                  [class.other-month]="!cell.isCurrentMonth"
+                  [class.today]="isToday(cell.date)"
+                  [class.selected]="isPlannerSelected(cell.date)"
+                  [class.has-planner]="cell.isCurrentMonth && cell.count > 0"
+                  (click)="selectPlannerDate(cell)"
+                >
+                  {{ cell.date.getDate() }}
+                  <span class="cell-dot planner-dot" *ngIf="cell.isCurrentMonth && cell.count > 0"></span>
                 </button>
               </div>
             </div>
-          </ng-container>
-        </div>
 
-        <button *ngIf="isLoggedIn" class="planner-toggle-btn" [class.active]="showPlannerSection" (click)="togglePlannerSection()">
-          <span class="material-icons">event_note</span>
-          Moj planer
-        </button>
+            <ng-container *ngIf="plannerSelectedDate">
+              <div class="planner-entries-header">
+                <span class="material-icons">event</span>
+                <span>{{ plannerSelectedDateLabel }}</span>
+              </div>
+              <div *ngIf="plannerEntriesLoading" class="loading-more">
+                <span class="material-icons spin">sync</span>
+              </div>
+              <div class="planner-entries" *ngIf="!plannerEntriesLoading">
+                <div *ngIf="plannerEntries.length === 0" class="planner-empty">
+                  Nema događaja za ovaj dan.
+                </div>
+                <div class="planner-entry" *ngFor="let entry of plannerEntries">
+                  <div class="planner-entry__thumb">
+                    <img *ngIf="entry.previewImageUrl" [src]="entry.previewImageUrl" [alt]="entry.entityName" class="planner-entry__thumb-img" />
+                    <span *ngIf="!entry.previewImageUrl" class="material-icons planner-entry__thumb-icon">{{ entry.entityType === 'event' ? 'event' : entry.entityType === 'destination' ? 'landscape' : entry.entityType === 'place' ? 'store' : 'directions_run' }}</span>
+                  </div>
+                  <div class="planner-entry__body">
+                    <a class="planner-entry__name" [routerLink]="getEntryRoute(entry)">{{ entry.entityName }}</a>
+                    <p class="planner-entry__note" *ngIf="entry.note">{{ entry.note }}</p>
+                  </div>
+                  <button class="planner-entry__remove" (click)="removeEntry(entry.id)" title="Ukloni">
+                    <span class="material-icons">delete_outline</span>
+                  </button>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </ng-container>
 
-        <!-- Quick filters -->
+        <!-- Quick filters + events list — always shown in calendar view (both tabs) -->
         <div class="chips-row">
           <button class="chip" [class.active]="quickFilter === 'today'" (click)="setQuickFilter('today')">{{ 'EVENTS.QUICK_TODAY' | translate }}</button>
           <button class="chip" [class.active]="quickFilter === 'weekend'" (click)="setQuickFilter('weekend')">{{ 'EVENTS.QUICK_WEEKEND' | translate }}</button>
@@ -270,6 +294,7 @@
           </div>
           <span class="material-icons ai-banner__arrow">arrow_forward</span>
         </div>
+
       </ng-container>
 
       <app-detail-footer />
@@ -411,11 +436,15 @@
                     Nema događaja za ovaj dan.
                   </div>
                   <div class="planner-entry" *ngFor="let entry of plannerEntries">
+                    <div class="planner-entry__thumb">
+                      <img *ngIf="entry.previewImageUrl" [src]="entry.previewImageUrl" [alt]="entry.entityName" class="planner-entry__thumb-img" />
+                      <span *ngIf="!entry.previewImageUrl" class="material-icons planner-entry__thumb-icon">{{ entry.entityType === 'event' ? 'event' : entry.entityType === 'destination' ? 'landscape' : entry.entityType === 'place' ? 'store' : 'directions_run' }}</span>
+                    </div>
                     <div class="planner-entry__body">
-                      <a class="planner-entry__name" [routerLink]="['/events', entry.eventSlug]">{{ entry.eventName }}</a>
+                      <a class="planner-entry__name" [routerLink]="getEntryRoute(entry)">{{ entry.entityName }}</a>
                       <p class="planner-entry__note" *ngIf="entry.note">{{ entry.note }}</p>
                     </div>
-                    <button class="planner-entry__remove" (click)="removeEntry(entry.id)" title="Ukloni">
+                    <button class="planner-entry__remove" (click)="openDeleteConfirm(entry.id)" title="Ukloni">
                       <span class="material-icons">delete_outline</span>
                     </button>
                   </div>
@@ -605,6 +634,28 @@
           </button>
         </div>
       </ng-container>
+    </div>
+  </div>
+
+  <!-- Delete confirmation modal -->
+  <div class="planner-modal-backdrop" *ngIf="confirmDeleteId" (click)="cancelDeleteConfirm()">
+    <div class="planner-modal planner-modal--confirm" (click)="$event.stopPropagation()">
+      <div class="planner-modal__header">
+        <div class="planner-modal__icon planner-modal__icon--danger">
+          <span class="material-icons">delete_outline</span>
+        </div>
+        <div>
+          <h3 class="planner-modal__title">Ukloni iz planera</h3>
+          <p class="planner-modal__event-name">Da li si siguran/a da želiš da ukloniš ovu stavku?</p>
+        </div>
+      </div>
+      <div class="planner-modal__actions">
+        <button class="planner-modal__cancel" (click)="cancelDeleteConfirm()" type="button">Otkaži</button>
+        <button class="planner-modal__confirm planner-modal__confirm--danger" (click)="confirmDelete()" [disabled]="confirmDeleteSaving" type="button">
+          <span class="material-icons spin" *ngIf="confirmDeleteSaving" style="font-size: 18px;">sync</span>
+          <span *ngIf="!confirmDeleteSaving">Ukloni</span>
+        </button>
+      </div>
     </div>
   </div>
 

@@ -4,14 +4,14 @@ export interface PlannerDot {
 }
 
 export interface PlannerEntry {
-  id:            string;
-  eventId:       string;
-  eventName:     string;
-  eventSlug:     string;
-  plannedAt:     string;
-  note:          string | null;
-  startDatetime: string | null;
-  endDatetime:   string | null;
+  id:              string;
+  entityType:      string;
+  entityId:        string;
+  entityName:      string;
+  entitySlug:      string;
+  plannedAt:       string;
+  note:            string | null;
+  previewImageUrl: string | null;
 }
 
 export interface PlannerEventRef {

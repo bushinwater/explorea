@@ -63,28 +63,48 @@ namespace Explorea.Server.Controllers
 
             var items = await _context.TripPlanItems
                 .Where(i => i.TripPlanId == plan.Id &&
-                            i.EntityType == "event"  &&
                             i.PlannedAt  >= startOfDay &&
                             i.PlannedAt  <  endOfDay)
                 .ToListAsync();
 
-            var eventIds = items.Select(i => i.EntityId).Distinct().ToList();
-            var eventsMap = await _context.Events
-                .Where(e => eventIds.Contains(e.Id))
-                .Select(e => new { e.Id, e.Name, e.Slug, e.StartDatetime, e.EndDatetime })
-                .ToDictionaryAsync(e => e.Id);
+            // Resolve entity details per type
+            var eventIds    = items.Where(i => i.EntityType == "event")       .Select(i => i.EntityId).Distinct().ToList();
+            var destIds     = items.Where(i => i.EntityType == "destination") .Select(i => i.EntityId).Distinct().ToList();
+            var placeIds    = items.Where(i => i.EntityType == "place")       .Select(i => i.EntityId).Distinct().ToList();
+            var activityIds = items.Where(i => i.EntityType == "activity")    .Select(i => i.EntityId).Distinct().ToList();
 
-            var result = items.Select(i => {
-                eventsMap.TryGetValue(i.EntityId, out var ev);
+            var eventsMap     = (await _context.Events      .Where(e => eventIds   .Contains(e.Id)).Select(e => new { e.Id, e.Name, e.Slug, e.PreviewImageUrl }).ToListAsync()).ToDictionary(x => x.Id);
+            var destsMap      = (await _context.Destinations.Where(d => destIds    .Contains(d.Id)).Select(d => new { d.Id, d.Name, d.Slug, d.PreviewImageUrl }).ToListAsync()).ToDictionary(x => x.Id);
+            var placesMap     = (await _context.Places      .Where(p => placeIds   .Contains(p.Id)).Select(p => new { p.Id, p.Name, p.Slug, p.PreviewImageUrl }).ToListAsync()).ToDictionary(x => x.Id);
+            var activitiesMap = (await _context.Activities  .Where(a => activityIds.Contains(a.Id)).Select(a => new { a.Id, a.Name, a.Slug, a.PreviewImageUrl }).ToListAsync()).ToDictionary(x => x.Id);
+
+            var result = items.Select(i =>
+            {
+                string  name            = "(nepoznat entitet)";
+                string  slug            = "";
+                string? previewImageUrl = null;
+
+                switch (i.EntityType)
+                {
+                    case "event":
+                        if (eventsMap    .TryGetValue(i.EntityId, out var ev))   { name = ev.Name;   slug = ev.Slug;   previewImageUrl = ev.PreviewImageUrl; }   break;
+                    case "destination":
+                        if (destsMap     .TryGetValue(i.EntityId, out var dest)) { name = dest.Name; slug = dest.Slug; previewImageUrl = dest.PreviewImageUrl; } break;
+                    case "place":
+                        if (placesMap    .TryGetValue(i.EntityId, out var pl))   { name = pl.Name;   slug = pl.Slug;   previewImageUrl = pl.PreviewImageUrl; }   break;
+                    case "activity":
+                        if (activitiesMap.TryGetValue(i.EntityId, out var act))  { name = act.Name;  slug = act.Slug;  previewImageUrl = act.PreviewImageUrl; }  break;
+                }
+
                 return new {
-                    id            = i.Id,
-                    eventId       = i.EntityId,
-                    eventName     = ev?.Name ?? "(nepoznat događaj)",
-                    eventSlug     = ev?.Slug ?? "",
-                    plannedAt     = i.PlannedAt!.Value.ToString("yyyy-MM-dd"),
-                    note          = i.Note,
-                    startDatetime = ev?.StartDatetime.ToString("o"),
-                    endDatetime   = ev?.EndDatetime.ToString("o"),
+                    id              = i.Id,
+                    entityType      = i.EntityType,
+                    entityId        = i.EntityId,
+                    entityName      = name,
+                    entitySlug      = slug,
+                    previewImageUrl = previewImageUrl,
+                    plannedAt       = i.PlannedAt!.Value.ToString("yyyy-MM-dd"),
+                    note            = i.Note,
                 };
             }).ToList();
 
@@ -107,12 +127,68 @@ namespace Explorea.Server.Controllers
                     System.Globalization.DateTimeStyles.None, out var parsedDate))
                 return BadRequest(new { message = "Invalid date format. Use yyyy-MM-dd." });
 
+            var dayStart = new DateTimeOffset(parsedDate.Year, parsedDate.Month, parsedDate.Day, 0, 0, 0, TimeSpan.Zero);
+            var dayEnd   = dayStart.AddDays(1);
+            var already  = await _context.TripPlanItems.AnyAsync(i =>
+                i.TripPlanId == plan.Id &&
+                i.EntityType == "event" &&
+                i.EntityId   == request.EventId &&
+                i.PlannedAt  >= dayStart &&
+                i.PlannedAt  <  dayEnd);
+            if (already)
+                return Conflict(new { message = "Već si dodao ovaj događaj za taj dan." });
+
             var item = new TripPlanItem
             {
                 Id         = Guid.NewGuid(),
                 TripPlanId = plan.Id,
                 EntityType = "event",
                 EntityId   = request.EventId,
+                PlannedAt  = new DateTimeOffset(parsedDate.Year, parsedDate.Month, parsedDate.Day, 0, 0, 0, TimeSpan.Zero),
+                Note       = request.Note?.Trim(),
+                SortOrder  = 0,
+                CreatedAt  = DateTimeOffset.UtcNow,
+                CreatedBy  = userId,
+            };
+
+            _context.TripPlanItems.Add(item);
+            await _context.SaveChangesAsync();
+
+            return StatusCode(201, new { id = item.Id });
+        }
+
+        // POST /api/planner/add-entity
+        [HttpPost("add-entity")]
+        public async Task<IActionResult> AddEntity([FromBody] AddGenericPlannerItemRequest request)
+        {
+            var allowed = new[] { "event", "destination", "place", "activity" };
+            if (!allowed.Contains(request.EntityType))
+                return BadRequest(new { message = "Invalid entity type." });
+
+            if (!DateTime.TryParseExact(request.PlannedAt, "yyyy-MM-dd", null,
+                    System.Globalization.DateTimeStyles.None, out var parsedDate))
+                return BadRequest(new { message = "Invalid date format. Use yyyy-MM-dd." });
+
+            var userId = await GetCurrentUserId();
+            var plan   = await GetOrCreatePlan(userId);
+
+            var dayStart = new DateTimeOffset(parsedDate.Year, parsedDate.Month, parsedDate.Day, 0, 0, 0, TimeSpan.Zero);
+            var dayEnd   = dayStart.AddDays(1);
+            var already  = await _context.TripPlanItems.AnyAsync(i =>
+                i.TripPlanId == plan.Id &&
+                i.EntityType == request.EntityType &&
+                i.EntityId   == request.EntityId &&
+                i.PlannedAt  >= dayStart &&
+                i.PlannedAt  <  dayEnd);
+            if (already)
+                return Conflict(new { message = "Već si dodao ovaj entitet za taj dan." });
+
+            var item = new TripPlanItem
+            {
+                Id         = Guid.NewGuid(),
+                TripPlanId = plan.Id,
+                EntityType = request.EntityType,
+                EntityId   = request.EntityId,
                 PlannedAt  = new DateTimeOffset(parsedDate.Year, parsedDate.Month, parsedDate.Day, 0, 0, 0, TimeSpan.Zero),
                 Note       = request.Note?.Trim(),
                 SortOrder  = 0,
@@ -190,5 +266,13 @@ namespace Explorea.Server.Controllers
         public Guid    EventId   { get; set; }
         public string  PlannedAt { get; set; } = null!;
         public string? Note      { get; set; }
+    }
+
+    public class AddGenericPlannerItemRequest
+    {
+        public string  EntityType { get; set; } = null!;
+        public Guid    EntityId   { get; set; }
+        public string  PlannedAt  { get; set; } = null!;
+        public string? Note       { get; set; }
     }
 }

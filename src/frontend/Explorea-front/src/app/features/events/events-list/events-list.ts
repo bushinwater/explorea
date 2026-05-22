@@ -561,6 +561,48 @@ export class EventsListPage implements OnInit, OnDestroy {
     });
   }
 
+  getEntryRoute(entry: { entityType: string; entitySlug: string }): string[] {
+    switch (entry.entityType) {
+      case 'destination': return ['/destinations', entry.entitySlug];
+      case 'place':       return ['/places',       entry.entitySlug];
+      case 'activity':    return ['/activities',   entry.entitySlug];
+      default:            return ['/events',        entry.entitySlug];
+    }
+  }
+
+  confirmDeleteId: string | null = null;
+  confirmDeleteSaving = false;
+
+  openDeleteConfirm(id: string): void {
+    this.confirmDeleteId = id;
+    this.confirmDeleteSaving = false;
+    this.cdr.detectChanges();
+  }
+
+  cancelDeleteConfirm(): void {
+    this.confirmDeleteId = null;
+    this.cdr.detectChanges();
+  }
+
+  confirmDelete(): void {
+    if (!this.confirmDeleteId || this.confirmDeleteSaving) return;
+    this.confirmDeleteSaving = true;
+    this.cdr.detectChanges();
+    this.plannerService.removeEntry(this.confirmDeleteId).subscribe({
+      next: () => {
+        this.plannerEntries = this.plannerEntries.filter(e => e.id !== this.confirmDeleteId);
+        this.confirmDeleteId = null;
+        this.confirmDeleteSaving = false;
+        this.loadPlannerDots();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.confirmDeleteSaving = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   removeEntry(id: string): void {
     this.plannerService.removeEntry(id).subscribe({
       next: () => {

@@ -1055,8 +1055,12 @@
    ══════════════════════════════════════ */
 
 /* ══════════════════════════════════════
-   CALENDAR TAB SWITCHER (desktop aside)
+   CALENDAR TAB SWITCHER
    ══════════════════════════════════════ */
+
+.mobile-tab-switcher {
+  margin: 0 var(--spacing-md) var(--spacing-md);
+}
 
 .calendar-tab-switcher {
   display: flex;
@@ -1231,11 +1235,35 @@
 
 .planner-entry {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
   transition: background 0.15s;
+}
+
+.planner-entry__thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.planner-entry__thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.planner-entry__thumb-icon {
+  font-size: 20px;
+  color: var(--color-primary);
+  opacity: 0.7;
 }
 
 .planner-entry:last-child { border-bottom: none; }
@@ -1478,6 +1506,15 @@
 
 .planner-modal__confirm:hover:not(:disabled) { opacity: 0.88; }
 .planner-modal__confirm:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.planner-modal--confirm { max-width: 340px; }
+
+.planner-modal__icon--danger {
+  background: color-mix(in srgb, var(--color-danger, #e53e3e) 12%, transparent);
+}
+.planner-modal__icon--danger .material-icons { color: var(--color-danger, #e53e3e); }
+
+.planner-modal__confirm--danger { background: var(--color-danger, #e53e3e); }
 
 .planner-modal__error {
   display: flex;
