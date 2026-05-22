@@ -54,6 +54,10 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   draftNearbyEnabled = false;
   nearbyEnabled      = false;
 
+  draftEntityTypes: string[] = [];
+
+  get isMultiEntityDraft(): boolean { return this.draftEntityTypes.length > 1; }
+
   // location
   locationAvailable    = false;
   showLocationModal    = false;
@@ -245,6 +249,7 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   openFilterPanel(): void {
     this.draftFilters       = { ...this.filters };
     this.draftNearbyEnabled = this.nearbyEnabled;
+    this.draftEntityTypes   = this.filterEntityType ? [this.filterEntityType] : [];
     if (this.filterEntityType && this.filterEntityType !== 'activity') {
       const ids = this.getSelectedCategoryIds();
       if (ids.length === 1 && this.filterDefsTypeId !== ids[0]) this.loadFilterDefs(ids[0]);
@@ -265,13 +270,28 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
     else if (!f.radiusKm) f.radiusKm = 50;
     this.filters         = f;
     this.showFilterPanel = false;
+
+    let entityType: string | null = null;
+    let activeEntityTypes: string[] | undefined;
+
+    if (this.draftEntityTypes.length === 1) {
+      entityType = this.draftEntityTypes[0];
+      this.filterEntityType = entityType as 'destination' | 'place' | 'activity' | 'event';
+    } else if (this.draftEntityTypes.length > 1) {
+      activeEntityTypes = [...this.draftEntityTypes];
+      this.filterEntityType = null;
+    } else {
+      this.filterEntityType = null;
+    }
+
     this.router.navigate(['/search'], {
       state: {
-        fromHero:         true,
-        query:            this.searchQuery.trim(),
-        filters:          this.filters,
-        nearbyEnabled:    this.nearbyEnabled,
-        filterEntityType: this.filterEntityType,
+        fromHero:          true,
+        query:             this.searchQuery.trim(),
+        filters:           this.filters,
+        nearbyEnabled:     this.nearbyEnabled,
+        filterEntityType:  entityType,
+        activeEntityTypes: activeEntityTypes,
       },
     });
   }
@@ -282,24 +302,37 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
     this.nearbyEnabled      = false;
     this.draftNearbyEnabled = false;
     this.filterEntityType   = null;
+    this.draftEntityTypes   = [];
     this.filterDefs         = [];
     this.filterDefsTypeId   = null;
     this.showFilterPanel    = false;
     this.cdr.markForCheck();
   }
 
-  setFilterEntityType(type: 'destination' | 'place' | 'activity' | 'event' | null): void {
-    if (this.filterEntityType === type) {
-      this.filterEntityType = null;
+  toggleDraftEntityType(type: string): void {
+    const idx = this.draftEntityTypes.indexOf(type);
+    if (idx >= 0) {
+      this.draftEntityTypes = this.draftEntityTypes.filter(t => t !== type);
     } else {
-      this.filterEntityType = type;
-      if (type !== 'destination') this.draftFilters = { ...this.draftFilters, destinationTypeIds: [] };
-      if (type !== 'place')       this.draftFilters = { ...this.draftFilters, placeTypeIds: [] };
-      if (type !== 'activity')    this.draftFilters = { ...this.draftFilters, activityCategoryIds: [] };
-      if (type !== 'event')       this.draftFilters = { ...this.draftFilters, eventTypeIds: [] };
-      this.draftFilters     = { ...this.draftFilters, extraFilters: {} };
-      this.filterDefs       = [];
+      this.draftEntityTypes = [...this.draftEntityTypes, type];
+    }
+    if (this.draftEntityTypes.length === 1) {
+      const single = this.draftEntityTypes[0] as 'destination' | 'place' | 'activity' | 'event';
+      this.filterEntityType = single;
+      if (single !== 'destination') this.draftFilters = { ...this.draftFilters, destinationTypeIds: [] };
+      if (single !== 'place')       this.draftFilters = { ...this.draftFilters, placeTypeIds: [] };
+      if (single !== 'activity')    this.draftFilters = { ...this.draftFilters, activityCategoryIds: [] };
+      if (single !== 'event')       this.draftFilters = { ...this.draftFilters, eventTypeIds: [] };
+      this.draftFilters = { ...this.draftFilters, extraFilters: {} };
+      this.filterDefs = [];
       this.filterDefsTypeId = null;
+    } else if (this.draftEntityTypes.length > 1) {
+      this.filterEntityType = null;
+      this.draftFilters = { ...this.draftFilters, destinationTypeIds: [], placeTypeIds: [], activityCategoryIds: [], eventTypeIds: [], extraFilters: {} };
+      this.filterDefs = [];
+      this.filterDefsTypeId = null;
+    } else {
+      this.filterEntityType = null;
     }
     this.cdr.markForCheck();
   }

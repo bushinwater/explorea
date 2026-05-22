@@ -223,10 +223,10 @@
             <p>Stranica koja se otvara nakon ulaska u admin panel.</p>
           </div>
 
-          <select #landingPageSelect class="preference-select" [value]="preferencesForm().defaultAdminPage"
+          <select #landingPageSelect class="preference-select"
             [disabled]="isPreferencesSaving()" (change)="updatePreferencesField('defaultAdminPage', landingPageSelect.value)">
             @for (option of landingPageOptions(); track option.value) {
-            <option [value]="option.value">{{ option.label }}</option>
+            <option [value]="option.value" [selected]="option.value === preferencesForm().defaultAdminPage">{{ option.label }}</option>
             }
           </select>
         </article>

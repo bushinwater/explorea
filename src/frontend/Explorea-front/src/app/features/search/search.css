@@ -1153,6 +1153,17 @@
 
 .filter-nearby-hint .material-icons { font-size: 14px; flex-shrink: 0; }
 
+.filter-multi-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+.filter-multi-hint .material-icons { font-size: 13px; flex-shrink: 0; }
+
 .filter-location-hint {
   display: flex;
   align-items: center;

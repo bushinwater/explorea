@@ -119,6 +119,11 @@ export class Search implements OnInit, OnDestroy {
   draftFilters: SearchFilters = {};
   filters: SearchFilters = {};
 
+  /** Multi-select entity types in draft (filter panel open) */
+  draftEntityTypes: string[] = [];
+  /** Committed multi-type selection — empty means no restriction */
+  activeEntityTypes: string[] = [];
+
   // Lookup data for filter selectors
   placeTypes:           LookupItem[] = [];
   activityCategories:   LookupItem[] = [];
@@ -169,12 +174,16 @@ export class Search implements OnInit, OnDestroy {
       if (state.query)  this.query = state.query;
       if (state.filters) this.filters = { ...state.filters };
       if (state.nearbyEnabled) this.nearbyEnabled = state.nearbyEnabled;
-      if (state.filterEntityType) {
+      if ((state.activeEntityTypes as string[] | undefined)?.length ?? 0 > 1) {
+        this.activeEntityTypes = state.activeEntityTypes;
+        this.activeChip  = 'sve';
+        this.activeTab   = 'sve';
+      } else if (state.filterEntityType) {
         this.filterEntityType = state.filterEntityType;
         this.activeChip  = state.filterEntityType;
         this.activeTab   = state.filterEntityType;
       }
-      if (state.query || state.filterEntityType) {
+      if (state.query || state.filterEntityType || (this.activeEntityTypes.length > 1)) {
         this.hasSearched = true;
       }
     }
@@ -192,7 +201,7 @@ export class Search implements OnInit, OnDestroy {
     this.loadUserLocation();
     this.loadLookups();
 
-    if (preselected || (fromHero && (this.query || this.filterEntityType))) {
+    if (preselected || (fromHero && (this.query || this.filterEntityType || this.activeEntityTypes.length > 1))) {
       this.triggerSearch();
     }
 
@@ -401,6 +410,40 @@ export class Search implements OnInit, OnDestroy {
    */
   private executeSearch(page: number, append: boolean): void {
     if (this.activeTab === 'sve') {
+
+      // Multi-entity with no query: parallel list calls per selected type
+      if (this.activeEntityTypes.length > 1 && !this.query.trim()) {
+        const useLocation = this.nearbyEnabled && this.locationAvailable;
+        const calls = this.activeEntityTypes
+          .filter(t => TAB_TO_BACKEND[t])
+          .map(t => this.searchPageService.getList({
+            tab:      TAB_TO_BACKEND[t],
+            page:     1,
+            pageSize: 12,
+            sortBy:   'popularity_desc',
+            userLat:  useLocation ? (this.userLat  ?? undefined) : undefined,
+            userLng:  useLocation ? (this.userLng  ?? undefined) : undefined,
+            ...this.filters,
+          }));
+        forkJoin(calls).subscribe({
+          next: responses => {
+            this.allResults  = responses.flatMap(r => r.items);
+            this.hasSearched = true;
+            this.loading     = false;
+            this.loadingMore = false;
+            this.pagination  = { page: 1, totalPages: 1, total: this.allResults.length };
+            this.cdr.detectChanges();
+          },
+          error: () => {
+            this.allResults  = [];
+            this.loading     = false;
+            this.loadingMore = false;
+            this.cdr.detectChanges();
+          },
+        });
+        return;
+      }
+
       const useLocSve = this.nearbyEnabled && this.locationAvailable;
       this.searchService.search(
         this.query.trim(),
@@ -486,18 +529,72 @@ export class Search implements OnInit, OnDestroy {
   }
 
   get filteredResults(): SearchItem[] {
-    if (this.activeTab === 'sve') return this.allResults;
-    return this.allResults.filter(r => r.entityType === this.activeTab);
+    let results = this.activeTab === 'sve'
+      ? this.allResults
+      : this.allResults.filter(r => r.entityType === this.activeTab);
+    if (this.activeEntityTypes.length > 1) {
+      results = results.filter(r => this.activeEntityTypes.includes(r.entityType));
+      if (this.filters.minRating != null) {
+        results = results.filter(r => ((r.entity as any).avgRating ?? 0) >= this.filters.minRating!);
+      }
+    }
+    return results;
   }
 
   get hasMore(): boolean {
     return this.pagination.page < this.pagination.totalPages;
   }
 
+  get isMultiEntityDraft(): boolean { return this.draftEntityTypes.length > 1; }
+
+  isChipActive(key: string): boolean {
+    if (key === 'sve') return this.activeEntityTypes.length === 0 && (this.activeChip === 'sve' || this.activeChip === '');
+    if (this.activeEntityTypes.length > 1) return this.activeEntityTypes.includes(key);
+    return this.activeChip === key;
+  }
+
+  onChipClick(key: string): void {
+    if (key === 'sve') {
+      this.activeEntityTypes = [];
+      this.searchCategory('sve');
+      return;
+    }
+    if (this.activeEntityTypes.length > 1) {
+      const newTypes = this.activeEntityTypes.includes(key)
+        ? this.activeEntityTypes.filter(t => t !== key)
+        : [...this.activeEntityTypes, key];
+      if (newTypes.length === 0) {
+        this.activeEntityTypes = [];
+        this.searchCategory('sve');
+      } else if (newTypes.length === 1) {
+        this.activeEntityTypes = [];
+        this.searchCategory(newTypes[0]);
+      } else {
+        this.activeEntityTypes = newTypes;
+        this.triggerSearch();
+        this.cdr.detectChanges();
+      }
+    } else if (this.activeChip !== 'sve' && this.activeChip !== '' && this.activeChip !== key) {
+      // Single type active, user clicks a different chip → enter multi-entity mode
+      this.activeEntityTypes = [this.activeChip, key];
+      this.activeChip  = 'sve';
+      this.activeTab   = 'sve';
+      this.hasSearched = true;
+      this.filters = { ...this.filters, destinationTypeIds: [], placeTypeIds: [], activityCategoryIds: [], eventTypeIds: [], extraFilters: {} };
+      this.filterDefs = [];
+      this.filterDefsTypeId = null;
+      this.triggerSearch();
+      this.cdr.detectChanges();
+    } else {
+      this.searchCategory(key);
+    }
+  }
+
   get hasActiveFilters(): boolean {
     const f = this.filters;
     return !!(
       this.nearbyEnabled ||
+      this.activeEntityTypes.length > 1 ||
       f.minRating != null || f.minPrice != null || f.maxPrice != null ||
       f.openNow != null || f.radiusKm != null ||
       (f.placeTypeIds        ?? []).length > 0 ||
@@ -635,20 +732,30 @@ export class Search implements OnInit, OnDestroy {
     return this.getSelectedCategoryIds().includes(id);
   }
 
-  setFilterEntityType(type: 'destination' | 'place' | 'activity' | 'event' | null): void {
-    if (this.filterEntityType === type) {
-      this.filterEntityType = null;
+  toggleDraftEntityType(type: string): void {
+    const idx = this.draftEntityTypes.indexOf(type);
+    if (idx >= 0) {
+      this.draftEntityTypes = this.draftEntityTypes.filter(t => t !== type);
     } else {
-      this.filterEntityType = type;
-      // Clear category selections from other types
-      if (type !== 'destination') this.draftFilters = { ...this.draftFilters, destinationTypeIds: [] };
-      if (type !== 'place')       this.draftFilters = { ...this.draftFilters, placeTypeIds: [] };
-      if (type !== 'activity')    this.draftFilters = { ...this.draftFilters, activityCategoryIds: [] };
-      if (type !== 'event')       this.draftFilters = { ...this.draftFilters, eventTypeIds: [] };
-      // Clear extra filters and defs when switching type
-      this.draftFilters    = { ...this.draftFilters, extraFilters: {} };
-      this.filterDefs      = [];
+      this.draftEntityTypes = [...this.draftEntityTypes, type];
+    }
+    if (this.draftEntityTypes.length === 1) {
+      const single = this.draftEntityTypes[0] as 'destination' | 'place' | 'activity' | 'event';
+      this.filterEntityType = single;
+      if (single !== 'destination') this.draftFilters = { ...this.draftFilters, destinationTypeIds: [] };
+      if (single !== 'place')       this.draftFilters = { ...this.draftFilters, placeTypeIds: [] };
+      if (single !== 'activity')    this.draftFilters = { ...this.draftFilters, activityCategoryIds: [] };
+      if (single !== 'event')       this.draftFilters = { ...this.draftFilters, eventTypeIds: [] };
+      this.draftFilters = { ...this.draftFilters, extraFilters: {} };
+      this.filterDefs = [];
       this.filterDefsTypeId = null;
+    } else if (this.draftEntityTypes.length > 1) {
+      this.filterEntityType = null;
+      this.draftFilters = { ...this.draftFilters, destinationTypeIds: [], placeTypeIds: [], activityCategoryIds: [], eventTypeIds: [], extraFilters: {} };
+      this.filterDefs = [];
+      this.filterDefsTypeId = null;
+    } else {
+      this.filterEntityType = null;
     }
     this.cdr.detectChanges();
   }
@@ -712,6 +819,7 @@ export class Search implements OnInit, OnDestroy {
       this.sortBy  = null;
       this.sortDir = 'asc';
     }
+    this.activeEntityTypes = [];
     this.activeChip = key;
     this.activeTab  = key;
     if (key === 'sve') {
@@ -809,8 +917,14 @@ export class Search implements OnInit, OnDestroy {
   openFilterPanel(): void {
     this.draftFilters       = { ...this.filters };
     this.draftNearbyEnabled = this.nearbyEnabled;
-    if (this.activeChip !== 'sve' && this.activeChip !== '') {
-      this.filterEntityType = this.activeChip as 'destination' | 'place' | 'activity' | 'event';
+    if (this.activeEntityTypes.length > 1) {
+      this.draftEntityTypes = [...this.activeEntityTypes];
+      this.filterEntityType = null;
+    } else {
+      if (this.activeChip !== 'sve' && this.activeChip !== '') {
+        this.filterEntityType = this.activeChip as 'destination' | 'place' | 'activity' | 'event';
+      }
+      this.draftEntityTypes = this.filterEntityType ? [this.filterEntityType] : [];
     }
     // Auto-load extra filter defs if exactly one subcat was pre-selected via inline chips
     if (this.filterEntityType && this.filterEntityType !== 'activity') {
@@ -830,7 +944,6 @@ export class Search implements OnInit, OnDestroy {
 
   applyFilters(): void {
     this.nearbyEnabled   = this.draftNearbyEnabled;
-    // Clear radiusKm from filters when nearby is disabled
     const f = { ...this.draftFilters };
     if (!this.nearbyEnabled) {
       delete f.radiusKm;
@@ -839,12 +952,30 @@ export class Search implements OnInit, OnDestroy {
     }
     this.filters         = f;
     this.showFilterPanel = false;
-    // Sync chip/tab if the entity type was changed inside the filter panel
-    if (this.filterEntityType && this.filterEntityType !== this.activeChip) {
-      this.activeChip  = this.filterEntityType;
-      this.activeTab   = this.filterEntityType;
+
+    if (this.draftEntityTypes.length > 1) {
+      this.activeEntityTypes = [...this.draftEntityTypes];
+      this.filterEntityType  = null;
+      this.activeChip  = 'sve';
+      this.activeTab   = 'sve';
       this.hasSearched = true;
+    } else if (this.draftEntityTypes.length === 1) {
+      this.activeEntityTypes = [];
+      this.filterEntityType  = this.draftEntityTypes[0] as 'destination' | 'place' | 'activity' | 'event';
+      if (this.filterEntityType !== this.activeChip) {
+        this.activeChip  = this.filterEntityType;
+        this.activeTab   = this.filterEntityType;
+        this.hasSearched = true;
+      }
+    } else {
+      this.activeEntityTypes = [];
+      if (this.filterEntityType && this.filterEntityType !== this.activeChip) {
+        this.activeChip  = this.filterEntityType;
+        this.activeTab   = this.filterEntityType;
+        this.hasSearched = true;
+      }
     }
+
     if (this.showResults) {
       this.triggerSearch();
     } else if (this.activeChip === 'sve') {
@@ -854,14 +985,16 @@ export class Search implements OnInit, OnDestroy {
   }
 
   resetFilters(): void {
-    this.draftFilters      = {};
-    this.filters           = {};
-    this.nearbyEnabled     = false;
+    this.draftFilters       = {};
+    this.filters            = {};
+    this.nearbyEnabled      = false;
     this.draftNearbyEnabled = false;
-    this.filterEntityType  = null;
-    this.filterDefs        = [];
-    this.filterDefsTypeId  = null;
-    this.showFilterPanel   = false;
+    this.filterEntityType   = null;
+    this.draftEntityTypes   = [];
+    this.activeEntityTypes  = [];
+    this.filterDefs         = [];
+    this.filterDefsTypeId   = null;
+    this.showFilterPanel    = false;
     if (this.showResults) {
       this.triggerSearch();
     } else if (this.activeChip === 'sve') {

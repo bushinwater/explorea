@@ -135,6 +135,7 @@ export class Explore implements AfterViewInit, OnDestroy {
 
   map!: MapLibreMap;
   markers: Marker[] = [];
+  private pinElements = new Map<string, HTMLElement>();
   private themeObserver!: MutationObserver;
   private lightStyle: any = null;
   private darkStyle: any = null;
@@ -462,12 +463,28 @@ export class Explore implements AfterViewInit, OnDestroy {
     });
   }
 
+  private pinKey(pin: ExploreMarker): string {
+    return `${pin.entityType}:${pin.slug}`;
+  }
+
+  private clearSelectedPin() {
+    if (this.selectedPin) {
+      this.pinElements.get(this.pinKey(this.selectedPin))?.classList.remove('map-pin-btn--selected');
+    }
+    this.selectedPin = null;
+  }
+
   private flyToPin(pin: ExploreMarker) {
+    if (this.selectedPin) {
+      this.pinElements.get(this.pinKey(this.selectedPin))?.classList.remove('map-pin-btn--selected');
+    }
     this.selectedPin = pin;
-    // Collapse the bottom sheet so the pin popup is fully visible.
+    this.pinElements.get(this.pinKey(pin))?.classList.add('map-pin-btn--selected');
     this.drawerExpanded = false;
     this.drawerTranslateY = this.collapsedTranslate;
-    this.map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(this.map.getZoom(), 12), duration: 900 });
+    const isMobile = window.innerWidth <= 768;
+    const offset: [number, number] = isMobile ? [0, -(window.innerHeight * 0.1)] : [0, 0];
+    this.map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(this.map.getZoom(), 12), duration: 900, offset });
     this.cdr.detectChanges();
   }
 
@@ -728,7 +745,7 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.map.on('click', e => {
       const target = e.originalEvent.target as HTMLElement;
       if (!target.closest('.map-pin-btn')) {
-        this.selectedPin = null;
+        this.clearSelectedPin();
         this.cdr.detectChanges();
       }
     });
@@ -799,10 +816,18 @@ export class Explore implements AfterViewInit, OnDestroy {
   private addMarkers() {
     this.markers.forEach(m => m.remove());
     this.markers = [];
+    this.pinElements.clear();
 
     this.filteredPins.forEach(pin => {
       const el = document.createElement('div');
       el.className = 'map-pin-btn';
+      const key = this.pinKey(pin);
+      this.pinElements.set(key, el);
+
+      if (this.selectedPin && this.pinKey(this.selectedPin) === key) {
+        el.classList.add('map-pin-btn--selected');
+      }
+
       const icon = this.getPinIcon(pin.entityType);
       el.innerHTML = `
         <div class="pin-bubble">
@@ -813,7 +838,6 @@ export class Explore implements AfterViewInit, OnDestroy {
       el.addEventListener('click', e => {
         e.stopPropagation();
         this.flyToPin(pin);
-        this.map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(this.map.getZoom(), 10), duration: 800 });
       });
 
       const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
@@ -884,7 +908,7 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.drawerExpanded = !this.drawerExpanded;
     this.drawerTranslateY = this.drawerExpanded ? 0 : this.collapsedTranslate;
     if (this.drawerExpanded && this.selectedPin) {
-      this.selectedPin = null;
+      this.clearSelectedPin();
     }
   }
 
@@ -894,7 +918,7 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.sheetTouchStartY = e.touches[0].clientY;
     this.sheetStartTranslate = this.drawerTranslateY;
     if (this.selectedPin) {
-      this.selectedPin = null;
+      this.clearSelectedPin();
     }
     this.cdr.detectChanges();
   }
@@ -952,14 +976,11 @@ export class Explore implements AfterViewInit, OnDestroy {
   }
 
   selectResult(pin: ExploreMarker) {
-    this.selectedPin = pin;
-    this.drawerExpanded = false;
-    this.drawerTranslateY = this.collapsedTranslate;
-    this.map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(this.map.getZoom(), 12), duration: 800 });
+    this.flyToPin(pin);
   }
 
   closePin() {
-    this.selectedPin = null;
+    this.clearSelectedPin();
   }
 
   openRoute(pin: ExploreMarker) {

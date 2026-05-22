@@ -990,6 +990,16 @@
   transform: rotate(-45deg) scale(1.15);
 }
 
+:host ::ng-deep .map-pin-btn--selected .pin-bubble {
+  background: #fff;
+  border-color: var(--color-primary);
+  transform: rotate(-45deg) scale(1.25);
+}
+
+:host ::ng-deep .map-pin-btn--selected .pin-bubble .material-icons {
+  color: var(--color-primary);
+}
+
 /* =====================
    MOBILE
    ===================== */

@@ -44,8 +44,8 @@
         <button
           *ngFor="let chip of categoryChips"
           class="chip"
-          [class.active]="activeChip === chip.key"
-          (click)="searchCategory(chip.key)"
+          [class.active]="isChipActive(chip.key)"
+          (click)="onChipClick(chip.key)"
           type="button"
         >
           <span class="material-icons">{{ chip.icon }}</span>
@@ -54,7 +54,7 @@
       </div>
 
       <!-- SUBCATEGORY CHIPS -->
-      <div class="subcats-row" *ngIf="activeChip !== 'sve' && activeChip !== '' && getSubcatsForActiveChip().length > 0">
+      <div class="subcats-row" *ngIf="activeEntityTypes.length <= 1 && activeChip !== 'sve' && activeChip !== '' && getSubcatsForActiveChip().length > 0">
         <button
           *ngFor="let cat of subcatsPreview"
           class="subcat-chip"
@@ -280,14 +280,18 @@
           <button
             *ngFor="let et of filterEntityTypes"
             class="filter-entity-btn"
-            [class.active]="filterEntityType === et.key"
-            (click)="setFilterEntityType(et.key)"
+            [class.active]="draftEntityTypes.includes(et.key)"
+            (click)="toggleDraftEntityType(et.key)"
             type="button"
           >
             <span class="material-icons">{{ et.icon }}</span>
             <span>{{ et.labelKey | translate }}</span>
           </button>
         </div>
+        <p class="filter-multi-hint" *ngIf="isMultiEntityDraft">
+          <span class="material-icons">info</span>
+          Za vise tipova dostupna je samo osnovna pretraga
+        </p>
       </div>
 
       <div class="filter-group">
@@ -326,7 +330,7 @@
         </ng-container>
       </div>
 
-      <div class="filter-group" *ngIf="filterEntityType && getCategoriesForType().length > 0">
+      <div class="filter-group" *ngIf="!isMultiEntityDraft && filterEntityType && getCategoriesForType().length > 0">
         <p class="filter-label">{{ 'SEARCH.FILTER_CATEGORIES' | translate }}</p>
         <div class="filter-chips">
           <button
@@ -340,14 +344,14 @@
       </div>
 
       <!-- Dynamic extra filters (shown when exactly one subtype is selected) -->
-      <ng-container *ngIf="filterDefsLoading">
+      <ng-container *ngIf="!isMultiEntityDraft && filterDefsLoading">
         <div class="filter-group">
           <div class="filter-defs-loading">
             <span class="material-icons spin">sync</span>
           </div>
         </div>
       </ng-container>
-      <ng-container *ngIf="!filterDefsLoading && filterDefs.length > 0">
+      <ng-container *ngIf="!isMultiEntityDraft && !filterDefsLoading && filterDefs.length > 0">
         <div class="filter-group">
           <p class="filter-label">{{ 'SEARCH.FILTER_EXTRA' | translate }}</p>
           <div class="filter-extra-list">
@@ -401,7 +405,7 @@
         </div>
       </div>
 
-      <div class="filter-group" *ngIf="filterEntityType === 'place' || filterEntityType === 'activity' || filterEntityType === null">
+      <div class="filter-group" *ngIf="!isMultiEntityDraft && (filterEntityType === 'place' || filterEntityType === 'activity' || filterEntityType === null)">
         <div class="filter-toggle-row">
           <p class="filter-label" style="margin:0">{{ 'SEARCH.FILTER_OPEN_NOW' | translate }}</p>
           <button
@@ -417,7 +421,7 @@
         </div>
       </div>
 
-      <div class="filter-group" *ngIf="filterEntityType === 'event' || filterEntityType === 'place'">
+      <div class="filter-group" *ngIf="!isMultiEntityDraft && (filterEntityType === 'event' || filterEntityType === 'place')">
         <p class="filter-label">{{ 'SEARCH.FILTER_PRICE' | translate }}</p>
         <div class="filter-price-row">
           <div class="filter-price-input">
