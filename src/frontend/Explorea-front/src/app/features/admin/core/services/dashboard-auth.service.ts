@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { AuthService } from '../../../../core/services/auth.service';
 import { AdminRole, ROLE_LABELS } from '../models/admin.models';
 import { AdminProfileService } from './admin-profile.service';
@@ -73,4 +73,6 @@ export class DashboardAuthService {
   get profileImageUrl(): string | null {
     return this.profileService.profile()?.profileImageUrl ?? null;
   }
+
+  readonly isPhotoUploading = computed(() => this.profileService.isPhotoUploading());
 }

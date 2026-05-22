@@ -316,6 +316,7 @@
 
 /* Avatar */
 .header__avatar {
+  position: relative;
   width: 36px;
   height: 36px;
   border-radius: var(--radius-full);
@@ -335,6 +336,26 @@
   height: 100%;
   object-fit: cover;
   border-radius: var(--radius-full);
+}
+
+.header__avatar-uploading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: var(--radius-full);
+}
+
+.header__avatar-spin {
+  color: #fff;
+  font-size: 18px;
+  animation: header-avatar-spin 0.9s linear infinite;
+}
+
+@keyframes header-avatar-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 /* Role dropdown */

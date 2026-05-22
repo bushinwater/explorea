@@ -88,6 +88,11 @@
         } @else {
           {{ auth.userInitials }}
         }
+        @if (auth.isPhotoUploading()) {
+          <div class="header__avatar-uploading">
+            <span class="material-icons header__avatar-spin">sync</span>
+          </div>
+        }
       </div>
     </div>
 

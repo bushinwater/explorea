@@ -9,10 +9,16 @@ export class AdminProfileService {
   private readonly http = inject(HttpClient);
 
   readonly profile = signal<AdminProfile | null>(null);
+  readonly isPhotoUploading = signal(false);
 
   load(): Observable<AdminProfile> {
     return this.http.get<AdminProfile>('/api/admin/me').pipe(
       tap(p => this.profile.set(p)),
     );
+  }
+
+  patch(partial: Partial<Pick<AdminProfile, 'firstName' | 'lastName' | 'profileImageUrl'>>): void {
+    const current = this.profile();
+    if (current) this.profile.set({ ...current, ...partial });
   }
 }

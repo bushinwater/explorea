@@ -34,6 +34,11 @@
               } @else {
               {{ adminProfile().initials }}
               }
+              @if (isProfilePhotoUploading() || isProfilePhotoDeleting()) {
+                <div class="profile-card__avatar-uploading">
+                  <span class="material-icons profile-card__avatar-spin">sync</span>
+                </div>
+              }
             </div>
 
             <span class="profile-card__status-dot" aria-label="Active status"></span>

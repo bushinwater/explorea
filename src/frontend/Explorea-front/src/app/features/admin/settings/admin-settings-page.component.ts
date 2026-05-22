@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
+import { AdminProfileService } from '../core/services/admin-profile.service';
 import { Subscription } from 'rxjs';
 import { ImageCropperComponent, ImageCroppedEvent } from 'ngx-image-cropper';
 import {
@@ -279,6 +280,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     public auth: DashboardAuthService,
     private readonly adminSettingsService: AdminSettingsService,
     private readonly ui: AdminUiPreferencesService,
+    private readonly adminProfileService: AdminProfileService,
   ) {}
 
   ngOnDestroy(): void {
@@ -697,6 +699,11 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           next: (profile) => {
             this.adminProfile.set(profile);
             this.resetProfileForm(profile);
+            this.adminProfileService.patch({
+              firstName: profile.firstName,
+              lastName: profile.lastName,
+              profileImageUrl: profile.profileImageUrl,
+            });
             this.showToast('success', 'Profil je uspešno sačuvan.');
             this.isProfileSaving.set(false);
           },
@@ -804,6 +811,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     this.profilePhotoInputRef.nativeElement.value = '';
 
     this.isProfilePhotoUploading.set(true);
+    this.adminProfileService.isPhotoUploading.set(true);
     this.profileErrorMessage.set('');
     this.profileSuccessMessage.set('');
 
@@ -812,10 +820,13 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
         next: (profile) => {
           this.adminProfile.set(profile);
           this.resetProfileForm(profile);
+          this.adminProfileService.patch({ profileImageUrl: profile.profileImageUrl });
+          this.adminProfileService.isPhotoUploading.set(false);
           this.showToast('success', 'Profilna slika je uspešno sačuvana.');
           this.isProfilePhotoUploading.set(false);
         },
         error: () => {
+          this.adminProfileService.isPhotoUploading.set(false);
           this.showToast('error', 'Nije moguće okačiti profilnu sliku.');
           this.isProfilePhotoUploading.set(false);
         },
@@ -837,6 +848,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
         next: (profile) => {
           this.adminProfile.set(profile);
           this.resetProfileForm(profile);
+          this.adminProfileService.patch({ profileImageUrl: profile.profileImageUrl });
           this.showToast('success', 'Profilna slika je obrisana.');
           this.isProfilePhotoDeleting.set(false);
         },
