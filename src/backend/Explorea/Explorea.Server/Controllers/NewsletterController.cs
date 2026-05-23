@@ -3,6 +3,7 @@ using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 using System.Security.Claims;
 
 namespace Explorea.Server.Controllers
@@ -40,6 +41,28 @@ namespace Explorea.Server.Controllers
             }
         }
 
+        [HttpGet("unsubscribe")]
+        public async Task<IActionResult> Unsubscribe([FromQuery] string email)
+        {
+            try
+            {
+                await _newsletterService.UnsubscribeAsync(email);
+
+                var safeEmail = WebUtility.HtmlEncode(email);
+                return Content($@"
+                    <html>
+                        <body style='font-family:Arial,sans-serif;color:#1f2937;padding:32px;'>
+                            <h2>Uspesno ste se odjavili</h2>
+                            <p>Email adresa <strong>{safeEmail}</strong> vise nece primati Explorea newsletter.</p>
+                        </body>
+                    </html>", "text/html");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [Authorize]
         [HttpPost("send")]
         public async Task<IActionResult> Send([FromBody] SendNewsletterDto dto)
@@ -53,6 +76,26 @@ namespace Explorea.Server.Controllers
 
                 var sentCount = await _newsletterService.SendNewsletterAsync(dto.Subject, dto.HtmlBody);
                 return Ok(new { message = "Newsletter sent successfully.", sentCount });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize]
+        [HttpPost("send-test")]
+        public async Task<IActionResult> SendTest()
+        {
+            try
+            {
+                var currentUser = await GetCurrentUserAsync();
+
+                if (!string.Equals(currentUser.Role?.Name, "admin", StringComparison.OrdinalIgnoreCase))
+                    return Forbid();
+
+                var sentCount = await _newsletterService.SendTestNewsletterAsync();
+                return Ok(new { message = "Test newsletter sent successfully.", sentCount });
             }
             catch (Exception ex)
             {
