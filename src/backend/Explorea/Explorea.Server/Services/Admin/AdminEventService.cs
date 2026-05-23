@@ -18,6 +18,7 @@ namespace Explorea.Server.Services.Admin
         private readonly ILookupRepository _lookupRepo;
         private readonly AppDbContext _db;
         private readonly ISavedItemCleanupService _savedItemCleanup;
+        private readonly IOwnerChangeNotificationService _ownerChangeNotifications;
 
         public AdminEventService(
             IAdminEventRepository eventRepo,
@@ -27,7 +28,8 @@ namespace Explorea.Server.Services.Admin
             IUserRepository userRepo,
             ILookupRepository lookupRepo,
             AppDbContext db,
-            ISavedItemCleanupService savedItemCleanup)
+            ISavedItemCleanupService savedItemCleanup,
+            IOwnerChangeNotificationService ownerChangeNotifications)
         {
             _eventRepo       = eventRepo;
             _assignmentRepo  = assignmentRepo;
@@ -37,6 +39,7 @@ namespace Explorea.Server.Services.Admin
             _lookupRepo      = lookupRepo;
             _db              = db;
             _savedItemCleanup = savedItemCleanup;
+            _ownerChangeNotifications = ownerChangeNotifications;
         }
 
         public async Task<AdminEventStatsDto> GetStatsDtoAsync(Guid currentUserId)
@@ -292,28 +295,37 @@ namespace Explorea.Server.Services.Admin
             var target = await _eventRepo.GetAdminByIdAsync(id);
             if (target == null) return null;
 
-            if (dto.Name          != null) target.Name          = dto.Name;
-            if (dto.Slug          != null) target.Slug          = dto.Slug;
-            if (dto.Description   != null) target.Description   = dto.Description;
-            if (dto.TypeId        != null) target.TypeId        = dto.TypeId.Value;
-            if (dto.StartDatetime != null) target.StartDatetime = dto.StartDatetime.Value;
-            if (dto.EndDatetime   != null) target.EndDatetime   = dto.EndDatetime.Value;
-            if (dto.Price         != null) target.Price         = dto.Price;
-            if (dto.Address       != null) target.Address       = dto.Address;
-            if (dto.Latitude      != null) target.Latitude      = dto.Latitude;
-            if (dto.Longitude     != null) target.Longitude     = dto.Longitude;
-            if (dto.TicketUrl     != null) target.TicketUrl     = dto.TicketUrl;
-            if (dto.CityId        != null) target.CityId        = dto.CityId;
-            if (dto.CountryId     != null) target.CountryId     = dto.CountryId;
-            if (dto.DestinationId != null) target.DestinationId = dto.DestinationId;
-            if (dto.PlaceId       != null) target.PlaceId       = dto.PlaceId;
-            if (dto.IsFeatured    != null) target.IsFeatured    = dto.IsFeatured.Value;
+            var ownerId = await ResolveEventOwnerIdAsync(target);
+            var changedFields = new List<string>();
+
+            if (dto.Name          != null) { AddChangedField(changedFields, "naslov", target.Name, dto.Name); target.Name = dto.Name; }
+            if (dto.Slug          != null) { AddChangedField(changedFields, "slug", target.Slug, dto.Slug); target.Slug = dto.Slug; }
+            if (dto.Description   != null) { AddChangedField(changedFields, "opis", target.Description, dto.Description); target.Description = dto.Description; }
+            if (dto.TypeId        != null) { AddChangedField(changedFields, "tip", target.TypeId, dto.TypeId.Value); target.TypeId = dto.TypeId.Value; }
+            if (dto.StartDatetime != null) { AddChangedField(changedFields, "pocetak", target.StartDatetime, dto.StartDatetime.Value); target.StartDatetime = dto.StartDatetime.Value; }
+            if (dto.EndDatetime   != null) { AddChangedField(changedFields, "kraj", target.EndDatetime, dto.EndDatetime.Value); target.EndDatetime = dto.EndDatetime.Value; }
+            if (dto.Price         != null) { AddChangedField(changedFields, "cena", target.Price, dto.Price); target.Price = dto.Price; }
+            if (dto.Address       != null) { AddChangedField(changedFields, "adresa", target.Address, dto.Address); target.Address = dto.Address; }
+            if (dto.Latitude      != null) { AddChangedField(changedFields, "koordinate", target.Latitude, dto.Latitude); target.Latitude = dto.Latitude; }
+            if (dto.Longitude     != null) { AddChangedField(changedFields, "koordinate", target.Longitude, dto.Longitude); target.Longitude = dto.Longitude; }
+            if (dto.TicketUrl     != null) { AddChangedField(changedFields, "link za karte", target.TicketUrl, dto.TicketUrl); target.TicketUrl = dto.TicketUrl; }
+            if (dto.CityId        != null) { AddChangedField(changedFields, "grad", target.CityId, dto.CityId); target.CityId = dto.CityId; }
+            if (dto.CountryId     != null) { AddChangedField(changedFields, "drzava", target.CountryId, dto.CountryId); target.CountryId = dto.CountryId; }
+            if (dto.DestinationId != null) { AddChangedField(changedFields, "destinacija", target.DestinationId, dto.DestinationId); target.DestinationId = dto.DestinationId; }
+            if (dto.PlaceId       != null) { AddChangedField(changedFields, "objekat", target.PlaceId, dto.PlaceId); target.PlaceId = dto.PlaceId; }
+            if (dto.IsFeatured    != null) { AddChangedField(changedFields, "istaknuto", target.IsFeatured, dto.IsFeatured.Value); target.IsFeatured = dto.IsFeatured.Value; }
 
             target.UpdatedAt = DateTimeOffset.UtcNow;
             target.UpdatedBy = updatedBy;
 
             _eventRepo.Update(target);
             await _eventRepo.SaveChangesAsync();
+            await _ownerChangeNotifications.NotifyOwnerAsync(
+                ownerId,
+                "dogadjaj",
+                target.Name,
+                user!,
+                changedFields);
 
             var updated = await _eventRepo.GetAdminByIdAsync(id);
             return MapToDetailDto(updated!);
@@ -362,6 +374,34 @@ namespace Explorea.Server.Services.Admin
             }
 
             return false;
+        }
+
+        private async Task<Guid?> ResolveEventOwnerIdAsync(Event ev)
+        {
+            if (ev.PlaceId.HasValue)
+            {
+                return await _db.Places
+                    .IgnoreQueryFilters()
+                    .Where(place => place.Id == ev.PlaceId.Value)
+                    .Select(place => place.CreatedBy)
+                    .FirstOrDefaultAsync();
+            }
+
+            var createdByRole = await _db.Users
+                .Include(user => user.Role)
+                .Where(user => user.Id == ev.CreatedBy)
+                .Select(user => user.Role.Name)
+                .FirstOrDefaultAsync();
+
+            return createdByRole == RoleNames.PlaceOwner ? ev.CreatedBy : null;
+        }
+
+        private static void AddChangedField<T>(ICollection<string> fields, string label, T oldValue, T newValue)
+        {
+            if (!EqualityComparer<T>.Default.Equals(oldValue, newValue))
+            {
+                fields.Add(label);
+            }
         }
 
         private static AdminEventListDto MapToListDto(Event e) => new()

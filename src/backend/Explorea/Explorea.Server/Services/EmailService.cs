@@ -213,5 +213,39 @@ namespace Explorea.Server.Services
 
             await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
         }
+
+        public async Task SendOwnerEntityUpdatedEmailAsync(
+            string toEmail,
+            string firstName,
+            string entityType,
+            string entityName,
+            string actorName,
+            IEnumerable<string> changedFields)
+        {
+            var fields = changedFields
+                .Where(field => !string.IsNullOrWhiteSpace(field))
+                .Select(field => field.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (fields.Count == 0) return;
+
+            var safeEntityName = WebUtility.HtmlEncode(entityName);
+            var safeActorName = WebUtility.HtmlEncode(actorName);
+            var subject = $"Vas {entityType} je izmenjen";
+            var htmlBody = $@"
+                <html>
+                    <body>
+                        <p>Zdravo, {WebUtility.HtmlEncode(firstName)}!</p>
+                        <p>Vas {WebUtility.HtmlEncode(entityType)} ""{safeEntityName}"" je izmenjen od strane {safeActorName}.</p>
+                        <p>Izmenjene su sledece stvari:</p>
+                        <ul>
+                            {string.Join("", fields.Select(field => $"<li>{WebUtility.HtmlEncode(field)}</li>"))}
+                        </ul>
+                    </body>
+                </html>";
+
+            await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
+        }
     }
 }
