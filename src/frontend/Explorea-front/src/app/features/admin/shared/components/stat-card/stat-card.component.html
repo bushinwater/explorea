@@ -8,7 +8,5 @@
 
   <div class="stat-card__value">{{ value }}</div>
 
-  @if (hint) {
-    <p class="stat-card__hint">{{ hint }}</p>
-  }
+  <p class="stat-card__hint" [class.stat-card__hint--hidden]="!hint">{{ hint || ' ' }}</p>
 </article>

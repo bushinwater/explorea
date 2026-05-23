@@ -1,6 +1,6 @@
 <div class="edit-modal__backdrop" (click)="cancel.emit()"></div>
 
-<aside class="edit-modal__panel">
+<aside class="edit-modal__panel" [class.edit-modal__panel--closing]="closing">
   <!-- Header -->
   <header class="edit-modal__header">
     <div class="edit-modal__title-block">

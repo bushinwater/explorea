@@ -41,7 +41,7 @@ import { AdminActivitiesService } from './admin-activities.service';
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 import { MapPreviewComponent } from '../shared/components/map-preview/map-preview.component';
 
-const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
 const DARK = {
   land: '#1e2e24', water: '#102840', park: '#1e3228',
@@ -120,12 +120,15 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly errorMessage = signal('');
 
   protected readonly isDetailsPanelOpen = signal(false);
+  protected readonly isPanelClosing = signal(false);
   protected readonly isDetailLoading = signal(false);
   protected readonly selectedActivity = signal<ActivityRow | null>(null);
   protected readonly selectedActivityDetail = signal<ActivityDetail | null>(null);
   protected readonly isDescriptionExpanded = signal(false);
+  protected readonly detailsInterests = signal<InterestTagOption[]>([]);
 
   protected readonly isCreateModalOpen = signal(false);
+  protected readonly isEditModalClosing = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly isEditMode = signal(false);
   protected readonly editingActivityId = signal<string | null>(null);
@@ -388,8 +391,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.selectedActivity.set(activity);
     this.selectedActivityDetail.set(null);
     this.isDetailsPanelOpen.set(true);
+    this.isPanelClosing.set(false);
     this.isDetailLoading.set(true);
     this.isDescriptionExpanded.set(false);
+    this.detailsInterests.set([]);
 
     this.subscription.add(
       this.activitiesService.getById(activity.id).subscribe({
@@ -403,13 +408,24 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+
+    this.subscription.add(
+      this.activitiesService.getActivityInterests(activity.id).subscribe({
+        next: (tags) => this.detailsInterests.set(tags.filter(t => t.isAssigned)),
+      }),
+    );
   }
 
   protected closeDetailsPanel(): void {
-    this.isDetailsPanelOpen.set(false);
-    this.selectedActivity.set(null);
-    this.selectedActivityDetail.set(null);
-    this.isDescriptionExpanded.set(false);
+    this.isPanelClosing.set(true);
+    setTimeout(() => {
+      this.isPanelClosing.set(false);
+      this.isDetailsPanelOpen.set(false);
+      this.selectedActivity.set(null);
+      this.selectedActivityDetail.set(null);
+      this.isDescriptionExpanded.set(false);
+      this.detailsInterests.set([]);
+    }, 220);
   }
 
   protected openCreateModal(): void {
@@ -531,25 +547,29 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   protected closeCreateModal(): void {
-    this.destroyMap();
-    this.modalImagePreviews().forEach(p => URL.revokeObjectURL(p.url));
-    this.modalImagePreviews.set([]);
-    this.modalHeroIndex.set(0);
-    this.editExistingImages.set([]);
-    this.editHeroImageId.set(null);
-    this.mapLatitude.set(null);
-    this.mapLongitude.set(null);
-    this.mapAddress.set('');
-    this.destinationSearchText.set('');
-    this.destinationResults.set([]);
-    this.destinationDropdownOpen.set(false);
-    this.allInterestTags.set([]);
-    this.selectedInterestIds.set([]);
-    this.isCreateModalOpen.set(false);
-    this.isSubmitting.set(false);
-    this.isEditMode.set(false);
-    this.editingActivityId.set(null);
-    this.errorMessage.set('');
+    this.isEditModalClosing.set(true);
+    setTimeout(() => {
+      this.destroyMap();
+      this.modalImagePreviews().forEach(p => URL.revokeObjectURL(p.url));
+      this.modalImagePreviews.set([]);
+      this.modalHeroIndex.set(0);
+      this.editExistingImages.set([]);
+      this.editHeroImageId.set(null);
+      this.mapLatitude.set(null);
+      this.mapLongitude.set(null);
+      this.mapAddress.set('');
+      this.destinationSearchText.set('');
+      this.destinationResults.set([]);
+      this.destinationDropdownOpen.set(false);
+      this.allInterestTags.set([]);
+      this.selectedInterestIds.set([]);
+      this.isCreateModalOpen.set(false);
+      this.isEditModalClosing.set(false);
+      this.isSubmitting.set(false);
+      this.isEditMode.set(false);
+      this.editingActivityId.set(null);
+      this.errorMessage.set('');
+    }, 220);
   }
 
   protected updateCreateField<K extends keyof CreateActivityDto>(key: K, value: CreateActivityDto[K]): void {
@@ -1187,7 +1207,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     if (!this.mapEl?.nativeElement) return;
     this.destroyMap();
 
-    const base = await (await fetch(MAP_STYLE_URL)).json();
+    const base = patchStyleSources(await (await fetch(MAP_STYLE_URL)).json());
     this.lightStyle = this.buildThemedStyle(base, LIGHT);
     this.darkStyle  = this.buildThemedStyle(base, DARK);
 
@@ -1359,9 +1379,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   private finalizeSubmit(activityId: string, activity: ActivityDetail): void {
     const isEdit = this.isEditMode();
     this.isSubmitting.set(false);
-    this.isCreateModalOpen.set(false);
-    this.isEditMode.set(false);
-    this.editingActivityId.set(null);
+    this.closeCreateModal();
 
     if (isEdit) {
       this.successMessage.set(`„${activity.name}" je uspešno izmenjena.`);

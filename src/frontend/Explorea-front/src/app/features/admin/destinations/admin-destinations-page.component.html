@@ -6,10 +6,11 @@
   <app-feedback-banner variant="error" [title]="errorMessage()" />
 }
 
-@if (isEditModalOpen() && selectedDestination()) {
+@if ((isEditModalOpen() || isEditModalClosing()) && selectedDestination()) {
   <app-destination-edit-modal
     [row]="selectedDestination()!"
     [types]="types()"
+    [closing]="isEditModalClosing()"
     (cancel)="closeEditModal()"
     (saved)="onEditSaved($event)"
     (typeCreated)="onTypeCreated($event)"
@@ -432,9 +433,9 @@
 </div>
 
 <!-- ===== DESTINATION DETAILS PANEL ===== -->
-@if (isDetailsPanelOpen() && detailsPanelRow(); as dest) {
+@if ((isDetailsPanelOpen() || isPanelClosing()) && detailsPanelRow(); as dest) {
   <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
-  <aside class="ddp-panel" role="dialog" aria-modal="true">
+  <aside class="ddp-panel" [class.ddp-panel--closing]="isPanelClosing()" role="dialog" aria-modal="true">
 
     <header class="ddp-header">
       <div class="ddp-header__title-group">

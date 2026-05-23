@@ -21,7 +21,7 @@ import { AdminDestinationsService } from './admin-destinations.service';
 import { CountryOption, DestinationDetail, DestinationImage, DestinationRow, InterestTagOption, RegionOption, TypeOption } from './admin-destinations.models';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 
-const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 const MAX_IMAGES = 10;
 const MAX_DESC = 2000;
 
@@ -53,6 +53,7 @@ const LIGHT = {
 export class DestinationEditModalComponent implements OnInit, OnDestroy {
   @Input() row!: DestinationRow;
   @Input() types: TypeOption[] = [];
+  @Input() closing = false;
   @Output() cancel      = new EventEmitter<void>();
   @Output() saved       = new EventEmitter<DestinationRow>();
   @Output() typeCreated = new EventEmitter<TypeOption>();
@@ -368,7 +369,7 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
   private async initMap(lat: number | null, lng: number | null): Promise<void> {
     if (!this.mapEl?.nativeElement) return;
 
-    const base = await (await fetch(MAP_STYLE_URL)).json();
+    const base = patchStyleSources(await (await fetch(MAP_STYLE_URL)).json());
     this.lightStyle = this.buildThemedStyle(base, LIGHT);
     this.darkStyle  = this.buildThemedStyle(base, DARK);
 

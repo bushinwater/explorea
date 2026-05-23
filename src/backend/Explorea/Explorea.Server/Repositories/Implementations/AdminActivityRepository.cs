@@ -47,14 +47,6 @@ namespace Explorea.Server.Repositories.Admin
         .IgnoreQueryFilters()
         .CountAsync(a => !a.IsDeleted);
 
-      var mostPopular = await _context.Activities
-        .IgnoreQueryFilters()
-        .AsNoTracking()
-        .Where(a => !a.IsDeleted)
-        .OrderByDescending(a => a.Popularity)
-        .Select(a => new { a.Name, a.Popularity })
-        .FirstOrDefaultAsync();
-
       var thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30);
 
       var activeIds = await _context.Activities
@@ -64,10 +56,35 @@ namespace Explorea.Server.Repositories.Admin
         .Select(a => a.Id)
         .ToListAsync();
 
-      var visitedIds = await _context.Visits
+      var clickCounts = await _context.PopularityLogs
         .AsNoTracking()
-        .Where(v => v.EntityType == "activity" && v.VisitedAt >= thirtyDaysAgo)
-        .Select(v => v.EntityId)
+        .Where(l => l.EntityType == "activity" && l.Source == "click")
+        .GroupBy(l => l.EntityId)
+        .Select(g => new { EntityId = g.Key, Count = g.Count() })
+        .ToListAsync();
+
+      var mostPopularId = clickCounts
+        .OrderByDescending(x => x.Count)
+        .Select(x => (Guid?)x.EntityId)
+        .FirstOrDefault();
+
+      var mostPopular = mostPopularId.HasValue
+        ? await _context.Activities
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(a => a.Id == mostPopularId.Value && !a.IsDeleted)
+            .Select(a => new { a.Name, a.Id })
+            .FirstOrDefaultAsync()
+        : null;
+
+      var mostPopularViews = mostPopularId.HasValue
+        ? (clickCounts.FirstOrDefault(x => x.EntityId == mostPopularId.Value)?.Count ?? 0)
+        : 0;
+
+      var visitedIds = await _context.PopularityLogs
+        .AsNoTracking()
+        .Where(l => l.EntityType == "activity" && l.Source == "click" && l.CreatedAt >= thirtyDaysAgo)
+        .Select(l => l.EntityId)
         .Distinct()
         .ToListAsync();
 
@@ -86,7 +103,7 @@ namespace Explorea.Server.Repositories.Admin
       {
         TotalActivities  = totalActivities,
         MostPopularName  = mostPopular?.Name,
-        MostPopularViews = mostPopular?.Popularity ?? 0,
+        MostPopularViews = mostPopularViews,
         InactiveCount    = inactiveCount,
         NewestName       = newest?.Name,
         NewestCreatedAt  = newest?.CreatedAt,

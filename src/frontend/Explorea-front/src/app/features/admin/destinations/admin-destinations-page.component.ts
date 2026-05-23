@@ -78,12 +78,14 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected readonly isDeleteDialogOpen = signal(false);
   protected readonly isDeleting = signal(false);
   protected readonly isEditModalOpen = signal(false);
+  protected readonly isEditModalClosing = signal(false);
   protected readonly isCreateModalOpen = signal(false);
   protected readonly selectedDestination = signal<DestinationRow | null>(null);
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
 
   protected readonly isDetailsPanelOpen = signal(false);
+  protected readonly isPanelClosing = signal(false);
   protected readonly isDetailLoading = signal(false);
   protected readonly detailsPanelRow = signal<DestinationRow | null>(null);
   protected readonly detailsPanelDetail = signal<DestinationDetail | null>(null);
@@ -265,8 +267,12 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected closeEditModal(): void {
-    this.isEditModalOpen.set(false);
-    this.selectedDestination.set(null);
+    this.isEditModalClosing.set(true);
+    setTimeout(() => {
+      this.isEditModalOpen.set(false);
+      this.isEditModalClosing.set(false);
+      this.selectedDestination.set(null);
+    }, 220);
   }
 
   protected onEditSaved(updated: DestinationRow): void {
@@ -326,10 +332,14 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected closeDetailsPanel(): void {
-    this.isDetailsPanelOpen.set(false);
-    this.detailsPanelRow.set(null);
-    this.detailsPanelDetail.set(null);
-    this.detailsPanelInterests.set([]);
+    this.isPanelClosing.set(true);
+    setTimeout(() => {
+      this.isPanelClosing.set(false);
+      this.isDetailsPanelOpen.set(false);
+      this.detailsPanelRow.set(null);
+      this.detailsPanelDetail.set(null);
+      this.detailsPanelInterests.set([]);
+    }, 220);
   }
 
   protected openDeleteDialog(dest: DestinationRow): void {

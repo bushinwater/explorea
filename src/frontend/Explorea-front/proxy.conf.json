@@ -3,5 +3,12 @@
     "target": "http://localhost:5372",
     "secure": false,
     "changeOrigin": true
+  },
+  "/tiles-proxy": {
+    "target": "https://tiles.openfreemap.org",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": { "^/tiles-proxy": "" },
+    "logLevel": "silent"
   }
 }

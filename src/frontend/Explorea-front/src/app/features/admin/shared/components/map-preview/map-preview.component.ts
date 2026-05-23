@@ -9,8 +9,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
-
-const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+import { MAP_STYLE_URL, patchStyleSources } from '../../../../../core/utils/map-style.utils';
 
 const DARK = {
   land: '#1e2e24', water: '#102840', park: '#1e3228',
@@ -79,7 +78,7 @@ export class MapPreviewComponent implements OnChanges, OnDestroy {
     const lat = this.latitude ?? null;
     const lng = this.longitude ?? null;
 
-    const base = await (await fetch(MAP_STYLE_URL)).json();
+    const base = patchStyleSources(await (await fetch(MAP_STYLE_URL)).json());
     this.lightStyle = this.buildThemedStyle(base, LIGHT);
     this.darkStyle  = this.buildThemedStyle(base, DARK);
 

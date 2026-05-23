@@ -16,7 +16,7 @@
     <app-stat-card
       [label]="ui.t('activities.stats.mostPopular')"
       [value]="stats()?.mostPopularName ?? '—'"
-      [hint]="stats() ? formatViews(stats()!.mostPopularViews) + ' pregleda' : ''"
+      [hint]="stats() ? ui.t('activities.stats.mostPopularHint', { count: formatViews(stats()!.mostPopularViews) }) : ''"
       tone="neutral" />
 
     <app-stat-card
@@ -409,60 +409,65 @@
   </div>
 
   <!-- ===== DETAILS PANEL ===== -->
-  @if (isDetailsPanelOpen()) {
-  <div class="activity-details-backdrop" (click)="closeDetailsPanel()"></div>
+  @if (isDetailsPanelOpen() || isPanelClosing()) {
+  <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
 
-  <aside class="activity-details-panel" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+  <aside class="ddp-panel" [class.ddp-panel--closing]="isPanelClosing()" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
     <!-- Header -->
     @if (selectedActivity(); as activity) {
-    <div class="activity-details-panel__header">
-      <div class="activity-details-panel__title-group">
-        <div class="activity-details-panel__icon" [style.background-color]="thumbColor(activity.category)">
+    <header class="ddp-header">
+      <div class="ddp-header__title-group">
+        @if (activity.previewImageUrl) {
+        <img class="ddp-header__icon ddp-header__icon--img" [src]="activity.previewImageUrl" [alt]="activity.name" />
+        } @else {
+        <div class="ddp-header__icon" [style.background-color]="thumbColor(activity.category)">
           <span class="material-icons">{{ categoryIcon(activity.category) }}</span>
         </div>
-        <div>
-          <h3 class="activity-details-panel__title">{{ activity.name }}</h3>
-          <p class="activity-details-panel__subtitle">
+        }
+        <div class="ddp-header__text">
+          <h2 class="ddp-header__name">{{ activity.name }}</h2>
+          <p class="ddp-header__location">
+            <span class="material-icons">location_on</span>
             {{ activity.region ?? '' }}{{ (activity.region && activity.city) ? ' / ' : '' }}{{ activity.city ?? '' }}
           </p>
         </div>
       </div>
-      <button class="activity-details-panel__close" type="button" (click)="closeDetailsPanel()">
+      <button class="ddp-close" type="button" (click)="closeDetailsPanel()">
         <span class="material-icons">close</span>
       </button>
-    </div>
+    </header>
     }
 
     @if (isDetailLoading()) {
-    <div class="activity-details-loading">
-      <span class="material-icons activity-details-loading__icon">sync</span>
+    <div class="ddp-loading">
+      <span class="material-icons ddp-loading__icon">sync</span>
       <span>Učitavanje...</span>
     </div>
     } @else if (selectedActivityDetail(); as detail) {
-    <div class="activity-details-panel__body">
+    <div class="ddp-body">
 
       <!-- Image gallery -->
       @if (detail.images.length > 0) {
-      <div class="activity-details-gallery">
-        <img class="activity-details-gallery__main" [src]="detail.images[0].url" [alt]="detail.name" />
+      <div class="ddp-gallery">
+        <img class="ddp-gallery__main" [src]="detail.images[0].url" [alt]="detail.name" />
         @if (detail.images.length > 1) {
-        <div class="activity-details-gallery__thumbs">
+        <div class="ddp-gallery__thumbs">
           @for (img of detail.images.slice(1, 4); track img.id) {
-          <img class="activity-details-gallery__thumb" [src]="img.url" [alt]="detail.name" />
+          <img class="ddp-gallery__thumb" [src]="img.url" [alt]="detail.name" />
           }
         </div>
         }
       </div>
       } @else {
-      <div class="activity-details-gallery">
-        <div class="activity-details-hero__placeholder" [style.background-color]="thumbColor(detail.categoryName)">
+      <div class="ddp-gallery">
+        <div class="ddp-gallery__placeholder" [style.background-color]="thumbColor(detail.categoryName)">
           <span class="material-icons">{{ categoryIcon(detail.categoryName) }}</span>
         </div>
       </div>
       }
 
       <!-- Status + difficulty badges -->
-      <div class="activity-details-panel__badges">
+      <div class="ddp-badges">
         <span class="activity-status activity-status--{{ statusKey(detail.isActive) }}">
           {{ statusLabel(detail.isActive) }}
         </span>
@@ -473,14 +478,29 @@
         }
       </div>
 
+      <!-- Interests -->
+      @if (detailsInterests().length) {
+      <div class="ddp-interests">
+        <span class="ddp-grid__label">Interesovanja</span>
+        <div class="ddp-interests-scroll">
+          @for (tag of detailsInterests(); track tag.id) {
+          <span class="ddp-interest-chip">
+            @if (tag.icon) { <span class="material-icons">{{ tag.icon }}</span> }
+            {{ tag.name }}
+          </span>
+          }
+        </div>
+      </div>
+      }
+
       <!-- Description -->
       @if (detail.description) {
-      <div class="activity-details-description">
-        <p class="activity-details-panel__description">
-          {{ visibleDescription(detail.description) }}
+      <div class="ddp-description-wrap">
+        <p class="ddp-description" [class.ddp-description--collapsed]="!isDescriptionExpanded()">
+          {{ detail.description }}
         </p>
-        @if (shouldShowDescriptionToggle(detail.description)) {
-        <button class="activity-details-description__toggle" type="button" (click)="toggleDescription()">
+        @if (detail.description.length > 160) {
+        <button class="ddp-description__toggle" type="button" (click)="toggleDescription()">
           {{ isDescriptionExpanded() ? ui.t('activities.details.showLess') : ui.t('activities.details.showMore') }}
         </button>
         }
@@ -488,76 +508,76 @@
       }
 
       <!-- Info grid -->
-      <div class="activity-details-grid">
-        <div class="activity-details-item">
-          <span class="activity-details-item__label">Kategorija</span>
-          <strong class="activity-details-item__value">{{ detail.categoryName }}</strong>
+      <div class="ddp-grid">
+        <div class="ddp-grid__item">
+          <span class="ddp-grid__label">Kategorija</span>
+          <strong class="ddp-grid__value">{{ detail.categoryName }}</strong>
         </div>
 
-        <div class="activity-details-item">
-          <span class="activity-details-item__label">Ocena</span>
-          <strong class="activity-details-item__value">
+        <div class="ddp-grid__item">
+          <span class="ddp-grid__label">Ocena</span>
+          <strong class="ddp-grid__value">
             {{ formatRating(detail.avgRating) }} / 5
           </strong>
         </div>
 
-        <div class="activity-details-item">
-          <span class="activity-details-item__label">Trajanje</span>
-          <strong class="activity-details-item__value">{{ formatDuration(detail.durationMinutes) }}</strong>
+        <div class="ddp-grid__item">
+          <span class="ddp-grid__label">Trajanje</span>
+          <strong class="ddp-grid__value">{{ formatDuration(detail.durationMinutes) }}</strong>
         </div>
 
-        <div class="activity-details-item">
-          <span class="activity-details-item__label">Popularnost</span>
-          <strong class="activity-details-item__value">{{ formatViews(detail.popularity) }}</strong>
+        <div class="ddp-grid__item">
+          <span class="ddp-grid__label">Popularnost</span>
+          <strong class="ddp-grid__value">{{ formatViews(detail.popularity) }}</strong>
         </div>
 
-        <div class="activity-details-item">
-          <span class="activity-details-item__label">Cena</span>
-          <strong class="activity-details-item__value">{{ formatPrice(detail.price) }}</strong>
+        <div class="ddp-grid__item">
+          <span class="ddp-grid__label">Cena</span>
+          <strong class="ddp-grid__value">{{ formatPrice(detail.price) }}</strong>
         </div>
 
         @if (detail.distanceKm) {
-        <div class="activity-details-item">
-          <span class="activity-details-item__label">Distanca</span>
-          <strong class="activity-details-item__value">{{ detail.distanceKm }} km</strong>
+        <div class="ddp-grid__item">
+          <span class="ddp-grid__label">Distanca</span>
+          <strong class="ddp-grid__value">{{ detail.distanceKm }} km</strong>
         </div>
         }
 
         @if (detail.startPoint) {
-        <div class="activity-details-item">
-          <span class="activity-details-item__label">Polazna tačka</span>
-          <strong class="activity-details-item__value">{{ detail.startPoint }}</strong>
+        <div class="ddp-grid__item">
+          <span class="ddp-grid__label">Polazna tačka</span>
+          <strong class="ddp-grid__value">{{ detail.startPoint }}</strong>
         </div>
         }
 
         @if (detail.seasonName) {
-        <div class="activity-details-item">
-          <span class="activity-details-item__label">Sezona</span>
-          <strong class="activity-details-item__value">{{ detail.seasonName }}</strong>
+        <div class="ddp-grid__item">
+          <span class="ddp-grid__label">Sezona</span>
+          <strong class="ddp-grid__value">{{ detail.seasonName }}</strong>
         </div>
         }
 
         @if (detail.organizerWebsite) {
-        <div class="activity-details-item activity-details-item--full">
-          <span class="activity-details-item__label">Sajt organizatora</span>
-          <a class="activity-details-item__value activity-details-item__link"
+        <div class="ddp-grid__item ddp-grid__item--full">
+          <span class="ddp-grid__label">Sajt organizatora</span>
+          <a class="ddp-grid__value ddp-grid__link"
             [href]="detail.organizerWebsite" target="_blank" rel="noopener">
             {{ detail.organizerWebsite }}
           </a>
         </div>
         }
 
-        <div class="activity-details-item activity-details-item--full">
-          <span class="activity-details-item__label">Lokacija</span>
+        <div class="ddp-grid__item ddp-grid__item--full">
+          <span class="ddp-grid__label">Lokacija</span>
           <app-admin-map-preview
             [latitude]="detail.latitude"
             [longitude]="detail.longitude"
           />
         </div>
 
-        <div class="activity-details-item activity-details-item--full">
-          <span class="activity-details-item__label">Poslednja izmena</span>
-          <strong class="activity-details-item__value">{{ timeAgo(detail.updatedAt) }}</strong>
+        <div class="ddp-grid__item ddp-grid__item--full">
+          <span class="ddp-grid__label">Poslednja izmena</span>
+          <strong class="ddp-grid__value">{{ timeAgo(detail.updatedAt) }}</strong>
         </div>
       </div>
 
@@ -621,14 +641,14 @@
     </div>
 
     <!-- Footer actions -->
-    <div class="activity-details-panel__footer">
+    <div class="ddp-footer">
       @if (!detail.isActive) {
       <button class="btn btn-primary btn-sm" type="button" (click)="activateSelectedActivity()">
         <span class="material-icons">check</span>
         Aktiviraj
       </button>
       } @else {
-      <button class="btn btn-ghost btn-sm activity-details-panel__danger" type="button"
+      <button class="btn btn-ghost btn-sm ddp-footer__danger" type="button"
         (click)="deactivateSelectedActivity()">
         <span class="material-icons">block</span>
         Deaktiviraj
@@ -641,7 +661,7 @@
       </button>
 
       @if (selectedActivity(); as activity) {
-      <button class="btn btn-ghost btn-sm activity-details-panel__danger" type="button"
+      <button class="btn btn-ghost btn-sm ddp-footer__danger" type="button"
         (click)="openDeleteDialog(activity)">
         <span class="material-icons">delete</span>
         Obriši
@@ -658,9 +678,9 @@
 </div>
 
 <!-- ===== CREATE / EDIT MODAL ===== -->
-@if (isCreateModalOpen()) {
+@if (isCreateModalOpen() || isEditModalClosing()) {
 <div class="edit-modal__backdrop" (click)="closeCreateModal()"></div>
-<aside class="edit-modal__panel" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+<aside class="edit-modal__panel" [class.edit-modal__panel--closing]="isEditModalClosing()" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
 
   <header class="edit-modal__header">
     <div class="edit-modal__title-block">

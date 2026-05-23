@@ -21,7 +21,7 @@ import { SearchService } from '../../core/services/search.service';
 import { LookupService, LookupItem, FilterDefinition } from '../../core/services/lookup.service';
 import { SearchItem } from '../../core/models/search.model';
 
-const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+import { MAP_STYLE_URL, patchStyleSources } from '../../core/utils/map-style.utils';
 
 const DARK = {
   land:             '#1e2e24',
@@ -701,7 +701,7 @@ export class Explore implements AfterViewInit, OnDestroy {
 
   private async initMap() {
     const res = await fetch(MAP_STYLE_URL);
-    const base = await res.json();
+    const base = patchStyleSources(await res.json());
     this.lightStyle = this.buildThemedStyle(base, LIGHT);
     this.darkStyle  = this.buildThemedStyle(base, DARK);
 

@@ -767,6 +767,15 @@
   to   { transform: translateX(0); }
 }
 
+.ddp-panel--closing {
+  animation: ddpSlideOut 0.22s ease forwards;
+}
+
+@keyframes ddpSlideOut {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
+}
+
 /* Header */
 .ddp-header {
   display: flex;
