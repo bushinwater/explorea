@@ -16,6 +16,7 @@ namespace Explorea.API.DTOs.Admin.Destination
         public bool IsFeatured { get; set; }
         public string Visibility { get; set; } = null!;
         public string? City { get; set; }
+        public int? CountryId { get; set; }
         public string? Country { get; set; }
         public string? Description { get; set; }
         public double? Latitude { get; set; }

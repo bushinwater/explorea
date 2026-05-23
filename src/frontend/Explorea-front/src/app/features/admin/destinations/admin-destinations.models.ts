@@ -6,6 +6,13 @@ export interface DestinationImage {
   sortOrder: number;
 }
 
+export interface InterestTagOption {
+  id: number;
+  name: string;
+  icon: string | null;
+  isAssigned?: boolean;
+}
+
 export interface DestinationDetail {
   id: string;
   name: string;
@@ -17,6 +24,7 @@ export interface DestinationDetail {
   previewImageUrl: string | null;
   typeId: number | null;
   regionId: number | null;
+  countryId: number | null;
   images: DestinationImage[];
 }
 
@@ -78,6 +86,13 @@ export interface DestinationPagedResponse {
 export interface RegionOption {
   id: number;
   name: string;
+  countryId?: number | null;
+}
+
+export interface CountryOption {
+  id: number;
+  name: string;
+  code: string;
 }
 
 export interface TypeOption {

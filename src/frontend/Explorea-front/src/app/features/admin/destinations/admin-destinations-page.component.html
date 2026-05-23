@@ -291,6 +291,7 @@
               <th class="dest-th">{{ ui.t('destinations.table.category') }}</th>
               <th class="dest-th">{{ ui.t('destinations.table.status') }}</th>
               <th class="dest-th dest-th--right">{{ ui.t('destinations.table.views') }}</th>
+              <th class="dest-th dest-th--center">Ocena</th>
               <th class="dest-th">{{ ui.t('destinations.table.updated') }}</th>
               <th class="dest-th"></th>
             </tr>
@@ -340,6 +341,14 @@
                   <div class="dest-views">
                     <span class="material-icons">visibility</span>
                     {{ formatViews(dest.views) }}
+                  </div>
+                </td>
+
+                <!-- Rating -->
+                <td class="dest-td dest-td--center">
+                  <div class="dest-rating">
+                    <span class="material-icons">star</span>
+                    {{ dest.avgRating ? formatRating(dest.avgRating) : '—' }}
                   </div>
                 </td>
 
@@ -490,6 +499,21 @@
             </span>
           }
         </div>
+
+        <!-- Interests -->
+        @if (detailsPanelInterests().length) {
+          <div class="ddp-interests">
+            <span class="ddp-grid__label">Interesovanja</span>
+            <div class="ddp-interests-scroll">
+              @for (tag of detailsPanelInterests(); track tag.id) {
+                <span class="ddp-interest-chip">
+                  @if (tag.icon) { <span class="material-icons">{{ tag.icon }}</span> }
+                  {{ tag.name }}
+                </span>
+              }
+            </div>
+          </div>
+        }
 
         <!-- Description -->
         @if (detailsPanelDetail()?.description) {

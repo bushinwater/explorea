@@ -9,6 +9,7 @@ import {
   OnInit,
   Output,
   ViewChild,
+  computed,
   signal,
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
@@ -17,7 +18,7 @@ import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminDestinationsService } from './admin-destinations.service';
-import { DestinationDetail, DestinationImage, DestinationRow, RegionOption, TypeOption } from './admin-destinations.models';
+import { CountryOption, DestinationDetail, DestinationImage, DestinationRow, InterestTagOption, RegionOption, TypeOption } from './admin-destinations.models';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
@@ -63,6 +64,7 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
     description: new FormControl('', [Validators.maxLength(MAX_DESC)]),
     visibility:  new FormControl('published'),
     typeId:      new FormControl<string | null>(null),
+    countryId:   new FormControl<string | null>(null),
     regionId:    new FormControl<string | null>(null),
     address:     new FormControl(''),
     latitude:    new FormControl<number | null>(null),
@@ -79,10 +81,19 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
   protected readonly images        = signal<DestinationImage[]>([]);
   protected readonly uploadingCount = signal(0);
   protected readonly heroImageId      = signal<string | null>(null);
-  protected readonly localTypes       = signal<TypeOption[]>([]);
-  protected readonly localRegions     = signal<RegionOption[]>([]);
+  protected readonly localTypes        = signal<TypeOption[]>([]);
+  protected readonly localRegions      = signal<RegionOption[]>([]);
+  protected readonly localCountries    = signal<CountryOption[]>([]);
+  protected readonly selectedCountryId = signal<number | null>(null);
+  protected readonly filteredRegions   = computed(() => {
+    const cid = this.selectedCountryId();
+    if (cid === null) return this.localRegions();
+    return this.localRegions().filter(r => r.countryId === cid);
+  });
 
   private originalHeroImageId: string | null = null;
+  protected readonly allInterestTags    = signal<InterestTagOption[]>([]);
+  protected readonly selectedInterestIds = signal<number[]>([]);
   protected readonly showNewTypeInput = signal(false);
   protected readonly newTypeName      = signal('');
   protected readonly isCreatingType   = signal(false);
@@ -111,14 +122,34 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.localTypes.set([...this.types]);
     this.svc.getRegions().subscribe(r => { this.localRegions.set(r); this.cdr.detectChanges(); });
+    this.svc.getCountries().subscribe(c => { this.localCountries.set(c); this.cdr.detectChanges(); });
+    this.svc.getDestinationInterests(this.row.id).subscribe(tags => {
+      this.allInterestTags.set(tags);
+      this.selectedInterestIds.set(tags.filter(t => t.isAssigned).map(t => t.id));
+      this.cdr.detectChanges();
+    });
+    this.form.controls.countryId.valueChanges.subscribe(val => {
+      const id = val ? parseInt(val) : null;
+      this.selectedCountryId.set(id);
+      const regionVal = this.form.value.regionId;
+      if (regionVal) {
+        const regionId = parseInt(regionVal);
+        const stillValid = this.filteredRegions().some(r => r.id === regionId);
+        if (!stillValid) this.form.patchValue({ regionId: null });
+      }
+      this.cdr.detectChanges();
+    });
     this.sub.add(
       this.svc.getDestinationById(this.row.id).subscribe({
         next: (detail) => {
+          const countryId = detail.countryId ?? null;
+          this.selectedCountryId.set(countryId);
           this.form.patchValue({
             name:        detail.name,
             description: detail.description ?? '',
             visibility:  detail.visibility,
             typeId:      detail.typeId?.toString()   ?? null,
+            countryId:   countryId?.toString()       ?? null,
             regionId:    detail.regionId?.toString() ?? null,
             latitude:    detail.latitude,
             longitude:   detail.longitude,
@@ -273,6 +304,15 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected toggleInterest(id: number): void {
+    const current = this.selectedInterestIds();
+    if (current.includes(id)) {
+      this.selectedInterestIds.set(current.filter(i => i !== id));
+    } else if (current.length < 3) {
+      this.selectedInterestIds.set([...current, id]);
+    }
+  }
+
   protected setHero(imageId: string): void {
     this.heroImageId.set(imageId);
   }
@@ -286,27 +326,34 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
     this.sub.add(
       this.svc
         .updateDestination(this.row.id, {
-          name:          v.name ?? undefined,
-          description:   v.description ?? undefined,
-          visibility:    v.visibility ?? undefined,
-          latitude:      v.latitude ?? undefined,
-          longitude:     v.longitude ?? undefined,
-          typeId:        v.typeId   ? parseInt(v.typeId)   : undefined,
-          clearTypeId:   v.typeId   === null,
-          regionId:      v.regionId ? parseInt(v.regionId) : undefined,
-          clearRegionId: v.regionId === null,
+          name:           v.name ?? undefined,
+          description:    v.description ?? undefined,
+          visibility:     v.visibility ?? undefined,
+          latitude:       v.latitude ?? undefined,
+          longitude:      v.longitude ?? undefined,
+          typeId:         v.typeId    ? parseInt(v.typeId)    : undefined,
+          clearTypeId:    v.typeId    === null,
+          regionId:       v.regionId  ? parseInt(v.regionId)  : undefined,
+          clearRegionId:  v.regionId  === null,
+          countryId:      v.countryId ? parseInt(v.countryId) : undefined,
+          clearCountryId: v.countryId === null,
         })
         .subscribe({
           next: (updated) => {
+            const finish = (row: DestinationRow) => {
+              this.svc.setDestinationInterests(this.row.id, this.selectedInterestIds()).subscribe({
+                next: () => { this.isSaving.set(false); this.saved.emit(row); },
+                error: () => { this.isSaving.set(false); this.saved.emit(row); },
+              });
+            };
             const pendingHero = this.heroImageId();
             if (pendingHero && pendingHero !== this.originalHeroImageId) {
               this.svc.setPreviewImage(this.row.id, pendingHero).subscribe({
-                next: () => { this.isSaving.set(false); this.saved.emit(updated); },
-                error: () => { this.isSaving.set(false); this.saved.emit(updated); },
+                next: () => finish(updated),
+                error: () => finish(updated),
               });
             } else {
-              this.isSaving.set(false);
-              this.saved.emit(updated);
+              finish(updated);
             }
           },
           error: () => {

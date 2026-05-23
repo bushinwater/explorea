@@ -607,6 +607,24 @@
   color: var(--color-text-muted);
 }
 
+/* Rating */
+.dest-td--center { text-align: center; }
+
+.dest-rating {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.dest-rating .material-icons {
+  font-size: 16px;
+  color: #f59e0b;
+}
+
 /* Updated */
 .dest-updated {
   display: inline-flex;
@@ -995,6 +1013,42 @@
   display: block;
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
+}
+
+/* Interests scroll */
+.ddp-interests {
+  padding: var(--sp-1) 0 var(--sp-3);
+}
+
+.ddp-interests-scroll {
+  display: flex;
+  gap: var(--sp-2);
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.ddp-interests-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.ddp-interest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ddp-interest-chip .material-icons {
+  font-size: 16px;
+  line-height: 1;
 }
 
 /* Footer */

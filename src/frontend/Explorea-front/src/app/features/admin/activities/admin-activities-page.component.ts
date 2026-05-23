@@ -34,6 +34,7 @@ import {
   CityOption,
   CreateActivityDto,
   DestinationOption,
+  InterestTagOption,
   RegionOption,
 } from './admin-activities.models';
 import { AdminActivitiesService } from './admin-activities.service';
@@ -196,6 +197,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected readonly managedRegion = signal<{ id: number; name: string } | null>(null);
   protected readonly hoverRating = signal<number | null>(null);
+  protected readonly allInterestTags = signal<InterestTagOption[]>([]);
+  protected readonly selectedInterestIds = signal<number[]>([]);
 
   constructor(
     private readonly activitiesService: AdminActivitiesService,
@@ -222,8 +225,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           return;
         }
         this.isDestinationSearching.set(true);
+        const rid = this.modalRegionId();
         this.subscription.add(
-          this.activitiesService.searchDestinations(q).subscribe({
+          this.activitiesService.searchDestinations(q, rid === 'all' ? undefined : rid).subscribe({
             next: (results) => {
               this.destinationResults.set(results);
               this.destinationDropdownOpen.set(results.length > 0);
@@ -425,7 +429,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.destinationResults.set([]);
     this.destinationDropdownOpen.set(false);
     this.modalCities.set([]);
-    this.modalRegionId.set('all');
+    const mr = this.managedRegion();
+    this.modalRegionId.set(mr ? mr.id : 'all');
+    this.selectedInterestIds.set([]);
     this.newInclusionText.set('');
     this.createForm.set({
       name: '',
@@ -440,9 +446,30 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       latitude: undefined,
       longitude: undefined,
     });
-    this.loadModalCities();
+    this.loadModalCities(mr ? mr.id : undefined);
+    this.subscription.add(
+      this.activitiesService.getAllInterestTags().subscribe({
+        next: (tags) => this.allInterestTags.set(tags),
+      }),
+    );
     this.isCreateModalOpen.set(true);
     setTimeout(() => this.initMap(null, null), 50);
+  }
+
+  protected openEditFromRow(activity: ActivityRow): void {
+    this.selectedActivity.set(activity);
+    this.selectedActivityDetail.set(null);
+    this.subscription.add(
+      this.activitiesService.getById(activity.id).subscribe({
+        next: (detail) => {
+          this.selectedActivityDetail.set(detail);
+          this.openEditModal();
+        },
+        error: () => {
+          this.errorMessage.set('Greška pri učitavanju detalja aktivnosti.');
+        },
+      }),
+    );
   }
 
   protected openEditModal(): void {
@@ -489,6 +516,16 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.modalRegionId.set(regionId ?? 'all');
     this.loadModalCities(regionId ?? undefined);
 
+    this.selectedInterestIds.set([]);
+    this.subscription.add(
+      this.activitiesService.getActivityInterests(detail.id).subscribe({
+        next: (tags) => {
+          this.allInterestTags.set(tags);
+          this.selectedInterestIds.set(tags.filter(t => t.isAssigned).map(t => t.id));
+        },
+      }),
+    );
+
     this.isCreateModalOpen.set(true);
     setTimeout(() => this.initMap(detail.latitude ?? null, detail.longitude ?? null), 50);
   }
@@ -506,6 +543,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.destinationSearchText.set('');
     this.destinationResults.set([]);
     this.destinationDropdownOpen.set(false);
+    this.allInterestTags.set([]);
+    this.selectedInterestIds.set([]);
     this.isCreateModalOpen.set(false);
     this.isSubmitting.set(false);
     this.isEditMode.set(false);
@@ -625,12 +664,26 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     const regionId = value === 'all' ? 'all' : +value;
     this.modalRegionId.set(regionId);
     this.updateCreateField('cityId', undefined);
+    this.destinationSearchText.set('');
+    this.destinationResults.set([]);
+    this.destinationDropdownOpen.set(false);
+    this.createForm.update((f) => ({ ...f, destinationId: undefined }));
     this.loadModalCities(regionId === 'all' ? undefined : regionId);
+  }
+
+  protected toggleInterest(id: number): void {
+    const current = this.selectedInterestIds();
+    if (current.includes(id)) {
+      this.selectedInterestIds.set(current.filter(x => x !== id));
+    } else if (current.length < 3) {
+      this.selectedInterestIds.set([...current, id]);
+    }
   }
 
   protected submitCreate(): void {
     const form = this.createForm();
     if (!form.name.trim() || !form.slug.trim() || !form.categoryId) return;
+    if (!this.managedRegion() && this.modalRegionId() === 'all') return;
 
     this.isSubmitting.set(true);
 
@@ -644,11 +697,20 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       inclusions: inclusions.length ? inclusions : undefined,
     };
 
+    const saveInterestsThenImages = (id: string, activity: ActivityDetail) => {
+      this.subscription.add(
+        this.activitiesService.setActivityInterests(id, this.selectedInterestIds()).subscribe({
+          next: () => this.uploadPendingImages(id, activity),
+          error: () => this.uploadPendingImages(id, activity),
+        }),
+      );
+    };
+
     if (this.isEditMode()) {
       const id = this.editingActivityId()!;
       this.subscription.add(
         this.activitiesService.update(id, dto).subscribe({
-          next: (updated) => this.uploadPendingImages(id, updated),
+          next: (updated) => saveInterestsThenImages(id, updated),
           error: () => {
             this.isSubmitting.set(false);
             this.errorMessage.set('Greška pri izmeni aktivnosti.');
@@ -658,7 +720,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     } else {
       this.subscription.add(
         this.activitiesService.create(dto).subscribe({
-          next: (created) => this.uploadPendingImages(created.id, created),
+          next: (created) => saveInterestsThenImages(created.id, created),
           error: () => {
             this.isSubmitting.set(false);
             this.errorMessage.set('Greška pri dodavanju aktivnosti.');

@@ -22,6 +22,7 @@ import {
   DestinationRow,
   DestinationStats,
   DestinationStatus,
+  InterestTagOption,
   RegionOption,
   TypeOption,
 } from './admin-destinations.models';
@@ -86,6 +87,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected readonly isDetailLoading = signal(false);
   protected readonly detailsPanelRow = signal<DestinationRow | null>(null);
   protected readonly detailsPanelDetail = signal<DestinationDetail | null>(null);
+  protected readonly detailsPanelInterests = signal<InterestTagOption[]>([]);
   protected readonly descriptionExpanded = signal(false);
 
   protected readonly totalPages = computed(() =>
@@ -299,6 +301,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected openDetailsPanel(dest: DestinationRow): void {
     this.detailsPanelRow.set(dest);
     this.detailsPanelDetail.set(null);
+    this.detailsPanelInterests.set([]);
     this.isDetailsPanelOpen.set(true);
     this.isDetailLoading.set(true);
     this.descriptionExpanded.set(false);
@@ -314,12 +317,19 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+
+    this.subscription.add(
+      this.destinationsService.getDestinationInterests(dest.id).subscribe({
+        next: (tags) => this.detailsPanelInterests.set(tags.filter(t => t.isAssigned)),
+      }),
+    );
   }
 
   protected closeDetailsPanel(): void {
     this.isDetailsPanelOpen.set(false);
     this.detailsPanelRow.set(null);
     this.detailsPanelDetail.set(null);
+    this.detailsPanelInterests.set([]);
   }
 
   protected openDeleteDialog(dest: DestinationRow): void {

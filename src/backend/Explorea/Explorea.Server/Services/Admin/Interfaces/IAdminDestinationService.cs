@@ -22,6 +22,8 @@ namespace Explorea.Server.Services.Admin.Interfaces
 
         Task<List<AdminDestinationLookupDto>> GetRegionsAsync(Guid currentUserId);
 
+        Task<List<AdminCountryLookupDto>> GetCountriesAsync();
+
         Task<List<AdminDestinationLookupDto>> GetTypesAsync(Guid currentUserId);
 
         Task<AdminDestinationListDto?> GetByIdAsync(Guid id, Guid currentUserId);

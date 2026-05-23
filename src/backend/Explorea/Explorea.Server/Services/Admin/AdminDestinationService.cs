@@ -211,8 +211,9 @@ namespace Explorea.Server.Services.Admin
                     .OrderBy(r => r.Name)
                     .Select(r => new AdminDestinationLookupDto
                     {
-                        Id = r.Id,
-                        Name = r.Name
+                        Id        = r.Id,
+                        Name      = r.Name,
+                        CountryId = r.CountryId
                     })
                     .ToListAsync();
             }
@@ -227,8 +228,22 @@ namespace Explorea.Server.Services.Admin
                 .Where(r => r.Id == user.ManagedRegionId.Value)
                 .Select(r => new AdminDestinationLookupDto
                 {
-                    Id = r.Id,
-                    Name = r.Name
+                    Id        = r.Id,
+                    Name      = r.Name,
+                    CountryId = r.CountryId
+                })
+                .ToListAsync();
+        }
+
+        public async Task<List<AdminCountryLookupDto>> GetCountriesAsync()
+        {
+            return await _db.Countries
+                .OrderBy(c => c.Name)
+                .Select(c => new AdminCountryLookupDto
+                {
+                    Id   = c.Id,
+                    Name = c.Name,
+                    Code = c.Code
                 })
                 .ToListAsync();
         }
@@ -329,8 +344,10 @@ namespace Explorea.Server.Services.Admin
             if (dto.Description != null) destination.Description = dto.Description;
             if (dto.HeroImageUrl!= null) destination.HeroImageUrl= dto.HeroImageUrl;
             if (dto.Visibility  != null) destination.Visibility  = dto.Visibility;
-            if (dto.CityId      != null) destination.CityId      = dto.CityId;
-            if (dto.CountryId   != null) destination.CountryId   = dto.CountryId;
+            if (dto.CityId    != null) destination.CityId = dto.CityId;
+
+            if (dto.ClearCountryId)             destination.CountryId = null;
+            else if (dto.CountryId.HasValue)    destination.CountryId = dto.CountryId.Value;
 
             if (dto.Latitude.HasValue && dto.Longitude.HasValue)
             {
@@ -391,6 +408,7 @@ namespace Explorea.Server.Services.Admin
             IsFeatured      = d.IsFeatured,
             Visibility      = d.Visibility,
             City            = d.City?.Name,
+            CountryId       = d.CountryId,
             Country         = d.Country?.Name,
             Description     = d.Description,
             Latitude        = d.Latitude,

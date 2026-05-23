@@ -408,6 +408,15 @@
   color: var(--color-text-primary);
 }
 
+.btn-icon--danger {
+  color: var(--color-danger, #ef4444);
+}
+
+.btn-icon--danger:hover {
+  background: color-mix(in srgb, var(--color-danger, #ef4444) 12%, transparent);
+  color: var(--color-danger, #ef4444);
+}
+
 .btn-icon .material-icons {
   font-size: 16px;
 }
@@ -750,6 +759,12 @@
   background: var(--color-surface);
   border-left: 1px solid var(--color-border);
   box-shadow: -20px 0 50px rgba(0, 0, 0, 0.35);
+  animation: activityPanelSlideIn 0.22s ease;
+}
+
+@keyframes activityPanelSlideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
 }
 
 .activity-details-panel__header {
@@ -2042,3 +2057,65 @@
 .edit-modal__add-inclusion-btn .material-icons {
   font-size: 18px;
 }
+
+/* ===== INTERESTS SECTION ===== */
+.edit-modal__interests-section {
+  padding: 12px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.edit-modal__interests-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.edit-modal__interests-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.interest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.interest-chip--selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.interest-chip:disabled:not(.interest-chip--selected) {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.interest-chip__icon {
+  font-size: 16px;
+  vertical-align: middle;
+}
+
+/* Locked region display */
+.edit-field__locked {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+

@@ -108,10 +108,20 @@
           </div>
 
           <div class="edit-field">
+            <label class="edit-field__label" for="dest-country">Država</label>
+            <select id="dest-country" class="edit-field__select" formControlName="countryId">
+              <option [ngValue]="null">— Sve države —</option>
+              @for (c of localCountries(); track c.id) {
+                <option [ngValue]="c.id.toString()">{{ c.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="edit-field">
             <label class="edit-field__label" for="dest-region">Regija</label>
             <select id="dest-region" class="edit-field__select" formControlName="regionId">
               <option [ngValue]="null">— Bez regije —</option>
-              @for (r of localRegions(); track r.id) {
+              @for (r of filteredRegions(); track r.id) {
                 <option [ngValue]="r.id.toString()">{{ r.name }}</option>
               }
             </select>
@@ -170,6 +180,30 @@
           <p class="edit-modal__map-hint">Klikni na mapu ili prevuci pin da postaviš lokaciju.</p>
         </div>
 
+      </div>
+
+      <!-- Interests section -->
+      <div class="edit-modal__interests-section">
+        <div class="edit-modal__interests-header">
+          <span class="edit-field__label">
+            Interesovanja
+            <span class="edit-field__counter">{{ selectedInterestIds().length }} / 3</span>
+          </span>
+        </div>
+        <div class="edit-modal__interests-chips">
+          @for (tag of allInterestTags(); track tag.id) {
+            <button
+              type="button"
+              class="interest-chip"
+              [class.interest-chip--selected]="selectedInterestIds().includes(tag.id)"
+              [disabled]="selectedInterestIds().length >= 3 && !selectedInterestIds().includes(tag.id)"
+              (click)="toggleInterest(tag.id)"
+            >
+              @if (tag.icon) { <span class="material-icons interest-chip__icon">{{ tag.icon }}</span> }
+              {{ tag.name }}
+            </button>
+          }
+        </div>
       </div>
 
       <!-- Images section -->

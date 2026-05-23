@@ -73,6 +73,14 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        // GET /api/admin/destinations/countries
+        [HttpGet("countries")]
+        public async Task<IActionResult> GetCountries()
+        {
+            var countries = await _service.GetCountriesAsync();
+            return Ok(countries);
+        }
+
         // GET /api/admin/destinations/regions
         [HttpGet("regions")]
         public async Task<IActionResult> GetRegions()

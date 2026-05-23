@@ -274,6 +274,61 @@
   color: var(--color-text-muted);
 }
 
+/* Interests section */
+.edit-modal__interests-section {
+  border-top: 1px solid var(--color-border);
+  padding: 20px var(--sp-5) 0;
+}
+
+.edit-modal__interests-header {
+  margin-bottom: var(--sp-3);
+}
+
+.edit-modal__interests-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding-bottom: 20px;
+}
+
+.interest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  line-height: 1.4;
+}
+
+.interest-chip:hover:not(:disabled) {
+  background: var(--color-surface-3);
+  border-color: var(--color-text-muted);
+}
+
+.interest-chip--selected {
+  background: color-mix(in srgb, var(--color-primary, #28694c) 12%, transparent);
+  border-color: var(--color-primary, #28694c);
+  color: var(--color-primary, #28694c);
+  font-weight: 500;
+}
+
+.interest-chip:disabled:not(.interest-chip--selected) {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.interest-chip__icon {
+  font-size: 16px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
 /* Images section */
 .edit-modal__images-section {
   border-top: 1px solid var(--color-border);

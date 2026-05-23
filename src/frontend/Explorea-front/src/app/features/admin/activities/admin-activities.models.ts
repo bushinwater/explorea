@@ -1,3 +1,10 @@
+export interface InterestTagOption {
+  id: number;
+  name: string;
+  icon: string | null;
+  isAssigned?: boolean;
+}
+
 export type ActivityStatus = 'active' | 'inactive';
 
 export type ActivityDifficulty = 'easy' | 'medium' | 'hard';

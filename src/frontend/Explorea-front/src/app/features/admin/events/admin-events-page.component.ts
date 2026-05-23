@@ -73,7 +73,8 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly activeMenuId = signal<string | null>(null);
 
   protected readonly selectedEvent = signal<EventRow | null>(null);
-  protected readonly isPanelOpen = computed(() => !!this.selectedEvent());
+  protected readonly isPanelOpen = signal(false);
+  private _editFromPanel = false;
 
   protected readonly isCreateOpen = signal(false);
   protected readonly isEditOpen = signal(false);
@@ -146,6 +147,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
   protected setTab(tab: EventsTab): void {
     this.selectedEvent.set(null);
+    this.isPanelOpen.set(false);
     this.patchFilter({ tab, page: 1 });
     this.loadEvents();
   }
@@ -213,6 +215,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.activeMenuId.set(null);
     this.descriptionExpanded.set(false);
     this.selectedEvent.set(event);
+    this.isPanelOpen.set(true);
 
     this.subscription.add(
       this.eventsService.getEventDetail(event.id, event).subscribe({
@@ -232,6 +235,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
   protected closeDetailsPanel(): void {
     this.selectedEvent.set(null);
+    this.isPanelOpen.set(false);
   }
 
   protected toggleMenu(id: string, event: MouseEvent): void {
@@ -250,6 +254,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.filterDefs.set([]);
     this.currentPage.set(1);
     this.selectedEvent.set(row);
+    this.isPanelOpen.set(true);
     this.loadStats();
     this.loadEvents();
     setTimeout(() => this.successMessage.set(''), 4000);
@@ -257,12 +262,27 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
   protected openEdit(): void {
     if (!this.selectedEvent()) return;
+    this._editFromPanel = true;
     this.isEditOpen.set(true);
+  }
+
+  protected openEditFromRow(ev: EventRow): void {
+    this._editFromPanel = false;
+    this.selectedEvent.set(ev);
+    this.isEditOpen.set(true);
+  }
+
+  protected openDeleteFromRow(ev: EventRow): void {
+    this.selectedEvent.set(ev);
+    this.initiateAction('delete');
   }
 
   protected onEditSaved(row: EventRow): void {
     this.isEditOpen.set(false);
     this.selectedEvent.set(row);
+    if (this._editFromPanel) {
+      this.isPanelOpen.set(true);
+    }
     this.successMessage.set('Izmene su sačuvane.');
     this.loadEvents();
     setTimeout(() => this.successMessage.set(''), 4000);
@@ -294,6 +314,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
               this.isConfirmOpen.set(false);
               this.confirmAction.set(null);
               this.selectedEvent.set(null);
+              this.isPanelOpen.set(false);
               this.successMessage.set('Događaj je obrisan.');
               this.loadStats();
               this.loadEvents();
@@ -323,6 +344,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
           this.isConfirmOpen.set(false);
           this.confirmAction.set(null);
           this.selectedEvent.set(null);
+          this.isPanelOpen.set(false);
           const msg = action === 'approve' ? 'Događaj je uspešno odobren.'
             : action === 'reject' ? 'Zahtev za događaj je odbijen.'
             : 'Zahtev je prosleđen vlasniku.';
@@ -344,6 +366,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   }
 
   protected isSelected(ev: EventRow): boolean {
+    if (!this.isPanelOpen()) return false;
     const selected = this.selectedEvent();
     return selected?.id === ev.id && selected?.queueId === ev.queueId;
   }

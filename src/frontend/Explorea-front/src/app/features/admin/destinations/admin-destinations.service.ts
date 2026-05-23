@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
+  CountryOption,
   DestinationCategory,
   DestinationDetail,
   DestinationFilters,
@@ -10,6 +11,7 @@ import {
   DestinationRow,
   DestinationStats,
   DestinationStatus,
+  InterestTagOption,
   RegionOption,
   TypeOption,
 } from './admin-destinations.models';
@@ -103,6 +105,10 @@ export class AdminDestinationsService {
     return this.http.get<RegionOption[]>('/api/admin/destinations/regions');
   }
 
+  getCountries(): Observable<CountryOption[]> {
+    return this.http.get<CountryOption[]>('/api/admin/destinations/countries');
+  }
+
   getTypes(): Observable<TypeOption[]> {
     return this.http.get<TypeOption[]>('/api/admin/destinations/types');
   }
@@ -110,7 +116,7 @@ export class AdminDestinationsService {
   createDestination(dto: {
     name: string; slug: string; description: string;
     latitude: number; longitude: number; visibility: string;
-    typeId?: number | null; regionId?: number | null;
+    typeId?: number | null; regionId?: number | null; countryId?: number | null;
   }): Observable<DestinationRow> {
     return this.http.post<ApiDestinationItem>('/api/admin/destinations', dto).pipe(
       map((item) => this.mapToRow(item)),
@@ -136,6 +142,7 @@ export class AdminDestinationsService {
         previewImageUrl: item.previewImageUrl ?? null,
         typeId: item.typeId ?? null,
         regionId: item.regionId ?? null,
+        countryId: (item as any).countryId ?? null,
         images: ((item as any).images ?? []).map((img: any) => ({
           id: img.id,
           imageUrl: img.imageUrl,
@@ -151,7 +158,7 @@ export class AdminDestinationsService {
     );
   }
 
-  updateDestination(id: string, dto: Partial<{ name: string; description: string; latitude: number; longitude: number; visibility: string; typeId: number | null; clearTypeId: boolean; regionId: number | null; clearRegionId: boolean }>): Observable<DestinationRow> {
+  updateDestination(id: string, dto: Partial<{ name: string; description: string; latitude: number; longitude: number; visibility: string; typeId: number | null; clearTypeId: boolean; regionId: number | null; clearRegionId: boolean; countryId: number | null; clearCountryId: boolean }>): Observable<DestinationRow> {
     return this.http.put<ApiDestinationItem>(`/api/admin/destinations/${id}`, dto).pipe(
       map((item) => this.mapToRow(item)),
     );
@@ -171,6 +178,18 @@ export class AdminDestinationsService {
 
   deleteDestination(id: string): Observable<void> {
     return this.http.delete<void>(`/api/admin/destinations/${id}`);
+  }
+
+  getDestinationInterests(id: string): Observable<InterestTagOption[]> {
+    return this.http.get<InterestTagOption[]>(`/api/admin/interest-tags/destination/${id}`);
+  }
+
+  setDestinationInterests(id: string, tagIds: number[]): Observable<void> {
+    return this.http.put<void>(`/api/admin/interest-tags/destination/${id}`, { tagIds });
+  }
+
+  getAllInterestTags(): Observable<InterestTagOption[]> {
+    return this.http.get<InterestTagOption[]>('/api/interest-tags');
   }
 
   private mapToRow(item: ApiDestinationItem): DestinationRow {

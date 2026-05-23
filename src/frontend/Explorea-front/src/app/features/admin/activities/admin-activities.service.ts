@@ -11,6 +11,7 @@ import {
   CityOption,
   CreateActivityDto,
   DestinationOption,
+  InterestTagOption,
   RegionOption,
   UpdateActivityDto,
 } from './admin-activities.models';
@@ -73,11 +74,25 @@ export class AdminActivitiesService {
     return this.http.get<{ id: string; name: string; latitude: number | null; longitude: number | null }>(`/api/admin/destinations/${id}`);
   }
 
-  searchDestinations(query: string): Observable<DestinationOption[]> {
+  searchDestinations(query: string, regionId?: number): Observable<DestinationOption[]> {
+    const params: Record<string, string> = { search: query, page: '1', pageSize: '8' };
+    if (regionId !== undefined) params['regionId'] = String(regionId);
     return this.http.get<{ total: number; items: { id: string; name: string; city?: string | null }[] }>(
       `/api/admin/destinations`,
-      { params: { search: query, page: '1', pageSize: '8' } },
+      { params },
     ).pipe(map(r => r.items.map(d => ({ id: d.id, name: d.name, city: d.city ?? null }))));
+  }
+
+  getActivityInterests(id: string): Observable<InterestTagOption[]> {
+    return this.http.get<InterestTagOption[]>(`/api/admin/interest-tags/activity/${id}`);
+  }
+
+  setActivityInterests(id: string, tagIds: number[]): Observable<void> {
+    return this.http.put<void>(`/api/admin/interest-tags/activity/${id}`, { tagIds });
+  }
+
+  getAllInterestTags(): Observable<InterestTagOption[]> {
+    return this.http.get<InterestTagOption[]>('/api/interest-tags');
   }
 
   getCities(regionId?: number): Observable<CityOption[]> {

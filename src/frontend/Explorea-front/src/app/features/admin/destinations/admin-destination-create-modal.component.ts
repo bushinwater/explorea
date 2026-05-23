@@ -9,6 +9,7 @@ import {
   OnInit,
   Output,
   ViewChild,
+  computed,
   signal,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -17,7 +18,7 @@ import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminDestinationsService } from './admin-destinations.service';
-import { DestinationImage, DestinationRow, RegionOption, TypeOption } from './admin-destinations.models';
+import { CountryOption, DestinationImage, DestinationRow, InterestTagOption, RegionOption, TypeOption } from './admin-destinations.models';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
@@ -62,6 +63,7 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
     description: new FormControl('', [Validators.required, Validators.maxLength(MAX_DESC)]),
     visibility:  new FormControl('published', [Validators.required]),
     typeId:      new FormControl<string | null>(null),
+    countryId:   new FormControl<string | null>(null),
     regionId:    new FormControl<string | null>(null),
     address:     new FormControl(''),
     latitude:    new FormControl<number | null>(null, [Validators.required]),
@@ -81,6 +83,15 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
   protected readonly isSettingHero    = signal(false);
   protected readonly localTypes       = signal<TypeOption[]>([]);
   protected readonly localRegions     = signal<RegionOption[]>([]);
+  protected readonly localCountries   = signal<CountryOption[]>([]);
+  protected readonly selectedCountryId = signal<number | null>(null);
+  protected readonly filteredRegions  = computed(() => {
+    const cid = this.selectedCountryId();
+    if (cid === null) return this.localRegions();
+    return this.localRegions().filter(r => r.countryId === cid);
+  });
+  protected readonly allInterestTags     = signal<InterestTagOption[]>([]);
+  protected readonly selectedInterestIds = signal<number[]>([]);
   protected readonly showNewTypeInput = signal(false);
   protected readonly newTypeName      = signal('');
   protected readonly isCreatingType   = signal(false);
@@ -109,6 +120,20 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.localTypes.set([...this.types]);
     this.svc.getRegions().subscribe(r => { this.localRegions.set(r); this.cdr.detectChanges(); });
+    this.svc.getCountries().subscribe(c => { this.localCountries.set(c); this.cdr.detectChanges(); });
+    this.svc.getAllInterestTags().subscribe(tags => { this.allInterestTags.set(tags); this.cdr.detectChanges(); });
+    this.form.controls.countryId.valueChanges.subscribe(val => {
+      const id = val ? parseInt(val) : null;
+      this.selectedCountryId.set(id);
+      // reset region if it no longer belongs to the selected country
+      const regionVal = this.form.value.regionId;
+      if (regionVal) {
+        const regionId = parseInt(regionVal);
+        const stillValid = this.filteredRegions().some(r => r.id === regionId);
+        if (!stillValid) this.form.patchValue({ regionId: null });
+      }
+      this.cdr.detectChanges();
+    });
     setTimeout(() => this.initMap(), 50);
   }
 
@@ -116,6 +141,15 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
     this.sub.unsubscribe();
     this.themeObserver?.disconnect();
     this.map?.remove();
+  }
+
+  protected toggleInterest(id: number): void {
+    const current = this.selectedInterestIds();
+    if (current.includes(id)) {
+      this.selectedInterestIds.set(current.filter(i => i !== id));
+    } else if (current.length < 3) {
+      this.selectedInterestIds.set([...current, id]);
+    }
   }
 
   protected get descLength(): number {
@@ -170,12 +204,17 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
         latitude:    v.latitude!,
         longitude:   v.longitude!,
         visibility:  v.visibility!,
-        typeId:      v.typeId   ? parseInt(v.typeId)   : null,
-        regionId:    v.regionId ? parseInt(v.regionId) : null,
+        typeId:      v.typeId     ? parseInt(v.typeId)     : null,
+        regionId:    v.regionId   ? parseInt(v.regionId)   : null,
+        countryId:   v.countryId  ? parseInt(v.countryId)  : null,
       }).subscribe({
         next: (row) => {
-          this.isSaving.set(false);
           this.createdRow.set(row);
+          const ids = this.selectedInterestIds();
+          if (ids.length > 0) {
+            this.svc.setDestinationInterests(row.id, ids).subscribe();
+          }
+          this.isSaving.set(false);
           this.form.disable();
           this.cdr.detectChanges();
         },

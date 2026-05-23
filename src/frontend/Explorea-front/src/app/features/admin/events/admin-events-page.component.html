@@ -261,9 +261,21 @@
                   }
                   <td class="evts-td evts-td--actions" (click)="$event.stopPropagation()">
                     <div class="row-actions">
-                      <button class="btn-icon" title="Detalji" (click)="openDetailsPanel(ev)">
-                        <span class="material-icons">chevron_right</span>
-                      </button>
+                      @if (ev.slug) {
+                        <a class="btn-icon" title="Otvori u aplikaciji" [href]="'/events/' + ev.slug" target="_blank" rel="noopener">
+                          <span class="material-icons">open_in_new</span>
+                        </a>
+                      }
+                      @if (isSuperAdmin() && ev.status === 'active') {
+                        <button class="btn-icon" title="Izmeni" (click)="openEditFromRow(ev)">
+                          <span class="material-icons">edit</span>
+                        </button>
+                      }
+                      @if (isSuperAdmin()) {
+                        <button class="btn-icon btn-icon--danger" title="Obriši" (click)="openDeleteFromRow(ev)">
+                          <span class="material-icons">delete</span>
+                        </button>
+                      }
                     </div>
                   </td>
                 </tr>

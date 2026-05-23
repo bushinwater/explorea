@@ -365,24 +365,14 @@
                 >
                   <span class="material-icons">open_in_new</span>
                 </a>
-                <div class="row-menu-wrap">
-                <button class="activity-menu-btn" (click)="toggleMenu(activity.id, $event)"
-                  [title]="ui.t('activities.actions.label')">
-                  <span class="material-icons">more_vert</span>
-                </button>
-                @if (activeMenuId() === activity.id) {
-                <div class="activity-menu-dropdown">
-                  <button class="activity-menu-item" (click)="openDetailsPanel(activity)">
-                    <span class="material-icons">visibility</span>
-                    {{ ui.t('activities.actions.view') }}
+                @if (isSuperAdmin()) {
+                  <button class="btn-icon" title="Izmeni" (click)="openEditFromRow(activity)">
+                    <span class="material-icons">edit</span>
                   </button>
-                  <button class="activity-menu-item activity-menu-item--danger" (click)="openDeleteDialog(activity)">
+                  <button class="btn-icon btn-icon--danger" title="Obriši" (click)="openDeleteDialog(activity)">
                     <span class="material-icons">delete</span>
-                    {{ ui.t('activities.actions.delete') }}
                   </button>
-                </div>
                 }
-                </div>
               </div>
             </td>
           </tr>
@@ -557,7 +547,6 @@
         </div>
         }
 
-        @if (detail.latitude && detail.longitude) {
         <div class="activity-details-item activity-details-item--full">
           <span class="activity-details-item__label">Lokacija</span>
           <app-admin-map-preview
@@ -565,7 +554,6 @@
             [longitude]="detail.longitude"
           />
         </div>
-        }
 
         <div class="activity-details-item activity-details-item--full">
           <span class="activity-details-item__label">Poslednja izmena</span>
@@ -766,6 +754,25 @@
           </select>
         </div>
 
+        @if (allInterestTags().length) {
+        <div class="edit-modal__interests-section">
+          <div class="edit-modal__interests-header">
+            <span class="edit-field__label">Interesovanja <span class="edit-field__counter">{{ selectedInterestIds().length }} / 3</span></span>
+          </div>
+          <div class="edit-modal__interests-chips">
+            @for (tag of allInterestTags(); track tag.id) {
+              <button type="button" class="interest-chip"
+                [class.interest-chip--selected]="selectedInterestIds().includes(tag.id)"
+                [disabled]="selectedInterestIds().length >= 3 && !selectedInterestIds().includes(tag.id)"
+                (click)="toggleInterest(tag.id)">
+                @if (tag.icon) { <span class="material-icons interest-chip__icon">{{ tag.icon }}</span> }
+                {{ tag.name }}
+              </button>
+            }
+          </div>
+        </div>
+        }
+
       </div>
 
       <!-- Right: location + extras -->
@@ -773,29 +780,25 @@
 
         @if (isSuperAdmin()) {
           <div class="edit-field">
-            <label class="edit-field__label">Region</label>
+            <label class="edit-field__label">Region <span class="edit-field__required">*</span></label>
             <select class="edit-field__select"
               [value]="modalRegionId()"
               (change)="onModalRegionChange($any($event.target).value)">
-              <option value="all">Svi regioni</option>
+              <option value="all" disabled>Izaberi region</option>
               @for (r of regions(); track r.id) {
                 <option [value]="r.id">{{ r.name }}</option>
               }
             </select>
           </div>
+        } @else if (managedRegion(); as mr) {
+          <div class="edit-field">
+            <label class="edit-field__label">Region</label>
+            <div class="edit-field__locked">
+              <span class="material-icons" style="font-size:14px;vertical-align:middle;margin-right:4px">lock</span>
+              {{ mr.name }}
+            </div>
+          </div>
         }
-
-        <div class="edit-field">
-          <label class="edit-field__label">Grad</label>
-          <select class="edit-field__select"
-            [value]="createForm().cityId ?? ''"
-            (change)="updateCreateField('cityId', $any($event.target).value ? +$any($event.target).value : undefined)">
-            <option value="">Nije određeno</option>
-            @for (c of modalCities(); track c.id) {
-              <option [value]="c.id">{{ c.name }}</option>
-            }
-          </select>
-        </div>
 
         <div class="edit-field">
           <label class="edit-field__label">Destinacija (opciono)</label>
@@ -803,10 +806,11 @@
             <input class="edit-field__input dest-search-input"
               type="text"
               [value]="destinationSearchText()"
+              [disabled]="isSuperAdmin() && modalRegionId() === 'all'"
               (input)="updateDestinationSearch($any($event.target).value)"
               (blur)="closeDestinationDropdownDelayed()"
               (focus)="destinationDropdownOpen.set(destinationResults().length > 0)"
-              placeholder="Pretraži destinaciju po imenu..." />
+              [placeholder]="isSuperAdmin() && modalRegionId() === 'all' ? 'Izaberi region prvo...' : 'Pretraži destinaciju po imenu...'" />
             @if (createForm().destinationId) {
               <button class="dest-search-clear" type="button" title="Ukloni destinaciju" (click)="clearDestination()">
                 <span class="material-icons">close</span>
@@ -827,9 +831,6 @@
               </div>
             }
           </div>
-          @if (createForm().destinationId) {
-            <span class="dest-search-selected-id">ID: {{ createForm().destinationId }}</span>
-          }
         </div>
 
         <div class="edit-field">
@@ -965,7 +966,7 @@
       Otkaži
     </button>
     <button class="edit-modal__btn edit-modal__btn--save" type="button"
-      [disabled]="isSubmitting() || !createForm().name.trim() || !createForm().slug.trim() || !createForm().categoryId"
+      [disabled]="isSubmitting() || !createForm().name.trim() || !createForm().slug.trim() || !createForm().categoryId || (!managedRegion() && modalRegionId() === 'all')"
       (click)="submitCreate()">
       @if (isSubmitting()) {
         <span class="material-icons edit-modal__spin">sync</span>
