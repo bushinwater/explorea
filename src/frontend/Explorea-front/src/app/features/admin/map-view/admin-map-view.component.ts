@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
@@ -48,7 +49,14 @@ const ADMIN_ROUTES: Record<string, string> = {
   destination: '/admin/destinations',
   activity:    '/admin/activities',
   event:       '/admin/events',
-  place:       '/admin/destinations',
+  place:       '/admin/places',
+};
+
+const ADMIN_DELETE_ENDPOINTS: Record<string, string> = {
+  destination: '/api/admin/destinations',
+  activity:    '/api/admin/activities',
+  event:       '/api/admin/events',
+  place:       '/api/admin/places',
 };
 
 @Component({
@@ -73,6 +81,8 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
   currentZoom = 6.5;
   isSatellite = false;
   filterPanelVisible = false;
+  selectedPin: ExploreMarker | null = null;
+  deletingPinId: string | null = null;
 
   // Filters
   selectedEntityTypes: string[] = [];   // backend types: 'destination'|'place'|'activity'|'event'
@@ -99,6 +109,7 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private exploreService: ExploreService,
     private lookupService: LookupService,
+    private http: HttpClient,
     private router: Router,
     public auth: DashboardAuthService,
     public ui: AdminUiPreferencesService,
@@ -254,13 +265,59 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
   }
 
   onPinClick(pin: ExploreMarker): void {
+    this.selectedPin = pin;
+    this.cdr.detectChanges();
+  }
+
+  closePinCard(): void {
+    this.selectedPin = null;
+    this.cdr.detectChanges();
+  }
+
+  openInTouristApp(pin: ExploreMarker): void {
+    window.open(this.getUserRoute(pin), '_blank', 'noopener');
+  }
+
+  editPin(pin: ExploreMarker): void {
     const role = this.auth.role();
     if (role === 'super_admin') {
       const route = ADMIN_ROUTES[pin.entityType] ?? '/admin/destinations';
-      this.router.navigate([route], { queryParams: { selected: pin.slug } });
+      this.router.navigate([route], { queryParams: { selected: pin.slug, edit: pin.id } });
     } else {
-      this.router.navigate([this.getUserRoute(pin)]);
+      const route = ADMIN_ROUTES[pin.entityType] ?? '/admin/destinations';
+      this.router.navigate([route], { queryParams: { selected: pin.slug, edit: pin.id } });
     }
+  }
+
+  deletePin(pin: ExploreMarker): void {
+    const endpoint = ADMIN_DELETE_ENDPOINTS[pin.entityType];
+    if (!endpoint || !confirm(`Obrisati "${pin.name}"?`)) return;
+
+    this.deletingPinId = pin.id;
+    this.http.delete<void>(`${endpoint}/${pin.id}`).subscribe({
+      next: () => {
+        this.pins = this.pins.filter(p => !(p.entityType === pin.entityType && p.id === pin.id));
+        this.selectedPin = null;
+        this.deletingPinId = null;
+        this.addMarkers();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.deletingPinId = null;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  getPinTypeLabel(type: string): string {
+    return ENTITY_TYPES.find(et => et.type === type)?.label ?? type;
+  }
+
+  getPinSubtitle(pin: ExploreMarker): string {
+    if (pin.subtitle) return pin.subtitle;
+    if (pin.startDatetime) return new Date(pin.startDatetime).toLocaleDateString('sr-RS');
+    if (pin.price !== null) return `${pin.price.toLocaleString('sr-RS')} RSD`;
+    return this.getPinTypeLabel(pin.entityType);
   }
 
   private getUserRoute(pin: ExploreMarker): string {
@@ -375,11 +432,11 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
 
   // ── Markers ───────────────────────────────────────────────
 
-  private getPinColor(entityType: string): string {
+  getPinColor(entityType: string): string {
     return ENTITY_TYPES.find(et => et.type === entityType)?.color ?? 'var(--color-primary)';
   }
 
-  private getPinIcon(entityType: string): string {
+  getPinIcon(entityType: string): string {
     switch (entityType) {
       case 'destination': return 'landscape';
       case 'place':       return 'store';

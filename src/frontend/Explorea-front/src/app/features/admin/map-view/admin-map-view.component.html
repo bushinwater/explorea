@@ -41,6 +41,59 @@
   <!-- Map -->
   <div #mapContainer class="admin-map-container"></div>
 
+  @if (selectedPin; as pin) {
+    <article class="admin-map-pin-card">
+      <button class="pin-card-close" type="button" title="Zatvori" (click)="closePinCard()">
+        <span class="material-icons">close</span>
+      </button>
+
+      <div class="pin-card-media" [style.background-color]="getPinColor(pin.entityType)">
+        @if (pin.previewImageUrl) {
+          <img [src]="pin.previewImageUrl" [alt]="pin.name" />
+        } @else {
+          <span class="material-icons">{{ getPinIcon(pin.entityType) }}</span>
+        }
+      </div>
+
+      <div class="pin-card-body">
+        <div class="pin-card-kicker">
+          <span class="material-icons" [style.color]="getPinColor(pin.entityType)">{{ getPinIcon(pin.entityType) }}</span>
+          <span>{{ getPinTypeLabel(pin.entityType) }}</span>
+        </div>
+        <h3>{{ pin.name }}</h3>
+        <p>{{ getPinSubtitle(pin) }}</p>
+
+        @if (pin.avgRating !== null) {
+          <div class="pin-card-rating">
+            <span class="material-icons">star</span>
+            <span>{{ pin.avgRating | number:'1.1-1' }}</span>
+          </div>
+        }
+      </div>
+
+      <footer class="pin-card-actions">
+        <button class="pin-card-action" type="button" title="Otvori u turistickoj aplikaciji" (click)="openInTouristApp(pin)">
+          <span class="material-icons">open_in_new</span>
+          <span>Otvori</span>
+        </button>
+        <button class="pin-card-action" type="button" title="Izmeni" (click)="editPin(pin)">
+          <span class="material-icons">edit</span>
+          <span>Izmeni</span>
+        </button>
+        <button
+          class="pin-card-action pin-card-action--danger"
+          type="button"
+          title="Obrisi"
+          [disabled]="deletingPinId === pin.id"
+          (click)="deletePin(pin)"
+        >
+          <span class="material-icons">{{ deletingPinId === pin.id ? 'sync' : 'delete' }}</span>
+          <span>Obrisi</span>
+        </button>
+      </footer>
+    </article>
+  }
+
 </div>
 
 <!-- Filter panel (outside wrapper so it's not clipped) -->
