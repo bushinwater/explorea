@@ -95,6 +95,7 @@ builder.Services.AddScoped<IOrganizationAssignmentRepository, OrganizationAssign
 builder.Services.AddScoped<IOrganizationRegionAssignmentRepository, OrganizationRegionAssignmentRepository>();
 builder.Services.AddScoped<ISubmissionQueueRepository, SubmissionQueueRepository>();
 builder.Services.AddScoped<IAdminQueueService, AdminQueueService>();
+builder.Services.AddScoped<ISavedItemCleanupService, SavedItemCleanupService>();
 
 builder.Services.AddCors(options =>
 {

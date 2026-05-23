@@ -17,6 +17,7 @@ namespace Explorea.Server.Services.Admin
         private readonly ISubmissionQueueRepository _queueRepo;
         private readonly ILookupRepository _lookupRepo;
         private readonly AppDbContext _db;
+        private readonly ISavedItemCleanupService _savedItemCleanup;
 
         public AdminEventService(
             IAdminEventRepository eventRepo,
@@ -25,7 +26,8 @@ namespace Explorea.Server.Services.Admin
             ISubmissionQueueRepository queueRepo,
             IUserRepository userRepo,
             ILookupRepository lookupRepo,
-            AppDbContext db)
+            AppDbContext db,
+            ISavedItemCleanupService savedItemCleanup)
         {
             _eventRepo       = eventRepo;
             _assignmentRepo  = assignmentRepo;
@@ -34,6 +36,7 @@ namespace Explorea.Server.Services.Admin
             _userRepo        = userRepo;
             _lookupRepo      = lookupRepo;
             _db              = db;
+            _savedItemCleanup = savedItemCleanup;
         }
 
         public async Task<AdminEventStatsDto> GetStatsDtoAsync(Guid currentUserId)
@@ -332,6 +335,10 @@ namespace Explorea.Server.Services.Admin
 
             _eventRepo.Update(ev);
             await _eventRepo.SaveChangesAsync();
+            await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync(
+                "event",
+                ev.Id,
+                ev.Name);
 
             return true;
         }

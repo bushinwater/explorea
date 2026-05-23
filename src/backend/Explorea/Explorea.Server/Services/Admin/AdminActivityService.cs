@@ -14,12 +14,18 @@ namespace Explorea.Server.Services.Admin
     private readonly IAdminActivityRepository _repository;
     private readonly AppDbContext _context;
     private readonly IUserRepository _userRepo;
+    private readonly ISavedItemCleanupService _savedItemCleanup;
 
-    public AdminActivityService(IAdminActivityRepository repository, AppDbContext context, IUserRepository userRepo)
+    public AdminActivityService(
+      IAdminActivityRepository repository,
+      AppDbContext context,
+      IUserRepository userRepo,
+      ISavedItemCleanupService savedItemCleanup)
     {
       _repository = repository;
       _context = context;
       _userRepo = userRepo;
+      _savedItemCleanup = savedItemCleanup;
     }
 
     public async Task<(List<AdminActivityListDto> Items, int Total)> GetAllAsync(AdminActivityListQueryDto query, Guid currentUserId)
@@ -533,6 +539,10 @@ namespace Explorea.Server.Services.Admin
       activity.UpdatedBy = currentUserId;
       _repository.Delete(activity);
       await _repository.SaveChangesAsync();
+      await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync(
+        "activity",
+        activity.Id,
+        activity.Name);
 
       return true;
     }

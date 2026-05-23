@@ -198,5 +198,20 @@ namespace Explorea.Server.Services
 
             await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
         }
+
+        public async Task SendSavedItemDeletedEmailAsync(string toEmail, string firstName, string entityName)
+        {
+            var safeName = WebUtility.HtmlEncode(entityName);
+            var subject = $"{entityName} je obrisan iz sistema";
+            var htmlBody = $@"
+                <html>
+                    <body>
+                        <p>Zdravo, {WebUtility.HtmlEncode(firstName)}!</p>
+                        <p>{safeName} koji je bio u vasoj listi sacuvanih je obrisan iz sistema.</p>
+                    </body>
+                </html>";
+
+            await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
+        }
     }
 }

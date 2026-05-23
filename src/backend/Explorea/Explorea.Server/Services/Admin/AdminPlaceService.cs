@@ -16,6 +16,7 @@ namespace Explorea.Server.Services.Admin
         private readonly IUserRepository _userRepo;
         private readonly ISubmissionQueueRepository _queueRepo;
         private readonly AppDbContext _context;
+        private readonly ISavedItemCleanupService _savedItemCleanup;
 
         private static readonly GeometryFactory _geometryFactory =
             new GeometryFactory(new PrecisionModel(), 4326);
@@ -24,12 +25,14 @@ namespace Explorea.Server.Services.Admin
             IAdminPlaceRepository placeRepo,
             IUserRepository userRepo,
             ISubmissionQueueRepository queueRepo,
-            AppDbContext context)
+            AppDbContext context,
+            ISavedItemCleanupService savedItemCleanup)
         {
             _placeRepo = placeRepo;
             _userRepo = userRepo;
             _queueRepo = queueRepo;
             _context = context;
+            _savedItemCleanup = savedItemCleanup;
         }
 
         public async Task<(List<AdminPlaceListDto> Items, int Total)> GetAllAsync(
@@ -504,6 +507,10 @@ namespace Explorea.Server.Services.Admin
 
             _placeRepo.Update(place);
             await _placeRepo.SaveChangesAsync();
+            await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync(
+                "place",
+                place.Id,
+                place.Name);
 
             return true;
         }

@@ -6,5 +6,6 @@ namespace Explorea.Server.Services.Interfaces
         Task SendForgotPasswordEmailAsync(string toEmail, string firstName, string resetLink);
         Task SendNewsletterEmailAsync(IEnumerable<string> toEmails, string subject, string htmlBody);
         Task SendAdminReportEmailAsync(string toEmail, string firstName, IEnumerable<string> topics);
+        Task SendSavedItemDeletedEmailAsync(string toEmail, string firstName, string entityName);
     }
 }

@@ -18,6 +18,7 @@ namespace Explorea.Server.Services.Admin
         private readonly ISearchRepository _searchRepo;
         private readonly ICloudinaryService _cloudinary;
         private readonly AppDbContext _db;
+        private readonly ISavedItemCleanupService _savedItemCleanup;
 
         private static readonly GeometryFactory _geometryFactory =
             new GeometryFactory(new PrecisionModel(), 4326);
@@ -28,7 +29,8 @@ namespace Explorea.Server.Services.Admin
             IUserRepository userRepo,
             ISearchRepository searchRepo,
             ICloudinaryService cloudinary,
-            AppDbContext db)
+            AppDbContext db,
+            ISavedItemCleanupService savedItemCleanup)
         {
             _destinationRepo = destinationRepo;
             _assignmentRepo  = assignmentRepo;
@@ -36,6 +38,7 @@ namespace Explorea.Server.Services.Admin
             _searchRepo      = searchRepo;
             _cloudinary      = cloudinary;
             _db              = db;
+            _savedItemCleanup = savedItemCleanup;
         }
 
         public async Task<(List<AdminDestinationListDto> Items, int Total)> GetAllAsync(
@@ -446,6 +449,10 @@ namespace Explorea.Server.Services.Admin
 
             _destinationRepo.Update(destination);
             await _destinationRepo.SaveChangesAsync();
+            await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync(
+                "destination",
+                destination.Id,
+                destination.Name);
 
             return true;
         }
