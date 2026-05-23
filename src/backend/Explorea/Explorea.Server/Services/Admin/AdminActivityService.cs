@@ -196,7 +196,77 @@ namespace Explorea.Server.Services.Admin
             .FirstOrDefault(),
 
           CreatedAt = a.CreatedAt,
-          UpdatedAt = a.UpdatedAt
+          UpdatedAt = a.UpdatedAt,
+          DeletedAt = a.DeletedAt
+        })
+        .ToListAsync();
+
+      return (items, total);
+    }
+
+    public async Task<(List<AdminActivityListDto> Items, int Total)> GetDeletedAsync(AdminActivityListQueryDto query, Guid currentUserId)
+    {
+      ValidatePagination(query.Page, query.PageSize);
+
+      var activitiesQuery = _repository.Query()
+        .Where(a => a.IsDeleted);
+
+      var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+      if (user?.Role.Name == RoleNames.TouristOrganization && user.ManagedRegionId.HasValue)
+      {
+        var regionId = user.ManagedRegionId.Value;
+        activitiesQuery = activitiesQuery.Where(a => a.City != null && a.City.RegionId == regionId);
+      }
+
+      if (!string.IsNullOrWhiteSpace(query.Search))
+      {
+        var search = query.Search.Trim().ToLower();
+        activitiesQuery = activitiesQuery.Where(a => a.Name.ToLower().Contains(search));
+      }
+
+      if (query.RegionId.HasValue)
+        activitiesQuery = activitiesQuery.Where(a => a.City != null && a.City.RegionId == query.RegionId.Value);
+
+      if (query.CityId.HasValue)
+        activitiesQuery = activitiesQuery.Where(a => a.CityId == query.CityId.Value);
+
+      if (query.CategoryId.HasValue)
+        activitiesQuery = activitiesQuery.Where(a => a.CategoryId == query.CategoryId.Value);
+
+      var total = await activitiesQuery.CountAsync();
+
+      var items = await activitiesQuery
+        .OrderByDescending(a => a.DeletedAt ?? a.UpdatedAt)
+        .Skip((query.Page - 1) * query.PageSize)
+        .Take(query.PageSize)
+        .Select(a => new AdminActivityListDto
+        {
+          Id = a.Id,
+          Name = a.Name,
+          Slug = a.Slug,
+          Description = a.Description,
+          CategoryId = a.CategoryId,
+          Category = a.Category.Name,
+          CityId = a.CityId,
+          City = a.City != null ? a.City.Name : null,
+          RegionId = a.City != null ? a.City.RegionId : null,
+          Region = a.City != null && a.City.Region != null ? a.City.Region.Name : null,
+          DestinationId = a.DestinationId,
+          Destination = a.Destination != null ? a.Destination.Name : null,
+          Price = a.Price,
+          DurationMinutes = a.DurationMinutes,
+          DurationGroup = GetDurationGroup(a.DurationMinutes),
+          DifficultyLevel = a.DifficultyLevel,
+          DistanceKm = a.DistanceKm,
+          StartPoint = a.StartPoint,
+          AvgRating = a.AvgRating,
+          Popularity = a.Popularity,
+          IsFeatured = a.IsFeatured,
+          IsActive = false,
+          PreviewImageUrl = a.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
+          CreatedAt = a.CreatedAt,
+          UpdatedAt = a.UpdatedAt,
+          DeletedAt = a.DeletedAt
         })
         .ToListAsync();
 
@@ -459,6 +529,8 @@ namespace Explorea.Server.Services.Admin
       if (activity == null) return false;
       if (activity.IsDeleted) return true;
 
+      activity.UpdatedAt = DateTimeOffset.UtcNow;
+      activity.UpdatedBy = currentUserId;
       _repository.Delete(activity);
       await _repository.SaveChangesAsync();
 

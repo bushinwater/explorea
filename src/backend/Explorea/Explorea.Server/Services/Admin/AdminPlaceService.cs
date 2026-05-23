@@ -73,6 +73,69 @@ namespace Explorea.Server.Services.Admin
             return (items.Select(MapToListDto).ToList(), total);
         }
 
+        public async Task<(List<AdminPlaceListDto> Items, int Total)> GetDeletedAsync(
+            AdminPlaceListQueryDto query, Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+
+            var placesQuery = _context.Places
+                .IgnoreQueryFilters()
+                .Include(p => p.Images)
+                .Include(p => p.Type)
+                .Include(p => p.City)
+                    .ThenInclude(c => c!.Region)
+                .Include(p => p.Destination)
+                .Where(p => p.IsDeleted)
+                .AsQueryable();
+
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                placesQuery = placesQuery.Where(p => p.CreatedBy == currentUserId);
+            }
+            else if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (!user.ManagedRegionId.HasValue)
+                    return (new List<AdminPlaceListDto>(), 0);
+
+                placesQuery = placesQuery.Where(p => p.City != null && p.City.RegionId == user.ManagedRegionId.Value);
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                var s = query.Search.Trim().ToLower();
+                placesQuery = placesQuery.Where(p => p.Name.ToLower().Contains(s));
+            }
+
+            if (query.TypeId.HasValue)
+                placesQuery = placesQuery.Where(p => p.TypeId == query.TypeId.Value);
+
+            if (query.Region.HasValue && user?.Role.Name != RoleNames.PlaceOwner)
+                placesQuery = placesQuery.Where(p => p.City != null && p.City.RegionId == query.Region.Value);
+
+            if (query.MinRating.HasValue)
+                placesQuery = placesQuery.Where(p => p.AvgRating >= query.MinRating.Value);
+
+            if (query.DestinationId.HasValue)
+                placesQuery = placesQuery.Where(p => p.DestinationId == query.DestinationId.Value);
+
+            if (query.AmenityId.HasValue)
+                placesQuery = placesQuery.Where(p => p.AmenityLinks.Any(al => al.AmenityId == query.AmenityId.Value));
+
+            var total = await placesQuery.CountAsync();
+
+            var items = await placesQuery
+                .OrderByDescending(p => p.DeletedAt ?? p.UpdatedAt)
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            return (items.Select(MapToListDto).ToList(), total);
+        }
+
         public async Task<AdminPlaceStatsDto> GetStatsAsync(Guid currentUserId)
         {
             var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
@@ -519,7 +582,8 @@ namespace Explorea.Server.Services.Admin
             Status = p.ApprovalStatus,
             CreatedBy = p.CreatedBy,
             CreatedAt = p.CreatedAt,
-            UpdatedAt = p.UpdatedAt
+            UpdatedAt = p.UpdatedAt,
+            DeletedAt = p.DeletedAt
         };
 
         private static AdminPlaceDetailDto MapToDetailDto(Place p) => new()

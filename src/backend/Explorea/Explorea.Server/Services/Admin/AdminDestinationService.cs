@@ -112,6 +112,83 @@ namespace Explorea.Server.Services.Admin
             return (items.Select(d => MapToListDto(d, viewCounts)).ToList(), total);
         }
 
+        public async Task<(List<AdminDestinationListDto> Items, int Total)> GetDeletedAsync(
+            string? search,
+            int? cityId,
+            int? regionId,
+            int? typeId,
+            int page,
+            int pageSize,
+            Guid currentUserId)
+        {
+            List<Guid>? restrictToIds = null;
+            int? restrictToRegionId = null;
+
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+
+            if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (user.ManagedRegionId.HasValue)
+                {
+                    restrictToRegionId = user.ManagedRegionId.Value;
+                }
+                else
+                {
+                    var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
+                    restrictToIds = assignments.Select(a => a.DestinationId).ToList();
+                }
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            var query = _db.Destinations
+                .IgnoreQueryFilters()
+                .Include(d => d.City)
+                    .ThenInclude(c => c!.Region)
+                .Include(d => d.Country)
+                .Include(d => d.Type)
+                .Include(d => d.Images)
+                .Where(d => d.IsDeleted)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(d =>
+                    d.Name.ToLower().Contains(term) ||
+                    d.Slug.ToLower().Contains(term) ||
+                    (d.City != null && d.City.Name.ToLower().Contains(term)) ||
+                    (d.Country != null && d.Country.Name.ToLower().Contains(term)) ||
+                    (d.Type != null && d.Type.Name.ToLower().Contains(term)));
+            }
+
+            if (cityId.HasValue)
+                query = query.Where(d => d.CityId == cityId.Value);
+
+            if (regionId.HasValue)
+                query = query.Where(d => d.City != null && d.City.RegionId == regionId.Value);
+
+            if (typeId.HasValue)
+                query = query.Where(d => d.TypeId == typeId.Value);
+
+            if (restrictToIds != null)
+                query = query.Where(d => restrictToIds.Contains(d.Id));
+
+            if (restrictToRegionId.HasValue)
+                query = query.Where(d => d.City != null && d.City.RegionId == restrictToRegionId.Value);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(d => d.DeletedAt ?? d.UpdatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items.Select(d => MapToListDto(d)).ToList(), total);
+        }
+
         public async Task<AdminDestinationStatsDto> GetStatsAsync(Guid currentUserId)
         {
             var destinationQuery = _db.Destinations
@@ -364,6 +441,8 @@ namespace Explorea.Server.Services.Admin
 
             destination.IsDeleted = true;
             destination.DeletedAt = DateTimeOffset.UtcNow;
+            destination.UpdatedAt = DateTimeOffset.UtcNow;
+            destination.UpdatedBy = currentUserId;
 
             _destinationRepo.Update(destination);
             await _destinationRepo.SaveChangesAsync();
@@ -405,7 +484,8 @@ namespace Explorea.Server.Services.Admin
                                 })
                                 .ToList(),
             CreatedAt       = d.CreatedAt,
-            UpdatedAt       = d.UpdatedAt
+            UpdatedAt       = d.UpdatedAt,
+            DeletedAt       = d.DeletedAt
         };
 
         private async Task<Dictionary<Guid, int>> GetViewCountsAsync(List<Destination> destinations)

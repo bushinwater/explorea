@@ -6,6 +6,8 @@ namespace Explorea.Server.Services.Admin.Interfaces
     {
         Task<(List<AdminPlaceListDto> Items, int Total)> GetAllAsync(
             AdminPlaceListQueryDto query, Guid currentUserId);
+        Task<(List<AdminPlaceListDto> Items, int Total)> GetDeletedAsync(
+            AdminPlaceListQueryDto query, Guid currentUserId);
         Task<AdminPlaceStatsDto> GetStatsAsync(Guid currentUserId);
         Task<AdminPlaceDetailDto?> GetByIdAsync(Guid id, Guid currentUserId);
         Task<AdminPlaceDetailDto> CreateAsync(AdminCreatePlaceDto dto, Guid createdBy);

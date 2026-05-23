@@ -18,6 +18,15 @@ namespace Explorea.Server.Services.Admin.Interfaces
             Guid currentUserId,
             List<string>? extraFilters = null);
 
+        Task<(List<AdminDestinationListDto> Items, int Total)> GetDeletedAsync(
+            string? search,
+            int? cityId,
+            int? regionId,
+            int? typeId,
+            int page,
+            int pageSize,
+            Guid currentUserId);
+
         Task<AdminDestinationStatsDto> GetStatsAsync(Guid currentUserId);
 
         Task<List<AdminDestinationLookupDto>> GetRegionsAsync(Guid currentUserId);

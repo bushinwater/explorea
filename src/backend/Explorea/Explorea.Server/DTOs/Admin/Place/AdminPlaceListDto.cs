@@ -18,5 +18,6 @@ namespace Explorea.API.DTOs.Admin.Place
         public Guid? CreatedBy { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
     }
 }

@@ -1,8 +1,10 @@
 using Explorea.API.DTOs.Admin.Event;
 using Explorea.API.Models;
+using Explorea.Server.Data;
 using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Admin.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Explorea.Server.Services.Admin
 {
@@ -14,6 +16,7 @@ namespace Explorea.Server.Services.Admin
         private readonly IUserRepository _userRepo;
         private readonly ISubmissionQueueRepository _queueRepo;
         private readonly ILookupRepository _lookupRepo;
+        private readonly AppDbContext _db;
 
         public AdminEventService(
             IAdminEventRepository eventRepo,
@@ -21,7 +24,8 @@ namespace Explorea.Server.Services.Admin
             IDestinationRepository destinationRepo,
             ISubmissionQueueRepository queueRepo,
             IUserRepository userRepo,
-            ILookupRepository lookupRepo)
+            ILookupRepository lookupRepo,
+            AppDbContext db)
         {
             _eventRepo       = eventRepo;
             _assignmentRepo  = assignmentRepo;
@@ -29,6 +33,7 @@ namespace Explorea.Server.Services.Admin
             _queueRepo       = queueRepo;
             _userRepo        = userRepo;
             _lookupRepo      = lookupRepo;
+            _db              = db;
         }
 
         public async Task<AdminEventStatsDto> GetStatsDtoAsync(Guid currentUserId)
@@ -138,6 +143,65 @@ namespace Explorea.Server.Services.Admin
                 extraFilters,
                 restrictToDestinationIds, restrictToCityIds,
                 page, pageSize);
+
+            return (items.Select(MapToListDto).ToList(), total);
+        }
+
+        public async Task<(List<AdminEventListDto> Items, int Total)> GetDeletedAsync(
+            string? search,
+            Guid? destinationId,
+            int? cityId,
+            int? typeId,
+            int page,
+            int pageSize,
+            Guid currentUserId)
+        {
+            var (restrictToDestinationIds, restrictToCityIds) =
+                await GetAccessRestrictionsAsync(currentUserId);
+
+            var query = _db.Events
+                .IgnoreQueryFilters()
+                .Include(e => e.City)
+                .Include(e => e.Type)
+                .Include(e => e.Destination)
+                .Include(e => e.Images)
+                .Where(e => e.IsDeleted)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(e =>
+                    e.Name.ToLower().Contains(term) ||
+                    (e.Description != null && e.Description.ToLower().Contains(term)) ||
+                    (e.Address != null && e.Address.ToLower().Contains(term)) ||
+                    (e.City != null && e.City.Name.ToLower().Contains(term)) ||
+                    (e.Destination != null && e.Destination.Name.ToLower().Contains(term)) ||
+                    (e.Type != null && e.Type.Name.ToLower().Contains(term)));
+            }
+
+            if (destinationId.HasValue)
+                query = query.Where(e => e.DestinationId == destinationId.Value);
+
+            if (cityId.HasValue)
+                query = query.Where(e => e.CityId == cityId.Value);
+
+            if (typeId.HasValue)
+                query = query.Where(e => e.TypeId == typeId.Value);
+
+            if (restrictToDestinationIds != null || restrictToCityIds != null)
+            {
+                query = query.Where(e =>
+                    (restrictToDestinationIds != null && e.DestinationId.HasValue && restrictToDestinationIds.Contains(e.DestinationId.Value)) ||
+                    (restrictToCityIds != null && e.CityId.HasValue && restrictToCityIds.Contains(e.CityId.Value)));
+            }
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(e => e.DeletedAt ?? e.UpdatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
             return (items.Select(MapToListDto).ToList(), total);
         }
@@ -263,6 +327,8 @@ namespace Explorea.Server.Services.Admin
 
             ev.IsDeleted = true;
             ev.DeletedAt = DateTimeOffset.UtcNow;
+            ev.UpdatedAt = DateTimeOffset.UtcNow;
+            ev.UpdatedBy = currentUserId;
 
             _eventRepo.Update(ev);
             await _eventRepo.SaveChangesAsync();
@@ -306,7 +372,8 @@ namespace Explorea.Server.Services.Admin
             AvgRating      = e.AvgRating,
             IsFeatured     = e.IsFeatured,
             CreatedAt      = e.CreatedAt,
-            UpdatedAt      = e.UpdatedAt
+            UpdatedAt      = e.UpdatedAt,
+            DeletedAt      = e.DeletedAt
         };
 
         private static AdminEventDetailDto MapToDetailDto(Event e) => new()
