@@ -1,7 +1,7 @@
-export type EventStatus = 'pending' | 'active' | 'rejected' | 'forwarded';
+export type EventStatus = 'pending' | 'active' | 'rejected' | 'forwarded' | 'deleted';
 export type EventType = 'concert' | 'tasting' | 'conference' | 'sport' | 'exhibition' | 'other';
 export type EventPriority = 'low' | 'medium' | 'high';
-export type EventsTab = 'pending' | 'active' | 'history';
+export type EventsTab = 'pending' | 'active' | 'history' | 'deleted';
 
 export interface EventFilterOption<TValue extends string | number = string | number> {
   value: TValue;
@@ -51,6 +51,7 @@ export interface EventRow {
   ownerName: string | null;
   region: string | null;
   rejectionReason: string | null;
+  deletedAt?: string | null;
 }
 
 export interface EventStats {

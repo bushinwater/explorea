@@ -63,6 +63,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly places    = signal<PlaceRow[]>([]);
+  protected readonly listMode  = signal<'active' | 'deleted'>('active');
   protected readonly stats     = signal<PlaceStats | null>(null);
   protected readonly types     = signal<PlaceTypeOption[]>([]);
   protected readonly regions   = signal<RegionOption[]>([]);
@@ -197,6 +198,15 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.loadPlaces();
   }
 
+  protected setListMode(mode: 'active' | 'deleted'): void {
+    if (this.listMode() === mode) return;
+    this.listMode.set(mode);
+    this.closeDetailsPanel();
+    this.patchFilter({ page: 1 });
+    this.currentPage.set(1);
+    this.loadPlaces();
+  }
+
   protected goToPage(page: number): void {
     const clamped = Math.min(Math.max(page, 1), this.totalPages());
     this.patchFilter({ page: clamped });
@@ -205,6 +215,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   }
 
   protected openCreateModal(): void {
+    if (this.listMode() === 'deleted') return;
     this.isCreateModalOpen.set(true);
   }
 
@@ -250,6 +261,8 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   }
 
   protected openDetailsPanel(place: PlaceRow): void {
+    if (this.listMode() === 'deleted') return;
+
     this.detailsPanelRow.set(place);
     this.detailsPanelDetail.set(null);
     this.isDetailsPanelOpen.set(true);
@@ -399,9 +412,12 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   private loadPlaces(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
+    const request = this.listMode() === 'deleted'
+      ? this.placesService.getDeletedPlaces(this.filters())
+      : this.placesService.getPlaces(this.filters());
 
     this.subscription.add(
-      this.placesService.getPlaces(this.filters()).subscribe({
+      request.subscribe({
         next: (response) => {
           this.places.set(response.items);
           this.total.set(response.total);

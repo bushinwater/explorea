@@ -34,6 +34,7 @@ interface ApiEventItem {
   isFeatured: boolean;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
 }
 
 interface ApiQueueResponse {
@@ -139,6 +140,10 @@ export class AdminEventsService {
   }
 
   getEvents(filters: EventFilters): Observable<EventPagedResponse> {
+    if (filters.tab === 'deleted') {
+      return this.fetchDeletedEvents(filters);
+    }
+
     if (filters.tab === 'active') {
       return this.fetchActiveEvents(filters);
     }
@@ -215,6 +220,25 @@ export class AdminEventsService {
       map((res) => ({
         total: res.total,
         items: res.items.map((e) => this.mapEventItem(e)),
+      })),
+    );
+  }
+
+  private fetchDeletedEvents(filters: EventFilters): Observable<EventPagedResponse> {
+    let params = new HttpParams().set('page', filters.page).set('pageSize', filters.pageSize);
+
+    if (filters.search.trim()) params = params.set('search', filters.search.trim());
+
+    if (filters.typeId !== null) params = params.set('typeId', filters.typeId);
+
+    if (filters.cityId !== null) params = params.set('cityId', filters.cityId);
+
+    if (filters.destinationId !== null) params = params.set('destinationId', filters.destinationId);
+
+    return this.http.get<ApiEventsResponse>('/api/admin/events/deleted', { params }).pipe(
+      map((res) => ({
+        total: res.total,
+        items: res.items.map((e) => this.mapEventItem(e, 'deleted')),
       })),
     );
   }
@@ -320,7 +344,7 @@ export class AdminEventsService {
     return map[type];
   }
 
-  private mapEventItem(e: ApiEventItem): EventRow {
+  private mapEventItem(e: ApiEventItem, status: EventStatus = 'active'): EventRow {
     return {
       id: e.id,
       queueId: null,
@@ -337,7 +361,7 @@ export class AdminEventsService {
       startDate: e.startDatetime,
       endDate: e.endDatetime,
       priority: null,
-      status: 'active',
+      status,
       heroImageUrl: e.previewImageUrl,
       imageItems: [],
       expectedGuests: null,
@@ -352,6 +376,7 @@ export class AdminEventsService {
       ownerName: null,
       region: e.city,
       rejectionReason: null,
+      deletedAt: e.deletedAt ?? null,
     };
   }
 
@@ -387,6 +412,7 @@ export class AdminEventsService {
       ownerName: q.linkedPlaceId ? 'Vlasnik objekta' : null,
       region: null,
       rejectionReason: q.rejectionReason,
+      deletedAt: null,
     };
   }
 
@@ -423,6 +449,7 @@ export class AdminEventsService {
       ownerName: base?.ownerName ?? (e.placeId ? 'Vlasnik objekta' : null),
       region: e.city,
       rejectionReason: base?.rejectionReason ?? null,
+      deletedAt: base?.deletedAt ?? null,
     };
   }
 

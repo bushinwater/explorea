@@ -66,6 +66,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected readonly filterDefs = signal<FilterDefinition[]>([]);
 
   protected readonly destinations = signal<DestinationRow[]>([]);
+  protected readonly listMode = signal<'active' | 'deleted'>('active');
   protected readonly stats = signal<DestinationStats | null>(null);
   protected readonly regions = signal<RegionOption[]>([]);
   protected readonly types = signal<TypeOption[]>([]);
@@ -229,6 +230,15 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.loadDestinations();
   }
 
+  protected setListMode(mode: 'active' | 'deleted'): void {
+    if (this.listMode() === mode) return;
+    this.listMode.set(mode);
+    this.closeDetailsPanel();
+    this.patchFilter({ page: 1 });
+    this.currentPage.set(1);
+    this.loadDestinations();
+  }
+
   protected goToPage(page: number): void {
     const clamped = Math.min(Math.max(page, 1), this.totalPages());
     this.patchFilter({ page: clamped });
@@ -274,6 +284,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected openCreateModal(): void {
+    if (this.listMode() === 'deleted') return;
     this.isCreateModalOpen.set(true);
   }
 
@@ -297,6 +308,8 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected openDetailsPanel(dest: DestinationRow): void {
+    if (this.listMode() === 'deleted') return;
+
     this.detailsPanelRow.set(dest);
     this.detailsPanelDetail.set(null);
     this.isDetailsPanelOpen.set(true);
@@ -469,9 +482,12 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   private loadDestinations(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
+    const request = this.listMode() === 'deleted'
+      ? this.destinationsService.getDeletedDestinations(this.filters())
+      : this.destinationsService.getDestinations(this.filters());
 
     this.subscription.add(
-      this.destinationsService.getDestinations(this.filters()).subscribe({
+      request.subscribe({
         next: (response) => {
           this.destinations.set(response.items);
           this.total.set(response.total);
@@ -488,7 +504,11 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected silentRefresh(): void {
-    this.destinationsService.getDestinations(this.filters()).subscribe({
+    const request = this.listMode() === 'deleted'
+      ? this.destinationsService.getDeletedDestinations(this.filters())
+      : this.destinationsService.getDestinations(this.filters());
+
+    request.subscribe({
       next: (response) => {
         this.destinations.set(response.items);
         this.total.set(response.total);
