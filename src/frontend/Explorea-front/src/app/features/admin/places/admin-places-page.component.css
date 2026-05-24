@@ -245,6 +245,10 @@
   gap: 6px;
 }
 
+.place-list-mode-tabs {
+  padding: var(--sp-3) var(--sp-6) var(--sp-4);
+}
+
 .place-chip {
   padding: 4px 10px;
   border-radius: 999px;

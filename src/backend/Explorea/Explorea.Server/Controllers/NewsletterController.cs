@@ -1,4 +1,5 @@
 using Explorea.API.DTOs.Newsletter;
+using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -71,7 +72,7 @@ namespace Explorea.Server.Controllers
             {
                 var currentUser = await GetCurrentUserAsync();
 
-                if (!string.Equals(currentUser.Role?.Name, "admin", StringComparison.OrdinalIgnoreCase))
+                if (!CanSendNewsletter(currentUser.Role?.Name))
                     return Forbid();
 
                 var sentCount = await _newsletterService.SendNewsletterAsync(dto.Subject, dto.HtmlBody);
@@ -91,7 +92,7 @@ namespace Explorea.Server.Controllers
             {
                 var currentUser = await GetCurrentUserAsync();
 
-                if (!string.Equals(currentUser.Role?.Name, "admin", StringComparison.OrdinalIgnoreCase))
+                if (!CanSendNewsletter(currentUser.Role?.Name))
                     return Forbid();
 
                 var sentCount = await _newsletterService.SendTestNewsletterAsync();
@@ -118,5 +119,8 @@ namespace Explorea.Server.Controllers
 
             return user;
         }
+
+        private static bool CanSendNewsletter(string? roleName)
+            => string.Equals(roleName, RoleNames.SuperAdmin, StringComparison.OrdinalIgnoreCase);
     }
 }
