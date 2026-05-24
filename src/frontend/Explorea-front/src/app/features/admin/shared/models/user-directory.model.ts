@@ -30,6 +30,8 @@ export interface UserDirectoryStats {
   under20Users: number;
   over20Users: number;
   flaggedAccounts: number;
+  averageAge?: number | null;
+  registrationGrowthPercent?: number;
 }
 
 export interface UserDirectoryFilters extends PageQuery {
