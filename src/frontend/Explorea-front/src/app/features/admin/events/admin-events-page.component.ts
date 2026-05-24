@@ -22,11 +22,13 @@ import {
   EventStats,
   EventType,
   EventsTab,
+  InterestTagOption,
 } from './admin-events.models';
 import { AdminEventsService } from './admin-events.service';
 import { EventCreateModalComponent } from './admin-event-create-modal.component';
 import { EventEditModalComponent } from './admin-event-edit-modal.component';
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
+import { MapPreviewComponent } from '../shared/components/map-preview/map-preview.component';
 
 @Component({
   selector: 'app-admin-events-page',
@@ -40,6 +42,7 @@ import { FilterDefinition, LookupService } from '../../../core/services/lookup.s
     TableSkeletonComponent,
     EventCreateModalComponent,
     EventEditModalComponent,
+    MapPreviewComponent,
   ],
   templateUrl: './admin-events-page.component.html',
   styleUrl: './admin-events-page.component.css',
@@ -74,10 +77,13 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
   protected readonly selectedEvent = signal<EventRow | null>(null);
   protected readonly isPanelOpen = signal(false);
+  protected readonly isPanelClosing = signal(false);
   private _editFromPanel = false;
 
   protected readonly isCreateOpen = signal(false);
+  protected readonly isCreateClosing = signal(false);
   protected readonly isEditOpen = signal(false);
+  protected readonly isEditClosing = signal(false);
 
   protected readonly confirmAction = signal<'approve' | 'reject' | 'forward' | 'delete' | null>(null);
   protected readonly isConfirmOpen = signal(false);
@@ -88,6 +94,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly errorMessage = signal('');
 
   protected readonly descriptionExpanded = signal(false);
+  protected readonly detailsInterests = signal<InterestTagOption[]>([]);
 
   protected readonly isSuperAdmin = computed(
     () => this.authContext.context().role === 'super_admin',
@@ -148,6 +155,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected setTab(tab: EventsTab): void {
     this.selectedEvent.set(null);
     this.isPanelOpen.set(false);
+    this.isPanelClosing.set(false);
     this.patchFilter({ tab, page: 1 });
     this.loadEvents();
   }
@@ -216,6 +224,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.descriptionExpanded.set(false);
     this.selectedEvent.set(event);
     this.isPanelOpen.set(true);
+    this.detailsInterests.set([]);
 
     this.subscription.add(
       this.eventsService.getEventDetail(event.id, event).subscribe({
@@ -231,11 +240,24 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+
+    this.subscription.add(
+      this.eventsService.getEventInterests(event.id).subscribe({
+        next: (tags) => this.detailsInterests.set(tags.filter(t => t.isAssigned)),
+        error: () => {},
+      }),
+    );
   }
 
   protected closeDetailsPanel(): void {
-    this.selectedEvent.set(null);
-    this.isPanelOpen.set(false);
+    if (this.isPanelClosing()) return;
+    this.isPanelClosing.set(true);
+    setTimeout(() => {
+      this.selectedEvent.set(null);
+      this.isPanelOpen.set(false);
+      this.isPanelClosing.set(false);
+      this.detailsInterests.set([]);
+    }, 220);
   }
 
   protected toggleMenu(id: string, event: MouseEvent): void {
@@ -247,17 +269,31 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.isCreateOpen.set(true);
   }
 
+  protected closeCreateModal(): void {
+    this.isCreateClosing.set(true);
+    setTimeout(() => { this.isCreateOpen.set(false); this.isCreateClosing.set(false); }, 220);
+  }
+
+  protected closeEditModal(): void {
+    this.isEditClosing.set(true);
+    setTimeout(() => { this.isEditOpen.set(false); this.isEditClosing.set(false); }, 220);
+  }
+
   protected onEventCreated(row: EventRow): void {
-    this.isCreateOpen.set(false);
-    this.successMessage.set('Interni događaj je uspešno kreiran.');
-    this.patchFilter({ tab: 'active', search: '', typeId: null, cityId: null, destinationId: null, extraFilters: {}, page: 1 });
-    this.filterDefs.set([]);
-    this.currentPage.set(1);
-    this.selectedEvent.set(row);
-    this.isPanelOpen.set(true);
-    this.loadStats();
-    this.loadEvents();
-    setTimeout(() => this.successMessage.set(''), 4000);
+    this.isCreateClosing.set(true);
+    setTimeout(() => {
+      this.isCreateOpen.set(false);
+      this.isCreateClosing.set(false);
+      this.successMessage.set('Interni događaj je uspešno kreiran.');
+      this.patchFilter({ tab: 'active', search: '', typeId: null, cityId: null, destinationId: null, extraFilters: {}, page: 1 });
+      this.filterDefs.set([]);
+      this.currentPage.set(1);
+      this.selectedEvent.set(row);
+      this.isPanelOpen.set(true);
+      this.loadStats();
+      this.loadEvents();
+      setTimeout(() => this.successMessage.set(''), 4000);
+    }, 220);
   }
 
   protected openEdit(): void {
@@ -278,14 +314,18 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   }
 
   protected onEditSaved(row: EventRow): void {
-    this.isEditOpen.set(false);
-    this.selectedEvent.set(row);
-    if (this._editFromPanel) {
-      this.isPanelOpen.set(true);
-    }
-    this.successMessage.set('Izmene su sačuvane.');
-    this.loadEvents();
-    setTimeout(() => this.successMessage.set(''), 4000);
+    this.isEditClosing.set(true);
+    setTimeout(() => {
+      this.isEditOpen.set(false);
+      this.isEditClosing.set(false);
+      this.selectedEvent.set(row);
+      if (this._editFromPanel) {
+        this.isPanelOpen.set(true);
+      }
+      this.successMessage.set('Izmene su sačuvane.');
+      this.loadEvents();
+      setTimeout(() => this.successMessage.set(''), 4000);
+    }, 220);
   }
 
   protected initiateAction(action: 'approve' | 'reject' | 'forward' | 'delete'): void {
@@ -435,6 +475,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     return n.toLocaleString('sr-RS');
   }
 
+  protected formatRating(r: number): string {
+    return r > 0 ? r.toFixed(1) : '—';
+  }
+
   protected formatPrice(n: number | null): string {
     if (n === null || n === 0) return 'Besplatno';
     return `${n.toLocaleString('sr-RS')} RSD`;
@@ -467,9 +511,9 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.isConfirmOpen()) return;
-    if (this.isEditOpen()) { this.isEditOpen.set(false); return; }
-    if (this.isCreateOpen()) { this.isCreateOpen.set(false); return; }
-    if (this.isPanelOpen()) { this.closeDetailsPanel(); return; }
+    if (this.isEditOpen()) { this.closeEditModal(); return; }
+    if (this.isCreateOpen()) { this.closeCreateModal(); return; }
+    if (this.isPanelOpen() && !this.isPanelClosing()) { this.closeDetailsPanel(); return; }
   }
 
   private patchFilter(patch: Partial<EventFilters>): void {

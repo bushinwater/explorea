@@ -434,6 +434,8 @@
 }
 
 .evts-th--actions { width: 80px; }
+.evts-th--center { text-align: center; }
+.evts-td--center { text-align: center; }
 
 .evts-td {
   padding: 8px 10px;
@@ -562,6 +564,17 @@
 
 .evts-location .material-icons,
 .evts-date .material-icons { font-size: 14px; }
+
+.evts-rating {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+.evts-rating .material-icons { font-size: 16px; color: #f59e0b; }
 
 /* ===== STATUS BADGES ===== */
 .evts-status {
@@ -725,6 +738,15 @@
   to   { transform: translateX(0); }
 }
 
+@keyframes ddpSlideOut {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
+}
+
+.ddp-panel--closing {
+  animation: ddpSlideOut 0.22s ease forwards;
+}
+
 /* Header */
 .ddp-header {
   display: flex;
@@ -818,6 +840,42 @@
   gap: var(--sp-4);
 }
 
+/* Gallery */
+.ddp-gallery {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ddp-gallery__main {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+.ddp-gallery__placeholder {
+  width: 100%;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+}
+.ddp-gallery__placeholder .material-icons {
+  font-size: 48px;
+  color: rgba(255,255,255,0.8);
+}
+.ddp-gallery__thumbs {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.ddp-gallery__thumb {
+  flex: 1;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
 /* Badges */
 .ddp-badges {
   display: flex;
@@ -883,6 +941,33 @@
   font-size: 0.85rem;
   font-weight: 500;
 }
+
+/* Interests */
+.ddp-interests { padding: var(--sp-1) 0 var(--sp-3); }
+
+.ddp-interests-scroll {
+  display: flex;
+  gap: var(--sp-2);
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.ddp-interests-scroll::-webkit-scrollbar { display: none; }
+
+.ddp-interest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ddp-interest-chip .material-icons { font-size: 16px; line-height: 1; }
 
 /* Description */
 .ddp-description-wrap { display: flex; flex-direction: column; gap: 4px; }

@@ -5,23 +5,21 @@
   <app-feedback-banner variant="error" [title]="errorMessage()" />
 }
 
-@if (isCreateOpen()) {
+@if (isCreateOpen() || isCreateClosing()) {
   <app-event-create-modal
     [eventTypeOptions]="eventTypeOptions()"
-    [cityOptions]="cityOptions()"
-    [destinationOptions]="destinationOptions()"
-    (cancel)="isCreateOpen.set(false)"
+    [closing]="isCreateClosing()"
+    (cancel)="closeCreateModal()"
     (created)="onEventCreated($event)"
   />
 }
 
-@if (isEditOpen() && selectedEvent()) {
+@if ((isEditOpen() || isEditClosing()) && selectedEvent()) {
   <app-event-edit-modal
     [event]="selectedEvent()!"
     [eventTypeOptions]="eventTypeOptions()"
-    [cityOptions]="cityOptions()"
-    [destinationOptions]="destinationOptions()"
-    (cancel)="isEditOpen.set(false)"
+    [closing]="isEditClosing()"
+    (cancel)="closeEditModal()"
     (saved)="onEditSaved($event)"
   />
 }
@@ -202,6 +200,7 @@
                 <th class="evts-th evts-th--hide-sm">Tip</th>
                 <th class="evts-th evts-th--hide-md">Lokacija</th>
                 <th class="evts-th evts-th--hide-sm">Datum</th>
+                <th class="evts-th evts-th--hide-md evts-th--center">Ocena</th>
                 @if (filters().tab !== 'active') {
                   <th class="evts-th">Status</th>
                 }
@@ -253,6 +252,16 @@
                       <span class="material-icons">calendar_today</span>
                       {{ formatDate(ev.startDate) }}
                     </span>
+                  </td>
+                  <td class="evts-td evts-td--hide-md evts-td--center">
+                    <div class="evts-rating">
+                      @if (ev.avgRating > 0) {
+                        <span class="material-icons">star</span>
+                        {{ formatRating(ev.avgRating) }}
+                      } @else {
+                        —
+                      }
+                    </div>
                   </td>
                   @if (filters().tab !== 'active') {
                     <td class="evts-td">
@@ -317,9 +326,9 @@
 </div>
 
 <!-- ===== EVENT DETAILS PANEL (ddp-panel style) ===== -->
-@if (isPanelOpen() && selectedEvent(); as ev) {
+@if ((isPanelOpen() || isPanelClosing()) && selectedEvent(); as ev) {
   <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
-  <aside class="ddp-panel" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+  <aside class="ddp-panel" [class.ddp-panel--closing]="isPanelClosing()" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
 
     <header class="ddp-header">
       <div class="ddp-header__title-group">
@@ -345,6 +354,30 @@
 
     <div class="ddp-body">
 
+      <!-- Gallery -->
+      @if (ev.imageItems.length > 0) {
+        <div class="ddp-gallery">
+          <img class="ddp-gallery__main" [src]="ev.imageItems[0].imageUrl" [alt]="ev.name" />
+          @if (ev.imageItems.length > 1) {
+            <div class="ddp-gallery__thumbs">
+              @for (img of ev.imageItems.slice(1, 4); track img.id) {
+                <img class="ddp-gallery__thumb" [src]="img.imageUrl" [alt]="ev.name" />
+              }
+            </div>
+          }
+        </div>
+      } @else if (ev.heroImageUrl) {
+        <div class="ddp-gallery">
+          <img class="ddp-gallery__main" [src]="ev.heroImageUrl" [alt]="ev.name" />
+        </div>
+      } @else {
+        <div class="ddp-gallery">
+          <div class="ddp-gallery__placeholder" [style.background-color]="thumbColor(ev.type)">
+            <span class="material-icons">{{ typeIcon(ev.type) }}</span>
+          </div>
+        </div>
+      }
+
       <!-- Badges -->
       <div class="ddp-badges">
         <span class="evts-status evts-status--{{ ev.status }}">{{ statusLabel(ev.status) }}</span>
@@ -368,6 +401,21 @@
           <span class="material-icons">business</span>
           {{ ev.organizer }}
         </p>
+      }
+
+      <!-- Interests -->
+      @if (detailsInterests().length) {
+        <div class="ddp-interests">
+          <span class="ddp-grid__label">Interesovanja</span>
+          <div class="ddp-interests-scroll">
+            @for (tag of detailsInterests(); track tag.id) {
+              <span class="ddp-interest-chip">
+                @if (tag.icon) { <span class="material-icons">{{ tag.icon }}</span> }
+                {{ tag.name }}
+              </span>
+            }
+          </div>
+        </div>
       }
 
       <!-- Detail grid -->
@@ -396,12 +444,24 @@
             <span class="ddp-grid__value">{{ ev.address }}</span>
           </div>
         }
+        @if (ev.avgRating > 0) {
+          <div class="ddp-grid__item">
+            <span class="ddp-grid__label">Ocena</span>
+            <span class="ddp-grid__value">{{ formatRating(ev.avgRating) }} / 5</span>
+          </div>
+        }
         @if (ev.ticketUrl) {
           <div class="ddp-grid__item ddp-grid__item--full">
             <span class="ddp-grid__label">Kupovina karata</span>
             <span class="ddp-grid__value">
               <a [href]="ev.ticketUrl" target="_blank" rel="noopener" class="ddp-link">{{ ev.ticketUrl }}</a>
             </span>
+          </div>
+        }
+        @if (ev.latitude != null && ev.longitude != null) {
+          <div class="ddp-grid__item ddp-grid__item--full">
+            <span class="ddp-grid__label">Lokacija</span>
+            <app-admin-map-preview [latitude]="ev.latitude" [longitude]="ev.longitude" />
           </div>
         }
       </div>

@@ -1,3 +1,39 @@
+export interface InterestTagOption {
+  id: number;
+  name: string;
+  icon: string | null;
+  isAssigned?: boolean;
+}
+
+export interface CountryOption {
+  id: number;
+  name: string;
+}
+
+export interface RegionWithCountry {
+  id: number;
+  name: string;
+  countryId: number | null;
+}
+
+export interface DestinationSearchItem {
+  id: string;
+  name: string;
+  regionId?: number | null;
+  countryId?: number | null;
+  regionName?: string | null;
+  countryName?: string | null;
+}
+
+export interface PlaceSearchItem {
+  id: string;
+  name: string;
+  destinationId?: string | null;
+  destinationName?: string | null;
+  regionId?: number | null;
+  countryId?: number | null;
+}
+
 export type EventStatus = 'pending' | 'active' | 'rejected' | 'forwarded';
 export type EventType = 'concert' | 'tasting' | 'conference' | 'sport' | 'exhibition' | 'other';
 export type EventPriority = 'low' | 'medium' | 'high';
@@ -32,6 +68,7 @@ export interface EventRow {
   city: string | null;
   cityId: number | null;
   destinationId: string | null;
+  placeId: string | null;
   venue: string | null;
   startDate: string;
   endDate: string | null;
@@ -47,10 +84,12 @@ export interface EventRow {
   longitude: number | null;
   ticketUrl: string | null;
   isFeatured: boolean;
+  avgRating: number;
   documents: EventDocument[];
   ownerName: string | null;
   region: string | null;
   rejectionReason: string | null;
+  extraFilters?: Record<string, string>;
 }
 
 export interface EventStats {
@@ -99,6 +138,7 @@ export interface CreateEventPayload {
   longitude: number | null;
   ticketUrl: string | null;
   isFeatured: boolean;
+  extraFilters?: Record<string, string>;
 }
 
 export interface UpdateEventPayload {
@@ -114,6 +154,8 @@ export interface UpdateEventPayload {
   longitude?: number | null;
   cityId?: number | null;
   destinationId?: string | null;
+  placeId?: string | null;
   ticketUrl?: string | null;
   isFeatured?: boolean;
+  extraFilters?: Record<string, string>;
 }
