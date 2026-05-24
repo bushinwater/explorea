@@ -81,6 +81,7 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
   protected readonly uploadingCount = signal(0);
   protected readonly heroImageId      = signal<string | null>(null);
   protected readonly isSettingHero    = signal(false);
+  protected readonly pendingImages    = signal<{ file: File; url: string }[]>([]);
   protected readonly localTypes       = signal<TypeOption[]>([]);
   protected readonly localRegions     = signal<RegionOption[]>([]);
   protected readonly localCountries   = signal<CountryOption[]>([]);
@@ -141,6 +142,7 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
     this.sub.unsubscribe();
     this.themeObserver?.disconnect();
     this.map?.remove();
+    this.pendingImages().forEach(p => URL.revokeObjectURL(p.url));
   }
 
   protected toggleInterest(id: number): void {
@@ -214,6 +216,7 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
           if (ids.length > 0) {
             this.svc.setDestinationInterests(row.id, ids).subscribe();
           }
+          this.uploadPendingImages(row.id);
           this.isSaving.set(false);
           this.form.disable();
           this.cdr.detectChanges();
@@ -282,12 +285,20 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
   }
 
   protected onFilesSelected(event: Event): void {
-    const destId = this.createdRow()?.id;
-    if (!destId) return;
-
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
     input.value = '';
+
+    const destId = this.createdRow()?.id;
+    if (!destId) {
+      const pending = this.pendingImages();
+      const slots = MAX_IMAGES - pending.length;
+      if (slots <= 0) { this.error.set(`Maksimalan broj slika je ${MAX_IMAGES}.`); this.cdr.detectChanges(); return; }
+      const toAdd = files.slice(0, slots).map(file => ({ file, url: URL.createObjectURL(file) }));
+      this.pendingImages.update(p => [...p, ...toAdd]);
+      this.cdr.detectChanges();
+      return;
+    }
 
     const slots = MAX_IMAGES - this.images().length - this.uploadingCount();
     if (slots <= 0) {
@@ -315,6 +326,37 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
           },
           error: (err) => {
             this.uploadingCount.update((n) => n - 1);
+            this.error.set(err?.error?.message ?? 'Greška pri otpremanju slike.');
+            this.cdr.detectChanges();
+          },
+        }),
+      );
+    });
+  }
+
+  protected removePendingImage(index: number): void {
+    const pending = this.pendingImages();
+    URL.revokeObjectURL(pending[index].url);
+    this.pendingImages.update(p => p.filter((_, i) => i !== index));
+  }
+
+  private uploadPendingImages(destId: string): void {
+    const pending = this.pendingImages();
+    if (!pending.length) return;
+    this.pendingImages.set([]);
+    this.uploadingCount.update(n => n + pending.length);
+    pending.forEach(({ file, url }) => {
+      URL.revokeObjectURL(url);
+      this.sub.add(
+        this.svc.addImage(destId, file).subscribe({
+          next: (img) => {
+            this.images.update(l => [...l, img]);
+            this.uploadingCount.update(n => n - 1);
+            if (this.heroImageId() === null) this.setHero(img.id);
+            this.cdr.detectChanges();
+          },
+          error: (err) => {
+            this.uploadingCount.update(n => n - 1);
             this.error.set(err?.error?.message ?? 'Greška pri otpremanju slike.');
             this.cdr.detectChanges();
           },

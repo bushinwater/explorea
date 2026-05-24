@@ -94,6 +94,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
   protected readonly heroImageId = signal<string | null>(null);
   protected readonly uploadingCount = signal(0);
   protected readonly isSettingHero = signal(false);
+  protected readonly pendingImages = signal<{ file: File; url: string }[]>([]);
 
   protected readonly allInterestTags = signal<InterestTagOption[]>([]);
   protected readonly selectedInterestIds = signal<number[]>([]);
@@ -198,6 +199,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.sub.unsubscribe();
     this.destroyMap();
+    this.pendingImages().forEach(p => URL.revokeObjectURL(p.url));
   }
 
   protected readonly isCreated = computed(() => this.createdRow() !== null);
@@ -287,19 +289,44 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
     this.placeQuery.set(item.name);
     this.placeResults.set([]);
     this.showPlaceResults.set(false);
-    if (item.destinationId) {
-      this.form.update(f => ({ ...f, destinationId: item.destinationId! }));
-      this.selectedDestName.set(item.destinationName ?? '');
-      this.destinationQuery.set(item.destinationName ?? '');
-    }
-    if (item.countryId != null) {
-      this.selectedCountryId.set(item.countryId);
-    } else if (item.regionId != null) {
-      const region = this.allRegions().find(r => r.id === item.regionId);
-      if (region?.countryId != null) this.selectedCountryId.set(region.countryId);
-    }
-    if (item.regionId != null) this.selectedRegionId.set(item.regionId);
     this.cdr.detectChanges();
+
+    // Fetch full place detail to get destinationId + countryId, then chain destination for regionId
+    this.sub.add(
+      this.eventsService.getPlaceById(item.id).subscribe({
+        next: place => {
+          if (!place) { this.cdr.detectChanges(); return; }
+          if (place.destinationId) {
+            this.form.update(f => ({ ...f, destinationId: place.destinationId! }));
+            this.selectedDestName.set(place.destinationName ?? '');
+            this.destinationQuery.set(place.destinationName ?? '');
+            this.sub.add(
+              this.eventsService.getDestinationById(place.destinationId).subscribe({
+                next: dest => {
+                  if (dest?.regionId != null) this.selectedRegionId.set(dest.regionId);
+                  const cid = dest?.countryId ?? place.countryId;
+                  if (cid != null) {
+                    this.selectedCountryId.set(cid);
+                  } else if (dest?.regionId != null) {
+                    const r = this.allRegions().find(reg => reg.id === dest.regionId);
+                    if (r?.countryId != null) this.selectedCountryId.set(r.countryId);
+                  }
+                  this.cdr.detectChanges();
+                },
+                error: () => {
+                  if (place.countryId != null) this.selectedCountryId.set(place.countryId);
+                  this.cdr.detectChanges();
+                },
+              }),
+            );
+          } else {
+            if (place.countryId != null) this.selectedCountryId.set(place.countryId);
+            this.cdr.detectChanges();
+          }
+        },
+        error: () => {},
+      }),
+    );
   }
 
   protected clearPlaceOnly(): void {
@@ -443,6 +470,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
           const finishCreate = () => {
             this.isSaving.set(false);
             this.createdRow.set(row);
+            this.uploadPendingImages(row.id);
             this.cdr.detectChanges();
           };
           const ids = this.selectedInterestIds();
@@ -463,11 +491,21 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
   protected finish(): void { this.created.emit(this.createdRow()!); }
 
   protected onFilesSelected(event: Event): void {
-    const eventId = this.createdRow()?.id;
-    if (!eventId) return;
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
     input.value = '';
+
+    const eventId = this.createdRow()?.id;
+    if (!eventId) {
+      const pending = this.pendingImages();
+      const slots = MAX_IMAGES - pending.length;
+      if (slots <= 0) { this.errors.set([`Maksimalan broj slika je ${MAX_IMAGES}.`]); this.cdr.detectChanges(); return; }
+      const toAdd = files.slice(0, slots).map(file => ({ file, url: URL.createObjectURL(file) }));
+      this.pendingImages.update(p => [...p, ...toAdd]);
+      this.cdr.detectChanges();
+      return;
+    }
+
     const slots = MAX_IMAGES - this.images().length - this.uploadingCount();
     if (slots <= 0) { this.errors.set([`Maksimalan broj slika je ${MAX_IMAGES}.`]); this.cdr.detectChanges(); return; }
     const toUpload = files.slice(0, slots);
@@ -485,6 +523,12 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
         }),
       );
     });
+  }
+
+  protected removePendingImage(index: number): void {
+    const pending = this.pendingImages();
+    URL.revokeObjectURL(pending[index].url);
+    this.pendingImages.update(p => p.filter((_, i) => i !== index));
   }
 
   protected setHero(imageId: string): void {
@@ -516,6 +560,31 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
         error: () => { this.errors.set(['Greška pri brisanju slike.']); this.cdr.detectChanges(); },
       }),
     );
+  }
+
+  private uploadPendingImages(eventId: string): void {
+    const pending = this.pendingImages();
+    if (!pending.length) return;
+    this.pendingImages.set([]);
+    this.uploadingCount.update(n => n + pending.length);
+    pending.forEach(({ file, url }) => {
+      URL.revokeObjectURL(url);
+      this.sub.add(
+        this.eventsService.uploadEventImage(eventId, file).subscribe({
+          next: img => {
+            this.images.update(l => [...l, img]);
+            this.uploadingCount.update(n => n - 1);
+            if (this.heroImageId() === null) this.setHero(img.id);
+            this.cdr.detectChanges();
+          },
+          error: () => {
+            this.uploadingCount.update(n => n - 1);
+            this.errors.set(['Greška pri otpremanju slike.']);
+            this.cdr.detectChanges();
+          },
+        }),
+      );
+    });
   }
 
   private loadFilterDefs(typeId: number): void {

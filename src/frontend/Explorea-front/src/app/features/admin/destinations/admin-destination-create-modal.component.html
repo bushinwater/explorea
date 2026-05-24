@@ -208,6 +208,40 @@
         </div>
       </div>
 
+      <!-- Images (local previews before creation) -->
+      <div class="edit-modal__images-section">
+        <div class="edit-modal__images-header">
+          <span class="edit-field__label">
+            Slike
+            <span class="edit-field__counter">{{ pendingImages().length }} / {{ MAX_IMAGES }}</span>
+          </span>
+          @if (pendingImages().length < MAX_IMAGES) {
+            <label class="edit-modal__add-img-btn" title="Dodaj sliku">
+              <span class="material-icons">add_photo_alternate</span>
+              Dodaj
+              <input type="file" accept="image/*" multiple hidden (change)="onFilesSelected($event)" />
+            </label>
+          }
+        </div>
+
+        <div class="edit-modal__images-grid">
+          @for (p of pendingImages(); track p.url) {
+            <div class="edit-modal__img-card">
+              <img [src]="p.url" alt="Slika destinacije" class="edit-modal__img" />
+              <button class="edit-modal__img-delete" type="button" title="Ukloni sliku" (click)="removePendingImage($index)">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+          }
+          @if (pendingImages().length === 0) {
+            <div class="edit-modal__images-empty">
+              <span class="material-icons">image_not_supported</span>
+              Nema slika
+            </div>
+          }
+        </div>
+      </div>
+
       <!-- Footer -->
       <footer class="edit-modal__footer">
         <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="cancel.emit()">

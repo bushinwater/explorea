@@ -352,9 +352,9 @@
       <div class="edit-modal__images-header">
         <span class="edit-field__label">
           Slike
-          <span class="edit-field__counter">{{ images().length }} / {{ MAX_IMAGES }}</span>
+          <span class="edit-field__counter">{{ images().length + pendingImages().length }} / {{ MAX_IMAGES }}</span>
         </span>
-        @if (isCreated() && images().length < MAX_IMAGES) {
+        @if ((images().length + pendingImages().length) < MAX_IMAGES) {
           <label class="edit-modal__add-img-btn" title="Dodaj sliku">
             <span class="material-icons">add_photo_alternate</span>
             Dodaj
@@ -364,6 +364,15 @@
       </div>
 
       <div class="edit-modal__images-grid">
+        @for (p of pendingImages(); track p.url) {
+          <div class="edit-modal__img-card">
+            <img [src]="p.url" alt="Slika događaja" class="edit-modal__img" />
+            <button class="edit-modal__img-delete" type="button" title="Ukloni sliku" (click)="removePendingImage($index)">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+        }
+
         @for (img of images(); track img.id) {
           <div class="edit-modal__img-card" [class.edit-modal__img-card--hero]="heroImageId() === img.id">
             <img [src]="img.imageUrl" alt="Slika događaja" class="edit-modal__img" />
@@ -384,7 +393,7 @@
           </div>
         }
 
-        @if (images().length === 0 && uploadingCount() === 0) {
+        @if (images().length === 0 && pendingImages().length === 0 && uploadingCount() === 0) {
           <div class="edit-modal__images-empty">
             <span class="material-icons">image_not_supported</span>
             Nema slika

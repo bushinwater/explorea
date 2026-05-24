@@ -373,19 +373,44 @@ export class EventEditModalComponent implements OnInit, AfterViewInit, OnDestroy
     this.placeQuery.set(item.name);
     this.placeResults.set([]);
     this.showPlaceResults.set(false);
-    if (item.destinationId) {
-      this.form.update(f => ({ ...f, destinationId: item.destinationId! }));
-      this.selectedDestName.set(item.destinationName ?? '');
-      this.destinationQuery.set(item.destinationName ?? '');
-    }
-    if (item.countryId != null) {
-      this.selectedCountryId.set(item.countryId);
-    } else if (item.regionId != null) {
-      const region = this.allRegions().find(r => r.id === item.regionId);
-      if (region?.countryId != null) this.selectedCountryId.set(region.countryId);
-    }
-    if (item.regionId != null) this.selectedRegionId.set(item.regionId);
     this.cdr.detectChanges();
+
+    // Fetch full place detail to get destinationId + countryId, then chain destination for regionId
+    this.sub.add(
+      this.eventsService.getPlaceById(item.id).subscribe({
+        next: place => {
+          if (!place) { this.cdr.detectChanges(); return; }
+          if (place.destinationId) {
+            this.form.update(f => ({ ...f, destinationId: place.destinationId! }));
+            this.selectedDestName.set(place.destinationName ?? '');
+            this.destinationQuery.set(place.destinationName ?? '');
+            this.sub.add(
+              this.eventsService.getDestinationById(place.destinationId).subscribe({
+                next: dest => {
+                  if (dest?.regionId != null) this.selectedRegionId.set(dest.regionId);
+                  const cid = dest?.countryId ?? place.countryId;
+                  if (cid != null) {
+                    this.selectedCountryId.set(cid);
+                  } else if (dest?.regionId != null) {
+                    const r = this.allRegions().find(reg => reg.id === dest.regionId);
+                    if (r?.countryId != null) this.selectedCountryId.set(r.countryId);
+                  }
+                  this.cdr.detectChanges();
+                },
+                error: () => {
+                  if (place.countryId != null) this.selectedCountryId.set(place.countryId);
+                  this.cdr.detectChanges();
+                },
+              }),
+            );
+          } else {
+            if (place.countryId != null) this.selectedCountryId.set(place.countryId);
+            this.cdr.detectChanges();
+          }
+        },
+        error: () => {},
+      }),
+    );
   }
 
   protected clearPlaceOnly(): void {
