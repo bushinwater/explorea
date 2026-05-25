@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Explorea.API.DTOs.Admin.Destination;
 using Explorea.API.Models;
 using Explorea.Server.Data;
@@ -211,8 +212,9 @@ namespace Explorea.Server.Services.Admin
                     .OrderBy(r => r.Name)
                     .Select(r => new AdminDestinationLookupDto
                     {
-                        Id = r.Id,
-                        Name = r.Name
+                        Id        = r.Id,
+                        Name      = r.Name,
+                        CountryId = r.CountryId
                     })
                     .ToListAsync();
             }
@@ -227,8 +229,22 @@ namespace Explorea.Server.Services.Admin
                 .Where(r => r.Id == user.ManagedRegionId.Value)
                 .Select(r => new AdminDestinationLookupDto
                 {
-                    Id = r.Id,
-                    Name = r.Name
+                    Id        = r.Id,
+                    Name      = r.Name,
+                    CountryId = r.CountryId
+                })
+                .ToListAsync();
+        }
+
+        public async Task<List<AdminCountryLookupDto>> GetCountriesAsync()
+        {
+            return await _db.Countries
+                .OrderBy(c => c.Name)
+                .Select(c => new AdminCountryLookupDto
+                {
+                    Id   = c.Id,
+                    Name = c.Name,
+                    Code = c.Code
                 })
                 .ToListAsync();
         }
@@ -293,6 +309,7 @@ namespace Explorea.Server.Services.Admin
                 HeroImageUrl = dto.HeroImageUrl,
                 Visibility  = dto.Visibility,
                 TypeId      = dto.TypeId,
+                ExtraFilters = dto.ExtraFilters != null ? JsonSerializer.Serialize(dto.ExtraFilters) : null,
                 CreatedAt   = now,
                 UpdatedAt   = now,
                 CreatedBy   = createdBy,
@@ -329,8 +346,10 @@ namespace Explorea.Server.Services.Admin
             if (dto.Description != null) destination.Description = dto.Description;
             if (dto.HeroImageUrl!= null) destination.HeroImageUrl= dto.HeroImageUrl;
             if (dto.Visibility  != null) destination.Visibility  = dto.Visibility;
-            if (dto.CityId      != null) destination.CityId      = dto.CityId;
-            if (dto.CountryId   != null) destination.CountryId   = dto.CountryId;
+            if (dto.CityId    != null) destination.CityId = dto.CityId;
+
+            if (dto.ClearCountryId)             destination.CountryId = null;
+            else if (dto.CountryId.HasValue)    destination.CountryId = dto.CountryId.Value;
 
             if (dto.Latitude.HasValue && dto.Longitude.HasValue)
             {
@@ -342,6 +361,9 @@ namespace Explorea.Server.Services.Admin
 
             if (dto.ClearTypeId)      destination.TypeId = null;
             else if (dto.TypeId.HasValue) destination.TypeId = dto.TypeId.Value;
+
+            if (dto.ExtraFilters != null)
+                destination.ExtraFilters = JsonSerializer.Serialize(dto.ExtraFilters);
 
             destination.UpdatedAt = DateTimeOffset.UtcNow;
             destination.UpdatedBy = updatedBy;
@@ -383,6 +405,7 @@ namespace Explorea.Server.Services.Admin
             PreviewImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
             Region          = d.City?.Region?.Name,
             RegionId        = d.City?.RegionId,
+            CityId          = d.CityId,
             Views           = viewCounts?.GetValueOrDefault(d.Id) ?? 0,
             Status          = MapStatus(d.Visibility),
             TypeId          = d.TypeId,
@@ -391,6 +414,7 @@ namespace Explorea.Server.Services.Admin
             IsFeatured      = d.IsFeatured,
             Visibility      = d.Visibility,
             City            = d.City?.Name,
+            CountryId       = d.CountryId,
             Country         = d.Country?.Name,
             Description     = d.Description,
             Latitude        = d.Latitude,
@@ -405,7 +429,10 @@ namespace Explorea.Server.Services.Admin
                                 })
                                 .ToList(),
             CreatedAt       = d.CreatedAt,
-            UpdatedAt       = d.UpdatedAt
+            UpdatedAt       = d.UpdatedAt,
+            ExtraFilters    = string.IsNullOrEmpty(d.ExtraFilters)
+                                ? null
+                                : JsonSerializer.Deserialize<Dictionary<string, string>>(d.ExtraFilters)
         };
 
         private async Task<Dictionary<Guid, int>> GetViewCountsAsync(List<Destination> destinations)

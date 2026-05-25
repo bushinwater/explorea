@@ -37,6 +37,7 @@ namespace Explorea.API.Models
         [MaxLength(50),  Column("price_range")]  public string?  PriceRange    { get; set; }
         [Column("price_per_night")]               public decimal? PricePerNight { get; set; }
         [MaxLength(50),  Column("phone")]        public string? Phone      { get; set; }
+        [MaxLength(200), Column("email")]        public string? Email      { get; set; }
         [MaxLength(500), Column("website_url")]  public string? WebsiteUrl { get; set; }
 
         [Column("country_id")] public int? CountryId { get; set; }

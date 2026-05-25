@@ -9,6 +9,7 @@ import {
   OnInit,
   Output,
   ViewChild,
+  computed,
   signal,
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
@@ -17,10 +18,11 @@ import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminDestinationsService } from './admin-destinations.service';
-import { DestinationDetail, DestinationImage, DestinationRow, RegionOption, TypeOption } from './admin-destinations.models';
+import { CountryOption, DestinationDetail, DestinationImage, DestinationRow, InterestTagOption, RegionOption, TypeOption } from './admin-destinations.models';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 
-const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 const MAX_IMAGES = 10;
 const MAX_DESC = 2000;
 
@@ -52,6 +54,7 @@ const LIGHT = {
 export class DestinationEditModalComponent implements OnInit, OnDestroy {
   @Input() row!: DestinationRow;
   @Input() types: TypeOption[] = [];
+  @Input() closing = false;
   @Output() cancel      = new EventEmitter<void>();
   @Output() saved       = new EventEmitter<DestinationRow>();
   @Output() typeCreated = new EventEmitter<TypeOption>();
@@ -63,6 +66,7 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
     description: new FormControl('', [Validators.maxLength(MAX_DESC)]),
     visibility:  new FormControl('published'),
     typeId:      new FormControl<string | null>(null),
+    countryId:   new FormControl<string | null>(null),
     regionId:    new FormControl<string | null>(null),
     address:     new FormControl(''),
     latitude:    new FormControl<number | null>(null),
@@ -79,13 +83,30 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
   protected readonly images        = signal<DestinationImage[]>([]);
   protected readonly uploadingCount = signal(0);
   protected readonly heroImageId      = signal<string | null>(null);
-  protected readonly localTypes       = signal<TypeOption[]>([]);
-  protected readonly localRegions     = signal<RegionOption[]>([]);
+  protected readonly localTypes        = signal<TypeOption[]>([]);
+  protected readonly localRegions      = signal<RegionOption[]>([]);
+  protected readonly localCountries    = signal<CountryOption[]>([]);
+  protected readonly selectedCountryId = signal<number | null>(null);
+  protected readonly filteredRegions   = computed(() => {
+    const cid = this.selectedCountryId();
+    if (cid === null) return this.localRegions();
+    return this.localRegions().filter(r => r.countryId === cid);
+  });
 
   private originalHeroImageId: string | null = null;
+  protected readonly allInterestTags    = signal<InterestTagOption[]>([]);
+  protected readonly selectedInterestIds = signal<number[]>([]);
   protected readonly showNewTypeInput = signal(false);
   protected readonly newTypeName      = signal('');
   protected readonly isCreatingType   = signal(false);
+
+  protected readonly filterDefs     = signal<FilterDefinition[]>([]);
+  protected readonly showAddFilter  = signal(false);
+  protected readonly newFilterKey   = signal('');
+  protected readonly newFilterLabel = signal('');
+  protected readonly newFilterType  = signal('boolean');
+  protected readonly isAddingFilter = signal(false);
+  protected readonly extraFilters   = signal<Record<string, string>>({});
 
   protected readonly visibilityOptions = [
     { value: 'published', label: 'Aktivno' },
@@ -103,6 +124,7 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly svc: AdminDestinationsService,
+    private readonly lookupService: LookupService,
     private readonly http: HttpClient,
     protected readonly ui: AdminUiPreferencesService,
     private readonly cdr: ChangeDetectorRef,
@@ -111,18 +133,49 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.localTypes.set([...this.types]);
     this.svc.getRegions().subscribe(r => { this.localRegions.set(r); this.cdr.detectChanges(); });
+    this.svc.getCountries().subscribe(c => { this.localCountries.set(c); this.cdr.detectChanges(); });
+    this.svc.getDestinationInterests(this.row.id).subscribe(tags => {
+      this.allInterestTags.set(tags);
+      this.selectedInterestIds.set(tags.filter(t => t.isAssigned).map(t => t.id));
+      this.cdr.detectChanges();
+    });
+    this.form.controls.countryId.valueChanges.subscribe(val => {
+      const id = val ? parseInt(val) : null;
+      this.selectedCountryId.set(id);
+      const regionVal = this.form.value.regionId;
+      if (regionVal) {
+        const regionId = parseInt(regionVal);
+        const stillValid = this.filteredRegions().some(r => r.id === regionId);
+        if (!stillValid) this.form.patchValue({ regionId: null });
+      }
+      this.cdr.detectChanges();
+    });
+    this.form.controls.typeId.valueChanges.subscribe(val => {
+      const typeId = val ? parseInt(val) : null;
+      this.extraFilters.set({});
+      if (typeId !== null) {
+        this.loadFilterDefs(typeId);
+      } else {
+        this.filterDefs.set([]);
+      }
+      this.cdr.detectChanges();
+    });
     this.sub.add(
       this.svc.getDestinationById(this.row.id).subscribe({
         next: (detail) => {
+          const countryId = detail.countryId ?? null;
+          this.selectedCountryId.set(countryId);
           this.form.patchValue({
             name:        detail.name,
             description: detail.description ?? '',
             visibility:  detail.visibility,
             typeId:      detail.typeId?.toString()   ?? null,
+            countryId:   countryId?.toString()       ?? null,
             regionId:    detail.regionId?.toString() ?? null,
             latitude:    detail.latitude,
             longitude:   detail.longitude,
           });
+          this.extraFilters.set(detail.extraFilters ?? {});
           this.images.set(detail.images);
           if (detail.previewImageUrl) {
             const heroImg = detail.images.find(i => i.imageUrl === detail.previewImageUrl);
@@ -273,6 +326,55 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected updateExtraFilter(key: string, value: string | boolean): void {
+    this.extraFilters.update(ef => {
+      const n = { ...ef };
+      if (value === false || value === '') delete n[key];
+      else n[key] = String(value);
+      return n;
+    });
+  }
+
+  protected toggleAddFilter(): void {
+    this.showAddFilter.update(v => !v);
+    this.newFilterKey.set('');
+    this.newFilterLabel.set('');
+    this.newFilterType.set('boolean');
+  }
+
+  protected addNewFilter(): void {
+    const typeId = this.form.value.typeId ? parseInt(this.form.value.typeId) : null;
+    const key = this.newFilterKey().trim();
+    const label = this.newFilterLabel().trim();
+    const type = this.newFilterType();
+    if (!typeId || !key || !label || this.isAddingFilter()) return;
+    this.isAddingFilter.set(true);
+    this.sub.add(
+      this.svc.createFilterDefinition(typeId, key, label, type).subscribe({
+        next: def => {
+          this.filterDefs.update(d => [...d, def]);
+          this.isAddingFilter.set(false);
+          this.showAddFilter.set(false);
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.isAddingFilter.set(false);
+          this.error.set('Kreiranje filtera nije uspelo.');
+          this.cdr.detectChanges();
+        },
+      }),
+    );
+  }
+
+  protected toggleInterest(id: number): void {
+    const current = this.selectedInterestIds();
+    if (current.includes(id)) {
+      this.selectedInterestIds.set(current.filter(i => i !== id));
+    } else if (current.length < 3) {
+      this.selectedInterestIds.set([...current, id]);
+    }
+  }
+
   protected setHero(imageId: string): void {
     this.heroImageId.set(imageId);
   }
@@ -286,27 +388,35 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
     this.sub.add(
       this.svc
         .updateDestination(this.row.id, {
-          name:          v.name ?? undefined,
-          description:   v.description ?? undefined,
-          visibility:    v.visibility ?? undefined,
-          latitude:      v.latitude ?? undefined,
-          longitude:     v.longitude ?? undefined,
-          typeId:        v.typeId   ? parseInt(v.typeId)   : undefined,
-          clearTypeId:   v.typeId   === null,
-          regionId:      v.regionId ? parseInt(v.regionId) : undefined,
-          clearRegionId: v.regionId === null,
+          name:           v.name ?? undefined,
+          description:    v.description ?? undefined,
+          visibility:     v.visibility ?? undefined,
+          latitude:       v.latitude ?? undefined,
+          longitude:      v.longitude ?? undefined,
+          typeId:         v.typeId    ? parseInt(v.typeId)    : undefined,
+          clearTypeId:    v.typeId    === null,
+          regionId:       v.regionId  ? parseInt(v.regionId)  : undefined,
+          clearRegionId:  v.regionId  === null,
+          countryId:      v.countryId ? parseInt(v.countryId) : undefined,
+          clearCountryId: v.countryId === null,
+          extraFilters:   v.typeId ? this.extraFilters() : undefined,
         })
         .subscribe({
           next: (updated) => {
+            const finish = (row: DestinationRow) => {
+              this.svc.setDestinationInterests(this.row.id, this.selectedInterestIds()).subscribe({
+                next: () => { this.isSaving.set(false); this.saved.emit(row); },
+                error: () => { this.isSaving.set(false); this.saved.emit(row); },
+              });
+            };
             const pendingHero = this.heroImageId();
             if (pendingHero && pendingHero !== this.originalHeroImageId) {
               this.svc.setPreviewImage(this.row.id, pendingHero).subscribe({
-                next: () => { this.isSaving.set(false); this.saved.emit(updated); },
-                error: () => { this.isSaving.set(false); this.saved.emit(updated); },
+                next: () => finish(updated),
+                error: () => finish(updated),
               });
             } else {
-              this.isSaving.set(false);
-              this.saved.emit(updated);
+              finish(updated);
             }
           },
           error: () => {
@@ -318,10 +428,19 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
     );
   }
 
+  private loadFilterDefs(typeId: number): void {
+    this.sub.add(
+      this.lookupService.getFilterDefinitions('destination', typeId).subscribe({
+        next: defs => { this.filterDefs.set(defs); this.cdr.detectChanges(); },
+        error: () => this.filterDefs.set([]),
+      }),
+    );
+  }
+
   private async initMap(lat: number | null, lng: number | null): Promise<void> {
     if (!this.mapEl?.nativeElement) return;
 
-    const base = await (await fetch(MAP_STYLE_URL)).json();
+    const base = patchStyleSources(await (await fetch(MAP_STYLE_URL)).json());
     this.lightStyle = this.buildThemedStyle(base, LIGHT);
     this.darkStyle  = this.buildThemedStyle(base, DARK);
 

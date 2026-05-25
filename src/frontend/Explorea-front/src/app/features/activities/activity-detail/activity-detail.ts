@@ -24,7 +24,7 @@ import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 import { ShareButton } from '../../../shared/components/share-button/share-button';
 
-const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 const DESKTOP_SIMILAR_LIMIT = 6;
 const MOBILE_SIMILAR_LIMIT = 4;
 
@@ -274,7 +274,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
     this.mapInitialized = true;
 
     const res = await fetch(MAP_STYLE_URL);
-    const base = await res.json();
+    const base = patchStyleSources(await res.json());
     this.lightStyle = this.buildThemedStyle(base, LIGHT);
     this.darkStyle = this.buildThemedStyle(base, DARK);
 

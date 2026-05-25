@@ -2,6 +2,7 @@ import {
   Component, OnInit, OnDestroy, ViewChild, ElementRef,
   HostListener, inject, ChangeDetectorRef,
 } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule, Location, NgStyle } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
@@ -20,7 +21,7 @@ import { ReviewModal } from '../../../shared/components/review-modal/review-moda
 import { ReviewDto } from '../../../core/models/home.model';
 import { ShareButton } from '../../../shared/components/share-button/share-button';
 
-const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
 const DARK = {
   land: '#1e2e24', water: '#102840', park: '#1e3228',
@@ -98,6 +99,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   private lightStyle: any = null;
   private darkStyle: any = null;
   private themeObserver?: MutationObserver;
+  private routeSub?: Subscription;
 
   @HostListener('window:scroll')
   onScroll(): void {
@@ -107,35 +109,45 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.currentUserId = this.authService.getCurrentUserId();
-    const slug = this.route.snapshot.paramMap.get('slug') ?? '';
-    this.placeService.getBySlug(slug).subscribe({
-      next: (data) => {
-        this.place = data;
-        this.loading = false;
+    this.routeSub = this.route.paramMap.subscribe(params => {
+      const slug = params.get('slug') ?? '';
+      this.loading = true;
+      this.notFound = false;
+      this.place = null;
+      this.mapInitialized = false;
+      this.activeTab = 'details';
+      this.cdr.detectChanges();
 
-        if (this.isValidGuid(data.id)) {
-          this.popularityService.track('place', data.id);
-          if (this.authService.isLoggedIn()) {
-            this.savedService.check('place', data.id).subscribe(r => {
-              this.isSaved = r.isSaved;
-              this.cdr.detectChanges();
-            });
+      this.placeService.getBySlug(slug).subscribe({
+        next: (data) => {
+          this.place = data;
+          this.loading = false;
+
+          if (this.isValidGuid(data.id)) {
+            this.popularityService.track('place', data.id);
+            if (this.authService.isLoggedIn()) {
+              this.savedService.check('place', data.id).subscribe(r => {
+                this.isSaved = r.isSaved;
+                this.cdr.detectChanges();
+              });
+            }
           }
-        }
 
-        this.cdr.detectChanges();
-        this.captureTitle();
-        setTimeout(() => this.initMap(), 200);
-      },
-      error: (err) => {
-        this.loading = false;
-        this.notFound = err?.status === 404;
-        this.cdr.detectChanges();
-      },
+          this.cdr.detectChanges();
+          this.captureTitle();
+          setTimeout(() => this.initMap(), 200);
+        },
+        error: (err) => {
+          this.loading = false;
+          this.notFound = err?.status === 404;
+          this.cdr.detectChanges();
+        },
+      });
     });
   }
 
   ngOnDestroy(): void {
+    this.routeSub?.unsubscribe();
     this.themeObserver?.disconnect();
     this.marker?.remove();
     this.map?.remove();
@@ -247,7 +259,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     const { lat, lng } = this.place.location;
 
     const res = await fetch(MAP_STYLE_URL);
-    const base = await res.json();
+    const base = patchStyleSources(await res.json());
     this.lightStyle = this.buildThemedStyle(base, LIGHT);
     this.darkStyle = this.buildThemedStyle(base, DARK);
 

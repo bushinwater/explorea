@@ -17,7 +17,7 @@ import { LookupService, LookupItem, FilterDefinition } from '../../../core/servi
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 
-const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
 const DARK = {
   land: '#1e2e24', water: '#102840', park: '#1e3228',
@@ -280,8 +280,7 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
   }
 
   private async initMap(): Promise<void> {
-    const res = await fetch(MAP_STYLE_URL);
-    const base = await res.json();
+    const base = patchStyleSources(await (await fetch(MAP_STYLE_URL)).json());
     this.lightStyle = this.buildThemedStyle(base, LIGHT);
     this.darkStyle  = this.buildThemedStyle(base, DARK);
 

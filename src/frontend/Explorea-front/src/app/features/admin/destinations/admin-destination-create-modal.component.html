@@ -106,11 +106,108 @@
             }
           </div>
 
+          <!-- Extra filters for destination category -->
+          @if (filterDefs().length) {
+            <div class="edit-field">
+              <label class="edit-field__label">Filteri kategorije</label>
+              <div class="ev-filter-defs">
+                @for (def of filterDefs(); track def.id) {
+                  @if (def.filterType === 'boolean') {
+                    <label class="ev-filter-chip" [class.ev-filter-chip--active]="extraFilters()[def.filterKey] === 'true'">
+                      <input type="checkbox"
+                        [checked]="extraFilters()[def.filterKey] === 'true'"
+                        (change)="updateExtraFilter(def.filterKey, $any($event.target).checked)" />
+                      {{ def.filterLabel }}
+                    </label>
+                  } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
+                    <div class="ev-filter-select-group">
+                      <span class="ev-filter-select-label">{{ def.filterLabel }}</span>
+                      <div class="ev-filter-opts">
+                        @for (opt of def.options; track opt.optionValue) {
+                          <label class="ev-filter-chip" [class.ev-filter-chip--active]="extraFilters()[def.filterKey] === opt.optionValue">
+                            <input type="radio" [name]="'dc-' + def.filterKey" [value]="opt.optionValue"
+                              [checked]="extraFilters()[def.filterKey] === opt.optionValue"
+                              (change)="updateExtraFilter(def.filterKey, opt.optionValue)" />
+                            {{ opt.optionLabel }}
+                          </label>
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+              <button class="ev-add-filter-btn" type="button" (click)="toggleAddFilter()">
+                <span class="material-icons">{{ showAddFilter() ? 'close' : 'tune' }}</span>
+                {{ showAddFilter() ? 'Otkaži' : 'Dodaj filter' }}
+              </button>
+              @if (showAddFilter()) {
+                <div class="ev-add-inline-form ev-add-inline-form--filter">
+                  <input class="edit-field__input" type="text" placeholder="Ključ (npr. has_parking)"
+                    [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
+                  <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
+                    [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
+                  <select class="edit-field__select" [value]="newFilterType()"
+                    (change)="newFilterType.set($any($event.target).value)">
+                    <option value="boolean">Da/Ne</option>
+                    <option value="select">Izbor</option>
+                    <option value="multi_select">Višestruki izbor</option>
+                  </select>
+                  <button class="ev-add-inline-form__submit" type="button"
+                    [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
+                    (click)="addNewFilter()">
+                    @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
+                    @else { Dodaj filter }
+                  </button>
+                </div>
+              }
+            </div>
+          }
+          @if (!filterDefs().length && form.value.typeId) {
+            <div class="edit-field">
+              <label class="edit-field__label">Filteri kategorije</label>
+              <div class="ev-filter-empty">Nema definisanih filtera za ovu kategoriju.</div>
+              <button class="ev-add-filter-btn" type="button" (click)="toggleAddFilter()">
+                <span class="material-icons">{{ showAddFilter() ? 'close' : 'tune' }}</span>
+                {{ showAddFilter() ? 'Otkaži' : 'Dodaj filter' }}
+              </button>
+              @if (showAddFilter()) {
+                <div class="ev-add-inline-form ev-add-inline-form--filter">
+                  <input class="edit-field__input" type="text" placeholder="Ključ (npr. has_parking)"
+                    [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
+                  <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
+                    [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
+                  <select class="edit-field__select" [value]="newFilterType()"
+                    (change)="newFilterType.set($any($event.target).value)">
+                    <option value="boolean">Da/Ne</option>
+                    <option value="select">Izbor</option>
+                    <option value="multi_select">Višestruki izbor</option>
+                  </select>
+                  <button class="ev-add-inline-form__submit" type="button"
+                    [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
+                    (click)="addNewFilter()">
+                    @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
+                    @else { Dodaj filter }
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <div class="edit-field">
+            <label class="edit-field__label" for="new-dest-country">Država</label>
+            <select id="new-dest-country" class="edit-field__select" formControlName="countryId">
+              <option [ngValue]="null">— Sve države —</option>
+              @for (c of localCountries(); track c.id) {
+                <option [ngValue]="c.id.toString()">{{ c.name }}</option>
+              }
+            </select>
+          </div>
+
           <div class="edit-field">
             <label class="edit-field__label" for="new-dest-region">Regija</label>
             <select id="new-dest-region" class="edit-field__select" formControlName="regionId">
               <option [ngValue]="null">— Bez regije —</option>
-              @for (r of localRegions(); track r.id) {
+              @for (r of filteredRegions(); track r.id) {
                 <option [ngValue]="r.id.toString()">{{ r.name }}</option>
               }
             </select>
@@ -174,26 +271,84 @@
 
       </div>
 
-      <!-- Footer -->
-      <footer class="edit-modal__footer">
-        <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="cancel.emit()">
-          Otkaži
-        </button>
-        <button
-          class="edit-modal__btn edit-modal__btn--save"
-          type="submit"
-          [disabled]="form.invalid || isSaving()"
-        >
-          @if (isSaving()) {
-            <span class="material-icons edit-modal__spin">sync</span>
-          } @else {
-            <span class="material-icons">add_circle_outline</span>
+      <!-- Interests section -->
+      <div class="edit-modal__interests-section">
+        <div class="edit-modal__interests-header">
+          <span class="edit-field__label">
+            Interesovanja
+            <span class="edit-field__counter">{{ selectedInterestIds().length }} / 3</span>
+          </span>
+        </div>
+        <div class="edit-modal__interests-chips">
+          @for (tag of allInterestTags(); track tag.id) {
+            <button
+              type="button"
+              class="interest-chip"
+              [class.interest-chip--selected]="selectedInterestIds().includes(tag.id)"
+              [disabled]="selectedInterestIds().length >= 3 && !selectedInterestIds().includes(tag.id)"
+              (click)="toggleInterest(tag.id)"
+            >
+              @if (tag.icon) { <span class="material-icons interest-chip__icon">{{ tag.icon }}</span> }
+              {{ tag.name }}
+            </button>
           }
-          Kreiraj destinaciju
-        </button>
-      </footer>
+        </div>
+      </div>
+
+      <!-- Images (local previews before creation) -->
+      <div class="edit-modal__images-section">
+        <div class="edit-modal__images-header">
+          <span class="edit-field__label">
+            Slike
+            <span class="edit-field__counter">{{ pendingImages().length }} / {{ MAX_IMAGES }}</span>
+          </span>
+          @if (pendingImages().length < MAX_IMAGES) {
+            <label class="edit-modal__add-img-btn" title="Dodaj sliku">
+              <span class="material-icons">add_photo_alternate</span>
+              Dodaj
+              <input type="file" accept="image/*" multiple hidden (change)="onFilesSelected($event)" />
+            </label>
+          }
+        </div>
+
+        <div class="edit-modal__images-grid">
+          @for (p of pendingImages(); track p.url) {
+            <div class="edit-modal__img-card">
+              <img [src]="p.url" alt="Slika destinacije" class="edit-modal__img" />
+              <button class="edit-modal__img-delete" type="button" title="Ukloni sliku" (click)="removePendingImage($index)">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+          }
+          @if (pendingImages().length === 0) {
+            <div class="edit-modal__images-empty">
+              <span class="material-icons">image_not_supported</span>
+              Nema slika
+            </div>
+          }
+        </div>
+      </div>
 
     </form>
+
+    <footer class="edit-modal__footer">
+      <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="cancel.emit()">
+        Otkaži
+      </button>
+      <button
+        class="edit-modal__btn edit-modal__btn--save"
+        type="button"
+        (click)="save()"
+        [disabled]="form.invalid || isSaving()"
+      >
+        @if (isSaving()) {
+          <span class="material-icons edit-modal__spin">sync</span>
+        } @else {
+          <span class="material-icons">add_circle_outline</span>
+        }
+        Kreiraj destinaciju
+      </button>
+    </footer>
 
   } @else {
     <!-- Phase 2: images after creation -->
@@ -266,25 +421,25 @@
         </div>
       </div>
 
-      <footer class="edit-modal__footer">
-        @if (!canFinish) {
-          <span class="edit-modal__finish-hint">
-            <span class="material-icons">info_outline</span>
-            Dodaj najmanje 2 slike da bi završio
-          </span>
-        }
-        <button
-          class="edit-modal__btn edit-modal__btn--save"
-          type="button"
-          (click)="finish()"
-          [disabled]="!canFinish"
-        >
-          <span class="material-icons">check</span>
-          Završi
-        </button>
-      </footer>
-
     </div>
+
+    <footer class="edit-modal__footer">
+      @if (!canFinish) {
+        <span class="edit-modal__finish-hint">
+          <span class="material-icons">info_outline</span>
+          Dodaj najmanje 2 slike da bi završio
+        </span>
+      }
+      <button
+        class="edit-modal__btn edit-modal__btn--save"
+        type="button"
+        (click)="finish()"
+        [disabled]="!canFinish"
+      >
+        <span class="material-icons">check</span>
+        Završi
+      </button>
+    </footer>
   }
 
 </aside>

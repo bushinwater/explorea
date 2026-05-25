@@ -62,10 +62,11 @@ namespace Explorea.Server.Services.Admin
             string? filterSubType, string? filterRegion, decimal? filterMinRating,
             string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
             List<string>? filterExtraFilters,
-            Guid currentUserId)
+            Guid currentUserId,
+            Guid? filterDestinationId = null)
         {
             var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
-            return await _repo.GetEntityTableAsync(entity, sortBy, filterSubType, filterRegion, filterMinRating, filterDifficulty, filterMinPrice, filterMaxPrice, filterExtraFilters, destIds, placeOwnerUserId);
+            return await _repo.GetEntityTableAsync(entity, sortBy, filterSubType, filterRegion, filterMinRating, filterDifficulty, filterMinPrice, filterMaxPrice, filterExtraFilters, destIds, placeOwnerUserId, filterDestinationId);
         }
 
         public async Task<List<SubtypeOptionDto>> GetSubtypeOptionsAsync(string entity, Guid currentUserId)
@@ -82,10 +83,22 @@ namespace Explorea.Server.Services.Admin
 
         public async Task<List<AggregatePointDto>> GetAggregateAsync(
             string entity, string groupBy, string metric,
-            DateOnly? dateFrom, DateOnly? dateTo, Guid currentUserId)
+            DateOnly? dateFrom, DateOnly? dateTo, Guid currentUserId, Guid? specificEntityId = null)
         {
             var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
-            return await _repo.GetAggregateAsync(entity, groupBy, metric, dateFrom, dateTo, destIds, placeOwnerUserId);
+            return await _repo.GetAggregateAsync(entity, groupBy, metric, dateFrom, dateTo, destIds, placeOwnerUserId, specificEntityId);
+        }
+
+        public async Task<List<EntitySearchItemDto>> SearchEntitiesAsync(string entity, string q, Guid currentUserId)
+        {
+            var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
+            return await _repo.SearchEntitiesAsync(entity, q, destIds, placeOwnerUserId);
+        }
+
+        public async Task<EntityProfileDto?> GetEntityProfileAsync(string entity, Guid entityId, Guid currentUserId)
+        {
+            await BuildScopeAsync(currentUserId); // authorization check
+            return await _repo.GetEntityProfileAsync(entity, entityId);
         }
 
         public async Task<List<ReportDataPointDto>> GetPreviewAsync(

@@ -911,8 +911,8 @@ namespace Explorea.Server.Repositories.Implementations
     )
     { 
        var trimmedQuery = query.Trim();
-       var enableFuzzy = query.Trim().Length >= 3;
-       var contains = $"%{trimmedQuery}";
+       var enableFuzzy = trimmedQuery.Length >= 2;
+       var contains = $"%{trimmedQuery}%";
 
        var (nameThreshold, relatedThreshold) = GetSimilarityThreshold(trimmedQuery);
       

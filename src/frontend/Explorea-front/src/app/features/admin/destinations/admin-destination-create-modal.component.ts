@@ -9,6 +9,7 @@ import {
   OnInit,
   Output,
   ViewChild,
+  computed,
   signal,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -17,10 +18,11 @@ import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminDestinationsService } from './admin-destinations.service';
-import { DestinationImage, DestinationRow, RegionOption, TypeOption } from './admin-destinations.models';
+import { CountryOption, DestinationImage, DestinationRow, InterestTagOption, RegionOption, TypeOption } from './admin-destinations.models';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 
-const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 const MAX_IMAGES = 10;
 const MAX_DESC = 2000;
 
@@ -62,6 +64,7 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
     description: new FormControl('', [Validators.required, Validators.maxLength(MAX_DESC)]),
     visibility:  new FormControl('published', [Validators.required]),
     typeId:      new FormControl<string | null>(null),
+    countryId:   new FormControl<string | null>(null),
     regionId:    new FormControl<string | null>(null),
     address:     new FormControl(''),
     latitude:    new FormControl<number | null>(null, [Validators.required]),
@@ -79,11 +82,29 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
   protected readonly uploadingCount = signal(0);
   protected readonly heroImageId      = signal<string | null>(null);
   protected readonly isSettingHero    = signal(false);
+  protected readonly pendingImages    = signal<{ file: File; url: string }[]>([]);
   protected readonly localTypes       = signal<TypeOption[]>([]);
   protected readonly localRegions     = signal<RegionOption[]>([]);
+  protected readonly localCountries   = signal<CountryOption[]>([]);
+  protected readonly selectedCountryId = signal<number | null>(null);
+  protected readonly filteredRegions  = computed(() => {
+    const cid = this.selectedCountryId();
+    if (cid === null) return this.localRegions();
+    return this.localRegions().filter(r => r.countryId === cid);
+  });
+  protected readonly allInterestTags     = signal<InterestTagOption[]>([]);
+  protected readonly selectedInterestIds = signal<number[]>([]);
   protected readonly showNewTypeInput = signal(false);
   protected readonly newTypeName      = signal('');
   protected readonly isCreatingType   = signal(false);
+
+  protected readonly filterDefs     = signal<FilterDefinition[]>([]);
+  protected readonly showAddFilter  = signal(false);
+  protected readonly newFilterKey   = signal('');
+  protected readonly newFilterLabel = signal('');
+  protected readonly newFilterType  = signal('boolean');
+  protected readonly isAddingFilter = signal(false);
+  protected readonly extraFilters   = signal<Record<string, string>>({});
 
   protected readonly visibilityOptions = [
     { value: 'published', label: 'Aktivno'     },
@@ -101,6 +122,7 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly svc: AdminDestinationsService,
+    private readonly lookupService: LookupService,
     private readonly http: HttpClient,
     protected readonly ui: AdminUiPreferencesService,
     private readonly cdr: ChangeDetectorRef,
@@ -109,6 +131,30 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.localTypes.set([...this.types]);
     this.svc.getRegions().subscribe(r => { this.localRegions.set(r); this.cdr.detectChanges(); });
+    this.svc.getCountries().subscribe(c => { this.localCountries.set(c); this.cdr.detectChanges(); });
+    this.svc.getAllInterestTags().subscribe(tags => { this.allInterestTags.set(tags); this.cdr.detectChanges(); });
+    this.form.controls.countryId.valueChanges.subscribe(val => {
+      const id = val ? parseInt(val) : null;
+      this.selectedCountryId.set(id);
+      // reset region if it no longer belongs to the selected country
+      const regionVal = this.form.value.regionId;
+      if (regionVal) {
+        const regionId = parseInt(regionVal);
+        const stillValid = this.filteredRegions().some(r => r.id === regionId);
+        if (!stillValid) this.form.patchValue({ regionId: null });
+      }
+      this.cdr.detectChanges();
+    });
+    this.form.controls.typeId.valueChanges.subscribe(val => {
+      const typeId = val ? parseInt(val) : null;
+      this.extraFilters.set({});
+      if (typeId !== null) {
+        this.loadFilterDefs(typeId);
+      } else {
+        this.filterDefs.set([]);
+      }
+      this.cdr.detectChanges();
+    });
     setTimeout(() => this.initMap(), 50);
   }
 
@@ -116,6 +162,16 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
     this.sub.unsubscribe();
     this.themeObserver?.disconnect();
     this.map?.remove();
+    this.pendingImages().forEach(p => URL.revokeObjectURL(p.url));
+  }
+
+  protected toggleInterest(id: number): void {
+    const current = this.selectedInterestIds();
+    if (current.includes(id)) {
+      this.selectedInterestIds.set(current.filter(i => i !== id));
+    } else if (current.length < 3) {
+      this.selectedInterestIds.set([...current, id]);
+    }
   }
 
   protected get descLength(): number {
@@ -170,12 +226,19 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
         latitude:    v.latitude!,
         longitude:   v.longitude!,
         visibility:  v.visibility!,
-        typeId:      v.typeId   ? parseInt(v.typeId)   : null,
-        regionId:    v.regionId ? parseInt(v.regionId) : null,
+        typeId:      v.typeId     ? parseInt(v.typeId)     : null,
+        regionId:    v.regionId   ? parseInt(v.regionId)   : null,
+        countryId:   v.countryId  ? parseInt(v.countryId)  : null,
+        extraFilters: v.typeId ? this.extraFilters() : undefined,
       }).subscribe({
         next: (row) => {
-          this.isSaving.set(false);
           this.createdRow.set(row);
+          const ids = this.selectedInterestIds();
+          if (ids.length > 0) {
+            this.svc.setDestinationInterests(row.id, ids).subscribe();
+          }
+          this.uploadPendingImages(row.id);
+          this.isSaving.set(false);
           this.form.disable();
           this.cdr.detectChanges();
         },
@@ -222,6 +285,46 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected updateExtraFilter(key: string, value: string | boolean): void {
+    this.extraFilters.update(ef => {
+      const n = { ...ef };
+      if (value === false || value === '') delete n[key];
+      else n[key] = String(value);
+      return n;
+    });
+  }
+
+  protected toggleAddFilter(): void {
+    this.showAddFilter.update(v => !v);
+    this.newFilterKey.set('');
+    this.newFilterLabel.set('');
+    this.newFilterType.set('boolean');
+  }
+
+  protected addNewFilter(): void {
+    const typeId = this.form.value.typeId ? parseInt(this.form.value.typeId) : null;
+    const key = this.newFilterKey().trim();
+    const label = this.newFilterLabel().trim();
+    const type = this.newFilterType();
+    if (!typeId || !key || !label || this.isAddingFilter()) return;
+    this.isAddingFilter.set(true);
+    this.sub.add(
+      this.svc.createFilterDefinition(typeId, key, label, type).subscribe({
+        next: def => {
+          this.filterDefs.update(d => [...d, def]);
+          this.isAddingFilter.set(false);
+          this.showAddFilter.set(false);
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.isAddingFilter.set(false);
+          this.error.set('Kreiranje filtera nije uspelo.');
+          this.cdr.detectChanges();
+        },
+      }),
+    );
+  }
+
   protected setHero(imageId: string): void {
     const destId = this.createdRow()?.id;
     if (!destId || this.isSettingHero()) return;
@@ -243,12 +346,20 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
   }
 
   protected onFilesSelected(event: Event): void {
-    const destId = this.createdRow()?.id;
-    if (!destId) return;
-
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
     input.value = '';
+
+    const destId = this.createdRow()?.id;
+    if (!destId) {
+      const pending = this.pendingImages();
+      const slots = MAX_IMAGES - pending.length;
+      if (slots <= 0) { this.error.set(`Maksimalan broj slika je ${MAX_IMAGES}.`); this.cdr.detectChanges(); return; }
+      const toAdd = files.slice(0, slots).map(file => ({ file, url: URL.createObjectURL(file) }));
+      this.pendingImages.update(p => [...p, ...toAdd]);
+      this.cdr.detectChanges();
+      return;
+    }
 
     const slots = MAX_IMAGES - this.images().length - this.uploadingCount();
     if (slots <= 0) {
@@ -284,6 +395,37 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
     });
   }
 
+  protected removePendingImage(index: number): void {
+    const pending = this.pendingImages();
+    URL.revokeObjectURL(pending[index].url);
+    this.pendingImages.update(p => p.filter((_, i) => i !== index));
+  }
+
+  private uploadPendingImages(destId: string): void {
+    const pending = this.pendingImages();
+    if (!pending.length) return;
+    this.pendingImages.set([]);
+    this.uploadingCount.update(n => n + pending.length);
+    pending.forEach(({ file, url }) => {
+      URL.revokeObjectURL(url);
+      this.sub.add(
+        this.svc.addImage(destId, file).subscribe({
+          next: (img) => {
+            this.images.update(l => [...l, img]);
+            this.uploadingCount.update(n => n - 1);
+            if (this.heroImageId() === null) this.setHero(img.id);
+            this.cdr.detectChanges();
+          },
+          error: (err) => {
+            this.uploadingCount.update(n => n - 1);
+            this.error.set(err?.error?.message ?? 'Greška pri otpremanju slike.');
+            this.cdr.detectChanges();
+          },
+        }),
+      );
+    });
+  }
+
   protected removeImage(imageId: string): void {
     const destId = this.createdRow()?.id;
     if (!destId) return;
@@ -306,10 +448,19 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
     );
   }
 
+  private loadFilterDefs(typeId: number): void {
+    this.sub.add(
+      this.lookupService.getFilterDefinitions('destination', typeId).subscribe({
+        next: defs => { this.filterDefs.set(defs); this.cdr.detectChanges(); },
+        error: () => this.filterDefs.set([]),
+      }),
+    );
+  }
+
   private async initMap(): Promise<void> {
     if (!this.mapEl?.nativeElement) return;
 
-    const base = await (await fetch(MAP_STYLE_URL)).json();
+    const base = patchStyleSources(await (await fetch(MAP_STYLE_URL)).json());
     this.lightStyle = this.buildThemedStyle(base, LIGHT);
     this.darkStyle  = this.buildThemedStyle(base, DARK);
 

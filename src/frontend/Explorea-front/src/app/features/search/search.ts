@@ -3,7 +3,7 @@ import {
   ChangeDetectorRef, HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, forkJoin } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
@@ -15,6 +15,8 @@ import { SearchPageService } from '../../core/services/search-page.service';
 import { SearchService } from '../../core/services/search.service';
 import { LocationService } from '../../core/services/location.service';
 import { LookupService, LookupItem, FilterDefinition } from '../../core/services/lookup.service';
+import { AuthService } from '../../core/services/auth.service';
+import { PlannerService } from '../../core/services/planner.service';
 import { SearchItem } from '../../core/models/search.model';
 import {
   SearchPageAllResponse,
@@ -152,6 +154,24 @@ export class Search implements OnInit, OnDestroy {
     { key: 'event'       as const, icon: 'event',         labelKey: 'SEARCH.TAB_EVENTS' },
   ];
 
+  // ─── Auth ──────────────────────────────────────────────────────
+  isLoggedIn = false;
+
+  // ─── Planner modal ─────────────────────────────────────────────
+  showPlannerModal      = false;
+  plannerModalItem: SearchItem | null = null;
+  plannerModalDays: { value: string; label: string }[] = [];
+  plannerModalSelectedDay = '';
+  plannerModalNote        = '';
+  plannerModalSaving      = false;
+  plannerModalSuccess     = false;
+  plannerModalError       = '';
+
+  // ─── Modal calendar (for non-event entities) ───────────────────
+  readonly DAY_LABELS = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub', 'Ned'];
+  modalCalViewDate = new Date();
+  modalCalGrid: { date: Date; isCurrentMonth: boolean }[] = [];
+
   private readonly searchSubject = new Subject<void>();
   private readonly destroy$      = new Subject<void>();
 
@@ -160,13 +180,17 @@ export class Search implements OnInit, OnDestroy {
     private searchService: SearchService,
     private locationService: LocationService,
     private lookupService: LookupService,
+    private authService: AuthService,
+    private plannerService: PlannerService,
     private cdr: ChangeDetectorRef,
     private route: ActivatedRoute,
+    private router: Router,
   ) {}
 
   // ─── Lifecycle ────────────────────────────────────────────────────────────
 
   ngOnInit(): void {
+    this.isLoggedIn = this.authService.isLoggedIn();
     const state = history.state;
     const fromHero = state?.fromHero === true;
 
@@ -1034,5 +1058,140 @@ export class Search implements OnInit, OnDestroy {
 
   trackByItem(_: number, item: SearchItem): string {
     return item.entity.id;
+  }
+
+  // ─── Modal calendar ────────────────────────────────────────────
+
+  get modalCalMonthLabel(): string {
+    return this.modalCalViewDate.toLocaleDateString('sr-Latn-RS', { month: 'long', year: 'numeric' });
+  }
+
+  buildModalCalGrid(): void {
+    const year  = this.modalCalViewDate.getFullYear();
+    const month = this.modalCalViewDate.getMonth();
+    const firstDay    = new Date(year, month, 1);
+    const lastDay     = new Date(year, month + 1, 0);
+    const startOffset = (firstDay.getDay() + 6) % 7;
+
+    const cells: { date: Date; isCurrentMonth: boolean }[] = [];
+    for (let i = startOffset - 1; i >= 0; i--)
+      cells.push({ date: new Date(year, month, -i), isCurrentMonth: false });
+    for (let d = 1; d <= lastDay.getDate(); d++)
+      cells.push({ date: new Date(year, month, d), isCurrentMonth: true });
+    // Always fill to exactly 42 cells (6 rows) so the grid height never changes
+    while (cells.length < 42) {
+      const n = cells.length - startOffset - lastDay.getDate() + 1;
+      cells.push({ date: new Date(year, month + 1, n), isCurrentMonth: false });
+    }
+    this.modalCalGrid = cells;
+  }
+
+  prevModalCalMonth(): void {
+    this.modalCalViewDate = new Date(this.modalCalViewDate.getFullYear(), this.modalCalViewDate.getMonth() - 1, 1);
+    this.buildModalCalGrid();
+    this.cdr.detectChanges();
+  }
+
+  nextModalCalMonth(): void {
+    this.modalCalViewDate = new Date(this.modalCalViewDate.getFullYear(), this.modalCalViewDate.getMonth() + 1, 1);
+    this.buildModalCalGrid();
+    this.cdr.detectChanges();
+  }
+
+  selectModalCalDate(cell: { date: Date; isCurrentMonth: boolean }): void {
+    if (!cell.isCurrentMonth) return;
+    const d = cell.date;
+    this.plannerModalSelectedDay = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    this.cdr.detectChanges();
+  }
+
+  isModalCalToday(date: Date): boolean {
+    const t = new Date();
+    return date.getFullYear() === t.getFullYear() && date.getMonth() === t.getMonth() && date.getDate() === t.getDate();
+  }
+
+  isModalCalSelected(date: Date): boolean {
+    if (!this.plannerModalSelectedDay) return false;
+    const [y, m, d] = this.plannerModalSelectedDay.split('-').map(Number);
+    return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
+  }
+
+  trackByModalCell(_: number, c: { date: Date }): string { return c.date.toISOString(); }
+
+  // ─── Planner modal ─────────────────────────────────────────────
+
+  openPlannerModal(item: SearchItem, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.plannerModalItem    = item;
+    this.plannerModalNote    = '';
+    this.plannerModalSaving  = false;
+    this.plannerModalSuccess = false;
+    this.plannerModalError   = '';
+
+    const toDateStr = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    const today = toDateStr(new Date());
+    const days: { value: string; label: string }[] = [];
+
+    if (item.entityType === 'event' && item.entity.startDatetime) {
+      const startRaw = new Date(item.entity.startDatetime);
+      const endRaw   = item.entity.endDatetime ? new Date(item.entity.endDatetime) : startRaw;
+      if (!isNaN(startRaw.getTime())) {
+        const endResolved = !isNaN(endRaw.getTime()) ? endRaw : startRaw;
+        const cur    = new Date(startRaw.getFullYear(), startRaw.getMonth(), startRaw.getDate());
+        const endDay = new Date(endResolved.getFullYear(), endResolved.getMonth(), endResolved.getDate());
+        while (cur <= endDay) {
+          days.push({
+            value: toDateStr(cur),
+            label: cur.toLocaleDateString('sr-Latn-RS', { weekday: 'short', day: 'numeric', month: 'short' }),
+          });
+          cur.setDate(cur.getDate() + 1);
+        }
+      }
+    }
+
+    this.plannerModalDays        = days;
+    this.plannerModalSelectedDay = days.length > 0 ? days[0].value : today;
+
+    if (item.entityType !== 'event') {
+      this.modalCalViewDate = new Date();
+      this.buildModalCalGrid();
+    }
+
+    this.showPlannerModal = true;
+    this.cdr.detectChanges();
+  }
+
+  cancelPlannerModal(): void {
+    this.showPlannerModal = false;
+    this.cdr.detectChanges();
+  }
+
+  confirmPlannerModal(): void {
+    if (!this.plannerModalItem || this.plannerModalSaving) return;
+    this.plannerModalSaving = true;
+    this.plannerModalError  = '';
+    this.cdr.detectChanges();
+
+    const item = this.plannerModalItem;
+    const obs = item.entityType === 'event'
+      ? this.plannerService.addEntry(item.entity.id, this.plannerModalSelectedDay, this.plannerModalNote)
+      : this.plannerService.addGenericEntry(item.entityType, item.entity.id, this.plannerModalSelectedDay, this.plannerModalNote);
+
+    obs.subscribe({
+      next: () => {
+        this.plannerModalSaving  = false;
+        this.plannerModalSuccess = true;
+        this.cdr.detectChanges();
+        setTimeout(() => { this.showPlannerModal = false; this.cdr.detectChanges(); }, 900);
+      },
+      error: (err) => {
+        this.plannerModalSaving = false;
+        this.plannerModalError  = err?.error?.message ?? 'Greška pri čuvanju. Pokušaj ponovo.';
+        this.cdr.detectChanges();
+      },
+    });
   }
 }

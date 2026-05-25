@@ -22,7 +22,9 @@ import {
   DestinationRow,
   DestinationStats,
   DestinationStatus,
+  InterestTagOption,
   RegionOption,
+  ReviewItem,
   TypeOption,
 } from './admin-destinations.models';
 import { AdminDestinationsService } from './admin-destinations.service';
@@ -60,7 +62,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     minRating: null,
     extraFilters: {},
     page: 1,
-    pageSize: 17,
+    pageSize: 20,
   });
 
   protected readonly filterDefs = signal<FilterDefinition[]>([]);
@@ -77,15 +79,19 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected readonly isDeleteDialogOpen = signal(false);
   protected readonly isDeleting = signal(false);
   protected readonly isEditModalOpen = signal(false);
+  protected readonly isEditModalClosing = signal(false);
   protected readonly isCreateModalOpen = signal(false);
   protected readonly selectedDestination = signal<DestinationRow | null>(null);
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
 
   protected readonly isDetailsPanelOpen = signal(false);
+  protected readonly isPanelClosing = signal(false);
   protected readonly isDetailLoading = signal(false);
   protected readonly detailsPanelRow = signal<DestinationRow | null>(null);
   protected readonly detailsPanelDetail = signal<DestinationDetail | null>(null);
+  protected readonly detailsPanelInterests = signal<InterestTagOption[]>([]);
+  protected readonly detailsPanelReviews   = signal<ReviewItem[]>([]);
   protected readonly descriptionExpanded = signal(false);
 
   protected readonly totalPages = computed(() =>
@@ -263,8 +269,12 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected closeEditModal(): void {
-    this.isEditModalOpen.set(false);
-    this.selectedDestination.set(null);
+    this.isEditModalClosing.set(true);
+    setTimeout(() => {
+      this.isEditModalOpen.set(false);
+      this.isEditModalClosing.set(false);
+      this.selectedDestination.set(null);
+    }, 220);
   }
 
   protected onEditSaved(updated: DestinationRow): void {
@@ -299,6 +309,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected openDetailsPanel(dest: DestinationRow): void {
     this.detailsPanelRow.set(dest);
     this.detailsPanelDetail.set(null);
+    this.detailsPanelInterests.set([]);
     this.isDetailsPanelOpen.set(true);
     this.isDetailLoading.set(true);
     this.descriptionExpanded.set(false);
@@ -314,12 +325,31 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+
+    this.subscription.add(
+      this.destinationsService.getDestinationInterests(dest.id).subscribe({
+        next: (tags) => this.detailsPanelInterests.set(tags.filter(t => t.isAssigned)),
+      }),
+    );
+
+    this.subscription.add(
+      this.destinationsService.getDestinationReviews(dest.id).subscribe({
+        next: reviews => this.detailsPanelReviews.set(reviews),
+        error: () => this.detailsPanelReviews.set([]),
+      }),
+    );
   }
 
   protected closeDetailsPanel(): void {
-    this.isDetailsPanelOpen.set(false);
-    this.detailsPanelRow.set(null);
-    this.detailsPanelDetail.set(null);
+    this.isPanelClosing.set(true);
+    setTimeout(() => {
+      this.isPanelClosing.set(false);
+      this.isDetailsPanelOpen.set(false);
+      this.detailsPanelRow.set(null);
+      this.detailsPanelDetail.set(null);
+      this.detailsPanelInterests.set([]);
+      this.detailsPanelReviews.set([]);
+    }, 220);
   }
 
   protected openDeleteDialog(dest: DestinationRow): void {
@@ -354,6 +384,11 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  protected formatDate(isoDate: string | null): string {
+    if (!isoDate) return '';
+    return new Date(isoDate).toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   protected timeAgo(isoDate: string): string {

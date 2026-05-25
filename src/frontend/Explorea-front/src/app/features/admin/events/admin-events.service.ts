@@ -12,7 +12,14 @@ import {
   EventFilterOption,
   CreateEventPayload,
   UpdateEventPayload,
+  InterestTagOption,
+  CountryOption,
+  RegionWithCountry,
+  DestinationSearchItem,
+  PlaceSearchItem,
+  ReviewItem,
 } from './admin-events.models';
+import { FilterDefinition } from '../../../core/services/lookup.service';
 
 interface ApiEventsResponse {
   total: number;
@@ -127,15 +134,109 @@ export class AdminEventsService {
     );
   }
 
-  getDestinations(): Observable<EventFilterOption<string>[]> {
-    return this.http.get<ApiDestinationLookupItem[]>('/api/destinations').pipe(
-      map((items) =>
-        items.map((item) => ({
-          value: item.id,
-          label: item.name,
-        })),
-      ),
+  getCountries(): Observable<CountryOption[]> {
+    return this.http.get<CountryOption[]>('/api/admin/destinations/countries').pipe(
+      catchError(() => of([])),
     );
+  }
+
+  getRegionsWithCountry(): Observable<RegionWithCountry[]> {
+    return this.http.get<RegionWithCountry[]>('/api/admin/destinations/regions').pipe(
+      catchError(() => of([])),
+    );
+  }
+
+  getDestinations(regionId?: number): Observable<EventFilterOption<string>[]> {
+    let params = new HttpParams();
+    if (regionId != null) params = params.set('regionId', regionId);
+    return this.http.get<ApiDestinationLookupItem[]>('/api/destinations', { params }).pipe(
+      map((items) => items.map((item) => ({ value: item.id, label: item.name }))),
+      catchError(() => of([])),
+    );
+  }
+
+  searchDestinations(query: string, regionId?: number): Observable<DestinationSearchItem[]> {
+    let params = new HttpParams().set('search', query).set('pageSize', '15');
+    if (regionId != null) params = params.set('regionId', regionId);
+    return this.http.get<any>('/api/admin/destinations', { params }).pipe(
+      map((res: any) => {
+        const items: any[] = Array.isArray(res) ? res : (res.items ?? []);
+        return items.map((item: any): DestinationSearchItem => ({
+          id: item.id,
+          name: item.name,
+          regionId: item.regionId ?? null,
+          countryId: item.countryId ?? null,
+          regionName: item.regionName ?? item.region ?? null,
+          countryName: item.countryName ?? item.country ?? null,
+          latitude: item.latitude ?? null,
+          longitude: item.longitude ?? null,
+        }));
+      }),
+      catchError(() => of([])),
+    );
+  }
+
+  getDestinationById(id: string): Observable<DestinationSearchItem | null> {
+    return this.http.get<any>(`/api/admin/destinations/${id}`).pipe(
+      map((item: any): DestinationSearchItem => ({
+        id: item.id,
+        name: item.name,
+        regionId: item.regionId ?? null,
+        countryId: item.countryId ?? null,
+        regionName: item.regionName ?? item.region ?? null,
+        countryName: item.countryName ?? item.country ?? null,
+        latitude: item.latitude ?? null,
+        longitude: item.longitude ?? null,
+      })),
+      catchError(() => of(null)),
+    );
+  }
+
+  searchPlaces(query: string, destinationId?: string): Observable<PlaceSearchItem[]> {
+    let params = new HttpParams().set('search', query).set('pageSize', '15');
+    if (destinationId != null) params = params.set('destinationId', destinationId);
+    return this.http.get<any>('/api/admin/places', { params }).pipe(
+      map((res: any) => {
+        const items: any[] = Array.isArray(res) ? res : (res.items ?? []);
+        return items.map((item: any): PlaceSearchItem => ({
+          id: item.id,
+          name: item.name,
+          destinationId: item.destinationId ?? null,
+          destinationName: item.destinationName ?? item.destination ?? null,
+          regionId: item.regionId ?? null,
+          countryId: item.countryId ?? null,
+        }));
+      }),
+      catchError(() => of([])),
+    );
+  }
+
+  getPlaceById(id: string): Observable<PlaceSearchItem | null> {
+    return this.http.get<any>(`/api/admin/places/${id}`).pipe(
+      map((item: any): PlaceSearchItem => ({
+        id: item.id,
+        name: item.name,
+        destinationId: item.destinationId ?? null,
+        destinationName: item.destinationName ?? item.destination ?? null,
+        regionId: item.regionId ?? null,
+        countryId: item.countryId ?? null,
+        latitude: item.latitude ?? null,
+        longitude: item.longitude ?? null,
+      })),
+      catchError(() => of(null)),
+    );
+  }
+
+  createEventType(name: string): Observable<EventFilterOption<number>> {
+    return this.http.post<ApiLookupItem>('/api/admin/event-types', { name }).pipe(
+      map((item) => ({ value: item.id, label: item.name })),
+    );
+  }
+
+  createFilterDefinition(typeId: number, filterKey: string, filterLabel: string, filterType: string): Observable<FilterDefinition> {
+    return this.http.post<FilterDefinition>('/api/admin/filter-definitions', {
+      entityType: 'event', typeId, filterKey, filterLabel, filterType,
+    });
   }
 
   getEvents(filters: EventFilters): Observable<EventPagedResponse> {
@@ -194,6 +295,22 @@ export class AdminEventsService {
 
   deleteEventImage(id: string, imageId: string): Observable<void> {
     return this.http.delete<void>(`/api/admin/events/${id}/images/${imageId}`);
+  }
+
+  getEventInterests(id: string): Observable<InterestTagOption[]> {
+    return this.http.get<InterestTagOption[]>(`/api/admin/interest-tags/event/${id}`);
+  }
+
+  getEventReviews(id: string): Observable<ReviewItem[]> {
+    return this.http.get<ReviewItem[]>(`/api/admin/events/${id}/reviews`);
+  }
+
+  setEventInterests(id: string, tagIds: number[]): Observable<void> {
+    return this.http.put<void>(`/api/admin/interest-tags/event/${id}`, { tagIds });
+  }
+
+  getAllInterestTags(): Observable<InterestTagOption[]> {
+    return this.http.get<InterestTagOption[]>('/api/interest-tags');
   }
 
   private fetchActiveEvents(filters: EventFilters): Observable<EventPagedResponse> {
@@ -333,6 +450,7 @@ export class AdminEventsService {
       city: e.city,
       cityId: null,
       destinationId: null,
+      placeId: null,
       venue: e.destination,
       startDate: e.startDatetime,
       endDate: e.endDatetime,
@@ -348,6 +466,7 @@ export class AdminEventsService {
       longitude: null,
       ticketUrl: null,
       isFeatured: e.isFeatured,
+      avgRating: e.avgRating ?? 0,
       documents: [],
       ownerName: null,
       region: e.city,
@@ -368,6 +487,7 @@ export class AdminEventsService {
       city: null,
       cityId: null,
       destinationId: q.destinationId ?? null,
+      placeId: null,
       venue: q.destinationName,
       startDate: q.submittedAt,
       endDate: null,
@@ -383,6 +503,7 @@ export class AdminEventsService {
       longitude: null,
       ticketUrl: null,
       isFeatured: false,
+      avgRating: 0,
       documents: [],
       ownerName: q.linkedPlaceId ? 'Vlasnik objekta' : null,
       region: null,
@@ -404,6 +525,7 @@ export class AdminEventsService {
       city: e.city,
       cityId: e.cityId ?? null,
       destinationId: e.destinationId ?? null,
+      placeId: e.placeId ?? null,
       venue: e.place ?? e.destination ?? e.address,
       startDate: e.startDatetime,
       endDate: e.endDatetime,
@@ -419,10 +541,12 @@ export class AdminEventsService {
       longitude: e.longitude ?? null,
       ticketUrl: e.ticketUrl ?? null,
       isFeatured: e.isFeatured ?? false,
+      avgRating: e.avgRating ?? 0,
       documents: base?.documents ?? [],
       ownerName: base?.ownerName ?? (e.placeId ? 'Vlasnik objekta' : null),
       region: e.city,
       rejectionReason: base?.rejectionReason ?? null,
+      extraFilters: (e as any).extraFilters ?? undefined,
     };
   }
 

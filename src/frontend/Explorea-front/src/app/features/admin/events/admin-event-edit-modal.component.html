@@ -1,6 +1,6 @@
 <div class="edit-modal__backdrop" (click)="cancel.emit()"></div>
 
-<aside class="edit-modal__panel">
+<aside class="edit-modal__panel" [class.edit-modal__panel--closing]="closing">
   <header class="edit-modal__header">
     <div class="edit-modal__title-block">
       <span class="material-icons edit-modal__title-icon">event</span>
@@ -22,113 +22,323 @@
   }
 
   <div class="edit-modal__body">
-    <div class="ev-form-grid">
 
-      <div class="edit-field ev-field--full">
-        <label class="edit-field__label" for="ev-e-name">Naziv *</label>
-        <input id="ev-e-name" class="edit-field__input" type="text" [value]="form().name"
-          (input)="updateText('name', $any($event.target).value)" />
-      </div>
+    <div class="edit-modal__cols">
 
-      <div class="edit-field">
-        <label class="edit-field__label" for="ev-e-type">Tip *</label>
-        <select id="ev-e-type" class="edit-field__select" [value]="form().typeId ?? ''"
-          (change)="updateNumber('typeId', $any($event.target).value)">
-          <option value="">Izaberi tip</option>
-          @for (t of eventTypeOptions; track t.value) {
-            <option [value]="t.value">{{ t.label }}</option>
-          }
-        </select>
-      </div>
+      <!-- Left: form fields -->
+      <div class="edit-modal__form-col">
+        <div class="ev-form-grid">
 
-      <div class="edit-field">
-        <label class="edit-field__label" for="ev-e-price">Cena (RSD)</label>
-        <input id="ev-e-price" class="edit-field__input" type="number" min="0" step="0.01"
-          [value]="form().price"
-          (input)="updateText('price', $any($event.target).value)" />
-      </div>
+          <div class="edit-field ev-field--full">
+            <label class="edit-field__label" for="ev-e-name">Naziv <span class="edit-field__required">*</span></label>
+            <input id="ev-e-name" class="edit-field__input" type="text" [value]="form().name"
+              (input)="updateText('name', $any($event.target).value)" />
+          </div>
 
-      <div class="edit-field">
-        <label class="edit-field__label" for="ev-e-start">Početak *</label>
-        <input id="ev-e-start" class="edit-field__input" type="datetime-local" [value]="form().startDatetime"
-          (input)="updateText('startDatetime', $any($event.target).value)" />
-      </div>
-
-      <div class="edit-field">
-        <label class="edit-field__label" for="ev-e-end">Završetak *</label>
-        <input id="ev-e-end" class="edit-field__input" type="datetime-local" [value]="form().endDatetime"
-          (input)="updateText('endDatetime', $any($event.target).value)" />
-      </div>
-
-      <div class="edit-field">
-        <label class="edit-field__label" for="ev-e-city">Grad</label>
-        <select id="ev-e-city" class="edit-field__select" [value]="form().cityId ?? ''"
-          (change)="updateNumber('cityId', $any($event.target).value)">
-          <option value="">Bez grada</option>
-          @for (c of cityOptions; track c.value) {
-            <option [value]="c.value">{{ c.label }}</option>
-          }
-        </select>
-      </div>
-
-      <div class="edit-field">
-        <label class="edit-field__label" for="ev-e-dest">Destinacija</label>
-        <select id="ev-e-dest" class="edit-field__select" [value]="form().destinationId ?? ''"
-          (change)="updateDestination($any($event.target).value)">
-          <option value="">Bez destinacije</option>
-          @for (d of destinationOptions; track d.value) {
-            <option [value]="d.value">{{ d.label }}</option>
-          }
-        </select>
-      </div>
-
-      <div class="edit-field ev-field--full">
-        <label class="edit-field__label">Lokacija</label>
-        <div class="edit-modal__address-row">
-          <input class="edit-field__input" type="text" [value]="form().address"
-            (input)="updateText('address', $any($event.target).value)"
-            (keydown.enter)="$event.preventDefault(); geocode()"
-            placeholder="Unesi adresu za pretragu..." />
-          <button class="edit-modal__geo-btn" type="button" (click)="geocode()" [disabled]="isGeocoding()" title="Pronađi koordinate">
-            @if (isGeocoding()) {
-              <span class="material-icons edit-modal__spin">sync</span>
-            } @else {
-              <span class="material-icons">search</span>
+          <!-- Type + add new type -->
+          <div class="edit-field ev-field--full">
+            <label class="edit-field__label" for="ev-e-type">Tip <span class="edit-field__required">*</span></label>
+            <div class="ev-type-row">
+              <select id="ev-e-type" class="edit-field__select"
+                (change)="updateType($any($event.target).value)">
+                <option value="" [selected]="form().typeId === null">Izaberi tip</option>
+                @for (t of allTypeOptions; track t.value) {
+                  <option [value]="t.value" [selected]="form().typeId === t.value">{{ t.label }}</option>
+                }
+              </select>
+              <button class="ev-add-inline-btn" type="button" (click)="toggleAddType()" title="Dodaj novi tip">
+                <span class="material-icons">{{ showAddType() ? 'close' : 'add' }}</span>
+              </button>
+            </div>
+            @if (showAddType()) {
+              <div class="ev-add-inline-form">
+                <input class="edit-field__input" type="text" placeholder="Naziv novog tipa"
+                  [value]="newTypeName()" (input)="newTypeName.set($any($event.target).value)" />
+                <button class="ev-add-inline-form__submit" type="button"
+                  [disabled]="!newTypeName().trim() || isAddingType()" (click)="addNewType()">
+                  @if (isAddingType()) { <span class="material-icons edit-modal__spin">sync</span> }
+                  @else { Dodaj }
+                </button>
+              </div>
             }
-          </button>
+          </div>
+
+          <!-- Extra filters (shown when type selected and defs loaded) -->
+          @if (filterDefs().length) {
+            <div class="edit-field ev-field--full">
+              <label class="edit-field__label">Kategorije / filteri</label>
+              <div class="ev-filter-defs">
+                @for (def of filterDefs(); track def.id) {
+                  @if (def.filterType === 'boolean') {
+                    <label class="ev-filter-chip" [class.ev-filter-chip--active]="form().extraFilters[def.filterKey] === 'true'">
+                      <input type="checkbox"
+                        [checked]="form().extraFilters[def.filterKey] === 'true'"
+                        (change)="updateExtraFilter(def.filterKey, $any($event.target).checked)" />
+                      {{ def.filterLabel }}
+                    </label>
+                  } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
+                    <div class="ev-filter-select-group">
+                      <span class="ev-filter-select-label">{{ def.filterLabel }}</span>
+                      <div class="ev-filter-opts">
+                        @for (opt of def.options; track opt.optionValue) {
+                          <label class="ev-filter-chip" [class.ev-filter-chip--active]="form().extraFilters[def.filterKey] === opt.optionValue">
+                            <input type="radio" [name]="'fe-' + def.filterKey" [value]="opt.optionValue"
+                              [checked]="form().extraFilters[def.filterKey] === opt.optionValue"
+                              (change)="updateExtraFilter(def.filterKey, opt.optionValue)" />
+                            {{ opt.optionLabel }}
+                          </label>
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+              <button class="ev-add-filter-btn" type="button" (click)="toggleAddFilter()">
+                <span class="material-icons">{{ showAddFilter() ? 'close' : 'tune' }}</span>
+                {{ showAddFilter() ? 'Otkaži' : 'Dodaj filter' }}
+              </button>
+              @if (showAddFilter()) {
+                <div class="ev-add-inline-form ev-add-inline-form--filter">
+                  <input class="edit-field__input" type="text" placeholder="Ključ (npr. has_parking)"
+                    [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
+                  <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
+                    [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
+                  <select class="edit-field__select" [value]="newFilterType()"
+                    (change)="newFilterType.set($any($event.target).value)">
+                    <option value="boolean">Da/Ne</option>
+                    <option value="select">Izbor</option>
+                    <option value="multi_select">Višestruki izbor</option>
+                  </select>
+                  <button class="ev-add-inline-form__submit" type="button"
+                    [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
+                    (click)="addNewFilter()">
+                    @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
+                    @else { Dodaj filter }
+                  </button>
+                </div>
+              }
+            </div>
+          }
+          @if (!filterDefs().length && form().typeId !== null) {
+            <div class="edit-field ev-field--full">
+              <label class="edit-field__label">Kategorije / filteri</label>
+              <div class="ev-filter-empty">Nema definisanih filtera za ovaj tip.</div>
+              <button class="ev-add-filter-btn" type="button" (click)="toggleAddFilter()">
+                <span class="material-icons">{{ showAddFilter() ? 'close' : 'tune' }}</span>
+                {{ showAddFilter() ? 'Otkaži' : 'Dodaj filter' }}
+              </button>
+              @if (showAddFilter()) {
+                <div class="ev-add-inline-form ev-add-inline-form--filter">
+                  <input class="edit-field__input" type="text" placeholder="Ključ (npr. has_parking)"
+                    [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
+                  <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
+                    [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
+                  <select class="edit-field__select" [value]="newFilterType()"
+                    (change)="newFilterType.set($any($event.target).value)">
+                    <option value="boolean">Da/Ne</option>
+                    <option value="select">Izbor</option>
+                    <option value="multi_select">Višestruki izbor</option>
+                  </select>
+                  <button class="ev-add-inline-form__submit" type="button"
+                    [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
+                    (click)="addNewFilter()">
+                    @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
+                    @else { Dodaj filter }
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <div class="edit-field">
+            <label class="edit-field__label" for="ev-e-price">Cena (RSD)</label>
+            <input id="ev-e-price" class="edit-field__input" type="number" min="0" step="0.01"
+              [value]="form().price"
+              (input)="updateText('price', $any($event.target).value)" />
+          </div>
+
+          <div class="edit-field">
+            <label class="edit-field__label" for="ev-e-ticket">Ticket URL</label>
+            <input id="ev-e-ticket" class="edit-field__input" type="url" [value]="form().ticketUrl"
+              (input)="updateText('ticketUrl', $any($event.target).value)" placeholder="https://..." />
+          </div>
+
+          <div class="edit-field">
+            <label class="edit-field__label" for="ev-e-start">Početak <span class="edit-field__required">*</span></label>
+            <input id="ev-e-start" class="edit-field__input" type="datetime-local" [value]="form().startDatetime"
+              (input)="updateText('startDatetime', $any($event.target).value)" />
+          </div>
+
+          <div class="edit-field">
+            <label class="edit-field__label" for="ev-e-end">Završetak <span class="edit-field__required">*</span></label>
+            <input id="ev-e-end" class="edit-field__input" type="datetime-local" [value]="form().endDatetime"
+              [min]="form().startDatetime"
+              (input)="updateText('endDatetime', $any($event.target).value)" />
+          </div>
+
+          <div class="edit-field ev-field--full">
+            <label class="edit-field__label" for="ev-e-desc">Opis</label>
+            <textarea id="ev-e-desc" class="edit-field__textarea" rows="4" [value]="form().description"
+              (input)="updateText('description', $any($event.target).value)"></textarea>
+          </div>
+
+          <label class="ev-checkbox ev-field--full">
+            <input type="checkbox" [checked]="form().isFeatured"
+              (change)="updateFeatured($any($event.target).checked)" />
+            <span>Istaknut događaj</span>
+          </label>
+
         </div>
-        @if (mapLatitude() != null) {
-          <span class="edit-modal__coords">
-            {{ mapLatitude() | number: '1.5-5' }}, {{ mapLongitude() | number: '1.5-5' }}
-          </span>
-        }
       </div>
 
-      <div class="ev-field--full">
+      <!-- Right: address + map -->
+      <div class="edit-modal__map-col">
+        <div class="edit-field">
+          <label class="edit-field__label">Adresa / koordinate</label>
+          <div class="edit-modal__address-row">
+            <input class="edit-field__input" type="text" [value]="form().address"
+              (input)="updateText('address', $any($event.target).value)"
+              (keydown.enter)="$event.preventDefault(); geocode()"
+              placeholder="Unesi adresu za pretragu..." />
+            <button class="edit-modal__geo-btn" type="button" (click)="geocode()" [disabled]="isGeocoding()" title="Pronađi koordinate">
+              @if (isGeocoding()) {
+                <span class="material-icons edit-modal__spin">sync</span>
+              } @else {
+                <span class="material-icons">search</span>
+              }
+            </button>
+          </div>
+          @if (mapLatitude() != null) {
+            <span class="edit-modal__coords">
+              {{ mapLatitude() | number: '1.5-5' }}, {{ mapLongitude() | number: '1.5-5' }}
+            </span>
+          }
+        </div>
         <div #mapEl class="edit-modal__map"></div>
         <p class="edit-modal__map-hint">Klikni na mapu ili prevuci pin da postaviš lokaciju.</p>
       </div>
 
-      <div class="edit-field ev-field--full">
-        <label class="edit-field__label" for="ev-e-ticket">Ticket URL</label>
-        <input id="ev-e-ticket" class="edit-field__input" type="url" [value]="form().ticketUrl"
-          (input)="updateText('ticketUrl', $any($event.target).value)" />
-      </div>
-
-      <div class="edit-field ev-field--full">
-        <label class="edit-field__label" for="ev-e-desc">Opis</label>
-        <textarea id="ev-e-desc" class="edit-field__textarea" rows="4" [value]="form().description"
-          (input)="updateText('description', $any($event.target).value)"></textarea>
-      </div>
-
-      <label class="ev-checkbox ev-field--full">
-        <input type="checkbox" [checked]="form().isFeatured"
-          (change)="updateFeatured($any($event.target).checked)" />
-        <span>Istaknut događaj</span>
-      </label>
-
     </div>
 
+    <!-- Location cascade: Country → Region → Destination → Place -->
+    <div class="ev-location-section">
+      <div class="ev-location-grid">
+
+        <div class="edit-field">
+          <label class="edit-field__label" for="ev-e-country">Zemlja</label>
+          <select id="ev-e-country" class="edit-field__select" [value]="selectedCountryId() ?? ''"
+            (change)="updateCountry($any($event.target).value)">
+            <option value="">Sve zemlje</option>
+            @for (c of countries(); track c.id) {
+              <option [value]="c.id">{{ c.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="edit-field">
+          <label class="edit-field__label" for="ev-e-region">Regija</label>
+          <select id="ev-e-region" class="edit-field__select" [value]="selectedRegionId() ?? ''"
+            (change)="updateRegion($any($event.target).value)">
+            <option value="">Sve regije</option>
+            @for (r of filteredRegions(); track r.id) {
+              <option [value]="r.id">{{ r.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="edit-field ev-location-full">
+          <label class="edit-field__label">Destinacija</label>
+          <div class="ev-search-field">
+            <span class="material-icons ev-search-field__icon">place</span>
+            <input class="edit-field__input ev-search-field__input" type="text"
+              [value]="destinationQuery()"
+              (input)="onDestinationInput($any($event.target).value)"
+              (focus)="showDestResults.set(destinationResults().length > 0)"
+              (blur)="hideDestResults()"
+              placeholder="Pretraži destinaciju..." />
+            @if (isSearchingDest()) {
+              <span class="material-icons ev-search-field__spinner edit-modal__spin">sync</span>
+            }
+            @if (form().destinationId) {
+              <button class="ev-search-field__clear" type="button" (click)="clearDestination()" title="Obriši">
+                <span class="material-icons">close</span>
+              </button>
+            }
+          </div>
+          @if (showDestResults() && destinationResults().length) {
+            <div class="ev-search-dropdown">
+              @for (d of destinationResults(); track d.id) {
+                <button class="ev-search-dropdown__item" type="button" (mousedown)="selectDestination(d)">
+                  <span class="material-icons ev-search-dropdown__icon">place</span>
+                  <span class="ev-search-dropdown__name">{{ d.name }}</span>
+                  @if (d.regionName || d.countryName) {
+                    <span class="ev-search-dropdown__sub">{{ [d.regionName, d.countryName].filter(x => x).join(', ') }}</span>
+                  }
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="edit-field ev-location-full">
+          <label class="edit-field__label">Objekat (nije obavezno)</label>
+          <div class="ev-search-field">
+            <span class="material-icons ev-search-field__icon">apartment</span>
+            <input class="edit-field__input ev-search-field__input" type="text"
+              [value]="placeQuery()"
+              (input)="onPlaceInput($any($event.target).value)"
+              (focus)="showPlaceResults.set(placeResults().length > 0)"
+              (blur)="hidePlaceResults()"
+              placeholder="Pretraži objekat..." />
+            @if (isSearchingPlaces()) {
+              <span class="material-icons ev-search-field__spinner edit-modal__spin">sync</span>
+            }
+            @if (form().placeId) {
+              <button class="ev-search-field__clear" type="button" (click)="clearPlaceOnly()" title="Obriši">
+                <span class="material-icons">close</span>
+              </button>
+            }
+          </div>
+          @if (showPlaceResults() && placeResults().length) {
+            <div class="ev-search-dropdown">
+              @for (p of placeResults(); track p.id) {
+                <button class="ev-search-dropdown__item" type="button" (mousedown)="selectPlace(p)">
+                  <span class="material-icons ev-search-dropdown__icon">apartment</span>
+                  <span class="ev-search-dropdown__name">{{ p.name }}</span>
+                  @if (p.destinationName) {
+                    <span class="ev-search-dropdown__sub">{{ p.destinationName }}</span>
+                  }
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Interests -->
+    <div class="edit-modal__interests-section">
+      <div class="edit-modal__interests-header">
+        <span class="edit-field__label">
+          Interesovanja
+          <span class="edit-field__counter">{{ selectedInterestIds().length }} / 3</span>
+        </span>
+      </div>
+      <div class="edit-modal__interests-chips">
+        @for (tag of allInterestTags(); track tag.id) {
+          <button type="button" class="interest-chip"
+            [class.interest-chip--selected]="selectedInterestIds().includes(tag.id)"
+            [disabled]="selectedInterestIds().length >= 3 && !selectedInterestIds().includes(tag.id)"
+            (click)="toggleInterest(tag.id)">
+            @if (tag.icon) { <span class="material-icons interest-chip__icon">{{ tag.icon }}</span> }
+            {{ tag.name }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Images -->
     <div class="edit-modal__images-section">
       <div class="edit-modal__images-header">
         <span class="edit-field__label">

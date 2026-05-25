@@ -607,6 +607,24 @@
   color: var(--color-text-muted);
 }
 
+/* Rating */
+.dest-td--center { text-align: center; }
+
+.dest-rating {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.dest-rating .material-icons {
+  font-size: 16px;
+  color: #f59e0b;
+}
+
 /* Updated */
 .dest-updated {
   display: inline-flex;
@@ -747,6 +765,15 @@
 @keyframes ddpSlideIn {
   from { transform: translateX(100%); }
   to   { transform: translateX(0); }
+}
+
+.ddp-panel--closing {
+  animation: ddpSlideOut 0.22s ease forwards;
+}
+
+@keyframes ddpSlideOut {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
 }
 
 /* Header */
@@ -997,6 +1024,42 @@
   font-size: var(--font-size-sm);
 }
 
+/* Interests scroll */
+.ddp-interests {
+  padding: var(--sp-1) 0 var(--sp-3);
+}
+
+.ddp-interests-scroll {
+  display: flex;
+  gap: var(--sp-2);
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.ddp-interests-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.ddp-interest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ddp-interest-chip .material-icons {
+  font-size: 16px;
+  line-height: 1;
+}
+
 /* Footer */
 .ddp-footer {
   display: flex;
@@ -1035,3 +1098,148 @@
     align-items: stretch;
   }
 }
+
+/* ===== REVIEWS SECTION ===== */
+.ddp-reviews-section {
+  margin-top: var(--sp-5);
+}
+
+.ddp-section-label {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.ddp-section-count {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.ddp-reviews-empty {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.ddp-reviews-scroll {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.ddp-reviews-scroll::-webkit-scrollbar { height: 4px; }
+.ddp-reviews-scroll::-webkit-scrollbar-track { background: transparent; }
+.ddp-reviews-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+.ddp-review-card {
+  min-width: 220px;
+  max-width: 260px;
+  flex-shrink: 0;
+  padding: var(--sp-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+
+.ddp-review-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.ddp-review-card__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ddp-review-card__avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.ddp-review-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ddp-review-card__author {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ddp-review-card__date {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.ddp-review-card__stars {
+  display: flex;
+  gap: 1px;
+  margin-bottom: var(--sp-2);
+}
+
+.ddp-review-card__star {
+  font-size: 14px;
+  color: var(--color-border);
+}
+
+.ddp-review-card__star--filled {
+  color: #f59e0b;
+}
+
+.ddp-review-card__comment {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.evts-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.evts-btn-primary:hover { opacity: 0.88; }
+.evts-btn-primary .material-icons { font-size: 16px; }

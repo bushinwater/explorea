@@ -6,10 +6,11 @@
   <app-feedback-banner variant="error" [title]="errorMessage()" />
 }
 
-@if (isEditModalOpen() && selectedDestination()) {
+@if ((isEditModalOpen() || isEditModalClosing()) && selectedDestination()) {
   <app-destination-edit-modal
     [row]="selectedDestination()!"
     [types]="types()"
+    [closing]="isEditModalClosing()"
     (cancel)="closeEditModal()"
     (saved)="onEditSaved($event)"
     (typeCreated)="onTypeCreated($event)"
@@ -267,7 +268,7 @@
         </div>
 
         <!-- Add new -->
-        <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
+        <button class="evts-btn-primary" type="button" (click)="openCreateModal()">
           <span class="material-icons">add</span>
           {{ ui.t('destinations.addNew') }}
         </button>
@@ -291,6 +292,7 @@
               <th class="dest-th">{{ ui.t('destinations.table.category') }}</th>
               <th class="dest-th">{{ ui.t('destinations.table.status') }}</th>
               <th class="dest-th dest-th--right">{{ ui.t('destinations.table.views') }}</th>
+              <th class="dest-th dest-th--center">Ocena</th>
               <th class="dest-th">{{ ui.t('destinations.table.updated') }}</th>
               <th class="dest-th"></th>
             </tr>
@@ -340,6 +342,14 @@
                   <div class="dest-views">
                     <span class="material-icons">visibility</span>
                     {{ formatViews(dest.views) }}
+                  </div>
+                </td>
+
+                <!-- Rating -->
+                <td class="dest-td dest-td--center">
+                  <div class="dest-rating">
+                    <span class="material-icons">star</span>
+                    {{ dest.avgRating ? formatRating(dest.avgRating) : '—' }}
                   </div>
                 </td>
 
@@ -423,9 +433,9 @@
 </div>
 
 <!-- ===== DESTINATION DETAILS PANEL ===== -->
-@if (isDetailsPanelOpen() && detailsPanelRow(); as dest) {
+@if ((isDetailsPanelOpen() || isPanelClosing()) && detailsPanelRow(); as dest) {
   <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
-  <aside class="ddp-panel" role="dialog" aria-modal="true">
+  <aside class="ddp-panel" [class.ddp-panel--closing]="isPanelClosing()" role="dialog" aria-modal="true">
 
     <header class="ddp-header">
       <div class="ddp-header__title-group">
@@ -491,6 +501,21 @@
           }
         </div>
 
+        <!-- Interests -->
+        @if (detailsPanelInterests().length) {
+          <div class="ddp-interests">
+            <span class="ddp-grid__label">Interesovanja</span>
+            <div class="ddp-interests-scroll">
+              @for (tag of detailsPanelInterests(); track tag.id) {
+                <span class="ddp-interest-chip">
+                  @if (tag.icon) { <span class="material-icons">{{ tag.icon }}</span> }
+                  {{ tag.name }}
+                </span>
+              }
+            </div>
+          </div>
+        }
+
         <!-- Description -->
         @if (detailsPanelDetail()?.description) {
           <div class="ddp-description-wrap">
@@ -530,6 +555,48 @@
                 [latitude]="detailsPanelDetail()!.latitude"
                 [longitude]="detailsPanelDetail()!.longitude"
               />
+            </div>
+          }
+        </div>
+
+        <!-- Reviews -->
+        <div class="ddp-reviews-section">
+          <h4 class="ddp-section-label">
+            Recenzije
+            @if (detailsPanelReviews().length > 0) {
+              <span class="ddp-section-count">({{ detailsPanelReviews().length }})</span>
+            }
+          </h4>
+          @if (!detailsPanelReviews().length) {
+            <p class="ddp-reviews-empty">Nema recenzija za ovu destinaciju.</p>
+          } @else {
+            <div class="ddp-reviews-scroll">
+              @for (review of detailsPanelReviews(); track review.createdAt) {
+                <div class="ddp-review-card">
+                  <div class="ddp-review-card__header">
+                    @if (review.authorAvatarUrl) {
+                      <img class="ddp-review-card__avatar" [src]="review.authorAvatarUrl" [alt]="review.authorName" />
+                    } @else {
+                      <div class="ddp-review-card__avatar ddp-review-card__avatar--placeholder">
+                        {{ review.authorName[0] }}
+                      </div>
+                    }
+                    <div class="ddp-review-card__meta">
+                      <span class="ddp-review-card__author">{{ review.authorName }}</span>
+                      <span class="ddp-review-card__date">{{ formatDate(review.createdAt) }}</span>
+                    </div>
+                  </div>
+                  <div class="ddp-review-card__stars">
+                    @for (star of starArray(); track star) {
+                      <span class="material-icons ddp-review-card__star"
+                        [class.ddp-review-card__star--filled]="star <= review.rating">star</span>
+                    }
+                  </div>
+                  @if (review.comment) {
+                    <p class="ddp-review-card__comment">{{ review.comment }}</p>
+                  }
+                </div>
+              }
             </div>
           }
         </div>

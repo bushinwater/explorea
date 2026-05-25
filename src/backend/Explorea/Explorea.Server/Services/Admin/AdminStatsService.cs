@@ -179,6 +179,33 @@ namespace Explorea.Server.Services.Admin
             return items;
         }
 
+        public async Task<int> GetPendingCountAsync(Guid currentUserId)
+        {
+            var user = await _userRepository.GetByIdWithRoleAsync(currentUserId)
+                ?? throw new UnauthorizedAccessException("Current user was not found.");
+
+            if (user.Role.Name == RoleNames.SuperAdmin || user.Role.Name == RoleNames.TouristOrganization)
+            {
+                var destinationQuery = await BuildDestinationScopeAsync(user, currentUserId);
+                var destinationIdsQuery = destinationQuery.Select(d => d.Id);
+                return await _db.SubmissionQueue.CountAsync(q =>
+                    q.Status == "Pending" && destinationIdsQuery.Contains(q.DestinationId));
+            }
+
+            // place_owner: count their own pending submissions + pending places they created
+            var pendingSubmissions = await _db.SubmissionQueue.CountAsync(q =>
+                q.Status == "Pending" && q.SubmittedByUserId == currentUserId);
+
+            var pendingPlaces = await _db.Places
+                .IgnoreQueryFilters()
+                .CountAsync(p =>
+                    !p.IsDeleted &&
+                    p.CreatedBy == currentUserId &&
+                    p.ApprovalStatus == "pending");
+
+            return pendingSubmissions + pendingPlaces;
+        }
+
         private async Task<IQueryable<Destination>> BuildDestinationScopeAsync(User user, Guid currentUserId)
         {
             var query = _db.Destinations

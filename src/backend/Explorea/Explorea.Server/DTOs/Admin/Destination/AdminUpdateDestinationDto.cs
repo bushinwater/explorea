@@ -13,5 +13,7 @@ namespace Explorea.API.DTOs.Admin.Destination
         public string? Visibility { get; set; }
         public int? TypeId { get; set; }
         public bool ClearTypeId { get; set; } = false;
+        public bool ClearCountryId { get; set; } = false;
+        public Dictionary<string, string>? ExtraFilters { get; set; }
     }
 }

@@ -10,16 +10,17 @@ import {
   signal,
 } from '@angular/core';
 import { Chart, registerables, TooltipItem } from 'chart.js';
-import { forkJoin } from 'rxjs';
+import { forkJoin, map } from 'rxjs';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { FeedbackBannerComponent, StatCardComponent } from '@shared/components';
 import {
   AggregatePoint, DEST_SORT_OPTIONS, DIMENSION_CONFIGS, DestTableSortBy,
-  DestinationsTableItem, ENTITY_CONFIGS, EntityTableRow, FLAT_TABLE_COLS,
-  FLAT_TABLE_ENTITIES, FLAT_TABLE_SORT_OPTIONS, FilterDefinition, FlatTableEntity,
-  METRIC_COLORS, METRIC_CONFIGS, PIE_COLORS, ReportDimensionId, ReportEntity,
-  ReportInsights, ReportMetricId, ReportQueueItem, ReportTemplateDto,
-  SavedReportConfig, SubtypeOption, VIZ_BY_DIM, VIZ_ICONS, VIZ_LABELS, VizType,
+  DestinationsTableItem, ENTITY_CONFIGS, EntityProfile, EntitySearchItem, EntityTableRow,
+  FLAT_TABLE_COLS, FLAT_TABLE_ENTITIES, FLAT_TABLE_SORT_OPTIONS, FilterDefinition,
+  FlatTableEntity, METRIC_COLORS, METRIC_CONFIGS, PIE_COLORS, ReportDimensionId,
+  ReportEntity, ReportInsights, ReportMetricId, ReportQueueItem, ReportTemplateDto,
+  SEARCHABLE_ENTITIES, SavedReportConfig, SubtypeOption, VIZ_BY_DIM, VIZ_ICONS,
+  VIZ_LABELS, VizType,
 } from './admin-reports.models';
 import { AdminReportsService } from './admin-reports.service';
 
@@ -51,6 +52,16 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   readonly loading        = signal(false);
   readonly error          = signal<string | null>(null);
   readonly chartData      = signal<AggregatePoint[] | null>(null);
+
+  // ─── Entity search ───────────────────────────────────────────────────────
+  readonly selectedEntityId    = signal<string | null>(null);
+  readonly selectedEntityName  = signal<string | null>(null);
+  readonly entitySearchQuery   = signal('');
+  readonly entitySearchResults = signal<EntitySearchItem[]>([]);
+  readonly entitySearchOpen    = signal(false);
+  readonly entityProfile       = signal<EntityProfile | null>(null);
+  readonly profileLoading      = signal(false);
+  private searchTimeout: ReturnType<typeof setTimeout> | null = null;
   readonly insights       = signal<ReportInsights | null>(null);
   readonly templates      = signal<ReportTemplateDto[]>([]);
   readonly isTemplatesOpen = signal(true);
@@ -60,11 +71,21 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
 
   // ─── Flat table ──────────────────────────────────────────────────────────
 
-  readonly flatEntity           = signal<FlatTableEntity>('destinations');
+  readonly flatEntities         = signal<FlatTableEntity[]>(['destinations']);
+  readonly flatEntity           = computed(() => this.flatEntities()[0] ?? 'destinations');
   readonly destSortBy           = signal<DestTableSortBy>('region');
   readonly flatSortBy           = signal<string>('name');
+
+  // flat table destination scope
+  readonly flatDestId           = signal<string | null>(null);
+  readonly flatDestName         = signal<string | null>(null);
+  readonly flatDestSearchQuery  = signal('');
+  readonly flatDestSearchResults = signal<EntitySearchItem[]>([]);
+  readonly flatDestSearchOpen   = signal(false);
+  private flatDestSearchTimeout: ReturnType<typeof setTimeout> | null = null;
   readonly destTableData        = signal<DestinationsTableItem[] | null>(null);
   readonly flatTableData        = signal<EntityTableRow[] | null>(null);
+  readonly flatTableSections    = signal<{ entity: FlatTableEntity; label: string; data: EntityTableRow[] }[]>([]);
   readonly destTableLoading     = signal(false);
   readonly destTableError       = signal<string | null>(null);
   readonly filterSubTypeOptions  = signal<string[]>([]);
@@ -96,12 +117,16 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   readonly entityConfig = computed(() =>
     ENTITY_CONFIGS.find(e => e.id === this.entity())!,
   );
-  readonly availableDimensions = computed(() =>
-    this.entityConfig().dimensions.map(id => DIMENSION_CONFIGS[id]),
-  );
-  readonly availableMetrics = computed(() =>
-    this.entityConfig().metrics.map(id => METRIC_CONFIGS[id]),
-  );
+  readonly availableDimensions = computed(() => {
+    if (this.selectedEntityId()) return [DIMENSION_CONFIGS['time']];
+    return this.entityConfig().dimensions.map(id => DIMENSION_CONFIGS[id]);
+  });
+  readonly availableMetrics = computed(() => {
+    const metrics = this.entityConfig().metrics;
+    if (this.selectedEntityId()) return metrics.filter(id => id !== 'count').map(id => METRIC_CONFIGS[id]);
+    return metrics.map(id => METRIC_CONFIGS[id]);
+  });
+  readonly supportsEntitySearch = computed(() => SEARCHABLE_ENTITIES.includes(this.entity()));
   readonly dimensionConfig = computed(() =>
     DIMENSION_CONFIGS[this.dimension()],
   );
@@ -117,6 +142,82 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     const m = METRIC_CONFIGS[this.metric()];
     return `${m.label} — ${e.label} / ${d.label}`;
   });
+  readonly chartHint = computed((): string | null => {
+    const hints: Record<string, string> = {
+      'destinations:region:count':        'Koliko destinacija postoji u svakom regionu',
+      'destinations:region:traffic':      'Ukupan broj poseta destinacija grupisanih po regionu',
+      'destinations:region:avgRating':    'Prosecna ocena korisnika za destinacije u svakom regionu',
+      'destinations:time:count':          'Koliko novih destinacija je dodato svaki mesec',
+      'destinations:time:traffic':        'Koliko puta su destinacije pregledane svaki mesec',
+      'destinations:time:avgRating':      'Prosecna ocena recenzija destinacija po mesecu',
+      'activities:category:count':        'Koliko aktivnosti postoji u svakoj kategoriji',
+      'activities:category:traffic':      'Ukupan broj poseta aktivnosti po kategoriji',
+      'activities:category:avgRating':    'Prosecna ocena korisnika za aktivnosti po kategoriji',
+      'activities:destination:count':     'Koliko aktivnosti postoji u svakoj destinaciji',
+      'activities:destination:traffic':   'Ukupan broj poseta aktivnosti po destinaciji',
+      'activities:destination:avgRating': 'Prosecna ocena korisnika za aktivnosti po destinaciji',
+      'activities:region:count':          'Koliko aktivnosti postoji u svakom regionu',
+      'activities:region:traffic':        'Ukupan broj poseta aktivnosti po regionu',
+      'activities:region:avgRating':      'Prosecna ocena korisnika za aktivnosti po regionu',
+      'activities:time:count':            'Koliko novih aktivnosti je dodato svaki mesec',
+      'activities:time:traffic':          'Koliko puta su aktivnosti pregledane svaki mesec',
+      'activities:time:avgRating':        'Prosecna ocena recenzija aktivnosti po mesecu',
+      'events:type:count':                'Koliko dogadjaja postoji po tipu',
+      'events:type:traffic':              'Ukupan broj poseta dogadjaja po tipu',
+      'events:type:avgRating':            'Prosecna ocena korisnika za dogadjaje po tipu',
+      'events:destination:count':         'Koliko dogadjaja postoji po destinaciji',
+      'events:destination:traffic':       'Ukupan broj poseta dogadjaja po destinaciji',
+      'events:destination:avgRating':     'Prosecna ocena korisnika za dogadjaje po destinaciji',
+      'events:region:count':              'Koliko dogadjaja postoji u svakom regionu',
+      'events:region:traffic':            'Ukupan broj poseta dogadjaja po regionu',
+      'events:region:avgRating':          'Prosecna ocena korisnika za dogadjaje po regionu',
+      'events:time:count':                'Koliko novih dogadjaja je dodato svaki mesec',
+      'events:time:traffic':              'Koliko puta su dogadjaji pregledani svaki mesec',
+      'events:time:avgRating':            'Prosecna ocena recenzija dogadjaja po mesecu',
+      'places:type:count':                'Koliko objekata postoji po tipu',
+      'places:type:traffic':              'Ukupan broj poseta objekata po tipu',
+      'places:type:avgRating':            'Prosecna ocena korisnika za objekte po tipu',
+      'places:destination:count':         'Koliko objekata postoji po destinaciji',
+      'places:destination:traffic':       'Ukupan broj poseta objekata po destinaciji',
+      'places:destination:avgRating':     'Prosecna ocena korisnika za objekte po destinaciji',
+      'places:region:count':              'Koliko objekata postoji u svakom regionu',
+      'places:region:traffic':            'Ukupan broj poseta objekata po regionu',
+      'places:region:avgRating':          'Prosecna ocena korisnika za objekte po regionu',
+      'places:time:count':                'Koliko novih objekata je dodato svaki mesec',
+      'places:time:traffic':              'Koliko puta su objekti pregledani svaki mesec',
+      'places:time:avgRating':            'Prosecna ocena recenzija objekata po mesecu',
+      'reviews:rating:count':             'Raspodela recenzija po oceni — koliko recenzija ima svaku ocenu',
+      'reviews:entityType:count':         'Koliko recenzija je ostavljeno po vrsti entiteta',
+      'reviews:time:count':               'Koliko novih recenzija je ostavljeno svaki mesec',
+      'users:time:count':                 'Koliko novih korisnika se registrovalo svaki mesec',
+      'users:gender:count':               'Raspodela korisnika po polu',
+      'users:ageGroup:count':             'Raspodela korisnika po starosnoj grupi',
+    };
+    return hints[`${this.entity()}:${this.dimension()}:${this.metric()}`] ?? null;
+  });
+  readonly profileChips = computed(() => {
+    const p = this.entityProfile();
+    if (!p) return [];
+    const trend = p.viewsPrev30 > 0
+      ? Math.round((p.viewsLast30 - p.viewsPrev30) / p.viewsPrev30 * 100)
+      : p.viewsLast30 > 0 ? 100 : 0;
+    const trendLabel = trend > 0 ? `+${trend}%` : trend < 0 ? `${trend}%` : '0%';
+    const chips = [
+      { icon: 'visibility',  label: 'Ukupno pregleda', value: this.formatNum(p.totalViews) },
+      { icon: 'star',        label: 'Prosecna ocena',  value: p.avgRating > 0 ? p.avgRating.toFixed(1) + ' ★' : '—' },
+      { icon: 'rate_review', label: 'Recenzije',       value: this.formatNum(p.reviewCount) },
+      { icon: 'trending_up', label: 'Trend (30 dana)', value: trendLabel },
+    ];
+    if (p.placeCount || p.activityCount || p.eventCount) {
+      chips.splice(3, 0,
+        { icon: 'store',        label: 'Objekti',     value: this.formatNum(p.placeCount)    },
+        { icon: 'hiking',       label: 'Aktivnosti',  value: this.formatNum(p.activityCount) },
+        { icon: 'celebration',  label: 'Dogadjaji',   value: this.formatNum(p.eventCount)    },
+      );
+    }
+    return chips;
+  });
+
   readonly insightCards = computed(() => {
     const ins = this.insights();
     return [
@@ -145,6 +246,12 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   });
 
   readonly flatCols = computed(() => FLAT_TABLE_COLS[this.flatEntity()]);
+
+  readonly flatScopedEntities = computed(() =>
+    this.flatDestId()
+      ? FLAT_TABLE_ENTITIES.filter(e => e.id !== 'destinations')
+      : FLAT_TABLE_ENTITIES,
+  );
 
   // Computed: destinations table grouped by region for display
   readonly destTableGrouped = computed(() => {
@@ -203,7 +310,47 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     this.metric.set(cfg.metrics[0]);
     const validViz = VIZ_BY_DIM[DIMENSION_CONFIGS[firstDim].type];
     if (!validViz.includes(this.vizType())) this.vizType.set(validViz[0]);
+    this.clearEntitySelection();
     this.clearChart();
+  }
+
+  onEntitySearch(q: string): void {
+    this.entitySearchQuery.set(q);
+    if (this.searchTimeout) clearTimeout(this.searchTimeout);
+    if (q.length < 2) { this.entitySearchResults.set([]); this.entitySearchOpen.set(false); return; }
+    this.searchTimeout = setTimeout(() => {
+      this.svc.searchEntities(this.entity(), q).subscribe({
+        next: results => {
+          this.entitySearchResults.set(results);
+          this.entitySearchOpen.set(results.length > 0);
+          this.cdr.detectChanges();
+        },
+      });
+    }, 280);
+  }
+
+  selectEntityFromSearch(id: string, name: string): void {
+    this.selectedEntityId.set(id);
+    this.selectedEntityName.set(name);
+    this.entitySearchOpen.set(false);
+    this.entitySearchQuery.set('');
+    this.entitySearchResults.set([]);
+    // force dimension to time and default metric to traffic
+    this.dimension.set('time');
+    const metrics = this.entityConfig().metrics.filter(m => m !== 'count');
+    if (metrics.length) this.metric.set(metrics[0] as ReportMetricId);
+    this.vizType.set('line');
+    this.clearChart();
+    this.entityProfile.set(null);
+  }
+
+  clearEntitySelection(): void {
+    this.selectedEntityId.set(null);
+    this.selectedEntityName.set(null);
+    this.entitySearchQuery.set('');
+    this.entitySearchResults.set([]);
+    this.entitySearchOpen.set(false);
+    this.entityProfile.set(null);
   }
 
   selectDimension(d: ReportDimensionId): void {
@@ -233,9 +380,19 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   generate(): void {
     this.loading.set(true);
     this.error.set(null);
-    const dateFrom = this.isTimeDimension() ? this.dateFrom() : null;
-    const dateTo   = this.isTimeDimension() ? this.dateTo()   : null;
-    this.svc.getAggregate(this.entity(), this.dimension(), this.metric(), dateFrom, dateTo)
+    const dateFrom        = this.isTimeDimension() ? this.dateFrom() : null;
+    const dateTo          = this.isTimeDimension() ? this.dateTo()   : null;
+    const specificEntityId = this.selectedEntityId();
+
+    if (specificEntityId) {
+      this.profileLoading.set(true);
+      this.svc.getEntityProfile(this.entity(), specificEntityId).subscribe({
+        next:  p => { this.entityProfile.set(p); this.profileLoading.set(false); this.cdr.detectChanges(); },
+        error: () => { this.profileLoading.set(false); },
+      });
+    }
+
+    this.svc.getAggregate(this.entity(), this.dimension(), this.metric(), dateFrom, dateTo, specificEntityId)
       .subscribe({
         next: data => {
           this.loading.set(false);
@@ -310,10 +467,46 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   // ─── Flat table ──────────────────────────────────────────────────────────
 
   selectFlatEntity(e: FlatTableEntity): void {
-    this.flatEntity.set(e);
+    if (e === 'destinations') this.clearFlatDest();
+    const prev = this.flatEntity();
+    this.flatEntities.set([e]);
+    this.clearFlatResults();
+    if (prev !== e) this.reloadFiltersFor(e);
+  }
+
+  toggleFlatEntity(e: FlatTableEntity): void {
+    const current = this.flatEntities();
+    const prevPrimary = current[0];
+
+    let next: FlatTableEntity[];
+    if (e === 'destinations') {
+      if (current.length === 1 && current[0] === 'destinations') return;
+      this.clearFlatDest();
+      next = ['destinations'];
+    } else {
+      const withoutDest = current.filter(x => x !== 'destinations');
+      if (withoutDest.includes(e)) {
+        const remaining = withoutDest.filter(x => x !== e);
+        next = remaining.length ? remaining : ['destinations'];
+        if (next[0] === 'destinations') this.clearFlatDest();
+      } else {
+        next = [...withoutDest, e];
+      }
+    }
+
+    this.flatEntities.set(next);
+    this.clearFlatResults();
+    if (prevPrimary !== next[0]) this.reloadFiltersFor(next[0]);
+  }
+
+  private clearFlatResults(): void {
     this.destTableData.set(null);
     this.flatTableData.set(null);
+    this.flatTableSections.set([]);
     this.destTableError.set(null);
+  }
+
+  private reloadFiltersFor(e: FlatTableEntity): void {
     this.filterSubType.set(null);
     this.filterRegion.set(this.scopeRegion());
     this.filterMinRating.set(null);
@@ -324,6 +517,41 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     this.extraFilters.set({});
     this.subtypeOptionsWithId.set([]);
     this.loadFilterOptions(e);
+  }
+
+  onFlatDestSearch(q: string): void {
+    this.flatDestSearchQuery.set(q);
+    if (this.flatDestSearchTimeout) clearTimeout(this.flatDestSearchTimeout);
+    if (q.length < 2) { this.flatDestSearchResults.set([]); this.flatDestSearchOpen.set(false); return; }
+    this.flatDestSearchTimeout = setTimeout(() => {
+      this.svc.searchEntities('destinations', q).subscribe({
+        next: results => {
+          this.flatDestSearchResults.set(results);
+          this.flatDestSearchOpen.set(results.length > 0);
+          this.cdr.detectChanges();
+        },
+      });
+    }, 280);
+  }
+
+  selectFlatDestFromSearch(id: string, name: string): void {
+    this.flatDestId.set(id);
+    this.flatDestName.set(name);
+    this.flatDestSearchOpen.set(false);
+    this.flatDestSearchQuery.set('');
+    this.flatDestSearchResults.set([]);
+    const prev = this.flatEntity();
+    this.flatEntities.set(['activities', 'events', 'places']);
+    this.clearFlatResults();
+    if (prev === 'destinations') this.reloadFiltersFor('activities');
+  }
+
+  clearFlatDest(): void {
+    this.flatDestId.set(null);
+    this.flatDestName.set(null);
+    this.flatDestSearchQuery.set('');
+    this.flatDestSearchResults.set([]);
+    this.flatDestSearchOpen.set(false);
   }
 
   clearSubType(): void {
@@ -442,8 +670,9 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   generateFlatTable(): void {
     this.destTableLoading.set(true);
     this.destTableError.set(null);
-    const entity = this.flatEntity();
-    if (entity === 'destinations') {
+    const entities = this.flatEntities();
+
+    if (entities.length === 1 && entities[0] === 'destinations') {
       this.svc.getDestinationsTable(
         this.destSortBy(),
         this.filterSubType(), this.filterRegion(), this.filterMinRating(),
@@ -452,43 +681,64 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
         error: () => { this.destTableLoading.set(false); this.destTableError.set('Greška pri učitavanju.'); this.cdr.detectChanges(); },
       });
     } else {
+      const nonDest = entities.filter(e => e !== 'destinations');
       const extraArr = Object.entries(this.extraFilters()).map(([k, v]) => `${k}:${v}`);
-      this.svc.getEntityTable(
-        entity, this.flatSortBy(),
-        this.filterSubType(), this.filterRegion(), this.filterMinRating(),
-        this.filterDifficulty(),
-        this.filterMinPrice(), this.filterMaxPrice(),
-        extraArr.length ? extraArr : null,
-      ).subscribe({
-        next: data => { this.destTableLoading.set(false); this.flatTableData.set(data); this.cdr.detectChanges(); },
+      const reqs = nonDest.map(entity =>
+        this.svc.getEntityTable(
+          entity, this.flatSortBy(),
+          this.filterSubType(), this.filterRegion(), this.filterMinRating(),
+          this.filterDifficulty(), this.filterMinPrice(), this.filterMaxPrice(),
+          extraArr.length ? extraArr : null,
+          this.flatDestId(),
+        ).pipe(map(data => ({
+          entity,
+          label: FLAT_TABLE_ENTITIES.find(x => x.id === entity)!.label,
+          data,
+        })))
+      );
+      forkJoin(reqs).subscribe({
+        next: sections => {
+          this.destTableLoading.set(false);
+          this.flatTableSections.set(sections);
+          this.flatTableData.set(sections[0]?.data ?? null);
+          this.cdr.detectChanges();
+        },
         error: () => { this.destTableLoading.set(false); this.destTableError.set('Greška pri učitavanju.'); this.cdr.detectChanges(); },
       });
     }
   }
 
   exportFlatTableCsv(): void {
-    const entity = this.flatEntity();
-    const cols   = FLAT_TABLE_COLS[entity];
-    const header = cols.map(c => `"${c.header}"`).join(',');
-
-    if (entity === 'destinations') {
+    if (this.flatEntity() === 'destinations') {
       const data = this.destTableData();
       if (!data?.length) return;
+      const cols = FLAT_TABLE_COLS['destinations'];
+      const header = cols.map(c => `"${c.header}"`).join(',');
       const rows = data.map(d =>
         [`"${d.name}"`, `"${d.city ?? ''}"`, `"${d.region ?? ''}"`, `"${d.type ?? ''}"`, d.avgRating, d.popularity].join(','),
       );
       this.downloadCsv([header, ...rows].join('\n'), 'destinacije.csv');
-    } else {
-      const data = this.flatTableData();
-      if (!data?.length) return;
-      const rows = data.map(r =>
-        cols.map(c => {
+      return;
+    }
+
+    const sections = this.flatTableSections();
+    if (!sections.length) return;
+
+    const lines: string[] = [];
+    for (const section of sections) {
+      const cols = FLAT_TABLE_COLS[section.entity];
+      if (lines.length) lines.push('');
+      lines.push(`"${section.label}"`);
+      lines.push(cols.map(c => `"${c.header}"`).join(','));
+      section.data.forEach(r =>
+        lines.push(cols.map(c => {
           const v = (r as any)[c.key];
           return typeof v === 'string' ? `"${v}"` : String(v ?? '');
-        }).join(','),
+        }).join(','))
       );
-      this.downloadCsv([header, ...rows].join('\n'), `${entity}.csv`);
     }
+    const name = sections.length === 1 ? `${sections[0].entity}.csv` : 'entiteti.csv';
+    this.downloadCsv(lines.join('\n'), name);
   }
 
   // kept for backward compat — now delegates to generateFlatTable
@@ -505,7 +755,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     const entityLabel = FLAT_TABLE_ENTITIES.find(e => e.id === entity)?.label ?? entity;
     const defaultTitle =
       type === 'dest-table'    ? 'Tabela destinacija'
-      : type === 'entity-table' ? `Tabela: ${entityLabel}`
+      : type === 'entity-table' ? (this.flatTableSections().length > 1 ? `Tabele entiteta${this.flatDestName() ? ' — ' + this.flatDestName() : ''}` : `Tabela: ${entityLabel}`)
       : type === 'table'        ? `Tabela: ${this.chartTitle()}`
       :                           `Grafik: ${this.chartTitle()}`;
     this.queueItemTitle.set(defaultTitle);
@@ -529,6 +779,24 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
       if (!data) return;
       item = { id: Date.now().toString(), title, qtype: 'dest-table', destData: data };
     } else if (type === 'entity-table') {
+      const sections = this.flatTableSections();
+      if (sections.length > 1) {
+        // add each section as a separate queue item
+        const base = title || 'Tabela entiteta';
+        const items = sections.map((s, i) => ({
+          id: (Date.now() + i).toString(),
+          title: sections.length > 1 ? `${base} — ${s.label}` : base,
+          qtype: 'entity-table' as const,
+          entityData: s.data,
+          entityCols: FLAT_TABLE_COLS[s.entity],
+        }));
+        this.reportQueue.update(q => [...q, ...items]);
+        this.isAddQueueOpen.set(false);
+        this.pendingQueueType.set(null);
+        this.isQueueOpen.set(true);
+        this.cdr.detectChanges();
+        return;
+      }
       const data = this.flatTableData();
       if (!data) return;
       const cols = FLAT_TABLE_COLS[this.flatEntity()];
@@ -758,6 +1026,16 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     return type === 'chart' ? 'bar_chart' : type === 'table' ? 'table_chart' : 'list';
   }
 
+  sectionIcon(entity: FlatTableEntity): string {
+    const icons: Record<FlatTableEntity, string> = {
+      destinations: 'place',
+      activities:   'hiking',
+      events:       'celebration',
+      places:       'store',
+    };
+    return icons[entity];
+  }
+
   private clearChart(): void {
     this.destroyChart();
     this.chartData.set(null);
@@ -879,7 +1157,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
           },
           y: {
             grid:   { color: 'rgba(42,58,45,0.5)', drawBorder: false } as any,
-            ticks:  { color: '#5a7060', font: { family: 'Inter', size: 11 }, callback: (v: any) => this.formatNum(v) },
+            ticks:  { color: '#5a7060', font: { family: 'Inter', size: 11 }, callback: (v: any) => this.metric() !== 'avgRating' && !Number.isInteger(v) ? '' : this.formatNum(v) },
             border: { display: false },
           },
         },
@@ -990,6 +1268,18 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     const a    = document.createElement('a');
     a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
+  }
+
+  readonly todayStr = this.today();
+
+  setDateFrom(value: string): void {
+    this.dateFrom.set(value);
+    if (this.dateTo() && value > this.dateTo()) this.dateTo.set(value);
+  }
+
+  setDateTo(value: string): void {
+    if (value < this.dateFrom()) this.dateFrom.set(value);
+    this.dateTo.set(value);
   }
 
   private today(): string { return new Date().toISOString().slice(0, 10); }

@@ -393,6 +393,7 @@
 
   "activities.stats.totalActivities": "Ukupne aktivnosti",
   "activities.stats.mostPopular": "Najpopularnija",
+  "activities.stats.mostPopularHint": "{count} pregleda",
   "activities.stats.inactive": "Neaktivne (30 dana)",
   "activities.stats.inactiveHint": "Bez poseta u poslednjih 30 dana",
   "activities.stats.newest": "Najnovija",

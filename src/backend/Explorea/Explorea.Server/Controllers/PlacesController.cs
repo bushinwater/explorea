@@ -88,6 +88,7 @@ namespace Explorea.Server.Controllers
                 destination = place.Destination == null ? null : new { name = place.Destination.Name, slug = place.Destination.Slug },
                 description = place.Description,
                 phone = place.Phone,
+                email = place.Email,
                 websiteUrl = place.WebsiteUrl,
                 location = (place.Latitude.HasValue && place.Longitude.HasValue)
                     ? new { lat = place.Latitude!.Value, lng = place.Longitude!.Value }

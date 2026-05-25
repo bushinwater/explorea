@@ -2,8 +2,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  AggregatePoint, CreateReportTemplateDto, DestinationsTableItem,
-  EntityTableRow, FilterDefinition, ReportInsights, ReportTemplateDto, SubtypeOption,
+  AggregatePoint, CreateReportTemplateDto, DestinationsTableItem, EntityProfile,
+  EntitySearchItem, EntityTableRow, FilterDefinition, ReportInsights, ReportTemplateDto, SubtypeOption,
 } from './admin-reports.models';
 
 @Injectable({ providedIn: 'root' })
@@ -19,14 +19,26 @@ export class AdminReportsService {
   getAggregate(
     entity: string, groupBy: string, metric: string,
     dateFrom: string | null, dateTo: string | null,
+    specificEntityId?: string | null,
   ): Observable<AggregatePoint[]> {
     let params = new HttpParams()
       .set('entity',  entity)
       .set('groupBy', groupBy)
       .set('metric',  metric);
-    if (dateFrom) params = params.set('dateFrom', dateFrom);
-    if (dateTo)   params = params.set('dateTo',   dateTo);
+    if (dateFrom)          params = params.set('dateFrom',         dateFrom);
+    if (dateTo)            params = params.set('dateTo',           dateTo);
+    if (specificEntityId)  params = params.set('specificEntityId', specificEntityId);
     return this.http.get<AggregatePoint[]>(`${this.base}/aggregate`, { params });
+  }
+
+  searchEntities(entity: string, q: string): Observable<EntitySearchItem[]> {
+    const params = new HttpParams().set('entity', entity).set('q', q);
+    return this.http.get<EntitySearchItem[]>(`${this.base}/entity-search`, { params });
+  }
+
+  getEntityProfile(entity: string, id: string): Observable<EntityProfile> {
+    const params = new HttpParams().set('entity', entity).set('id', id);
+    return this.http.get<EntityProfile>(`${this.base}/entity-profile`, { params });
   }
 
   getDestinationsTable(
@@ -45,21 +57,23 @@ export class AdminReportsService {
   getEntityTable(
     entity: string,
     sortBy: string,
-    filterSubType?:      string | null,
-    filterRegion?:       string | null,
-    filterMinRating?:    string | null,
-    filterDifficulty?:   string | null,
-    filterMinPrice?:     number | null,
-    filterMaxPrice?:     number | null,
-    filterExtraFilters?: string[] | null,
+    filterSubType?:        string | null,
+    filterRegion?:         string | null,
+    filterMinRating?:      string | null,
+    filterDifficulty?:     string | null,
+    filterMinPrice?:       number | null,
+    filterMaxPrice?:       number | null,
+    filterExtraFilters?:   string[] | null,
+    filterDestinationId?:  string | null,
   ): Observable<EntityTableRow[]> {
     let params = new HttpParams().set('entity', entity).set('sortBy', sortBy);
-    if (filterSubType)    params = params.set('filterSubType',    filterSubType);
-    if (filterRegion)     params = params.set('filterRegion',     filterRegion);
-    if (filterMinRating)  params = params.set('filterMinRating',  filterMinRating);
-    if (filterDifficulty) params = params.set('filterDifficulty', filterDifficulty);
-    if (filterMinPrice != null) params = params.set('filterMinPrice', String(filterMinPrice));
-    if (filterMaxPrice != null) params = params.set('filterMaxPrice', String(filterMaxPrice));
+    if (filterSubType)         params = params.set('filterSubType',        filterSubType);
+    if (filterRegion)          params = params.set('filterRegion',         filterRegion);
+    if (filterMinRating)       params = params.set('filterMinRating',      filterMinRating);
+    if (filterDifficulty)      params = params.set('filterDifficulty',     filterDifficulty);
+    if (filterMinPrice != null) params = params.set('filterMinPrice',      String(filterMinPrice));
+    if (filterMaxPrice != null) params = params.set('filterMaxPrice',      String(filterMaxPrice));
+    if (filterDestinationId)   params = params.set('filterDestinationId',  filterDestinationId);
     if (filterExtraFilters?.length) {
       filterExtraFilters.forEach(f => { params = params.append('filterExtraFilters', f); });
     }

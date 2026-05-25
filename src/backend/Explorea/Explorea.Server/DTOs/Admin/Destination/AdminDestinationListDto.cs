@@ -8,6 +8,7 @@ namespace Explorea.API.DTOs.Admin.Destination
         public string? PreviewImageUrl { get; set; }
         public string? Region { get; set; }
         public int? RegionId { get; set; }
+        public int? CityId { get; set; }
         public int Views { get; set; }
         public string Status { get; set; } = null!;
         public int? TypeId { get; set; }
@@ -16,6 +17,7 @@ namespace Explorea.API.DTOs.Admin.Destination
         public bool IsFeatured { get; set; }
         public string Visibility { get; set; } = null!;
         public string? City { get; set; }
+        public int? CountryId { get; set; }
         public string? Country { get; set; }
         public string? Description { get; set; }
         public double? Latitude { get; set; }
@@ -23,5 +25,6 @@ namespace Explorea.API.DTOs.Admin.Destination
         public List<AdminDestinationImageDto> Images { get; set; } = new();
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
+        public Dictionary<string, string>? ExtraFilters { get; set; }
     }
 }

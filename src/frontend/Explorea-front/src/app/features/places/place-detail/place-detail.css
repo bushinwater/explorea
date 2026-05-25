@@ -635,6 +635,32 @@
   flex-wrap: wrap;
 }
 
+/* Contact row */
+.place-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+
+.place-contact__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary, inherit);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.place-contact__item:hover {
+  color: var(--color-primary);
+}
+
+.place-contact__item .material-icons {
+  font-size: 18px;
+  color: var(--color-primary);
+}
+
 /* Details tab content */
 .details-grid {
   display: grid;

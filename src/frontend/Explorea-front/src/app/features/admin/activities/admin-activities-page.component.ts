@@ -32,15 +32,17 @@ import {
   ActivityStatus,
   CategoryOption,
   CityOption,
+  CountryOption,
   CreateActivityDto,
   DestinationOption,
+  InterestTagOption,
   RegionOption,
 } from './admin-activities.models';
 import { AdminActivitiesService } from './admin-activities.service';
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 import { MapPreviewComponent } from '../shared/components/map-preview/map-preview.component';
 
-const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
 const DARK = {
   land: '#1e2e24', water: '#102840', park: '#1e3228',
@@ -97,7 +99,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     regionId: 'all',
     extraFilters: {},
     page: 1,
-    pageSize: 17,
+    pageSize: 20,
   });
 
   protected readonly filterDefs = signal<FilterDefinition[]>([]);
@@ -119,12 +121,15 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly errorMessage = signal('');
 
   protected readonly isDetailsPanelOpen = signal(false);
+  protected readonly isPanelClosing = signal(false);
   protected readonly isDetailLoading = signal(false);
   protected readonly selectedActivity = signal<ActivityRow | null>(null);
   protected readonly selectedActivityDetail = signal<ActivityDetail | null>(null);
   protected readonly isDescriptionExpanded = signal(false);
+  protected readonly detailsInterests = signal<InterestTagOption[]>([]);
 
   protected readonly isCreateModalOpen = signal(false);
+  protected readonly isEditModalClosing = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly isEditMode = signal(false);
   protected readonly editingActivityId = signal<string | null>(null);
@@ -144,6 +149,22 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly modalCities = signal<CityOption[]>([]);
   protected readonly modalRegionId = signal<number | 'all'>('all');
   protected readonly newInclusionText = signal('');
+
+  // Modal: country + extra filters + category add-new
+  protected readonly countries = signal<CountryOption[]>([]);
+  protected readonly selectedCountryId = signal<number | null>(null);
+  protected readonly modalExtraFilters = signal<Record<string, string>>({});
+  protected readonly modalFilterDefs = signal<FilterDefinition[]>([]);
+  protected readonly showAddCategory = signal(false);
+  protected readonly newCategoryName = signal('');
+  protected readonly isAddingCategory = signal(false);
+  protected readonly extraCategories = signal<CategoryOption[]>([]);
+  protected readonly showAddFilter = signal(false);
+  protected readonly newFilterKey = signal('');
+  protected readonly newFilterLabel = signal('');
+  protected readonly newFilterType = signal('boolean');
+  protected readonly isAddingFilter = signal(false);
+
   protected readonly createForm = signal<CreateActivityDto>({
     name: '',
     slug: '',
@@ -159,6 +180,16 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.total() / this.filters().pageSize)),
   );
+
+  protected readonly allCategoryOptions = computed(() => [
+    ...this.categories(),
+    ...this.extraCategories(),
+  ]);
+
+  protected readonly filteredModalRegions = computed(() => {
+    const cid = this.selectedCountryId();
+    return cid === null ? this.regions() : this.regions().filter(r => r.countryId === cid);
+  });
 
   protected readonly isSuperAdmin = computed(
     () => this.authContext.context().role === 'super_admin',
@@ -196,6 +227,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected readonly managedRegion = signal<{ id: number; name: string } | null>(null);
   protected readonly hoverRating = signal<number | null>(null);
+  protected readonly allInterestTags = signal<InterestTagOption[]>([]);
+  protected readonly selectedInterestIds = signal<number[]>([]);
 
   constructor(
     private readonly activitiesService: AdminActivitiesService,
@@ -222,8 +255,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           return;
         }
         this.isDestinationSearching.set(true);
+        const rid = this.modalRegionId();
         this.subscription.add(
-          this.activitiesService.searchDestinations(q).subscribe({
+          this.activitiesService.searchDestinations(q, rid === 'all' ? undefined : rid).subscribe({
             next: (results) => {
               this.destinationResults.set(results);
               this.destinationDropdownOpen.set(results.length > 0);
@@ -251,6 +285,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.loadStats();
     this.loadFilterOptions();
     this.loadRegions();
+    this.loadCountries();
     this.loadActivities();
   }
 
@@ -384,8 +419,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.selectedActivity.set(activity);
     this.selectedActivityDetail.set(null);
     this.isDetailsPanelOpen.set(true);
+    this.isPanelClosing.set(false);
     this.isDetailLoading.set(true);
     this.isDescriptionExpanded.set(false);
+    this.detailsInterests.set([]);
 
     this.subscription.add(
       this.activitiesService.getById(activity.id).subscribe({
@@ -399,13 +436,24 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+
+    this.subscription.add(
+      this.activitiesService.getActivityInterests(activity.id).subscribe({
+        next: (tags) => this.detailsInterests.set(tags.filter(t => t.isAssigned)),
+      }),
+    );
   }
 
   protected closeDetailsPanel(): void {
-    this.isDetailsPanelOpen.set(false);
-    this.selectedActivity.set(null);
-    this.selectedActivityDetail.set(null);
-    this.isDescriptionExpanded.set(false);
+    this.isPanelClosing.set(true);
+    setTimeout(() => {
+      this.isPanelClosing.set(false);
+      this.isDetailsPanelOpen.set(false);
+      this.selectedActivity.set(null);
+      this.selectedActivityDetail.set(null);
+      this.isDescriptionExpanded.set(false);
+      this.detailsInterests.set([]);
+    }, 220);
   }
 
   protected openCreateModal(): void {
@@ -425,12 +473,25 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.destinationResults.set([]);
     this.destinationDropdownOpen.set(false);
     this.modalCities.set([]);
-    this.modalRegionId.set('all');
+    const mr = this.managedRegion();
+    this.modalRegionId.set(mr ? mr.id : 'all');
+    this.selectedInterestIds.set([]);
     this.newInclusionText.set('');
+    this.selectedCountryId.set(null);
+    this.modalExtraFilters.set({});
+    this.modalFilterDefs.set([]);
+    this.showAddCategory.set(false);
+    this.newCategoryName.set('');
+    this.extraCategories.set([]);
+    this.showAddFilter.set(false);
+    this.newFilterKey.set('');
+    this.newFilterLabel.set('');
+    this.newFilterType.set('boolean');
+    const initialCatId = this.categories()[0]?.id ?? 0;
     this.createForm.set({
       name: '',
       slug: '',
-      categoryId: this.categories()[0]?.id ?? 0,
+      categoryId: initialCatId,
       description: '',
       price: undefined,
       durationMinutes: undefined,
@@ -440,9 +501,31 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       latitude: undefined,
       longitude: undefined,
     });
-    this.loadModalCities();
+    if (initialCatId) this.loadModalFilterDefs(initialCatId);
+    this.loadModalCities(mr ? mr.id : undefined);
+    this.subscription.add(
+      this.activitiesService.getAllInterestTags().subscribe({
+        next: (tags) => this.allInterestTags.set(tags),
+      }),
+    );
     this.isCreateModalOpen.set(true);
     setTimeout(() => this.initMap(null, null), 50);
+  }
+
+  protected openEditFromRow(activity: ActivityRow): void {
+    this.selectedActivity.set(activity);
+    this.selectedActivityDetail.set(null);
+    this.subscription.add(
+      this.activitiesService.getById(activity.id).subscribe({
+        next: (detail) => {
+          this.selectedActivityDetail.set(detail);
+          this.openEditModal();
+        },
+        error: () => {
+          this.errorMessage.set('Greška pri učitavanju detalja aktivnosti.');
+        },
+      }),
+    );
   }
 
   protected openEditModal(): void {
@@ -487,30 +570,69 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
     const regionId = detail.regionId ?? null;
     this.modalRegionId.set(regionId ?? 'all');
+    if (regionId != null) {
+      const region = this.regions().find(r => r.id === regionId);
+      this.selectedCountryId.set(region?.countryId ?? null);
+    } else {
+      this.selectedCountryId.set(null);
+    }
+    this.modalExtraFilters.set({ ...(detail.extraFilters ?? {}) });
+    this.modalFilterDefs.set([]);
+    this.showAddCategory.set(false);
+    this.newCategoryName.set('');
+    this.extraCategories.set([]);
+    this.showAddFilter.set(false);
+    this.newFilterKey.set('');
+    this.newFilterLabel.set('');
+    this.newFilterType.set('boolean');
+    if (detail.categoryId) this.loadModalFilterDefs(detail.categoryId);
     this.loadModalCities(regionId ?? undefined);
+
+    this.selectedInterestIds.set([]);
+    this.subscription.add(
+      this.activitiesService.getActivityInterests(detail.id).subscribe({
+        next: (tags) => {
+          this.allInterestTags.set(tags);
+          this.selectedInterestIds.set(tags.filter(t => t.isAssigned).map(t => t.id));
+        },
+      }),
+    );
 
     this.isCreateModalOpen.set(true);
     setTimeout(() => this.initMap(detail.latitude ?? null, detail.longitude ?? null), 50);
   }
 
   protected closeCreateModal(): void {
-    this.destroyMap();
-    this.modalImagePreviews().forEach(p => URL.revokeObjectURL(p.url));
-    this.modalImagePreviews.set([]);
-    this.modalHeroIndex.set(0);
-    this.editExistingImages.set([]);
-    this.editHeroImageId.set(null);
-    this.mapLatitude.set(null);
-    this.mapLongitude.set(null);
-    this.mapAddress.set('');
-    this.destinationSearchText.set('');
-    this.destinationResults.set([]);
-    this.destinationDropdownOpen.set(false);
-    this.isCreateModalOpen.set(false);
-    this.isSubmitting.set(false);
-    this.isEditMode.set(false);
-    this.editingActivityId.set(null);
-    this.errorMessage.set('');
+    this.isEditModalClosing.set(true);
+    setTimeout(() => {
+      this.destroyMap();
+      this.modalImagePreviews().forEach(p => URL.revokeObjectURL(p.url));
+      this.modalImagePreviews.set([]);
+      this.modalHeroIndex.set(0);
+      this.editExistingImages.set([]);
+      this.editHeroImageId.set(null);
+      this.mapLatitude.set(null);
+      this.mapLongitude.set(null);
+      this.mapAddress.set('');
+      this.destinationSearchText.set('');
+      this.destinationResults.set([]);
+      this.destinationDropdownOpen.set(false);
+      this.allInterestTags.set([]);
+      this.selectedInterestIds.set([]);
+      this.selectedCountryId.set(null);
+      this.modalExtraFilters.set({});
+      this.modalFilterDefs.set([]);
+      this.showAddCategory.set(false);
+      this.newCategoryName.set('');
+      this.extraCategories.set([]);
+      this.showAddFilter.set(false);
+      this.isCreateModalOpen.set(false);
+      this.isEditModalClosing.set(false);
+      this.isSubmitting.set(false);
+      this.isEditMode.set(false);
+      this.editingActivityId.set(null);
+      this.errorMessage.set('');
+    }, 220);
   }
 
   protected updateCreateField<K extends keyof CreateActivityDto>(key: K, value: CreateActivityDto[K]): void {
@@ -528,13 +650,36 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.destinationDropdownOpen.set(false);
     this.destinationResults.set([]);
     this.createForm.update((f) => ({ ...f, destinationId: dest.id }));
+
+    // Auto-fill region from search result
+    if (dest.regionId != null && (this.isSuperAdmin() || !this.managedRegion())) {
+      this.modalRegionId.set(dest.regionId);
+      this.loadModalCities(dest.regionId);
+      this.createForm.update(f => ({ ...f, cityId: undefined }));
+    }
+    // Auto-fill country from search result
+    if (dest.countryId != null) {
+      this.selectedCountryId.set(dest.countryId);
+    } else if (dest.regionId != null) {
+      const region = this.regions().find(r => r.id === dest.regionId);
+      if (region?.countryId != null) this.selectedCountryId.set(region.countryId);
+    }
+
     this.subscription.add(
       this.activitiesService.getDestination(dest.id).subscribe({
         next: (d) => {
           if (d.latitude != null && d.longitude != null) {
             this.setMapCoords(d.latitude, d.longitude);
-            this.cdr.detectChanges();
           }
+          // Fill region/country from full detail if not already set from search result
+          if (d.regionId != null && this.modalRegionId() === 'all' && (this.isSuperAdmin() || !this.managedRegion())) {
+            this.modalRegionId.set(d.regionId);
+            this.loadModalCities(d.regionId);
+          }
+          if (d.countryId != null && this.selectedCountryId() === null) {
+            this.selectedCountryId.set(d.countryId);
+          }
+          this.cdr.detectChanges();
         },
       }),
     );
@@ -625,30 +770,155 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     const regionId = value === 'all' ? 'all' : +value;
     this.modalRegionId.set(regionId);
     this.updateCreateField('cityId', undefined);
+    this.destinationSearchText.set('');
+    this.destinationResults.set([]);
+    this.destinationDropdownOpen.set(false);
+    this.createForm.update((f) => ({ ...f, destinationId: undefined }));
     this.loadModalCities(regionId === 'all' ? undefined : regionId);
+    if (regionId !== 'all') {
+      const region = this.regions().find(r => r.id === regionId);
+      if (region?.countryId != null) this.selectedCountryId.set(region.countryId);
+    }
+  }
+
+  protected onModalCountryChange(value: string): void {
+    const countryId = value ? +value : null;
+    this.selectedCountryId.set(countryId);
+    // If current region doesn't belong to new country, reset it
+    const currentRegionId = this.modalRegionId();
+    if (currentRegionId !== 'all') {
+      const region = this.regions().find(r => r.id === currentRegionId);
+      if (region?.countryId !== countryId) {
+        this.modalRegionId.set('all');
+        this.updateCreateField('cityId', undefined);
+        this.destinationSearchText.set('');
+        this.createForm.update(f => ({ ...f, destinationId: undefined }));
+        this.loadModalCities(undefined);
+      }
+    }
+  }
+
+  protected onModalCategoryChange(value: string): void {
+    const catId = +value;
+    this.updateCreateField('categoryId', catId);
+    this.modalExtraFilters.set({});
+    this.modalFilterDefs.set([]);
+    if (catId) this.loadModalFilterDefs(catId);
+  }
+
+  protected updateModalExtraFilter(key: string, value: string | boolean): void {
+    this.modalExtraFilters.update(ef => {
+      const updated = { ...ef };
+      if (value === false || value === '') delete updated[key];
+      else updated[key] = String(value);
+      return updated;
+    });
+  }
+
+  protected toggleAddCategory(): void {
+    this.showAddCategory.update(v => !v);
+    this.newCategoryName.set('');
+  }
+
+  protected addNewCategory(): void {
+    const name = this.newCategoryName().trim();
+    if (!name || this.isAddingCategory()) return;
+    this.isAddingCategory.set(true);
+    this.subscription.add(
+      this.activitiesService.createCategory(name).subscribe({
+        next: cat => {
+          this.extraCategories.update(cats => [...cats, cat]);
+          this.updateCreateField('categoryId', cat.id);
+          this.modalExtraFilters.set({});
+          this.modalFilterDefs.set([]);
+          this.isAddingCategory.set(false);
+          this.showAddCategory.set(false);
+          this.newCategoryName.set('');
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.errorMessage.set('Kreiranje kategorije nije uspelo.');
+          this.isAddingCategory.set(false);
+          this.cdr.detectChanges();
+        },
+      }),
+    );
+  }
+
+  protected toggleAddFilter(): void {
+    this.showAddFilter.update(v => !v);
+    this.newFilterKey.set('');
+    this.newFilterLabel.set('');
+    this.newFilterType.set('boolean');
+  }
+
+  protected addNewFilter(): void {
+    const catId = this.createForm().categoryId;
+    const key = this.newFilterKey().trim();
+    const label = this.newFilterLabel().trim();
+    const type = this.newFilterType();
+    if (!catId || !key || !label || this.isAddingFilter()) return;
+    this.isAddingFilter.set(true);
+    this.subscription.add(
+      this.activitiesService.createFilterDefinition(catId, key, label, type).subscribe({
+        next: def => {
+          this.modalFilterDefs.update(d => [...d, def]);
+          this.isAddingFilter.set(false);
+          this.showAddFilter.set(false);
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.errorMessage.set('Kreiranje filtera nije uspelo.');
+          this.isAddingFilter.set(false);
+          this.cdr.detectChanges();
+        },
+      }),
+    );
+  }
+
+  protected toggleInterest(id: number): void {
+    const current = this.selectedInterestIds();
+    if (current.includes(id)) {
+      this.selectedInterestIds.set(current.filter(x => x !== id));
+    } else if (current.length < 3) {
+      this.selectedInterestIds.set([...current, id]);
+    }
   }
 
   protected submitCreate(): void {
     const form = this.createForm();
     if (!form.name.trim() || !form.slug.trim() || !form.categoryId) return;
+    if (!this.managedRegion() && !this.selectedCountryId()) return;
+    if (!this.managedRegion() && this.modalRegionId() === 'all') return;
 
     this.isSubmitting.set(true);
 
     const inclusions = this.modalInclusions();
     const lat = this.mapLatitude();
     const lng = this.mapLongitude();
+    const ef = this.modalExtraFilters();
     const dto: CreateActivityDto = {
       ...form,
       latitude: lat ?? undefined,
       longitude: lng ?? undefined,
       inclusions: inclusions.length ? inclusions : undefined,
+      extraFilters: Object.keys(ef).length ? ef : undefined,
+    };
+
+    const saveInterestsThenImages = (id: string, activity: ActivityDetail) => {
+      this.subscription.add(
+        this.activitiesService.setActivityInterests(id, this.selectedInterestIds()).subscribe({
+          next: () => this.uploadPendingImages(id, activity),
+          error: () => this.uploadPendingImages(id, activity),
+        }),
+      );
     };
 
     if (this.isEditMode()) {
       const id = this.editingActivityId()!;
       this.subscription.add(
         this.activitiesService.update(id, dto).subscribe({
-          next: (updated) => this.uploadPendingImages(id, updated),
+          next: (updated) => saveInterestsThenImages(id, updated),
           error: () => {
             this.isSubmitting.set(false);
             this.errorMessage.set('Greška pri izmeni aktivnosti.');
@@ -658,7 +928,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     } else {
       this.subscription.add(
         this.activitiesService.create(dto).subscribe({
-          next: (created) => this.uploadPendingImages(created.id, created),
+          next: (created) => saveInterestsThenImages(created.id, created),
           error: () => {
             this.isSubmitting.set(false);
             this.errorMessage.set('Greška pri dodavanju aktivnosti.');
@@ -931,7 +1201,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     const efEntries = Object.entries(f.extraFilters);
     if (efEntries.length)       qp['extraFilters'] = efEntries.map(([k, v]) => `${k}:${v}`);
     if (f.page > 1)             qp['page']       = f.page;
-    if (f.pageSize !== 17)      qp['pageSize']   = f.pageSize;
+    if (f.pageSize !== 20)      qp['pageSize']   = f.pageSize;
 
     return qp;
   }
@@ -961,6 +1231,23 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       this.lookupService.getFilterDefinitions('activity', categoryId).subscribe({
         next: (defs) => this.filterDefs.set(defs),
         error: () => this.filterDefs.set([]),
+      }),
+    );
+  }
+
+  private loadModalFilterDefs(categoryId: number): void {
+    this.subscription.add(
+      this.lookupService.getFilterDefinitions('activity', categoryId).subscribe({
+        next: (defs) => { this.modalFilterDefs.set(defs); this.cdr.detectChanges(); },
+        error: () => this.modalFilterDefs.set([]),
+      }),
+    );
+  }
+
+  private loadCountries(): void {
+    this.subscription.add(
+      this.activitiesService.getCountries().subscribe({
+        next: (countries) => this.countries.set(countries),
       }),
     );
   }
@@ -1125,7 +1412,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     if (!this.mapEl?.nativeElement) return;
     this.destroyMap();
 
-    const base = await (await fetch(MAP_STYLE_URL)).json();
+    const base = patchStyleSources(await (await fetch(MAP_STYLE_URL)).json());
     this.lightStyle = this.buildThemedStyle(base, LIGHT);
     this.darkStyle  = this.buildThemedStyle(base, DARK);
 
@@ -1297,9 +1584,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   private finalizeSubmit(activityId: string, activity: ActivityDetail): void {
     const isEdit = this.isEditMode();
     this.isSubmitting.set(false);
-    this.isCreateModalOpen.set(false);
-    this.isEditMode.set(false);
-    this.editingActivityId.set(null);
+    this.closeCreateModal();
 
     if (isEdit) {
       this.successMessage.set(`„${activity.name}" je uspešno izmenjena.`);

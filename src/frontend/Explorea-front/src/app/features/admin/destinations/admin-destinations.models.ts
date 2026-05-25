@@ -1,9 +1,24 @@
 export type DestinationStatus = 'active' | 'pending' | 'inactive' | 'rejected';
 
+export interface ReviewItem {
+  authorName: string;
+  authorAvatarUrl: string | null;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
 export interface DestinationImage {
   id: string;
   imageUrl: string;
   sortOrder: number;
+}
+
+export interface InterestTagOption {
+  id: number;
+  name: string;
+  icon: string | null;
+  isAssigned?: boolean;
 }
 
 export interface DestinationDetail {
@@ -17,7 +32,9 @@ export interface DestinationDetail {
   previewImageUrl: string | null;
   typeId: number | null;
   regionId: number | null;
+  countryId: number | null;
   images: DestinationImage[];
+  extraFilters: Record<string, string>;
 }
 
 export type DestinationCategory =
@@ -78,6 +95,13 @@ export interface DestinationPagedResponse {
 export interface RegionOption {
   id: number;
   name: string;
+  countryId?: number | null;
+}
+
+export interface CountryOption {
+  id: number;
+  name: string;
+  code: string;
 }
 
 export interface TypeOption {

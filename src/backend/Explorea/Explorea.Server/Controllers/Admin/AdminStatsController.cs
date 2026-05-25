@@ -47,6 +47,21 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpGet("pending-count")]
+        public async Task<IActionResult> GetPendingCount()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var count = await _service.GetPendingCountAsync(userId);
+                return Ok(new { count });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
         [HttpGet("system-status")]
         public async Task<IActionResult> GetSystemStatus()
         {

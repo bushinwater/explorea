@@ -265,6 +265,22 @@
               <!-- Details tab -->
               @if (activeTab === 'details') {
                 <div class="tab-block">
+                  @if (place.phone || place.email) {
+                    <div class="place-contact">
+                      @if (place.phone) {
+                        <a class="place-contact__item" [href]="'tel:' + place.phone">
+                          <span class="material-icons">phone</span>
+                          {{ place.phone }}
+                        </a>
+                      }
+                      @if (place.email) {
+                        <a class="place-contact__item" [href]="'mailto:' + place.email">
+                          <span class="material-icons">email</span>
+                          {{ place.email }}
+                        </a>
+                      }
+                    </div>
+                  }
                   <div class="details-grid">
                     <div>
                       <h3 class="subsection__title">{{ 'PLACE_DETAIL.WHAT_OFFERS' | translate }}</h3>

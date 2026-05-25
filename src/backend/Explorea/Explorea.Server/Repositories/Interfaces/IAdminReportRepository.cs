@@ -25,7 +25,8 @@ namespace Explorea.Server.Repositories.Interfaces
             string? filterSubType, string? filterRegion, decimal? filterMinRating,
             string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
             List<string>? filterExtraFilters,
-            List<Guid>? destIds, Guid? placeOwnerUserId);
+            List<Guid>? destIds, Guid? placeOwnerUserId,
+            Guid? filterDestinationId = null);
         Task<List<string>> GetFilterOptionsAsync(string entity, string field, List<Guid>? destIds, Guid? placeOwnerUserId);
         Task<List<SubtypeOptionDto>> GetSubtypeOptionsAsync(string entity, List<Guid>? destIds, Guid? placeOwnerUserId);
 
@@ -33,7 +34,12 @@ namespace Explorea.Server.Repositories.Interfaces
         Task<List<AggregatePointDto>> GetAggregateAsync(
             string entity, string groupBy, string metric,
             DateOnly? dateFrom, DateOnly? dateTo,
-            List<Guid>? restrictToDestinationIds, Guid? placeOwnerUserId);
+            List<Guid>? restrictToDestinationIds, Guid? placeOwnerUserId,
+            Guid? specificEntityId = null);
+
+        // Entity search + profile
+        Task<List<EntitySearchItemDto>> SearchEntitiesAsync(string entity, string q, List<Guid>? destIds, Guid? placeOwnerUserId);
+        Task<EntityProfileDto?>         GetEntityProfileAsync(string entity, Guid entityId);
 
         // Time series for legacy preview/export
         Task<Dictionary<DateOnly, long>> GetTrafficByDateAsync(DateOnly from, DateOnly to, List<Guid>? restrictToDestinationIds, Guid? placeOwnerUserId);

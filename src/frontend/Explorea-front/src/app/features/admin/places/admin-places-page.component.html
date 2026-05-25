@@ -11,6 +11,8 @@
     [row]="selectedPlace()!"
     [types]="types()"
     [regions]="regions()"
+    [countries]="countries()"
+    [isSuperAdmin]="isSuperAdmin()"
     (cancel)="closeEditModal()"
     (saved)="onEditSaved($event)"
   />
@@ -20,6 +22,8 @@
   <app-place-create-modal
     [types]="types()"
     [regions]="regions()"
+    [countries]="countries()"
+    [isSuperAdmin]="isSuperAdmin()"
     (cancel)="closeCreateModal()"
     (created)="onPlaceCreated($event)"
   />
@@ -222,7 +226,7 @@
         </div>
 
         <!-- Add new -->
-        <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
+        <button class="evts-btn-primary" type="button" (click)="openCreateModal()">
           <span class="material-icons">add</span>
           {{ ui.t('places.addNew') }}
         </button>
@@ -404,9 +408,9 @@
 </div>
 
 <!-- ===== PLACE DETAILS PANEL ===== -->
-@if (isDetailsPanelOpen() && detailsPanelRow(); as place) {
+@if ((isDetailsPanelOpen() || isPanelClosing()) && detailsPanelRow(); as place) {
   <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
-  <aside class="ddp-panel" role="dialog" aria-modal="true">
+  <aside class="ddp-panel" [class.ddp-panel--closing]="isPanelClosing()" role="dialog" aria-modal="true">
 
     <header class="ddp-header">
       <div class="ddp-header__title-group">
@@ -487,6 +491,22 @@
             </span>
           }
         </div>
+
+        <!-- Interest tags -->
+        @if (detailsPanelInterests().length > 0) {
+          <div class="ddp-interests">
+            <div class="ddp-interests-scroll">
+              @for (tag of detailsPanelInterests(); track tag.id) {
+                <span class="ddp-interest-chip">
+                  @if (tag.icon) {
+                    <span class="material-icons" style="font-size:14px">{{ tag.icon }}</span>
+                  }
+                  {{ tag.name }}
+                </span>
+              }
+            </div>
+          </div>
+        }
 
         <!-- Description -->
         @if (detailsPanelDetail()?.description) {
@@ -569,6 +589,48 @@
                 [latitude]="detailsPanelDetail()!.latitude"
                 [longitude]="detailsPanelDetail()!.longitude"
               />
+            </div>
+          }
+        </div>
+
+        <!-- Reviews -->
+        <div class="place-details-section">
+          <h4 class="place-details-section__title">
+            Recenzije
+            @if (detailsPanelReviews().length > 0) {
+              <span class="place-details-section__count">({{ detailsPanelReviews().length }})</span>
+            }
+          </h4>
+          @if (!detailsPanelReviews().length) {
+            <p class="place-details-empty">Nema recenzija za ovaj objekat.</p>
+          } @else {
+            <div class="place-reviews">
+              @for (review of detailsPanelReviews(); track review.createdAt) {
+                <div class="place-review">
+                  <div class="place-review__header">
+                    @if (review.authorAvatarUrl) {
+                      <img class="place-review__avatar" [src]="review.authorAvatarUrl" [alt]="review.authorName" />
+                    } @else {
+                      <div class="place-review__avatar place-review__avatar--placeholder">
+                        {{ review.authorName[0] }}
+                      </div>
+                    }
+                    <div class="place-review__meta">
+                      <span class="place-review__author">{{ review.authorName }}</span>
+                      <span class="place-review__date">{{ formatDate(review.createdAt) }}</span>
+                    </div>
+                    <div class="place-review__stars">
+                      @for (star of starArray(review.rating); track star) {
+                        <span class="material-icons place-review__star"
+                          [class.place-review__star--filled]="star <= review.rating">star</span>
+                      }
+                    </div>
+                  </div>
+                  @if (review.comment) {
+                    <p class="place-review__comment">{{ review.comment }}</p>
+                  }
+                </div>
+              }
             </div>
           }
         </div>

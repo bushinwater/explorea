@@ -393,6 +393,7 @@
 
   "activities.stats.totalActivities": "Total activities",
   "activities.stats.mostPopular": "Most popular",
+  "activities.stats.mostPopularHint": "{count} views",
   "activities.stats.inactive": "Inactive (30 days)",
   "activities.stats.inactiveHint": "No visits in last 30 days",
   "activities.stats.newest": "Newest",

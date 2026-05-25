@@ -12,5 +12,6 @@ namespace Explorea.API.DTOs.Admin.Destination
         public string? HeroImageUrl { get; set; }
         public string Visibility { get; set; } = "draft";
         public int? TypeId { get; set; }
+        public Dictionary<string, string>? ExtraFilters { get; set; }
     }
 }

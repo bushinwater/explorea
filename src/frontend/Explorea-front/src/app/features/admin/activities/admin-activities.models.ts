@@ -1,3 +1,10 @@
+export interface InterestTagOption {
+  id: number;
+  name: string;
+  icon: string | null;
+  isAssigned?: boolean;
+}
+
 export type ActivityStatus = 'active' | 'inactive';
 
 export type ActivityDifficulty = 'easy' | 'medium' | 'hard';
@@ -55,6 +62,7 @@ export interface ActivityDetail extends ActivityRow {
   latitude: number | null;
   longitude: number | null;
   organizerWebsite: string | null;
+  extraFilters?: Record<string, string>;
 }
 
 export interface ActivityStats {
@@ -92,6 +100,12 @@ export interface CategoryOption {
 export interface RegionOption {
   id: number;
   name: string;
+  countryId?: number | null;
+}
+
+export interface CountryOption {
+  id: number;
+  name: string;
 }
 
 export interface CreateActivityDto {
@@ -107,6 +121,7 @@ export interface CreateActivityDto {
   latitude?: number;
   longitude?: number;
   inclusions?: string[];
+  extraFilters?: Record<string, string>;
 }
 
 export interface UpdateActivityDto {
@@ -122,6 +137,7 @@ export interface UpdateActivityDto {
   isActive?: boolean;
   latitude?: number;
   longitude?: number;
+  extraFilters?: Record<string, string>;
 }
 
 export interface CityOption {
@@ -133,6 +149,10 @@ export interface DestinationOption {
   id: string;
   name: string;
   city: string | null;
+  regionId?: number | null;
+  countryId?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface ActivityFilterOptions {
