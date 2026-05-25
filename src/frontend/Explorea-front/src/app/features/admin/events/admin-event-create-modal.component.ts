@@ -260,6 +260,9 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
       if (region?.countryId != null) this.selectedCountryId.set(region.countryId);
     }
     if (item.regionId != null) this.selectedRegionId.set(item.regionId);
+    if (item.latitude != null && item.longitude != null) {
+      this.setCoords(item.latitude, item.longitude);
+    }
     this.clearPlaceOnly();
     this.cdr.detectChanges();
   }
@@ -267,6 +270,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
   protected clearDestination(): void {
     this.form.update(f => ({ ...f, destinationId: null, placeId: null }));
     this.selectedDestName.set('');
+    this.destinationQuery.set('');
     this.destinationResults.set([]);
     this.showDestResults.set(false);
     this.clearPlaceOnly();
@@ -291,11 +295,14 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
     this.showPlaceResults.set(false);
     this.cdr.detectChanges();
 
-    // Fetch full place detail to get destinationId + countryId, then chain destination for regionId
+    // Fetch full place detail to get coords, destinationId + countryId, then chain destination for regionId
     this.sub.add(
       this.eventsService.getPlaceById(item.id).subscribe({
         next: place => {
           if (!place) { this.cdr.detectChanges(); return; }
+          if (place.latitude != null && place.longitude != null) {
+            this.setCoords(place.latitude, place.longitude);
+          }
           if (place.destinationId) {
             this.form.update(f => ({ ...f, destinationId: place.destinationId! }));
             this.selectedDestName.set(place.destinationName ?? '');
@@ -310,6 +317,9 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
                   } else if (dest?.regionId != null) {
                     const r = this.allRegions().find(reg => reg.id === dest.regionId);
                     if (r?.countryId != null) this.selectedCountryId.set(r.countryId);
+                  }
+                  if (place.latitude == null && dest?.latitude != null && dest.longitude != null) {
+                    this.setCoords(dest.latitude, dest.longitude);
                   }
                   this.cdr.detectChanges();
                 },

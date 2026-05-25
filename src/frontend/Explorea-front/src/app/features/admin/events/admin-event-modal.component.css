@@ -138,8 +138,6 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  position: sticky;
-  top: 0;
 }
 
 /* Form grid within left column */

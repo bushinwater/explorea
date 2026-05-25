@@ -23,6 +23,8 @@ export interface DestinationSearchItem {
   countryId?: number | null;
   regionName?: string | null;
   countryName?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface PlaceSearchItem {
@@ -32,6 +34,8 @@ export interface PlaceSearchItem {
   destinationName?: string | null;
   regionId?: number | null;
   countryId?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export type EventStatus = 'pending' | 'active' | 'rejected' | 'forwarded';

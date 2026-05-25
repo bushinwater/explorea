@@ -167,6 +167,8 @@ export class AdminEventsService {
           countryId: item.countryId ?? null,
           regionName: item.regionName ?? item.region ?? null,
           countryName: item.countryName ?? item.country ?? null,
+          latitude: item.latitude ?? null,
+          longitude: item.longitude ?? null,
         }));
       }),
       catchError(() => of([])),
@@ -182,6 +184,8 @@ export class AdminEventsService {
         countryId: item.countryId ?? null,
         regionName: item.regionName ?? item.region ?? null,
         countryName: item.countryName ?? item.country ?? null,
+        latitude: item.latitude ?? null,
+        longitude: item.longitude ?? null,
       })),
       catchError(() => of(null)),
     );
@@ -215,6 +219,8 @@ export class AdminEventsService {
         destinationName: item.destinationName ?? item.destination ?? null,
         regionId: item.regionId ?? null,
         countryId: item.countryId ?? null,
+        latitude: item.latitude ?? null,
+        longitude: item.longitude ?? null,
       })),
       catchError(() => of(null)),
     );

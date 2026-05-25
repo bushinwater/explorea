@@ -259,7 +259,7 @@
           <label class="edit-field__label">Destinacija</label>
           <div class="ev-search-field">
             <span class="material-icons ev-search-field__icon">place</span>
-            <input class="edit-field__input ev-search-field__input" type="search"
+            <input class="edit-field__input ev-search-field__input" type="text"
               [value]="destinationQuery()"
               (input)="onDestinationInput($any($event.target).value)"
               (focus)="showDestResults.set(destinationResults().length > 0)"
@@ -293,7 +293,7 @@
           <label class="edit-field__label">Objekat (nije obavezno)</label>
           <div class="ev-search-field">
             <span class="material-icons ev-search-field__icon">apartment</span>
-            <input class="edit-field__input ev-search-field__input" type="search"
+            <input class="edit-field__input ev-search-field__input" type="text"
               [value]="placeQuery()"
               (input)="onPlaceInput($any($event.target).value)"
               (focus)="showPlaceResults.set(placeResults().length > 0)"
