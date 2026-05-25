@@ -62,6 +62,7 @@ export class Dashboard implements OnInit, OnDestroy {
   private activitySubscription?: Subscription;
   private systemStatusSubscription?: Subscription;
   private aiInsightsSubscription?: Subscription;
+  private pendingCountSubscription?: Subscription;
 
   private readonly onMouseMove = this.handleResizeMove.bind(this);
   private readonly onMouseUp   = this.handleResizeEnd.bind(this);
@@ -76,7 +77,13 @@ export class Dashboard implements OnInit, OnDestroy {
   ) {
     effect(() => {
       const role = this.auth.role();
-      this.data.set(this.dashService.getData(role));
+      this.data.set({
+        pendingCount: 0,
+        stats: [],
+        activity: [],
+        quickActions: this.dashService.getQuickActions(role),
+      });
+      this.loadPendingCount();
       this.loadOverviewStats(role);
       this.loadTraffic(role);
       this.loadRecentActivity(role);
@@ -100,8 +107,19 @@ export class Dashboard implements OnInit, OnDestroy {
     this.activitySubscription?.unsubscribe();
     this.systemStatusSubscription?.unsubscribe();
     this.aiInsightsSubscription?.unsubscribe();
+    this.pendingCountSubscription?.unsubscribe();
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup',   this.onMouseUp);
+  }
+
+  private loadPendingCount(): void {
+    this.pendingCountSubscription?.unsubscribe();
+    this.pendingCountSubscription = this.dashService.getPendingCount().subscribe({
+      next: (count) => {
+        this.data.update((current) => current ? { ...current, pendingCount: count } : current);
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   // ===== State builders =====
@@ -205,11 +223,6 @@ export class Dashboard implements OnInit, OnDestroy {
 
   private loadOverviewStats(role: AdminRole): void {
     this.statsSubscription?.unsubscribe();
-
-    if (role !== 'super_admin' && role !== 'tourist_organization') {
-      return;
-    }
-
     this.statsSubscription = this.dashService.getOverviewStats().subscribe({
       next: (stats) => {
         this.data.update((current) => current ? { ...current, stats } : current);
@@ -220,11 +233,6 @@ export class Dashboard implements OnInit, OnDestroy {
 
   private loadTraffic(role: AdminRole): void {
     this.trafficSubscription?.unsubscribe();
-
-    if (role !== 'super_admin' && role !== 'tourist_organization') {
-      return;
-    }
-
     this.trafficSubscription = this.dashService.getTraffic(30).subscribe({
       next: (traffic) => {
         this.data.update((current) => current ? { ...current, traffic } : current);
@@ -235,11 +243,6 @@ export class Dashboard implements OnInit, OnDestroy {
 
   private loadRecentActivity(role: AdminRole): void {
     this.activitySubscription?.unsubscribe();
-
-    if (role !== 'super_admin' && role !== 'tourist_organization') {
-      return;
-    }
-
     this.activitySubscription = this.dashService.getRecentActivity(15).subscribe({
       next: (activity) => {
         this.data.update((current) => current ? { ...current, activity } : current);
@@ -250,11 +253,7 @@ export class Dashboard implements OnInit, OnDestroy {
 
   private loadSystemStatus(role: AdminRole): void {
     this.systemStatusSubscription?.unsubscribe();
-
-    if (role !== 'super_admin' && role !== 'tourist_organization') {
-      return;
-    }
-
+    if (role === 'place_owner') return; // system status is admin-only
     this.systemStatusSubscription = this.dashService.getSystemStatus().subscribe({
       next: (systemStatus) => {
         this.data.update((current) => current ? { ...current, systemStatus } : current);
@@ -265,11 +264,7 @@ export class Dashboard implements OnInit, OnDestroy {
 
   private loadAiInsights(role: AdminRole): void {
     this.aiInsightsSubscription?.unsubscribe();
-
-    if (role !== 'super_admin' && role !== 'tourist_organization') {
-      return;
-    }
-
+    if (role === 'place_owner') return; // AI insights panel not available for place owners
     this.aiInsightsSubscription = this.dashService.getAiInsights().subscribe({
       next: (aiInsights) => {
         this.data.update((current) => current ? { ...current, aiInsights } : current);

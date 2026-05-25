@@ -407,23 +407,23 @@ namespace Explorea.Server.Repositories.Implementations
                 return raw.Select(x => new AggregatePointDto { Label = x.Label, Value = Math.Round(x.Value, 1) }).ToList();
             }
 
-            var projected = q.Select(d => new
+            if (metric == "traffic")
             {
-                Region     = d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato",
-                Popularity = (double)d.Popularity,
-            });
-
-            return metric switch
-            {
-                "traffic" => await projected
-                    .GroupBy(x => x.Region)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(x => x.Popularity) })
-                    .OrderByDescending(x => x.Value).ToListAsync(),
-                _ => await projected
-                    .GroupBy(x => x.Region)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
-                    .OrderByDescending(x => x.Value).ToListAsync(),
-            };
+                var rows = await q.Select(d => new { d.Id, Region = d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato" }).ToListAsync();
+                var entityIds = rows.Select(r => r.Id).ToList();
+                var logCounts = await _db.PopularityLogs
+                    .Where(l => l.EntityType == "destination" && entityIds.Contains(l.EntityId))
+                    .GroupBy(l => l.EntityId)
+                    .Select(g => new { EntityId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.EntityId, x => x.Count);
+                return rows.GroupBy(r => r.Region)
+                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(r => logCounts.GetValueOrDefault(r.Id, 0)) })
+                    .OrderByDescending(x => x.Value).ToList();
+            }
+            return await q.Select(d => new { Region = d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato" })
+                .GroupBy(x => x.Region)
+                .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
+                .OrderByDescending(x => x.Value).ToListAsync();
         }
 
         private async Task<List<AggregatePointDto>> AggDests_Type(string metric, List<Guid>? destIds)
@@ -440,23 +440,23 @@ namespace Explorea.Server.Repositories.Implementations
                 return raw.Select(x => new AggregatePointDto { Label = x.Label, Value = Math.Round(x.Value, 1) }).ToList();
             }
 
-            var projected = q.Select(d => new
+            if (metric == "traffic")
             {
-                TypeName   = d.Type != null ? d.Type.Name : "Nepoznato",
-                Popularity = (double)d.Popularity,
-            });
-
-            return metric switch
-            {
-                "traffic" => await projected
-                    .GroupBy(x => x.TypeName)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(x => x.Popularity) })
-                    .OrderByDescending(x => x.Value).ToListAsync(),
-                _ => await projected
-                    .GroupBy(x => x.TypeName)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
-                    .OrderByDescending(x => x.Value).ToListAsync(),
-            };
+                var rows = await q.Select(d => new { d.Id, TypeName = d.Type != null ? d.Type.Name : "Nepoznato" }).ToListAsync();
+                var entityIds = rows.Select(r => r.Id).ToList();
+                var logCounts = await _db.PopularityLogs
+                    .Where(l => l.EntityType == "destination" && entityIds.Contains(l.EntityId))
+                    .GroupBy(l => l.EntityId)
+                    .Select(g => new { EntityId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.EntityId, x => x.Count);
+                return rows.GroupBy(r => r.TypeName)
+                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(r => logCounts.GetValueOrDefault(r.Id, 0)) })
+                    .OrderByDescending(x => x.Value).ToList();
+            }
+            return await q.Select(d => new { TypeName = d.Type != null ? d.Type.Name : "Nepoznato" })
+                .GroupBy(x => x.TypeName)
+                .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
+                .OrderByDescending(x => x.Value).ToListAsync();
         }
 
         private async Task<List<AggregatePointDto>> AggDests_Time(
@@ -493,26 +493,42 @@ namespace Explorea.Server.Repositories.Implementations
                 return raw.Select(x => new AggregatePointDto { Label = x.Label, Value = Math.Round(x.Value, 1) }).ToList();
             }
 
-            var projected = q.Select(a => new
+            if (metric == "traffic")
             {
-                Cat        = a.Category != null ? a.Category.Name : "Nepoznato",
-                Popularity = (double)a.Popularity,
-            });
-            return metric switch
-            {
-                "traffic" => await projected.GroupBy(x => x.Cat)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(x => x.Popularity) })
-                    .OrderByDescending(x => x.Value).ToListAsync(),
-                _ => await projected.GroupBy(x => x.Cat)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
-                    .OrderByDescending(x => x.Value).ToListAsync(),
-            };
+                var rows = await q.Select(a => new { a.Id, Cat = a.Category != null ? a.Category.Name : "Nepoznato" }).ToListAsync();
+                var entityIds = rows.Select(r => r.Id).ToList();
+                var logCounts = await _db.PopularityLogs
+                    .Where(l => l.EntityType == "activity" && entityIds.Contains(l.EntityId))
+                    .GroupBy(l => l.EntityId)
+                    .Select(g => new { EntityId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.EntityId, x => x.Count);
+                return rows.GroupBy(r => r.Cat)
+                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(r => logCounts.GetValueOrDefault(r.Id, 0)) })
+                    .OrderByDescending(x => x.Value).ToList();
+            }
+            return await q.Select(a => new { Cat = a.Category != null ? a.Category.Name : "Nepoznato" })
+                .GroupBy(x => x.Cat)
+                .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
+                .OrderByDescending(x => x.Value).ToListAsync();
         }
 
         private async Task<List<AggregatePointDto>> AggActivities_Destination(
             string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
         {
             var q = ScopeActivities(destIds, placeOwnerUserId);
+            if (metric == "traffic")
+            {
+                var rows = await q.Select(a => new { a.Id, Dest = a.Destination != null ? a.Destination.Name : "Bez destinacije" }).ToListAsync();
+                var entityIds = rows.Select(r => r.Id).ToList();
+                var logCounts = await _db.PopularityLogs
+                    .Where(l => l.EntityType == "activity" && entityIds.Contains(l.EntityId))
+                    .GroupBy(l => l.EntityId)
+                    .Select(g => new { EntityId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.EntityId, x => x.Count);
+                return rows.GroupBy(r => r.Dest)
+                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(r => logCounts.GetValueOrDefault(r.Id, 0)) })
+                    .OrderByDescending(x => x.Value).Take(20).ToList();
+            }
             return await q
                 .GroupBy(a => a.Destination != null ? a.Destination.Name : "Bez destinacije")
                 .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
@@ -523,18 +539,23 @@ namespace Explorea.Server.Repositories.Implementations
             string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
         {
             var q = ScopeActivities(destIds, placeOwnerUserId);
-            var projected = q.Select(a => new
+            if (metric == "traffic")
             {
-                Region     = a.City != null && a.City.Region != null ? a.City.Region.Name : "Nepoznato",
-                Popularity = (double)a.Popularity,
-            });
-            return metric == "traffic"
-                ? await projected.GroupBy(x => x.Region)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(x => x.Popularity) })
-                    .OrderByDescending(x => x.Value).ToListAsync()
-                : await projected.GroupBy(x => x.Region)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
-                    .OrderByDescending(x => x.Value).ToListAsync();
+                var rows = await q.Select(a => new { a.Id, Region = a.City != null && a.City.Region != null ? a.City.Region.Name : "Nepoznato" }).ToListAsync();
+                var entityIds = rows.Select(r => r.Id).ToList();
+                var logCounts = await _db.PopularityLogs
+                    .Where(l => l.EntityType == "activity" && entityIds.Contains(l.EntityId))
+                    .GroupBy(l => l.EntityId)
+                    .Select(g => new { EntityId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.EntityId, x => x.Count);
+                return rows.GroupBy(r => r.Region)
+                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(r => logCounts.GetValueOrDefault(r.Id, 0)) })
+                    .OrderByDescending(x => x.Value).ToList();
+            }
+            return await q.Select(a => new { Region = a.City != null && a.City.Region != null ? a.City.Region.Name : "Nepoznato" })
+                .GroupBy(x => x.Region)
+                .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
+                .OrderByDescending(x => x.Value).ToListAsync();
         }
 
         private async Task<List<AggregatePointDto>> AggActivities_Time(
@@ -574,26 +595,42 @@ namespace Explorea.Server.Repositories.Implementations
                 return raw.Select(x => new AggregatePointDto { Label = x.Label, Value = Math.Round(x.Value, 1) }).ToList();
             }
 
-            var projected = q.Select(e => new
+            if (metric == "traffic")
             {
-                TypeName   = e.Type != null ? e.Type.Name : "Nepoznato",
-                Popularity = (double)e.Popularity,
-            });
-            return metric switch
-            {
-                "traffic" => await projected.GroupBy(x => x.TypeName)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(x => x.Popularity) })
-                    .OrderByDescending(x => x.Value).ToListAsync(),
-                _ => await projected.GroupBy(x => x.TypeName)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
-                    .OrderByDescending(x => x.Value).ToListAsync(),
-            };
+                var rows = await q.Select(e => new { e.Id, TypeName = e.Type != null ? e.Type.Name : "Nepoznato" }).ToListAsync();
+                var entityIds = rows.Select(r => r.Id).ToList();
+                var logCounts = await _db.PopularityLogs
+                    .Where(l => l.EntityType == "event" && entityIds.Contains(l.EntityId))
+                    .GroupBy(l => l.EntityId)
+                    .Select(g => new { EntityId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.EntityId, x => x.Count);
+                return rows.GroupBy(r => r.TypeName)
+                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(r => logCounts.GetValueOrDefault(r.Id, 0)) })
+                    .OrderByDescending(x => x.Value).ToList();
+            }
+            return await q.Select(e => new { TypeName = e.Type != null ? e.Type.Name : "Nepoznato" })
+                .GroupBy(x => x.TypeName)
+                .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
+                .OrderByDescending(x => x.Value).ToListAsync();
         }
 
         private async Task<List<AggregatePointDto>> AggEvents_Destination(
             string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
         {
             var q = ScopeEvents(destIds, placeOwnerUserId);
+            if (metric == "traffic")
+            {
+                var rows = await q.Select(e => new { e.Id, Dest = e.Destination != null ? e.Destination.Name : "Bez destinacije" }).ToListAsync();
+                var entityIds = rows.Select(r => r.Id).ToList();
+                var logCounts = await _db.PopularityLogs
+                    .Where(l => l.EntityType == "event" && entityIds.Contains(l.EntityId))
+                    .GroupBy(l => l.EntityId)
+                    .Select(g => new { EntityId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.EntityId, x => x.Count);
+                return rows.GroupBy(r => r.Dest)
+                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(r => logCounts.GetValueOrDefault(r.Id, 0)) })
+                    .OrderByDescending(x => x.Value).Take(20).ToList();
+            }
             return await q
                 .GroupBy(e => e.Destination != null ? e.Destination.Name : "Bez destinacije")
                 .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
@@ -604,18 +641,23 @@ namespace Explorea.Server.Repositories.Implementations
             string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
         {
             var q = ScopeEvents(destIds, placeOwnerUserId);
-            var projected = q.Select(e => new
+            if (metric == "traffic")
             {
-                Region     = e.City != null && e.City.Region != null ? e.City.Region.Name : "Nepoznato",
-                Popularity = (double)e.Popularity,
-            });
-            return metric == "traffic"
-                ? await projected.GroupBy(x => x.Region)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(x => x.Popularity) })
-                    .OrderByDescending(x => x.Value).ToListAsync()
-                : await projected.GroupBy(x => x.Region)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
-                    .OrderByDescending(x => x.Value).ToListAsync();
+                var rows = await q.Select(e => new { e.Id, Region = e.City != null && e.City.Region != null ? e.City.Region.Name : "Nepoznato" }).ToListAsync();
+                var entityIds = rows.Select(r => r.Id).ToList();
+                var logCounts = await _db.PopularityLogs
+                    .Where(l => l.EntityType == "event" && entityIds.Contains(l.EntityId))
+                    .GroupBy(l => l.EntityId)
+                    .Select(g => new { EntityId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.EntityId, x => x.Count);
+                return rows.GroupBy(r => r.Region)
+                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(r => logCounts.GetValueOrDefault(r.Id, 0)) })
+                    .OrderByDescending(x => x.Value).ToList();
+            }
+            return await q.Select(e => new { Region = e.City != null && e.City.Region != null ? e.City.Region.Name : "Nepoznato" })
+                .GroupBy(x => x.Region)
+                .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
+                .OrderByDescending(x => x.Value).ToListAsync();
         }
 
         private async Task<List<AggregatePointDto>> AggEvents_Time(
@@ -651,26 +693,42 @@ namespace Explorea.Server.Repositories.Implementations
                 return raw.Select(x => new AggregatePointDto { Label = x.Label, Value = Math.Round(x.Value, 1) }).ToList();
             }
 
-            var projected = q.Select(p => new
+            if (metric == "traffic")
             {
-                TypeName   = p.Type != null ? p.Type.Name : "Nepoznato",
-                Popularity = (double)p.Popularity,
-            });
-            return metric switch
-            {
-                "traffic" => await projected.GroupBy(x => x.TypeName)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(x => x.Popularity) })
-                    .OrderByDescending(x => x.Value).ToListAsync(),
-                _ => await projected.GroupBy(x => x.TypeName)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
-                    .OrderByDescending(x => x.Value).ToListAsync(),
-            };
+                var rows = await q.Select(p => new { p.Id, TypeName = p.Type != null ? p.Type.Name : "Nepoznato" }).ToListAsync();
+                var entityIds = rows.Select(r => r.Id).ToList();
+                var logCounts = await _db.PopularityLogs
+                    .Where(l => l.EntityType == "place" && entityIds.Contains(l.EntityId))
+                    .GroupBy(l => l.EntityId)
+                    .Select(g => new { EntityId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.EntityId, x => x.Count);
+                return rows.GroupBy(r => r.TypeName)
+                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(r => logCounts.GetValueOrDefault(r.Id, 0)) })
+                    .OrderByDescending(x => x.Value).ToList();
+            }
+            return await q.Select(p => new { TypeName = p.Type != null ? p.Type.Name : "Nepoznato" })
+                .GroupBy(x => x.TypeName)
+                .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
+                .OrderByDescending(x => x.Value).ToListAsync();
         }
 
         private async Task<List<AggregatePointDto>> AggPlaces_Destination(
             string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
         {
             var q = ScopePlaces(destIds, placeOwnerUserId);
+            if (metric == "traffic")
+            {
+                var rows = await q.Select(p => new { p.Id, Dest = p.Destination != null ? p.Destination.Name : "Bez destinacije" }).ToListAsync();
+                var entityIds = rows.Select(r => r.Id).ToList();
+                var logCounts = await _db.PopularityLogs
+                    .Where(l => l.EntityType == "place" && entityIds.Contains(l.EntityId))
+                    .GroupBy(l => l.EntityId)
+                    .Select(g => new { EntityId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.EntityId, x => x.Count);
+                return rows.GroupBy(r => r.Dest)
+                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(r => logCounts.GetValueOrDefault(r.Id, 0)) })
+                    .OrderByDescending(x => x.Value).Take(20).ToList();
+            }
             return await q
                 .GroupBy(p => p.Destination != null ? p.Destination.Name : "Bez destinacije")
                 .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
@@ -681,18 +739,23 @@ namespace Explorea.Server.Repositories.Implementations
             string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
         {
             var q = ScopePlaces(destIds, placeOwnerUserId);
-            var projected = q.Select(p => new
+            if (metric == "traffic")
             {
-                Region     = p.City != null && p.City.Region != null ? p.City.Region.Name : "Nepoznato",
-                Popularity = (double)p.Popularity,
-            });
-            return metric == "traffic"
-                ? await projected.GroupBy(x => x.Region)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(x => x.Popularity) })
-                    .OrderByDescending(x => x.Value).ToListAsync()
-                : await projected.GroupBy(x => x.Region)
-                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
-                    .OrderByDescending(x => x.Value).ToListAsync();
+                var rows = await q.Select(p => new { p.Id, Region = p.City != null && p.City.Region != null ? p.City.Region.Name : "Nepoznato" }).ToListAsync();
+                var entityIds = rows.Select(r => r.Id).ToList();
+                var logCounts = await _db.PopularityLogs
+                    .Where(l => l.EntityType == "place" && entityIds.Contains(l.EntityId))
+                    .GroupBy(l => l.EntityId)
+                    .Select(g => new { EntityId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.EntityId, x => x.Count);
+                return rows.GroupBy(r => r.Region)
+                    .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(r => logCounts.GetValueOrDefault(r.Id, 0)) })
+                    .OrderByDescending(x => x.Value).ToList();
+            }
+            return await q.Select(p => new { Region = p.City != null && p.City.Region != null ? p.City.Region.Name : "Nepoznato" })
+                .GroupBy(x => x.Region)
+                .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
+                .OrderByDescending(x => x.Value).ToListAsync();
         }
 
         private async Task<List<AggregatePointDto>> AggPlaces_Time(

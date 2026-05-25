@@ -103,11 +103,24 @@
             <div class="rp-date-range">
               <div class="rp-date-field">
                 <label class="rp-date-field__label">Od</label>
-                <input type="date" class="rp-date-input" [value]="dateFrom()" (change)="dateFrom.set($any($event.target).value)" />
+                <div class="rp-date-input-wrap">
+                  <span class="material-icons rp-date-icon" (click)="dateFromInput.showPicker()">calendar_today</span>
+                  <input #dateFromInput type="date" class="rp-date-input"
+                    [value]="dateFrom()"
+                    [max]="dateTo()"
+                    (change)="setDateFrom($any($event.target).value)" />
+                </div>
               </div>
               <div class="rp-date-field">
                 <label class="rp-date-field__label">Do</label>
-                <input type="date" class="rp-date-input" [value]="dateTo()" (change)="dateTo.set($any($event.target).value)" />
+                <div class="rp-date-input-wrap">
+                  <span class="material-icons rp-date-icon" (click)="dateToInput.showPicker()">calendar_today</span>
+                  <input #dateToInput type="date" class="rp-date-input"
+                    [value]="dateTo()"
+                    [min]="dateFrom()"
+                    [max]="todayStr"
+                    (change)="setDateTo($any($event.target).value)" />
+                </div>
               </div>
             </div>
           </div>
@@ -151,7 +164,12 @@
       <div class="rp-preview">
 
         <div class="rp-preview__toolbar">
-          <span class="rp-preview__view-label">{{ chartTitle() }}</span>
+          <div class="rp-preview__title-group">
+            <span class="rp-preview__view-label">{{ chartTitle() }}</span>
+            @if (chartHint()) {
+              <p class="rp-preview__hint">{{ chartHint() }}</p>
+            }
+          </div>
           <div class="rp-preview__toolbar-actions">
             <button class="btn btn-ghost btn-sm" [disabled]="!chartData()" (click)="exportCsv()">
               <span class="material-icons">download</span> Izvezi CSV

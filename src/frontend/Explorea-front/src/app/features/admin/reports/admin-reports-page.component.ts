@@ -117,6 +117,59 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     const m = METRIC_CONFIGS[this.metric()];
     return `${m.label} — ${e.label} / ${d.label}`;
   });
+  readonly chartHint = computed((): string | null => {
+    const hints: Record<string, string> = {
+      'destinations:region:count':        'Koliko destinacija postoji u svakom regionu',
+      'destinations:region:traffic':      'Ukupan broj poseta destinacija grupisanih po regionu',
+      'destinations:region:avgRating':    'Prosecna ocena korisnika za destinacije u svakom regionu',
+      'destinations:time:count':          'Koliko novih destinacija je dodato svaki mesec',
+      'destinations:time:traffic':        'Koliko puta su destinacije pregledane svaki mesec',
+      'destinations:time:avgRating':      'Prosecna ocena recenzija destinacija po mesecu',
+      'activities:category:count':        'Koliko aktivnosti postoji u svakoj kategoriji',
+      'activities:category:traffic':      'Ukupan broj poseta aktivnosti po kategoriji',
+      'activities:category:avgRating':    'Prosecna ocena korisnika za aktivnosti po kategoriji',
+      'activities:destination:count':     'Koliko aktivnosti postoji u svakoj destinaciji',
+      'activities:destination:traffic':   'Ukupan broj poseta aktivnosti po destinaciji',
+      'activities:destination:avgRating': 'Prosecna ocena korisnika za aktivnosti po destinaciji',
+      'activities:region:count':          'Koliko aktivnosti postoji u svakom regionu',
+      'activities:region:traffic':        'Ukupan broj poseta aktivnosti po regionu',
+      'activities:region:avgRating':      'Prosecna ocena korisnika za aktivnosti po regionu',
+      'activities:time:count':            'Koliko novih aktivnosti je dodato svaki mesec',
+      'activities:time:traffic':          'Koliko puta su aktivnosti pregledane svaki mesec',
+      'activities:time:avgRating':        'Prosecna ocena recenzija aktivnosti po mesecu',
+      'events:type:count':                'Koliko dogadjaja postoji po tipu',
+      'events:type:traffic':              'Ukupan broj poseta dogadjaja po tipu',
+      'events:type:avgRating':            'Prosecna ocena korisnika za dogadjaje po tipu',
+      'events:destination:count':         'Koliko dogadjaja postoji po destinaciji',
+      'events:destination:traffic':       'Ukupan broj poseta dogadjaja po destinaciji',
+      'events:destination:avgRating':     'Prosecna ocena korisnika za dogadjaje po destinaciji',
+      'events:region:count':              'Koliko dogadjaja postoji u svakom regionu',
+      'events:region:traffic':            'Ukupan broj poseta dogadjaja po regionu',
+      'events:region:avgRating':          'Prosecna ocena korisnika za dogadjaje po regionu',
+      'events:time:count':                'Koliko novih dogadjaja je dodato svaki mesec',
+      'events:time:traffic':              'Koliko puta su dogadjaji pregledani svaki mesec',
+      'events:time:avgRating':            'Prosecna ocena recenzija dogadjaja po mesecu',
+      'places:type:count':                'Koliko objekata postoji po tipu',
+      'places:type:traffic':              'Ukupan broj poseta objekata po tipu',
+      'places:type:avgRating':            'Prosecna ocena korisnika za objekte po tipu',
+      'places:destination:count':         'Koliko objekata postoji po destinaciji',
+      'places:destination:traffic':       'Ukupan broj poseta objekata po destinaciji',
+      'places:destination:avgRating':     'Prosecna ocena korisnika za objekte po destinaciji',
+      'places:region:count':              'Koliko objekata postoji u svakom regionu',
+      'places:region:traffic':            'Ukupan broj poseta objekata po regionu',
+      'places:region:avgRating':          'Prosecna ocena korisnika za objekte po regionu',
+      'places:time:count':                'Koliko novih objekata je dodato svaki mesec',
+      'places:time:traffic':              'Koliko puta su objekti pregledani svaki mesec',
+      'places:time:avgRating':            'Prosecna ocena recenzija objekata po mesecu',
+      'reviews:rating:count':             'Raspodela recenzija po oceni — koliko recenzija ima svaku ocenu',
+      'reviews:entityType:count':         'Koliko recenzija je ostavljeno po vrsti entiteta',
+      'reviews:time:count':               'Koliko novih recenzija je ostavljeno svaki mesec',
+      'users:time:count':                 'Koliko novih korisnika se registrovalo svaki mesec',
+      'users:gender:count':               'Raspodela korisnika po polu',
+      'users:ageGroup:count':             'Raspodela korisnika po starosnoj grupi',
+    };
+    return hints[`${this.entity()}:${this.dimension()}:${this.metric()}`] ?? null;
+  });
   readonly insightCards = computed(() => {
     const ins = this.insights();
     return [
@@ -879,7 +932,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
           },
           y: {
             grid:   { color: 'rgba(42,58,45,0.5)', drawBorder: false } as any,
-            ticks:  { color: '#5a7060', font: { family: 'Inter', size: 11 }, callback: (v: any) => this.formatNum(v) },
+            ticks:  { color: '#5a7060', font: { family: 'Inter', size: 11 }, callback: (v: any) => this.metric() !== 'avgRating' && !Number.isInteger(v) ? '' : this.formatNum(v) },
             border: { display: false },
           },
         },
@@ -990,6 +1043,18 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     const a    = document.createElement('a');
     a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
+  }
+
+  readonly todayStr = this.today();
+
+  setDateFrom(value: string): void {
+    this.dateFrom.set(value);
+    if (this.dateTo() && value > this.dateTo()) this.dateTo.set(value);
+  }
+
+  setDateTo(value: string): void {
+    if (value < this.dateFrom()) this.dateFrom.set(value);
+    this.dateTo.set(value);
   }
 
   private today(): string { return new Date().toISOString().slice(0, 10); }
