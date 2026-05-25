@@ -408,9 +408,9 @@
 </div>
 
 <!-- ===== PLACE DETAILS PANEL ===== -->
-@if (isDetailsPanelOpen() && detailsPanelRow(); as place) {
+@if ((isDetailsPanelOpen() || isPanelClosing()) && detailsPanelRow(); as place) {
   <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
-  <aside class="ddp-panel" role="dialog" aria-modal="true">
+  <aside class="ddp-panel" [class.ddp-panel--closing]="isPanelClosing()" role="dialog" aria-modal="true">
 
     <header class="ddp-header">
       <div class="ddp-header__title-group">

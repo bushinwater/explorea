@@ -60,7 +60,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     extraFilters: {},
     tab: 'active',
     page: 1,
-    pageSize: 8,
+    pageSize: 20,
   });
 
   protected readonly filterDefs = signal<FilterDefinition[]>([]);

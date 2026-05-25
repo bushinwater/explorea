@@ -99,7 +99,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     regionId: 'all',
     extraFilters: {},
     page: 1,
-    pageSize: 17,
+    pageSize: 20,
   });
 
   protected readonly filterDefs = signal<FilterDefinition[]>([]);
@@ -1201,7 +1201,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     const efEntries = Object.entries(f.extraFilters);
     if (efEntries.length)       qp['extraFilters'] = efEntries.map(([k, v]) => `${k}:${v}`);
     if (f.page > 1)             qp['page']       = f.page;
-    if (f.pageSize !== 17)      qp['pageSize']   = f.pageSize;
+    if (f.pageSize !== 20)      qp['pageSize']   = f.pageSize;
 
     return qp;
   }

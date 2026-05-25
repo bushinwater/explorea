@@ -62,7 +62,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     minRating: null,
     amenityId: null,
     page: 1,
-    pageSize: 17,
+    pageSize: 20,
   });
 
   protected readonly places    = signal<PlaceRow[]>([]);
@@ -86,6 +86,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   protected readonly errorMessage   = signal('');
 
   protected readonly isDetailsPanelOpen  = signal(false);
+  protected readonly isPanelClosing      = signal(false);
   protected readonly isDetailLoading     = signal(false);
   protected readonly detailsPanelRow     = signal<PlaceRow | null>(null);
   protected readonly detailsPanelDetail  = signal<PlaceDetail | null>(null);
@@ -292,11 +293,16 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   }
 
   protected closeDetailsPanel(): void {
-    this.isDetailsPanelOpen.set(false);
-    this.detailsPanelRow.set(null);
-    this.detailsPanelDetail.set(null);
-    this.detailsPanelInterests.set([]);
-    this.detailsPanelReviews.set([]);
+    if (this.isPanelClosing()) return;
+    this.isPanelClosing.set(true);
+    setTimeout(() => {
+      this.isDetailsPanelOpen.set(false);
+      this.isPanelClosing.set(false);
+      this.detailsPanelRow.set(null);
+      this.detailsPanelDetail.set(null);
+      this.detailsPanelInterests.set([]);
+      this.detailsPanelReviews.set([]);
+    }, 220);
   }
 
   protected openDeleteDialog(place: PlaceRow): void {

@@ -62,7 +62,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     minRating: null,
     extraFilters: {},
     page: 1,
-    pageSize: 17,
+    pageSize: 20,
   });
 
   protected readonly filterDefs = signal<FilterDefinition[]>([]);
