@@ -2,7 +2,8 @@
   <span class="material-icons status-badge__icon">
     @switch (status) {
       @case ('active') { check_circle }
-      @case ('pending') { schedule }
+      @case ('inactive') { schedule }
+      @case ('pending') { hourglass_empty }
       @default { cancel }
     }
   </span>

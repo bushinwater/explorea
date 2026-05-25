@@ -303,6 +303,17 @@ namespace Explorea.Server.Repositories.Implementations
                 };
             }
 
+            if (!string.IsNullOrWhiteSpace(filters.ActivityStatus))
+            {
+                var cutoff = DateTimeOffset.UtcNow.AddDays(-30);
+                query = filters.ActivityStatus.Trim().ToLower() switch
+                {
+                    "active"   => query.Where(u => u.LastLoginAt != null && u.LastLoginAt >= cutoff),
+                    "inactive" => query.Where(u => u.LastLoginAt == null || u.LastLoginAt < cutoff),
+                    _          => query
+                };
+            }
+
             if (!string.IsNullOrWhiteSpace(filters.Gender))
             {
                 var gender = filters.Gender.Trim().ToLower();

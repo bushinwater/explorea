@@ -29,10 +29,11 @@ export class UserEditModalComponent {
   @Output() readonly cancel = new EventEmitter<void>();
   @Output() readonly submitUser = new EventEmitter<UpdateAdminUserDto>();
 
-  protected readonly roles: Array<Exclude<AdminUserRole, 'traveler'>> = [
+  protected readonly roles: AdminUserRole[] = [
     'super_admin',
     'tourist_organization',
     'place_owner',
+    'traveler',
   ];
 
   protected readonly genders: Array<Exclude<AdminUserGender, 'unknown'>> = ['male', 'female', 'other'];
@@ -46,7 +47,7 @@ export class UserEditModalComponent {
       firstName: ['', [Validators.required, Validators.maxLength(100)]],
       lastName: ['', [Validators.required, Validators.maxLength(100)]],
       email: ['', [Validators.required, Validators.email]],
-      role: ['tourist_organization' as Exclude<AdminUserRole, 'traveler'>, [Validators.required]],
+      role: ['tourist_organization' as AdminUserRole, [Validators.required]],
       region: [''],
       gender: ['male' as Exclude<AdminUserGender, 'unknown'>],
       age: [null as number | null],
@@ -60,7 +61,7 @@ export class UserEditModalComponent {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      role: user.role as Exclude<AdminUserRole, 'traveler'>,
+      role: user.role,
       region: user.regionName ?? '',
       gender: (user.gender === 'unknown' ? 'male' : user.gender) as Exclude<AdminUserGender, 'unknown'>,
       age: user.age,
@@ -83,7 +84,7 @@ export class UserEditModalComponent {
     this.cancel.emit();
   }
 
-  protected roleLabel(role: Exclude<AdminUserRole, 'traveler'>): string {
+  protected roleLabel(role: AdminUserRole): string {
     return this.ui.t(`role.${role}`);
   }
 

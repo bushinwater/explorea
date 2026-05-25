@@ -1,8 +1,11 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import {
   AdminUserGender,
   AdminUserRole,
+  AdminUserStatus,
   PagedResponse,
+  UserActivityStatus,
   UserDirectoryFilters,
   UserDirectoryStats,
   UserDirectoryUser,
@@ -51,6 +54,7 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
     region: 'all',
     gender: 'all',
     ageBucket: 'all',
+    activityStatus: 'all',
   });
   protected readonly currentPage = signal(1);
   protected readonly isLoading = signal(true);
@@ -93,6 +97,7 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
     if (f.gender !== 'all') count++;
     if (f.ageBucket !== 'all') count++;
     if (f.region !== 'all') count++;
+    if (f.activityStatus !== 'all') count++;
     return count;
   });
 
@@ -177,12 +182,17 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
     this.loadUsers();
   }
 
+  protected updateActivityStatus(value: UserActivityStatus): void {
+    this.updateFilterState({ activityStatus: value, page: 1 });
+    this.loadUsers();
+  }
+
   protected updateSearch(value: string): void {
     this.searchInput$.next(value);
   }
 
   protected resetFilters(): void {
-    this.updateFilterState({ role: 'all', gender: 'all', ageBucket: 'all', region: 'all', page: 1 });
+    this.updateFilterState({ role: 'all', gender: 'all', ageBucket: 'all', region: 'all', activityStatus: 'all', page: 1 });
     this.loadUsers();
   }
 
@@ -235,9 +245,10 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
           this.loadStats();
           this.loadUsers();
         },
-        error: (error: Error) => {
+        error: (err: HttpErrorResponse) => {
           this.isCreating.set(false);
-          this.createErrorMessage.set(error.message || this.ui.t('users.form.error'));
+          const msg = err.error?.message || err.message || this.ui.t('users.form.error');
+          this.createErrorMessage.set(msg);
         },
       }),
     );
@@ -258,9 +269,10 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
           this.loadStats();
           this.loadUsers();
         },
-        error: (error: Error) => {
+        error: (err: HttpErrorResponse) => {
           this.isUpdating.set(false);
-          this.editErrorMessage.set(error.message || this.ui.t('users.form.error'));
+          const msg = err.error?.message || err.message || this.ui.t('users.form.error');
+          this.editErrorMessage.set(msg);
         },
       }),
     );
@@ -315,6 +327,15 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
 
   protected roleClass(role: AdminUserRole): string {
     return `role-pill--${role}`;
+  }
+
+  protected displayStatus(user: UserDirectoryUser): AdminUserStatus {
+    if (user.status === 'revoked') return 'revoked';
+    if (user.status === 'pending') return 'pending';
+    if (!user.lastActivityAt) return 'inactive';
+    const diffMs = Date.now() - new Date(user.lastActivityAt).getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    return diffDays <= 30 ? 'active' : 'inactive';
   }
 
   protected activityLabel(value: string | null): string {

@@ -45,6 +45,10 @@ export class AdminUserDirectoryService {
       params = params.set('ageBucket', filters.ageBucket);
     }
 
+    if (filters.activityStatus !== 'all') {
+      params = params.set('activityStatus', filters.activityStatus);
+    }
+
     return this.http.get<PagedResponse<UserDirectoryUser>>(this.api, { params });
   }
 

@@ -4,7 +4,11 @@
   (close)="requestClose()"
 >
   @if (errorMessage) {
-    <app-feedback-banner variant="error" [title]="ui.t('users.form.error')" [description]="errorMessage" />
+    <app-feedback-banner
+      variant="error"
+      [title]="ui.t('users.form.error')"
+      [description]="errorMessage + ' ' + ui.t('users.form.error_hint')"
+    />
   }
 
   <form class="user-form" [formGroup]="form" (ngSubmit)="save()">

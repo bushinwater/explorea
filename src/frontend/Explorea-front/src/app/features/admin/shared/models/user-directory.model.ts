@@ -2,7 +2,7 @@ import { PageQuery } from './pagination.model';
 
 export type AdminUserRole = 'super_admin' | 'tourist_organization' | 'place_owner' | 'traveler';
 
-export type AdminUserStatus = 'active' | 'pending' | 'revoked';
+export type AdminUserStatus = 'active' | 'inactive' | 'pending' | 'revoked';
 
 export type AdminUserGender = 'male' | 'female' | 'other' | 'unknown';
 
@@ -34,19 +34,22 @@ export interface UserDirectoryStats {
   registrationGrowthPercent?: number;
 }
 
+export type UserActivityStatus = 'all' | 'active' | 'inactive';
+
 export interface UserDirectoryFilters extends PageQuery {
   search: string;
   role: AdminUserRole | 'all';
   region: string | 'all';
   gender: AdminUserGender | 'all';
   ageBucket: UserAgeBucket;
+  activityStatus: UserActivityStatus;
 }
 
 export interface UpsertAdminUserDto {
   firstName: string;
   lastName: string;
   email: string;
-  role: Exclude<AdminUserRole, 'traveler'>;
+  role: AdminUserRole;
   region: string | null;
   gender: Exclude<AdminUserGender, 'unknown'> | null;
   age: number | null;

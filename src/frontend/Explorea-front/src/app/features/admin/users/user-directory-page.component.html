@@ -115,6 +115,16 @@
                 </div>
               </div>
 
+              <!-- Activity status filter -->
+              <div class="user-filter-section">
+                <label class="user-filter-section__label">{{ ui.t('users.filter.activity') }}</label>
+                <div class="user-filter-chips">
+                  <button class="user-chip" [class.user-chip--active]="filters().activityStatus === 'all'" (click)="updateActivityStatus('all')">{{ ui.t('users.filter.activity_all') }}</button>
+                  <button class="user-chip" [class.user-chip--active]="filters().activityStatus === 'active'" (click)="updateActivityStatus('active')">{{ ui.t('users.filter.activity_active') }}</button>
+                  <button class="user-chip" [class.user-chip--active]="filters().activityStatus === 'inactive'" (click)="updateActivityStatus('inactive')">{{ ui.t('users.filter.activity_inactive') }}</button>
+                </div>
+              </div>
+
               <!-- Region filter -->
               <div class="user-filter-section">
                 <label class="user-filter-section__label">{{ ui.t('users.filter.region') }}</label>
@@ -180,7 +190,7 @@
                 </td>
                 <td class="user-td user-td--muted">{{ user.regionName ?? ui.t('users.region.none') }}</td>
                 <td class="user-td">
-                  <app-status-badge [status]="user.status" />
+                  <app-status-badge [status]="displayStatus(user)" />
                 </td>
                 <td class="user-td user-td--muted">{{ activityLabel(user.lastActivityAt) }}</td>
                 <td class="user-td user-td--actions">

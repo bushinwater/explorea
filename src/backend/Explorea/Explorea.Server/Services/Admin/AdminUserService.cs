@@ -82,7 +82,7 @@ namespace Explorea.Server.Services.Admin
             if (targetRole == null)
                 throw new InvalidOperationException("Requested role was not found.");
 
-            var managedRegion = await ResolveManagedRegionAsync(dto.Region, scope, required: targetRoleName != RoleNames.SuperAdmin);
+            var managedRegion = await ResolveManagedRegionAsync(dto.Region, scope, required: targetRoleName == RoleNames.TouristOrganization);
             var now = DateTimeOffset.UtcNow;
 
             var user = new User
@@ -167,7 +167,7 @@ namespace Explorea.Server.Services.Admin
             if (targetRole == null)
                 throw new InvalidOperationException("Requested role was not found.");
 
-            var managedRegion = await ResolveManagedRegionAsync(dto.Region, scope, required: targetRoleName != RoleNames.SuperAdmin);
+            var managedRegion = await ResolveManagedRegionAsync(dto.Region, scope, required: targetRoleName == RoleNames.TouristOrganization);
             var now = DateTimeOffset.UtcNow;
 
             user.FirstName = dto.FirstName.Trim();
@@ -183,9 +183,10 @@ namespace Explorea.Server.Services.Admin
             user.UpdatedAt = now;
             user.UpdatedBy = currentUserId;
 
-            _userRepository.Update(user);
             await _userRepository.SaveChangesAsync();
-            await SyncTouristOrganizationRegionAsync(user.Id, targetRoleName, managedRegion, now, currentUserId);
+
+            if (targetRoleName == RoleNames.TouristOrganization)
+                await SyncTouristOrganizationRegionAsync(user.Id, targetRoleName, managedRegion, now, currentUserId);
 
             var updated = await _userRepository.GetByIdWithAdminContextAsync(user.Id)
                 ?? throw new InvalidOperationException("Updated user could not be loaded.");
@@ -275,6 +276,7 @@ namespace Explorea.Server.Services.Admin
                 Role = NormalizeOptionalFilter(query.Role),
                 RegionId = query.RegionId,
                 Status = NormalizeOptionalFilter(query.Status),
+                ActivityStatus = NormalizeOptionalFilter(query.ActivityStatus),
                 Gender = NormalizeOptionalFilter(query.Gender),
                 AgeBucket = NormalizeOptionalFilter(query.AgeBucket),
                 Page = query.Page < 1 ? 1 : query.Page,

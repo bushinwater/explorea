@@ -21,6 +21,12 @@
   border-color: rgba(52, 163, 86, 0.28);
 }
 
+.status-badge--inactive {
+  color: #f0a96a;
+  background: rgba(154, 80, 27, 0.16);
+  border-color: rgba(200, 120, 61, 0.26);
+}
+
 .status-badge--pending {
   color: #e1d07d;
   background: rgba(154, 120, 27, 0.16);
@@ -37,6 +43,12 @@
   color: #2f8f57;
   background: rgba(80, 187, 120, 0.12);
   border-color: rgba(80, 187, 120, 0.2);
+}
+
+:host-context([data-theme='light']) .status-badge--inactive {
+  color: #c96a1e;
+  background: rgba(230, 140, 80, 0.12);
+  border-color: rgba(230, 140, 80, 0.24);
 }
 
 :host-context([data-theme='light']) .status-badge--pending {
