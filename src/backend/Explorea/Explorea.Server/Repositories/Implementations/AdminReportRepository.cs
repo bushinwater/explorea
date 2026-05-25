@@ -139,13 +139,14 @@ namespace Explorea.Server.Repositories.Implementations
             string? filterSubType, string? filterRegion, decimal? filterMinRating,
             string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
             List<string>? filterExtraFilters,
-            List<Guid>? destIds, Guid? placeOwnerUserId)
+            List<Guid>? destIds, Guid? placeOwnerUserId,
+            Guid? filterDestinationId = null)
         {
             return entity switch
             {
-                "activities" => await GetActivitiesTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterDifficulty, filterMinPrice, filterMaxPrice, destIds, placeOwnerUserId),
-                "events"     => await GetEventsTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterMinPrice, filterMaxPrice, filterExtraFilters, destIds, placeOwnerUserId),
-                "places"     => await GetPlacesTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterExtraFilters, destIds, placeOwnerUserId),
+                "activities" => await GetActivitiesTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterDifficulty, filterMinPrice, filterMaxPrice, destIds, placeOwnerUserId, filterDestinationId),
+                "events"     => await GetEventsTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterMinPrice, filterMaxPrice, filterExtraFilters, destIds, placeOwnerUserId, filterDestinationId),
+                "places"     => await GetPlacesTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterExtraFilters, destIds, placeOwnerUserId, filterDestinationId),
                 _            => [],
             };
         }
@@ -226,9 +227,11 @@ namespace Explorea.Server.Repositories.Implementations
         private async Task<List<EntityTableRowDto>> GetActivitiesTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
             string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
-            List<Guid>? destIds, Guid? placeOwnerUserId)
+            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? filterDestinationId = null)
         {
             var q = ScopeActivities(destIds, placeOwnerUserId);
+            if (filterDestinationId.HasValue)
+                q = q.Where(a => a.DestinationId == filterDestinationId.Value);
             if (!string.IsNullOrEmpty(filterSubType))
                 q = q.Where(a => a.Category != null && a.Category.Name == filterSubType);
             if (!string.IsNullOrEmpty(filterRegion))
@@ -263,9 +266,11 @@ namespace Explorea.Server.Repositories.Implementations
         private async Task<List<EntityTableRowDto>> GetEventsTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
             decimal? filterMinPrice, decimal? filterMaxPrice, List<string>? filterExtraFilters,
-            List<Guid>? destIds, Guid? placeOwnerUserId)
+            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? filterDestinationId = null)
         {
             var q = ScopeEvents(destIds, placeOwnerUserId);
+            if (filterDestinationId.HasValue)
+                q = q.Where(e => e.DestinationId == filterDestinationId.Value);
             if (!string.IsNullOrEmpty(filterSubType))
                 q = q.Where(e => e.Type != null && e.Type.Name == filterSubType);
             if (!string.IsNullOrEmpty(filterRegion))
@@ -307,9 +312,11 @@ namespace Explorea.Server.Repositories.Implementations
         private async Task<List<EntityTableRowDto>> GetPlacesTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
             List<string>? filterExtraFilters,
-            List<Guid>? destIds, Guid? placeOwnerUserId)
+            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? filterDestinationId = null)
         {
             var q = ScopePlaces(destIds, placeOwnerUserId);
+            if (filterDestinationId.HasValue)
+                q = q.Where(p => p.DestinationId == filterDestinationId.Value);
             if (!string.IsNullOrEmpty(filterSubType))
                 q = q.Where(p => p.Type != null && p.Type.Name == filterSubType);
             if (!string.IsNullOrEmpty(filterRegion))

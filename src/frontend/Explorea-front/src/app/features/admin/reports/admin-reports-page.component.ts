@@ -10,7 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { Chart, registerables, TooltipItem } from 'chart.js';
-import { forkJoin } from 'rxjs';
+import { forkJoin, map } from 'rxjs';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { FeedbackBannerComponent, StatCardComponent } from '@shared/components';
 import {
@@ -71,11 +71,21 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
 
   // ─── Flat table ──────────────────────────────────────────────────────────
 
-  readonly flatEntity           = signal<FlatTableEntity>('destinations');
+  readonly flatEntities         = signal<FlatTableEntity[]>(['destinations']);
+  readonly flatEntity           = computed(() => this.flatEntities()[0] ?? 'destinations');
   readonly destSortBy           = signal<DestTableSortBy>('region');
   readonly flatSortBy           = signal<string>('name');
+
+  // flat table destination scope
+  readonly flatDestId           = signal<string | null>(null);
+  readonly flatDestName         = signal<string | null>(null);
+  readonly flatDestSearchQuery  = signal('');
+  readonly flatDestSearchResults = signal<EntitySearchItem[]>([]);
+  readonly flatDestSearchOpen   = signal(false);
+  private flatDestSearchTimeout: ReturnType<typeof setTimeout> | null = null;
   readonly destTableData        = signal<DestinationsTableItem[] | null>(null);
   readonly flatTableData        = signal<EntityTableRow[] | null>(null);
+  readonly flatTableSections    = signal<{ entity: FlatTableEntity; label: string; data: EntityTableRow[] }[]>([]);
   readonly destTableLoading     = signal(false);
   readonly destTableError       = signal<string | null>(null);
   readonly filterSubTypeOptions  = signal<string[]>([]);
@@ -236,6 +246,12 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   });
 
   readonly flatCols = computed(() => FLAT_TABLE_COLS[this.flatEntity()]);
+
+  readonly flatScopedEntities = computed(() =>
+    this.flatDestId()
+      ? FLAT_TABLE_ENTITIES.filter(e => e.id !== 'destinations')
+      : FLAT_TABLE_ENTITIES,
+  );
 
   // Computed: destinations table grouped by region for display
   readonly destTableGrouped = computed(() => {
@@ -451,10 +467,46 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   // ─── Flat table ──────────────────────────────────────────────────────────
 
   selectFlatEntity(e: FlatTableEntity): void {
-    this.flatEntity.set(e);
+    if (e === 'destinations') this.clearFlatDest();
+    const prev = this.flatEntity();
+    this.flatEntities.set([e]);
+    this.clearFlatResults();
+    if (prev !== e) this.reloadFiltersFor(e);
+  }
+
+  toggleFlatEntity(e: FlatTableEntity): void {
+    const current = this.flatEntities();
+    const prevPrimary = current[0];
+
+    let next: FlatTableEntity[];
+    if (e === 'destinations') {
+      if (current.length === 1 && current[0] === 'destinations') return;
+      this.clearFlatDest();
+      next = ['destinations'];
+    } else {
+      const withoutDest = current.filter(x => x !== 'destinations');
+      if (withoutDest.includes(e)) {
+        const remaining = withoutDest.filter(x => x !== e);
+        next = remaining.length ? remaining : ['destinations'];
+        if (next[0] === 'destinations') this.clearFlatDest();
+      } else {
+        next = [...withoutDest, e];
+      }
+    }
+
+    this.flatEntities.set(next);
+    this.clearFlatResults();
+    if (prevPrimary !== next[0]) this.reloadFiltersFor(next[0]);
+  }
+
+  private clearFlatResults(): void {
     this.destTableData.set(null);
     this.flatTableData.set(null);
+    this.flatTableSections.set([]);
     this.destTableError.set(null);
+  }
+
+  private reloadFiltersFor(e: FlatTableEntity): void {
     this.filterSubType.set(null);
     this.filterRegion.set(this.scopeRegion());
     this.filterMinRating.set(null);
@@ -465,6 +517,41 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     this.extraFilters.set({});
     this.subtypeOptionsWithId.set([]);
     this.loadFilterOptions(e);
+  }
+
+  onFlatDestSearch(q: string): void {
+    this.flatDestSearchQuery.set(q);
+    if (this.flatDestSearchTimeout) clearTimeout(this.flatDestSearchTimeout);
+    if (q.length < 2) { this.flatDestSearchResults.set([]); this.flatDestSearchOpen.set(false); return; }
+    this.flatDestSearchTimeout = setTimeout(() => {
+      this.svc.searchEntities('destinations', q).subscribe({
+        next: results => {
+          this.flatDestSearchResults.set(results);
+          this.flatDestSearchOpen.set(results.length > 0);
+          this.cdr.detectChanges();
+        },
+      });
+    }, 280);
+  }
+
+  selectFlatDestFromSearch(id: string, name: string): void {
+    this.flatDestId.set(id);
+    this.flatDestName.set(name);
+    this.flatDestSearchOpen.set(false);
+    this.flatDestSearchQuery.set('');
+    this.flatDestSearchResults.set([]);
+    const prev = this.flatEntity();
+    this.flatEntities.set(['activities', 'events', 'places']);
+    this.clearFlatResults();
+    if (prev === 'destinations') this.reloadFiltersFor('activities');
+  }
+
+  clearFlatDest(): void {
+    this.flatDestId.set(null);
+    this.flatDestName.set(null);
+    this.flatDestSearchQuery.set('');
+    this.flatDestSearchResults.set([]);
+    this.flatDestSearchOpen.set(false);
   }
 
   clearSubType(): void {
@@ -583,8 +670,9 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   generateFlatTable(): void {
     this.destTableLoading.set(true);
     this.destTableError.set(null);
-    const entity = this.flatEntity();
-    if (entity === 'destinations') {
+    const entities = this.flatEntities();
+
+    if (entities.length === 1 && entities[0] === 'destinations') {
       this.svc.getDestinationsTable(
         this.destSortBy(),
         this.filterSubType(), this.filterRegion(), this.filterMinRating(),
@@ -593,43 +681,64 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
         error: () => { this.destTableLoading.set(false); this.destTableError.set('Greška pri učitavanju.'); this.cdr.detectChanges(); },
       });
     } else {
+      const nonDest = entities.filter(e => e !== 'destinations');
       const extraArr = Object.entries(this.extraFilters()).map(([k, v]) => `${k}:${v}`);
-      this.svc.getEntityTable(
-        entity, this.flatSortBy(),
-        this.filterSubType(), this.filterRegion(), this.filterMinRating(),
-        this.filterDifficulty(),
-        this.filterMinPrice(), this.filterMaxPrice(),
-        extraArr.length ? extraArr : null,
-      ).subscribe({
-        next: data => { this.destTableLoading.set(false); this.flatTableData.set(data); this.cdr.detectChanges(); },
+      const reqs = nonDest.map(entity =>
+        this.svc.getEntityTable(
+          entity, this.flatSortBy(),
+          this.filterSubType(), this.filterRegion(), this.filterMinRating(),
+          this.filterDifficulty(), this.filterMinPrice(), this.filterMaxPrice(),
+          extraArr.length ? extraArr : null,
+          this.flatDestId(),
+        ).pipe(map(data => ({
+          entity,
+          label: FLAT_TABLE_ENTITIES.find(x => x.id === entity)!.label,
+          data,
+        })))
+      );
+      forkJoin(reqs).subscribe({
+        next: sections => {
+          this.destTableLoading.set(false);
+          this.flatTableSections.set(sections);
+          this.flatTableData.set(sections[0]?.data ?? null);
+          this.cdr.detectChanges();
+        },
         error: () => { this.destTableLoading.set(false); this.destTableError.set('Greška pri učitavanju.'); this.cdr.detectChanges(); },
       });
     }
   }
 
   exportFlatTableCsv(): void {
-    const entity = this.flatEntity();
-    const cols   = FLAT_TABLE_COLS[entity];
-    const header = cols.map(c => `"${c.header}"`).join(',');
-
-    if (entity === 'destinations') {
+    if (this.flatEntity() === 'destinations') {
       const data = this.destTableData();
       if (!data?.length) return;
+      const cols = FLAT_TABLE_COLS['destinations'];
+      const header = cols.map(c => `"${c.header}"`).join(',');
       const rows = data.map(d =>
         [`"${d.name}"`, `"${d.city ?? ''}"`, `"${d.region ?? ''}"`, `"${d.type ?? ''}"`, d.avgRating, d.popularity].join(','),
       );
       this.downloadCsv([header, ...rows].join('\n'), 'destinacije.csv');
-    } else {
-      const data = this.flatTableData();
-      if (!data?.length) return;
-      const rows = data.map(r =>
-        cols.map(c => {
+      return;
+    }
+
+    const sections = this.flatTableSections();
+    if (!sections.length) return;
+
+    const lines: string[] = [];
+    for (const section of sections) {
+      const cols = FLAT_TABLE_COLS[section.entity];
+      if (lines.length) lines.push('');
+      lines.push(`"${section.label}"`);
+      lines.push(cols.map(c => `"${c.header}"`).join(','));
+      section.data.forEach(r =>
+        lines.push(cols.map(c => {
           const v = (r as any)[c.key];
           return typeof v === 'string' ? `"${v}"` : String(v ?? '');
-        }).join(','),
+        }).join(','))
       );
-      this.downloadCsv([header, ...rows].join('\n'), `${entity}.csv`);
     }
+    const name = sections.length === 1 ? `${sections[0].entity}.csv` : 'entiteti.csv';
+    this.downloadCsv(lines.join('\n'), name);
   }
 
   // kept for backward compat — now delegates to generateFlatTable
@@ -646,7 +755,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     const entityLabel = FLAT_TABLE_ENTITIES.find(e => e.id === entity)?.label ?? entity;
     const defaultTitle =
       type === 'dest-table'    ? 'Tabela destinacija'
-      : type === 'entity-table' ? `Tabela: ${entityLabel}`
+      : type === 'entity-table' ? (this.flatTableSections().length > 1 ? `Tabele entiteta${this.flatDestName() ? ' — ' + this.flatDestName() : ''}` : `Tabela: ${entityLabel}`)
       : type === 'table'        ? `Tabela: ${this.chartTitle()}`
       :                           `Grafik: ${this.chartTitle()}`;
     this.queueItemTitle.set(defaultTitle);
@@ -670,6 +779,24 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
       if (!data) return;
       item = { id: Date.now().toString(), title, qtype: 'dest-table', destData: data };
     } else if (type === 'entity-table') {
+      const sections = this.flatTableSections();
+      if (sections.length > 1) {
+        // add each section as a separate queue item
+        const base = title || 'Tabela entiteta';
+        const items = sections.map((s, i) => ({
+          id: (Date.now() + i).toString(),
+          title: sections.length > 1 ? `${base} — ${s.label}` : base,
+          qtype: 'entity-table' as const,
+          entityData: s.data,
+          entityCols: FLAT_TABLE_COLS[s.entity],
+        }));
+        this.reportQueue.update(q => [...q, ...items]);
+        this.isAddQueueOpen.set(false);
+        this.pendingQueueType.set(null);
+        this.isQueueOpen.set(true);
+        this.cdr.detectChanges();
+        return;
+      }
       const data = this.flatTableData();
       if (!data) return;
       const cols = FLAT_TABLE_COLS[this.flatEntity()];
@@ -897,6 +1024,16 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
 
   queueIcon(type: string): string {
     return type === 'chart' ? 'bar_chart' : type === 'table' ? 'table_chart' : 'list';
+  }
+
+  sectionIcon(entity: FlatTableEntity): string {
+    const icons: Record<FlatTableEntity, string> = {
+      destinations: 'place',
+      activities:   'hiking',
+      events:       'celebration',
+      places:       'store',
+    };
+    return icons[entity];
   }
 
   private clearChart(): void {

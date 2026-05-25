@@ -320,15 +320,54 @@
     <div class="rp-config-section" style="padding: var(--sp-4) var(--sp-6) var(--sp-3)">
       <span class="rp-config-section__label">Entitet</span>
       <div class="rp-source-tabs--row">
-        @for (e of flatTableEntities; track e.id) {
+        @for (e of flatScopedEntities(); track e.id) {
           <button
             class="rp-source-tab"
-            [class.rp-source-tab--active]="flatEntity() === e.id"
-            (click)="selectFlatEntity(e.id)"
+            [class.rp-source-tab--active]="flatEntities().includes(e.id)"
+            (click)="toggleFlatEntity(e.id)"
           >{{ e.label }}</button>
         }
       </div>
     </div>
+
+    <!-- Destination scope search (shown on Destinations tab or as chip when dest selected) -->
+    @if (flatEntity() === 'destinations' && !flatDestId()) {
+      <div class="rp-config-section" style="padding: 0 var(--sp-6) var(--sp-3)">
+        <span class="rp-config-section__label">Konkretna destinacija <span class="rp-optional">(opcionalno)</span></span>
+        <div class="rp-entity-search-wrap">
+          <span class="material-icons rp-entity-search-icon">search</span>
+          <input
+            class="rp-entity-search-input"
+            type="text"
+            placeholder="Pretraži destinacije..."
+            [value]="flatDestSearchQuery()"
+            (input)="onFlatDestSearch($any($event.target).value)"
+            (blur)="flatDestSearchOpen.set(false)"
+            autocomplete="off"
+          />
+          @if (flatDestSearchOpen() && flatDestSearchResults().length) {
+            <div class="rp-entity-dropdown">
+              @for (r of flatDestSearchResults(); track r.id) {
+                <button class="rp-entity-option" (mousedown)="selectFlatDestFromSearch(r.id, r.name)">
+                  {{ r.name }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    } @else if (flatDestId()) {
+      <div class="rp-config-section" style="padding: 0 var(--sp-6) var(--sp-3)">
+        <span class="rp-config-section__label">Destinacija</span>
+        <div class="rp-entity-chip">
+          <span class="material-icons rp-entity-chip__icon">place</span>
+          <span class="rp-entity-chip__name">{{ flatDestName() }}</span>
+          <button class="rp-entity-chip__remove" (click)="selectFlatEntity('destinations')" title="Ukloni">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+      </div>
+    }
 
     @if (filterSubTypeOptions().length || filterRegionOptions().length || filterOptionsLoading() || scopeRegion()) {
       <div class="rp-filter-section">
@@ -472,7 +511,7 @@
       </div>
       <div class="rp-dest-actions">
         <button class="btn btn-ghost btn-sm"
-          [disabled]="flatEntity() === 'destinations' ? !destTableData() : !flatTableData()"
+          [disabled]="flatEntity() === 'destinations' ? !destTableData() : !flatTableSections().length"
           (click)="exportFlatTableCsv()">
           <span class="material-icons">download</span> CSV
         </button>
@@ -481,7 +520,7 @@
             <span class="material-icons">playlist_add</span> Dodaj u izvestaj
           </button>
         }
-        @if (flatEntity() !== 'destinations' && flatTableData()) {
+        @if (flatEntity() !== 'destinations' && flatTableSections().length) {
           <button class="btn btn-ghost btn-sm" (click)="promptAddToQueue('entity-table')">
             <span class="material-icons">playlist_add</span> Dodaj u izvestaj
           </button>
@@ -576,32 +615,45 @@
         </div>
       }
     } @else {
-      @if (flatTableData() && !destTableLoading()) {
+      @if (flatTableSections().length && !destTableLoading()) {
         <div class="rp-dest-table-wrap">
-          <table class="rp-data-table">
-            <thead>
-              <tr>
-                @for (col of flatCols(); track col.key) {
-                  <th class="rp-dt-th">{{ col.header }}</th>
-                }
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of flatTableData()!; track row.name) {
-                <tr class="rp-dt-row">
-                  @for (col of flatCols(); track col.key) {
-                    @if (col.key === 'avgRating') {
-                      <td class="rp-dt-td">{{ $any(row)[col.key]?.toFixed(1) ?? '—' }}</td>
-                    } @else if (col.key === 'popularity') {
-                      <td class="rp-dt-td">{{ formatNum($any(row)[col.key] ?? 0) }}</td>
-                    } @else {
-                      <td class="rp-dt-td" [class.rp-dt-td--period]="col.key === 'name'">{{ $any(row)[col.key] ?? '—' }}</td>
+          @for (section of flatTableSections(); track section.entity) {
+            <div class="rp-flat-section">
+              <div class="rp-flat-section__header">
+                <span class="material-icons">{{ sectionIcon(section.entity) }}</span>
+                {{ section.label }}
+                <span class="rp-dest-group__count">({{ section.data.length }})</span>
+              </div>
+              @if (section.data.length) {
+                <table class="rp-data-table">
+                  <thead>
+                    <tr>
+                      @for (col of flatTableColDefs[section.entity]; track col.key) {
+                        <th class="rp-dt-th">{{ col.header }}</th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of section.data; track row.name) {
+                      <tr class="rp-dt-row">
+                        @for (col of flatTableColDefs[section.entity]; track col.key) {
+                          @if (col.key === 'avgRating') {
+                            <td class="rp-dt-td">{{ $any(row)[col.key]?.toFixed(1) ?? '—' }}</td>
+                          } @else if (col.key === 'popularity') {
+                            <td class="rp-dt-td">{{ formatNum($any(row)[col.key] ?? 0) }}</td>
+                          } @else {
+                            <td class="rp-dt-td" [class.rp-dt-td--period]="col.key === 'name'">{{ $any(row)[col.key] ?? '—' }}</td>
+                          }
+                        }
+                      </tr>
                     }
-                  }
-                </tr>
+                  </tbody>
+                </table>
+              } @else {
+                <p class="rp-flat-section__empty">Nema podataka</p>
               }
-            </tbody>
-          </table>
+            </div>
+          }
         </div>
       } @else if (destTableLoading()) {
         <div class="rp-chart-empty" style="padding: var(--sp-6)">
@@ -611,7 +663,7 @@
       } @else {
         <div class="rp-chart-empty" style="padding: var(--sp-6)">
           <span class="material-icons">table_view</span>
-          <p>Odaberite sortiranje i kliknite <strong>Generisi</strong></p>
+          <p>Odaberite entitete i kliknite <strong>Generisi</strong></p>
         </div>
       }
     }

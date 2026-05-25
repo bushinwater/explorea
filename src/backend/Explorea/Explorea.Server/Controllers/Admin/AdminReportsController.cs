@@ -60,7 +60,8 @@ namespace Explorea.Server.Controllers.Admin
             [FromQuery] string?       filterDifficulty,
             [FromQuery] decimal?      filterMinPrice,
             [FromQuery] decimal?      filterMaxPrice,
-            [FromQuery] List<string>? filterExtraFilters)
+            [FromQuery] List<string>? filterExtraFilters,
+            [FromQuery] Guid?         filterDestinationId)
         {
             try
             {
@@ -69,7 +70,8 @@ namespace Explorea.Server.Controllers.Admin
                     filterSubType, filterRegion, filterMinRating,
                     filterDifficulty, filterMinPrice, filterMaxPrice,
                     filterExtraFilters,
-                    GetCurrentUserId());
+                    GetCurrentUserId(),
+                    filterDestinationId);
                 return Ok(data);
             }
             catch (UnauthorizedAccessException ex)

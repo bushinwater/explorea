@@ -57,21 +57,23 @@ export class AdminReportsService {
   getEntityTable(
     entity: string,
     sortBy: string,
-    filterSubType?:      string | null,
-    filterRegion?:       string | null,
-    filterMinRating?:    string | null,
-    filterDifficulty?:   string | null,
-    filterMinPrice?:     number | null,
-    filterMaxPrice?:     number | null,
-    filterExtraFilters?: string[] | null,
+    filterSubType?:        string | null,
+    filterRegion?:         string | null,
+    filterMinRating?:      string | null,
+    filterDifficulty?:     string | null,
+    filterMinPrice?:       number | null,
+    filterMaxPrice?:       number | null,
+    filterExtraFilters?:   string[] | null,
+    filterDestinationId?:  string | null,
   ): Observable<EntityTableRow[]> {
     let params = new HttpParams().set('entity', entity).set('sortBy', sortBy);
-    if (filterSubType)    params = params.set('filterSubType',    filterSubType);
-    if (filterRegion)     params = params.set('filterRegion',     filterRegion);
-    if (filterMinRating)  params = params.set('filterMinRating',  filterMinRating);
-    if (filterDifficulty) params = params.set('filterDifficulty', filterDifficulty);
-    if (filterMinPrice != null) params = params.set('filterMinPrice', String(filterMinPrice));
-    if (filterMaxPrice != null) params = params.set('filterMaxPrice', String(filterMaxPrice));
+    if (filterSubType)         params = params.set('filterSubType',        filterSubType);
+    if (filterRegion)          params = params.set('filterRegion',         filterRegion);
+    if (filterMinRating)       params = params.set('filterMinRating',      filterMinRating);
+    if (filterDifficulty)      params = params.set('filterDifficulty',     filterDifficulty);
+    if (filterMinPrice != null) params = params.set('filterMinPrice',      String(filterMinPrice));
+    if (filterMaxPrice != null) params = params.set('filterMaxPrice',      String(filterMaxPrice));
+    if (filterDestinationId)   params = params.set('filterDestinationId',  filterDestinationId);
     if (filterExtraFilters?.length) {
       filterExtraFilters.forEach(f => { params = params.append('filterExtraFilters', f); });
     }

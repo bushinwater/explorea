@@ -25,7 +25,8 @@ namespace Explorea.Server.Repositories.Interfaces
             string? filterSubType, string? filterRegion, decimal? filterMinRating,
             string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
             List<string>? filterExtraFilters,
-            List<Guid>? destIds, Guid? placeOwnerUserId);
+            List<Guid>? destIds, Guid? placeOwnerUserId,
+            Guid? filterDestinationId = null);
         Task<List<string>> GetFilterOptionsAsync(string entity, string field, List<Guid>? destIds, Guid? placeOwnerUserId);
         Task<List<SubtypeOptionDto>> GetSubtypeOptionsAsync(string entity, List<Guid>? destIds, Guid? placeOwnerUserId);
 
