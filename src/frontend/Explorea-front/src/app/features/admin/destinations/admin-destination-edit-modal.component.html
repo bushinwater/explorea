@@ -107,6 +107,93 @@
             }
           </div>
 
+          <!-- Extra filters for destination category -->
+          @if (filterDefs().length) {
+            <div class="edit-field">
+              <label class="edit-field__label">Filteri kategorije</label>
+              <div class="ev-filter-defs">
+                @for (def of filterDefs(); track def.id) {
+                  @if (def.filterType === 'boolean') {
+                    <label class="ev-filter-chip" [class.ev-filter-chip--active]="extraFilters()[def.filterKey] === 'true'">
+                      <input type="checkbox"
+                        [checked]="extraFilters()[def.filterKey] === 'true'"
+                        (change)="updateExtraFilter(def.filterKey, $any($event.target).checked)" />
+                      {{ def.filterLabel }}
+                    </label>
+                  } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
+                    <div class="ev-filter-select-group">
+                      <span class="ev-filter-select-label">{{ def.filterLabel }}</span>
+                      <div class="ev-filter-opts">
+                        @for (opt of def.options; track opt.optionValue) {
+                          <label class="ev-filter-chip" [class.ev-filter-chip--active]="extraFilters()[def.filterKey] === opt.optionValue">
+                            <input type="radio" [name]="'de-' + def.filterKey" [value]="opt.optionValue"
+                              [checked]="extraFilters()[def.filterKey] === opt.optionValue"
+                              (change)="updateExtraFilter(def.filterKey, opt.optionValue)" />
+                            {{ opt.optionLabel }}
+                          </label>
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+              <button class="ev-add-filter-btn" type="button" (click)="toggleAddFilter()">
+                <span class="material-icons">{{ showAddFilter() ? 'close' : 'tune' }}</span>
+                {{ showAddFilter() ? 'Otkaži' : 'Dodaj filter' }}
+              </button>
+              @if (showAddFilter()) {
+                <div class="ev-add-inline-form ev-add-inline-form--filter">
+                  <input class="edit-field__input" type="text" placeholder="Ključ (npr. has_parking)"
+                    [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
+                  <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
+                    [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
+                  <select class="edit-field__select" [value]="newFilterType()"
+                    (change)="newFilterType.set($any($event.target).value)">
+                    <option value="boolean">Da/Ne</option>
+                    <option value="select">Izbor</option>
+                    <option value="multi_select">Višestruki izbor</option>
+                  </select>
+                  <button class="ev-add-inline-form__submit" type="button"
+                    [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
+                    (click)="addNewFilter()">
+                    @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
+                    @else { Dodaj filter }
+                  </button>
+                </div>
+              }
+            </div>
+          }
+          @if (!filterDefs().length && form.value.typeId) {
+            <div class="edit-field">
+              <label class="edit-field__label">Filteri kategorije</label>
+              <div class="ev-filter-empty">Nema definisanih filtera za ovu kategoriju.</div>
+              <button class="ev-add-filter-btn" type="button" (click)="toggleAddFilter()">
+                <span class="material-icons">{{ showAddFilter() ? 'close' : 'tune' }}</span>
+                {{ showAddFilter() ? 'Otkaži' : 'Dodaj filter' }}
+              </button>
+              @if (showAddFilter()) {
+                <div class="ev-add-inline-form ev-add-inline-form--filter">
+                  <input class="edit-field__input" type="text" placeholder="Ključ (npr. has_parking)"
+                    [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
+                  <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
+                    [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
+                  <select class="edit-field__select" [value]="newFilterType()"
+                    (change)="newFilterType.set($any($event.target).value)">
+                    <option value="boolean">Da/Ne</option>
+                    <option value="select">Izbor</option>
+                    <option value="multi_select">Višestruki izbor</option>
+                  </select>
+                  <button class="ev-add-inline-form__submit" type="button"
+                    [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
+                    (click)="addNewFilter()">
+                    @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
+                    @else { Dodaj filter }
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
           <div class="edit-field">
             <label class="edit-field__label" for="dest-country">Država</label>
             <select id="dest-country" class="edit-field__select" formControlName="countryId">
@@ -268,25 +355,25 @@
         </div>
       </div>
 
-      <!-- Footer -->
-      <footer class="edit-modal__footer">
-        <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="cancel.emit()">
-          Otkaži
-        </button>
-        <button
-          class="edit-modal__btn edit-modal__btn--save"
-          type="submit"
-          [disabled]="form.invalid || isSaving()"
-        >
-          @if (isSaving()) {
-            <span class="material-icons edit-modal__spin">sync</span>
-          } @else {
-            <span class="material-icons">save</span>
-          }
-          Sačuvaj
-        </button>
-      </footer>
-
     </form>
+
+    <footer class="edit-modal__footer">
+      <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="cancel.emit()">
+        Otkaži
+      </button>
+      <button
+        class="edit-modal__btn edit-modal__btn--save"
+        type="button"
+        (click)="save()"
+        [disabled]="form.invalid || isSaving()"
+      >
+        @if (isSaving()) {
+          <span class="material-icons edit-modal__spin">sync</span>
+        } @else {
+          <span class="material-icons">save</span>
+        }
+        Sačuvaj
+      </button>
+    </footer>
   }
 </aside>

@@ -26,6 +26,7 @@ export interface DestinationDetail {
   regionId: number | null;
   countryId: number | null;
   images: DestinationImage[];
+  extraFilters: Record<string, string>;
 }
 
 export type DestinationCategory =

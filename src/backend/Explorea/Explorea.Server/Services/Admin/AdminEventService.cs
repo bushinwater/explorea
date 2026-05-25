@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Explorea.API.DTOs.Admin.Event;
 using Explorea.API.Models;
 using Explorea.Server.Helpers;
@@ -192,6 +193,7 @@ namespace Explorea.Server.Services.Admin
                 DestinationId = dto.DestinationId,
                 PlaceId       = dto.PlaceId,
                 IsFeatured    = dto.IsFeatured,
+                ExtraFilters  = dto.ExtraFilters != null ? JsonSerializer.Serialize(dto.ExtraFilters) : null,
                 CreatedAt     = now,
                 UpdatedAt     = now,
                 CreatedBy     = createdBy,
@@ -241,6 +243,7 @@ namespace Explorea.Server.Services.Admin
             if (dto.DestinationId != null) target.DestinationId = dto.DestinationId;
             if (dto.PlaceId       != null) target.PlaceId       = dto.PlaceId;
             if (dto.IsFeatured    != null) target.IsFeatured    = dto.IsFeatured.Value;
+            if (dto.ExtraFilters  != null) target.ExtraFilters  = JsonSerializer.Serialize(dto.ExtraFilters);
 
             target.UpdatedAt = DateTimeOffset.UtcNow;
             target.UpdatedBy = updatedBy;
@@ -339,7 +342,10 @@ namespace Explorea.Server.Services.Admin
                                 .Select(i => new AdminEventImageDto { Id = i.Id, ImageUrl = i.ImageUrl, SortOrder = i.SortOrder })
                                 .ToList(),
             CreatedAt      = e.CreatedAt,
-            UpdatedAt      = e.UpdatedAt
+            UpdatedAt      = e.UpdatedAt,
+            ExtraFilters   = string.IsNullOrEmpty(e.ExtraFilters)
+                               ? null
+                               : JsonSerializer.Deserialize<Dictionary<string, string>>(e.ExtraFilters)
         };
 
   }

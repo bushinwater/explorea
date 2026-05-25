@@ -20,6 +20,7 @@ import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminDestinationsService } from './admin-destinations.service';
 import { CountryOption, DestinationImage, DestinationRow, InterestTagOption, RegionOption, TypeOption } from './admin-destinations.models';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 const MAX_IMAGES = 10;
@@ -97,6 +98,14 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
   protected readonly newTypeName      = signal('');
   protected readonly isCreatingType   = signal(false);
 
+  protected readonly filterDefs     = signal<FilterDefinition[]>([]);
+  protected readonly showAddFilter  = signal(false);
+  protected readonly newFilterKey   = signal('');
+  protected readonly newFilterLabel = signal('');
+  protected readonly newFilterType  = signal('boolean');
+  protected readonly isAddingFilter = signal(false);
+  protected readonly extraFilters   = signal<Record<string, string>>({});
+
   protected readonly visibilityOptions = [
     { value: 'published', label: 'Aktivno'     },
     { value: 'draft',     label: 'Na čekanju'  },
@@ -113,6 +122,7 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly svc: AdminDestinationsService,
+    private readonly lookupService: LookupService,
     private readonly http: HttpClient,
     protected readonly ui: AdminUiPreferencesService,
     private readonly cdr: ChangeDetectorRef,
@@ -132,6 +142,16 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
         const regionId = parseInt(regionVal);
         const stillValid = this.filteredRegions().some(r => r.id === regionId);
         if (!stillValid) this.form.patchValue({ regionId: null });
+      }
+      this.cdr.detectChanges();
+    });
+    this.form.controls.typeId.valueChanges.subscribe(val => {
+      const typeId = val ? parseInt(val) : null;
+      this.extraFilters.set({});
+      if (typeId !== null) {
+        this.loadFilterDefs(typeId);
+      } else {
+        this.filterDefs.set([]);
       }
       this.cdr.detectChanges();
     });
@@ -209,6 +229,7 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
         typeId:      v.typeId     ? parseInt(v.typeId)     : null,
         regionId:    v.regionId   ? parseInt(v.regionId)   : null,
         countryId:   v.countryId  ? parseInt(v.countryId)  : null,
+        extraFilters: v.typeId ? this.extraFilters() : undefined,
       }).subscribe({
         next: (row) => {
           this.createdRow.set(row);
@@ -258,6 +279,46 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
         error: () => {
           this.isCreatingType.set(false);
           this.error.set('Greška pri kreiranju kategorije.');
+          this.cdr.detectChanges();
+        },
+      }),
+    );
+  }
+
+  protected updateExtraFilter(key: string, value: string | boolean): void {
+    this.extraFilters.update(ef => {
+      const n = { ...ef };
+      if (value === false || value === '') delete n[key];
+      else n[key] = String(value);
+      return n;
+    });
+  }
+
+  protected toggleAddFilter(): void {
+    this.showAddFilter.update(v => !v);
+    this.newFilterKey.set('');
+    this.newFilterLabel.set('');
+    this.newFilterType.set('boolean');
+  }
+
+  protected addNewFilter(): void {
+    const typeId = this.form.value.typeId ? parseInt(this.form.value.typeId) : null;
+    const key = this.newFilterKey().trim();
+    const label = this.newFilterLabel().trim();
+    const type = this.newFilterType();
+    if (!typeId || !key || !label || this.isAddingFilter()) return;
+    this.isAddingFilter.set(true);
+    this.sub.add(
+      this.svc.createFilterDefinition(typeId, key, label, type).subscribe({
+        next: def => {
+          this.filterDefs.update(d => [...d, def]);
+          this.isAddingFilter.set(false);
+          this.showAddFilter.set(false);
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.isAddingFilter.set(false);
+          this.error.set('Kreiranje filtera nije uspelo.');
           this.cdr.detectChanges();
         },
       }),
@@ -383,6 +444,15 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
           this.error.set('Greška pri brisanju slike.');
           this.cdr.detectChanges();
         },
+      }),
+    );
+  }
+
+  private loadFilterDefs(typeId: number): void {
+    this.sub.add(
+      this.lookupService.getFilterDefinitions('destination', typeId).subscribe({
+        next: defs => { this.filterDefs.set(defs); this.cdr.detectChanges(); },
+        error: () => this.filterDefs.set([]),
       }),
     );
   }

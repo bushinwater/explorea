@@ -24,5 +24,6 @@ namespace Explorea.API.DTOs.Admin.Destination
         public List<AdminDestinationImageDto> Images { get; set; } = new();
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
+        public Dictionary<string, string>? ExtraFilters { get; set; }
     }
 }

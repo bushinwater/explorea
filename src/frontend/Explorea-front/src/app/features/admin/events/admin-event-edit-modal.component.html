@@ -39,11 +39,11 @@
           <div class="edit-field ev-field--full">
             <label class="edit-field__label" for="ev-e-type">Tip <span class="edit-field__required">*</span></label>
             <div class="ev-type-row">
-              <select id="ev-e-type" class="edit-field__select" [value]="form().typeId ?? ''"
+              <select id="ev-e-type" class="edit-field__select"
                 (change)="updateType($any($event.target).value)">
-                <option value="">Izaberi tip</option>
+                <option value="" [selected]="form().typeId === null">Izaberi tip</option>
                 @for (t of allTypeOptions; track t.value) {
-                  <option [value]="t.value">{{ t.label }}</option>
+                  <option [value]="t.value" [selected]="form().typeId === t.value">{{ t.label }}</option>
                 }
               </select>
               <button class="ev-add-inline-btn" type="button" (click)="toggleAddType()" title="Dodaj novi tip">

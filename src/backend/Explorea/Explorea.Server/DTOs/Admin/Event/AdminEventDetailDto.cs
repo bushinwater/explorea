@@ -29,5 +29,6 @@ namespace Explorea.API.DTOs.Admin.Event
         public List<AdminEventImageDto> Images { get; set; } = new();
         public DateTimeOffset  CreatedAt      { get; set; }
         public DateTimeOffset  UpdatedAt      { get; set; }
+        public Dictionary<string, string>? ExtraFilters { get; set; }
     }
 }

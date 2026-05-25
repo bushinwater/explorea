@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Explorea.API.DTOs.Admin.Destination;
 using Explorea.API.Models;
 using Explorea.Server.Data;
@@ -308,6 +309,7 @@ namespace Explorea.Server.Services.Admin
                 HeroImageUrl = dto.HeroImageUrl,
                 Visibility  = dto.Visibility,
                 TypeId      = dto.TypeId,
+                ExtraFilters = dto.ExtraFilters != null ? JsonSerializer.Serialize(dto.ExtraFilters) : null,
                 CreatedAt   = now,
                 UpdatedAt   = now,
                 CreatedBy   = createdBy,
@@ -359,6 +361,9 @@ namespace Explorea.Server.Services.Admin
 
             if (dto.ClearTypeId)      destination.TypeId = null;
             else if (dto.TypeId.HasValue) destination.TypeId = dto.TypeId.Value;
+
+            if (dto.ExtraFilters != null)
+                destination.ExtraFilters = JsonSerializer.Serialize(dto.ExtraFilters);
 
             destination.UpdatedAt = DateTimeOffset.UtcNow;
             destination.UpdatedBy = updatedBy;
@@ -423,7 +428,10 @@ namespace Explorea.Server.Services.Admin
                                 })
                                 .ToList(),
             CreatedAt       = d.CreatedAt,
-            UpdatedAt       = d.UpdatedAt
+            UpdatedAt       = d.UpdatedAt,
+            ExtraFilters    = string.IsNullOrEmpty(d.ExtraFilters)
+                                ? null
+                                : JsonSerializer.Deserialize<Dictionary<string, string>>(d.ExtraFilters)
         };
 
         private async Task<Dictionary<Guid, int>> GetViewCountsAsync(List<Destination> destinations)

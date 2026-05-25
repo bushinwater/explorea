@@ -183,18 +183,28 @@ export class EventEditModalComponent implements OnInit, AfterViewInit, OnDestroy
     this.mapLatitude.set(ev.latitude ?? null);
     this.mapLongitude.set(ev.longitude ?? null);
 
-    // Load full event images from API (row may have empty imageItems)
+    // Load full event detail from API (list row may have null typeId / no extraFilters)
     this.sub.add(
       this.eventsService.getEventDetail(ev.id).subscribe({
         next: detail => {
           this.images.set([...(detail.imageItems ?? [])]);
           const heroImg = detail.imageItems?.find(i => i.imageUrl === detail.heroImageUrl);
           this.heroImageId.set(heroImg?.id ?? detail.imageItems?.[0]?.id ?? null);
+          // Refresh typeId and extraFilters from full detail
+          const freshTypeId = detail.typeId;
+          const freshExtraFilters = detail.extraFilters ?? {};
+          this.form.update(f => ({
+            ...f,
+            typeId: freshTypeId ?? f.typeId,
+            extraFilters: Object.keys(freshExtraFilters).length ? freshExtraFilters : f.extraFilters,
+          }));
+          if (freshTypeId !== null) this.loadFilterDefs(freshTypeId);
           this.cdr.detectChanges();
         },
         error: () => {
           this.images.set([...(ev.imageItems ?? [])]);
           this.heroImageId.set(ev.imageItems?.[0]?.id ?? null);
+          if (ev.typeId !== null) this.loadFilterDefs(ev.typeId);
         },
       }),
     );
@@ -211,7 +221,7 @@ export class EventEditModalComponent implements OnInit, AfterViewInit, OnDestroy
       }),
     );
 
-    // Load filter definitions if type is set
+    // Load filter definitions from initial ev (shown while detail loads)
     if (ev.typeId !== null) this.loadFilterDefs(ev.typeId);
 
     // Pre-populate destination name and auto-fill country/region

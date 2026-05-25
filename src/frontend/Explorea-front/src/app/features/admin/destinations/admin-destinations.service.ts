@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
+import { FilterDefinition } from '../../../core/services/lookup.service';
 import {
   CountryOption,
   DestinationCategory,
@@ -117,10 +118,17 @@ export class AdminDestinationsService {
     name: string; slug: string; description: string;
     latitude: number; longitude: number; visibility: string;
     typeId?: number | null; regionId?: number | null; countryId?: number | null;
+    extraFilters?: Record<string, string>;
   }): Observable<DestinationRow> {
     return this.http.post<ApiDestinationItem>('/api/admin/destinations', dto).pipe(
       map((item) => this.mapToRow(item)),
     );
+  }
+
+  createFilterDefinition(typeId: number, filterKey: string, filterLabel: string, filterType: string): Observable<FilterDefinition> {
+    return this.http.post<FilterDefinition>('/api/admin/filter-definitions', {
+      entityType: 'destination', typeId, filterKey, filterLabel, filterType,
+    });
   }
 
   createType(name: string): Observable<{ id: number; name: string }> {
@@ -148,6 +156,7 @@ export class AdminDestinationsService {
           imageUrl: img.imageUrl,
           sortOrder: img.sortOrder,
         })),
+        extraFilters: (item as any).extraFilters ?? {},
       })),
     );
   }
@@ -158,7 +167,7 @@ export class AdminDestinationsService {
     );
   }
 
-  updateDestination(id: string, dto: Partial<{ name: string; description: string; latitude: number; longitude: number; visibility: string; typeId: number | null; clearTypeId: boolean; regionId: number | null; clearRegionId: boolean; countryId: number | null; clearCountryId: boolean }>): Observable<DestinationRow> {
+  updateDestination(id: string, dto: Partial<{ name: string; description: string; latitude: number; longitude: number; visibility: string; typeId: number | null; clearTypeId: boolean; regionId: number | null; clearRegionId: boolean; countryId: number | null; clearCountryId: boolean; extraFilters: Record<string, string> }>): Observable<DestinationRow> {
     return this.http.put<ApiDestinationItem>(`/api/admin/destinations/${id}`, dto).pipe(
       map((item) => this.mapToRow(item)),
     );
