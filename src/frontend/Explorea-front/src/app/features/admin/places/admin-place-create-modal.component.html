@@ -1,6 +1,6 @@
-<div class="edit-modal__backdrop" (click)="cancel.emit()"></div>
+<div class="edit-modal__backdrop" (click)="requestClose()"></div>
 
-<div class="edit-modal__panel" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+<div class="edit-modal__panel" [class.edit-modal__panel--closing]="isClosing()" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
 
   <!-- Header -->
   <div class="edit-modal__header">
@@ -11,7 +11,7 @@
         <p class="edit-modal__subtitle">Popuni podatke o objektu i označi lokaciju na mapi.</p>
       </div>
     </div>
-    <button class="edit-modal__close" type="button" (click)="cancel.emit()">
+    <button class="edit-modal__close" type="button" (click)="requestClose()">
       <span class="material-icons">close</span>
     </button>
   </div>
@@ -379,7 +379,7 @@
 
   <!-- Footer -->
   <div class="edit-modal__footer">
-    <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="cancel.emit()">
+    <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="requestClose()">
       Otkaži
     </button>
     <button class="edit-modal__btn edit-modal__btn--save" type="button"

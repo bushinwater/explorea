@@ -93,6 +93,7 @@ export class PlaceEditModalComponent implements OnInit, OnDestroy {
   protected readonly MAX_IMAGES = MAX_IMAGES;
 
   // Core state
+  protected readonly isClosing      = signal(false);
   protected readonly isLoading      = signal(true);
   protected readonly isSaving       = signal(false);
   protected readonly isGeocoding    = signal(false);
@@ -224,6 +225,12 @@ export class PlaceEditModalComponent implements OnInit, OnDestroy {
     this.sub.unsubscribe();
     this.themeObserver?.disconnect();
     this.map?.remove();
+  }
+
+  protected requestClose(): void {
+    if (this.isClosing()) return;
+    this.isClosing.set(true);
+    setTimeout(() => this.cancel.emit(), 220);
   }
 
   protected get descLength(): number {
