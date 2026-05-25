@@ -144,7 +144,7 @@
     <!-- Table -->
     <div class="user-table-wrap">
       @if (isLoading()) {
-        <app-table-skeleton [rows]="17" />
+        <app-table-skeleton [rows]="20" />
       } @else if (pagedUsers().length) {
         <table class="user-table">
           <thead>
@@ -162,7 +162,13 @@
               <tr class="user-row">
                 <td class="user-td">
                   <div class="user-identity">
-                    <div class="user-avatar">{{ initials(user) }}</div>
+                    <div class="user-avatar">
+                      @if (user.avatarUrl) {
+                        <img [src]="user.avatarUrl" [alt]="initials(user)" class="user-avatar__img" />
+                      } @else {
+                        {{ initials(user) }}
+                      }
+                    </div>
                     <div class="user-identity__info">
                       <span class="user-identity__name">{{ user.firstName }} {{ user.lastName }}</span>
                       <span class="user-identity__email">{{ user.email }}</span>

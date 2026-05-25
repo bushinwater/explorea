@@ -45,7 +45,7 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
 
   protected readonly filters = signal<UserDirectoryFilters>({
     page: 1,
-    pageSize: 17,
+    pageSize: 20,
     search: '',
     role: 'all',
     region: 'all',
