@@ -90,6 +90,7 @@ export interface PlaceDetail {
   priceRange: string | null;
   pricePerNight: number | null;
   phone: string | null;
+  email: string | null;
   websiteUrl: string | null;
   avgRating: number;
   isFeatured: boolean;
@@ -174,6 +175,7 @@ export interface CreatePlaceDto {
   longitude?: number;
   priceRange?: string;
   phone?: string;
+  email?: string;
   websiteUrl?: string;
   isFeatured?: boolean;
   extraFilters?: Record<string, string>;
@@ -191,6 +193,7 @@ export interface UpdatePlaceDto {
   longitude?: number;
   priceRange?: string;
   phone?: string;
+  email?: string;
   websiteUrl?: string;
   isFeatured?: boolean;
   approvalStatus?: string;

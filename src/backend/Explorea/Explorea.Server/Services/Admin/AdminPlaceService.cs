@@ -203,6 +203,7 @@ namespace Explorea.Server.Services.Admin
                 Location = CreatePoint(dto.Latitude, dto.Longitude),
                 PriceRange = dto.PriceRange,
                 Phone = dto.Phone,
+                Email = dto.Email,
                 WebsiteUrl = dto.WebsiteUrl,
                 IsFeatured = dto.IsFeatured,
                 ApprovalStatus = approvalStatus,
@@ -308,6 +309,7 @@ namespace Explorea.Server.Services.Admin
             if (dto.TypeId.HasValue) place.TypeId = dto.TypeId.Value;
             if (dto.PriceRange != null) place.PriceRange = dto.PriceRange;
             if (dto.Phone != null) place.Phone = dto.Phone;
+            if (dto.Email != null) place.Email = dto.Email;
             if (dto.WebsiteUrl != null) place.WebsiteUrl = dto.WebsiteUrl;
             if (dto.IsFeatured.HasValue) place.IsFeatured = dto.IsFeatured.Value;
 
@@ -538,6 +540,7 @@ namespace Explorea.Server.Services.Admin
             PriceRange = p.PriceRange,
             PricePerNight = p.PricePerNight,
             Phone = p.Phone,
+            Email = p.Email,
             WebsiteUrl = p.WebsiteUrl,
             AvgRating = p.AvgRating,
             IsFeatured = p.IsFeatured,

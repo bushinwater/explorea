@@ -17,6 +17,7 @@ namespace Explorea.API.DTOs.Admin.Place
 
         public string? PriceRange { get; set; }
         public string? Phone { get; set; }
+        public string? Email { get; set; }
         public string? WebsiteUrl { get; set; }
 
         public bool IsFeatured { get; set; }

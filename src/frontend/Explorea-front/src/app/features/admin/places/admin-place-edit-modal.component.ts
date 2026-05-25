@@ -75,13 +75,14 @@ export class PlaceEditModalComponent implements OnInit, OnDestroy {
   protected readonly form = new FormGroup({
     name:           new FormControl('', [Validators.required, Validators.maxLength(200)]),
     slug:           new FormControl('', [Validators.required, Validators.maxLength(200)]),
-    typeId:         new FormControl<string | null>(null),
-    description:    new FormControl('', [Validators.maxLength(MAX_DESC)]),
+    typeId:         new FormControl<string | null>(null, [Validators.required]),
+    description:    new FormControl('', [Validators.required, Validators.maxLength(MAX_DESC)]),
     address:        new FormControl(''),
-    regionId:       new FormControl<string | null>(null),
+    regionId:       new FormControl<string | null>(null, [Validators.required]),
     cityId:         new FormControl<string | null>(null),
     priceRange:     new FormControl(''),
-    phone:          new FormControl(''),
+    phone:          new FormControl('', [Validators.required, Validators.pattern(/^\+?[\d\s\(\)\-\.]{7,20}$/)]),
+    email:          new FormControl('', [Validators.required, Validators.email]),
     websiteUrl:     new FormControl(''),
     approvalStatus: new FormControl('approved'),
     isFeatured:     new FormControl(false),
@@ -94,6 +95,7 @@ export class PlaceEditModalComponent implements OnInit, OnDestroy {
 
   // Core state
   protected readonly isClosing      = signal(false);
+  protected readonly saveAttempted  = signal(false);
   protected readonly isLoading      = signal(true);
   protected readonly isSaving       = signal(false);
   protected readonly isGeocoding    = signal(false);
@@ -169,6 +171,7 @@ export class PlaceEditModalComponent implements OnInit, OnDestroy {
             address:        detail.address ?? '',
             priceRange:     detail.priceRange ?? '',
             phone:          detail.phone ?? '',
+            email:          detail.email ?? '',
             websiteUrl:     detail.websiteUrl ?? '',
             approvalStatus: detail.status,
             isFeatured:     detail.isFeatured,
@@ -199,7 +202,17 @@ export class PlaceEditModalComponent implements OnInit, OnDestroy {
             this.originalHeroImageId = hero.id;
           }
 
-          this.loadCities(undefined, detail.cityId ?? undefined);
+          if (detail.region) {
+            const region = this.regions.find(r => r.name === detail.region);
+            if (region) {
+              this.form.patchValue({ regionId: String(region.id) });
+              this.loadCities(region.id, detail.cityId ?? undefined);
+            } else {
+              this.loadCities(undefined, detail.cityId ?? undefined);
+            }
+          } else {
+            this.loadCities(undefined, detail.cityId ?? undefined);
+          }
 
           if (detail.typeId != null) {
             this.loadFilterDefs(detail.typeId);
@@ -486,7 +499,23 @@ export class PlaceEditModalComponent implements OnInit, OnDestroy {
 
   // ── Save ────────────────────────────────────────────────────────────────
   protected save(): void {
-    if (this.form.invalid || this.isSaving()) return;
+    this.saveAttempted.set(true);
+    this.form.markAllAsTouched();
+    this.cdr.detectChanges();
+    if (this.form.invalid) return;
+    if (!this.selectedDestinationId()) {
+      this.error.set('Destinacija je obavezna.');
+      return;
+    }
+    if (this.allInterestTags().length > 0 && this.selectedInterestIds().length === 0) {
+      this.error.set('Izaberi bar jedno interesovanje.');
+      return;
+    }
+    if (this.isSuperAdmin && !this.selectedCountryId()) {
+      this.error.set('Država je obavezna.');
+      return;
+    }
+    if (this.isSaving()) return;
     this.isSaving.set(true);
     this.error.set('');
 
@@ -503,6 +532,7 @@ export class PlaceEditModalComponent implements OnInit, OnDestroy {
         destinationId:  this.selectedDestinationId() ?? undefined,
         priceRange:     v.priceRange ?? undefined,
         phone:          v.phone ?? undefined,
+        email:          v.email ?? undefined,
         websiteUrl:     v.websiteUrl ?? undefined,
         approvalStatus: v.approvalStatus ?? undefined,
         isFeatured:     v.isFeatured ?? undefined,

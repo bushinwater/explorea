@@ -18,6 +18,7 @@ export interface PlaceCard {
 export interface PlaceDetail extends PlaceCard {
   description: string | null;
   phone: string | null;
+  email: string | null;
   websiteUrl: string | null;
   location: { lat: number; lng: number } | null;
   images: { imageUrl: string; caption: string | null; sortOrder: number }[];

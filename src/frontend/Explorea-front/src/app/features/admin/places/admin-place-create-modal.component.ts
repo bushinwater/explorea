@@ -18,6 +18,7 @@ import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminPlacesService } from './admin-places.service';
+import { AdminProfileService } from '../core/services/admin-profile.service';
 import {
   CityOption,
   CountryOption,
@@ -73,13 +74,14 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
   protected readonly form = new FormGroup({
     name:        new FormControl('', [Validators.required, Validators.maxLength(200)]),
     slug:        new FormControl('', [Validators.required, Validators.maxLength(200)]),
-    typeId:      new FormControl<string | null>(null),
-    description: new FormControl('', [Validators.maxLength(MAX_DESC)]),
+    typeId:      new FormControl<string | null>(null, [Validators.required]),
+    description: new FormControl('', [Validators.required, Validators.maxLength(MAX_DESC)]),
     address:     new FormControl(''),
-    regionId:    new FormControl<string | null>(null),
+    regionId:    new FormControl<string | null>(null, [Validators.required]),
     cityId:      new FormControl<string | null>(null),
     priceRange:  new FormControl(''),
-    phone:       new FormControl(''),
+    phone:       new FormControl('', [Validators.required, Validators.pattern(/^\+?[\d\s\(\)\-\.]{7,20}$/)]),
+    email:       new FormControl('', [Validators.required, Validators.email]),
     websiteUrl:  new FormControl(''),
     latitude:    new FormControl<number | null>(null),
     longitude:   new FormControl<number | null>(null),
@@ -90,6 +92,7 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
 
   // Core state
   protected readonly isClosing      = signal(false);
+  protected readonly saveAttempted  = signal(false);
   protected readonly isSaving       = signal(false);
   protected readonly isGeocoding    = signal(false);
   protected readonly error          = signal('');
@@ -144,12 +147,18 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
     private readonly http: HttpClient,
     protected readonly ui: AdminUiPreferencesService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly profileSvc: AdminProfileService,
   ) {}
 
   ngOnInit(): void {
     this.loadCities();
     this.loadInterestTags();
     setTimeout(() => this.initMap(), 50);
+
+    const profile = this.profileSvc.profile();
+    if (profile?.email) {
+      this.form.patchValue({ email: profile.email });
+    }
 
     this.form.get('name')!.valueChanges.subscribe((name) => {
       if (name && !this.createdId) {
@@ -432,7 +441,23 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
 
   // ── Save ────────────────────────────────────────────────────────────────
   protected save(): void {
-    if (this.form.invalid || this.isSaving()) return;
+    this.saveAttempted.set(true);
+    this.form.markAllAsTouched();
+    this.cdr.detectChanges();
+    if (this.form.invalid) return;
+    if (!this.selectedDestinationId()) {
+      this.error.set('Destinacija je obavezna.');
+      return;
+    }
+    if (this.allInterestTags().length > 0 && this.selectedInterestIds().length === 0) {
+      this.error.set('Izaberi bar jedno interesovanje.');
+      return;
+    }
+    if (this.isSuperAdmin && !this.selectedCountryId()) {
+      this.error.set('Država je obavezna.');
+      return;
+    }
+    if (this.isSaving()) return;
     this.isSaving.set(true);
     this.error.set('');
 
@@ -451,6 +476,7 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
         longitude:    v.longitude ?? undefined,
         priceRange:   v.priceRange || undefined,
         phone:        v.phone || undefined,
+        email:        v.email || undefined,
         websiteUrl:   v.websiteUrl || undefined,
         extraFilters: Object.keys(ef).length ? ef : undefined,
       }).subscribe({

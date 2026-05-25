@@ -17,6 +17,7 @@ namespace Explorea.API.DTOs.Admin.Place
         public string? PriceRange { get; set; }
         public decimal? PricePerNight { get; set; }
         public string? Phone { get; set; }
+        public string? Email { get; set; }
         public string? WebsiteUrl { get; set; }
 
         public decimal AvgRating { get; set; }
