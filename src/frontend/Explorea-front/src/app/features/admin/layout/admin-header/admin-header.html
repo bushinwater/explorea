@@ -77,7 +77,7 @@
       <div class="header__backdrop" (click)="showNotifications = false"></div>
     }
 
-    <div class="header__user-wrap" (click)="showRolePicker = !showRolePicker; showNotifications = false">
+    <div class="header__user-wrap">
       <div class="header__user-info">
         <span class="header__user-name">{{ auth.userName }}</span>
         <span class="header__user-role">{{ ui.t('shell.role.' + auth.role()) }}</span>
@@ -95,22 +95,6 @@
         }
       </div>
     </div>
-
-    <!-- Role picker dropdown (demo) -->
-    @if (showRolePicker) {
-      <div class="header__role-dropdown">
-        <div class="header__role-dropdown-title">{{ ui.t('dashboard.header.demo_role') }}</div>
-        @for (r of roles; track r) {
-          <button
-            class="header__role-option"
-            [class.header__role-option--active]="auth.role() === r"
-            (click)="selectRole(r)">
-            {{ ui.t('shell.role.' + r) }}
-          </button>
-        }
-      </div>
-      <div class="header__backdrop" (click)="showRolePicker = false"></div>
-    }
 
   </div>
 </header>

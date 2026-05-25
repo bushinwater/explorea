@@ -5,7 +5,6 @@ import { Subscription } from 'rxjs';
 import { DashboardAuthService } from '../../core/services/dashboard-auth.service';
 import { LayoutService } from '../../core/services/layout.service';
 import { AdminUiPreferencesService } from '../../core/services/admin-ui-preferences.service';
-import { AdminRole } from '../../core/models/admin.models';
 import {
   AdminBroadcastNotificationService,
   AdminNotificationItem,
@@ -20,10 +19,7 @@ import {
   styleUrl: './admin-header.css',
 })
 export class AdminHeader implements OnInit, OnDestroy {
-  showRolePicker = false;
   showNotifications = false;
-
-  readonly roles: AdminRole[] = ['super_admin', 'tourist_organization', 'place_owner'];
 
   readonly notifications = signal<AdminNotificationItem[]>([]);
   readonly unreadCount = signal(0);
@@ -48,14 +44,8 @@ export class AdminHeader implements OnInit, OnDestroy {
     this.subscription.unsubscribe();
   }
 
-  selectRole(role: AdminRole): void {
-    this.auth.setRole(role);
-    this.showRolePicker = false;
-  }
-
   toggleNotifications(): void {
     this.showNotifications = !this.showNotifications;
-    this.showRolePicker = false;
 
     if (this.showNotifications) {
       this.loadNotifications();

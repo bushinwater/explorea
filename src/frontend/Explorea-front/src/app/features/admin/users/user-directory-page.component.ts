@@ -107,7 +107,7 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
     if (!total) return '—';
     const mPct = Math.round((s.maleUsers / total) * 100);
     const fPct = 100 - mPct;
-    return `${mPct}% M / ${fPct}% Ž`;
+    return `${mPct}% / ${fPct}%`;
   });
 
   protected readonly avgAgeValue = computed(() => {
