@@ -9,12 +9,14 @@ import {
   ActivityStats,
   CategoryOption,
   CityOption,
+  CountryOption,
   CreateActivityDto,
   DestinationOption,
   InterestTagOption,
   RegionOption,
   UpdateActivityDto,
 } from './admin-activities.models';
+import { FilterDefinition } from '../../../core/services/lookup.service';
 
 @Injectable({ providedIn: 'root' })
 export class AdminActivitiesService {
@@ -67,20 +69,53 @@ export class AdminActivitiesService {
   }
 
   getRegions(): Observable<RegionOption[]> {
-    return this.http.get<RegionOption[]>('/api/admin/destinations/regions');
+    return this.http.get<any[]>('/api/admin/destinations/regions').pipe(
+      map(items => items.map(r => ({ id: r.id, name: r.name, countryId: r.countryId ?? null }))),
+    );
   }
 
-  getDestination(id: string): Observable<{ id: string; name: string; latitude: number | null; longitude: number | null }> {
-    return this.http.get<{ id: string; name: string; latitude: number | null; longitude: number | null }>(`/api/admin/destinations/${id}`);
+  getCountries(): Observable<CountryOption[]> {
+    return this.http.get<CountryOption[]>('/api/admin/destinations/countries');
+  }
+
+  getDestination(id: string): Observable<{ id: string; name: string; latitude: number | null; longitude: number | null; regionId: number | null; countryId: number | null }> {
+    return this.http.get<any>(`/api/admin/destinations/${id}`).pipe(
+      map(item => ({
+        id: item.id,
+        name: item.name,
+        latitude: item.latitude ?? null,
+        longitude: item.longitude ?? null,
+        regionId: item.regionId ?? null,
+        countryId: item.countryId ?? null,
+      })),
+    );
   }
 
   searchDestinations(query: string, regionId?: number): Observable<DestinationOption[]> {
     const params: Record<string, string> = { search: query, page: '1', pageSize: '8' };
     if (regionId !== undefined) params['regionId'] = String(regionId);
-    return this.http.get<{ total: number; items: { id: string; name: string; city?: string | null }[] }>(
+    return this.http.get<{ total: number; items: any[] }>(
       `/api/admin/destinations`,
       { params },
-    ).pipe(map(r => r.items.map(d => ({ id: d.id, name: d.name, city: d.city ?? null }))));
+    ).pipe(map(r => r.items.map(d => ({
+      id: d.id,
+      name: d.name,
+      city: d.city ?? null,
+      regionId: d.regionId ?? null,
+      countryId: d.countryId ?? null,
+      latitude: d.latitude ?? null,
+      longitude: d.longitude ?? null,
+    }))));
+  }
+
+  createCategory(name: string): Observable<CategoryOption> {
+    return this.http.post<CategoryOption>(`${this.base}/categories`, { name });
+  }
+
+  createFilterDefinition(categoryId: number, filterKey: string, filterLabel: string, filterType: string): Observable<FilterDefinition> {
+    return this.http.post<FilterDefinition>('/api/admin/filter-definitions', {
+      entityType: 'activity', typeId: categoryId, filterKey, filterLabel, filterType,
+    });
   }
 
   getActivityInterests(id: string): Observable<InterestTagOption[]> {

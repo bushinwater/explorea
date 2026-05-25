@@ -727,15 +727,114 @@
 
         <div class="edit-field">
           <label class="edit-field__label">Kategorija <span class="edit-field__required">*</span></label>
-          <select class="edit-field__select"
-            [value]="createForm().categoryId"
-            (change)="updateCreateField('categoryId', +$any($event.target).value)">
-            <option value="0" disabled>Izaberi kategoriju</option>
-            @for (cat of categories(); track cat.id) {
-              <option [value]="cat.id">{{ cat.name }}</option>
-            }
-          </select>
+          <div class="ev-type-row">
+            <select class="edit-field__select"
+              (change)="onModalCategoryChange($any($event.target).value)">
+              <option value="0" disabled [selected]="!createForm().categoryId">Izaberi kategoriju</option>
+              @for (cat of allCategoryOptions(); track cat.id) {
+                <option [value]="cat.id" [selected]="createForm().categoryId === cat.id">{{ cat.name }}</option>
+              }
+            </select>
+            <button class="ev-add-inline-btn" type="button" (click)="toggleAddCategory()" title="Dodaj novu kategoriju">
+              <span class="material-icons">{{ showAddCategory() ? 'close' : 'add' }}</span>
+            </button>
+          </div>
+          @if (showAddCategory()) {
+            <div class="ev-add-inline-form">
+              <input class="edit-field__input" type="text" placeholder="Naziv nove kategorije"
+                [value]="newCategoryName()" (input)="newCategoryName.set($any($event.target).value)" />
+              <button class="ev-add-inline-form__submit" type="button"
+                [disabled]="!newCategoryName().trim() || isAddingCategory()" (click)="addNewCategory()">
+                @if (isAddingCategory()) { <span class="material-icons edit-modal__spin">sync</span> }
+                @else { Dodaj }
+              </button>
+            </div>
+          }
         </div>
+
+        @if (modalFilterDefs().length) {
+          <div class="edit-field">
+            <label class="edit-field__label">Kategorije / filteri</label>
+            <div class="ev-filter-defs">
+              @for (def of modalFilterDefs(); track def.id) {
+                @if (def.filterType === 'boolean') {
+                  <label class="ev-filter-chip" [class.ev-filter-chip--active]="modalExtraFilters()[def.filterKey] === 'true'">
+                    <input type="checkbox"
+                      [checked]="modalExtraFilters()[def.filterKey] === 'true'"
+                      (change)="updateModalExtraFilter(def.filterKey, $any($event.target).checked)" />
+                    {{ def.filterLabel }}
+                  </label>
+                } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
+                  <div class="ev-filter-select-group">
+                    <span class="ev-filter-select-label">{{ def.filterLabel }}</span>
+                    <div class="ev-filter-opts">
+                      @for (opt of def.options; track opt.optionValue) {
+                        <label class="ev-filter-chip" [class.ev-filter-chip--active]="modalExtraFilters()[def.filterKey] === opt.optionValue">
+                          <input type="radio" [name]="'ac-fc-' + def.filterKey" [value]="opt.optionValue"
+                            [checked]="modalExtraFilters()[def.filterKey] === opt.optionValue"
+                            (change)="updateModalExtraFilter(def.filterKey, opt.optionValue)" />
+                          {{ opt.optionLabel }}
+                        </label>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+            <button class="ev-add-filter-btn" type="button" (click)="toggleAddFilter()">
+              <span class="material-icons">{{ showAddFilter() ? 'close' : 'tune' }}</span>
+              {{ showAddFilter() ? 'Otkaži' : 'Dodaj filter' }}
+            </button>
+            @if (showAddFilter()) {
+              <div class="ev-add-inline-form ev-add-inline-form--filter">
+                <input class="edit-field__input" type="text" placeholder="Ključ (npr. has_parking)"
+                  [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
+                <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
+                  [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
+                <select class="edit-field__select" [value]="newFilterType()"
+                  (change)="newFilterType.set($any($event.target).value)">
+                  <option value="boolean">Da/Ne</option>
+                  <option value="select">Izbor</option>
+                  <option value="multi_select">Višestruki izbor</option>
+                </select>
+                <button class="ev-add-inline-form__submit" type="button"
+                  [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
+                  (click)="addNewFilter()">
+                  @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
+                  @else { Dodaj filter }
+                </button>
+              </div>
+            }
+          </div>
+        }
+        @if (!modalFilterDefs().length && createForm().categoryId) {
+          <div class="edit-field">
+            <button class="ev-add-filter-btn" type="button" (click)="toggleAddFilter()">
+              <span class="material-icons">{{ showAddFilter() ? 'close' : 'tune' }}</span>
+              {{ showAddFilter() ? 'Otkaži' : 'Dodaj filter' }}
+            </button>
+            @if (showAddFilter()) {
+              <div class="ev-add-inline-form ev-add-inline-form--filter">
+                <input class="edit-field__input" type="text" placeholder="Ključ (npr. has_parking)"
+                  [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
+                <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
+                  [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
+                <select class="edit-field__select" [value]="newFilterType()"
+                  (change)="newFilterType.set($any($event.target).value)">
+                  <option value="boolean">Da/Ne</option>
+                  <option value="select">Izbor</option>
+                  <option value="multi_select">Višestruki izbor</option>
+                </select>
+                <button class="ev-add-inline-form__submit" type="button"
+                  [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
+                  (click)="addNewFilter()">
+                  @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
+                  @else { Dodaj filter }
+                </button>
+              </div>
+            }
+          </div>
+        }
 
         <div class="edit-field">
           <label class="edit-field__label">Opis</label>
@@ -800,13 +899,24 @@
 
         @if (isSuperAdmin()) {
           <div class="edit-field">
+            <label class="edit-field__label">Država <span class="edit-field__required">*</span></label>
+            <select class="edit-field__select"
+              [value]="selectedCountryId() ?? ''"
+              (change)="onModalCountryChange($any($event.target).value)">
+              <option value="" disabled>Izaberi državu</option>
+              @for (c of countries(); track c.id) {
+                <option [value]="c.id" [selected]="selectedCountryId() === c.id">{{ c.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="edit-field">
             <label class="edit-field__label">Region <span class="edit-field__required">*</span></label>
             <select class="edit-field__select"
               [value]="modalRegionId()"
               (change)="onModalRegionChange($any($event.target).value)">
               <option value="all" disabled>Izaberi region</option>
-              @for (r of regions(); track r.id) {
-                <option [value]="r.id">{{ r.name }}</option>
+              @for (r of filteredModalRegions(); track r.id) {
+                <option [value]="r.id" [selected]="modalRegionId() === r.id">{{ r.name }}</option>
               }
             </select>
           </div>
@@ -986,7 +1096,7 @@
       Otkaži
     </button>
     <button class="edit-modal__btn edit-modal__btn--save" type="button"
-      [disabled]="isSubmitting() || !createForm().name.trim() || !createForm().slug.trim() || !createForm().categoryId || (!managedRegion() && modalRegionId() === 'all')"
+      [disabled]="isSubmitting() || !createForm().name.trim() || !createForm().slug.trim() || !createForm().categoryId || (!managedRegion() && !selectedCountryId()) || (!managedRegion() && modalRegionId() === 'all')"
       (click)="submitCreate()">
       @if (isSubmitting()) {
         <span class="material-icons edit-modal__spin">sync</span>

@@ -2288,3 +2288,135 @@
   color: var(--color-text-secondary);
 }
 
+/* ===== TYPE ROW + ADD-NEW INLINE FORM ===== */
+.ev-type-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ev-type-row .edit-field__select {
+  flex: 1;
+}
+
+.ev-add-inline-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ev-add-inline-btn:hover {
+  background: var(--color-surface-3, var(--color-surface-2));
+  color: var(--color-primary);
+}
+
+.ev-add-inline-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.ev-add-inline-form__submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.ev-add-inline-form__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== FILTER DEFINITIONS ===== */
+.ev-filter-defs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ev-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.ev-filter-chip input[type="checkbox"],
+.ev-filter-chip input[type="radio"] {
+  display: none;
+}
+.ev-filter-chip:hover {
+  background: var(--color-surface-3, var(--color-surface-2));
+  border-color: var(--color-text-muted);
+}
+.ev-filter-chip--active {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.ev-filter-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.ev-filter-select-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+.ev-filter-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ev-add-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ev-add-filter-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.ev-add-inline-form--filter {
+  flex-direction: column;
+  align-items: stretch;
+}
+

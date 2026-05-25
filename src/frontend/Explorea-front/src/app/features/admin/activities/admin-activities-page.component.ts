@@ -32,6 +32,7 @@ import {
   ActivityStatus,
   CategoryOption,
   CityOption,
+  CountryOption,
   CreateActivityDto,
   DestinationOption,
   InterestTagOption,
@@ -148,6 +149,22 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly modalCities = signal<CityOption[]>([]);
   protected readonly modalRegionId = signal<number | 'all'>('all');
   protected readonly newInclusionText = signal('');
+
+  // Modal: country + extra filters + category add-new
+  protected readonly countries = signal<CountryOption[]>([]);
+  protected readonly selectedCountryId = signal<number | null>(null);
+  protected readonly modalExtraFilters = signal<Record<string, string>>({});
+  protected readonly modalFilterDefs = signal<FilterDefinition[]>([]);
+  protected readonly showAddCategory = signal(false);
+  protected readonly newCategoryName = signal('');
+  protected readonly isAddingCategory = signal(false);
+  protected readonly extraCategories = signal<CategoryOption[]>([]);
+  protected readonly showAddFilter = signal(false);
+  protected readonly newFilterKey = signal('');
+  protected readonly newFilterLabel = signal('');
+  protected readonly newFilterType = signal('boolean');
+  protected readonly isAddingFilter = signal(false);
+
   protected readonly createForm = signal<CreateActivityDto>({
     name: '',
     slug: '',
@@ -163,6 +180,16 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.total() / this.filters().pageSize)),
   );
+
+  protected readonly allCategoryOptions = computed(() => [
+    ...this.categories(),
+    ...this.extraCategories(),
+  ]);
+
+  protected readonly filteredModalRegions = computed(() => {
+    const cid = this.selectedCountryId();
+    return cid === null ? this.regions() : this.regions().filter(r => r.countryId === cid);
+  });
 
   protected readonly isSuperAdmin = computed(
     () => this.authContext.context().role === 'super_admin',
@@ -258,6 +285,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.loadStats();
     this.loadFilterOptions();
     this.loadRegions();
+    this.loadCountries();
     this.loadActivities();
   }
 
@@ -449,10 +477,21 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.modalRegionId.set(mr ? mr.id : 'all');
     this.selectedInterestIds.set([]);
     this.newInclusionText.set('');
+    this.selectedCountryId.set(null);
+    this.modalExtraFilters.set({});
+    this.modalFilterDefs.set([]);
+    this.showAddCategory.set(false);
+    this.newCategoryName.set('');
+    this.extraCategories.set([]);
+    this.showAddFilter.set(false);
+    this.newFilterKey.set('');
+    this.newFilterLabel.set('');
+    this.newFilterType.set('boolean');
+    const initialCatId = this.categories()[0]?.id ?? 0;
     this.createForm.set({
       name: '',
       slug: '',
-      categoryId: this.categories()[0]?.id ?? 0,
+      categoryId: initialCatId,
       description: '',
       price: undefined,
       durationMinutes: undefined,
@@ -462,6 +501,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       latitude: undefined,
       longitude: undefined,
     });
+    if (initialCatId) this.loadModalFilterDefs(initialCatId);
     this.loadModalCities(mr ? mr.id : undefined);
     this.subscription.add(
       this.activitiesService.getAllInterestTags().subscribe({
@@ -530,6 +570,22 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
     const regionId = detail.regionId ?? null;
     this.modalRegionId.set(regionId ?? 'all');
+    if (regionId != null) {
+      const region = this.regions().find(r => r.id === regionId);
+      this.selectedCountryId.set(region?.countryId ?? null);
+    } else {
+      this.selectedCountryId.set(null);
+    }
+    this.modalExtraFilters.set({ ...(detail.extraFilters ?? {}) });
+    this.modalFilterDefs.set([]);
+    this.showAddCategory.set(false);
+    this.newCategoryName.set('');
+    this.extraCategories.set([]);
+    this.showAddFilter.set(false);
+    this.newFilterKey.set('');
+    this.newFilterLabel.set('');
+    this.newFilterType.set('boolean');
+    if (detail.categoryId) this.loadModalFilterDefs(detail.categoryId);
     this.loadModalCities(regionId ?? undefined);
 
     this.selectedInterestIds.set([]);
@@ -563,6 +619,13 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       this.destinationDropdownOpen.set(false);
       this.allInterestTags.set([]);
       this.selectedInterestIds.set([]);
+      this.selectedCountryId.set(null);
+      this.modalExtraFilters.set({});
+      this.modalFilterDefs.set([]);
+      this.showAddCategory.set(false);
+      this.newCategoryName.set('');
+      this.extraCategories.set([]);
+      this.showAddFilter.set(false);
       this.isCreateModalOpen.set(false);
       this.isEditModalClosing.set(false);
       this.isSubmitting.set(false);
@@ -587,13 +650,36 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.destinationDropdownOpen.set(false);
     this.destinationResults.set([]);
     this.createForm.update((f) => ({ ...f, destinationId: dest.id }));
+
+    // Auto-fill region from search result
+    if (dest.regionId != null && (this.isSuperAdmin() || !this.managedRegion())) {
+      this.modalRegionId.set(dest.regionId);
+      this.loadModalCities(dest.regionId);
+      this.createForm.update(f => ({ ...f, cityId: undefined }));
+    }
+    // Auto-fill country from search result
+    if (dest.countryId != null) {
+      this.selectedCountryId.set(dest.countryId);
+    } else if (dest.regionId != null) {
+      const region = this.regions().find(r => r.id === dest.regionId);
+      if (region?.countryId != null) this.selectedCountryId.set(region.countryId);
+    }
+
     this.subscription.add(
       this.activitiesService.getDestination(dest.id).subscribe({
         next: (d) => {
           if (d.latitude != null && d.longitude != null) {
             this.setMapCoords(d.latitude, d.longitude);
-            this.cdr.detectChanges();
           }
+          // Fill region/country from full detail if not already set from search result
+          if (d.regionId != null && this.modalRegionId() === 'all' && (this.isSuperAdmin() || !this.managedRegion())) {
+            this.modalRegionId.set(d.regionId);
+            this.loadModalCities(d.regionId);
+          }
+          if (d.countryId != null && this.selectedCountryId() === null) {
+            this.selectedCountryId.set(d.countryId);
+          }
+          this.cdr.detectChanges();
         },
       }),
     );
@@ -689,6 +775,105 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.destinationDropdownOpen.set(false);
     this.createForm.update((f) => ({ ...f, destinationId: undefined }));
     this.loadModalCities(regionId === 'all' ? undefined : regionId);
+    if (regionId !== 'all') {
+      const region = this.regions().find(r => r.id === regionId);
+      if (region?.countryId != null) this.selectedCountryId.set(region.countryId);
+    }
+  }
+
+  protected onModalCountryChange(value: string): void {
+    const countryId = value ? +value : null;
+    this.selectedCountryId.set(countryId);
+    // If current region doesn't belong to new country, reset it
+    const currentRegionId = this.modalRegionId();
+    if (currentRegionId !== 'all') {
+      const region = this.regions().find(r => r.id === currentRegionId);
+      if (region?.countryId !== countryId) {
+        this.modalRegionId.set('all');
+        this.updateCreateField('cityId', undefined);
+        this.destinationSearchText.set('');
+        this.createForm.update(f => ({ ...f, destinationId: undefined }));
+        this.loadModalCities(undefined);
+      }
+    }
+  }
+
+  protected onModalCategoryChange(value: string): void {
+    const catId = +value;
+    this.updateCreateField('categoryId', catId);
+    this.modalExtraFilters.set({});
+    this.modalFilterDefs.set([]);
+    if (catId) this.loadModalFilterDefs(catId);
+  }
+
+  protected updateModalExtraFilter(key: string, value: string | boolean): void {
+    this.modalExtraFilters.update(ef => {
+      const updated = { ...ef };
+      if (value === false || value === '') delete updated[key];
+      else updated[key] = String(value);
+      return updated;
+    });
+  }
+
+  protected toggleAddCategory(): void {
+    this.showAddCategory.update(v => !v);
+    this.newCategoryName.set('');
+  }
+
+  protected addNewCategory(): void {
+    const name = this.newCategoryName().trim();
+    if (!name || this.isAddingCategory()) return;
+    this.isAddingCategory.set(true);
+    this.subscription.add(
+      this.activitiesService.createCategory(name).subscribe({
+        next: cat => {
+          this.extraCategories.update(cats => [...cats, cat]);
+          this.updateCreateField('categoryId', cat.id);
+          this.modalExtraFilters.set({});
+          this.modalFilterDefs.set([]);
+          this.isAddingCategory.set(false);
+          this.showAddCategory.set(false);
+          this.newCategoryName.set('');
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.errorMessage.set('Kreiranje kategorije nije uspelo.');
+          this.isAddingCategory.set(false);
+          this.cdr.detectChanges();
+        },
+      }),
+    );
+  }
+
+  protected toggleAddFilter(): void {
+    this.showAddFilter.update(v => !v);
+    this.newFilterKey.set('');
+    this.newFilterLabel.set('');
+    this.newFilterType.set('boolean');
+  }
+
+  protected addNewFilter(): void {
+    const catId = this.createForm().categoryId;
+    const key = this.newFilterKey().trim();
+    const label = this.newFilterLabel().trim();
+    const type = this.newFilterType();
+    if (!catId || !key || !label || this.isAddingFilter()) return;
+    this.isAddingFilter.set(true);
+    this.subscription.add(
+      this.activitiesService.createFilterDefinition(catId, key, label, type).subscribe({
+        next: def => {
+          this.modalFilterDefs.update(d => [...d, def]);
+          this.isAddingFilter.set(false);
+          this.showAddFilter.set(false);
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.errorMessage.set('Kreiranje filtera nije uspelo.');
+          this.isAddingFilter.set(false);
+          this.cdr.detectChanges();
+        },
+      }),
+    );
   }
 
   protected toggleInterest(id: number): void {
@@ -703,6 +888,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected submitCreate(): void {
     const form = this.createForm();
     if (!form.name.trim() || !form.slug.trim() || !form.categoryId) return;
+    if (!this.managedRegion() && !this.selectedCountryId()) return;
     if (!this.managedRegion() && this.modalRegionId() === 'all') return;
 
     this.isSubmitting.set(true);
@@ -710,11 +896,13 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     const inclusions = this.modalInclusions();
     const lat = this.mapLatitude();
     const lng = this.mapLongitude();
+    const ef = this.modalExtraFilters();
     const dto: CreateActivityDto = {
       ...form,
       latitude: lat ?? undefined,
       longitude: lng ?? undefined,
       inclusions: inclusions.length ? inclusions : undefined,
+      extraFilters: Object.keys(ef).length ? ef : undefined,
     };
 
     const saveInterestsThenImages = (id: string, activity: ActivityDetail) => {
@@ -1043,6 +1231,23 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       this.lookupService.getFilterDefinitions('activity', categoryId).subscribe({
         next: (defs) => this.filterDefs.set(defs),
         error: () => this.filterDefs.set([]),
+      }),
+    );
+  }
+
+  private loadModalFilterDefs(categoryId: number): void {
+    this.subscription.add(
+      this.lookupService.getFilterDefinitions('activity', categoryId).subscribe({
+        next: (defs) => { this.modalFilterDefs.set(defs); this.cdr.detectChanges(); },
+        error: () => this.modalFilterDefs.set([]),
+      }),
+    );
+  }
+
+  private loadCountries(): void {
+    this.subscription.add(
+      this.activitiesService.getCountries().subscribe({
+        next: (countries) => this.countries.set(countries),
       }),
     );
   }
