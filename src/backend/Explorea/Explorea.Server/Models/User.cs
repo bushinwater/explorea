@@ -71,6 +71,7 @@ namespace Explorea.API.Models
         [Column("updated_at")] public DateTimeOffset UpdatedAt { get; set; }
         [Column("created_by")] public Guid? CreatedBy { get; set; }
         [Column("updated_by")] public Guid? UpdatedBy { get; set; }
+        [Column("deleted_at")] public DateTimeOffset? DeletedAt { get; set; }
 
         [ForeignKey("RoleId")]
         public Role Role { get; set; } = null!;

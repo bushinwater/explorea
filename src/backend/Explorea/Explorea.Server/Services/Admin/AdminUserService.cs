@@ -202,13 +202,11 @@ namespace Explorea.Server.Services.Admin
 
             ValidateManageTarget(scope, user);
 
-            var existingAssignments = await _organizationRegionAssignmentRepository.GetByUserIdAsync(user.Id);
-            foreach (var assignment in existingAssignments)
-            {
-                await _organizationRegionAssignmentRepository.RemoveAsync(assignment.Id);
-            }
+            user.DeletedAt = DateTimeOffset.UtcNow;
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+            user.UpdatedBy = currentUserId;
 
-            _userRepository.Remove(user);
+            _userRepository.Update(user);
             await _userRepository.SaveChangesAsync();
         }
 

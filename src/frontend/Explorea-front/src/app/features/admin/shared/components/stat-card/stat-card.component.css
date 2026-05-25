@@ -57,9 +57,12 @@
 
 .stat-card__value {
   font-family: var(--font-heading);
-  font-size: clamp(1.4rem, 2vw, 1.8rem);
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
   line-height: 1;
   letter-spacing: -0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stat-card__hint {

@@ -45,7 +45,7 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
 
   protected readonly filters = signal<UserDirectoryFilters>({
     page: 1,
-    pageSize: 5,
+    pageSize: 17,
     search: '',
     role: 'all',
     region: 'all',
@@ -55,6 +55,7 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
   protected readonly currentPage = signal(1);
   protected readonly isLoading = signal(true);
   protected readonly isStatsLoading = signal(true);
+  protected readonly isFilterOpen = signal(false);
   protected readonly isCreateModalOpen = signal(false);
   protected readonly isEditModalOpen = signal(false);
   protected readonly isDeleteDialogOpen = signal(false);
@@ -71,12 +72,12 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
   protected readonly selectedUser = signal<UserDirectoryUser | null>(null);
 
   protected readonly stats = signal<UserDirectoryStats>({
-    totalUsers: 1284,
-    maleUsers: 534,
-    femaleUsers: 750,
-    under20Users: 357,
-    over20Users: 927,
-    flaggedAccounts: 3,
+    totalUsers: 0,
+    maleUsers: 0,
+    femaleUsers: 0,
+    under20Users: 0,
+    over20Users: 0,
+    flaggedAccounts: 0,
   });
 
   protected readonly totalPages = computed(() =>
@@ -84,6 +85,54 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
   );
 
   protected readonly pagedUsers = computed(() => this.users());
+
+  protected readonly activeFilterCount = computed(() => {
+    const f = this.filters();
+    let count = 0;
+    if (f.role !== 'all') count++;
+    if (f.gender !== 'all') count++;
+    if (f.ageBucket !== 'all') count++;
+    if (f.region !== 'all') count++;
+    return count;
+  });
+
+  protected readonly genderStatValue = computed(() => {
+    const s = this.stats();
+    const total = s.maleUsers + s.femaleUsers;
+    if (!total) return '—';
+    const mPct = Math.round((s.maleUsers / total) * 100);
+    const fPct = 100 - mPct;
+    return `${mPct}% M / ${fPct}% Ž`;
+  });
+
+  protected readonly avgAgeValue = computed(() => {
+    const age = this.stats().averageAge;
+    if (age == null) return '—';
+    return `${age} god`;
+  });
+
+  protected readonly growthValue = computed(() => {
+    const g = this.stats().registrationGrowthPercent ?? 0;
+    return g >= 0 ? `+${g}%` : `${g}%`;
+  });
+
+  protected readonly growthTone = computed(() => {
+    const g = this.stats().registrationGrowthPercent ?? 0;
+    return g >= 0 ? 'success' : 'danger';
+  });
+
+  protected readonly pageNumbers = computed(() => {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+
+    const pages: number[] = [1];
+    if (current > 3) pages.push(-1);
+    for (let p = Math.max(2, current - 1); p <= Math.min(total - 1, current + 1); p++) pages.push(p);
+    if (current < total - 2) pages.push(-1);
+    pages.push(total);
+    return pages;
+  });
 
   constructor(
     private readonly adminUserDirectoryService: AdminUserDirectoryService,
@@ -130,6 +179,11 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
 
   protected updateSearch(value: string): void {
     this.searchInput$.next(value);
+  }
+
+  protected resetFilters(): void {
+    this.updateFilterState({ role: 'all', gender: 'all', ageBucket: 'all', region: 'all', page: 1 });
+    this.loadUsers();
   }
 
   protected openCreateModal(): void {
@@ -214,9 +268,7 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
 
   protected deleteUser(): void {
     const user = this.selectedUser();
-    if (!user) {
-      return;
-    }
+    if (!user) return;
 
     this.isDeleting.set(true);
 
@@ -266,40 +318,24 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
   }
 
   protected activityLabel(value: string | null): string {
-    if (!value) {
-      return this.ui.t('users.activity.never');
-    }
+    if (!value) return this.ui.t('users.activity.never');
 
     const diffMs = Date.now() - new Date(value).getTime();
     const diffMinutes = Math.max(1, Math.floor(diffMs / 60000));
 
-    if (diffMinutes < 60) {
-      return this.ui.t('users.activity.minutes', { value: diffMinutes });
-    }
+    if (diffMinutes < 60) return this.ui.t('users.activity.minutes', { value: diffMinutes });
 
     const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) {
-      return this.ui.t('users.activity.hours', { value: diffHours });
-    }
+    if (diffHours < 24) return this.ui.t('users.activity.hours', { value: diffHours });
 
     const diffDays = Math.floor(diffHours / 24);
     return this.ui.t('users.activity.days', { value: diffDays });
   }
 
-  protected genderLabel(gender: AdminUserGender | 'all'): string {
-    if (gender === 'all') {
-      return this.ui.t('users.filter.gender_all');
-    }
-
-    return this.ui.t(`users.filter.gender.${gender}`);
-  }
-
   protected canManageUser(user: UserDirectoryUser): boolean {
     const context = this.authContext.context();
 
-    if (context.role === 'super_admin') {
-      return true;
-    }
+    if (context.role === 'super_admin') return true;
 
     if (context.role === 'tourist_organization') {
       return Boolean(context.region) && user.regionName === context.region;
@@ -311,6 +347,18 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
   protected lockedRegionForCreate(): string | null {
     const context = this.authContext.context();
     return context.role === 'tourist_organization' ? context.region : null;
+  }
+
+  protected visibleRangeText(): string {
+    const total = this.totalUsers();
+    if (!total) return this.ui.t('users.pagination.empty');
+
+    const page = this.clampPage(this.currentPage());
+    const pageSize = this.filters().pageSize;
+    const from = (page - 1) * pageSize + 1;
+    const to = Math.min(page * pageSize, total);
+
+    return this.ui.t('users.pagination.range', { from, to, total });
   }
 
   private clampPage(page: number): number {
@@ -365,20 +413,5 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
 
   private updateFilterState(patch: Partial<UserDirectoryFilters>): void {
     this.filters.update((current) => ({ ...current, ...patch }));
-  }
-
-  protected visibleRangeText(): string {
-    const total = this.totalUsers();
-
-    if (!total) {
-      return this.ui.t('users.pagination.empty');
-    }
-
-    const page = this.clampPage(this.currentPage());
-    const pageSize = this.filters().pageSize;
-    const from = (page - 1) * pageSize + 1;
-    const to = Math.min(page * pageSize, total);
-
-    return this.ui.t('users.pagination.range', { from, to, total });
   }
 }

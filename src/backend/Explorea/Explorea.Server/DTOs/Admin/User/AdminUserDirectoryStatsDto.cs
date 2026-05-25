@@ -8,5 +8,7 @@ namespace Explorea.API.DTOs.Admin.User
         public int Under20Users { get; set; }
         public int Over20Users { get; set; }
         public int FlaggedAccounts { get; set; }
+        public decimal? AverageAge { get; set; }
+        public decimal RegistrationGrowthPercent { get; set; }
     }
 }

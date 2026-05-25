@@ -145,6 +145,35 @@ namespace Explorea.Server.Repositories.Implementations
                 includeUsersWithoutLocation,
                 excludedRoles);
 
+            var now = DateTimeOffset.UtcNow;
+            var firstOfThisMonth = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
+            var firstOfLastMonth = firstOfThisMonth.AddMonths(-1);
+
+            var thisMonthCount = await query.CountAsync(u => u.CreatedAt >= firstOfThisMonth);
+            var lastMonthCount = await query.CountAsync(u => u.CreatedAt >= firstOfLastMonth && u.CreatedAt < firstOfThisMonth);
+
+            var growthPercent = lastMonthCount == 0
+                ? (thisMonthCount > 0 ? 100m : 0m)
+                : Math.Round((decimal)(thisMonthCount - lastMonthCount) / lastMonthCount * 100, 1);
+
+            var birthDates = await query
+                .Where(u => u.DateOfBirth != null)
+                .Select(u => u.DateOfBirth!.Value)
+                .ToListAsync();
+
+            decimal? avgAge = null;
+            if (birthDates.Count > 0)
+            {
+                var todayDate = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+                var ages = birthDates.Select(dob =>
+                {
+                    var age = todayDate.Year - dob.Year;
+                    if (dob > todayDate.AddYears(-age)) age--;
+                    return age;
+                });
+                avgAge = Math.Round((decimal)ages.Average(), 1);
+            }
+
             return new AdminUserDirectoryStatsDto
             {
                 TotalUsers = await query.CountAsync(),
@@ -152,7 +181,9 @@ namespace Explorea.Server.Repositories.Implementations
                 FemaleUsers = await query.CountAsync(u => u.Gender != null && u.Gender.ToLower() == "female"),
                 Under20Users = await query.CountAsync(u => u.DateOfBirth != null && u.DateOfBirth > adultThreshold),
                 Over20Users = await query.CountAsync(u => u.DateOfBirth != null && u.DateOfBirth <= adultThreshold),
-                FlaggedAccounts = 0
+                FlaggedAccounts = 0,
+                AverageAge = avgAge,
+                RegistrationGrowthPercent = growthPercent
             };
         }
 
@@ -210,6 +241,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(u => u.ManagedRegion)
                 .Include(u => u.CurrentCity)
                     .ThenInclude(c => c!.Region)
+                .Where(u => u.DeletedAt == null)
                 .AsQueryable();
 
             if (excludedRoles is { Count: > 0 })
