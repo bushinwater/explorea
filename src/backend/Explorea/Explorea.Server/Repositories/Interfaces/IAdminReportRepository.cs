@@ -33,7 +33,12 @@ namespace Explorea.Server.Repositories.Interfaces
         Task<List<AggregatePointDto>> GetAggregateAsync(
             string entity, string groupBy, string metric,
             DateOnly? dateFrom, DateOnly? dateTo,
-            List<Guid>? restrictToDestinationIds, Guid? placeOwnerUserId);
+            List<Guid>? restrictToDestinationIds, Guid? placeOwnerUserId,
+            Guid? specificEntityId = null);
+
+        // Entity search + profile
+        Task<List<EntitySearchItemDto>> SearchEntitiesAsync(string entity, string q, List<Guid>? destIds, Guid? placeOwnerUserId);
+        Task<EntityProfileDto?>         GetEntityProfileAsync(string entity, Guid entityId);
 
         // Time series for legacy preview/export
         Task<Dictionary<DateOnly, long>> GetTrafficByDateAsync(DateOnly from, DateOnly to, List<Guid>? restrictToDestinationIds, Guid? placeOwnerUserId);

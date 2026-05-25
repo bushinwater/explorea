@@ -174,6 +174,25 @@ export interface ReportQueueItem {
   entityCols?:  { header: string; key: string }[];
 }
 
+export interface EntitySearchItem {
+  id:   string;
+  name: string;
+}
+
+export interface EntityProfile {
+  name:          string;
+  totalViews:    number;
+  avgRating:     number;
+  reviewCount:   number;
+  placeCount:    number;
+  activityCount: number;
+  eventCount:    number;
+  viewsLast30:   number;
+  viewsPrev30:   number;
+}
+
+export const SEARCHABLE_ENTITIES: ReportEntity[] = ['destinations', 'activities', 'events', 'places'];
+
 export interface ReportTemplateDto {
   id:         string;
   name:       string;

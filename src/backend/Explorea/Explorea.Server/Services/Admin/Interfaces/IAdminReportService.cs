@@ -5,7 +5,9 @@ namespace Explorea.Server.Services.Admin.Interfaces
     public interface IAdminReportService
     {
         Task<ReportInsightsDto> GetInsightsAsync(Guid currentUserId);
-        Task<List<AggregatePointDto>> GetAggregateAsync(string entity, string groupBy, string metric, DateOnly? dateFrom, DateOnly? dateTo, Guid currentUserId);
+        Task<List<AggregatePointDto>> GetAggregateAsync(string entity, string groupBy, string metric, DateOnly? dateFrom, DateOnly? dateTo, Guid currentUserId, Guid? specificEntityId = null);
+        Task<List<EntitySearchItemDto>> SearchEntitiesAsync(string entity, string q, Guid currentUserId);
+        Task<EntityProfileDto?>         GetEntityProfileAsync(string entity, Guid entityId, Guid currentUserId);
         Task<List<DestinationsTableItemDto>> GetDestinationsTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
             Guid currentUserId);

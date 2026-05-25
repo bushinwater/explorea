@@ -106,28 +106,47 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
-        // GET /api/admin/reports/aggregate?entity=destinations&groupBy=region&metric=count&dateFrom=2024-01-01&dateTo=2024-12-31
+        // GET /api/admin/reports/aggregate
         [HttpGet("aggregate")]
         public async Task<IActionResult> GetAggregate(
-            [FromQuery] string entity,
-            [FromQuery] string groupBy,
-            [FromQuery] string metric,
+            [FromQuery] string  entity,
+            [FromQuery] string  groupBy,
+            [FromQuery] string  metric,
             [FromQuery] DateOnly? dateFrom,
-            [FromQuery] DateOnly? dateTo)
+            [FromQuery] DateOnly? dateTo,
+            [FromQuery] Guid?   specificEntityId)
         {
             try
             {
-                var data = await _service.GetAggregateAsync(entity, groupBy, metric, dateFrom, dateTo, GetCurrentUserId());
+                var data = await _service.GetAggregateAsync(entity, groupBy, metric, dateFrom, dateTo, GetCurrentUserId(), specificEntityId);
                 return Ok(data);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (NotSupportedException ex)       { return BadRequest(new { message = ex.Message }); }
+        }
+
+        // GET /api/admin/reports/entity-search?entity=destinations&q=beo
+        [HttpGet("entity-search")]
+        public async Task<IActionResult> SearchEntities([FromQuery] string entity, [FromQuery] string q)
+        {
+            try
             {
-                return StatusCode(403, new { message = ex.Message });
+                return Ok(await _service.SearchEntitiesAsync(entity, q, GetCurrentUserId()));
             }
-            catch (NotSupportedException ex)
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+        }
+
+        // GET /api/admin/reports/entity-profile?entity=destinations&id={guid}
+        [HttpGet("entity-profile")]
+        public async Task<IActionResult> GetEntityProfile([FromQuery] string entity, [FromQuery] Guid id)
+        {
+            try
             {
-                return BadRequest(new { message = ex.Message });
+                var profile = await _service.GetEntityProfileAsync(entity, id, GetCurrentUserId());
+                if (profile == null) return NotFound();
+                return Ok(profile);
             }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
         }
 
         // GET /api/admin/reports/preview?metrics=traffic,userGrowth&dimensions=reviews,requests&dateFrom=2024-01-01&dateTo=2024-01-31

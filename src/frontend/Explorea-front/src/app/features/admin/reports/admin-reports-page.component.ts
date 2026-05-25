@@ -15,11 +15,12 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { FeedbackBannerComponent, StatCardComponent } from '@shared/components';
 import {
   AggregatePoint, DEST_SORT_OPTIONS, DIMENSION_CONFIGS, DestTableSortBy,
-  DestinationsTableItem, ENTITY_CONFIGS, EntityTableRow, FLAT_TABLE_COLS,
-  FLAT_TABLE_ENTITIES, FLAT_TABLE_SORT_OPTIONS, FilterDefinition, FlatTableEntity,
-  METRIC_COLORS, METRIC_CONFIGS, PIE_COLORS, ReportDimensionId, ReportEntity,
-  ReportInsights, ReportMetricId, ReportQueueItem, ReportTemplateDto,
-  SavedReportConfig, SubtypeOption, VIZ_BY_DIM, VIZ_ICONS, VIZ_LABELS, VizType,
+  DestinationsTableItem, ENTITY_CONFIGS, EntityProfile, EntitySearchItem, EntityTableRow,
+  FLAT_TABLE_COLS, FLAT_TABLE_ENTITIES, FLAT_TABLE_SORT_OPTIONS, FilterDefinition,
+  FlatTableEntity, METRIC_COLORS, METRIC_CONFIGS, PIE_COLORS, ReportDimensionId,
+  ReportEntity, ReportInsights, ReportMetricId, ReportQueueItem, ReportTemplateDto,
+  SEARCHABLE_ENTITIES, SavedReportConfig, SubtypeOption, VIZ_BY_DIM, VIZ_ICONS,
+  VIZ_LABELS, VizType,
 } from './admin-reports.models';
 import { AdminReportsService } from './admin-reports.service';
 
@@ -51,6 +52,16 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   readonly loading        = signal(false);
   readonly error          = signal<string | null>(null);
   readonly chartData      = signal<AggregatePoint[] | null>(null);
+
+  // ─── Entity search ───────────────────────────────────────────────────────
+  readonly selectedEntityId    = signal<string | null>(null);
+  readonly selectedEntityName  = signal<string | null>(null);
+  readonly entitySearchQuery   = signal('');
+  readonly entitySearchResults = signal<EntitySearchItem[]>([]);
+  readonly entitySearchOpen    = signal(false);
+  readonly entityProfile       = signal<EntityProfile | null>(null);
+  readonly profileLoading      = signal(false);
+  private searchTimeout: ReturnType<typeof setTimeout> | null = null;
   readonly insights       = signal<ReportInsights | null>(null);
   readonly templates      = signal<ReportTemplateDto[]>([]);
   readonly isTemplatesOpen = signal(true);
@@ -96,12 +107,16 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   readonly entityConfig = computed(() =>
     ENTITY_CONFIGS.find(e => e.id === this.entity())!,
   );
-  readonly availableDimensions = computed(() =>
-    this.entityConfig().dimensions.map(id => DIMENSION_CONFIGS[id]),
-  );
-  readonly availableMetrics = computed(() =>
-    this.entityConfig().metrics.map(id => METRIC_CONFIGS[id]),
-  );
+  readonly availableDimensions = computed(() => {
+    if (this.selectedEntityId()) return [DIMENSION_CONFIGS['time']];
+    return this.entityConfig().dimensions.map(id => DIMENSION_CONFIGS[id]);
+  });
+  readonly availableMetrics = computed(() => {
+    const metrics = this.entityConfig().metrics;
+    if (this.selectedEntityId()) return metrics.filter(id => id !== 'count').map(id => METRIC_CONFIGS[id]);
+    return metrics.map(id => METRIC_CONFIGS[id]);
+  });
+  readonly supportsEntitySearch = computed(() => SEARCHABLE_ENTITIES.includes(this.entity()));
   readonly dimensionConfig = computed(() =>
     DIMENSION_CONFIGS[this.dimension()],
   );
@@ -170,6 +185,29 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     };
     return hints[`${this.entity()}:${this.dimension()}:${this.metric()}`] ?? null;
   });
+  readonly profileChips = computed(() => {
+    const p = this.entityProfile();
+    if (!p) return [];
+    const trend = p.viewsPrev30 > 0
+      ? Math.round((p.viewsLast30 - p.viewsPrev30) / p.viewsPrev30 * 100)
+      : p.viewsLast30 > 0 ? 100 : 0;
+    const trendLabel = trend > 0 ? `+${trend}%` : trend < 0 ? `${trend}%` : '0%';
+    const chips = [
+      { icon: 'visibility',  label: 'Ukupno pregleda', value: this.formatNum(p.totalViews) },
+      { icon: 'star',        label: 'Prosecna ocena',  value: p.avgRating > 0 ? p.avgRating.toFixed(1) + ' ★' : '—' },
+      { icon: 'rate_review', label: 'Recenzije',       value: this.formatNum(p.reviewCount) },
+      { icon: 'trending_up', label: 'Trend (30 dana)', value: trendLabel },
+    ];
+    if (p.placeCount || p.activityCount || p.eventCount) {
+      chips.splice(3, 0,
+        { icon: 'store',        label: 'Objekti',     value: this.formatNum(p.placeCount)    },
+        { icon: 'hiking',       label: 'Aktivnosti',  value: this.formatNum(p.activityCount) },
+        { icon: 'celebration',  label: 'Dogadjaji',   value: this.formatNum(p.eventCount)    },
+      );
+    }
+    return chips;
+  });
+
   readonly insightCards = computed(() => {
     const ins = this.insights();
     return [
@@ -256,7 +294,47 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     this.metric.set(cfg.metrics[0]);
     const validViz = VIZ_BY_DIM[DIMENSION_CONFIGS[firstDim].type];
     if (!validViz.includes(this.vizType())) this.vizType.set(validViz[0]);
+    this.clearEntitySelection();
     this.clearChart();
+  }
+
+  onEntitySearch(q: string): void {
+    this.entitySearchQuery.set(q);
+    if (this.searchTimeout) clearTimeout(this.searchTimeout);
+    if (q.length < 2) { this.entitySearchResults.set([]); this.entitySearchOpen.set(false); return; }
+    this.searchTimeout = setTimeout(() => {
+      this.svc.searchEntities(this.entity(), q).subscribe({
+        next: results => {
+          this.entitySearchResults.set(results);
+          this.entitySearchOpen.set(results.length > 0);
+          this.cdr.detectChanges();
+        },
+      });
+    }, 280);
+  }
+
+  selectEntityFromSearch(id: string, name: string): void {
+    this.selectedEntityId.set(id);
+    this.selectedEntityName.set(name);
+    this.entitySearchOpen.set(false);
+    this.entitySearchQuery.set('');
+    this.entitySearchResults.set([]);
+    // force dimension to time and default metric to traffic
+    this.dimension.set('time');
+    const metrics = this.entityConfig().metrics.filter(m => m !== 'count');
+    if (metrics.length) this.metric.set(metrics[0] as ReportMetricId);
+    this.vizType.set('line');
+    this.clearChart();
+    this.entityProfile.set(null);
+  }
+
+  clearEntitySelection(): void {
+    this.selectedEntityId.set(null);
+    this.selectedEntityName.set(null);
+    this.entitySearchQuery.set('');
+    this.entitySearchResults.set([]);
+    this.entitySearchOpen.set(false);
+    this.entityProfile.set(null);
   }
 
   selectDimension(d: ReportDimensionId): void {
@@ -286,9 +364,19 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   generate(): void {
     this.loading.set(true);
     this.error.set(null);
-    const dateFrom = this.isTimeDimension() ? this.dateFrom() : null;
-    const dateTo   = this.isTimeDimension() ? this.dateTo()   : null;
-    this.svc.getAggregate(this.entity(), this.dimension(), this.metric(), dateFrom, dateTo)
+    const dateFrom        = this.isTimeDimension() ? this.dateFrom() : null;
+    const dateTo          = this.isTimeDimension() ? this.dateTo()   : null;
+    const specificEntityId = this.selectedEntityId();
+
+    if (specificEntityId) {
+      this.profileLoading.set(true);
+      this.svc.getEntityProfile(this.entity(), specificEntityId).subscribe({
+        next:  p => { this.entityProfile.set(p); this.profileLoading.set(false); this.cdr.detectChanges(); },
+        error: () => { this.profileLoading.set(false); },
+      });
+    }
+
+    this.svc.getAggregate(this.entity(), this.dimension(), this.metric(), dateFrom, dateTo, specificEntityId)
       .subscribe({
         next: data => {
           this.loading.set(false);

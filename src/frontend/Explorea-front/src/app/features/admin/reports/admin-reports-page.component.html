@@ -55,6 +55,43 @@
           </div>
         </div>
 
+        @if (supportsEntitySearch()) {
+          <div class="rp-config-section">
+            <span class="rp-config-section__label">Konkretan entitet <span class="rp-optional">(opcionalno)</span></span>
+            @if (selectedEntityId()) {
+              <div class="rp-entity-chip">
+                <span class="material-icons rp-entity-chip__icon">push_pin</span>
+                <span class="rp-entity-chip__name">{{ selectedEntityName() }}</span>
+                <button class="rp-entity-chip__remove" (click)="clearEntitySelection()" title="Ukloni">
+                  <span class="material-icons">close</span>
+                </button>
+              </div>
+            } @else {
+              <div class="rp-entity-search-wrap">
+                <span class="material-icons rp-entity-search-icon">search</span>
+                <input
+                  class="rp-entity-search-input"
+                  type="text"
+                  [placeholder]="'Pretraži ' + entityConfig().label.toLowerCase() + '...'"
+                  [value]="entitySearchQuery()"
+                  (input)="onEntitySearch($any($event.target).value)"
+                  (blur)="entitySearchOpen.set(false)"
+                  autocomplete="off"
+                />
+                @if (entitySearchOpen() && entitySearchResults().length) {
+                  <div class="rp-entity-dropdown">
+                    @for (r of entitySearchResults(); track r.id) {
+                      <button class="rp-entity-option" (mousedown)="selectEntityFromSearch(r.id, r.name)">
+                        {{ r.name }}
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
         <div class="rp-config-section">
           <span class="rp-config-section__label">Grupisanje</span>
           <div class="rp-pills">
@@ -189,6 +226,24 @@
             }
           </div>
         </div>
+
+        @if (profileLoading()) {
+          <div class="rp-profile-chips rp-profile-chips--loading">
+            <span class="rp-spinner"></span>
+          </div>
+        } @else if (profileChips().length) {
+          <div class="rp-profile-chips">
+            @for (chip of profileChips(); track chip.label) {
+              <div class="rp-profile-chip">
+                <span class="material-icons rp-profile-chip__icon">{{ chip.icon }}</span>
+                <div class="rp-profile-chip__body">
+                  <span class="rp-profile-chip__value">{{ chip.value }}</span>
+                  <span class="rp-profile-chip__label">{{ chip.label }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
 
         <div class="rp-chart-area">
           <div class="rp-chart-wrap">

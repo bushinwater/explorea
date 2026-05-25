@@ -351,8 +351,16 @@ namespace Explorea.Server.Repositories.Implementations
         public async Task<List<AggregatePointDto>> GetAggregateAsync(
             string entity, string groupBy, string metric,
             DateOnly? dateFrom, DateOnly? dateTo,
-            List<Guid>? destIds, Guid? placeOwnerUserId)
+            List<Guid>? destIds, Guid? placeOwnerUserId,
+            Guid? specificEntityId = null)
         {
+            // When a specific destination is selected, scope to just that one
+            if (specificEntityId.HasValue && entity == "destinations")
+            {
+                destIds          = [specificEntityId.Value];
+                placeOwnerUserId = null;
+            }
+
             DateTimeOffset? fromOff = dateFrom.HasValue
                 ? new DateTimeOffset(dateFrom.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) : null;
             DateTimeOffset? toOff = dateTo.HasValue
@@ -360,32 +368,32 @@ namespace Explorea.Server.Repositories.Implementations
 
             return (entity, groupBy) switch
             {
-                ("destinations", "region")          => await AggDests_Region(metric, destIds),
-                ("destinations", "type")            => await AggDests_Type(metric, destIds),
-                ("destinations", "time")            => await AggDests_Time(metric, fromOff, toOff, destIds),
+                ("destinations", "region")    => await AggDests_Region(metric, destIds),
+                ("destinations", "type")      => await AggDests_Type(metric, destIds),
+                ("destinations", "time")      => await AggDests_Time(metric, fromOff, toOff, destIds),
 
-                ("activities", "category")           => await AggActivities_Category(metric, destIds, placeOwnerUserId),
-                ("activities", "destination")       => await AggActivities_Destination(metric, destIds, placeOwnerUserId),
-                ("activities", "region")            => await AggActivities_Region(metric, destIds, placeOwnerUserId),
-                ("activities", "time")              => await AggActivities_Time(metric, fromOff, toOff, destIds, placeOwnerUserId),
+                ("activities", "category")    => await AggActivities_Category(metric, destIds, placeOwnerUserId),
+                ("activities", "destination") => await AggActivities_Destination(metric, destIds, placeOwnerUserId),
+                ("activities", "region")      => await AggActivities_Region(metric, destIds, placeOwnerUserId),
+                ("activities", "time")        => await AggActivities_Time(metric, fromOff, toOff, destIds, placeOwnerUserId, specificEntityId),
 
-                ("events", "type")                  => await AggEvents_Type(metric, destIds, placeOwnerUserId),
-                ("events", "destination")           => await AggEvents_Destination(metric, destIds, placeOwnerUserId),
-                ("events", "region")                => await AggEvents_Region(metric, destIds, placeOwnerUserId),
-                ("events", "time")                  => await AggEvents_Time(metric, fromOff, toOff, destIds, placeOwnerUserId),
+                ("events", "type")            => await AggEvents_Type(metric, destIds, placeOwnerUserId),
+                ("events", "destination")     => await AggEvents_Destination(metric, destIds, placeOwnerUserId),
+                ("events", "region")          => await AggEvents_Region(metric, destIds, placeOwnerUserId),
+                ("events", "time")            => await AggEvents_Time(metric, fromOff, toOff, destIds, placeOwnerUserId, specificEntityId),
 
-                ("places", "type")                  => await AggPlaces_Type(metric, destIds, placeOwnerUserId),
-                ("places", "destination")           => await AggPlaces_Destination(metric, destIds, placeOwnerUserId),
-                ("places", "region")                => await AggPlaces_Region(metric, destIds, placeOwnerUserId),
-                ("places", "time")                  => await AggPlaces_Time(metric, fromOff, toOff, destIds, placeOwnerUserId),
+                ("places", "type")            => await AggPlaces_Type(metric, destIds, placeOwnerUserId),
+                ("places", "destination")     => await AggPlaces_Destination(metric, destIds, placeOwnerUserId),
+                ("places", "region")          => await AggPlaces_Region(metric, destIds, placeOwnerUserId),
+                ("places", "time")            => await AggPlaces_Time(metric, fromOff, toOff, destIds, placeOwnerUserId, specificEntityId),
 
-                ("reviews", "rating")               => await AggReviews_Rating(fromOff, toOff, destIds, placeOwnerUserId),
-                ("reviews", "entityType")           => await AggReviews_EntityType(fromOff, toOff, destIds, placeOwnerUserId),
-                ("reviews", "time")                 => await AggReviews_Time(fromOff, toOff, destIds, placeOwnerUserId),
+                ("reviews", "rating")         => await AggReviews_Rating(fromOff, toOff, destIds, placeOwnerUserId),
+                ("reviews", "entityType")     => await AggReviews_EntityType(fromOff, toOff, destIds, placeOwnerUserId),
+                ("reviews", "time")           => await AggReviews_Time(fromOff, toOff, destIds, placeOwnerUserId),
 
-                ("users", "time")                   => await AggUsers_Time(fromOff, toOff),
-                ("users", "gender")                 => await AggUsers_Gender(fromOff, toOff),
-                ("users", "ageGroup")               => await AggUsers_AgeGroup(fromOff, toOff),
+                ("users", "time")             => await AggUsers_Time(fromOff, toOff),
+                ("users", "gender")           => await AggUsers_Gender(fromOff, toOff),
+                ("users", "ageGroup")         => await AggUsers_AgeGroup(fromOff, toOff),
 
                 _ => []
             };
@@ -469,6 +477,14 @@ namespace Explorea.Server.Repositories.Implementations
                 if (to.HasValue)   logQ = logQ.Where(l => l.CreatedAt < to.Value);
                 if (destIds != null) logQ = logQ.Where(l => destIds.Contains(l.EntityId));
                 return await GroupByMonth(logQ.Select(l => l.CreatedAt));
+            }
+            if (metric == "avgRating")
+            {
+                var revQ = _db.Reviews.Where(r => !r.IsDeleted && !r.IsHidden && r.EntityType == "destination");
+                if (from.HasValue)   revQ = revQ.Where(r => r.CreatedAt >= from.Value);
+                if (to.HasValue)     revQ = revQ.Where(r => r.CreatedAt < to.Value);
+                if (destIds != null) revQ = revQ.Where(r => destIds.Contains(r.EntityId));
+                return await GroupByMonthAvgRating(revQ);
             }
             var q = _db.Destinations.Where(d => !d.IsDeleted);
             if (destIds != null) q = q.Where(d => destIds.Contains(d.Id));
@@ -559,21 +575,32 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         private async Task<List<AggregatePointDto>> AggActivities_Time(
-            string metric, DateTimeOffset? from, DateTimeOffset? to, List<Guid>? destIds, Guid? placeOwnerUserId)
+            string metric, DateTimeOffset? from, DateTimeOffset? to,
+            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? specificEntityId = null)
         {
             if (metric == "traffic")
             {
-                var placeIds = await _db.Places.IgnoreQueryFilters()
-                    .Where(p => placeOwnerUserId.HasValue ? p.CreatedBy == placeOwnerUserId.Value
-                               : destIds == null || (p.DestinationId.HasValue && destIds.Contains(p.DestinationId.Value)))
-                    .Select(p => p.Id).ToListAsync();
-                var actIds = await ScopeActivities(destIds, placeOwnerUserId).Select(a => a.Id).ToListAsync();
+                var actIds = specificEntityId.HasValue
+                    ? [specificEntityId.Value]
+                    : await ScopeActivities(destIds, placeOwnerUserId).Select(a => a.Id).ToListAsync();
                 var logQ = _db.PopularityLogs.Where(l => l.EntityType == "activity" && actIds.Contains(l.EntityId));
                 if (from.HasValue) logQ = logQ.Where(l => l.CreatedAt >= from.Value);
                 if (to.HasValue)   logQ = logQ.Where(l => l.CreatedAt < to.Value);
                 return await GroupByMonth(logQ.Select(l => l.CreatedAt));
             }
-            var q = ScopeActivities(destIds, placeOwnerUserId);
+            if (metric == "avgRating")
+            {
+                var entityIds = specificEntityId.HasValue
+                    ? [specificEntityId.Value]
+                    : await ScopeActivities(destIds, placeOwnerUserId).Select(a => a.Id).ToListAsync();
+                var revQ = _db.Reviews.Where(r => !r.IsDeleted && !r.IsHidden && r.EntityType == "activity" && entityIds.Contains(r.EntityId));
+                if (from.HasValue) revQ = revQ.Where(r => r.CreatedAt >= from.Value);
+                if (to.HasValue)   revQ = revQ.Where(r => r.CreatedAt < to.Value);
+                return await GroupByMonthAvgRating(revQ);
+            }
+            var q = specificEntityId.HasValue
+                ? _db.Activities.Where(a => a.Id == specificEntityId.Value && !a.IsDeleted)
+                : ScopeActivities(destIds, placeOwnerUserId);
             if (from.HasValue) q = q.Where(a => a.CreatedAt >= from.Value);
             if (to.HasValue)   q = q.Where(a => a.CreatedAt < to.Value);
             return await GroupByMonth(q.Select(a => a.CreatedAt));
@@ -661,17 +688,32 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         private async Task<List<AggregatePointDto>> AggEvents_Time(
-            string metric, DateTimeOffset? from, DateTimeOffset? to, List<Guid>? destIds, Guid? placeOwnerUserId)
+            string metric, DateTimeOffset? from, DateTimeOffset? to,
+            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? specificEntityId = null)
         {
             if (metric == "traffic")
             {
-                var evIds = await ScopeEvents(destIds, placeOwnerUserId).Select(e => e.Id).ToListAsync();
-                var logQ  = _db.PopularityLogs.Where(l => l.EntityType == "event" && evIds.Contains(l.EntityId));
+                var evIds = specificEntityId.HasValue
+                    ? [specificEntityId.Value]
+                    : await ScopeEvents(destIds, placeOwnerUserId).Select(e => e.Id).ToListAsync();
+                var logQ = _db.PopularityLogs.Where(l => l.EntityType == "event" && evIds.Contains(l.EntityId));
                 if (from.HasValue) logQ = logQ.Where(l => l.CreatedAt >= from.Value);
                 if (to.HasValue)   logQ = logQ.Where(l => l.CreatedAt < to.Value);
                 return await GroupByMonth(logQ.Select(l => l.CreatedAt));
             }
-            var q = ScopeEvents(destIds, placeOwnerUserId);
+            if (metric == "avgRating")
+            {
+                var entityIds = specificEntityId.HasValue
+                    ? [specificEntityId.Value]
+                    : await ScopeEvents(destIds, placeOwnerUserId).Select(e => e.Id).ToListAsync();
+                var revQ = _db.Reviews.Where(r => !r.IsDeleted && !r.IsHidden && r.EntityType == "event" && entityIds.Contains(r.EntityId));
+                if (from.HasValue) revQ = revQ.Where(r => r.CreatedAt >= from.Value);
+                if (to.HasValue)   revQ = revQ.Where(r => r.CreatedAt < to.Value);
+                return await GroupByMonthAvgRating(revQ);
+            }
+            var q = specificEntityId.HasValue
+                ? _db.Events.Where(e => e.Id == specificEntityId.Value && !e.IsDeleted)
+                : ScopeEvents(destIds, placeOwnerUserId);
             if (from.HasValue) q = q.Where(e => e.CreatedAt >= from.Value);
             if (to.HasValue)   q = q.Where(e => e.CreatedAt < to.Value);
             return await GroupByMonth(q.Select(e => e.CreatedAt));
@@ -759,17 +801,32 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         private async Task<List<AggregatePointDto>> AggPlaces_Time(
-            string metric, DateTimeOffset? from, DateTimeOffset? to, List<Guid>? destIds, Guid? placeOwnerUserId)
+            string metric, DateTimeOffset? from, DateTimeOffset? to,
+            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? specificEntityId = null)
         {
             if (metric == "traffic")
             {
-                var placeIds = await ScopePlaces(destIds, placeOwnerUserId).Select(p => p.Id).ToListAsync();
-                var logQ     = _db.PopularityLogs.Where(l => l.EntityType == "place" && placeIds.Contains(l.EntityId));
+                var placeIds = specificEntityId.HasValue
+                    ? [specificEntityId.Value]
+                    : await ScopePlaces(destIds, placeOwnerUserId).Select(p => p.Id).ToListAsync();
+                var logQ = _db.PopularityLogs.Where(l => l.EntityType == "place" && placeIds.Contains(l.EntityId));
                 if (from.HasValue) logQ = logQ.Where(l => l.CreatedAt >= from.Value);
                 if (to.HasValue)   logQ = logQ.Where(l => l.CreatedAt < to.Value);
                 return await GroupByMonth(logQ.Select(l => l.CreatedAt));
             }
-            var q = ScopePlaces(destIds, placeOwnerUserId);
+            if (metric == "avgRating")
+            {
+                var entityIds = specificEntityId.HasValue
+                    ? [specificEntityId.Value]
+                    : await ScopePlaces(destIds, placeOwnerUserId).Select(p => p.Id).ToListAsync();
+                var revQ = _db.Reviews.Where(r => !r.IsDeleted && !r.IsHidden && r.EntityType == "place" && entityIds.Contains(r.EntityId));
+                if (from.HasValue) revQ = revQ.Where(r => r.CreatedAt >= from.Value);
+                if (to.HasValue)   revQ = revQ.Where(r => r.CreatedAt < to.Value);
+                return await GroupByMonthAvgRating(revQ);
+            }
+            var q = specificEntityId.HasValue
+                ? _db.Places.Where(p => p.Id == specificEntityId.Value && !p.IsDeleted)
+                : ScopePlaces(destIds, placeOwnerUserId);
             if (from.HasValue) q = q.Where(p => p.CreatedAt >= from.Value);
             if (to.HasValue)   q = q.Where(p => p.CreatedAt < to.Value);
             return await GroupByMonth(q.Select(p => p.CreatedAt));
@@ -1033,6 +1090,132 @@ namespace Explorea.Server.Repositories.Implementations
             return dict;
         }
 
+        // ─── Entity search + profile ─────────────────────────────────────────────
+
+        public async Task<List<EntitySearchItemDto>> SearchEntitiesAsync(
+            string entity, string q, List<Guid>? destIds, Guid? placeOwnerUserId)
+        {
+            if (string.IsNullOrWhiteSpace(q)) return [];
+            var lower = q.ToLower();
+
+            return entity switch
+            {
+                "destinations" => await _db.Destinations
+                    .Where(d => !d.IsDeleted)
+                    .Where(d => destIds == null || destIds.Contains(d.Id))
+                    .Where(d => d.Name.ToLower().Contains(lower))
+                    .OrderBy(d => d.Name).Take(20)
+                    .Select(d => new EntitySearchItemDto { Id = d.Id, Name = d.Name })
+                    .ToListAsync(),
+
+                "activities" => await ScopeActivities(destIds, placeOwnerUserId)
+                    .Where(a => a.Name.ToLower().Contains(lower))
+                    .OrderBy(a => a.Name).Take(20)
+                    .Select(a => new EntitySearchItemDto { Id = a.Id, Name = a.Name })
+                    .ToListAsync(),
+
+                "events" => await ScopeEvents(destIds, placeOwnerUserId)
+                    .Where(e => e.Name.ToLower().Contains(lower))
+                    .OrderBy(e => e.Name).Take(20)
+                    .Select(e => new EntitySearchItemDto { Id = e.Id, Name = e.Name })
+                    .ToListAsync(),
+
+                "places" => await ScopePlaces(destIds, placeOwnerUserId)
+                    .Where(p => p.Name.ToLower().Contains(lower))
+                    .OrderBy(p => p.Name).Take(20)
+                    .Select(p => new EntitySearchItemDto { Id = p.Id, Name = p.Name })
+                    .ToListAsync(),
+
+                _ => []
+            };
+        }
+
+        public async Task<EntityProfileDto?> GetEntityProfileAsync(string entity, Guid entityId)
+        {
+            return entity switch
+            {
+                "destinations" => await GetDestProfileAsync(entityId),
+                "activities"   => await GetSimpleProfileAsync("activity",   entityId),
+                "events"       => await GetSimpleProfileAsync("event",      entityId),
+                "places"       => await GetSimpleProfileAsync("place",      entityId),
+                _ => null
+            };
+        }
+
+        private async Task<EntityProfileDto?> GetDestProfileAsync(Guid id)
+        {
+            var dest = await _db.Destinations.IgnoreQueryFilters()
+                .Where(d => d.Id == id && !d.IsDeleted)
+                .Select(d => new { d.Name, AvgRating = (double)d.AvgRating })
+                .FirstOrDefaultAsync();
+            if (dest == null) return null;
+
+            var now         = DateTimeOffset.UtcNow;
+            var last30Start = now.AddDays(-30);
+            var prev30Start = now.AddDays(-60);
+
+            var totalViews  = await _db.PopularityLogs.LongCountAsync(l => l.EntityType == "destination" && l.EntityId == id);
+            var viewsLast30 = await _db.PopularityLogs.CountAsync(l => l.EntityType == "destination" && l.EntityId == id && l.CreatedAt >= last30Start);
+            var viewsPrev30 = await _db.PopularityLogs.CountAsync(l => l.EntityType == "destination" && l.EntityId == id && l.CreatedAt >= prev30Start && l.CreatedAt < last30Start);
+            var reviewCount = await _db.Reviews.CountAsync(r => r.EntityType == "destination" && r.EntityId == id && !r.IsDeleted && !r.IsHidden);
+            var placeCount  = await _db.Places.CountAsync(p    => p.DestinationId == id && !p.IsDeleted);
+            var actCount    = await _db.Activities.CountAsync(a => a.DestinationId == id && !a.IsDeleted);
+            var eventCount  = await _db.Events.CountAsync(e    => e.DestinationId == id && !e.IsDeleted);
+
+            return new EntityProfileDto
+            {
+                Name          = dest.Name,
+                TotalViews    = totalViews,
+                AvgRating     = Math.Round(dest.AvgRating, 1),
+                ReviewCount   = reviewCount,
+                PlaceCount    = placeCount,
+                ActivityCount = actCount,
+                EventCount    = eventCount,
+                ViewsLast30   = viewsLast30,
+                ViewsPrev30   = viewsPrev30,
+            };
+        }
+
+        private async Task<EntityProfileDto?> GetSimpleProfileAsync(string entityType, Guid id)
+        {
+            (string Name, double AvgRating)? row = entityType switch
+            {
+                "activity" => await _db.Activities.IgnoreQueryFilters()
+                    .Where(a => a.Id == id && !a.IsDeleted)
+                    .Select(a => new ValueTuple<string, double>(a.Name, (double)a.AvgRating))
+                    .FirstOrDefaultAsync(),
+                "event" => await _db.Events.IgnoreQueryFilters()
+                    .Where(e => e.Id == id && !e.IsDeleted)
+                    .Select(e => new ValueTuple<string, double>(e.Name, (double)e.AvgRating))
+                    .FirstOrDefaultAsync(),
+                "place" => await _db.Places.IgnoreQueryFilters()
+                    .Where(p => p.Id == id && !p.IsDeleted)
+                    .Select(p => new ValueTuple<string, double>(p.Name, (double)p.AvgRating))
+                    .FirstOrDefaultAsync(),
+                _ => null
+            };
+            if (row == null) return null;
+
+            var now         = DateTimeOffset.UtcNow;
+            var last30Start = now.AddDays(-30);
+            var prev30Start = now.AddDays(-60);
+
+            var totalViews  = await _db.PopularityLogs.LongCountAsync(l => l.EntityType == entityType && l.EntityId == id);
+            var viewsLast30 = await _db.PopularityLogs.CountAsync(l => l.EntityType == entityType && l.EntityId == id && l.CreatedAt >= last30Start);
+            var viewsPrev30 = await _db.PopularityLogs.CountAsync(l => l.EntityType == entityType && l.EntityId == id && l.CreatedAt >= prev30Start && l.CreatedAt < last30Start);
+            var reviewCount = await _db.Reviews.CountAsync(r => r.EntityType == entityType && r.EntityId == id && !r.IsDeleted && !r.IsHidden);
+
+            return new EntityProfileDto
+            {
+                Name        = row.Value.Name,
+                TotalViews  = totalViews,
+                AvgRating   = Math.Round(row.Value.AvgRating, 1),
+                ReviewCount = reviewCount,
+                ViewsLast30 = viewsLast30,
+                ViewsPrev30 = viewsPrev30,
+            };
+        }
+
         // Groups a DateTimeOffset sequence by year-month and returns ordered AggregatePoints
         private async Task<List<AggregatePointDto>> GroupByMonth(IQueryable<DateTimeOffset> dates)
             => await dates
@@ -1044,5 +1227,20 @@ namespace Explorea.Server.Repositories.Implementations
                 })
                 .OrderBy(x => x.Label)
                 .ToListAsync();
+
+        // Groups reviews by year-month and averages their rating
+        private async Task<List<AggregatePointDto>> GroupByMonthAvgRating(IQueryable<Review> reviews)
+        {
+            var raw = await reviews
+                .GroupBy(r => new { r.CreatedAt.Year, r.CreatedAt.Month })
+                .Select(g => new
+                {
+                    Label = g.Key.Year.ToString() + "-" + (g.Key.Month < 10 ? "0" : "") + g.Key.Month.ToString(),
+                    Value = g.Average(r => (double)r.Rating),
+                })
+                .OrderBy(x => x.Label)
+                .ToListAsync();
+            return raw.Select(x => new AggregatePointDto { Label = x.Label, Value = Math.Round(x.Value, 1) }).ToList();
+        }
     }
 }
