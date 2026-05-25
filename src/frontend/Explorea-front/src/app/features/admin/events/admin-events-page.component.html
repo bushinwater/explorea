@@ -32,8 +32,8 @@
       [trend]="stats()?.activeRequestsTrend ?? ''" />
     <app-stat-card label="Potrebno odobrenje" [value]="stats()?.pendingApproval ?? 0"
       [hint]="stats()?.pendingApprovalHint ?? ''" tone="danger" />
-    <app-stat-card label="Odobreno" [value]="stats()?.approvedThisMonth ?? 0"
-      [trend]="stats()?.approvedThisMonthTrend ?? ''" tone="success" />
+    <app-stat-card label="Odobreno ovog meseca" [value]="stats()?.approvedThisMonth ?? 0"
+      tone="success" />
     <app-stat-card label="Odbijeno" [value]="stats()?.rejected ?? 0" [hint]="stats()?.rejectedNote ?? ''"
       tone="danger" />
   </div>

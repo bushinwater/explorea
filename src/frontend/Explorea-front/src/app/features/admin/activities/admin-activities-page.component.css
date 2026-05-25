@@ -2434,3 +2434,21 @@
   align-items: stretch;
 }
 
+.evts-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.evts-btn-primary:hover { opacity: 0.88; }
+.evts-btn-primary .material-icons { font-size: 16px; }
+
