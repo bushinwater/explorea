@@ -8,6 +8,7 @@ namespace Explorea.API.DTOs.Admin.Destination
         public string? PreviewImageUrl { get; set; }
         public string? Region { get; set; }
         public int? RegionId { get; set; }
+        public int? CityId { get; set; }
         public int Views { get; set; }
         public string Status { get; set; } = null!;
         public int? TypeId { get; set; }

@@ -405,6 +405,7 @@ namespace Explorea.Server.Services.Admin
             PreviewImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
             Region          = d.City?.Region?.Name,
             RegionId        = d.City?.RegionId,
+            CityId          = d.CityId,
             Views           = viewCounts?.GetValueOrDefault(d.Id) ?? 0,
             Status          = MapStatus(d.Visibility),
             TypeId          = d.TypeId,

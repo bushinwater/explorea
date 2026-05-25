@@ -24,6 +24,7 @@ import {
   DestinationStatus,
   InterestTagOption,
   RegionOption,
+  ReviewItem,
   TypeOption,
 } from './admin-destinations.models';
 import { AdminDestinationsService } from './admin-destinations.service';
@@ -90,6 +91,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected readonly detailsPanelRow = signal<DestinationRow | null>(null);
   protected readonly detailsPanelDetail = signal<DestinationDetail | null>(null);
   protected readonly detailsPanelInterests = signal<InterestTagOption[]>([]);
+  protected readonly detailsPanelReviews   = signal<ReviewItem[]>([]);
   protected readonly descriptionExpanded = signal(false);
 
   protected readonly totalPages = computed(() =>
@@ -329,6 +331,13 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         next: (tags) => this.detailsPanelInterests.set(tags.filter(t => t.isAssigned)),
       }),
     );
+
+    this.subscription.add(
+      this.destinationsService.getDestinationReviews(dest.id).subscribe({
+        next: reviews => this.detailsPanelReviews.set(reviews),
+        error: () => this.detailsPanelReviews.set([]),
+      }),
+    );
   }
 
   protected closeDetailsPanel(): void {
@@ -339,6 +348,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       this.detailsPanelRow.set(null);
       this.detailsPanelDetail.set(null);
       this.detailsPanelInterests.set([]);
+      this.detailsPanelReviews.set([]);
     }, 220);
   }
 
@@ -374,6 +384,11 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  protected formatDate(isoDate: string | null): string {
+    if (!isoDate) return '';
+    return new Date(isoDate).toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   protected timeAgo(isoDate: string): string {

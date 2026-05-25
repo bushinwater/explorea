@@ -14,6 +14,7 @@ import {
   DestinationStatus,
   InterestTagOption,
   RegionOption,
+  ReviewItem,
   TypeOption,
 } from './admin-destinations.models';
 
@@ -191,6 +192,10 @@ export class AdminDestinationsService {
 
   getDestinationInterests(id: string): Observable<InterestTagOption[]> {
     return this.http.get<InterestTagOption[]>(`/api/admin/interest-tags/destination/${id}`);
+  }
+
+  getDestinationReviews(id: string): Observable<ReviewItem[]> {
+    return this.http.get<ReviewItem[]>(`/api/admin/destinations/${id}/reviews`);
   }
 
   setDestinationInterests(id: string, tagIds: number[]): Observable<void> {

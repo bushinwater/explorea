@@ -17,8 +17,11 @@ import { FeedbackBannerComponent } from '../shared/components/feedback-banner/fe
 import { TableSkeletonComponent } from '../shared/components/table-skeleton/table-skeleton.component';
 import {
   AmenityOption,
+  CountryOption,
+  InterestTagOption,
   PlaceDetail,
   PlaceFilters,
+  PlaceReview,
   PlaceRow,
   PlaceStats,
   PlaceStatus,
@@ -66,6 +69,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   protected readonly stats     = signal<PlaceStats | null>(null);
   protected readonly types     = signal<PlaceTypeOption[]>([]);
   protected readonly regions   = signal<RegionOption[]>([]);
+  protected readonly countries = signal<CountryOption[]>([]);
   protected readonly amenities = signal<AmenityOption[]>([]);
   protected readonly hoverRating = signal<number | null>(null);
   protected readonly total     = signal(0);
@@ -85,6 +89,8 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   protected readonly isDetailLoading     = signal(false);
   protected readonly detailsPanelRow     = signal<PlaceRow | null>(null);
   protected readonly detailsPanelDetail  = signal<PlaceDetail | null>(null);
+  protected readonly detailsPanelInterests = signal<InterestTagOption[]>([]);
+  protected readonly detailsPanelReviews   = signal<PlaceReview[]>([]);
   protected readonly descriptionExpanded = signal(false);
 
   protected readonly totalPages = computed(() =>
@@ -140,6 +146,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.loadStats();
     this.loadTypes();
     this.loadRegions();
+    this.loadCountries();
     this.loadPlaces();
   }
 
@@ -252,6 +259,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   protected openDetailsPanel(place: PlaceRow): void {
     this.detailsPanelRow.set(place);
     this.detailsPanelDetail.set(null);
+    this.detailsPanelInterests.set([]);
     this.isDetailsPanelOpen.set(true);
     this.isDetailLoading.set(true);
     this.descriptionExpanded.set(false);
@@ -267,12 +275,28 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+
+    this.subscription.add(
+      this.placesService.getPlaceInterests(place.id).subscribe({
+        next: tags => this.detailsPanelInterests.set(tags.filter(t => t.isAssigned)),
+        error: () => {},
+      }),
+    );
+
+    this.subscription.add(
+      this.placesService.getPlaceReviews(place.id).subscribe({
+        next: reviews => this.detailsPanelReviews.set(reviews),
+        error: () => this.detailsPanelReviews.set([]),
+      }),
+    );
   }
 
   protected closeDetailsPanel(): void {
     this.isDetailsPanelOpen.set(false);
     this.detailsPanelRow.set(null);
     this.detailsPanelDetail.set(null);
+    this.detailsPanelInterests.set([]);
+    this.detailsPanelReviews.set([]);
   }
 
   protected openDeleteDialog(place: PlaceRow): void {
@@ -373,6 +397,10 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     return '#3a5a6b';
   }
 
+  protected starArray(rating: number): number[] {
+    return Array.from({ length: 5 }, (_, i) => i + 1);
+  }
+
   protected visibleRangeText(): string {
     const total = this.total();
     if (!total) return '';
@@ -442,6 +470,14 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.placesService.getRegions().subscribe({
         next: (regions) => this.regions.set(regions),
+      }),
+    );
+  }
+
+  private loadCountries(): void {
+    this.subscription.add(
+      this.placesService.getCountries().subscribe({
+        next: (countries) => this.countries.set(countries),
       }),
     );
   }

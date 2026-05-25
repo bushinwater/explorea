@@ -5,6 +5,14 @@ export interface InterestTagOption {
   isAssigned?: boolean;
 }
 
+export interface ReviewItem {
+  authorName: string;
+  authorAvatarUrl: string | null;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
 export interface CountryOption {
   id: number;
   name: string;

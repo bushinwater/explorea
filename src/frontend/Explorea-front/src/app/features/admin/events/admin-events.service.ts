@@ -17,6 +17,7 @@ import {
   RegionWithCountry,
   DestinationSearchItem,
   PlaceSearchItem,
+  ReviewItem,
 } from './admin-events.models';
 import { FilterDefinition } from '../../../core/services/lookup.service';
 
@@ -298,6 +299,10 @@ export class AdminEventsService {
 
   getEventInterests(id: string): Observable<InterestTagOption[]> {
     return this.http.get<InterestTagOption[]>(`/api/admin/interest-tags/event/${id}`);
+  }
+
+  getEventReviews(id: string): Observable<ReviewItem[]> {
+    return this.http.get<ReviewItem[]>(`/api/admin/events/${id}/reviews`);
   }
 
   setEventInterests(id: string, tagIds: number[]): Observable<void> {

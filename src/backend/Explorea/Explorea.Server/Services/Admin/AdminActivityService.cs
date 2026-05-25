@@ -214,6 +214,7 @@ namespace Explorea.Server.Services.Admin
         .Include(r => r.User)
         .Where(r => r.EntityType == "activity" && r.EntityId == id && !r.IsDeleted && !r.IsHidden)
         .OrderByDescending(r => r.CreatedAt)
+        .Take(10)
         .Select(r => new ActivityReviewDto
         {
           AuthorName      = r.User.FirstName + " " + r.User.LastName,

@@ -1332,11 +1332,25 @@
 /* ===== REVIEWS ===== */
 .activity-reviews {
   display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
+  flex-direction: row;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.activity-reviews::-webkit-scrollbar { height: 4px; }
+.activity-reviews::-webkit-scrollbar-track { background: transparent; }
+.activity-reviews::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
 }
 
 .activity-review {
+  min-width: 220px;
+  max-width: 260px;
+  flex-shrink: 0;
   padding: var(--sp-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);

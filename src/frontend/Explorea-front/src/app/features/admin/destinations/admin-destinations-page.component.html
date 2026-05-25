@@ -559,6 +559,48 @@
           }
         </div>
 
+        <!-- Reviews -->
+        <div class="ddp-reviews-section">
+          <h4 class="ddp-section-label">
+            Recenzije
+            @if (detailsPanelReviews().length > 0) {
+              <span class="ddp-section-count">({{ detailsPanelReviews().length }})</span>
+            }
+          </h4>
+          @if (!detailsPanelReviews().length) {
+            <p class="ddp-reviews-empty">Nema recenzija za ovu destinaciju.</p>
+          } @else {
+            <div class="ddp-reviews-scroll">
+              @for (review of detailsPanelReviews(); track review.createdAt) {
+                <div class="ddp-review-card">
+                  <div class="ddp-review-card__header">
+                    @if (review.authorAvatarUrl) {
+                      <img class="ddp-review-card__avatar" [src]="review.authorAvatarUrl" [alt]="review.authorName" />
+                    } @else {
+                      <div class="ddp-review-card__avatar ddp-review-card__avatar--placeholder">
+                        {{ review.authorName[0] }}
+                      </div>
+                    }
+                    <div class="ddp-review-card__meta">
+                      <span class="ddp-review-card__author">{{ review.authorName }}</span>
+                      <span class="ddp-review-card__date">{{ formatDate(review.createdAt) }}</span>
+                    </div>
+                  </div>
+                  <div class="ddp-review-card__stars">
+                    @for (star of starArray(); track star) {
+                      <span class="material-icons ddp-review-card__star"
+                        [class.ddp-review-card__star--filled]="star <= review.rating">star</span>
+                    }
+                  </div>
+                  @if (review.comment) {
+                    <p class="ddp-review-card__comment">{{ review.comment }}</p>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+
       }
     </div>
 

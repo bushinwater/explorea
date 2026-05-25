@@ -1,5 +1,13 @@
 export type DestinationStatus = 'active' | 'pending' | 'inactive' | 'rejected';
 
+export interface ReviewItem {
+  authorName: string;
+  authorAvatarUrl: string | null;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
 export interface DestinationImage {
   id: string;
   imageUrl: string;

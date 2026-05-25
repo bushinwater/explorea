@@ -9,6 +9,7 @@ import {
   OnInit,
   Output,
   ViewChild,
+  computed,
   signal,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -17,10 +18,20 @@ import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminPlacesService } from './admin-places.service';
-import { CityOption, PlaceDetail, PlaceImage, PlaceTypeOption, RegionOption } from './admin-places.models';
+import {
+  CityOption,
+  CountryOption,
+  DestinationOption,
+  InterestTagOption,
+  PlaceDetail,
+  PlaceImage,
+  PlaceTypeOption,
+  RegionOption,
+} from './admin-places.models';
+import { FilterDefinition } from '../../../core/services/lookup.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
-
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
+
 const MAX_IMAGES = 10;
 const MAX_DESC = 2000;
 
@@ -52,6 +63,8 @@ const LIGHT = {
 export class PlaceCreateModalComponent implements OnInit, OnDestroy {
   @Input() types: PlaceTypeOption[] = [];
   @Input() regions: RegionOption[] = [];
+  @Input() countries: CountryOption[] = [];
+  @Input() isSuperAdmin = false;
   @Output() cancel  = new EventEmitter<void>();
   @Output() created = new EventEmitter<PlaceDetail>();
 
@@ -72,18 +85,52 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
     longitude:   new FormControl<number | null>(null),
   });
 
-  protected readonly MAX_DESC    = MAX_DESC;
-  protected readonly MAX_IMAGES  = MAX_IMAGES;
+  protected readonly MAX_DESC   = MAX_DESC;
+  protected readonly MAX_IMAGES = MAX_IMAGES;
 
+  // Core state
   protected readonly isSaving       = signal(false);
   protected readonly isGeocoding    = signal(false);
   protected readonly error          = signal('');
-  protected readonly createdDetail  = signal<PlaceDetail | null>(null);
   protected readonly images         = signal<PlaceImage[]>([]);
   protected readonly uploadingCount = signal(0);
   protected readonly heroImageId    = signal<string | null>(null);
   protected readonly cities         = signal<CityOption[]>([]);
 
+  // New: location cascade
+  protected readonly selectedCountryId = signal<number | null>(null);
+
+  // New: destination search
+  protected readonly destinationQuery        = signal('');
+  protected readonly destinationResults      = signal<DestinationOption[]>([]);
+  protected readonly isSearchingDestination  = signal(false);
+  protected readonly showDestinationDropdown = signal(false);
+  protected readonly selectedDestinationId   = signal<string | null>(null);
+
+  // New: type row + filter defs
+  protected readonly extraTypes     = signal<PlaceTypeOption[]>([]);
+  protected readonly showAddType    = signal(false);
+  protected readonly newTypeName    = signal('');
+  protected readonly isAddingType   = signal(false);
+  protected readonly modalFilterDefs    = signal<FilterDefinition[]>([]);
+  protected readonly modalExtraFilters  = signal<Record<string, string>>({});
+  protected readonly showAddFilter   = signal(false);
+  protected readonly newFilterKey    = signal('');
+  protected readonly newFilterLabel  = signal('');
+  protected readonly newFilterType   = signal('boolean');
+  protected readonly isAddingFilter  = signal(false);
+
+  // New: interest tags
+  protected readonly allInterestTags    = signal<InterestTagOption[]>([]);
+  protected readonly selectedInterestIds = signal<number[]>([]);
+
+  // New: pending files (queued before creation)
+  protected readonly pendingFiles = signal<File[]>([]);
+
+  protected readonly allTypeOptions = computed(() => [...this.types, ...this.extraTypes()]);
+
+  private searchDebounce: ReturnType<typeof setTimeout> | null = null;
+  private createdId: string | null = null;
   private map: MapLibreMap | null = null;
   private marker: Marker | null = null;
   private lightStyle: any;
@@ -100,16 +147,18 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadCities();
+    this.loadInterestTags();
     setTimeout(() => this.initMap(), 50);
 
     this.form.get('name')!.valueChanges.subscribe((name) => {
-      if (name && !this.createdDetail()) {
+      if (name && !this.createdId) {
         this.form.patchValue({ slug: this.toSlug(name) }, { emitEvent: false });
       }
     });
   }
 
   ngOnDestroy(): void {
+    if (this.searchDebounce) clearTimeout(this.searchDebounce);
     this.sub.unsubscribe();
     this.themeObserver?.disconnect();
     this.map?.remove();
@@ -119,77 +168,289 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
     return this.form.value.description?.length ?? 0;
   }
 
-  protected get isCreated(): boolean {
-    return this.createdDetail() !== null;
+  protected get filteredRegions(): RegionOption[] {
+    const cid = this.selectedCountryId();
+    return cid === null ? this.regions : this.regions.filter(r => r.countryId === cid);
   }
 
-  protected get canFinish(): boolean {
-    return this.isCreated;
-  }
-
+  // ── Region / country cascade ───────────────────────────────────────────
   protected onRegionChange(): void {
     this.form.patchValue({ cityId: null });
     const regionId = this.form.value.regionId;
-    this.loadCities(regionId ? +regionId : undefined);
+    if (regionId) {
+      this.loadCities(+regionId);
+      const region = this.regions.find(r => r.id === +regionId);
+      if (region?.countryId != null && this.selectedCountryId() == null) {
+        this.selectedCountryId.set(region.countryId);
+      }
+    } else {
+      this.loadCities();
+    }
+    this.cdr.detectChanges();
   }
 
+  protected onCountryChange(value: string): void {
+    const cid = value ? +value : null;
+    this.selectedCountryId.set(cid);
+    const regionId = this.form.value.regionId;
+    if (regionId) {
+      const region = this.regions.find(r => r.id === +regionId);
+      if (region && region.countryId !== cid) {
+        this.form.patchValue({ regionId: null, cityId: null });
+        this.cities.set([]);
+      }
+    }
+    this.cdr.detectChanges();
+  }
+
+  // ── Destination search ─────────────────────────────────────────────────
+  protected onDestinationInput(query: string): void {
+    this.destinationQuery.set(query);
+    if (this.searchDebounce) clearTimeout(this.searchDebounce);
+    if (!query.trim()) {
+      this.destinationResults.set([]);
+      this.showDestinationDropdown.set(false);
+      return;
+    }
+    this.searchDebounce = setTimeout(() => {
+      this.isSearchingDestination.set(true);
+      const regionId = this.form.value.regionId ? +this.form.value.regionId : undefined;
+      this.sub.add(
+        this.svc.searchDestinations(query.trim(), regionId).subscribe({
+          next: results => {
+            this.destinationResults.set(results);
+            this.showDestinationDropdown.set(results.length > 0);
+            this.isSearchingDestination.set(false);
+            this.cdr.detectChanges();
+          },
+          error: () => { this.isSearchingDestination.set(false); this.cdr.detectChanges(); },
+        }),
+      );
+    }, 300);
+  }
+
+  protected selectDestination(dest: DestinationOption): void {
+    this.selectedDestinationId.set(dest.id);
+    this.destinationQuery.set(dest.name);
+    this.showDestinationDropdown.set(false);
+    this.destinationResults.set([]);
+
+    if (dest.regionId != null) {
+      this.form.patchValue({ regionId: String(dest.regionId) });
+      this.loadCities(dest.regionId, dest.cityId ?? undefined, dest.cityId == null ? (dest.city ?? dest.name) : undefined);
+    }
+    if (dest.countryId != null) {
+      this.selectedCountryId.set(dest.countryId);
+    } else if (dest.regionId != null) {
+      const region = this.regions.find(r => r.id === dest.regionId);
+      if (region?.countryId != null) this.selectedCountryId.set(region.countryId);
+    }
+    if (dest.latitude != null && dest.longitude != null) {
+      this.setCoords(dest.latitude, dest.longitude);
+    } else {
+      this.sub.add(
+        this.svc.getDestinationById(dest.id).subscribe({
+          next: full => {
+            if (full.latitude != null && full.longitude != null) {
+              this.setCoords(full.latitude, full.longitude);
+            }
+            this.cdr.detectChanges();
+          },
+        }),
+      );
+    }
+    this.cdr.detectChanges();
+  }
+
+  protected clearDestination(): void {
+    this.selectedDestinationId.set(null);
+    this.destinationQuery.set('');
+    this.destinationResults.set([]);
+    this.showDestinationDropdown.set(false);
+    this.cdr.detectChanges();
+  }
+
+  // ── Type row ────────────────────────────────────────────────────────────
+  protected onTypeChange(value: string): void {
+    this.modalExtraFilters.set({});
+    this.modalFilterDefs.set([]);
+    if (value) this.loadFilterDefs(+value);
+    this.cdr.detectChanges();
+  }
+
+  protected toggleAddType(): void {
+    this.showAddType.update(v => !v);
+    this.newTypeName.set('');
+  }
+
+  protected addNewType(): void {
+    const name = this.newTypeName().trim();
+    if (!name || this.isAddingType()) return;
+    this.isAddingType.set(true);
+    this.sub.add(
+      this.svc.createType(name).subscribe({
+        next: t => {
+          this.extraTypes.update(ts => [...ts, t]);
+          this.form.patchValue({ typeId: String(t.id) });
+          this.onTypeChange(String(t.id));
+          this.showAddType.set(false);
+          this.isAddingType.set(false);
+          this.cdr.detectChanges();
+        },
+        error: () => { this.isAddingType.set(false); this.cdr.detectChanges(); },
+      }),
+    );
+  }
+
+  // ── Filter defs ─────────────────────────────────────────────────────────
+  protected updateModalExtraFilter(key: string, value: string | boolean): void {
+    this.modalExtraFilters.update(ef => {
+      const copy = { ...ef };
+      if (value === false || value === '') delete copy[key];
+      else copy[key] = String(value);
+      return copy;
+    });
+  }
+
+  protected toggleAddFilter(): void { this.showAddFilter.update(v => !v); }
+
+  protected addNewFilter(): void {
+    const key   = this.newFilterKey().trim();
+    const label = this.newFilterLabel().trim();
+    const typeId = this.form.value.typeId ? +this.form.value.typeId : null;
+    if (!key || !label || !typeId || this.isAddingFilter()) return;
+    this.isAddingFilter.set(true);
+    this.sub.add(
+      this.svc.createFilterDefinition(typeId, key, label, this.newFilterType()).subscribe({
+        next: fd => {
+          this.modalFilterDefs.update(defs => [...defs, fd]);
+          this.showAddFilter.set(false);
+          this.newFilterKey.set('');
+          this.newFilterLabel.set('');
+          this.isAddingFilter.set(false);
+          this.cdr.detectChanges();
+        },
+        error: () => { this.isAddingFilter.set(false); this.cdr.detectChanges(); },
+      }),
+    );
+  }
+
+  // ── Interest tags ───────────────────────────────────────────────────────
+  protected toggleInterest(id: number): void {
+    this.selectedInterestIds.update(ids => {
+      if (ids.includes(id)) return ids.filter(i => i !== id);
+      if (ids.length >= 3) return ids;
+      return [...ids, id];
+    });
+  }
+
+  // ── Geocode ─────────────────────────────────────────────────────────────
   protected geocode(): void {
     const address = this.form.value.address?.trim();
     if (!address) return;
     this.isGeocoding.set(true);
     this.error.set('');
-
     this.sub.add(
-      this.http
-        .get<any[]>(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
-          { headers: { 'Accept-Language': 'sr,en' } },
-        )
-        .subscribe({
-          next: (results) => {
-            this.isGeocoding.set(false);
-            if (!results.length) {
-              this.error.set('Adresa nije pronađena.');
-              this.cdr.detectChanges();
-              return;
-            }
-            this.setCoords(parseFloat(results[0].lat), parseFloat(results[0].lon));
-            this.cdr.detectChanges();
-          },
-          error: () => {
-            this.isGeocoding.set(false);
-            this.error.set('Greška pri pretrazi adrese.');
-            this.cdr.detectChanges();
-          },
-        }),
+      this.http.get<any[]>(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+        { headers: { 'Accept-Language': 'sr,en' } },
+      ).subscribe({
+        next: results => {
+          this.isGeocoding.set(false);
+          if (!results.length) { this.error.set('Adresa nije pronađena.'); this.cdr.detectChanges(); return; }
+          this.setCoords(parseFloat(results[0].lat), parseFloat(results[0].lon));
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.isGeocoding.set(false);
+          this.error.set('Greška pri pretrazi adrese.');
+          this.cdr.detectChanges();
+        },
+      }),
     );
   }
 
+  // ── Images ──────────────────────────────────────────────────────────────
+  protected onFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+
+    if (!this.createdId) {
+      const slots = MAX_IMAGES - this.pendingFiles().length;
+      if (slots <= 0) { this.error.set(`Maksimalan broj slika je ${MAX_IMAGES}.`); this.cdr.detectChanges(); return; }
+      this.pendingFiles.update(pf => [...pf, ...files.slice(0, slots)]);
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const slots = MAX_IMAGES - this.images().length - this.uploadingCount();
+    if (slots <= 0) { this.error.set(`Maksimalan broj slika je ${MAX_IMAGES}.`); this.cdr.detectChanges(); return; }
+    const toUpload = files.slice(0, slots);
+    this.uploadingCount.update(n => n + toUpload.length);
+    toUpload.forEach(file => this.uploadFile(this.createdId!, file));
+  }
+
+  protected removePendingFile(index: number): void {
+    this.pendingFiles.update(pf => pf.filter((_, i) => i !== index));
+    this.cdr.detectChanges();
+  }
+
+  protected removeImage(imageId: string): void {
+    if (!this.createdId) return;
+    this.sub.add(
+      this.svc.deleteImage(this.createdId, imageId).subscribe({
+        next: () => {
+          this.images.update(l => l.filter(i => i.id !== imageId));
+          if (this.heroImageId() === imageId) {
+            this.heroImageId.set(null);
+            const remaining = this.images();
+            if (remaining.length > 0) this.setHero(remaining[0].id);
+          }
+          this.cdr.detectChanges();
+        },
+        error: () => { this.error.set('Greška pri brisanju slike.'); this.cdr.detectChanges(); },
+      }),
+    );
+  }
+
+  protected setHero(imageId: string): void {
+    if (!this.createdId) return;
+    this.sub.add(
+      this.svc.setHeroImage(this.createdId, imageId).subscribe({
+        next: () => { this.heroImageId.set(imageId); this.cdr.detectChanges(); },
+      }),
+    );
+  }
+
+  // ── Save ────────────────────────────────────────────────────────────────
   protected save(): void {
     if (this.form.invalid || this.isSaving()) return;
     this.isSaving.set(true);
     this.error.set('');
 
-    const v = this.form.value;
+    const v  = this.form.value;
+    const ef = this.modalExtraFilters();
     this.sub.add(
       this.svc.create({
-        name:        v.name!,
-        slug:        v.slug!,
-        typeId:      v.typeId ? +v.typeId : undefined,
-        description: v.description || undefined,
-        address:     v.address || undefined,
-        cityId:      v.cityId ? +v.cityId : undefined,
-        priceRange:  v.priceRange || undefined,
-        phone:       v.phone || undefined,
-        websiteUrl:  v.websiteUrl || undefined,
-        latitude:    v.latitude ?? undefined,
-        longitude:   v.longitude ?? undefined,
+        name:         v.name!,
+        slug:         v.slug!,
+        typeId:       v.typeId ? +v.typeId : undefined,
+        description:  v.description || undefined,
+        address:      v.address || undefined,
+        cityId:       v.cityId ? +v.cityId : undefined,
+        destinationId: this.selectedDestinationId() ?? undefined,
+        latitude:     v.latitude ?? undefined,
+        longitude:    v.longitude ?? undefined,
+        priceRange:   v.priceRange || undefined,
+        phone:        v.phone || undefined,
+        websiteUrl:   v.websiteUrl || undefined,
+        extraFilters: Object.keys(ef).length ? ef : undefined,
       }).subscribe({
-        next: (detail) => {
-          this.isSaving.set(false);
-          this.createdDetail.set(detail);
+        next: detail => {
+          this.createdId = detail.id;
           this.form.disable();
-          this.cdr.detectChanges();
+          this.uploadPendingAndFinish(detail);
         },
         error: () => {
           this.isSaving.set(false);
@@ -200,105 +461,97 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
     );
   }
 
-  protected finish(): void {
-    if (!this.canFinish) return;
-    this.created.emit(this.createdDetail()!);
-  }
+  // ── Private helpers ─────────────────────────────────────────────────────
+  private uploadPendingAndFinish(detail: PlaceDetail): void {
+    const pending     = this.pendingFiles();
+    const interestIds = this.selectedInterestIds();
+    const total = pending.length + (interestIds.length > 0 ? 1 : 0);
 
-  protected onFilesSelected(event: Event): void {
-    const placeId = this.createdDetail()?.id;
-    if (!placeId) return;
-
-    const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files ?? []);
-    input.value = '';
-
-    const slots = MAX_IMAGES - this.images().length - this.uploadingCount();
-    if (slots <= 0) {
-      this.error.set(`Maksimalan broj slika je ${MAX_IMAGES}.`);
-      this.cdr.detectChanges();
+    if (total === 0) {
+      this.isSaving.set(false);
+      this.created.emit(detail);
       return;
     }
 
-    const toUpload = files.slice(0, slots);
-    if (files.length > slots) {
-      this.error.set(`Možeš dodati još ${slots} slika. Ostatak je ignorisan.`);
-    }
+    let done = 0;
+    const onDone = () => {
+      done++;
+      if (done === total) { this.isSaving.set(false); this.created.emit(detail); }
+    };
 
-    this.uploadingCount.update((n) => n + toUpload.length);
-
-    toUpload.forEach((file) => {
+    pending.forEach(file => {
       this.sub.add(
-        this.svc.uploadImage(placeId, file).subscribe({
-          next: (img) => {
-            this.images.update((l) => [...l, img]);
-            this.uploadingCount.update((n) => n - 1);
-            if (this.heroImageId() === null) {
-              this.setHero(img.id);
-            }
-            this.cdr.detectChanges();
-          },
-          error: (err) => {
-            this.uploadingCount.update((n) => n - 1);
-            this.error.set(err?.error?.message ?? 'Greška pri otpremanju slike.');
-            this.cdr.detectChanges();
-          },
-        }),
+        this.svc.uploadImage(detail.id, file).subscribe({ next: onDone, error: onDone }),
       );
     });
+    if (interestIds.length > 0) {
+      this.sub.add(
+        this.svc.setPlaceInterests(detail.id, interestIds).subscribe({ next: onDone, error: onDone }),
+      );
+    }
   }
 
-  protected removeImage(imageId: string): void {
-    const placeId = this.createdDetail()?.id;
-    if (!placeId) return;
+  private uploadFile(placeId: string, file: File): void {
     this.sub.add(
-      this.svc.deleteImage(placeId, imageId).subscribe({
-        next: () => {
-          this.images.update((l) => l.filter((i) => i.id !== imageId));
-          if (this.heroImageId() === imageId) {
-            this.heroImageId.set(null);
-            const remaining = this.images();
-            if (remaining.length > 0) this.setHero(remaining[0].id);
-          }
+      this.svc.uploadImage(placeId, file).subscribe({
+        next: img => {
+          this.images.update(l => [...l, img]);
+          this.uploadingCount.update(n => n - 1);
+          if (this.heroImageId() === null) this.setHero(img.id);
           this.cdr.detectChanges();
         },
-        error: () => {
-          this.error.set('Greška pri brisanju slike.');
+        error: err => {
+          this.uploadingCount.update(n => n - 1);
+          this.error.set(err?.error?.message ?? 'Greška pri otpremanju slike.');
           this.cdr.detectChanges();
         },
       }),
     );
   }
 
-  protected setHero(imageId: string): void {
-    const placeId = this.createdDetail()?.id;
-    if (!placeId) return;
-    this.sub.add(
-      this.svc.setHeroImage(placeId, imageId).subscribe({
-        next: () => {
-          this.heroImageId.set(imageId);
-          this.cdr.detectChanges();
-        },
-      }),
-    );
-  }
-
-  private loadCities(regionId?: number): void {
+  private loadCities(regionId?: number, selectCityId?: number, selectCityName?: string): void {
     let params = '';
     if (regionId !== undefined) params = `?regionId=${regionId}`;
     this.sub.add(
       this.http.get<CityOption[]>(`/api/cities${params}`).subscribe({
-        next: (cities) => {
+        next: cities => {
           this.cities.set(cities);
+          if (selectCityId !== undefined) {
+            const match = cities.find(c => c.id === selectCityId);
+            if (match) { this.form.patchValue({ cityId: match.id.toString() }); }
+            else if (selectCityName) {
+              const byName = cities.find(c => c.name.toLowerCase() === selectCityName.toLowerCase());
+              if (byName) this.form.patchValue({ cityId: byName.id.toString() });
+            }
+          } else if (selectCityName) {
+            const byName = cities.find(c => c.name.toLowerCase() === selectCityName.toLowerCase());
+            if (byName) this.form.patchValue({ cityId: byName.id.toString() });
+          }
           this.cdr.detectChanges();
         },
+      }),
+    );
+  }
+
+  private loadInterestTags(): void {
+    this.sub.add(
+      this.svc.getAllInterestTags().subscribe({
+        next: tags => { this.allInterestTags.set(tags); this.cdr.detectChanges(); },
+      }),
+    );
+  }
+
+  private loadFilterDefs(typeId: number): void {
+    this.sub.add(
+      this.svc.getFilterDefinitions(typeId).subscribe({
+        next: defs => { this.modalFilterDefs.set(defs); this.cdr.detectChanges(); },
+        error: () => { this.modalFilterDefs.set([]); this.cdr.detectChanges(); },
       }),
     );
   }
 
   private async initMap(): Promise<void> {
     if (!this.mapEl?.nativeElement) return;
-
     const base = patchStyleSources(await (await fetch(MAP_STYLE_URL)).json());
     this.lightStyle = this.buildThemedStyle(base, LIGHT);
     this.darkStyle  = this.buildThemedStyle(base, DARK);
@@ -310,42 +563,31 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
       zoom: 6,
       attributionControl: false,
     });
-
     this.map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
-
-    this.map.on('click', (e) => {
-      this.setCoords(e.lngLat.lat, e.lngLat.lng);
-      this.cdr.detectChanges();
-    });
+    this.map.on('click', e => { this.setCoords(e.lngLat.lat, e.lngLat.lng); this.cdr.detectChanges(); });
 
     this.themeObserver = new MutationObserver(() => {
       const style = this.isDark ? this.darkStyle : this.lightStyle;
       if (style) this.map?.setStyle(style);
     });
-    this.themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme'],
-    });
+    this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   }
 
   private setCoords(lat: number, lng: number): void {
     this.form.patchValue({ latitude: lat, longitude: lng });
     if (!this.map) return;
-
     if (this.marker) {
       this.marker.setLngLat([lng, lat]);
     } else {
       this.marker = new maplibregl.Marker({ color: '#28694c', draggable: true })
         .setLngLat([lng, lat])
         .addTo(this.map);
-
       this.marker.on('dragend', () => {
         const pos = this.marker!.getLngLat();
         this.form.patchValue({ latitude: pos.lat, longitude: pos.lng });
         this.cdr.detectChanges();
       });
     }
-
     this.map.flyTo({ center: [lng, lat], zoom: 13, duration: 800 });
   }
 
@@ -354,13 +596,8 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
       'š': 's', 'đ': 'dj', 'ć': 'c', 'č': 'c', 'ž': 'z',
       'Š': 's', 'Đ': 'dj', 'Ć': 'c', 'Č': 'c', 'Ž': 'z',
     };
-    return name
-      .split('').map(c => map[c] ?? c).join('')
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^\w-]/g, '')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
+    return name.split('').map(c => map[c] ?? c).join('')
+      .toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
   }
 
   private get isDark(): boolean {
@@ -381,8 +618,7 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
       if (!layer.paint) return layer;
       delete layer.paint['fill-pattern'];
       switch (layer.type) {
-        case 'background':
-          layer.paint['background-color'] = p.land; break;
+        case 'background': layer.paint['background-color'] = p.land; break;
         case 'fill': {
           let c: string;
           if (/building/.test(id)) { layer.paint['fill-opacity'] = 0; break; }
@@ -406,9 +642,7 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
           else { const orig = typeof layer.paint['line-color'] === 'string' ? layer.paint['line-color'] : ''; c = this.luminance(orig) > 128 ? p.road_minor : p.land; }
           layer.paint['line-color'] = c; break;
         }
-        case 'fill-extrusion':
-          layer.paint['fill-extrusion-color'] = p.extrusion;
-          layer.paint['fill-extrusion-opacity'] = 1; break;
+        case 'fill-extrusion': layer.paint['fill-extrusion-color'] = p.extrusion; layer.paint['fill-extrusion-opacity'] = 1; break;
         case 'symbol':
           layer.paint['text-color'] = p.text;
           if (layer.paint['text-halo-color']) layer.paint['text-halo-color'] = p.text_halo;

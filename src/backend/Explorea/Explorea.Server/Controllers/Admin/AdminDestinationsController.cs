@@ -1,7 +1,9 @@
 using Explorea.API.DTOs.Admin.Destination;
+using Explorea.Server.Data;
 using Explorea.Server.Services.Admin.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Explorea.Server.Controllers.Admin
@@ -12,10 +14,12 @@ namespace Explorea.Server.Controllers.Admin
     public class AdminDestinationsController : ControllerBase
     {
         private readonly IAdminDestinationService _service;
+        private readonly AppDbContext _context;
 
-        public AdminDestinationsController(IAdminDestinationService service)
+        public AdminDestinationsController(IAdminDestinationService service, AppDbContext context)
         {
             _service = service;
+            _context = context;
         }
 
         // GET /api/admin/destinations
@@ -249,6 +253,26 @@ namespace Explorea.Server.Controllers.Admin
                 queuePending  = 0,
                 queueApproved = 0
             });
+        }
+
+        [HttpGet("{id}/reviews")]
+        public async Task<IActionResult> GetReviews(Guid id)
+        {
+            var reviews = await _context.Reviews
+                .Where(r => r.EntityType == "destination" && r.EntityId == id)
+                .Include(r => r.User)
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(10)
+                .Select(r => new
+                {
+                    authorName = r.User.FirstName + " " + r.User.LastName,
+                    authorAvatarUrl = r.User.ProfileImageUrl,
+                    rating = (int)r.Rating,
+                    comment = r.Comment,
+                    createdAt = r.CreatedAt,
+                })
+                .ToListAsync();
+            return Ok(reviews);
         }
 
         private Guid GetCurrentUserId()

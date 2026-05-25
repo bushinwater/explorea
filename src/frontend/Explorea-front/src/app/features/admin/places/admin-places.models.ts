@@ -1,5 +1,36 @@
 export type PlaceStatus = 'approved' | 'pending' | 'inactive' | 'rejected';
 
+export interface InterestTagOption {
+  id: number;
+  name: string;
+  icon: string | null;
+  isAssigned?: boolean;
+}
+
+export interface CountryOption {
+  id: number;
+  name: string;
+}
+
+export interface DestinationOption {
+  id: string;
+  name: string;
+  city: string | null;
+  cityId?: number | null;
+  regionId?: number | null;
+  countryId?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
+export interface PlaceReview {
+  authorName: string;
+  authorAvatarUrl: string | null;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
 export interface PlaceImage {
   id: string;
   imageUrl: string;
@@ -72,6 +103,8 @@ export interface PlaceDetail {
   images: PlaceImage[];
   amenities: PlaceAmenity[];
   workingDays: PlaceWorkingDay[];
+  extraFilters?: Record<string, string>;
+  reviews?: PlaceReview[];
   createdAt: string;
   updatedAt: string;
 }
@@ -121,6 +154,7 @@ export interface PlaceTypeOption {
 export interface RegionOption {
   id: number;
   name: string;
+  countryId?: number | null;
 }
 
 export interface CityOption {
@@ -142,6 +176,7 @@ export interface CreatePlaceDto {
   phone?: string;
   websiteUrl?: string;
   isFeatured?: boolean;
+  extraFilters?: Record<string, string>;
 }
 
 export interface UpdatePlaceDto {
@@ -159,4 +194,5 @@ export interface UpdatePlaceDto {
   websiteUrl?: string;
   isFeatured?: boolean;
   approvalStatus?: string;
+  extraFilters?: Record<string, string>;
 }

@@ -253,6 +253,26 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpGet("{id}/reviews")]
+        public async Task<IActionResult> GetReviews(Guid id)
+        {
+            var reviews = await _context.Reviews
+                .Where(r => r.EntityType == "event" && r.EntityId == id)
+                .Include(r => r.User)
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(10)
+                .Select(r => new
+                {
+                    authorName = r.User.FirstName + " " + r.User.LastName,
+                    authorAvatarUrl = r.User.ProfileImageUrl,
+                    rating = (int)r.Rating,
+                    comment = r.Comment,
+                    createdAt = r.CreatedAt,
+                })
+                .ToListAsync();
+            return Ok(reviews);
+        }
+
         private Guid GetCurrentUserId()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

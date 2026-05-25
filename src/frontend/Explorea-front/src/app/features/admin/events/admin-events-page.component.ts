@@ -23,6 +23,7 @@ import {
   EventType,
   EventsTab,
   InterestTagOption,
+  ReviewItem,
 } from './admin-events.models';
 import { AdminEventsService } from './admin-events.service';
 import { EventCreateModalComponent } from './admin-event-create-modal.component';
@@ -95,6 +96,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
   protected readonly descriptionExpanded = signal(false);
   protected readonly detailsInterests = signal<InterestTagOption[]>([]);
+  protected readonly detailsReviews   = signal<ReviewItem[]>([]);
 
   protected readonly isSuperAdmin = computed(
     () => this.authContext.context().role === 'super_admin',
@@ -247,6 +249,13 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
         error: () => {},
       }),
     );
+
+    this.subscription.add(
+      this.eventsService.getEventReviews(event.id).subscribe({
+        next: reviews => this.detailsReviews.set(reviews),
+        error: () => this.detailsReviews.set([]),
+      }),
+    );
   }
 
   protected closeDetailsPanel(): void {
@@ -257,6 +266,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       this.isPanelOpen.set(false);
       this.isPanelClosing.set(false);
       this.detailsInterests.set([]);
+      this.detailsReviews.set([]);
     }, 220);
   }
 
@@ -477,6 +487,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
   protected formatRating(r: number): string {
     return r > 0 ? r.toFixed(1) : '—';
+  }
+
+  protected starArray(): number[] {
+    return [1, 2, 3, 4, 5];
   }
 
   protected formatPrice(n: number | null): string {
