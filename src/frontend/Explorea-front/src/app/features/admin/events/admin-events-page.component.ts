@@ -152,7 +152,11 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     );
     this.loadStats();
     this.loadFilterOptions();
-    this.loadEvents();
+    const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
+    this.loadEvents(openEditId ? (items) => {
+      const ev = items.find(e => e.id === openEditId);
+      if (ev) this.openEditFromRow(ev);
+    } : undefined);
   }
 
   ngOnDestroy(): void {
@@ -549,7 +553,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     if (patch.page !== undefined) this.currentPage.set(patch.page);
   }
 
-  private loadEvents(): void {
+  private loadEvents(afterLoad?: (items: EventRow[]) => void): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
@@ -561,6 +565,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
           next: (response) => {
             this.events.set(response.items);
             this.total.set(response.total);
+            afterLoad?.(response.items);
           },
           error: () => {
             this.events.set([]);

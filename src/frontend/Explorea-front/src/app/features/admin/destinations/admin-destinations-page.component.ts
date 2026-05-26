@@ -159,7 +159,11 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.loadStats();
     this.loadRegions();
     this.loadTypes();
-    this.loadDestinations();
+    const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
+    this.loadDestinations(openEditId ? (items) => {
+      const dest = items.find(d => d.id === openEditId);
+      if (dest) this.openEdit(dest);
+    } : undefined);
 
     this.subscription.add(
       interval(5 * 60 * 1000).subscribe(() => this.silentRefresh()),
@@ -530,7 +534,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  private loadDestinations(): void {
+  private loadDestinations(afterLoad?: (items: DestinationRow[]) => void): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
     const request = this.listMode() === 'deleted'
@@ -543,6 +547,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
           this.destinations.set(response.items);
           this.total.set(response.total);
           this.isLoading.set(false);
+          afterLoad?.(response.items);
         },
         error: () => {
           this.destinations.set([]);

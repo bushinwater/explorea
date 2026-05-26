@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -65,7 +66,7 @@ const ADMIN_DELETE_ENDPOINTS: Record<string, string> = {
   selector: 'app-admin-map-view',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmDialogComponent],
   templateUrl: './admin-map-view.component.html',
   styleUrl: './admin-map-view.component.css',
 })
@@ -77,6 +78,7 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
 
   private map!: MapLibreMap;
   private markers: Marker[] = [];
+  private readonly pinElements = new Map<string, HTMLElement>();
   private themeObserver?: MutationObserver;
   private lightStyle: any;
   private darkStyle: any;
@@ -87,7 +89,8 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
   isSatellite = false;
   filterPanelVisible = false;
   selectedPin: ExploreMarker | null = null;
-  deletingPinId: string | null = null;
+  pinToDelete: ExploreMarker | null = null;
+  isDeleting = false;
 
   // Filters
   selectedEntityTypes: string[] = [];   // backend types: 'destination'|'place'|'activity'|'event'
@@ -271,13 +274,24 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
   }
 
   onPinClick(pin: ExploreMarker): void {
+    if (this.selectedPin) {
+      this.pinElements.get(this.pinKey(this.selectedPin))?.classList.remove('map-pin-btn--selected');
+    }
     this.selectedPin = pin;
+    this.pinElements.get(this.pinKey(pin))?.classList.add('map-pin-btn--selected');
     this.cdr.detectChanges();
   }
 
   closePinCard(): void {
+    if (this.selectedPin) {
+      this.pinElements.get(this.pinKey(this.selectedPin))?.classList.remove('map-pin-btn--selected');
+    }
     this.selectedPin = null;
     this.cdr.detectChanges();
+  }
+
+  private pinKey(pin: ExploreMarker): string {
+    return `${pin.entityType}:${pin.id}`;
   }
 
   openInTouristApp(pin: ExploreMarker): void {
@@ -285,34 +299,53 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
   }
 
   editPin(pin: ExploreMarker): void {
-    const role = this.auth.role();
-    if (role === 'super_admin') {
-      const route = ADMIN_ROUTES[pin.entityType] ?? '/admin/destinations';
-      this.router.navigate([route], { queryParams: { selected: pin.slug, edit: pin.id } });
-    } else {
-      const route = ADMIN_ROUTES[pin.entityType] ?? '/admin/destinations';
-      this.router.navigate([route], { queryParams: { selected: pin.slug, edit: pin.id } });
-    }
+    const route = ADMIN_ROUTES[pin.entityType] ?? '/admin/destinations';
+    this.router.navigate([route], { state: { openEditId: pin.id } });
   }
 
   deletePin(pin: ExploreMarker): void {
-    const endpoint = ADMIN_DELETE_ENDPOINTS[pin.entityType];
-    if (!endpoint || !confirm(`Obrisati "${pin.name}"?`)) return;
+    this.pinToDelete = pin;
+    this.cdr.detectChanges();
+  }
 
-    this.deletingPinId = pin.id;
+  cancelDeletePin(): void {
+    this.pinToDelete = null;
+    this.isDeleting = false;
+    this.cdr.detectChanges();
+  }
+
+  confirmDeletePin(): void {
+    const pin = this.pinToDelete;
+    const endpoint = pin ? ADMIN_DELETE_ENDPOINTS[pin.entityType] : null;
+    if (!pin || !endpoint) return;
+
+    this.isDeleting = true;
+    this.cdr.detectChanges();
+
     this.http.delete<void>(`${endpoint}/${pin.id}`).subscribe({
       next: () => {
         this.pins = this.pins.filter(p => !(p.entityType === pin.entityType && p.id === pin.id));
         this.selectedPin = null;
-        this.deletingPinId = null;
+        this.pinToDelete = null;
+        this.isDeleting = false;
         this.addMarkers();
         this.cdr.detectChanges();
       },
       error: () => {
-        this.deletingPinId = null;
+        this.isDeleting = false;
         this.cdr.detectChanges();
       },
     });
+  }
+
+  get deletePinTitle(): string {
+    return this.pinToDelete ? `Obriši ${this.getPinTypeLabel(this.pinToDelete.entityType).toLowerCase()}` : '';
+  }
+
+  get deletePinDescription(): string {
+    return this.pinToDelete
+      ? `Da li sigurno želite da obrišete "${this.pinToDelete.name}"? Ova akcija se ne može poništiti.`
+      : '';
   }
 
   getPinTypeLabel(type: string): string {
@@ -454,13 +487,16 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
   private addMarkers(): void {
     this.markers.forEach(m => m.remove());
     this.markers = [];
+    this.pinElements.clear();
 
     this.filteredPins.forEach(pin => {
       const icon  = this.getPinIcon(pin.entityType);
       const color = this.getPinColor(pin.entityType);
+      const isSelected = this.selectedPin?.entityType === pin.entityType && this.selectedPin?.id === pin.id;
 
       const el = document.createElement('div');
-      el.className = 'map-pin-btn';
+      el.className = 'map-pin-btn' + (isSelected ? ' map-pin-btn--selected' : '');
+      el.style.setProperty('--pin-color', color);
       el.innerHTML = `
         <div class="pin-bubble" style="background:${color};border-color:${color}">
           <span class="material-icons">${icon}</span>
@@ -472,6 +508,8 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
         this.map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(this.map.getZoom(), 12), duration: 800 });
         this.onPinClick(pin);
       });
+
+      this.pinElements.set(this.pinKey(pin), el);
 
       const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat([pin.lng, pin.lat])

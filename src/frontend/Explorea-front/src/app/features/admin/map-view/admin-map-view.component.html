@@ -84,10 +84,9 @@
           class="pin-card-action pin-card-action--danger"
           type="button"
           title="Obrisi"
-          [disabled]="deletingPinId === pin.id"
           (click)="deletePin(pin)"
         >
-          <span class="material-icons">{{ deletingPinId === pin.id ? 'sync' : 'delete' }}</span>
+          <span class="material-icons">delete</span>
           <span>Obrisi</span>
         </button>
       </footer>
@@ -95,6 +94,16 @@
   }
 
 </div>
+
+@if (pinToDelete) {
+  <app-confirm-dialog
+    [title]="deletePinTitle"
+    [description]="deletePinDescription"
+    [isLoading]="isDeleting"
+    (cancel)="cancelDeletePin()"
+    (confirm)="confirmDeletePin()"
+  />
+}
 
 <!-- Filter panel (outside wrapper so it's not clipped) -->
 <aside class="admin-filter-panel" [class.visible]="filterPanelVisible">

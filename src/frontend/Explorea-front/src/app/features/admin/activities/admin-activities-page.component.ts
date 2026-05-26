@@ -288,7 +288,11 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.loadFilterOptions();
     this.loadRegions();
     this.loadCountries();
-    this.loadActivities();
+    const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
+    this.loadActivities(openEditId ? (items) => {
+      const activity = items.find(a => a.id === openEditId);
+      if (activity) this.openEditFromRow(activity);
+    } : undefined);
   }
 
   ngOnDestroy(): void {
@@ -1327,7 +1331,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     return false;
   }
 
-  private loadActivities(): void {
+  private loadActivities(afterLoad?: (items: ActivityRow[]) => void): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
     const request = this.listMode() === 'deleted'
@@ -1340,6 +1344,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           this.activities.set(response.items);
           this.total.set(response.total);
           this.isLoading.set(false);
+          afterLoad?.(response.items);
         },
         error: () => {
           this.activities.set([]);

@@ -155,7 +155,11 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.loadTypes();
     this.loadRegions();
     this.loadCountries();
-    this.loadPlaces();
+    const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
+    this.loadPlaces(openEditId ? (items) => {
+      const place = items.find(p => p.id === openEditId);
+      if (place) this.openEdit(place);
+    } : undefined);
   }
 
   ngOnDestroy(): void {
@@ -460,7 +464,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     if (patch.page !== undefined) this.currentPage.set(patch.page);
   }
 
-  private loadPlaces(): void {
+  private loadPlaces(afterLoad?: (items: PlaceRow[]) => void): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
     const request = this.listMode() === 'deleted'
@@ -473,6 +477,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
           this.places.set(response.items);
           this.total.set(response.total);
           this.isLoading.set(false);
+          afterLoad?.(response.items);
         },
         error: () => {
           this.places.set([]);

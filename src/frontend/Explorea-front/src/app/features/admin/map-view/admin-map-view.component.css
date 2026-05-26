@@ -690,3 +690,24 @@
 :host ::ng-deep .map-pin-btn:hover .pin-bubble {
   transform: rotate(-45deg) scale(1.15);
 }
+
+:host ::ng-deep .map-pin-btn--selected {
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.6));
+  z-index: 10;
+}
+
+:host ::ng-deep .map-pin-btn--selected .pin-bubble {
+  background: #fff !important;
+  border-color: var(--pin-color) !important;
+  transform: rotate(-45deg) scale(1.25) !important;
+}
+
+:host ::ng-deep .map-pin-btn--selected .pin-bubble .material-icons {
+  color: var(--pin-color) !important;
+}
+
+:host ::ng-deep .map-pin-btn--selected .pin-label {
+  font-weight: 800;
+  border-color: var(--pin-color);
+  color: var(--pin-color);
+}
