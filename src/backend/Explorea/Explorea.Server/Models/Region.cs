@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using NetTopologySuite.Geometries;
 
 namespace Explorea.API.Models
 {
@@ -11,6 +12,9 @@ namespace Explorea.API.Models
 
         [Required, MaxLength(100), Column("name")]
         public string Name { get; set; } = null!;
+
+        [Column("boundary")]
+        public Geometry? Boundary { get; set; }
 
         [Column("country_id")]
         public int? CountryId { get; set; }

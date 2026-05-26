@@ -23,6 +23,17 @@ import { LayoutService } from '../core/services/layout.service';
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
+interface RegionGeoItem {
+  id: number;
+  name: string;
+  boundaryGeoJson: string;
+}
+
+interface RegionGeoResponse {
+  regions: RegionGeoItem[];
+  serbiaOutline: string | null;
+}
+
 const DARK = {
   land: '#1e2e24', water: '#102840', park: '#1e3228',
   road_major: '#486858', road_minor: '#364e40', road_path: '#2c4436',
@@ -62,6 +73,14 @@ const ADMIN_DELETE_ENDPOINTS: Record<string, string> = {
   place:       '/api/admin/places',
 };
 
+const REGION_COLORS: Record<number, string> = {
+  1: '#e67e22',
+  2: '#3498db',
+  3: '#e74c3c',
+  4: '#9b59b6',
+  5: '#27ae60',
+};
+
 @Component({
   selector: 'app-admin-map-view',
   standalone: true,
@@ -87,10 +106,14 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
   loading = false;
   currentZoom = 6.5;
   isSatellite = false;
+  showRegions = true;
   filterPanelVisible = false;
   selectedPin: ExploreMarker | null = null;
   pinToDelete: ExploreMarker | null = null;
   isDeleting = false;
+
+  private regionData: RegionGeoResponse | null = null;
+  regionLegend: { id: number; name: string; color: string }[] = [];
 
   // Filters
   selectedEntityTypes: string[] = [];   // backend types: 'destination'|'place'|'activity'|'event'
@@ -269,6 +292,7 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
     this.map.once('style.load', () => {
       if (!this.isSatellite) this.add3DBuildings();
       this.addMarkers();
+      if (this.showRegions && this.regionData) this.applyRegionLayers();
     });
     this.cdr.detectChanges();
   }
@@ -394,6 +418,7 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
     this.map.on('load', () => {
       this.add3DBuildings();
       this.fetchMarkers();
+      this.loadRegionBoundaries();
     });
 
     this.map.on('zoomend', () => {
@@ -556,9 +581,99 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
       this.map.once('style.load', () => {
         this.add3DBuildings();
         this.addMarkers();
+        if (this.showRegions && this.regionData) this.applyRegionLayers();
       });
     });
     this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  }
+
+  // ── Region overlays ───────────────────────────────────────
+
+  toggleRegions(): void {
+    this.showRegions = !this.showRegions;
+    if (this.showRegions && this.regionData) {
+      this.applyRegionLayers();
+    } else if (!this.showRegions) {
+      this.removeRegionLayers();
+    }
+    this.cdr.detectChanges();
+  }
+
+  private loadRegionBoundaries(): void {
+    this.http.get<RegionGeoResponse>('/api/admin/destinations/regions-geo').subscribe({
+      next: data => {
+        this.regionData = data;
+        this.regionLegend = data.regions.map(r => ({
+          id: r.id, name: r.name, color: REGION_COLORS[r.id] ?? '#888',
+        }));
+        if (this.showRegions) this.applyRegionLayers();
+        this.cdr.detectChanges();
+      },
+      error: () => {},
+    });
+  }
+
+  private applyRegionLayers(): void {
+    if (!this.regionData || !this.map.isStyleLoaded()) return;
+    const beforeId = this.firstSymbolLayerId();
+
+    this.regionData.regions.forEach(region => {
+      const color = REGION_COLORS[region.id] ?? '#888888';
+      const srcId  = `region-source-${region.id}`;
+      const fillId = `region-fill-${region.id}`;
+      const lineId = `region-line-${region.id}`;
+
+      if (!this.map.getSource(srcId)) {
+        this.map.addSource(srcId, {
+          type: 'geojson',
+          data: { type: 'Feature', geometry: JSON.parse(region.boundaryGeoJson), properties: {} } as any,
+        });
+      }
+      if (!this.map.getLayer(fillId)) {
+        this.map.addLayer(
+          { id: fillId, type: 'fill', source: srcId, paint: { 'fill-color': color, 'fill-opacity': 0.1 } } as any,
+          beforeId,
+        );
+      }
+      if (!this.map.getLayer(lineId)) {
+        this.map.addLayer(
+          { id: lineId, type: 'line', source: srcId, paint: { 'line-color': color, 'line-width': 1.5, 'line-opacity': 0.8 } } as any,
+          beforeId,
+        );
+      }
+    });
+
+    if (this.regionData.serbiaOutline) {
+      const srcId  = 'serbia-outline-source';
+      const lineId = 'serbia-outline-line';
+      if (!this.map.getSource(srcId)) {
+        this.map.addSource(srcId, {
+          type: 'geojson',
+          data: { type: 'Feature', geometry: JSON.parse(this.regionData.serbiaOutline), properties: {} } as any,
+        });
+      }
+      if (!this.map.getLayer(lineId)) {
+        this.map.addLayer(
+          { id: lineId, type: 'line', source: srcId, paint: { 'line-color': '#ffffff', 'line-width': 2.5, 'line-opacity': 0.55, 'line-dasharray': [4, 2] } } as any,
+          beforeId,
+        );
+      }
+    }
+  }
+
+  private removeRegionLayers(): void {
+    if (!this.map.isStyleLoaded()) return;
+    [1, 2, 3, 4, 5].forEach(id => {
+      if (this.map.getLayer(`region-fill-${id}`)) this.map.removeLayer(`region-fill-${id}`);
+      if (this.map.getLayer(`region-line-${id}`)) this.map.removeLayer(`region-line-${id}`);
+      if (this.map.getSource(`region-source-${id}`)) this.map.removeSource(`region-source-${id}`);
+    });
+    if (this.map.getLayer('serbia-outline-line')) this.map.removeLayer('serbia-outline-line');
+    if (this.map.getSource('serbia-outline-source')) this.map.removeSource('serbia-outline-source');
+  }
+
+  private firstSymbolLayerId(): string | undefined {
+    return (this.map.getStyle()?.layers ?? []).find(l => l.type === 'symbol')?.id;
   }
 
   private luminance(hex: string): number {

@@ -4,6 +4,8 @@ using Explorea.Server.Services.Admin.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Explorea.Server.Helpers;
+using NetTopologySuite.Geometries;
 using System.Security.Claims;
 
 namespace Explorea.Server.Controllers.Admin
@@ -128,6 +130,47 @@ namespace Explorea.Server.Controllers.Admin
             {
                 return StatusCode(403, new { message = ex.Message });
             }
+        }
+
+        // GET /api/admin/destinations/regions-geo
+        [HttpGet("regions-geo")]
+        public async Task<IActionResult> GetRegionsGeo()
+        {
+            var userId = GetCurrentUserId();
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            bool isSuperAdmin = user?.Role?.Name == RoleNames.SuperAdmin;
+            int? managedRegionId = user?.ManagedRegionId;
+
+            var query = _context.Regions.Where(r => r.Boundary != null);
+            if (!isSuperAdmin)
+            {
+                if (!managedRegionId.HasValue)
+                    return Ok(new { regions = Array.Empty<object>(), serbiaOutline = (string?)null });
+                query = query.Where(r => r.Id == managedRegionId.Value);
+            }
+
+            var regions = await query.OrderBy(r => r.Id).ToListAsync();
+
+            var regionDtos = regions.Select(r => new
+            {
+                id = r.Id,
+                name = r.Name,
+                boundaryGeoJson = GeometryToGeoJson(r.Boundary!),
+            }).ToList();
+
+            string? serbiaOutlineGeoJson = null;
+            if (isSuperAdmin && regions.Count > 0)
+            {
+                var union = regions[0].Boundary!;
+                for (int i = 1; i < regions.Count; i++)
+                    union = union.Union(regions[i].Boundary!);
+                serbiaOutlineGeoJson = GeometryToGeoJson(union);
+            }
+
+            return Ok(new { regions = regionDtos, serbiaOutline = serbiaOutlineGeoJson });
         }
 
         // POST /api/admin/destinations/types
@@ -326,6 +369,28 @@ namespace Explorea.Server.Controllers.Admin
             var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return Guid.Parse(claim!);
         }
+
+        private static string GeometryToGeoJson(Geometry geom)
+        {
+            if (geom is MultiPolygon mp)
+            {
+                var polys = string.Join(",", mp.Geometries.Cast<Polygon>().Select(PolygonToGeoJson));
+                return $"{{\"type\":\"MultiPolygon\",\"coordinates\":[{polys}]}}";
+            }
+            if (geom is Polygon poly)
+                return $"{{\"type\":\"Polygon\",\"coordinates\":{PolygonToGeoJson(poly)}}}";
+            return "null";
+        }
+
+        private static string PolygonToGeoJson(Polygon poly)
+        {
+            var rings = new System.Collections.Generic.List<string> { RingToGeoJson(poly.ExteriorRing) };
+            rings.AddRange(poly.InteriorRings.Select(RingToGeoJson));
+            return $"[{string.Join(",", rings)}]";
+        }
+
+        private static string RingToGeoJson(LineString ring) =>
+            $"[{string.Join(",", ring.Coordinates.Select(c => $"[{c.X.ToString(System.Globalization.CultureInfo.InvariantCulture)},{c.Y.ToString(System.Globalization.CultureInfo.InvariantCulture)}]"))}]";
     }
 
     public record CreateTypeRequest(string Name);

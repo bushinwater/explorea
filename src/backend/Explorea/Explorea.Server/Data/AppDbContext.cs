@@ -222,6 +222,10 @@ namespace Explorea.Server.Data
                 .HasForeignKey(a => a.RegionId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Region>()
+                .Property(r => r.Boundary)
+                .HasColumnType("geography");
+
             modelBuilder.Entity<OrganizationRegionAssignment>()
                 .HasOne(a => a.AssignedByUser)
                 .WithMany()

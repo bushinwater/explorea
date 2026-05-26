@@ -20,11 +20,18 @@
       }
     </button>
 
+    <!-- Regions toggle -->
+    <button class="topbar-satellite-btn" [class.active]="showRegions" type="button" (click)="toggleRegions()">
+      <span class="material-icons">map</span>
+      Regioni
+    </button>
+
     <!-- Satellite toggle -->
     <button class="topbar-satellite-btn" [class.active]="isSatellite" type="button" (click)="toggleSatellite()">
       <span class="material-icons">satellite</span>
       Satelit
     </button>
+
 
     <div class="topbar-sync">
       <span class="sync-dot"></span>
@@ -40,6 +47,17 @@
 
   <!-- Map -->
   <div #mapContainer class="admin-map-container"></div>
+
+  @if (showRegions && regionLegend.length > 0) {
+    <div class="region-legend">
+      @for (r of regionLegend; track r.id) {
+        <div class="region-legend-item">
+          <span class="region-legend-swatch" [style.background]="r.color"></span>
+          <span class="region-legend-name">{{ r.name }}</span>
+        </div>
+      }
+    </div>
+  }
 
   @if (selectedPin; as pin) {
     <article class="admin-map-pin-card">
