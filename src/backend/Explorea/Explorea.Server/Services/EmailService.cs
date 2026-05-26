@@ -172,31 +172,161 @@ namespace Explorea.Server.Services
             }
         }
 
-        public async Task SendAdminReportEmailAsync(string toEmail, string firstName, IEnumerable<string> topics)
+        public async Task SendAdminReportEmailAsync(string toEmail, Explorea.API.DTOs.Admin.AdminReportEmailData data)
         {
-            var topicList = topics
-                .Where(topic => !string.IsNullOrWhiteSpace(topic))
-                .Select(topic => topic.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            if (topicList.Count == 0)
+            if (data.Topics.Count == 0)
                 return;
 
-            var subject = "Explorea admin izvestaj";
-            var htmlBody = $@"
-                <html>
-                    <body>
-                        <p>Zdravo, {WebUtility.HtmlEncode(firstName)}!</p>
-                        <p>Ovo je zakazani admin izvestaj za teme koje si izabrao/la u podesavanjima.</p>
-                        <ul>
-                            {string.Join("", topicList.Select(topic => $"<li>{WebUtility.HtmlEncode(topic)}</li>"))}
-                        </ul>
-                        <p>Detaljna logika za generisanje izvestaja se povezuje odvojeno.</p>
-                    </body>
-                </html>";
+            var periodLabel = data.PeriodEnd.Subtract(data.PeriodStart).TotalDays switch
+            {
+                <= 1  => "dnevni",
+                <= 7  => "nedeljni",
+                <= 14 => "dvonedeljni",
+                _     => "mesecni",
+            };
+
+            var fromDate = data.PeriodStart.ToString("dd.MM.yyyy");
+            var toDate   = data.PeriodEnd.ToString("dd.MM.yyyy");
+
+            var subject  = $"Explorea admin izvestaj - {fromDate} do {toDate}";
+            var htmlBody = BuildReportHtml(data, periodLabel, fromDate, toDate);
 
             await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
+        }
+
+        private static string BuildReportHtml(
+            Explorea.API.DTOs.Admin.AdminReportEmailData data,
+            string periodLabel,
+            string fromDate,
+            string toDate)
+        {
+            var sections = new System.Text.StringBuilder();
+            var topics   = data.Topics;
+
+            if (topics.Contains("weekly_summary"))
+            {
+                sections.Append(BuildSection(
+                    "Nedeljni pregled",
+                    new[]
+                    {
+                        Stat("Novi korisnici",         data.NewUsersCount,         "u ovom periodu"),
+                        Stat("Nove recenzije",         data.NewReviewsCount,        "u ovom periodu"),
+                        Stat("Recenzije na moderaciji",data.HiddenReviewsCount,     "ceka pregled"),
+                        Stat("Novi dogadjaji",          data.NewEventsCount,         "u ovom periodu"),
+                        Stat("Nadolazeci dogadjaji",    data.UpcomingEventsCount,    "u narednom periodu"),
+                        Stat("Zahtevi na cekanju",     data.PendingPlacesCount,     "ceka odobravanje"),
+                        Stat("Otvoreni tiketi",        data.OpenTicketsCount,       "otvoreno"),
+                    }));
+            }
+            else
+            {
+                if (topics.Contains("reviews"))
+                {
+                    sections.Append(BuildSection(
+                        "Recenzije i moderacija",
+                        new[]
+                        {
+                            Stat("Nove recenzije",          data.NewReviewsCount,   "u ovom periodu"),
+                            Stat("Recenzije na moderaciji", data.HiddenReviewsCount, "ceka pregled"),
+                        }));
+                }
+
+                if (topics.Contains("events"))
+                {
+                    sections.Append(BuildSection(
+                        "Dogadjaji i aktivnosti",
+                        new[]
+                        {
+                            Stat("Novi dogadjaji",       data.NewEventsCount,      "u ovom periodu"),
+                            Stat("Nadolazeci dogadjaji", data.UpcomingEventsCount, "u narednom periodu"),
+                        }));
+                }
+
+                if (topics.Contains("system"))
+                {
+                    sections.Append(BuildSection(
+                        "Sistemska upozorenja",
+                        new[]
+                        {
+                            Stat("Zahtevi objekata na cekanju", data.PendingPlacesCount, "ceka odobravanje"),
+                            Stat("Otvoreni support tiketi",     data.OpenTicketsCount,   "otvoreno"),
+                        }));
+                }
+            }
+
+            return $@"<!DOCTYPE html>
+<html lang=""sr"">
+<head><meta charset=""UTF-8""><meta name=""viewport"" content=""width=device-width,initial-scale=1""></head>
+<body style=""margin:0;padding:0;background:#0f1117;font-family:'Segoe UI',Arial,sans-serif;"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#0f1117;"">
+    <tr><td align=""center"" style=""padding:32px 16px;"">
+      <table width=""580"" cellpadding=""0"" cellspacing=""0"" style=""max-width:580px;width:100%;"">
+
+        <!-- header -->
+        <tr><td style=""background:#1a1d27;border-radius:12px 12px 0 0;padding:28px 32px;border-bottom:1px solid #2a2d3a;"">
+          <span style=""font-size:22px;font-weight:800;color:#6366f1;letter-spacing:-0.5px;"">Explorea</span>
+          <span style=""font-size:13px;color:#8b8fa8;margin-left:10px;"">Admin izvestaj</span>
+        </td></tr>
+
+        <!-- greeting -->
+        <tr><td style=""background:#1a1d27;padding:24px 32px 8px;"">
+          <p style=""margin:0 0 6px;font-size:16px;font-weight:600;color:#e8e9f0;"">
+            Zdravo, {WebUtility.HtmlEncode(data.FirstName)}!
+          </p>
+          <p style=""margin:0;font-size:13px;color:#8b8fa8;line-height:1.5;"">
+            Ovo je tvoj {WebUtility.HtmlEncode(periodLabel)} izvestaj za period
+            <strong style=""color:#a8aabc;"">{WebUtility.HtmlEncode(fromDate)} &ndash; {WebUtility.HtmlEncode(toDate)}</strong>.
+          </p>
+        </td></tr>
+
+        <!-- sections -->
+        {sections}
+
+        <!-- footer -->
+        <tr><td style=""background:#13151f;border-radius:0 0 12px 12px;padding:20px 32px;border-top:1px solid #2a2d3a;"">
+          <p style=""margin:0;font-size:12px;color:#5c5f72;line-height:1.6;"">
+            Ovaj izvestaj je automatski generisan na osnovu tvojih podesavanja obavest&shy;enja.<br>
+            Za promenu ucestalosti ili tema poseti <strong>Admin panel &rsaquo; Settings &rsaquo; Notifications</strong>.
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>";
+        }
+
+        private static string BuildSection(string title, IEnumerable<string> statRows)
+        {
+            var rows = string.Join("", statRows);
+            return $@"
+        <tr><td style=""background:#1a1d27;padding:20px 32px 0;"">
+          <p style=""margin:0 0 12px;font-size:11px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:0.08em;"">{WebUtility.HtmlEncode(title)}</p>
+          <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#12141e;border:1px solid #2a2d3a;border-radius:8px;overflow:hidden;"">
+            {rows}
+          </table>
+        </td></tr>
+        <tr><td style=""background:#1a1d27;padding:0 0 4px;""></td></tr>";
+        }
+
+        private static string Stat(string label, int value, string suffix)
+        {
+            var color = value == 0 ? "#5c5f72" : "#e8e9f0";
+            var badge = value == 0
+                ? $@"<span style=""color:#5c5f72;font-size:20px;font-weight:700;"">0</span>"
+                : $@"<span style=""color:#6366f1;font-size:20px;font-weight:700;"">{value}</span>";
+
+            return $@"
+            <tr style=""border-bottom:1px solid #1e2130;"">
+              <td style=""padding:12px 16px;"">
+                <span style=""font-size:13px;color:{color};"">{WebUtility.HtmlEncode(label)}</span>
+                <span style=""font-size:11px;color:#5c5f72;margin-left:6px;"">{WebUtility.HtmlEncode(suffix)}</span>
+              </td>
+              <td align=""right"" style=""padding:12px 16px;white-space:nowrap;"">
+                {badge}
+              </td>
+            </tr>";
         }
 
         public async Task SendSavedItemDeletedEmailAsync(string toEmail, string firstName, string entityName)

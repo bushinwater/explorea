@@ -349,7 +349,7 @@
           </label>
 
           <label class="delivery-field">
-            <span>Sat dostave</span>
+            <span>Sat dostave <span class="delivery-field__tz">po Beogradu</span></span>
             <select [value]="notificationsForm().deliveryHour"
               [disabled]="isNotificationsSaving()"
               (change)="updateDeliveryHour($any($event.target).value)">
@@ -368,6 +368,28 @@
               <option value="all">Sva obaveštenja</option>
             </select>
           </label>
+        </div>
+
+        <div class="test-report-row">
+          @if (testReportResult()) {
+            <span class="test-report-result" [class.test-report-result--ok]="testReportResult()!.ok">
+              <span class="material-icons">{{ testReportResult()!.ok ? 'check_circle' : 'error' }}</span>
+              {{ testReportResult()!.message }}
+            </span>
+          }
+          <button
+            type="button"
+            class="test-report-btn"
+            [disabled]="isTestReportSending()"
+            (click)="sendTestReport()">
+            @if (isTestReportSending()) {
+              <span class="material-icons test-report-btn__spin">refresh</span>
+              Šaljem...
+            } @else {
+              <span class="material-icons">send</span>
+              Pošalji izveštaj odmah
+            }
+          </button>
         </div>
       </section>
 

@@ -126,6 +126,10 @@ export class AdminSettingsService {
     return this.http.get<AdminAdministrationOverviewDto>(`${this.api}/administration`);
   }
 
+  sendDueReports(): Observable<{ sentCount: number; sentAt: string }> {
+    return this.http.post<{ sentCount: number; sentAt: string }>(`${this.api}/notifications/reports/send-due`, {});
+  }
+
   deleteProfilePhoto(): Observable<AdminProfileDto> {
     return this.http.delete<AdminProfileDto>(`${this.api}/profile-photo`);
   }

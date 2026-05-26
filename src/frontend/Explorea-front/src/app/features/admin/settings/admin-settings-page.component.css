@@ -967,6 +967,12 @@
   font-weight: 800;
 }
 
+.delivery-field__tz {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
 .delivery-field select {
   width: 100%;
   min-height: 48px;
@@ -982,6 +988,70 @@
 .delivery-field select:focus {
   border-color: color-mix(in srgb, var(--color-primary) 54%, transparent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.test-report-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 0 2px;
+  border-top: 1px dashed var(--color-border-light);
+  margin-top: 4px;
+}
+
+.test-report-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px dashed color-mix(in srgb, var(--color-border) 80%, transparent);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.test-report-btn:hover:not(:disabled) {
+  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+}
+.test-report-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.test-report-btn .material-icons {
+  font-size: 14px;
+}
+.test-report-btn__spin {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.test-report-result {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  flex: 1;
+}
+.test-report-result .material-icons {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.test-report-result--ok {
+  color: var(--color-success, #34d399);
+}
+.test-report-result:not(.test-report-result--ok) {
+  color: var(--color-danger, #f87171);
 }
 
 .notifications-actions {

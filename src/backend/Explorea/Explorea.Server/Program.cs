@@ -160,6 +160,7 @@ builder.Services.AddHttpClient<IChatService, GeminiChatService>();
 builder.Services.AddHostedService<SupportRetentionService>();
 builder.Services.AddHostedService<UserPurgeService>();
 builder.Services.AddHostedService<DatabaseBackupService>();
+builder.Services.AddHostedService<NotificationReportBackgroundService>();
 
 builder.Services.AddMcpServer()
     .WithHttpTransport()

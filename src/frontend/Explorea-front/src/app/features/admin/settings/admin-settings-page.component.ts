@@ -101,6 +101,8 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   readonly isNotificationsSaving = signal(false);
   readonly notificationsErrorMessage = signal('');
   readonly notificationsSuccessMessage = signal('');
+  readonly isTestReportSending = signal(false);
+  readonly testReportResult = signal<{ ok: boolean; message: string } | null>(null);
 
   readonly isAdministrationLoading = signal(false);
   readonly administrationErrorMessage = signal('');
@@ -499,6 +501,29 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     this.loadNotifications();
     this.notificationsSuccessMessage.set('');
     this.notificationsErrorMessage.set('');
+  }
+
+  protected sendTestReport(): void {
+    this.isTestReportSending.set(true);
+    this.testReportResult.set(null);
+
+    this.subscription.add(
+      this.adminSettingsService.sendDueReports().subscribe({
+        next: (result) => {
+          this.isTestReportSending.set(false);
+          this.testReportResult.set({
+            ok: true,
+            message: result.sentCount > 0
+              ? `Poslato ${result.sentCount} izveštaj(a).`
+              : 'Nema izveštaja za slanje (proveri podešavanja ili spam folder).',
+          });
+        },
+        error: () => {
+          this.isTestReportSending.set(false);
+          this.testReportResult.set({ ok: false, message: 'Greška pri slanju — proveri SMTP konfiguraciju.' });
+        },
+      }),
+    );
   }
 
   protected saveNotifications(): void {

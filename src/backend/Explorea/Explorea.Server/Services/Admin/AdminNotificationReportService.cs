@@ -1,3 +1,5 @@
+using Explorea.API.DTOs.Admin;
+using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Services.Admin.Interfaces;
 using Explorea.Server.Services.Interfaces;
@@ -41,7 +43,8 @@ namespace Explorea.Server.Services.Admin
                 if (topics.Count == 0 || !IsDue(preferences.NotificationReportsLastSentAt, preferences.NotificationDeliveryFrequencyDays, now))
                     continue;
 
-                await _emailService.SendAdminReportEmailAsync(user.Email, user.FirstName, topics);
+                var reportData = await BuildReportDataAsync(user, preferences, now, topics);
+                await _emailService.SendAdminReportEmailAsync(user.Email, reportData);
 
                 preferences.NotificationReportsLastSentAt = now;
                 preferences.UpdatedAt = now;
@@ -49,11 +52,66 @@ namespace Explorea.Server.Services.Admin
             }
 
             if (sentCount > 0)
-            {
                 await _db.SaveChangesAsync();
-            }
 
             return sentCount;
+        }
+
+        private async Task<AdminReportEmailData> BuildReportDataAsync(
+            User user,
+            UserPreferences prefs,
+            DateTimeOffset now,
+            List<string> topics)
+        {
+            var periodStart = now.AddDays(-prefs.NotificationDeliveryFrequencyDays);
+
+            var data = new AdminReportEmailData
+            {
+                FirstName   = user.FirstName,
+                Topics      = topics,
+                PeriodStart = periodStart,
+                PeriodEnd   = now,
+            };
+
+            var needsReviews = topics.Contains("reviews") || topics.Contains("weekly_summary");
+            var needsEvents  = topics.Contains("events")  || topics.Contains("weekly_summary");
+            var needsSystem  = topics.Contains("system")  || topics.Contains("weekly_summary");
+            var needsUsers   = topics.Contains("weekly_summary");
+
+            if (needsReviews)
+            {
+                data.NewReviewsCount = await _db.Reviews.AsNoTracking()
+                    .CountAsync(r => !r.IsDeleted && r.CreatedAt >= periodStart);
+
+                data.HiddenReviewsCount = await _db.Reviews.AsNoTracking()
+                    .CountAsync(r => !r.IsDeleted && r.IsHidden);
+            }
+
+            if (needsEvents)
+            {
+                data.NewEventsCount = await _db.Events.AsNoTracking()
+                    .CountAsync(e => e.CreatedAt >= periodStart);
+
+                data.UpcomingEventsCount = await _db.Events.AsNoTracking()
+                    .CountAsync(e => e.StartDatetime > now);
+            }
+
+            if (needsSystem)
+            {
+                data.PendingPlacesCount = await _db.Places.AsNoTracking()
+                    .CountAsync(p => !p.IsDeleted && p.ApprovalStatus.ToLower() == "pending");
+
+                data.OpenTicketsCount = await _db.SupportTickets.AsNoTracking()
+                    .CountAsync(t => t.Status == SupportTicketStatuses.Open);
+            }
+
+            if (needsUsers)
+            {
+                data.NewUsersCount = await _db.Users.AsNoTracking()
+                    .CountAsync(u => u.IsActive && u.CreatedAt >= periodStart);
+            }
+
+            return data;
         }
 
         private static DateTimeOffset ToBelgradeTime(DateTimeOffset now)
