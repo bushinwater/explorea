@@ -341,6 +341,8 @@ namespace Explorea.Server.Services.Admin
             sb.AppendLine("Uz svaki odgovor predlozi 1-2 konkretne admin akcije ili postavi relevantno pratece pitanje.");
             sb.AppendLine("Ako bi korisniku pomogla navigacija, spomeni koju admin sekciju da otvori; aplikacija ce prikazati dugmad za podrzane quick actions.");
             sb.AppendLine("Primeri pitanja koja admin moze postavljati: koliko pregleda ima konkretna destinacija, koji dogadjaj je najpopularniji, koliko novih korisnika ima, sta treba odobriti, koje aktivnosti su neaktivne, pregled tiketa.");
+            sb.AppendLine("FORMATIRANJE: Nikad ne koristis markdown. Bez zvezdica (*), bez boldovanja (**rec**), bez bullet lista sa crticom ili zvezdicom. Pisi kao obican tekst, prirodnim recima.");
+            sb.AppendLine("OGRANICENJA: Ti si asistent za analizu i informacije — ne mozes da dodajes, menjas ni brises podatke u sistemu. Ako te pitaju da dodas destinaciju, dogadjaj ili slicno, odgovori prirodno i kratko da to mozes samo da ti pokaze gde to moze da uradi sam, a zatim ponudi korisne informacije iz konteksta. Ne izvinjuj se previse — samo preusmeri razgovor.");
             sb.AppendLine();
             sb.AppendLine("=== ADMIN KONTEKST ===");
             sb.AppendLine($"Korisnici: ukupno {context.TotalUsers}, novo ovaj mesec: {context.NewUsersLast30Days} ({userGrowth}).");
