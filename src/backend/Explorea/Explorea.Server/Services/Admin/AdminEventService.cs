@@ -308,8 +308,13 @@ namespace Explorea.Server.Services.Admin
             if (dto.EndDatetime   != null) { AddChangedField(changedFields, "kraj", target.EndDatetime, dto.EndDatetime.Value); target.EndDatetime = dto.EndDatetime.Value; }
             if (dto.Price         != null) { AddChangedField(changedFields, "cena", target.Price, dto.Price); target.Price = dto.Price; }
             if (dto.Address       != null) { AddChangedField(changedFields, "adresa", target.Address, dto.Address); target.Address = dto.Address; }
-            if (dto.Latitude      != null) { AddChangedField(changedFields, "koordinate", target.Latitude, dto.Latitude); target.Latitude = dto.Latitude; }
-            if (dto.Longitude     != null) { AddChangedField(changedFields, "koordinate", target.Longitude, dto.Longitude); target.Longitude = dto.Longitude; }
+            if (dto.Latitude != null || dto.Longitude != null)
+            {
+                if (target.Latitude != dto.Latitude || target.Longitude != dto.Longitude)
+                    changedFields.Add("koordinate");
+                if (dto.Latitude  != null) target.Latitude  = dto.Latitude;
+                if (dto.Longitude != null) target.Longitude = dto.Longitude;
+            }
             if (dto.TicketUrl     != null) { AddChangedField(changedFields, "link za karte", target.TicketUrl, dto.TicketUrl); target.TicketUrl = dto.TicketUrl; }
             if (dto.CityId        != null) { AddChangedField(changedFields, "grad", target.CityId, dto.CityId); target.CityId = dto.CityId; }
             if (dto.CountryId     != null) { AddChangedField(changedFields, "drzava", target.CountryId, dto.CountryId); target.CountryId = dto.CountryId; }
