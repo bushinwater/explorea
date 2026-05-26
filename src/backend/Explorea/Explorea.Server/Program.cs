@@ -28,6 +28,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 );
 
 builder.Services.AddMemoryCache();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -94,6 +95,8 @@ builder.Services.AddScoped<IOrganizationAssignmentRepository, OrganizationAssign
 builder.Services.AddScoped<IOrganizationRegionAssignmentRepository, OrganizationRegionAssignmentRepository>();
 builder.Services.AddScoped<ISubmissionQueueRepository, SubmissionQueueRepository>();
 builder.Services.AddScoped<IAdminQueueService, AdminQueueService>();
+builder.Services.AddScoped<ISavedItemCleanupService, SavedItemCleanupService>();
+builder.Services.AddScoped<IOwnerChangeNotificationService, OwnerChangeNotificationService>();
 
 builder.Services.AddCors(options =>
 {
@@ -156,6 +159,7 @@ builder.Services.AddSingleton<IAdminErrorLogService, AdminErrorLogService>();
 builder.Services.AddHttpClient<IChatService, GeminiChatService>();
 builder.Services.AddHostedService<SupportRetentionService>();
 builder.Services.AddHostedService<UserPurgeService>();
+builder.Services.AddHostedService<DatabaseBackupService>();
 
 builder.Services.AddMcpServer()
     .WithHttpTransport()

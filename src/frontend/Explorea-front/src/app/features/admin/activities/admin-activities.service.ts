@@ -25,6 +25,18 @@ export class AdminActivitiesService {
   constructor(private readonly http: HttpClient) {}
 
   getActivities(filters: ActivityFilters): Observable<ActivityPagedResponse> {
+    return this.getActivityList(this.base, filters);
+  }
+
+  getDeletedActivities(filters: ActivityFilters): Observable<ActivityPagedResponse> {
+    return this.getActivityList(`${this.base}/deleted`, filters, true);
+  }
+
+  private getActivityList(
+    url: string,
+    filters: ActivityFilters,
+    deletedOnly = false,
+  ): Observable<ActivityPagedResponse> {
     let params = new HttpParams()
       .set('page', filters.page)
       .set('pageSize', filters.pageSize);
@@ -37,23 +49,25 @@ export class AdminActivitiesService {
     if (filters.categoryId !== 'all') {
       params = params.set('categoryId', filters.categoryId);
     }
-    if (filters.status !== 'all') {
+    if (!deletedOnly && filters.status !== 'all') {
       params = params.set('status', filters.status);
     }
     if (filters.difficulty !== 'all') {
       params = params.set('difficultyLevel', filters.difficulty);
     }
-    if (filters.minRating !== 'all') {
+    if (!deletedOnly && filters.minRating !== 'all') {
       params = params.set('minAvgRating', filters.minRating);
     }
     if (filters.regionId !== 'all') {
       params = params.set('regionId', filters.regionId);
     }
-    for (const [key, value] of Object.entries(filters.extraFilters)) {
-      params = params.append('extraFilters', `${key}:${value}`);
+    if (!deletedOnly) {
+      for (const [key, value] of Object.entries(filters.extraFilters)) {
+        params = params.append('extraFilters', `${key}:${value}`);
+      }
     }
 
-    return this.http.get<ActivityPagedResponse>(this.base, { params });
+    return this.http.get<ActivityPagedResponse>(url, { params });
   }
 
   getStats(): Observable<ActivityStats> {

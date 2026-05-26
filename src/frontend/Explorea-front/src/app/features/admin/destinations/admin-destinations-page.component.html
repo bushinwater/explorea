@@ -268,11 +268,22 @@
         </div>
 
         <!-- Add new -->
-        <button class="evts-btn-primary" type="button" (click)="openCreateModal()">
-          <span class="material-icons">add</span>
-          {{ ui.t('destinations.addNew') }}
-        </button>
+        @if (listMode() === 'active') {
+          <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
+            <span class="material-icons">add</span>
+            {{ ui.t('destinations.addNew') }}
+          </button>
+        }
       </div>
+    </div>
+
+    <div class="dest-filter-chips dest-list-mode-tabs">
+      <button class="dest-chip" [class.dest-chip--active]="listMode() === 'active'" (click)="setListMode('active')">
+        Aktivne
+      </button>
+      <button class="dest-chip" [class.dest-chip--active]="listMode() === 'deleted'" (click)="setListMode('deleted')">
+        Obrisane
+      </button>
     </div>
 
     <!-- Table -->
@@ -293,7 +304,7 @@
               <th class="dest-th">{{ ui.t('destinations.table.status') }}</th>
               <th class="dest-th dest-th--right">{{ ui.t('destinations.table.views') }}</th>
               <th class="dest-th dest-th--center">Ocena</th>
-              <th class="dest-th">{{ ui.t('destinations.table.updated') }}</th>
+              <th class="dest-th">{{ listMode() === 'deleted' ? 'Obrisano' : ui.t('destinations.table.updated') }}</th>
               <th class="dest-th"></th>
             </tr>
           </thead>
@@ -357,13 +368,14 @@
                 <td class="dest-td">
                   <div class="dest-updated">
                     <span class="material-icons">calendar_today</span>
-                    {{ timeAgo(dest.lastUpdatedAt) }}
+                    {{ timeAgo(listMode() === 'deleted' ? (dest.deletedAt ?? dest.lastUpdatedAt) : dest.lastUpdatedAt) }}
                   </div>
                 </td>
 
                 <!-- Actions -->
                 <td class="dest-td dest-td--actions" (click)="$event.stopPropagation()">
                   <div class="row-actions">
+                    @if (listMode() === 'active') {
                     <a
                       class="btn-icon"
                       title="Otvori u aplikaciji"
@@ -387,6 +399,7 @@
                     >
                       <span class="material-icons">delete</span>
                     </button>
+                    }
                   </div>
                 </td>
               </tr>

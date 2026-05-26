@@ -57,3 +57,6 @@ appsettings.*.json
 
 # launch settings (optional)
 **/launchSettings.json
+
+# database backups
+src/backend/Explorea/Explorea.Server/DatabaseBackups/

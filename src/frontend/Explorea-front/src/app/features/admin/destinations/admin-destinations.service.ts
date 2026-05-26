@@ -40,6 +40,7 @@ interface ApiDestinationItem {
   country: string | null;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
 }
 
 interface ApiDestinationStats {
@@ -65,6 +66,18 @@ export class AdminDestinationsService {
   }
 
   getDestinations(filters: DestinationFilters): Observable<DestinationPagedResponse> {
+    return this.getDestinationList('/api/admin/destinations', filters);
+  }
+
+  getDeletedDestinations(filters: DestinationFilters): Observable<DestinationPagedResponse> {
+    return this.getDestinationList('/api/admin/destinations/deleted', filters, true);
+  }
+
+  private getDestinationList(
+    url: string,
+    filters: DestinationFilters,
+    deletedOnly = false,
+  ): Observable<DestinationPagedResponse> {
     let params = new HttpParams()
       .set('page', filters.page)
       .set('pageSize', filters.pageSize);
@@ -83,19 +96,21 @@ export class AdminDestinationsService {
       params = params.set('typeId', typeId);
     }
 
-    if (filters.minRating !== null) {
+    if (!deletedOnly && filters.minRating !== null) {
       params = params.set('minRating', filters.minRating);
     }
 
-    for (const [key, value] of Object.entries(filters.extraFilters)) {
-      params = params.append('extraFilters', `${key}:${value}`);
+    if (!deletedOnly) {
+      for (const [key, value] of Object.entries(filters.extraFilters)) {
+        params = params.append('extraFilters', `${key}:${value}`);
+      }
     }
 
-    if (filters.status !== 'all') {
+    if (!deletedOnly && filters.status !== 'all') {
       params = params.set('visibility', filters.status);
     }
 
-    return this.http.get<ApiDestinationResponse>('/api/admin/destinations', { params }).pipe(
+    return this.http.get<ApiDestinationResponse>(url, { params }).pipe(
       map((response) => ({
         total: response.total,
         items: response.items.map((item) => this.mapToRow(item)),
@@ -222,6 +237,7 @@ export class AdminDestinationsService {
       views: item.views,
       avgRating: item.avgRating,
       lastUpdatedAt: item.updatedAt,
+      deletedAt: item.deletedAt ?? null,
     };
   }
 

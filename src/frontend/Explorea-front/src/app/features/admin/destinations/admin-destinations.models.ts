@@ -60,6 +60,7 @@ export interface DestinationRow {
   views: number;
   avgRating?: number;
   lastUpdatedAt: string;
+  deletedAt?: string | null;
 }
 
 export interface TopDestination {

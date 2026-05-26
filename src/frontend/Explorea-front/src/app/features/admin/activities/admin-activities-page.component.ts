@@ -105,6 +105,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly filterDefs = signal<FilterDefinition[]>([]);
 
   protected readonly activities = signal<ActivityRow[]>([]);
+  protected readonly listMode = signal<'active' | 'deleted'>('active');
   protected readonly stats = signal<ActivityStats | null>(null);
   protected readonly categories = signal<CategoryOption[]>([]);
   protected readonly regions = signal<RegionOption[]>([]);
@@ -365,6 +366,16 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.loadActivities();
   }
 
+  protected setListMode(mode: 'active' | 'deleted'): void {
+    if (this.listMode() === mode) return;
+    this.listMode.set(mode);
+    this.closeDetailsPanel();
+    this.activeMenuId.set(null);
+    this.patchFilter({ page: 1 });
+    this.currentPage.set(1);
+    this.loadActivities();
+  }
+
   protected goToPage(page: number): void {
     const clamped = Math.min(Math.max(page, 1), this.totalPages());
     this.patchFilter({ page: clamped });
@@ -416,6 +427,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   protected openDetailsPanel(activity: ActivityRow): void {
+    if (this.listMode() === 'deleted') return;
+
     this.activeMenuId.set(null);
     this.selectedActivity.set(activity);
     this.selectedActivityDetail.set(null);
@@ -1264,9 +1277,12 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.errorMessage.set('');
 
     const allFilters = { ...this.filters(), search: '', ids: undefined, page: 1, pageSize: 500 };
+    const request = this.listMode() === 'deleted'
+      ? this.activitiesService.getDeletedActivities(allFilters)
+      : this.activitiesService.getActivities(allFilters);
 
     this.subscription.add(
-      this.activitiesService.getActivities(allFilters).subscribe({
+      request.subscribe({
         next: (response) => {
           const q = query.toLowerCase();
           const matched = response.items.filter(a =>
@@ -1314,9 +1330,12 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   private loadActivities(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
+    const request = this.listMode() === 'deleted'
+      ? this.activitiesService.getDeletedActivities(this.filters())
+      : this.activitiesService.getActivities(this.filters());
 
     this.subscription.add(
-      this.activitiesService.getActivities(this.filters()).subscribe({
+      request.subscribe({
         next: (response) => {
           this.activities.set(response.items);
           this.total.set(response.total);

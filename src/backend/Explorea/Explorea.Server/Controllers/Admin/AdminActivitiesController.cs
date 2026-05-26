@@ -66,6 +66,25 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpGet("deleted")]
+        public async Task<IActionResult> GetDeleted([FromQuery] AdminActivityListQueryDto query)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var (items, total) = await _service.GetDeletedAsync(query, userId);
+                return Ok(new { total, items });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpGet("filter-options")]
         public async Task<IActionResult> GetFilterOptions()
         {

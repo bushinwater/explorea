@@ -19,6 +19,7 @@ namespace Explorea.Server.Services.Admin
         private readonly ISearchRepository _searchRepo;
         private readonly ICloudinaryService _cloudinary;
         private readonly AppDbContext _db;
+        private readonly ISavedItemCleanupService _savedItemCleanup;
 
         private static readonly GeometryFactory _geometryFactory =
             new GeometryFactory(new PrecisionModel(), 4326);
@@ -29,7 +30,8 @@ namespace Explorea.Server.Services.Admin
             IUserRepository userRepo,
             ISearchRepository searchRepo,
             ICloudinaryService cloudinary,
-            AppDbContext db)
+            AppDbContext db,
+            ISavedItemCleanupService savedItemCleanup)
         {
             _destinationRepo = destinationRepo;
             _assignmentRepo  = assignmentRepo;
@@ -37,6 +39,7 @@ namespace Explorea.Server.Services.Admin
             _searchRepo      = searchRepo;
             _cloudinary      = cloudinary;
             _db              = db;
+            _savedItemCleanup = savedItemCleanup;
         }
 
         public async Task<(List<AdminDestinationListDto> Items, int Total)> GetAllAsync(
@@ -111,6 +114,83 @@ namespace Explorea.Server.Services.Admin
 
             var viewCounts = await GetViewCountsAsync(items);
             return (items.Select(d => MapToListDto(d, viewCounts)).ToList(), total);
+        }
+
+        public async Task<(List<AdminDestinationListDto> Items, int Total)> GetDeletedAsync(
+            string? search,
+            int? cityId,
+            int? regionId,
+            int? typeId,
+            int page,
+            int pageSize,
+            Guid currentUserId)
+        {
+            List<Guid>? restrictToIds = null;
+            int? restrictToRegionId = null;
+
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+
+            if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (user.ManagedRegionId.HasValue)
+                {
+                    restrictToRegionId = user.ManagedRegionId.Value;
+                }
+                else
+                {
+                    var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
+                    restrictToIds = assignments.Select(a => a.DestinationId).ToList();
+                }
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            var query = _db.Destinations
+                .IgnoreQueryFilters()
+                .Include(d => d.City)
+                    .ThenInclude(c => c!.Region)
+                .Include(d => d.Country)
+                .Include(d => d.Type)
+                .Include(d => d.Images)
+                .Where(d => d.IsDeleted)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(d =>
+                    d.Name.ToLower().Contains(term) ||
+                    d.Slug.ToLower().Contains(term) ||
+                    (d.City != null && d.City.Name.ToLower().Contains(term)) ||
+                    (d.Country != null && d.Country.Name.ToLower().Contains(term)) ||
+                    (d.Type != null && d.Type.Name.ToLower().Contains(term)));
+            }
+
+            if (cityId.HasValue)
+                query = query.Where(d => d.CityId == cityId.Value);
+
+            if (regionId.HasValue)
+                query = query.Where(d => d.City != null && d.City.RegionId == regionId.Value);
+
+            if (typeId.HasValue)
+                query = query.Where(d => d.TypeId == typeId.Value);
+
+            if (restrictToIds != null)
+                query = query.Where(d => restrictToIds.Contains(d.Id));
+
+            if (restrictToRegionId.HasValue)
+                query = query.Where(d => d.City != null && d.City.RegionId == restrictToRegionId.Value);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(d => d.DeletedAt ?? d.UpdatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items.Select(d => MapToListDto(d)).ToList(), total);
         }
 
         public async Task<AdminDestinationStatsDto> GetStatsAsync(Guid currentUserId)
@@ -386,9 +466,15 @@ namespace Explorea.Server.Services.Admin
 
             destination.IsDeleted = true;
             destination.DeletedAt = DateTimeOffset.UtcNow;
+            destination.UpdatedAt = DateTimeOffset.UtcNow;
+            destination.UpdatedBy = currentUserId;
 
             _destinationRepo.Update(destination);
             await _destinationRepo.SaveChangesAsync();
+            await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync(
+                "destination",
+                destination.Id,
+                destination.Name);
 
             return true;
         }
@@ -432,7 +518,8 @@ namespace Explorea.Server.Services.Admin
             UpdatedAt       = d.UpdatedAt,
             ExtraFilters    = string.IsNullOrEmpty(d.ExtraFilters)
                                 ? null
-                                : JsonSerializer.Deserialize<Dictionary<string, string>>(d.ExtraFilters)
+                                : JsonSerializer.Deserialize<Dictionary<string, string>>(d.ExtraFilters),
+            DeletedAt       = d.DeletedAt
         };
 
         private async Task<Dictionary<Guid, int>> GetViewCountsAsync(List<Destination> destinations)

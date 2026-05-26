@@ -217,6 +217,10 @@
   gap: 6px;
 }
 
+.activity-list-mode-tabs {
+  padding: var(--sp-3) var(--sp-6) var(--sp-4);
+}
+
 .activity-chip {
   padding: 4px 10px;
   border-radius: 999px;

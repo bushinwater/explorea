@@ -155,7 +155,7 @@
           }
         </div>
 
-        @if (isSuperAdmin()) {
+        @if (isSuperAdmin() && filters().tab !== 'deleted') {
           <button class="evts-btn-primary" type="button" (click)="openCreateDialog()">
             <span class="material-icons">add</span>
             Novi događaj
@@ -183,6 +183,9 @@
         </button>
         <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'history'" (click)="setTab('history')">
           Istorija
+        </button>
+        <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'deleted'" (click)="setTab('deleted')">
+          Obrisani
         </button>
       </div>
 
@@ -250,7 +253,7 @@
                   <td class="evts-td evts-td--hide-sm">
                     <span class="evts-date">
                       <span class="material-icons">calendar_today</span>
-                      {{ formatDate(ev.startDate) }}
+                      {{ formatDate(filters().tab === 'deleted' ? (ev.deletedAt ?? ev.startDate) : ev.startDate) }}
                     </span>
                   </td>
                   <td class="evts-td evts-td--hide-md evts-td--center">
@@ -555,7 +558,7 @@
     </div>
 
     <footer class="ddp-footer">
-      @if (ev.slug) {
+      @if (ev.slug && filters().tab !== 'deleted') {
         <a class="btn btn-ghost btn-sm" [href]="'/events/' + ev.slug" target="_blank" rel="noopener">
           <span class="material-icons">open_in_new</span>
           Otvori

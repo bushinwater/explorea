@@ -220,11 +220,22 @@
         </div>
 
         <!-- Add new -->
-        <button class="evts-btn-primary" type="button" (click)="openCreateModal()">
+        @if (listMode() === 'active') {
+        <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
           <span class="material-icons">add</span>
           {{ ui.t('activities.addNew') }}
         </button>
+        }
       </div>
+    </div>
+
+    <div class="activity-filter-chips activity-list-mode-tabs">
+      <button class="activity-chip" [class.activity-chip--active]="listMode() === 'active'" (click)="setListMode('active')">
+        Aktivne
+      </button>
+      <button class="activity-chip" [class.activity-chip--active]="listMode() === 'deleted'" (click)="setListMode('deleted')">
+        Obrisane
+      </button>
     </div>
 
     <!-- Active filters -->
@@ -290,7 +301,7 @@
             <th class="activity-th">{{ ui.t('activities.table.location') }}</th>
             <th class="activity-th activity-th--center">{{ ui.t('activities.table.rating') }}</th>
             <th class="activity-th">{{ ui.t('activities.table.difficulty') }}</th>
-            <th class="activity-th">{{ ui.t('activities.table.status') }}</th>
+            <th class="activity-th">{{ listMode() === 'deleted' ? 'Obrisano' : ui.t('activities.table.status') }}</th>
             <th class="activity-th"></th>
           </tr>
         </thead>
@@ -349,13 +360,14 @@
 
             <td class="activity-td">
               <span class="activity-status activity-status--{{ statusKey(activity.isActive) }}">
-                {{ statusLabel(activity.isActive) }}
-              </span>
-            </td>
+                  {{ listMode() === 'deleted' ? timeAgo(activity.deletedAt ?? activity.updatedAt) : statusLabel(activity.isActive) }}
+                </span>
+              </td>
 
             <!-- Actions -->
             <td class="activity-td activity-td--actions" (click)="$event.stopPropagation()">
               <div class="row-actions">
+                @if (listMode() === 'active') {
                 <a
                   class="btn-icon"
                   title="Otvori u aplikaciji"
@@ -372,6 +384,8 @@
                   <button class="btn-icon btn-icon--danger" title="Obriši" (click)="openDeleteDialog(activity)">
                     <span class="material-icons">delete</span>
                   </button>
+                }
+                </div>
                 }
               </div>
             </td>

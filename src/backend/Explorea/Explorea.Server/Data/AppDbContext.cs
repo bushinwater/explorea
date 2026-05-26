@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Security.AccessControl;
+using System.Security.Claims;
 using Explorea.API.Models;
 using Activity = Explorea.API.Models.Activity;
 
@@ -10,7 +11,14 @@ namespace Explorea.Server.Data
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        private readonly IHttpContextAccessor? _httpContextAccessor;
+
+        public AppDbContext(
+            DbContextOptions<AppDbContext> options,
+            IHttpContextAccessor? httpContextAccessor = null) : base(options)
+        {
+            _httpContextAccessor = httpContextAccessor;
+        }
 
         // DbSets:
         public DbSet<Region> Regions { get; set; }
@@ -320,6 +328,55 @@ namespace Explorea.Server.Data
             modelBuilder.Entity<UserChatHistory>()
                 .Property(h => h.Messages)
                 .HasColumnType("jsonb");
+        }
+
+        public override int SaveChanges()
+        {
+            ApplyAuditUser();
+            return base.SaveChanges();
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            ApplyAuditUser();
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
+        private void ApplyAuditUser()
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue) return;
+
+            foreach (var entry in ChangeTracker.Entries())
+            {
+                if (entry.State != EntityState.Added && entry.State != EntityState.Modified)
+                {
+                    continue;
+                }
+
+                if (entry.State == EntityState.Added)
+                {
+                    var createdBy = entry.Metadata.FindProperty("CreatedBy");
+                    if (createdBy != null && entry.Property("CreatedBy").CurrentValue == null)
+                    {
+                        entry.Property("CreatedBy").CurrentValue = userId.Value;
+                    }
+                }
+
+                var updatedBy = entry.Metadata.FindProperty("UpdatedBy");
+                if (updatedBy != null)
+                {
+                    entry.Property("UpdatedBy").CurrentValue = userId.Value;
+                }
+            }
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var claimValue = _httpContextAccessor?.HttpContext?.User
+                .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            return Guid.TryParse(claimValue, out var userId) ? userId : null;
         }
     }
 }

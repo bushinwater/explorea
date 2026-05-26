@@ -8,6 +8,10 @@ namespace Explorea.Server.Services.Admin.Interfaces
             AdminActivityListQueryDto query,
             Guid currentUserId);
 
+        Task<(List<AdminActivityListDto> Items, int Total)> GetDeletedAsync(
+            AdminActivityListQueryDto query,
+            Guid currentUserId);
+
         Task<AdminActivityDetailsDto?> GetByIdAsync(
             Guid id,
             Guid currentUserId);

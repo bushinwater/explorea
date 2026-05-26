@@ -85,6 +85,35 @@ namespace Explorea.Server.Controllers.Admin
             return Ok(countries);
         }
 
+        // GET /api/admin/destinations/deleted
+        [HttpGet("deleted")]
+        public async Task<IActionResult> GetDeleted(
+            [FromQuery] string? search,
+            [FromQuery] int? cityId,
+            [FromQuery] int? regionId,
+            [FromQuery] int? typeId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 15)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var (items, total) = await _service.GetDeletedAsync(
+                    search,
+                    cityId,
+                    regionId,
+                    typeId,
+                    page,
+                    pageSize,
+                    userId);
+                return Ok(new { total, items });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
         // GET /api/admin/destinations/regions
         [HttpGet("regions")]
         public async Task<IActionResult> GetRegions()

@@ -233,6 +233,8 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.isPanelOpen.set(true);
     this.detailsInterests.set([]);
 
+    if (this.filters().tab === 'deleted') return;
+
     this.subscription.add(
       this.eventsService.getEventDetail(event.id, event).subscribe({
         next: (detailedEvent) => {
@@ -462,6 +464,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     const map: Record<string, string> = {
       pending: 'Čeka', active: 'Odobreno', rejected: 'Odbijeno', forwarded: 'Prosleđeno',
     };
+    map['deleted'] = 'Obrisano';
     return map[s] ?? s;
   }
 

@@ -26,6 +26,18 @@ export class AdminPlacesService {
   constructor(private readonly http: HttpClient) {}
 
   getPlaces(filters: PlaceFilters): Observable<PlacePagedResponse> {
+    return this.getPlaceList(this.base, filters);
+  }
+
+  getDeletedPlaces(filters: PlaceFilters): Observable<PlacePagedResponse> {
+    return this.getPlaceList(`${this.base}/deleted`, filters, true);
+  }
+
+  private getPlaceList(
+    url: string,
+    filters: PlaceFilters,
+    deletedOnly = false,
+  ): Observable<PlacePagedResponse> {
     let params = new HttpParams()
       .set('page', filters.page)
       .set('pageSize', filters.pageSize);
@@ -36,20 +48,20 @@ export class AdminPlacesService {
     if (filters.typeId !== 'all') {
       params = params.set('typeId', filters.typeId);
     }
-    if (filters.status !== 'all') {
+    if (!deletedOnly && filters.status !== 'all') {
       params = params.set('status', filters.status);
     }
     if (filters.regionId !== 'all') {
       params = params.set('region', filters.regionId);
     }
-    if (filters.minRating !== null) {
+    if (!deletedOnly && filters.minRating !== null) {
       params = params.set('minRating', filters.minRating);
     }
-    if (filters.amenityId !== null) {
+    if (!deletedOnly && filters.amenityId !== null) {
       params = params.set('amenityId', filters.amenityId);
     }
 
-    return this.http.get<PlacePagedResponse>(this.base, { params });
+    return this.http.get<PlacePagedResponse>(url, { params });
   }
 
   getStats(): Observable<PlaceStats> {

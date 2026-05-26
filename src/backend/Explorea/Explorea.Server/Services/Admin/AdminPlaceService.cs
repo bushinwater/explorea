@@ -16,6 +16,8 @@ namespace Explorea.Server.Services.Admin
         private readonly IUserRepository _userRepo;
         private readonly ISubmissionQueueRepository _queueRepo;
         private readonly AppDbContext _context;
+        private readonly ISavedItemCleanupService _savedItemCleanup;
+        private readonly IOwnerChangeNotificationService _ownerChangeNotifications;
 
         private static readonly GeometryFactory _geometryFactory =
             new GeometryFactory(new PrecisionModel(), 4326);
@@ -24,12 +26,16 @@ namespace Explorea.Server.Services.Admin
             IAdminPlaceRepository placeRepo,
             IUserRepository userRepo,
             ISubmissionQueueRepository queueRepo,
-            AppDbContext context)
+            AppDbContext context,
+            ISavedItemCleanupService savedItemCleanup,
+            IOwnerChangeNotificationService ownerChangeNotifications)
         {
             _placeRepo = placeRepo;
             _userRepo = userRepo;
             _queueRepo = queueRepo;
             _context = context;
+            _savedItemCleanup = savedItemCleanup;
+            _ownerChangeNotifications = ownerChangeNotifications;
         }
 
         public async Task<(List<AdminPlaceListDto> Items, int Total)> GetAllAsync(
@@ -69,6 +75,69 @@ namespace Explorea.Server.Services.Admin
                 restrictToRegionId,
                 query.Page,
                 query.PageSize);
+
+            return (items.Select(MapToListDto).ToList(), total);
+        }
+
+        public async Task<(List<AdminPlaceListDto> Items, int Total)> GetDeletedAsync(
+            AdminPlaceListQueryDto query, Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+
+            var placesQuery = _context.Places
+                .IgnoreQueryFilters()
+                .Include(p => p.Images)
+                .Include(p => p.Type)
+                .Include(p => p.City)
+                    .ThenInclude(c => c!.Region)
+                .Include(p => p.Destination)
+                .Where(p => p.IsDeleted)
+                .AsQueryable();
+
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                placesQuery = placesQuery.Where(p => p.CreatedBy == currentUserId);
+            }
+            else if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (!user.ManagedRegionId.HasValue)
+                    return (new List<AdminPlaceListDto>(), 0);
+
+                placesQuery = placesQuery.Where(p => p.City != null && p.City.RegionId == user.ManagedRegionId.Value);
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                var s = query.Search.Trim().ToLower();
+                placesQuery = placesQuery.Where(p => p.Name.ToLower().Contains(s));
+            }
+
+            if (query.TypeId.HasValue)
+                placesQuery = placesQuery.Where(p => p.TypeId == query.TypeId.Value);
+
+            if (query.Region.HasValue && user?.Role.Name != RoleNames.PlaceOwner)
+                placesQuery = placesQuery.Where(p => p.City != null && p.City.RegionId == query.Region.Value);
+
+            if (query.MinRating.HasValue)
+                placesQuery = placesQuery.Where(p => p.AvgRating >= query.MinRating.Value);
+
+            if (query.DestinationId.HasValue)
+                placesQuery = placesQuery.Where(p => p.DestinationId == query.DestinationId.Value);
+
+            if (query.AmenityId.HasValue)
+                placesQuery = placesQuery.Where(p => p.AmenityLinks.Any(al => al.AmenityId == query.AmenityId.Value));
+
+            var total = await placesQuery.CountAsync();
+
+            var items = await placesQuery
+                .OrderByDescending(p => p.DeletedAt ?? p.UpdatedAt)
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
 
             return (items.Select(MapToListDto).ToList(), total);
         }
@@ -299,19 +368,22 @@ namespace Explorea.Server.Services.Admin
                 throw new UnauthorizedAccessException("Access denied.");
             }
 
-            if (dto.Name != null) place.Name = dto.Name;
-            if (dto.Slug != null) place.Slug = dto.Slug;
-            if (dto.Description != null) place.Description = dto.Description;
-            if (dto.Address != null) place.Address = dto.Address;
-            if (dto.DestinationId.HasValue) place.DestinationId = dto.DestinationId.Value;
-            if (dto.CityId.HasValue) place.CityId = dto.CityId.Value;
-            if (dto.CountryId.HasValue) place.CountryId = dto.CountryId.Value;
-            if (dto.TypeId.HasValue) place.TypeId = dto.TypeId.Value;
-            if (dto.PriceRange != null) place.PriceRange = dto.PriceRange;
-            if (dto.Phone != null) place.Phone = dto.Phone;
-            if (dto.Email != null) place.Email = dto.Email;
-            if (dto.WebsiteUrl != null) place.WebsiteUrl = dto.WebsiteUrl;
-            if (dto.IsFeatured.HasValue) place.IsFeatured = dto.IsFeatured.Value;
+            var ownerId = place.CreatedBy;
+            var changedFields = new List<string>();
+
+            if (dto.Name != null) { AddChangedField(changedFields, "naslov", place.Name, dto.Name); place.Name = dto.Name; }
+            if (dto.Slug != null) { AddChangedField(changedFields, "slug", place.Slug, dto.Slug); place.Slug = dto.Slug; }
+            if (dto.Description != null) { AddChangedField(changedFields, "opis", place.Description, dto.Description); place.Description = dto.Description; }
+            if (dto.Address != null) { AddChangedField(changedFields, "adresa", place.Address, dto.Address); place.Address = dto.Address; }
+            if (dto.DestinationId.HasValue) { AddChangedField(changedFields, "destinacija", place.DestinationId, dto.DestinationId.Value); place.DestinationId = dto.DestinationId.Value; }
+            if (dto.CityId.HasValue) { AddChangedField(changedFields, "grad", place.CityId, dto.CityId.Value); place.CityId = dto.CityId.Value; }
+            if (dto.CountryId.HasValue) { AddChangedField(changedFields, "drzava", place.CountryId, dto.CountryId.Value); place.CountryId = dto.CountryId.Value; }
+            if (dto.TypeId.HasValue) { AddChangedField(changedFields, "tip", place.TypeId, dto.TypeId.Value); place.TypeId = dto.TypeId.Value; }
+            if (dto.PriceRange != null) { AddChangedField(changedFields, "cenovni rang", place.PriceRange, dto.PriceRange); place.PriceRange = dto.PriceRange; }
+            if (dto.Phone != null) { AddChangedField(changedFields, "telefon", place.Phone, dto.Phone); place.Phone = dto.Phone; }
+            if (dto.Email != null) { AddChangedField(changedFields, "email", place.Email, dto.Email); place.Email = dto.Email; }
+            if (dto.WebsiteUrl != null) { AddChangedField(changedFields, "veb sajt", place.WebsiteUrl, dto.WebsiteUrl); place.WebsiteUrl = dto.WebsiteUrl; }
+            if (dto.IsFeatured.HasValue) { AddChangedField(changedFields, "istaknuto", place.IsFeatured, dto.IsFeatured.Value); place.IsFeatured = dto.IsFeatured.Value; }
 
             // Only SA and TO can change approval status
             if (dto.ApprovalStatus != null &&
@@ -319,11 +391,20 @@ namespace Explorea.Server.Services.Admin
             {
                 var validStatuses = new[] { "approved", "pending", "rejected" };
                 if (validStatuses.Contains(dto.ApprovalStatus.ToLowerInvariant()))
-                    place.ApprovalStatus = dto.ApprovalStatus.ToLowerInvariant();
+                {
+                    var newStatus = dto.ApprovalStatus.ToLowerInvariant();
+                    AddChangedField(changedFields, "status", place.ApprovalStatus, newStatus);
+                    place.ApprovalStatus = newStatus;
+                }
             }
 
             if (dto.Latitude.HasValue && dto.Longitude.HasValue)
             {
+                if (place.Latitude != dto.Latitude.Value || place.Longitude != dto.Longitude.Value)
+                {
+                    changedFields.Add("koordinate");
+                }
+
                 place.Latitude = dto.Latitude.Value;
                 place.Longitude = dto.Longitude.Value;
                 place.Location = CreatePoint(dto.Latitude, dto.Longitude);
@@ -331,6 +412,7 @@ namespace Explorea.Server.Services.Admin
 
             if (dto.Images != null)
             {
+                changedFields.Add("slike");
                 _placeRepo.RemoveImages(place.Images);
 
                 var now = DateTimeOffset.UtcNow;
@@ -349,6 +431,7 @@ namespace Explorea.Server.Services.Admin
 
             if (dto.AmenityIds != null)
             {
+                changedFields.Add("sadrzaji");
                 _placeRepo.RemoveAmenityLinks(place.AmenityLinks);
 
                 place.AmenityLinks = dto.AmenityIds
@@ -363,6 +446,7 @@ namespace Explorea.Server.Services.Admin
 
             if (dto.WorkingDays != null)
             {
+                changedFields.Add("radno vreme");
                 var newWorkingDays = new List<PlaceWorkingDay>();
                 var now = DateTimeOffset.UtcNow;
 
@@ -408,6 +492,12 @@ namespace Explorea.Server.Services.Admin
 
             _placeRepo.Update(place);
             await _placeRepo.SaveChangesAsync();
+            await _ownerChangeNotifications.NotifyOwnerAsync(
+                ownerId,
+                "objekat",
+                place.Name,
+                user!,
+                changedFields);
 
             var updated = await _placeRepo.GetAdminByIdAsync(id);
             return MapToDetailDto(updated!);
@@ -443,6 +533,10 @@ namespace Explorea.Server.Services.Admin
 
             _placeRepo.Update(place);
             await _placeRepo.SaveChangesAsync();
+            await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync(
+                "place",
+                place.Id,
+                place.Name);
 
             return true;
         }
@@ -521,7 +615,8 @@ namespace Explorea.Server.Services.Admin
             Status = p.ApprovalStatus,
             CreatedBy = p.CreatedBy,
             CreatedAt = p.CreatedAt,
-            UpdatedAt = p.UpdatedAt
+            UpdatedAt = p.UpdatedAt,
+            DeletedAt = p.DeletedAt
         };
 
         private static AdminPlaceDetailDto MapToDetailDto(Place p) => new()
@@ -591,5 +686,13 @@ namespace Explorea.Server.Services.Admin
             CreatedAt = p.CreatedAt,
             UpdatedAt = p.UpdatedAt
         };
+
+        private static void AddChangedField<T>(ICollection<string> fields, string label, T oldValue, T newValue)
+        {
+            if (!EqualityComparer<T>.Default.Equals(oldValue, newValue))
+            {
+                fields.Add(label);
+            }
+        }
     }
 }

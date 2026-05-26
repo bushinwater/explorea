@@ -26,5 +26,6 @@ namespace Explorea.API.DTOs.Admin.Destination
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
         public Dictionary<string, string>? ExtraFilters { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
     }
 }
