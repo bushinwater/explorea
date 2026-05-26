@@ -34,6 +34,7 @@ import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
 const MAX_IMAGES = 10;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_DESC = 2000;
 
 const DARK = {
@@ -451,8 +452,11 @@ export class PlaceEditModalComponent implements OnInit, OnDestroy {
   // ── Images ──────────────────────────────────────────────────────────────
   protected onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files ?? []);
+    const rawFiles = Array.from(input.files ?? []);
     input.value = '';
+    const files = rawFiles.filter(f => f.size <= MAX_FILE_SIZE);
+    if (files.length < rawFiles.length) { this.error.set('Slike moraju biti manje od 5 MB.'); }
+    if (!files.length) { this.cdr.detectChanges(); return; }
 
     const slots = MAX_IMAGES - this.images().length - this.uploadingCount();
     if (slots <= 0) { this.error.set(`Maksimalan broj slika je ${MAX_IMAGES}.`); this.cdr.detectChanges(); return; }

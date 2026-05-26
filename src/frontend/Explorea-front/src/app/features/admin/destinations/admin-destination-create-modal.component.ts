@@ -24,6 +24,7 @@ import { FilterDefinition, LookupService } from '../../../core/services/lookup.s
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 const MAX_IMAGES = 10;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_DESC = 2000;
 
 const DARK = {
@@ -347,8 +348,11 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
 
   protected onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files ?? []);
+    const rawFiles = Array.from(input.files ?? []);
     input.value = '';
+    const files = rawFiles.filter(f => f.size <= MAX_FILE_SIZE);
+    if (files.length < rawFiles.length) { this.error.set('Slike moraju biti manje od 5 MB.'); }
+    if (!files.length) { this.cdr.detectChanges(); return; }
 
     const destId = this.createdRow()?.id;
     if (!destId) {

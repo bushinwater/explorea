@@ -727,10 +727,13 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected onImageFilesSelect(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files ?? []);
+    const rawFiles = Array.from(input.files ?? []);
+    input.value = '';
+    const files = rawFiles.filter(f => f.size <= 5 * 1024 * 1024);
+    if (files.length < rawFiles.length) { this.errorMessage.set('Slike moraju biti manje od 5 MB.'); this.cdr.detectChanges(); }
+    if (!files.length) return;
     const previews = files.map(file => ({ file, url: URL.createObjectURL(file) }));
     this.modalImagePreviews.update(existing => [...existing, ...previews]);
-    input.value = '';
   }
 
   protected removeImageFile(index: number): void {

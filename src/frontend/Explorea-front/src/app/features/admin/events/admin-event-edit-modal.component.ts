@@ -33,6 +33,7 @@ import { FilterDefinition, LookupService } from '../../../core/services/lookup.s
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
 const MAX_IMAGES = 10;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const DARK = {
   land: '#1e2e24', water: '#102840', park: '#1e3228',
@@ -584,8 +585,11 @@ export class EventEditModalComponent implements OnInit, AfterViewInit, OnDestroy
 
   protected onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files ?? []);
+    const rawFiles = Array.from(input.files ?? []);
     input.value = '';
+    const files = rawFiles.filter(f => f.size <= MAX_FILE_SIZE);
+    if (files.length < rawFiles.length) { this.errors.set(['Slike moraju biti manje od 5 MB.']); }
+    if (!files.length) { this.cdr.detectChanges(); return; }
     const slots = MAX_IMAGES - this.images().length - this.uploadingCount();
     if (slots <= 0) { this.errors.set([`Maksimalan broj slika je ${MAX_IMAGES}.`]); this.cdr.detectChanges(); return; }
     const toUpload = files.slice(0, slots);

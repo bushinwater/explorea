@@ -34,6 +34,7 @@ import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
 const MAX_IMAGES = 10;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_DESC = 2000;
 
 const DARK = {
@@ -128,8 +129,7 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
   protected readonly allInterestTags    = signal<InterestTagOption[]>([]);
   protected readonly selectedInterestIds = signal<number[]>([]);
 
-  // New: pending files (queued before creation)
-  protected readonly pendingFiles = signal<File[]>([]);
+  protected readonly pendingImages = signal<{ file: File; url: string }[]>([]);
 
   protected readonly allTypeOptions = computed(() => [...this.types, ...this.extraTypes()]);
 
@@ -172,6 +172,7 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
     this.sub.unsubscribe();
     this.themeObserver?.disconnect();
     this.map?.remove();
+    this.pendingImages().forEach(p => URL.revokeObjectURL(p.url));
   }
 
   protected requestClose(): void {
@@ -389,13 +390,17 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
   // ── Images ──────────────────────────────────────────────────────────────
   protected onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files ?? []);
+    const rawFiles = Array.from(input.files ?? []);
     input.value = '';
+    const files = rawFiles.filter(f => f.size <= MAX_FILE_SIZE);
+    if (files.length < rawFiles.length) { this.error.set('Slike moraju biti manje od 5 MB.'); }
+    if (!files.length) { this.cdr.detectChanges(); return; }
 
     if (!this.createdId) {
-      const slots = MAX_IMAGES - this.pendingFiles().length;
+      const slots = MAX_IMAGES - this.pendingImages().length;
       if (slots <= 0) { this.error.set(`Maksimalan broj slika je ${MAX_IMAGES}.`); this.cdr.detectChanges(); return; }
-      this.pendingFiles.update(pf => [...pf, ...files.slice(0, slots)]);
+      const toAdd = files.slice(0, slots).map(file => ({ file, url: URL.createObjectURL(file) }));
+      this.pendingImages.update(p => [...p, ...toAdd]);
       this.cdr.detectChanges();
       return;
     }
@@ -407,8 +412,10 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
     toUpload.forEach(file => this.uploadFile(this.createdId!, file));
   }
 
-  protected removePendingFile(index: number): void {
-    this.pendingFiles.update(pf => pf.filter((_, i) => i !== index));
+  protected removePendingImage(index: number): void {
+    const pending = this.pendingImages();
+    URL.revokeObjectURL(pending[index].url);
+    this.pendingImages.update(p => p.filter((_, i) => i !== index));
     this.cdr.detectChanges();
   }
 
@@ -496,7 +503,7 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
 
   // ── Private helpers ─────────────────────────────────────────────────────
   private uploadPendingAndFinish(detail: PlaceDetail): void {
-    const pending     = this.pendingFiles();
+    const pending     = this.pendingImages();
     const interestIds = this.selectedInterestIds();
     const total = pending.length + (interestIds.length > 0 ? 1 : 0);
 
@@ -512,7 +519,8 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
       if (done === total) { this.isSaving.set(false); this.created.emit(detail); }
     };
 
-    pending.forEach(file => {
+    pending.forEach(({ file, url }) => {
+      URL.revokeObjectURL(url);
       this.sub.add(
         this.svc.uploadImage(detail.id, file).subscribe({ next: onDone, error: onDone }),
       );

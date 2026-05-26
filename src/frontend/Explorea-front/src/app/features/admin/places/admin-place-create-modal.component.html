@@ -358,8 +358,8 @@
       <div class="edit-modal__images-header">
         <h3 style="margin:0;font-size:var(--font-size-base);font-weight:600;color:var(--color-text-primary)">
           Slike
-          @if (pendingFiles().length + images().length > 0) {
-            <span style="font-weight:400;color:var(--color-text-muted)">({{ pendingFiles().length + images().length }})</span>
+          @if (pendingImages().length + images().length > 0) {
+            <span style="font-weight:400;color:var(--color-text-muted)">({{ pendingImages().length + images().length }})</span>
           }
         </h3>
         <label class="edit-modal__add-img-btn">
@@ -385,12 +385,11 @@
             </button>
           </div>
         }
-        @for (file of pendingFiles(); track $index; let i = $index) {
-          <div class="edit-modal__img-card edit-modal__img-card--pending">
-            <span class="material-icons" style="font-size:28px;color:var(--color-text-muted)">image</span>
-            <span style="font-size:var(--font-size-xs);color:var(--color-text-muted);text-align:center;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">{{ file.name }}</span>
+        @for (p of pendingImages(); track p.url; let i = $index) {
+          <div class="edit-modal__img-card">
+            <img [src]="p.url" [alt]="p.file.name" class="edit-modal__img" />
             <button class="edit-modal__img-delete" type="button" title="Ukloni"
-              (click)="removePendingFile(i)">
+              (click)="removePendingImage(i)">
               <span class="material-icons">close</span>
             </button>
           </div>
@@ -400,7 +399,7 @@
             <span class="material-icons edit-modal__spin">sync</span>
           </div>
         }
-        @if (!images().length && !pendingFiles().length && !uploadingCount()) {
+        @if (!images().length && !pendingImages().length && !uploadingCount()) {
           <div class="edit-modal__images-empty">
             <span class="material-icons">image_not_supported</span>
             Nema slika. Možeš ih dodati pre ili posle kreiranja.
