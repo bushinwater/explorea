@@ -205,6 +205,10 @@ export class AdminDestinationsService {
     return this.http.delete<void>(`/api/admin/destinations/${id}`);
   }
 
+  restoreDestination(id: string): Observable<void> {
+    return this.http.post<void>(`/api/admin/destinations/${id}/restore`, {});
+  }
+
   getDestinationInterests(id: string): Observable<InterestTagOption[]> {
     return this.http.get<InterestTagOption[]>(`/api/admin/interest-tags/destination/${id}`);
   }

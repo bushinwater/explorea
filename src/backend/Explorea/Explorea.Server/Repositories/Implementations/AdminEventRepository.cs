@@ -158,7 +158,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(e => e.Destination)
                 .Include(e => e.Place)
                 .Include(e => e.Images)
-                .FirstOrDefaultAsync(e => e.Id == id && !e.IsDeleted);
+                .FirstOrDefaultAsync(e => e.Id == id);
         }
     }
 }

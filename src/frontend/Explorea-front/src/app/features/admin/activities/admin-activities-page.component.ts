@@ -117,6 +117,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly activeMenuId = signal<string | null>(null);
   protected readonly isDeleteDialogOpen = signal(false);
   protected readonly isDeleting = signal(false);
+  protected readonly isRestoring = signal(false);
   protected readonly activityToDelete = signal<ActivityRow | null>(null);
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
@@ -430,8 +431,25 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected restoreActivity(activity: ActivityRow): void {
+    this.isRestoring.set(true);
+    this.subscription.add(
+      this.activitiesService.restoreActivity(activity.id).subscribe({
+        next: () => {
+          this.isRestoring.set(false);
+          this.successMessage.set(`„${activity.name}" je uspešno vraćena.`);
+          this.closeDetailsPanel();
+          this.loadActivities();
+        },
+        error: () => {
+          this.isRestoring.set(false);
+          this.errorMessage.set('Greška pri vraćanju aktivnosti.');
+        },
+      }),
+    );
+  }
+
   protected openDetailsPanel(activity: ActivityRow): void {
-    if (this.listMode() === 'deleted') return;
 
     this.activeMenuId.set(null);
     this.selectedActivity.set(activity);

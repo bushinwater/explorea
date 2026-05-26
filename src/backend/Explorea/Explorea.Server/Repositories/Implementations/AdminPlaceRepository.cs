@@ -87,6 +87,7 @@ namespace Explorea.Server.Repositories.Implementations
         public async Task<Place?> GetAdminByIdAsync(Guid id)
         {
             return await _db.Places
+                .IgnoreQueryFilters()
                 .Include(p => p.Images.OrderBy(i => i.SortOrder))
                 .Include(p => p.Type)
                 .Include(p => p.City)

@@ -314,7 +314,7 @@ namespace Explorea.Server.Repositories.Implementations
         FROM destinations d
         LEFT JOIN cities c ON c.id = d.city_id
         WHERE d.is_deleted = FALSE
-          AND ( 
+          AND (
                 d.search_vector @@ websearch_to_tsquery('simple', @q)
              OR d.name ILIKE @contains
              OR COALESCE(d.description, '') ILIKE @contains

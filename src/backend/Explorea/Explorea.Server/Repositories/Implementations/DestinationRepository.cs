@@ -139,7 +139,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(d => d.Country)
                 .Include(d => d.Images)
                 .Include(d => d.Type)
-                .FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
+                .FirstOrDefaultAsync(d => d.Id == id);
         }
 
         public async Task<List<int>> GetCityIdsByDestinationsAsync(List<Guid> destinationIds)

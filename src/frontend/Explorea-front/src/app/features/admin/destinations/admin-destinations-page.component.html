@@ -343,9 +343,13 @@
 
                 <!-- Status -->
                 <td class="dest-td">
-                  <span class="dest-status dest-status--{{ dest.status }}">
-                    {{ statusLabel(dest.status) }}
-                  </span>
+                  @if (listMode() === 'deleted') {
+                    <span class="dest-status dest-status--deleted">Obrisano</span>
+                  } @else {
+                    <span class="dest-status dest-status--{{ dest.status }}">
+                      {{ statusLabel(dest.status) }}
+                    </span>
+                  }
                 </td>
 
                 <!-- Views -->
@@ -375,30 +379,39 @@
                 <!-- Actions -->
                 <td class="dest-td dest-td--actions" (click)="$event.stopPropagation()">
                   <div class="row-actions">
-                    @if (listMode() === 'active') {
-                    <a
-                      class="btn-icon"
-                      title="Otvori u aplikaciji"
-                      [href]="'/destinations/' + dest.slug"
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      <span class="material-icons">open_in_new</span>
-                    </a>
-                    <button
-                      class="btn-icon"
-                      title="Izmeni"
-                      (click)="openEdit(dest)"
-                    >
-                      <span class="material-icons">edit</span>
-                    </button>
-                    <button
-                      class="btn-icon btn-icon--danger"
-                      title="Obriši"
-                      (click)="openDeleteDialog(dest)"
-                    >
-                      <span class="material-icons">delete</span>
-                    </button>
+                    @if (listMode() === 'deleted') {
+                      <button
+                        class="btn-icon btn-icon--restore"
+                        title="Vrati"
+                        [disabled]="isRestoring()"
+                        (click)="restoreDestination(dest)"
+                      >
+                        <span class="material-icons">restore</span>
+                      </button>
+                    } @else {
+                      <a
+                        class="btn-icon"
+                        title="Otvori u aplikaciji"
+                        [href]="'/destinations/' + dest.slug"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        <span class="material-icons">open_in_new</span>
+                      </a>
+                      <button
+                        class="btn-icon"
+                        title="Izmeni"
+                        (click)="openEdit(dest)"
+                      >
+                        <span class="material-icons">edit</span>
+                      </button>
+                      <button
+                        class="btn-icon btn-icon--danger"
+                        title="Obriši"
+                        (click)="openDeleteDialog(dest)"
+                      >
+                        <span class="material-icons">delete</span>
+                      </button>
                     }
                   </div>
                 </td>
@@ -505,7 +518,11 @@
 
         <!-- Badges -->
         <div class="ddp-badges">
-          <span class="dest-status dest-status--{{ dest.status }}">{{ statusLabel(dest.status) }}</span>
+          @if (listMode() === 'deleted') {
+            <span class="dest-status dest-status--deleted">Obrisano</span>
+          } @else {
+            <span class="dest-status dest-status--{{ dest.status }}">{{ statusLabel(dest.status) }}</span>
+          }
           @if (dest.avgRating) {
             <span class="ddp-rating">
               <span class="material-icons">star</span>
@@ -618,20 +635,27 @@
     </div>
 
     <footer class="ddp-footer">
-      <a class="btn btn-ghost btn-sm"
-        [href]="'/destinations/' + dest.slug"
-        target="_blank" rel="noopener">
-        <span class="material-icons">open_in_new</span>
-        Otvori
-      </a>
-      <button class="btn btn-ghost btn-sm" (click)="openEditFromPanel()">
-        <span class="material-icons">edit</span>
-        Izmeni
-      </button>
-      <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="openDeleteFromPanel()">
-        <span class="material-icons">delete</span>
-        Obriši
-      </button>
+      @if (listMode() === 'deleted') {
+        <button class="btn btn-ghost btn-sm ddp-footer__restore" [disabled]="isRestoring()" (click)="restoreDestination(dest)">
+          <span class="material-icons">restore</span>
+          Vrati
+        </button>
+      } @else {
+        <a class="btn btn-ghost btn-sm"
+          [href]="'/destinations/' + dest.slug"
+          target="_blank" rel="noopener">
+          <span class="material-icons">open_in_new</span>
+          Otvori
+        </a>
+        <button class="btn btn-ghost btn-sm" (click)="openEditFromPanel()">
+          <span class="material-icons">edit</span>
+          Izmeni
+        </button>
+        <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="openDeleteFromPanel()">
+          <span class="material-icons">delete</span>
+          Obriši
+        </button>
+      }
     </footer>
 
   </aside>

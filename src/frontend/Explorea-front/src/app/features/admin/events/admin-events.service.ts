@@ -302,6 +302,10 @@ export class AdminEventsService {
     return this.http.delete<void>(`/api/admin/events/${id}/images/${imageId}`);
   }
 
+  restoreEvent(id: string): Observable<void> {
+    return this.http.post<void>(`/api/admin/events/${id}/restore`, {});
+  }
+
   getEventInterests(id: string): Observable<InterestTagOption[]> {
     return this.http.get<InterestTagOption[]>(`/api/admin/interest-tags/event/${id}`);
   }

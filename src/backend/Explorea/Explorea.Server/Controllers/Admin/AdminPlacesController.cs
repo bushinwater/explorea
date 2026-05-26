@@ -199,6 +199,22 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpPost("{id}/restore")]
+        public async Task<IActionResult> Restore(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var restored = await _placeService.RestoreAsync(id, userId);
+                if (!restored) return NotFound();
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
         [HttpGet("{id}/reviews")]
         public async Task<IActionResult> GetReviews(Guid id)
         {

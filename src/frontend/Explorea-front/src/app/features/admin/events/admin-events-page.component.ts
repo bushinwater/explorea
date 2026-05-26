@@ -89,6 +89,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly confirmAction = signal<'approve' | 'reject' | 'forward' | 'delete' | null>(null);
   protected readonly isConfirmOpen = signal(false);
   protected readonly isActioning = signal(false);
+  protected readonly isRestoring = signal(false);
   protected readonly rejectReason = signal('');
 
   protected readonly successMessage = signal('');
@@ -237,8 +238,6 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.isPanelOpen.set(true);
     this.detailsInterests.set([]);
 
-    if (this.filters().tab === 'deleted') return;
-
     this.subscription.add(
       this.eventsService.getEventDetail(event.id, event).subscribe({
         next: (detailedEvent) => {
@@ -332,6 +331,29 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected openDeleteFromRow(ev: EventRow): void {
     this.selectedEvent.set(ev);
     this.initiateAction('delete');
+  }
+
+  protected restoreEvent(ev: EventRow): void {
+    if (this.isRestoring()) return;
+    this.isRestoring.set(true);
+    this.subscription.add(
+      this.eventsService.restoreEvent(ev.id)
+        .pipe(finalize(() => this.isRestoring.set(false)))
+        .subscribe({
+          next: () => {
+            this.selectedEvent.set(null);
+            this.isPanelOpen.set(false);
+            this.successMessage.set('Događaj je vraćen.');
+            this.loadStats();
+            this.loadEvents();
+            setTimeout(() => this.successMessage.set(''), 4000);
+          },
+          error: () => {
+            this.errorMessage.set('Vraćanje nije uspelo.');
+            setTimeout(() => this.errorMessage.set(''), 4000);
+          },
+        }),
+    );
   }
 
   protected onEditSaved(row: EventRow): void {

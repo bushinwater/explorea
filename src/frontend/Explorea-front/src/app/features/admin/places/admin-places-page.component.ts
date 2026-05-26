@@ -81,6 +81,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   protected readonly isFilterOpen   = signal(false);
   protected readonly isDeleteDialogOpen = signal(false);
   protected readonly isDeleting     = signal(false);
+  protected readonly isRestoring    = signal(false);
   protected readonly isEditModalOpen   = signal(false);
   protected readonly isCreateModalOpen = signal(false);
   protected readonly selectedPlace  = signal<PlaceRow | null>(null);
@@ -278,8 +279,25 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.loadStats();
   }
 
+  protected restorePlace(place: PlaceRow): void {
+    this.isRestoring.set(true);
+    this.subscription.add(
+      this.placesService.restorePlace(place.id).subscribe({
+        next: () => {
+          this.isRestoring.set(false);
+          this.successMessage.set(`„${place.name}" je uspešno vraćen.`);
+          this.closeDetailsPanel();
+          this.loadPlaces();
+        },
+        error: () => {
+          this.isRestoring.set(false);
+          this.errorMessage.set('Greška pri vraćanju mesta.');
+        },
+      }),
+    );
+  }
+
   protected openDetailsPanel(place: PlaceRow): void {
-    if (this.listMode() === 'deleted') return;
 
     this.detailsPanelRow.set(place);
     this.detailsPanelDetail.set(null);

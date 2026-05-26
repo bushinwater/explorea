@@ -80,6 +80,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected readonly isFilterOpen = signal(false);
   protected readonly isDeleteDialogOpen = signal(false);
   protected readonly isDeleting = signal(false);
+  protected readonly isRestoring = signal(false);
   protected readonly isEditModalOpen = signal(false);
   protected readonly isEditModalClosing = signal(false);
   protected readonly isCreateModalOpen = signal(false);
@@ -327,8 +328,25 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  protected restoreDestination(dest: DestinationRow): void {
+    this.isRestoring.set(true);
+    this.subscription.add(
+      this.destinationsService.restoreDestination(dest.id).subscribe({
+        next: () => {
+          this.isRestoring.set(false);
+          this.successMessage.set(`„${dest.name}" je uspešno vraćena.`);
+          this.closeDetailsPanel();
+          this.loadDestinations();
+        },
+        error: () => {
+          this.isRestoring.set(false);
+          this.errorMessage.set('Greška pri vraćanju destinacije.');
+        },
+      }),
+    );
+  }
+
   protected openDetailsPanel(dest: DestinationRow): void {
-    if (this.listMode() === 'deleted') return;
 
     this.detailsPanelRow.set(dest);
     this.detailsPanelDetail.set(null);
@@ -476,6 +494,10 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       rejected: 'Odbijeno',
     };
     return map[status];
+  }
+
+  protected isDeleted(dest: DestinationRow): boolean {
+    return this.listMode() === 'deleted';
   }
 
   protected thumbColor(category: DestinationCategory): string {

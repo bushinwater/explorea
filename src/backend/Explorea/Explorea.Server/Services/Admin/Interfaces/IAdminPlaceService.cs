@@ -13,6 +13,7 @@ namespace Explorea.Server.Services.Admin.Interfaces
         Task<AdminPlaceDetailDto> CreateAsync(AdminCreatePlaceDto dto, Guid createdBy);
         Task<AdminPlaceDetailDto?> UpdateAsync(Guid id, AdminUpdatePlaceDto dto, Guid updatedBy);
         Task<bool> DeleteAsync(Guid id, Guid currentUserId);
+        Task<bool> RestoreAsync(Guid id, Guid currentUserId);
         Task<List<AdminMyPlaceDto>> GetMyPlacesAsync(Guid currentUserId);
         Task SubmitPlaceRequestAsync(SubmitPlaceRequestDto dto, Guid currentUserId);
     }

@@ -43,6 +43,8 @@ namespace Explorea.Server.Services.Admin.Interfaces
 
         Task<bool> DeleteAsync(Guid id, Guid currentUserId);
 
+        Task<bool> RestoreAsync(Guid id, Guid currentUserId);
+
         Task<AdminDestinationImageDto> AddImageAsync(Guid destinationId, IFormFile file, Guid userId);
 
         Task<bool> DeleteImageAsync(Guid destinationId, Guid imageId, Guid userId);

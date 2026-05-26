@@ -479,6 +479,26 @@ namespace Explorea.Server.Services.Admin
             return true;
         }
 
+        public async Task<bool> RestoreAsync(Guid id, Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            if (user?.Role.Name != RoleNames.SuperAdmin)
+                throw new UnauthorizedAccessException("Only SuperAdmin can restore destinations.");
+
+            var destination = await _destinationRepo.GetAdminByIdAsync(id);
+            if (destination == null || !destination.IsDeleted) return false;
+
+            destination.IsDeleted = false;
+            destination.DeletedAt = null;
+            destination.UpdatedAt = DateTimeOffset.UtcNow;
+            destination.UpdatedBy = currentUserId;
+
+            _destinationRepo.Update(destination);
+            await _destinationRepo.SaveChangesAsync();
+
+            return true;
+        }
+
         // ---- Helpers ----
 
         private static AdminDestinationListDto MapToListDto(

@@ -421,6 +421,15 @@
   color: var(--color-danger, #ef4444);
 }
 
+.btn-icon--restore {
+  color: var(--color-primary);
+}
+
+.btn-icon--restore:hover {
+  background: rgba(34, 197, 94, 0.08);
+  color: var(--color-primary);
+}
+
 .btn-icon .material-icons {
   font-size: 16px;
 }
@@ -524,6 +533,13 @@
 .activity-status--inactive {
   color: var(--color-text-muted);
   border: 1px solid var(--color-border);
+}
+
+.activity-status--deleted {
+  color: var(--color-text-muted);
+  background: rgba(100, 100, 120, 0.12);
+  border: 1px solid rgba(100, 100, 120, 0.28);
+  text-decoration: line-through;
 }
 
 .activity-status--rejected {
@@ -1082,6 +1098,15 @@
 .ddp-footer__danger:hover {
   background: rgba(239, 68, 68, 0.08);
   color: #ef4444;
+}
+
+.ddp-footer__restore {
+  color: var(--color-primary);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.ddp-footer__restore:hover {
+  background: rgba(34, 197, 94, 0.08);
 }
 
 @media (max-width: 560px) {

@@ -165,6 +165,10 @@ export class AdminPlacesService {
     return this.http.delete<void>(`${this.base}/${id}`);
   }
 
+  restorePlace(id: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/${id}/restore`, {});
+  }
+
   uploadImage(placeId: string, file: File): Observable<PlaceImage> {
     const formData = new FormData();
     formData.append('file', file);

@@ -273,20 +273,28 @@
                   }
                   <td class="evts-td evts-td--actions" (click)="$event.stopPropagation()">
                     <div class="row-actions">
-                      @if (ev.slug) {
-                        <a class="btn-icon" title="Otvori u aplikaciji" [href]="'/events/' + ev.slug" target="_blank" rel="noopener">
-                          <span class="material-icons">open_in_new</span>
-                        </a>
-                      }
-                      @if (isSuperAdmin() && ev.status === 'active') {
-                        <button class="btn-icon" title="Izmeni" (click)="openEditFromRow(ev)">
-                          <span class="material-icons">edit</span>
-                        </button>
-                      }
-                      @if (isSuperAdmin()) {
-                        <button class="btn-icon btn-icon--danger" title="Obriši" (click)="openDeleteFromRow(ev)">
-                          <span class="material-icons">delete</span>
-                        </button>
+                      @if (filters().tab === 'deleted') {
+                        @if (isSuperAdmin()) {
+                          <button class="btn-icon btn-icon--restore" title="Vrati" (click)="restoreEvent(ev)" [disabled]="isRestoring()">
+                            <span class="material-icons">restore</span>
+                          </button>
+                        }
+                      } @else {
+                        @if (ev.slug) {
+                          <a class="btn-icon" title="Otvori u aplikaciji" [href]="'/events/' + ev.slug" target="_blank" rel="noopener">
+                            <span class="material-icons">open_in_new</span>
+                          </a>
+                        }
+                        @if (isSuperAdmin() && ev.status === 'active') {
+                          <button class="btn-icon" title="Izmeni" (click)="openEditFromRow(ev)">
+                            <span class="material-icons">edit</span>
+                          </button>
+                        }
+                        @if (isSuperAdmin()) {
+                          <button class="btn-icon btn-icon--danger" title="Obriši" (click)="openDeleteFromRow(ev)">
+                            <span class="material-icons">delete</span>
+                          </button>
+                        }
                       }
                     </div>
                   </td>
@@ -383,7 +391,11 @@
 
       <!-- Badges -->
       <div class="ddp-badges">
-        <span class="evts-status evts-status--{{ ev.status }}">{{ statusLabel(ev.status) }}</span>
+        @if (filters().tab === 'deleted') {
+          <span class="evts-status evts-status--deleted">Obrisano</span>
+        } @else {
+          <span class="evts-status evts-status--{{ ev.status }}">{{ statusLabel(ev.status) }}</span>
+        }
         @if (ev.type) {
           <span class="evts-type-label">
             <span class="material-icons evts-type-label__icon">{{ typeIcon(ev.type) }}</span>
@@ -558,31 +570,40 @@
     </div>
 
     <footer class="ddp-footer">
-      @if (ev.slug && filters().tab !== 'deleted') {
-        <a class="btn btn-ghost btn-sm" [href]="'/events/' + ev.slug" target="_blank" rel="noopener">
-          <span class="material-icons">open_in_new</span>
-          Otvori
-        </a>
-      }
-      @if (isSuperAdmin() && ev.status === 'active') {
-        <button class="btn btn-ghost btn-sm" (click)="openEdit()">
-          <span class="material-icons">edit</span>
-          Izmeni
-        </button>
-        <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="initiateAction('delete')">
-          <span class="material-icons">delete</span>
-          Obriši
-        </button>
-      }
-      @if (ev.status === 'pending') {
-        <button class="ddp-approve-btn" (click)="initiateAction('approve')">
-          <span class="material-icons">check_circle</span>
-          Odobri
-        </button>
-        <button class="ddp-reject-btn" (click)="initiateAction('reject')">
-          <span class="material-icons">cancel</span>
-          Odbij
-        </button>
+      @if (filters().tab === 'deleted') {
+        @if (isSuperAdmin()) {
+          <button class="btn btn-ghost btn-sm ddp-footer__restore" (click)="restoreEvent(ev)" [disabled]="isRestoring()">
+            <span class="material-icons">restore</span>
+            Vrati
+          </button>
+        }
+      } @else {
+        @if (ev.slug) {
+          <a class="btn btn-ghost btn-sm" [href]="'/events/' + ev.slug" target="_blank" rel="noopener">
+            <span class="material-icons">open_in_new</span>
+            Otvori
+          </a>
+        }
+        @if (isSuperAdmin() && ev.status === 'active') {
+          <button class="btn btn-ghost btn-sm" (click)="openEdit()">
+            <span class="material-icons">edit</span>
+            Izmeni
+          </button>
+          <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="initiateAction('delete')">
+            <span class="material-icons">delete</span>
+            Obriši
+          </button>
+        }
+        @if (ev.status === 'pending') {
+          <button class="ddp-approve-btn" (click)="initiateAction('approve')">
+            <span class="material-icons">check_circle</span>
+            Odobri
+          </button>
+          <button class="ddp-reject-btn" (click)="initiateAction('reject')">
+            <span class="material-icons">cancel</span>
+            Odbij
+          </button>
+        }
       }
     </footer>
 

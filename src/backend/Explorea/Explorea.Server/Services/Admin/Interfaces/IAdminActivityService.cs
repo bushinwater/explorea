@@ -31,6 +31,8 @@ namespace Explorea.Server.Services.Admin.Interfaces
             Guid id,
             Guid currentUserId);
 
+        Task<bool> RestoreAsync(Guid id, Guid currentUserId);
+
         Task<AdminActivityFilterOptionsDto> GetFilterOptionsAsync(Guid currentUserId);
     }
 }

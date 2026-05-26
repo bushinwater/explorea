@@ -3,6 +3,7 @@
   bottom: var(--chat-bubble-bottom, 24px);
   right: 24px;
   z-index: var(--chat-bubble-z, 1000);
+  transition: right 0.22s ease;
 }
 
 /* FAB trigger button */

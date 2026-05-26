@@ -548,6 +548,23 @@ namespace Explorea.Server.Services.Admin
       return true;
     }
 
+    public async Task<bool> RestoreAsync(Guid id, Guid currentUserId)
+    {
+      var activity = await _repository.GetByIdAsync(id);
+
+      if (activity == null || !activity.IsDeleted) return false;
+
+      activity.IsDeleted = false;
+      activity.DeletedAt = null;
+      activity.UpdatedAt = DateTimeOffset.UtcNow;
+      activity.UpdatedBy = currentUserId;
+
+      _repository.Update(activity);
+      await _repository.SaveChangesAsync();
+
+      return true;
+    }
+
     private static void ValidateCreateDto(AdminCreateActivityDto dto)
     {
       if (string.IsNullOrWhiteSpace(dto.Name))  throw new ArgumentException("Name is required");

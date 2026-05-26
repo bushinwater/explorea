@@ -718,3 +718,12 @@ select.input {
   --shadow-md:          0 4px 12px rgba(0,0,0,0.1);
   --shadow-lg:          0 8px 32px rgba(0,0,0,0.15);
 }
+
+/* ===== CHAT BUBBLE — shift left when admin right-side panels are open ===== */
+body:has(.ddp-panel) .chat-bubble-wrapper {
+  right: calc(min(430px, 100vw) + 24px);
+}
+
+body:has(.edit-modal__panel) .chat-bubble-wrapper {
+  right: calc(min(880px, 100vw) + 24px);
+}

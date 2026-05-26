@@ -363,6 +363,26 @@ namespace Explorea.Server.Services.Admin
             return true;
         }
 
+        public async Task<bool> RestoreAsync(Guid id, Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            if (user?.Role.Name != RoleNames.SuperAdmin)
+                throw new UnauthorizedAccessException("Only SuperAdmin can restore events.");
+
+            var ev = await _eventRepo.GetAdminByIdAsync(id);
+            if (ev == null || !ev.IsDeleted) return false;
+
+            ev.IsDeleted = false;
+            ev.DeletedAt = null;
+            ev.UpdatedAt = DateTimeOffset.UtcNow;
+            ev.UpdatedBy = currentUserId;
+
+            _eventRepo.Update(ev);
+            await _eventRepo.SaveChangesAsync();
+
+            return true;
+        }
+
         // ---- Helpers ----
 
         private async Task<bool> HasTOAccessToEvent(Guid userId, Event ev)

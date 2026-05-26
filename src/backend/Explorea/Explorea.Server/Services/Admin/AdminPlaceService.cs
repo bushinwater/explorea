@@ -541,6 +541,40 @@ namespace Explorea.Server.Services.Admin
             return true;
         }
 
+        public async Task<bool> RestoreAsync(Guid id, Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            var place = await _placeRepo.GetAdminByIdAsync(id);
+
+            if (place == null || !place.IsDeleted) return false;
+
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                if (place.CreatedBy != currentUserId)
+                    throw new UnauthorizedAccessException("Access denied.");
+            }
+            else if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (!user.ManagedRegionId.HasValue ||
+                    place.City?.RegionId != user.ManagedRegionId.Value)
+                    throw new UnauthorizedAccessException("Access denied.");
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            place.IsDeleted = false;
+            place.DeletedAt = null;
+            place.UpdatedAt = DateTimeOffset.UtcNow;
+            place.UpdatedBy = currentUserId;
+
+            _placeRepo.Update(place);
+            await _placeRepo.SaveChangesAsync();
+
+            return true;
+        }
+
         public async Task<List<AdminMyPlaceDto>> GetMyPlacesAsync(Guid currentUserId)
         {
             var places = await _placeRepo.GetMyPlacesAsync(currentUserId);

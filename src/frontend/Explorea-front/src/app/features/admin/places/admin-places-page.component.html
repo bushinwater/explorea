@@ -336,9 +336,13 @@
 
                 <!-- Status -->
                 <td class="place-td">
-                  <span class="place-status place-status--{{ place.status }}">
-                    {{ statusLabel(place.status) }}
-                  </span>
+                  @if (listMode() === 'deleted') {
+                    <span class="place-status place-status--deleted">Obrisano</span>
+                  } @else {
+                    <span class="place-status place-status--{{ place.status }}">
+                      {{ statusLabel(place.status) }}
+                    </span>
+                  }
                 </td>
 
                 <!-- Last updated -->
@@ -352,26 +356,35 @@
                 <!-- Actions -->
                 <td class="place-td place-td--actions" (click)="$event.stopPropagation()">
                   <div class="row-actions">
-                    @if (listMode() === 'active') {
-                    <a
-                      class="btn-icon"
-                      title="Otvori u aplikaciji"
-                      [href]="'/places/' + place.slug"
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      <span class="material-icons">open_in_new</span>
-                    </a>
-                    <button class="btn-icon" title="Izmeni" (click)="openEdit(place)">
-                      <span class="material-icons">edit</span>
-                    </button>
-                    <button
-                      class="btn-icon btn-icon--danger"
-                      title="Obriši"
-                      (click)="openDeleteDialog(place)"
-                    >
-                      <span class="material-icons">delete</span>
-                    </button>
+                    @if (listMode() === 'deleted') {
+                      <button
+                        class="btn-icon btn-icon--restore"
+                        title="Vrati"
+                        [disabled]="isRestoring()"
+                        (click)="restorePlace(place)"
+                      >
+                        <span class="material-icons">restore</span>
+                      </button>
+                    } @else {
+                      <a
+                        class="btn-icon"
+                        title="Otvori u aplikaciji"
+                        [href]="'/places/' + place.slug"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        <span class="material-icons">open_in_new</span>
+                      </a>
+                      <button class="btn-icon" title="Izmeni" (click)="openEdit(place)">
+                        <span class="material-icons">edit</span>
+                      </button>
+                      <button
+                        class="btn-icon btn-icon--danger"
+                        title="Obriši"
+                        (click)="openDeleteDialog(place)"
+                      >
+                        <span class="material-icons">delete</span>
+                      </button>
                     }
                   </div>
                 </td>
@@ -488,9 +501,13 @@
 
         <!-- Badges -->
         <div class="ddp-badges">
-          <span class="place-status place-status--{{ place.status }}">
-            {{ statusLabel(place.status) }}
-          </span>
+          @if (listMode() === 'deleted') {
+            <span class="place-status place-status--deleted">Obrisano</span>
+          } @else {
+            <span class="place-status place-status--{{ place.status }}">
+              {{ statusLabel(place.status) }}
+            </span>
+          }
           @if (place.avgRating) {
             <span class="ddp-rating">
               <span class="material-icons">star</span>
@@ -652,23 +669,30 @@
     </div>
 
     <footer class="ddp-footer">
-      <a
-        class="btn btn-ghost btn-sm"
-        [href]="'/places/' + place.slug"
-        target="_blank"
-        rel="noopener"
-      >
-        <span class="material-icons">open_in_new</span>
-        Otvori
-      </a>
-      <button class="btn btn-ghost btn-sm" (click)="openEditFromPanel()">
-        <span class="material-icons">edit</span>
-        Izmeni
-      </button>
-      <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="openDeleteFromPanel()">
-        <span class="material-icons">delete</span>
-        Obriši
-      </button>
+      @if (listMode() === 'deleted') {
+        <button class="btn btn-ghost btn-sm ddp-footer__restore" [disabled]="isRestoring()" (click)="restorePlace(place)">
+          <span class="material-icons">restore</span>
+          Vrati
+        </button>
+      } @else {
+        <a
+          class="btn btn-ghost btn-sm"
+          [href]="'/places/' + place.slug"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="material-icons">open_in_new</span>
+          Otvori
+        </a>
+        <button class="btn btn-ghost btn-sm" (click)="openEditFromPanel()">
+          <span class="material-icons">edit</span>
+          Izmeni
+        </button>
+        <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="openDeleteFromPanel()">
+          <span class="material-icons">delete</span>
+          Obriši
+        </button>
+      }
     </footer>
 
   </aside>

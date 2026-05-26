@@ -359,32 +359,45 @@
             </td>
 
             <td class="activity-td">
-              <span class="activity-status activity-status--{{ statusKey(activity.isActive) }}">
-                  {{ listMode() === 'deleted' ? timeAgo(activity.deletedAt ?? activity.updatedAt) : statusLabel(activity.isActive) }}
+              @if (listMode() === 'deleted') {
+                <span class="activity-status activity-status--deleted">Obrisano</span>
+              } @else {
+                <span class="activity-status activity-status--{{ statusKey(activity.isActive) }}">
+                  {{ statusLabel(activity.isActive) }}
                 </span>
-              </td>
+              }
+            </td>
 
             <!-- Actions -->
             <td class="activity-td activity-td--actions" (click)="$event.stopPropagation()">
               <div class="row-actions">
-                @if (listMode() === 'active') {
-                <a
-                  class="btn-icon"
-                  title="Otvori u aplikaciji"
-                  [href]="'/activities/' + activity.slug"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  <span class="material-icons">open_in_new</span>
-                </a>
-                @if (isSuperAdmin()) {
-                  <button class="btn-icon" title="Izmeni" (click)="openEditFromRow(activity)">
-                    <span class="material-icons">edit</span>
+                @if (listMode() === 'deleted') {
+                  <button
+                    class="btn-icon btn-icon--restore"
+                    title="Vrati"
+                    [disabled]="isRestoring()"
+                    (click)="restoreActivity(activity)"
+                  >
+                    <span class="material-icons">restore</span>
                   </button>
-                  <button class="btn-icon btn-icon--danger" title="Obriši" (click)="openDeleteDialog(activity)">
-                    <span class="material-icons">delete</span>
-                  </button>
-                }
+                } @else {
+                  <a
+                    class="btn-icon"
+                    title="Otvori u aplikaciji"
+                    [href]="'/activities/' + activity.slug"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    <span class="material-icons">open_in_new</span>
+                  </a>
+                  @if (isSuperAdmin()) {
+                    <button class="btn-icon" title="Izmeni" (click)="openEditFromRow(activity)">
+                      <span class="material-icons">edit</span>
+                    </button>
+                    <button class="btn-icon btn-icon--danger" title="Obriši" (click)="openDeleteDialog(activity)">
+                      <span class="material-icons">delete</span>
+                    </button>
+                  }
                 }
               </div>
             </td>
@@ -481,9 +494,13 @@
 
       <!-- Status + difficulty badges -->
       <div class="ddp-badges">
-        <span class="activity-status activity-status--{{ statusKey(detail.isActive) }}">
-          {{ statusLabel(detail.isActive) }}
-        </span>
+        @if (listMode() === 'deleted') {
+          <span class="activity-status activity-status--deleted">Obrisano</span>
+        } @else {
+          <span class="activity-status activity-status--{{ statusKey(detail.isActive) }}">
+            {{ statusLabel(detail.isActive) }}
+          </span>
+        }
         @if (detail.difficultyLevel) {
         <span class="activity-difficulty activity-difficulty--{{ detail.difficultyLevel.toLowerCase() }}">
           {{ difficultyLabel(detail.difficultyLevel) }}
@@ -655,35 +672,45 @@
 
     <!-- Footer actions -->
     <div class="ddp-footer">
-      @if (!detail.isActive) {
-      <button class="btn btn-primary btn-sm" type="button" (click)="activateSelectedActivity()">
-        <span class="material-icons">check</span>
-        Aktiviraj
-      </button>
+      @if (listMode() === 'deleted') {
+        <button class="btn btn-ghost btn-sm ddp-footer__restore" type="button" [disabled]="isRestoring()" (click)="restoreActivity(detail)">
+          <span class="material-icons">restore</span>
+          Vrati
+        </button>
+        <button class="btn btn-ghost btn-sm" type="button" (click)="closeDetailsPanel()">
+          Zatvori
+        </button>
       } @else {
-      <button class="btn btn-ghost btn-sm ddp-footer__danger" type="button"
-        (click)="deactivateSelectedActivity()">
-        <span class="material-icons">block</span>
-        Deaktiviraj
-      </button>
+        @if (!detail.isActive) {
+        <button class="btn btn-primary btn-sm" type="button" (click)="activateSelectedActivity()">
+          <span class="material-icons">check</span>
+          Aktiviraj
+        </button>
+        } @else {
+        <button class="btn btn-ghost btn-sm ddp-footer__danger" type="button"
+          (click)="deactivateSelectedActivity()">
+          <span class="material-icons">block</span>
+          Deaktiviraj
+        </button>
+        }
+
+        <button class="btn btn-secondary btn-sm" type="button" (click)="openEditModal()">
+          <span class="material-icons">edit</span>
+          Izmeni
+        </button>
+
+        @if (selectedActivity(); as activity) {
+        <button class="btn btn-ghost btn-sm ddp-footer__danger" type="button"
+          (click)="openDeleteDialog(activity)">
+          <span class="material-icons">delete</span>
+          Obriši
+        </button>
+        }
+
+        <button class="btn btn-ghost btn-sm" type="button" (click)="closeDetailsPanel()">
+          Zatvori
+        </button>
       }
-
-      <button class="btn btn-secondary btn-sm" type="button" (click)="openEditModal()">
-        <span class="material-icons">edit</span>
-        Izmeni
-      </button>
-
-      @if (selectedActivity(); as activity) {
-      <button class="btn btn-ghost btn-sm ddp-footer__danger" type="button"
-        (click)="openDeleteDialog(activity)">
-        <span class="material-icons">delete</span>
-        Obriši
-      </button>
-      }
-
-      <button class="btn btn-ghost btn-sm" type="button" (click)="closeDetailsPanel()">
-        Zatvori
-      </button>
     </div>
     }
   </aside>
