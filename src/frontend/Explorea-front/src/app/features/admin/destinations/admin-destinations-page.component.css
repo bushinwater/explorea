@@ -491,6 +491,10 @@
   background: var(--color-surface-2);
 }
 
+.dest-row--selected .dest-td {
+  background: var(--color-primary-muted) !important;
+}
+
 /* Destination name cell */
 .dest-name-cell {
   display: flex;
@@ -745,6 +749,7 @@
   inset: 0;
   z-index: 240;
   background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
 }
 
 .ddp-panel {

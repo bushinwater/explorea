@@ -141,8 +141,13 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.subscription.add(
       this.searchInput$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((value) => {
+        const q = value.trim();
         this.patchFilter({ search: value, page: 1 });
-        this.loadEvents();
+        if (!q) {
+          this.loadEvents();
+          return;
+        }
+        this.loadEventsFuzzy(q);
       }),
     );
     this.loadStats();
@@ -516,10 +521,16 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     return [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
   }
 
-  @HostListener('document:click')
-  onDocumentClick(): void {
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
     this.activeMenuId.set(null);
     this.isFilterOpen.set(false);
+    if (this.isPanelOpen() && !this.isPanelClosing()) {
+      const target = event.target as Element;
+      if (!target.closest('.ddp-panel') && !target.closest('.evts-card')) {
+        this.closeDetailsPanel();
+      }
+    }
   }
 
   @HostListener('document:keydown.escape')
@@ -555,6 +566,56 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
           },
         }),
     );
+  }
+
+  private loadEventsFuzzy(query: string): void {
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+
+    const allFilters = { ...this.filters(), search: '', page: 1, pageSize: 500 };
+
+    this.subscription.add(
+      this.eventsService
+        .getEvents(allFilters)
+        .pipe(finalize(() => this.isLoading.set(false)))
+        .subscribe({
+          next: (response) => {
+            const q = query.toLowerCase();
+            const matched = response.items.filter(e =>
+              this.fuzzyMatch(e.name.toLowerCase(), q) ||
+              (e.organizer && this.fuzzyMatch(e.organizer.toLowerCase(), q)) ||
+              (e.city && this.fuzzyMatch(e.city.toLowerCase(), q)) ||
+              (e.type && this.fuzzyMatch(e.type.toLowerCase(), q)),
+            );
+            this.events.set(matched);
+            this.total.set(matched.length);
+          },
+          error: () => {
+            this.events.set([]);
+            this.total.set(0);
+            this.errorMessage.set('Učitavanje događaja nije uspelo.');
+          },
+        }),
+    );
+  }
+
+  private fuzzyMatch(text: string, query: string): boolean {
+    if (text.includes(query)) return true;
+    if (query.length < 3) return false;
+
+    for (let i = 0; i < query.length - 1; i++) {
+      const swapped = query.slice(0, i) + query[i + 1] + query[i] + query.slice(i + 2);
+      if (text.includes(swapped)) return true;
+    }
+
+    if (query.length >= 4) {
+      for (let i = 0; i < query.length; i++) {
+        const shortened = query.slice(0, i) + query.slice(i + 1);
+        if (text.includes(shortened)) return true;
+      }
+    }
+
+    return false;
   }
 
   private loadStats(): void {

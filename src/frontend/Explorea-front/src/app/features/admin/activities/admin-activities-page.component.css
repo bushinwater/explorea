@@ -20,7 +20,7 @@
 /* ===== STATS ROW ===== */
 .activity-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--sp-4);
   align-items: stretch;
 }
@@ -429,6 +429,10 @@
   background: var(--color-surface-2);
 }
 
+.activity-row--selected .activity-td {
+  background: var(--color-primary-muted) !important;
+}
+
 .activity-name-cell {
   display: flex;
   align-items: center;
@@ -746,6 +750,7 @@
   inset: 0;
   z-index: 240;
   background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
 }
 
 .ddp-panel {

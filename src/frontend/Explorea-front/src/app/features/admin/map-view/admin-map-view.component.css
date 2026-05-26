@@ -7,6 +7,11 @@
   right: 0;
   bottom: 0;
   z-index: 10;
+  transition: left 0.25s ease;
+}
+
+:host.sidebar-expanded {
+  left: 280px;
 }
 
 /* ── Wrapper ─────────────────────────────────────────────── */
@@ -142,6 +147,7 @@
   position: fixed;
   top: calc(var(--header-height, 60px) + 44px);
   left: 72px;
+  transition: left 0.25s ease;
   width: 264px;
   max-height: calc(100vh - var(--header-height, 60px) - 44px);
   background: var(--color-surface);
@@ -163,6 +169,10 @@
 
 .admin-filter-panel.visible {
   transform: translateX(0);
+}
+
+:host.sidebar-expanded .admin-filter-panel {
+  left: 280px;
 }
 
 /* ── Filter panel internals (copied from explore) ────────── */

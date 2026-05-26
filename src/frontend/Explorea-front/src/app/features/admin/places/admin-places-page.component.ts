@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  HostListener,
   OnDestroy,
   OnInit,
   computed,
@@ -139,8 +140,13 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.subscription.add(
       this.searchInput$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((value) => {
+        const q = value.trim();
         this.patchFilter({ search: value, page: 1 });
-        this.loadPlaces();
+        if (!q) {
+          this.loadPlaces();
+          return;
+        }
+        this.loadPlacesFuzzy(q);
       }),
     );
 
@@ -425,6 +431,17 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     return [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
   }
 
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    this.isFilterOpen.set(false);
+    if (this.isDetailsPanelOpen() && !this.isPanelClosing()) {
+      const target = event.target as Element;
+      if (!target.closest('.ddp-panel') && !target.closest('.place-card')) {
+        this.closeDetailsPanel();
+      }
+    }
+  }
+
   private patchFilter(patch: Partial<PlaceFilters>): void {
     this.filters.update((current) => ({ ...current, ...patch }));
     if (patch.page !== undefined) this.currentPage.set(patch.page);
@@ -449,6 +466,56 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  private loadPlacesFuzzy(query: string): void {
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+
+    const allFilters = { ...this.filters(), search: '', page: 1, pageSize: 500 };
+
+    this.subscription.add(
+      this.placesService.getPlaces(allFilters).subscribe({
+        next: (response) => {
+          const q = query.toLowerCase();
+          const matched = response.items.filter(p =>
+            this.fuzzyMatch(p.name.toLowerCase(), q) ||
+            (p.city && this.fuzzyMatch(p.city.toLowerCase(), q)) ||
+            (p.region && this.fuzzyMatch(p.region.toLowerCase(), q)) ||
+            (p.type && this.fuzzyMatch(p.type.toLowerCase(), q)) ||
+            (p.destination && this.fuzzyMatch(p.destination.toLowerCase(), q)),
+          );
+          this.places.set(matched);
+          this.total.set(matched.length);
+          this.isLoading.set(false);
+        },
+        error: () => {
+          this.places.set([]);
+          this.total.set(0);
+          this.errorMessage.set('Greška pri učitavanju objekata.');
+          this.isLoading.set(false);
+        },
+      }),
+    );
+  }
+
+  private fuzzyMatch(text: string, query: string): boolean {
+    if (text.includes(query)) return true;
+    if (query.length < 3) return false;
+
+    for (let i = 0; i < query.length - 1; i++) {
+      const swapped = query.slice(0, i) + query[i + 1] + query[i] + query.slice(i + 2);
+      if (text.includes(swapped)) return true;
+    }
+
+    if (query.length >= 4) {
+      for (let i = 0; i < query.length; i++) {
+        const shortened = query.slice(0, i) + query.slice(i + 1);
+        if (text.includes(shortened)) return true;
+      }
+    }
+
+    return false;
   }
 
   private loadStats(): void {

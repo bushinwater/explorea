@@ -3,6 +3,7 @@ import {
   OnDestroy,
   AfterViewInit,
   ElementRef,
+  HostBinding,
   ViewChild,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -16,6 +17,7 @@ import { ExploreService, ExploreMarker } from '../../../core/services/explore.se
 import { LookupService, LookupItem, FilterDefinition } from '../../../core/services/lookup.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { LayoutService } from '../core/services/layout.service';
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
@@ -60,6 +62,9 @@ const ADMIN_ROUTES: Record<string, string> = {
   styleUrl: './admin-map-view.component.css',
 })
 export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
+  @HostBinding('class.sidebar-expanded')
+  get sidebarExpanded() { return this.layout.sidebarExpanded(); }
+
   @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef;
 
   private map!: MapLibreMap;
@@ -102,6 +107,7 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
     private router: Router,
     public auth: DashboardAuthService,
     public ui: AdminUiPreferencesService,
+    public layout: LayoutService,
   ) {}
 
   ngAfterViewInit(): void {

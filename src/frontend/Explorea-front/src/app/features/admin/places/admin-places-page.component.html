@@ -257,7 +257,7 @@
           </thead>
           <tbody>
             @for (place of places(); track place.id) {
-              <tr class="place-row" (click)="openDetailsPanel(place)">
+              <tr class="place-row" [class.place-row--selected]="detailsPanelRow()?.id === place.id" (click)="openDetailsPanel(place)">
 
                 <!-- Name + address + thumb -->
                 <td class="place-td">
@@ -409,7 +409,7 @@
 
 <!-- ===== PLACE DETAILS PANEL ===== -->
 @if ((isDetailsPanelOpen() || isPanelClosing()) && detailsPanelRow(); as place) {
-  <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
+  <div class="ddp-backdrop"></div>
   <aside class="ddp-panel" [class.ddp-panel--closing]="isPanelClosing()" role="dialog" aria-modal="true">
 
     <header class="ddp-header">

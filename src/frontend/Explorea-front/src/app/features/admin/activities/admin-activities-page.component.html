@@ -296,7 +296,7 @@
         </thead>
         <tbody>
           @for (activity of activities(); track activity.id) {
-          <tr class="activity-row" (click)="openDetailsPanel(activity)">
+          <tr class="activity-row" [class.activity-row--selected]="selectedActivity()?.id === activity.id" (click)="openDetailsPanel(activity)">
             <td class="activity-td">
               <div class="activity-name-cell">
                 @if (activity.previewImageUrl) {
@@ -410,7 +410,7 @@
 
   <!-- ===== DETAILS PANEL ===== -->
   @if (isDetailsPanelOpen() || isPanelClosing()) {
-  <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
+  <div class="ddp-backdrop"></div>
 
   <aside class="ddp-panel" [class.ddp-panel--closing]="isPanelClosing()" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
     <!-- Header -->

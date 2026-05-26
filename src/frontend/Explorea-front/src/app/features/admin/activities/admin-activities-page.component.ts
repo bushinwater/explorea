@@ -273,7 +273,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.searchInput$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((value) => {
         const q = value.trim();
-        this.patchFilter({ search: value, ids: undefined, page: 1 });
+        this.filters.update(f => ({ ...f, search: value, ids: undefined, page: 1 }));
+        this.currentPage.set(1);
         if (!q) {
           this.loadActivities();
           return;
@@ -1143,9 +1144,15 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     return v === 'all' ? 0 : v;
   }
 
-  @HostListener('document:click')
-  onDocumentClick(): void {
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
     this.activeMenuId.set(null);
+    if (this.isDetailsPanelOpen() && !this.isPanelClosing()) {
+      const target = event.target as Element;
+      if (!target.closest('.ddp-panel') && !target.closest('.activity-card')) {
+        this.closeDetailsPanel();
+      }
+    }
   }
 
   private patchFilter(patch: Partial<ActivityFilters>): void {

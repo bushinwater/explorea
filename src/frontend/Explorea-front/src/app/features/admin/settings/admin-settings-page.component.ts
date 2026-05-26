@@ -310,9 +310,6 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
             ).value,
           });
 
-          this.ui.setTheme(preferences.theme as AdminTheme);
-          this.ui.setLanguage(preferences.language as AdminLanguage);
-
           this.isPreferencesLoading.set(false);
         },
         error: () => {

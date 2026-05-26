@@ -299,7 +299,7 @@
           </thead>
           <tbody>
             @for (dest of destinations(); track dest.id) {
-              <tr class="dest-row" (click)="openDetailsPanel(dest)">
+              <tr class="dest-row" [class.dest-row--selected]="detailsPanelRow()?.id === dest.id" (click)="openDetailsPanel(dest)">
                 <!-- Destination name + thumb -->
                 <td class="dest-td">
                   <div class="dest-name-cell">
@@ -434,7 +434,7 @@
 
 <!-- ===== DESTINATION DETAILS PANEL ===== -->
 @if ((isDetailsPanelOpen() || isPanelClosing()) && detailsPanelRow(); as dest) {
-  <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
+  <div class="ddp-backdrop"></div>
   <aside class="ddp-panel" [class.ddp-panel--closing]="isPanelClosing()" role="dialog" aria-modal="true">
 
     <header class="ddp-header">

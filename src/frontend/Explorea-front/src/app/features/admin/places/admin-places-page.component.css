@@ -415,6 +415,10 @@
   background: var(--color-surface-2);
 }
 
+.place-row--selected .place-td {
+  background: var(--color-primary-muted) !important;
+}
+
 /* Name cell */
 .place-name-cell {
   display: flex;
@@ -678,6 +682,7 @@
   inset: 0;
   z-index: 240;
   background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
 }
 
 .ddp-panel {

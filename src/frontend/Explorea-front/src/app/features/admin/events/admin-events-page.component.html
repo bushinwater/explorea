@@ -327,7 +327,7 @@
 
 <!-- ===== EVENT DETAILS PANEL (ddp-panel style) ===== -->
 @if ((isPanelOpen() || isPanelClosing()) && selectedEvent(); as ev) {
-  <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
+  <div class="ddp-backdrop"></div>
   <aside class="ddp-panel" [class.ddp-panel--closing]="isPanelClosing()" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
 
     <header class="ddp-header">
