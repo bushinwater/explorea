@@ -92,13 +92,15 @@
             }
           </div>
 
-          <!-- Resize handle -->
+          <!-- Edge resize handles -->
           <div
-            class="widget-resize"
-            [class.widget-resize--active]="resizingId() === widget.id"
-            (mousedown)="startResize($event, widget)"
-            [title]="ui.t('dashboard.resize.hint')">
-            <span class="material-icons">drag_handle</span>
+            class="widget-edge widget-edge--left"
+            [class.widget-edge--active]="resizingId() === widget.id"
+            (mousedown)="startResize($event, widget, 'left')"></div>
+          <div
+            class="widget-edge widget-edge--right"
+            [class.widget-edge--active]="resizingId() === widget.id"
+            (mousedown)="startResize($event, widget, 'right')">
             @if (resizingId() === widget.id) {
               <span class="widget-resize__label">{{ colLabel(resizeCols()) }}</span>
             }

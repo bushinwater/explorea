@@ -55,7 +55,7 @@ export class Dashboard implements OnInit, OnDestroy {
   private nextRowId = 0;
 
   private resizeState: {
-    startX: number; startCols: 1|2|3|4; widgetId: WidgetId;
+    startX: number; startCols: 1|2|3|4; widgetId: WidgetId; direction: 'left' | 'right';
   } | null = null;
   private statsSubscription?: Subscription;
   private trafficSubscription?: Subscription;
@@ -342,10 +342,10 @@ export class Dashboard implements OnInit, OnDestroy {
 
   // ===== Resize =====
 
-  startResize(event: MouseEvent, widget: WidgetConfig): void {
+  startResize(event: MouseEvent, widget: WidgetConfig, direction: 'left' | 'right' = 'right'): void {
     event.preventDefault();
     event.stopPropagation();
-    this.resizeState = { startX: event.clientX, startCols: widget.cols, widgetId: widget.id };
+    this.resizeState = { startX: event.clientX, startCols: widget.cols, widgetId: widget.id, direction };
     this.resizingId.set(widget.id);
     this.resizeCols.set(widget.cols);
     document.addEventListener('mousemove', this.onMouseMove);
@@ -354,7 +354,8 @@ export class Dashboard implements OnInit, OnDestroy {
 
   private handleResizeMove(event: MouseEvent): void {
     if (!this.resizeState) return;
-    const dx        = event.clientX - this.resizeState.startX;
+    const rawDx     = event.clientX - this.resizeState.startX;
+    const dx        = this.resizeState.direction === 'left' ? -rawDx : rawDx;
     const deltaCols = Math.round(dx / 140);
     const newCols   = Math.max(1, Math.min(4, this.resizeState.startCols + deltaCols)) as 1|2|3|4;
 
