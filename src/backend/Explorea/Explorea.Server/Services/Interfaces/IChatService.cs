@@ -6,6 +6,6 @@ namespace Explorea.Server.Services.Interfaces
 
     public interface IChatService
     {
-        Task<string> ChatAsync(List<ChatMessage> history, string userMessage, ChatContext? context = null);
+        Task<string> ChatAsync(List<ChatMessage> history, string userMessage, ChatContext? context = null, string? systemPromptOverride = null);
     }
 }

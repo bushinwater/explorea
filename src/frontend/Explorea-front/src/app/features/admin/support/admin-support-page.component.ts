@@ -1,8 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, interval } from 'rxjs';
-import { ChatMessage, ChatService } from '../../../core/services/chat.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { AdminSupportService } from './admin-support.service';
 import {
@@ -29,6 +28,9 @@ type SupportMobileView = 'list' | 'chat' | 'details';
   styleUrl: './admin-support-page.component.css',
 })
 export class AdminSupportPageComponent implements OnInit, OnDestroy {
+  @ViewChild('aiMessagesViewport') private aiMessagesViewport?: ElementRef<HTMLElement>;
+  @ViewChild('ticketMessagesViewport') private ticketMessagesViewport?: ElementRef<HTMLElement>;
+
   private readonly searchInput$ = new Subject<string>();
   private readonly subscription = new Subscription();
 
@@ -70,7 +72,6 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly supportService: AdminSupportService,
-    private readonly chatService: ChatService,
     protected readonly auth: DashboardAuthService,
   ) {}
 
@@ -114,6 +115,7 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
     this.selectedTicket.set(null);
     this.isTicketLoading.set(false);
     this.mobileView.set('chat');
+    this.scrollAiMessagesToBottom();
   }
 
   protected selectConversation(conversationId: string): void {
@@ -232,6 +234,7 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
           this.isInternalNote.set(false);
           this.isSendingReply.set(false);
           this.loadConversations(false);
+          this.scrollTicketMessagesToBottom();
         },
         error: () => {
           this.isSendingReply.set(false);
@@ -374,15 +377,16 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
       content,
       createdAt: new Date().toISOString(),
     };
-    const history: ChatMessage[] = this.aiMessages().map(({ role, content }) => ({ role, content }));
+    const history = this.aiMessages();
 
     this.aiMessages.update((messages) => [...messages, userMessage]);
     this.aiInputText.set('');
     this.aiSendError.set('');
     this.isAiSending.set(true);
+    this.scrollAiMessagesToBottom();
 
     this.subscription.add(
-      this.chatService.send(history, content).subscribe({
+      this.supportService.sendAiChat(content, 'admin-support', history).subscribe({
         next: (response) => {
           this.aiMessages.update((messages) => [
             ...messages,
@@ -394,10 +398,12 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
             },
           ]);
           this.isAiSending.set(false);
+          this.scrollAiMessagesToBottom();
         },
         error: () => {
           this.aiSendError.set('Greska pri slanju poruke AI asistentu.');
           this.isAiSending.set(false);
+          this.scrollAiMessagesToBottom();
         },
       }),
     );
@@ -448,6 +454,7 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
         next: (ticket) => {
           this.selectedTicket.set(ticket);
           this.isTicketLoading.set(false);
+          this.scrollTicketMessagesToBottom();
         },
         error: () => {
           this.selectedTicket.set(null);
@@ -455,5 +462,22 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  private scrollAiMessagesToBottom(): void {
+    this.scrollMessagesToBottom(() => this.aiMessagesViewport);
+  }
+
+  private scrollTicketMessagesToBottom(): void {
+    this.scrollMessagesToBottom(() => this.ticketMessagesViewport);
+  }
+
+  private scrollMessagesToBottom(getViewport: () => ElementRef<HTMLElement> | undefined): void {
+    setTimeout(() => {
+      const el = getViewport()?.nativeElement;
+      if (!el) return;
+
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    });
   }
 }

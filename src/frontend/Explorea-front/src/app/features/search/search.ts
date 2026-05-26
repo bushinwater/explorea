@@ -154,6 +154,7 @@ export class Search implements OnInit, OnDestroy {
 
   private readonly searchSubject = new Subject<void>();
   private readonly destroy$      = new Subject<void>();
+  private lockedScrollY = 0;
 
   constructor(
     private searchPageService: SearchPageService,
@@ -213,6 +214,7 @@ export class Search implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.unlockPageScroll();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -934,11 +936,13 @@ export class Search implements OnInit, OnDestroy {
       }
     }
     this.showFilterPanel = true;
+    this.lockPageScroll();
     this.cdr.detectChanges();
   }
 
   closeFilterPanel(): void {
     this.showFilterPanel = false;
+    this.unlockPageScroll();
     this.cdr.detectChanges();
   }
 
@@ -952,6 +956,7 @@ export class Search implements OnInit, OnDestroy {
     }
     this.filters         = f;
     this.showFilterPanel = false;
+    this.unlockPageScroll();
 
     if (this.draftEntityTypes.length > 1) {
       this.activeEntityTypes = [...this.draftEntityTypes];
@@ -995,6 +1000,7 @@ export class Search implements OnInit, OnDestroy {
     this.filterDefs         = [];
     this.filterDefsTypeId   = null;
     this.showFilterPanel    = false;
+    this.unlockPageScroll();
     if (this.showResults) {
       this.triggerSearch();
     } else if (this.activeChip === 'sve') {
@@ -1034,5 +1040,29 @@ export class Search implements OnInit, OnDestroy {
 
   trackByItem(_: number, item: SearchItem): string {
     return item.entity.id;
+  }
+
+  private lockPageScroll(): void {
+    if (document.body.style.position === 'fixed') return;
+
+    this.lockedScrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.lockedScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockPageScroll(): void {
+    if (document.body.style.position !== 'fixed') return;
+
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo({ top: this.lockedScrollY, behavior: 'instant' as ScrollBehavior });
   }
 }

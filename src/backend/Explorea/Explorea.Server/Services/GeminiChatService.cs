@@ -43,13 +43,13 @@ namespace Explorea.Server.Services
             _apiKey = config["GeminiSettings:ApiKey"]!;
         }
 
-        public async Task<string> ChatAsync(List<ChatMessage> history, string userMessage, ChatContext? context = null)
+        public async Task<string> ChatAsync(List<ChatMessage> history, string userMessage, ChatContext? context = null, string? systemPromptOverride = null)
         {
             var contents = BuildContents(history, userMessage);
 
             for (int i = 0; i < 5; i++)
             {
-                var request = BuildRequest(contents, context);
+                var request = BuildRequest(contents, context, systemPromptOverride);
                 var (response, raw) = await CallGeminiAsync(request);
 
                 var apiError = response?["error"]?["message"]?.GetValue<string>();
@@ -124,12 +124,12 @@ namespace Explorea.Server.Services
             return contents;
         }
 
-        private JsonObject BuildRequest(List<JsonObject> contents, ChatContext? context)
+        private JsonObject BuildRequest(List<JsonObject> contents, ChatContext? context, string? systemPromptOverride)
         {
             var arr = new JsonArray();
             foreach (var c in contents) arr.Add(c.DeepClone());
 
-            var systemPrompt = SystemPrompt;
+            var systemPrompt = string.IsNullOrWhiteSpace(systemPromptOverride) ? SystemPrompt : systemPromptOverride;
             if (context is not null)
             {
                 if (!string.IsNullOrWhiteSpace(context.FirstName))

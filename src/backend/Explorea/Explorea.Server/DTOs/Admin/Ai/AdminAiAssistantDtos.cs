@@ -25,6 +25,7 @@ namespace Explorea.API.DTOs.Admin.Ai
     {
         public string Message { get; set; } = string.Empty;
         public List<AdminAiInsightDto> Insights { get; set; } = new();
+        public List<AdminAiQuickActionDto> QuickActions { get; set; } = new();
     }
 
     public class AdminAiInsightDto
@@ -32,5 +33,13 @@ namespace Explorea.API.DTOs.Admin.Ai
         public string Type { get; set; } = "neutral";
         public string Icon { get; set; } = "auto_awesome";
         public string Text { get; set; } = string.Empty;
+    }
+
+    public class AdminAiQuickActionDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Icon { get; set; } = "bolt";
+        public string Label { get; set; } = string.Empty;
+        public string Route { get; set; } = "/admin/dashboard";
     }
 }

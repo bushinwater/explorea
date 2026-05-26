@@ -102,9 +102,17 @@ export interface AiChatMessage {
   text: string;
 }
 
+export interface AiQuickAction {
+  id: string;
+  icon: string;
+  label: string;
+  route: string;
+}
+
 export interface AiChatResponse {
   message: string;
   insights: AiInsight[];
+  quickActions: AiQuickAction[];
 }
 
 // ===== DASHBOARD DATA (all combined per role) =====
