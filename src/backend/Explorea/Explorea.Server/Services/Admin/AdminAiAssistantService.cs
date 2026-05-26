@@ -71,7 +71,8 @@ namespace Explorea.Server.Services.Admin
                 return new AdminAiChatResponseDto
                 {
                     Message = BuildFallbackAnswer(message, context),
-                    Insights = insights
+                    Insights = insights,
+                    QuickActions = BuildQuickActions(message, context)
                 };
             }
 
@@ -79,7 +80,8 @@ namespace Explorea.Server.Services.Admin
             return new AdminAiChatResponseDto
             {
                 Message = string.IsNullOrWhiteSpace(response) ? BuildFallbackAnswer(message, context) : response,
-                Insights = insights
+                Insights = insights,
+                QuickActions = BuildQuickActions(message, context)
             };
         }
 
@@ -337,6 +339,7 @@ namespace Explorea.Server.Services.Admin
             sb.AppendLine("Odgovaraj konkretno i korisno na srpskom latinicom (bez dijakritika: s, c, z, dj).");
             sb.AppendLine("Koristi SAMO podatke iz konteksta ispod. Nikad ne izmisljaj informacije.");
             sb.AppendLine("Uz svaki odgovor predlozi 1-2 konkretne admin akcije ili postavi relevantno pratece pitanje.");
+            sb.AppendLine("Ako bi korisniku pomogla navigacija, spomeni koju admin sekciju da otvori; aplikacija ce prikazati dugmad za podrzane quick actions.");
             sb.AppendLine("Primeri pitanja koja admin moze postavljati: koliko pregleda ima konkretna destinacija, koji dogadjaj je najpopularniji, koliko novih korisnika ima, sta treba odobriti, koje aktivnosti su neaktivne, pregled tiketa.");
             sb.AppendLine();
             sb.AppendLine("=== ADMIN KONTEKST ===");
@@ -563,6 +566,68 @@ namespace Explorea.Server.Services.Admin
             }
 
             return insights;
+        }
+
+        private static List<AdminAiQuickActionDto> BuildQuickActions(string message, AdminAiContext context)
+        {
+            var normalized = message.Trim().ToLowerInvariant();
+            var actions = new List<AdminAiQuickActionDto>();
+
+            void Add(string id, string icon, string label, string route)
+            {
+                if (actions.Any(a => a.Id == id)) return;
+                actions.Add(new AdminAiQuickActionDto
+                {
+                    Id = id,
+                    Icon = icon,
+                    Label = label,
+                    Route = route
+                });
+            }
+
+            if (ContainsAny(normalized, "tiket", "support", "podrsk", "eskal"))
+                Add("open-support", "support_agent", "Otvori support", "/admin/support");
+
+            if (ContainsAny(normalized, "korisnik", "user", "registr"))
+                Add("open-users", "people", "Otvori korisnike", "/admin/users");
+
+            if (ContainsAny(normalized, "destin", "zahtev", "odobri", "cekanj", "pending"))
+                Add("open-destinations", "landscape", "Otvori destinacije", "/admin/destinations");
+
+            if (ContainsAny(normalized, "dogadj", "event"))
+                Add("open-events", "event", "Otvori dogadjaje", "/admin/events");
+
+            if (ContainsAny(normalized, "aktivnost", "activity", "neaktiv"))
+                Add("open-activities", "directions_walk", "Otvori aktivnosti", "/admin/activities");
+
+            if (ContainsAny(normalized, "mesto", "objek", "place"))
+                Add("open-places", "storefront", "Otvori mesta", "/admin/places");
+
+            if (ContainsAny(normalized, "recenz", "ocen"))
+                Add("open-reviews", "rate_review", "Otvori recenzije", "/admin/reviews");
+
+            if (ContainsAny(normalized, "izvestaj", "report", "analitik", "saobracaj", "pregled", "stat"))
+                Add("open-reports", "assessment", "Otvori izvestaje", "/admin/reports");
+
+            if (ContainsAny(normalized, "obavest", "broadcast", "notifik"))
+                Add("open-broadcast", "campaign", "Posalji obavestenje", "/admin/notifications/broadcast");
+
+            if (actions.Count == 0)
+            {
+                if (context.PendingDestinations > 0)
+                    Add("open-destinations", "landscape", "Pregledaj zahteve", "/admin/destinations");
+                if (context.OpenTickets > 0)
+                    Add("open-support", "support_agent", "Pregledaj tikete", "/admin/support");
+                if (actions.Count == 0)
+                    Add("open-dashboard", "dashboard", "Ostani na dashboardu", "/admin/dashboard");
+            }
+
+            return actions.Take(3).ToList();
+        }
+
+        private static bool ContainsAny(string value, params string[] terms)
+        {
+            return terms.Any(value.Contains);
         }
 
         private record DestViewEntry(string Name, int Views);

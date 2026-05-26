@@ -1,9 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
-  AdminRole, AiChatMessage, AiChatResponse, AiInsight,
-  ActivityItem, ActivityStatus, QuickAction, StatCardData,
-  SystemStatusItem, TrafficPoint,
+  AdminRole, DashboardData, TrafficPoint, SystemStatusItem,
+  AiInsight, AiChatMessage, AiChatResponse, AiQuickAction, QuickAction,
+  StatCardData, ActivityItem, ActivityStatus,
 } from '../models/admin.models';
 import { Observable, map } from 'rxjs';
 
@@ -45,6 +45,7 @@ interface AdminSystemStatusItem {
 interface AdminAiChatResponse {
   message: string;
   insights: AiInsight[];
+  quickActions?: AiQuickAction[];
 }
 
 const QUICK_ACTIONS: Record<AdminRole, QuickAction[]> = {
@@ -176,6 +177,7 @@ export class DashboardService {
       map((response) => ({
         message: response.message,
         insights: response.insights ?? [],
+        quickActions: response.quickActions ?? [],
       })),
     );
   }

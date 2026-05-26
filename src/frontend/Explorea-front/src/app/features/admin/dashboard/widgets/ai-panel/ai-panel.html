@@ -23,7 +23,7 @@
 
   <!-- Chat messages -->
   @if (messages().length > 0) {
-    <div class="ai__messages">
+    <div class="ai__messages" #messagesViewport>
       @for (msg of messages(); track $index) {
         <div class="ai__msg" [class.ai__msg--user]="msg.role === 'user'" [class.ai__msg--ai]="msg.role === 'ai'">
           @if (msg.role === 'ai') {
@@ -45,6 +45,17 @@
 
   @if (errorMessage()) {
     <div class="ai__error">{{ errorMessage() }}</div>
+  }
+
+  @if (quickActions().length > 0) {
+    <div class="ai__actions">
+      @for (action of quickActions(); track action.id) {
+        <button class="ai__action" type="button" (click)="runQuickAction(action)">
+          <span class="material-icons">{{ action.icon }}</span>
+          <span>{{ action.label }}</span>
+        </button>
+      }
+    </div>
   }
 
   <!-- Input -->

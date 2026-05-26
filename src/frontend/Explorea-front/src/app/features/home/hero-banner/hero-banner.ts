@@ -88,6 +88,7 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   private touchStartX = 0;
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
+  private lockedScrollY = 0;
 
   constructor(
     private cdr: ChangeDetectorRef,
@@ -144,6 +145,7 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.unlockPageScroll();
     this.stopAutoAdvance();
     this.destroy$.next();
     this.destroy$.complete();
@@ -255,11 +257,13 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
       if (ids.length === 1 && this.filterDefsTypeId !== ids[0]) this.loadFilterDefs(ids[0]);
     }
     this.showFilterPanel = true;
+    this.lockPageScroll();
     this.cdr.markForCheck();
   }
 
   closeFilterPanel(): void {
     this.showFilterPanel = false;
+    this.unlockPageScroll();
     this.cdr.markForCheck();
   }
 
@@ -270,6 +274,7 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
     else if (!f.radiusKm) f.radiusKm = 50;
     this.filters         = f;
     this.showFilterPanel = false;
+    this.unlockPageScroll();
 
     let entityType: string | null = null;
     let activeEntityTypes: string[] | undefined;
@@ -306,6 +311,7 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
     this.filterDefs         = [];
     this.filterDefsTypeId   = null;
     this.showFilterPanel    = false;
+    this.unlockPageScroll();
     this.cdr.markForCheck();
   }
 
@@ -603,5 +609,29 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
       this.prev();
     }
     this.startAutoAdvance();
+  }
+
+  private lockPageScroll(): void {
+    if (document.body.style.position === 'fixed') return;
+
+    this.lockedScrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.lockedScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockPageScroll(): void {
+    if (document.body.style.position !== 'fixed') return;
+
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo({ top: this.lockedScrollY, behavior: 'instant' as ScrollBehavior });
   }
 }

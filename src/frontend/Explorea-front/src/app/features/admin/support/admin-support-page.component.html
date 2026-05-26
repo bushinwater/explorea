@@ -126,7 +126,7 @@
           </div>
         </header>
 
-        <div class="support-messages support-messages--ai">
+        <div class="support-messages support-messages--ai" #aiMessagesViewport>
           @if (!aiMessages().length) {
             <div class="support-ai-welcome">
               <span class="material-icons">auto_awesome</span>
@@ -228,7 +228,7 @@
           </div>
         </header>
 
-        <div class="support-messages">
+        <div class="support-messages" #ticketMessagesViewport>
           @if (isTicketLoading()) {
             <div class="support-message-skeleton">
               <span class="support-skeleton support-skeleton--message"></span>
