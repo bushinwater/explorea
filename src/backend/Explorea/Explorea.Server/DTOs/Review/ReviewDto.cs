@@ -10,6 +10,8 @@ namespace Explorea.API.DTOs.Review
         public string? EntityType { get; set; }
         public string? EntityName { get; set; }
         public string? EntitySlug { get; set; }
+        public string? OwnerReply { get; set; }
+        public DateTimeOffset? OwnerReplyAt { get; set; }
     }
 
     public class ReviewUserDto

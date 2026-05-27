@@ -1,7 +1,12 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, forkJoin, map } from 'rxjs';
-import { ReviewFilters, ReviewPagedResponse, ReviewStats } from './admin-reviews.models';
+import {
+  DeleteReviewRequest,
+  ReviewFilters,
+  ReviewPagedResponse,
+  ReviewStats,
+} from './admin-reviews.models';
 
 @Injectable({ providedIn: 'root' })
 export class AdminReviewsService {
@@ -16,6 +21,15 @@ export class AdminReviewsService {
 
     if (filters.entityType !== 'all') {
       params = params.set('entityType', filters.entityType);
+    }
+    if (filters.subtypeId !== null) {
+      params = params.set('subtypeId', filters.subtypeId);
+    }
+    if (filters.regionId !== null) {
+      params = params.set('regionId', filters.regionId);
+    }
+    if (filters.cityId !== null) {
+      params = params.set('cityId', filters.cityId);
     }
     if (filters.minRating !== null) {
       params = params.set('minRating', filters.minRating);
@@ -64,7 +78,16 @@ export class AdminReviewsService {
     return this.http.put<void>(`${this.api}/${id}/approve`, {});
   }
 
-  delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.api}/${id}`);
+  delete(id: string, reason?: string): Observable<void> {
+    return this.http.delete<void>(`${this.api}/${id}`, {
+      body: { reason } as DeleteReviewRequest,
+    });
+  }
+
+  reply(id: string, replyText: string): Observable<{ ownerReply: string; ownerReplyAt: string }> {
+    return this.http.post<{ ownerReply: string; ownerReplyAt: string }>(
+      `/api/reviews/${id}/reply`,
+      { reply: replyText },
+    );
   }
 }

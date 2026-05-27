@@ -21,7 +21,9 @@ namespace Explorea.Server.Controllers.Admin
         [HttpGet]
         public async Task<IActionResult> GetAll(
             [FromQuery] string? entityType,
+            [FromQuery] int? subtypeId,
             [FromQuery] int? cityId,
+            [FromQuery] int? regionId,
             [FromQuery] short? minRating,
             [FromQuery] short? maxRating,
             [FromQuery] string? gender,
@@ -35,7 +37,7 @@ namespace Explorea.Server.Controllers.Admin
             {
                 var userId = GetCurrentUserId();
                 var (items, total) = await _service.GetAllAsync(
-                    entityType, cityId, minRating, maxRating,
+                    entityType, subtypeId, cityId, regionId, minRating, maxRating,
                     gender, minAge, maxAge, isHidden,
                     page, pageSize, userId);
                 return Ok(new { total, items });
@@ -99,12 +101,12 @@ namespace Explorea.Server.Controllers.Admin
 
         // DELETE /api/admin/reviews/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
+        public async Task<IActionResult> Delete(Guid id, [FromBody] DeleteReviewRequest? body)
         {
             try
             {
                 var userId = GetCurrentUserId();
-                var result = await _service.DeleteAsync(id, userId);
+                var result = await _service.DeleteAsync(id, userId, body?.Reason);
                 if (!result) return NotFound();
                 return NoContent();
             }
@@ -119,5 +121,10 @@ namespace Explorea.Server.Controllers.Admin
             var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return Guid.Parse(claim!);
         }
+    }
+
+    public class DeleteReviewRequest
+    {
+        public string? Reason { get; set; }
     }
 }

@@ -60,6 +60,8 @@ export interface ReviewDto {
   entityType?: string;
   entityName?: string;
   entitySlug?: string;
+  ownerReply?: string | null;
+  ownerReplyAt?: string | null;
   user: {
     id: string;
     firstName: string;

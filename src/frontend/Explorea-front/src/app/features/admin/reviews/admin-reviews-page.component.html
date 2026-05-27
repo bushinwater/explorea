@@ -90,6 +90,63 @@
                 </div>
               }
 
+              <!-- Subtype filter (activity category / event type / place type) -->
+              @if (showSubtypeFilter()) {
+                <div class="rv-filter-section">
+                  <label class="rv-filter-section__label">{{ subtypeLabel() }}</label>
+                  <select
+                    class="rv-filter-select"
+                    [value]="filters().subtypeId ?? ''"
+                    (change)="applySubtype($any($event.target).value)"
+                  >
+                    <option value="">Svi</option>
+                    @for (s of subtypes(); track s.id) {
+                      <option [value]="s.id">{{ s.name }}</option>
+                    }
+                    @if (!subtypes().length) {
+                      <option value="" disabled>Učitavanje...</option>
+                    }
+                  </select>
+                </div>
+              }
+
+              <!-- Region filter (only for SuperAdmin) -->
+              @if (showRegionFilter()) {
+                <div class="rv-filter-section">
+                  <label class="rv-filter-section__label">Regija</label>
+                  <select
+                    class="rv-filter-select"
+                    [value]="filters().regionId ?? ''"
+                    (change)="applyRegion($any($event.target).value)"
+                  >
+                    <option value="">Sve regije</option>
+                    @for (r of regions(); track r.id) {
+                      <option [value]="r.id">{{ r.name }}</option>
+                    }
+                  </select>
+                </div>
+              }
+
+              <!-- City filter -->
+              @if (!isPlaceOwner()) {
+                <div class="rv-filter-section">
+                  <label class="rv-filter-section__label">Grad</label>
+                  <select
+                    class="rv-filter-select"
+                    [value]="filters().cityId ?? ''"
+                    (change)="applyCity($any($event.target).value)"
+                  >
+                    <option value="">Svi gradovi</option>
+                    @for (c of cities(); track c.id) {
+                      <option [value]="c.id">{{ c.name }}</option>
+                    }
+                    @if (!cities().length && filters().regionId === null) {
+                      <option value="" disabled>Izaberi regiju za gradove</option>
+                    }
+                  </select>
+                </div>
+              }
+
               <!-- Rating filter -->
               <div class="rv-filter-section">
                 <label class="rv-filter-section__label">{{ ui.t('reviews.filter.rating') }}</label>
@@ -162,6 +219,7 @@
           <thead>
             <tr>
               <th class="rv-th">{{ ui.t('reviews.table.user') }}</th>
+              <th class="rv-th">Entitet</th>
               <th class="rv-th">{{ ui.t('reviews.table.rating') }}</th>
               <th class="rv-th">{{ ui.t('reviews.table.comment') }}</th>
               <th class="rv-th rv-th--nowrap">{{ ui.t('reviews.table.date') }}</th>
@@ -177,7 +235,11 @@
                 <td class="rv-td">
                   <div class="rv-user-cell">
                     <div class="rv-avatar">
-                      {{ review.userFullName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() }}
+                      @if (review.userProfileImageUrl) {
+                        <img [src]="review.userProfileImageUrl" [alt]="review.userFullName" class="rv-avatar-img" />
+                      } @else {
+                        {{ review.userFullName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() }}
+                      }
                     </div>
                     <div class="rv-user-info">
                       <span class="rv-user-info__name">{{ review.userFullName }}</span>
@@ -189,9 +251,36 @@
                   </div>
                 </td>
 
+                <!-- Entity name + links -->
+                <td class="rv-td rv-td--entity">
+                  <div class="rv-entity-cell">
+                    <span class="rv-entity-name">{{ review.entityName ?? '—' }}</span>
+                    <div class="rv-entity-links">
+                      @if (review.entityId) {
+                        <button
+                          class="rv-entity-link rv-entity-link--admin"
+                          (click)="navigateToAdminEntity(review)"
+                          title="Otvori u admin panelu"
+                        >
+                          <span class="material-icons">admin_panel_settings</span>
+                        </button>
+                      }
+                      @if (review.entitySlug) {
+                        <button
+                          class="rv-entity-link rv-entity-link--tourist"
+                          (click)="openTouristPage(review)"
+                          title="Otvori na turističkoj aplikaciji"
+                        >
+                          <span class="material-icons">open_in_new</span>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </td>
+
                 <!-- Rating -->
                 <td class="rv-td rv-td--nowrap">
-                  <span class="rv-stars rv-stars--{{ ratingClass(review.rating) }}">
+                  <span class="rv-stars {{ ratingClass(review.rating) }}">
                     @for (filled of starsArray(review.rating); track $index) {
                       <span class="material-icons rv-star">{{ filled ? 'star' : 'star_border' }}</span>
                     }
@@ -236,6 +325,12 @@
                                 {{ ui.t('reviews.actions.approve') }}
                               </button>
                             }
+                          }
+                          @if (isPlaceOwner()) {
+                            <button class="rv-menu-item" (click)="openReplyDialog(review)">
+                              <span class="material-icons">reply</span>
+                              {{ review.ownerReply ? 'Izmeni odgovor' : 'Odgovori' }}
+                            </button>
                           }
                           @if (isSuperAdmin()) {
                             <button
@@ -294,16 +389,87 @@
   </div>
 </div>
 
-<!-- ===== DELETE CONFIRM DIALOG ===== -->
+<!-- ===== REPLY DIALOG ===== -->
+@if (isReplyDialogOpen()) {
+  <div class="rv-delete-overlay" (click)="closeReplyDialog()">
+    <div class="rv-delete-modal" (click)="$event.stopPropagation()">
+      <div class="rv-delete-modal__header">
+        <span class="material-icons rv-delete-modal__icon">reply</span>
+        <h3 class="rv-delete-modal__title">{{ selectedReview()?.ownerReply ? 'Izmeni odgovor' : 'Odgovori na recenziju' }}</h3>
+      </div>
+      @if (selectedReview()?.entityName) {
+        <p class="rv-delete-modal__entity">
+          <span class="material-icons">place</span>
+          {{ selectedReview()?.entityName }} — {{ selectedReview()?.userFullName }}
+        </p>
+      }
+      <div class="rv-delete-modal__reason">
+        <label class="rv-delete-modal__reason-label">Vaš odgovor</label>
+        <textarea
+          class="rv-delete-modal__reason-input"
+          rows="4"
+          placeholder="Unesite odgovor..."
+          [value]="replyText()"
+          (input)="replyText.set($any($event.target).value)"
+        ></textarea>
+      </div>
+      <div class="rv-delete-modal__actions">
+        <button class="rv-delete-modal__cancel" (click)="closeReplyDialog()" [disabled]="isReplying()">
+          Otkaži
+        </button>
+        <button class="rv-delete-modal__confirm" (click)="confirmReply()" [disabled]="isReplying() || !replyText().trim()">
+          @if (isReplying()) {
+            <span class="material-icons spin">sync</span>
+            Čuvanje...
+          } @else {
+            Sačuvaj odgovor
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ===== DELETE CONFIRM DIALOG WITH REASON ===== -->
 @if (isDeleteDialogOpen()) {
-  <app-confirm-dialog
-    [title]="ui.t('reviews.delete.title')"
-    [description]="ui.t('reviews.delete.description', { name: selectedReview()?.userFullName ?? '' })"
-    [confirmLabel]="ui.t('reviews.delete.confirm')"
-    [cancelLabel]="ui.t('reviews.delete.cancel')"
-    [loadingLabel]="ui.t('reviews.delete.loading')"
-    [isLoading]="isDeleting()"
-    (cancel)="closeDeleteDialog()"
-    (confirm)="confirmDelete()"
-  />
+  <div class="rv-delete-overlay" (click)="closeDeleteDialog()">
+    <div class="rv-delete-modal" (click)="$event.stopPropagation()">
+      <div class="rv-delete-modal__header">
+        <span class="material-icons rv-delete-modal__icon">delete_forever</span>
+        <h3 class="rv-delete-modal__title">{{ ui.t('reviews.delete.title') }}</h3>
+      </div>
+      <p class="rv-delete-modal__desc">
+        {{ ui.t('reviews.delete.description', { name: selectedReview()?.userFullName ?? '' }) }}
+      </p>
+      @if (selectedReview()?.entityName) {
+        <p class="rv-delete-modal__entity">
+          <span class="material-icons">place</span>
+          {{ selectedReview()?.entityName }}
+        </p>
+      }
+      <div class="rv-delete-modal__reason">
+        <label class="rv-delete-modal__reason-label">Razlog brisanja (biće poslat korisniku emailom)</label>
+        <textarea
+          class="rv-delete-modal__reason-input"
+          rows="3"
+          placeholder="Unesite razlog..."
+          [value]="deleteReason()"
+          (input)="deleteReason.set($any($event.target).value)"
+        ></textarea>
+      </div>
+      <div class="rv-delete-modal__actions">
+        <button class="rv-delete-modal__cancel" (click)="closeDeleteDialog()" [disabled]="isDeleting()">
+          {{ ui.t('reviews.delete.cancel') }}
+        </button>
+        <button class="rv-delete-modal__confirm" (click)="confirmDelete()" [disabled]="isDeleting()">
+          @if (isDeleting()) {
+            <span class="material-icons spin">sync</span>
+            {{ ui.t('reviews.delete.loading') }}
+          } @else {
+            {{ ui.t('reviews.delete.confirm') }}
+          }
+        </button>
+      </div>
+    </div>
+  </div>
 }

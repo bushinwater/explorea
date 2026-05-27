@@ -34,6 +34,12 @@ namespace Explorea.API.Models
         [Column("created_by")] public Guid? CreatedBy { get; set; }
         [Column("updated_by")] public Guid? UpdatedBy { get; set; }
 
+        [Column("owner_reply")]
+        public string? OwnerReply { get; set; }
+
+        [Column("owner_reply_at")]
+        public DateTimeOffset? OwnerReplyAt { get; set; }
+
         [ForeignKey("UserId")]
         public User User { get; set; } = null!;
     }

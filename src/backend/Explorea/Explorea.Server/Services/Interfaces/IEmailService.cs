@@ -14,5 +14,12 @@ namespace Explorea.Server.Services.Interfaces
             string entityName,
             string actorName,
             IEnumerable<string> changedFields);
+
+        Task SendReviewDeletedEmailAsync(
+            string toEmail,
+            string firstName,
+            string entityName,
+            string entityLink,
+            string reason);
     }
 }

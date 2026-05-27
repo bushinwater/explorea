@@ -43,6 +43,18 @@
   <!-- Read mode -->
   <p *ngIf="!editMode" class="review-card__comment">{{ review.comment }}</p>
 
+  <!-- Owner reply -->
+  <div *ngIf="!editMode && review.ownerReply" class="review-card__owner-reply">
+    <div class="review-card__owner-reply-header">
+      <span class="material-icons">storefront</span>
+      <span class="review-card__owner-reply-label">Odgovor vlasnika</span>
+      <span *ngIf="review.ownerReplyAt" class="review-card__owner-reply-date">
+        {{ formatDate(review.ownerReplyAt) }}
+      </span>
+    </div>
+    <p class="review-card__owner-reply-text">{{ review.ownerReply }}</p>
+  </div>
+
   <!-- Edit mode -->
   <ng-container *ngIf="editMode">
     <div class="review-card__edit-stars">

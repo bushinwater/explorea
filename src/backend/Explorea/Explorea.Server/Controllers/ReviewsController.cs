@@ -1,6 +1,7 @@
 using Explorea.API.DTOs.Review;
 using Explorea.API.Models;
 using Explorea.Server.Data;
+using Explorea.Server.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,12 @@ using System.Security.Claims;
 
 namespace Explorea.Server.Controllers
 {
+    public class ReplyReviewDto
+    {
+        public string Reply { get; set; } = null!;
+    }
+
+
     [ApiController]
     [Route("api/reviews")]
     public class ReviewsController : ControllerBase
@@ -116,6 +123,40 @@ namespace Explorea.Server.Controllers
                     ProfileImageUrl = review.User.ProfileImageUrl
                 }
             });
+        }
+
+        [HttpPost("{id}/reply")]
+        [Authorize]
+        public async Task<IActionResult> Reply(Guid id, [FromBody] ReplyReviewDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Reply))
+                return BadRequest(new { message = "Odgovor ne sme biti prazan." });
+
+            var userId = await GetCurrentUserId();
+            var user = await _db.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null) return Unauthorized();
+            if (user.Role.Name != RoleNames.PlaceOwner)
+                return StatusCode(403, new { message = "Samo vlasnik objekta može da odgovori na recenziju." });
+
+            var review = await _db.Reviews
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.Id == id && (r.EntityType == "place" || r.EntityType == "event") && !r.IsDeleted);
+
+            if (review == null) return NotFound();
+
+            bool isOwner = review.EntityType == "place"
+                ? await _db.Places.AnyAsync(p => p.Id == review.EntityId && p.CreatedBy == userId)
+                : await _db.Events.AnyAsync(e => e.Id == review.EntityId && e.CreatedBy == userId);
+
+            if (!isOwner)
+                return StatusCode(403, new { message = "Možete odgovarati samo na recenzije vaših objekata ili događaja." });
+
+            review.OwnerReply   = dto.Reply.Trim();
+            review.OwnerReplyAt = DateTimeOffset.UtcNow;
+            await _db.SaveChangesAsync();
+
+            return Ok(new { ownerReply = review.OwnerReply, ownerReplyAt = review.OwnerReplyAt });
         }
 
         [HttpDelete("{id}")]

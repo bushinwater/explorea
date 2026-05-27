@@ -82,6 +82,8 @@ namespace Explorea.Server.Services
       EntityType = d.Review.EntityType,
       EntityName = d.EntityName,
       EntitySlug = d.EntitySlug,
+      OwnerReply = d.Review.OwnerReply,
+      OwnerReplyAt = d.Review.OwnerReplyAt,
       User = new ReviewUserDto
       {
         Id = d.Review.User.Id,

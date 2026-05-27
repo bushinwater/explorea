@@ -111,6 +111,8 @@ namespace Explorea.Server.Controllers
                     rating = r.Rating,
                     comment = r.Comment,
                     createdAt = r.CreatedAt,
+                    ownerReply = r.OwnerReply,
+                    ownerReplyAt = r.OwnerReplyAt,
                     user = new
                     {
                         id = r.User.Id,

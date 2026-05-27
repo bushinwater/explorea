@@ -27,7 +27,14 @@ namespace Explorea.Server.Services
                     _logger.LogError(ex, "Error while purging soft-deleted users.");
                 }
 
-                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
             }
         }
 

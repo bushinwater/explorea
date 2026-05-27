@@ -7,11 +7,13 @@ import {
   computed,
   signal,
 } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import {
-  ConfirmDialogComponent,
   EmptyStateComponent,
   FeedbackBannerComponent,
   StatCardComponent,
@@ -27,6 +29,8 @@ import {
 } from './admin-reviews.models';
 import { AdminReviewsService } from './admin-reviews.service';
 
+interface LookupOption { id: number; name: string; }
+
 @Component({
   selector: 'app-admin-reviews-page',
   standalone: true,
@@ -34,7 +38,6 @@ import { AdminReviewsService } from './admin-reviews.service';
   imports: [
     StatCardComponent,
     FeedbackBannerComponent,
-    ConfirmDialogComponent,
     EmptyStateComponent,
     TableSkeletonComponent,
     StatusBadgeComponent,
@@ -47,6 +50,9 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
 
   protected readonly filters = signal<ReviewFilters>({
     entityType: 'all',
+    subtypeId: null,
+    regionId: null,
+    cityId: null,
     minRating: null,
     maxRating: null,
     visibility: 'all',
@@ -66,44 +72,68 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
   protected readonly activeMenuId = signal<string | null>(null);
   protected readonly isDeleteDialogOpen = signal(false);
   protected readonly isDeleting = signal(false);
+  protected readonly isReplyDialogOpen = signal(false);
+  protected readonly isReplying = signal(false);
+  protected readonly replyText = signal('');
   protected readonly isActionLoading = signal(false);
   protected readonly selectedReview = signal<ReviewRow | null>(null);
+  protected readonly deleteReason = signal('');
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
+
+  // Lookup data za filtere
+  protected readonly regions = signal<LookupOption[]>([]);
+  protected readonly cities = signal<LookupOption[]>([]);
+  protected readonly subtypes = signal<LookupOption[]>([]);
 
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.total() / this.filters().pageSize)),
   );
 
   protected readonly isSuperAdmin = computed(
-    () => this.authContext.context().role === 'super_admin',
+    () => this.dashboardAuth.role() === 'super_admin',
   );
 
   protected readonly isTouristOrg = computed(
-    () => this.authContext.context().role === 'tourist_organization',
+    () => this.dashboardAuth.role() === 'tourist_organization',
   );
 
   protected readonly isPlaceOwner = computed(
-    () => this.authContext.context().role === 'place_owner',
+    () => this.dashboardAuth.role() === 'place_owner',
   );
 
   protected readonly canHideApprove = computed(
     () => this.isSuperAdmin() || this.isTouristOrg(),
   );
 
-  protected readonly showActionsMenu = computed(() => !this.isPlaceOwner());
-
+  protected readonly showActionsMenu = computed(() => true);
   protected readonly showEntityTypeFilter = computed(() => !this.isPlaceOwner());
-
   protected readonly showVisibilityFilter = computed(() => !this.isPlaceOwner());
+  protected readonly showRegionFilter = computed(() => this.isSuperAdmin());
+
+  protected readonly showSubtypeFilter = computed(() => {
+    const et = this.filters().entityType;
+    return et === 'activity' || et === 'event' || et === 'place';
+  });
+
+  protected readonly subtypeLabel = computed(() => {
+    const et = this.filters().entityType;
+    if (et === 'activity') return 'Kategorija aktivnosti';
+    if (et === 'event') return 'Tip događaja';
+    if (et === 'place') return 'Tip objekta';
+    return 'Podtip';
+  });
 
   protected readonly activeFilterCount = computed(() => {
     const f = this.filters();
     return [
       f.entityType !== 'all',
+      f.subtypeId !== null,
       f.minRating !== null,
       f.maxRating !== null,
       f.visibility !== 'all',
+      f.regionId !== null,
+      f.cityId !== null,
     ].filter(Boolean).length;
   });
 
@@ -130,11 +160,17 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
     private readonly reviewsService: AdminReviewsService,
     protected readonly authContext: AdminAuthContextService,
     protected readonly ui: AdminUiPreferencesService,
+    private readonly http: HttpClient,
+    private readonly router: Router,
+    private readonly dashboardAuth: DashboardAuthService,
   ) {}
 
   ngOnInit(): void {
     this.loadStats();
     this.loadReviews();
+    if (this.isSuperAdmin()) {
+      this.loadRegions();
+    }
   }
 
   ngOnDestroy(): void {
@@ -155,7 +191,31 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
   }
 
   protected applyEntityType(value: EntityType | 'all'): void {
-    this.patchFilter({ entityType: value, page: 1 });
+    this.patchFilter({ entityType: value, subtypeId: null, page: 1 });
+    this.subtypes.set([]);
+    if (value !== 'all' && value !== 'destination') {
+      this.loadSubtypes(value);
+    }
+    this.loadReviews();
+  }
+
+  protected applySubtype(rawValue: string): void {
+    this.patchFilter({ subtypeId: rawValue ? +rawValue : null, page: 1 });
+    this.loadReviews();
+  }
+
+  protected applyRegion(rawValue: string): void {
+    const regionId = rawValue ? +rawValue : null;
+    this.patchFilter({ regionId, cityId: null, page: 1 });
+    this.cities.set([]);
+    if (regionId !== null) {
+      this.loadCities(regionId);
+    }
+    this.loadReviews();
+  }
+
+  protected applyCity(rawValue: string): void {
+    this.patchFilter({ cityId: rawValue ? +rawValue : null, page: 1 });
     this.loadReviews();
   }
 
@@ -177,6 +237,9 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
   protected resetFilters(): void {
     this.filters.update((f) => ({
       entityType: 'all',
+      subtypeId: null,
+      regionId: null,
+      cityId: null,
       minRating: null,
       maxRating: null,
       visibility: 'all',
@@ -184,6 +247,8 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
       pageSize: f.pageSize,
     }));
     this.currentPage.set(1);
+    this.cities.set([]);
+    this.subtypes.set([]);
     this.loadReviews();
   }
 
@@ -242,13 +307,58 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
   protected openDeleteDialog(review: ReviewRow): void {
     this.activeMenuId.set(null);
     this.selectedReview.set(review);
+    this.deleteReason.set('');
     this.isDeleteDialogOpen.set(true);
   }
 
   protected closeDeleteDialog(): void {
     this.isDeleting.set(false);
     this.selectedReview.set(null);
+    this.deleteReason.set('');
     this.isDeleteDialogOpen.set(false);
+  }
+
+  protected openReplyDialog(review: ReviewRow): void {
+    this.activeMenuId.set(null);
+    this.selectedReview.set(review);
+    this.replyText.set(review.ownerReply ?? '');
+    this.isReplyDialogOpen.set(true);
+  }
+
+  protected closeReplyDialog(): void {
+    this.isReplying.set(false);
+    this.selectedReview.set(null);
+    this.replyText.set('');
+    this.isReplyDialogOpen.set(false);
+  }
+
+  protected confirmReply(): void {
+    const review = this.selectedReview();
+    if (!review || !this.replyText().trim()) return;
+
+    this.isReplying.set(true);
+    this.subscription.add(
+      this.reviewsService.reply(review.id, this.replyText().trim()).subscribe({
+        next: (res) => {
+          this.isReplying.set(false);
+          this.isReplyDialogOpen.set(false);
+          this.reviews.update((list) =>
+            list.map((r) =>
+              r.id === review.id
+                ? { ...r, ownerReply: res.ownerReply, ownerReplyAt: res.ownerReplyAt }
+                : r,
+            ),
+          );
+          this.successMessage.set('Odgovor je uspešno sačuvan.');
+          this.selectedReview.set(null);
+          this.replyText.set('');
+        },
+        error: () => {
+          this.isReplying.set(false);
+          this.errorMessage.set(this.ui.t('reviews.error.action'));
+        },
+      }),
+    );
   }
 
   protected confirmDelete(): void {
@@ -257,11 +367,12 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
 
     this.isDeleting.set(true);
     this.subscription.add(
-      this.reviewsService.delete(review.id).subscribe({
+      this.reviewsService.delete(review.id, this.deleteReason() || undefined).subscribe({
         next: () => {
           this.isDeleting.set(false);
           this.isDeleteDialogOpen.set(false);
           this.selectedReview.set(null);
+          this.deleteReason.set('');
           this.successMessage.set(this.ui.t('reviews.success.deleted'));
           this.loadReviews();
           this.loadStats();
@@ -274,14 +385,31 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected navigateToAdminEntity(review: ReviewRow): void {
+    const routeMap: Record<EntityType, string> = {
+      destination: '/admin/destinations',
+      place: '/admin/places',
+      event: '/admin/events',
+      activity: '/admin/activities',
+    };
+    const route = routeMap[review.entityType];
+    if (route) {
+      this.router.navigate([route], { state: { openEditId: review.entityId } });
+    }
+  }
+
+  protected openTouristPage(review: ReviewRow): void {
+    if (!review.entitySlug) return;
+    const base = `/${review.entityType}s/${review.entitySlug}`;
+    window.open(base, '_blank');
+  }
+
   protected starsArray(rating: number): boolean[] {
     return Array.from({ length: 5 }, (_, i) => i < rating);
   }
 
   protected ratingClass(rating: number): string {
-    if (rating >= 4) return 'high';
-    if (rating === 3) return 'mid';
-    return 'low';
+    return `rv-stars--r${rating}`;
   }
 
   protected entityTypeLabel(type: EntityType): string {
@@ -361,6 +489,40 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
           this.isStatsLoading.set(false);
         },
         error: () => this.isStatsLoading.set(false),
+      }),
+    );
+  }
+
+  private loadRegions(): void {
+    this.subscription.add(
+      this.http.get<LookupOption[]>('/api/regions').subscribe({
+        next: (r) => this.regions.set(r),
+        error: () => {},
+      }),
+    );
+  }
+
+  private loadCities(regionId: number): void {
+    this.subscription.add(
+      this.http.get<LookupOption[]>('/api/cities', { params: { regionId } }).subscribe({
+        next: (c) => this.cities.set(c),
+        error: () => {},
+      }),
+    );
+  }
+
+  private loadSubtypes(entityType: EntityType): void {
+    const urlMap: Record<string, string> = {
+      activity: '/api/activity-categories',
+      event: '/api/event-types',
+      place: '/api/place-types',
+    };
+    const url = urlMap[entityType];
+    if (!url) return;
+    this.subscription.add(
+      this.http.get<LookupOption[]>(url).subscribe({
+        next: (s) => this.subtypes.set(s),
+        error: () => {},
       }),
     );
   }
