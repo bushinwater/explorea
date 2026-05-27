@@ -83,7 +83,8 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
   protected readonly uploadingCount = signal(0);
   protected readonly heroImageId      = signal<string | null>(null);
   protected readonly isSettingHero    = signal(false);
-  protected readonly pendingImages    = signal<{ file: File; url: string }[]>([]);
+  protected readonly pendingImages     = signal<{ file: File; url: string }[]>([]);
+  protected readonly pendingHeroIndex  = signal<number>(0);
   protected readonly localTypes       = signal<TypeOption[]>([]);
   protected readonly localRegions     = signal<RegionOption[]>([]);
   protected readonly localCountries   = signal<CountryOption[]>([]);
@@ -403,21 +404,31 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
     const pending = this.pendingImages();
     URL.revokeObjectURL(pending[index].url);
     this.pendingImages.update(p => p.filter((_, i) => i !== index));
+    const hero = this.pendingHeroIndex();
+    if (hero === index) this.pendingHeroIndex.set(0);
+    else if (hero > index) this.pendingHeroIndex.update(h => h - 1);
+  }
+
+  protected setPendingHero(index: number): void {
+    this.pendingHeroIndex.set(index);
   }
 
   private uploadPendingImages(destId: string): void {
     const pending = this.pendingImages();
     if (!pending.length) return;
+    const heroIdx = this.pendingHeroIndex();
     this.pendingImages.set([]);
+    this.pendingHeroIndex.set(0);
     this.uploadingCount.update(n => n + pending.length);
-    pending.forEach(({ file, url }) => {
+    pending.forEach(({ file, url }, i) => {
       URL.revokeObjectURL(url);
       this.sub.add(
         this.svc.addImage(destId, file).subscribe({
           next: (img) => {
             this.images.update(l => [...l, img]);
             this.uploadingCount.update(n => n - 1);
-            if (this.heroImageId() === null) this.setHero(img.id);
+            if (i === heroIdx) this.setHero(img.id);
+            else if (this.heroImageId() === null) this.setHero(img.id);
             this.cdr.detectChanges();
           },
           error: (err) => {

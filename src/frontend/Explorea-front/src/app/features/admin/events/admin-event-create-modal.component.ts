@@ -95,7 +95,8 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
   protected readonly heroImageId = signal<string | null>(null);
   protected readonly uploadingCount = signal(0);
   protected readonly isSettingHero = signal(false);
-  protected readonly pendingImages = signal<{ file: File; url: string }[]>([]);
+  protected readonly pendingImages    = signal<{ file: File; url: string }[]>([]);
+  protected readonly pendingHeroIndex = signal<number>(0);
 
   protected readonly allInterestTags = signal<InterestTagOption[]>([]);
   protected readonly selectedInterestIds = signal<number[]>([]);
@@ -543,6 +544,13 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
     const pending = this.pendingImages();
     URL.revokeObjectURL(pending[index].url);
     this.pendingImages.update(p => p.filter((_, i) => i !== index));
+    const hero = this.pendingHeroIndex();
+    if (hero === index) this.pendingHeroIndex.set(0);
+    else if (hero > index) this.pendingHeroIndex.update(h => h - 1);
+  }
+
+  protected setPendingHero(index: number): void {
+    this.pendingHeroIndex.set(index);
   }
 
   protected setHero(imageId: string): void {
@@ -577,18 +585,21 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
   }
 
   private uploadPendingImages(eventId: string): void {
-    const pending = this.pendingImages();
+    const pending  = this.pendingImages();
     if (!pending.length) return;
+    const heroIdx  = this.pendingHeroIndex();
     this.pendingImages.set([]);
+    this.pendingHeroIndex.set(0);
     this.uploadingCount.update(n => n + pending.length);
-    pending.forEach(({ file, url }) => {
+    pending.forEach(({ file, url }, i) => {
       URL.revokeObjectURL(url);
       this.sub.add(
         this.eventsService.uploadEventImage(eventId, file).subscribe({
           next: img => {
             this.images.update(l => [...l, img]);
             this.uploadingCount.update(n => n - 1);
-            if (this.heroImageId() === null) this.setHero(img.id);
+            if (i === heroIdx) this.setHero(img.id);
+            else if (this.heroImageId() === null) this.setHero(img.id);
             this.cdr.detectChanges();
           },
           error: () => {

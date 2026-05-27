@@ -375,9 +375,10 @@
           <div class="edit-modal__img-card"
             [class.edit-modal__img-card--hero]="heroImageId() === img.id">
             <img class="edit-modal__img" [src]="img.imageUrl" alt="" />
-            <button class="edit-modal__img-hero" type="button" title="Postavi kao naslovnu"
+            <button class="edit-modal__img-hero" type="button"
+              [title]="heroImageId() === img.id ? 'Hero slika' : 'Postavi kao hero'"
               (click)="setHero(img.id)">
-              <span class="material-icons">star</span>
+              <span class="material-icons">{{ heroImageId() === img.id ? 'star' : 'star_border' }}</span>
             </button>
             <button class="edit-modal__img-delete" type="button" title="Obriši sliku"
               (click)="removeImage(img.id)">
@@ -386,8 +387,13 @@
           </div>
         }
         @for (p of pendingImages(); track p.url; let i = $index) {
-          <div class="edit-modal__img-card">
+          <div class="edit-modal__img-card" [class.edit-modal__img-card--hero]="pendingHeroIndex() === i">
             <img [src]="p.url" [alt]="p.file.name" class="edit-modal__img" />
+            <button class="edit-modal__img-hero" type="button"
+              [title]="pendingHeroIndex() === i ? 'Hero slika' : 'Postavi kao hero'"
+              (click)="setPendingHero(i)">
+              <span class="material-icons">{{ pendingHeroIndex() === i ? 'star' : 'star_border' }}</span>
+            </button>
             <button class="edit-modal__img-delete" type="button" title="Ukloni"
               (click)="removePendingImage(i)">
               <span class="material-icons">close</span>

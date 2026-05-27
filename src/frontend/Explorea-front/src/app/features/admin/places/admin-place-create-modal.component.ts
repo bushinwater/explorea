@@ -129,7 +129,8 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
   protected readonly allInterestTags    = signal<InterestTagOption[]>([]);
   protected readonly selectedInterestIds = signal<number[]>([]);
 
-  protected readonly pendingImages = signal<{ file: File; url: string }[]>([]);
+  protected readonly pendingImages     = signal<{ file: File; url: string }[]>([]);
+  protected readonly pendingHeroIndex  = signal<number>(0);
 
   protected readonly allTypeOptions = computed(() => [...this.types, ...this.extraTypes()]);
 
@@ -416,7 +417,14 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
     const pending = this.pendingImages();
     URL.revokeObjectURL(pending[index].url);
     this.pendingImages.update(p => p.filter((_, i) => i !== index));
+    const hero = this.pendingHeroIndex();
+    if (hero === index) this.pendingHeroIndex.set(0);
+    else if (hero > index) this.pendingHeroIndex.update(h => h - 1);
     this.cdr.detectChanges();
+  }
+
+  protected setPendingHero(index: number): void {
+    this.pendingHeroIndex.set(index);
   }
 
   protected removeImage(imageId: string): void {
@@ -504,6 +512,7 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
   // ── Private helpers ─────────────────────────────────────────────────────
   private uploadPendingAndFinish(detail: PlaceDetail): void {
     const pending     = this.pendingImages();
+    const heroIdx     = this.pendingHeroIndex();
     const interestIds = this.selectedInterestIds();
     const total = pending.length + (interestIds.length > 0 ? 1 : 0);
 
@@ -519,10 +528,16 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
       if (done === total) { this.isSaving.set(false); this.created.emit(detail); }
     };
 
-    pending.forEach(({ file, url }) => {
+    pending.forEach(({ file, url }, i) => {
       URL.revokeObjectURL(url);
       this.sub.add(
-        this.svc.uploadImage(detail.id, file).subscribe({ next: onDone, error: onDone }),
+        this.svc.uploadImage(detail.id, file).subscribe({
+          next: img => {
+            if (i === heroIdx) this.svc.setHeroImage(detail.id, img.id).subscribe();
+            onDone();
+          },
+          error: onDone,
+        }),
       );
     });
     if (interestIds.length > 0) {

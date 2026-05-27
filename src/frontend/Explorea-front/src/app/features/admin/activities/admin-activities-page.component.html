@@ -221,7 +221,7 @@
 
         <!-- Add new -->
         @if (listMode() === 'active') {
-        <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
+        <button class="evts-btn-primary" type="button" (click)="openCreateModal()">
           <span class="material-icons">add</span>
           {{ ui.t('activities.addNew') }}
         </button>
@@ -682,7 +682,7 @@
         </button>
       } @else {
         @if (!detail.isActive) {
-        <button class="btn btn-primary btn-sm" type="button" (click)="activateSelectedActivity()">
+        <button class="evts-btn-primary" type="button" (click)="activateSelectedActivity()">
           <span class="material-icons">check</span>
           Aktiviraj
         </button>
@@ -1145,7 +1145,7 @@
         <span class="material-icons">save</span>
         Sačuvaj izmene
       } @else {
-        <span class="material-icons">add_circle_outline</span>
+        <span class="material-icons">add</span>
         Dodaj aktivnost
       }
     </button>

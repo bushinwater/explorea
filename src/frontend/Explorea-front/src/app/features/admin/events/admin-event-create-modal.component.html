@@ -364,10 +364,15 @@
       </div>
 
       <div class="edit-modal__images-grid">
-        @for (p of pendingImages(); track p.url) {
-          <div class="edit-modal__img-card">
+        @for (p of pendingImages(); track p.url; let i = $index) {
+          <div class="edit-modal__img-card" [class.edit-modal__img-card--hero]="pendingHeroIndex() === i">
             <img [src]="p.url" alt="Slika događaja" class="edit-modal__img" />
-            <button class="edit-modal__img-delete" type="button" title="Ukloni sliku" (click)="removePendingImage($index)">
+            <button class="edit-modal__img-hero" type="button"
+              [title]="pendingHeroIndex() === i ? 'Hero slika' : 'Postavi kao hero'"
+              (click)="setPendingHero(i)">
+              <span class="material-icons">{{ pendingHeroIndex() === i ? 'star' : 'star_border' }}</span>
+            </button>
+            <button class="edit-modal__img-delete" type="button" title="Ukloni sliku" (click)="removePendingImage(i)">
               <span class="material-icons">close</span>
             </button>
           </div>
