@@ -323,13 +323,13 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
     if (!this.activity || !this.titleCaptured) return { opacity: '0' };
     const p = this.ease(this.scrollProgress);
     const isMobile = window.innerWidth <= 768;
-    const endX = isMobile ? 16 : 88;
+    const endX = isMobile ? 68 : 140;
     const startViewportTop = this.titleAbsTop - window.scrollY;
     const startViewportLeft = this.titleAbsLeft;
     const tx = startViewportLeft + (endX - startViewportLeft) * p;
-    const ty = startViewportTop + (16 - startViewportTop) * p;
-    const baseSize = isMobile ? 34 : 52;
-    const scale = 1 + (17 / baseSize - 1) * p;
+    const ty = startViewportTop + (20 - startViewportTop) * p;
+    const baseSize = isMobile ? Math.max(20, Math.min(28, window.innerWidth * 0.055)) : 52;
+    const scale = 1 + ((isMobile ? 16 : 17) / baseSize - 1) * p;
     return {
       transform: `translate(${tx}px, ${ty}px) scale(${scale})`,
       opacity: '1',

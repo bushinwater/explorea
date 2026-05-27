@@ -188,6 +188,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 8px;
   padding: 0 var(--spacing-lg);
   background: linear-gradient(to bottom, var(--color-bg) 0%, transparent 100%);
   opacity: 0;
@@ -201,6 +202,22 @@
   visibility: visible;
   pointer-events: all;
 }
+
+.sticky-back-btn {
+  margin-right: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  transition: opacity 0.15s;
+}
+
+.sticky-back-btn:hover { opacity: 0.6; }
+
+.sticky-back-btn .material-icons { font-size: 24px; }
 
 .floating-title {
   position: fixed;

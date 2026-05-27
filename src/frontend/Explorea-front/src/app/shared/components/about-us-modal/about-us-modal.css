@@ -140,4 +140,10 @@
   .modal-members {
     grid-template-columns: 1fr;
   }
+
+  .member:last-child:nth-child(odd) {
+    grid-column: auto;
+    justify-self: auto;
+    width: 100%;
+  }
 }

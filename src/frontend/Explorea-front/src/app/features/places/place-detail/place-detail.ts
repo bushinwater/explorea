@@ -386,14 +386,14 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     if (!this.place || !this.titleCaptured) return { opacity: '0' };
     const p = this.ease(this.scrollProgress);
     const isMobile = window.innerWidth <= 768;
-    const endX = isMobile ? 16 : 88;
-    const endY = 16;
+    const endX = isMobile ? 68 : 140;
+    const endY = 20;
     const startViewportTop = this.titleAbsTop - window.scrollY;
     const startViewportLeft = this.titleAbsLeft;
     const tx = startViewportLeft + (endX - startViewportLeft) * p;
     const ty = startViewportTop + (endY - startViewportTop) * p;
-    const baseSize = isMobile ? 34 : 52;
-    const endScale = 17 / baseSize;
+    const baseSize = isMobile ? Math.max(20, Math.min(28, window.innerWidth * 0.055)) : 52;
+    const endScale = (isMobile ? 16 : 17) / baseSize;
     const scale = 1 + (endScale - 1) * p;
     return {
       transform: `translate(${tx}px, ${ty}px) scale(${scale})`,

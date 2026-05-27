@@ -349,8 +349,8 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     const p = this.ease(this.scrollProgress);
 
     const isMobile = window.innerWidth <= 768;
-    const endX = isMobile ? 16 : 88;
-    const endY = 16;
+    const endX = isMobile ? 68 : 140;
+    const endY = 20;
 
     // Start: exact current viewport position of the original h1
     const startViewportTop  = this.titleAbsTop - window.scrollY;
@@ -359,9 +359,8 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     const tx = startViewportLeft + (endX - startViewportLeft) * p;
     const ty = startViewportTop  + (endY - startViewportTop)  * p;
 
-    // Target ~17px regardless of base font size (52px desktop, 34px mobile)
-    const baseSize = isMobile ? 34 : 52;
-    const endScale = 17 / baseSize;
+    const baseSize = isMobile ? Math.max(20, Math.min(28, window.innerWidth * 0.055)) : 52;
+    const endScale = (isMobile ? 16 : 17) / baseSize;
     const scale = 1 + (endScale - 1) * p;
 
     return {
