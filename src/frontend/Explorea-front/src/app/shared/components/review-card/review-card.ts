@@ -134,4 +134,13 @@ export class ReviewCard {
   getStars(): number[] {
     return [1, 2, 3, 4, 5];
   }
+
+  formatDate(isoDate: string | null | undefined): string {
+    if (!isoDate) return '';
+    return new Date(isoDate).toLocaleDateString('sr-Latn', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
 }
