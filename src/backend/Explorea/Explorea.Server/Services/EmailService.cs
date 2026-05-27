@@ -344,6 +344,65 @@ namespace Explorea.Server.Services
             await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
         }
 
+        public async Task SendReviewDeletedEmailAsync(
+            string toEmail,
+            string firstName,
+            string entityName,
+            string entityLink,
+            string reason)
+        {
+            var safeFirst  = WebUtility.HtmlEncode(firstName);
+            var safeEntity = WebUtility.HtmlEncode(entityName);
+            var safeReason = WebUtility.HtmlEncode(reason);
+
+            var subject  = "Vaša recenzija je obrisana";
+            var htmlBody = $@"<!DOCTYPE html>
+<html lang=""sr"">
+<head><meta charset=""UTF-8""><meta name=""viewport"" content=""width=device-width,initial-scale=1""></head>
+<body style=""margin:0;padding:0;background:#0f1117;font-family:'Segoe UI',Arial,sans-serif;"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#0f1117;"">
+    <tr><td align=""center"" style=""padding:32px 16px;"">
+      <table width=""560"" cellpadding=""0"" cellspacing=""0"" style=""max-width:560px;width:100%;"">
+
+        <tr><td style=""background:#1a1d27;border-radius:12px 12px 0 0;padding:28px 32px;border-bottom:1px solid #2a2d3a;"">
+          <span style=""font-size:22px;font-weight:800;color:#6366f1;"">Explorea</span>
+        </td></tr>
+
+        <tr><td style=""background:#1a1d27;padding:28px 32px;"">
+          <p style=""margin:0 0 12px;font-size:16px;font-weight:600;color:#e8e9f0;"">Zdravo, {safeFirst}!</p>
+          <p style=""margin:0 0 16px;font-size:14px;color:#a8aabc;line-height:1.6;"">
+            Vaša recenzija za <strong style=""color:#e8e9f0;"">{safeEntity}</strong> je obrisana od strane administratora.
+          </p>
+          <table width=""100%"" cellpadding=""0"" cellspacing=""0""
+                 style=""background:#12141e;border:1px solid #2a2d3a;border-radius:8px;padding:16px 20px;margin-bottom:20px;"">
+            <tr><td>
+              <p style=""margin:0 0 4px;font-size:11px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:0.08em;"">Razlog brisanja</p>
+              <p style=""margin:0;font-size:14px;color:#e8e9f0;line-height:1.5;"">{safeReason}</p>
+            </td></tr>
+          </table>
+          <p style=""margin:0 0 20px;font-size:13px;color:#8b8fa8;"">
+            Možete posetiti stranicu entiteta klikom na dugme ispod.
+          </p>
+          <a href=""{entityLink}"" style=""display:inline-block;padding:12px 24px;background:#6366f1;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;"">
+            Pogledaj stranicu
+          </a>
+        </td></tr>
+
+        <tr><td style=""background:#13151f;border-radius:0 0 12px 12px;padding:16px 32px;border-top:1px solid #2a2d3a;"">
+          <p style=""margin:0;font-size:11px;color:#5c5f72;"">
+            Ovo je automatska poruka Explorea platforme.
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>";
+
+            await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
+        }
+
         public async Task SendOwnerEntityUpdatedEmailAsync(
             string toEmail,
             string firstName,

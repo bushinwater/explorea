@@ -6,7 +6,9 @@ namespace Explorea.Server.Repositories.Interfaces
     {
         Task<(List<Review> Items, int Total)> GetAdminPagedAsync(
             string? entityType,
+            int? subtypeId,
             int? cityId,
+            int? regionId,
             short? minRating,
             short? maxRating,
             string? gender,

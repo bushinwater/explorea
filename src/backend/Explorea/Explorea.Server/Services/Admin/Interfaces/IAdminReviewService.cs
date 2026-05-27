@@ -6,7 +6,9 @@ namespace Explorea.Server.Services.Admin.Interfaces
     {
         Task<(List<AdminReviewListDto> Items, int Total)> GetAllAsync(
             string? entityType,
+            int? subtypeId,
             int? cityId,
+            int? regionId,
             short? minRating,
             short? maxRating,
             string? gender,
@@ -20,6 +22,6 @@ namespace Explorea.Server.Services.Admin.Interfaces
         Task<AdminReviewListDto?> GetByIdAsync(Guid id, Guid currentUserId);
         Task<bool> HideAsync(Guid id, Guid currentUserId);
         Task<bool> ApproveAsync(Guid id, Guid currentUserId);
-        Task<bool> DeleteAsync(Guid id, Guid currentUserId);
+        Task<bool> DeleteAsync(Guid id, Guid currentUserId, string? reason);
     }
 }

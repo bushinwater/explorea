@@ -133,6 +133,8 @@ namespace Explorea.Server.Services
                     Rating = r.Rating,
                     Comment = r.Comment,
                     CreatedAt = r.CreatedAt,
+                    OwnerReply = r.OwnerReply,
+                    OwnerReplyAt = r.OwnerReplyAt,
                     User = new ReviewUserDto
                     {
                         Id = r.User.Id,
