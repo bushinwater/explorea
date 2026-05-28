@@ -244,6 +244,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    const openId   = this.route.snapshot.queryParamMap.get('openId');
+    const openName = this.route.snapshot.queryParamMap.get('openName') ?? '';
+
     this.hydrateFiltersFromQueryParams();
     const initialCatId = this.filters().categoryId;
     if (initialCatId !== 'all') this.loadFilterDefs(initialCatId);
@@ -294,6 +297,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       const activity = items.find(a => a.id === openEditId);
       if (activity) this.openEditFromRow(activity);
     } : undefined);
+
+    if (openId) {
+      this.openDetailsPanel({ id: openId, name: openName } as unknown as ActivityRow);
+    }
   }
 
   ngOnDestroy(): void {
@@ -374,7 +381,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected setListMode(mode: 'active' | 'deleted'): void {
     if (this.listMode() === mode) return;
     this.listMode.set(mode);
-    this.closeDetailsPanel();
+    if (this.isDetailsPanelOpen()) this.closeDetailsPanel();
     this.activeMenuId.set(null);
     this.patchFilter({ page: 1 });
     this.currentPage.set(1);
@@ -1064,6 +1071,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   protected categoryIcon(categoryName: string): string {
+    if (!categoryName) return 'directions_run';
     const lower = categoryName.toLowerCase();
     if (lower.includes('pešač') || lower.includes('planinaren') || lower.includes('hiking')) return 'hiking';
     if (lower.includes('vod') || lower.includes('kajak') || lower.includes('water')) return 'kayaking';
@@ -1075,6 +1083,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   protected thumbColor(categoryName: string): string {
+    if (!categoryName) return '#3a5a6b';
     const lower = categoryName.toLowerCase();
     if (lower.includes('pešač') || lower.includes('planinaren') || lower.includes('hiking')) return '#1f5c3a';
     if (lower.includes('vod') || lower.includes('kajak') || lower.includes('water')) return '#1e4d7b';

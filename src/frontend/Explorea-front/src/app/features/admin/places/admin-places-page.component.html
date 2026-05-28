@@ -338,6 +338,10 @@
                 <td class="place-td">
                   @if (listMode() === 'deleted') {
                     <span class="place-status place-status--deleted">Obrisano</span>
+                  } @else if (place.status === 'approved') {
+                    <span class="place-status place-status--{{ place.hasRecentActivity ? 'active' : 'inactive' }}">
+                      {{ place.hasRecentActivity ? 'Aktivno' : 'Neaktivno' }}
+                    </span>
                   } @else {
                     <span class="place-status place-status--{{ place.status }}">
                       {{ statusLabel(place.status) }}
@@ -503,6 +507,10 @@
         <div class="ddp-badges">
           @if (listMode() === 'deleted') {
             <span class="place-status place-status--deleted">Obrisano</span>
+          } @else if (place.status === 'approved') {
+            <span class="place-status place-status--{{ place.hasRecentActivity ? 'active' : 'inactive' }}">
+              {{ place.hasRecentActivity ? 'Aktivno' : 'Neaktivno' }}
+            </span>
           } @else {
             <span class="place-status place-status--{{ place.status }}">
               {{ statusLabel(place.status) }}

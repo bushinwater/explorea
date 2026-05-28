@@ -201,7 +201,7 @@
               <tr>
                 <th class="evts-th">Događaj</th>
                 <th class="evts-th evts-th--hide-sm">Tip</th>
-                <th class="evts-th evts-th--hide-md">Lokacija</th>
+                <th class="evts-th evts-th--hide-md">Aktivnost</th>
                 <th class="evts-th evts-th--hide-sm">Datum</th>
                 <th class="evts-th evts-th--hide-md evts-th--center">Ocena</th>
                 @if (filters().tab !== 'active') {
@@ -241,13 +241,12 @@
                   <td class="evts-td evts-td--hide-sm">
                     <span class="evts-type-label">
                       <span class="material-icons evts-type-label__icon">{{ typeIcon(ev.type) }}</span>
-                      {{ typeLabel(ev.type) }}
+                      {{ typeLabel(ev.typeId, ev.type, ev.typeName) }}
                     </span>
                   </td>
                   <td class="evts-td evts-td--hide-md">
-                    <span class="evts-location" [title]="locationLabel(ev)">
-                      <span class="material-icons">location_on</span>
-                      <span class="evts-location__text">{{ locationLabel(ev) }}</span>
+                    <span class="evts-act-status evts-act-status--{{ evtActivityStatus(ev) }}">
+                      {{ evtActivityStatus(ev) === 'active' ? 'Aktivno' : 'Neaktivno' }}
                     </span>
                   </td>
                   <td class="evts-td evts-td--hide-sm">
@@ -399,7 +398,7 @@
         @if (ev.type) {
           <span class="evts-type-label">
             <span class="material-icons evts-type-label__icon">{{ typeIcon(ev.type) }}</span>
-            {{ typeLabel(ev.type) }}
+            {{ typeLabel(ev.typeId, ev.type, ev.typeName) }}
           </span>
         }
         @if (ev.isFeatured) {

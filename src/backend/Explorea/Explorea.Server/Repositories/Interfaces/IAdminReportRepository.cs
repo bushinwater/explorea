@@ -19,14 +19,14 @@ namespace Explorea.Server.Repositories.Interfaces
         // Flat tables
         Task<List<DestinationsTableItemDto>> GetDestinationsTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
-            List<Guid>? destIds, Guid? placeOwnerUserId);
+            List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null);
         Task<List<EntityTableRowDto>> GetEntityTableAsync(
             string entity, string? sortBy,
             string? filterSubType, string? filterRegion, decimal? filterMinRating,
             string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
             List<string>? filterExtraFilters,
             List<Guid>? destIds, Guid? placeOwnerUserId,
-            Guid? filterDestinationId = null);
+            Guid? filterDestinationId = null, string? filterStatus = null);
         Task<List<string>> GetFilterOptionsAsync(string entity, string field, List<Guid>? destIds, Guid? placeOwnerUserId);
         Task<List<SubtypeOptionDto>> GetSubtypeOptionsAsync(string entity, List<Guid>? destIds, Guid? placeOwnerUserId);
 
@@ -35,7 +35,7 @@ namespace Explorea.Server.Repositories.Interfaces
             string entity, string groupBy, string metric,
             DateOnly? dateFrom, DateOnly? dateTo,
             List<Guid>? restrictToDestinationIds, Guid? placeOwnerUserId,
-            Guid? specificEntityId = null);
+            Guid? specificEntityId = null, string? filterStatus = null);
 
         // Entity search + profile
         Task<List<EntitySearchItemDto>> SearchEntitiesAsync(string entity, string q, List<Guid>? destIds, Guid? placeOwnerUserId);
