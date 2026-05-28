@@ -20,6 +20,7 @@ import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-p
 import { ReviewModal } from '../../../shared/components/review-modal/review-modal';
 import { ReviewDto } from '../../../core/models/home.model';
 import { ShareButton } from '../../../shared/components/share-button/share-button';
+import { AddToPlannerModal } from '../../../shared/components/add-to-planner-modal/add-to-planner-modal';
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
@@ -47,7 +48,7 @@ const LIGHT = {
   imports: [
     CommonModule, NgStyle, RouterModule, TranslateModule,
     Sidebar, BottomNav,
-    ReviewCard, RatingStats, ReviewsPanel, ReviewModal, ShareButton,
+    ReviewCard, RatingStats, ReviewsPanel, ReviewModal, ShareButton, AddToPlannerModal,
   ],
   templateUrl: './place-detail.html',
   styleUrl: './place-detail.css',
@@ -73,6 +74,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
 
   isSaved = false;
   isSavedLoading = false;
+  showPlannerModal = false;
   reviewsPanelOpen = false;
   reviewFormOpen = false;
   hasReviewed = false;
@@ -514,4 +516,12 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   incrementGuests(): void { this.guests++; }
   decrementGuests(): void { if (this.guests > 1) this.guests--; }
   goBack(): void { this.location.back(); }
+
+  openPlannerModal(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+    this.showPlannerModal = true;
+  }
 }

@@ -9,6 +9,9 @@
         <span class="material-icons">arrow_back</span>
       </button>
       <app-share-button [small]="true" />
+      <button class="circle-btn circle-btn--sm" type="button" (click)="openPlannerModal()">
+        <span class="material-icons">bookmark_add</span>
+      </button>
       <button class="circle-btn circle-btn--sm"
         [class.circle-btn--saved]="isSaved"
         [disabled]="isSavedLoading"
@@ -109,6 +112,9 @@
           </button>
           <div class="detail-hero__actions">
             <app-share-button />
+            <button class="circle-btn" type="button" (click)="openPlannerModal()">
+              <span class="material-icons">bookmark_add</span>
+            </button>
             <button class="circle-btn"
               [class.circle-btn--saved]="isSaved"
               [disabled]="isSavedLoading"
@@ -519,3 +525,11 @@
 
   <app-bottom-nav />
 </div>
+
+<app-add-to-planner-modal
+  *ngIf="showPlannerModal"
+  entityType="place"
+  [entityId]="place?.id ?? ''"
+  [entityName]="place?.name ?? ''"
+  (closed)="showPlannerModal = false"
+/>

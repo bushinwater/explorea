@@ -1,0 +1,93 @@
+<div class="atp-backdrop" (click)="close()">
+  <div class="atp-modal" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="atp-modal__header">
+      <div class="atp-modal__icon">
+        <span class="material-icons">{{ success ? 'check_circle' : 'bookmark_add' }}</span>
+      </div>
+      <div>
+        <h3 class="atp-modal__title">{{ success ? 'Dodato u planer!' : 'Dodaj u planer' }}</h3>
+        <p class="atp-modal__entity-name" *ngIf="entityName">{{ entityName }}</p>
+      </div>
+    </div>
+
+    <ng-container *ngIf="!success">
+
+      <!-- Event: multi-day chip selection -->
+      <div class="atp-modal__field" *ngIf="entityType === 'event' && days.length > 1">
+        <label class="atp-modal__label">Izaberi dane</label>
+        <div class="atp-modal__day-chips">
+          <button
+            *ngFor="let d of days"
+            class="atp-day-chip"
+            [class.active]="selectedDays.includes(d.value)"
+            (click)="toggleDay(d.value)"
+            type="button"
+          >{{ d.label }}</button>
+        </div>
+      </div>
+
+      <!-- Non-event: date range calendar -->
+      <div class="atp-modal__field" *ngIf="entityType !== 'event'">
+        <div class="calendar-card">
+          <div class="calendar-header">
+            <button class="calendar-nav" (click)="prevMonth()" type="button">
+              <span class="material-icons">chevron_left</span>
+            </button>
+            <span class="calendar-month">{{ calMonthLabel }}</span>
+            <button class="calendar-nav" (click)="nextMonth()" type="button">
+              <span class="material-icons">chevron_right</span>
+            </button>
+          </div>
+          <div class="calendar-grid">
+            <div class="calendar-day-label" *ngFor="let d of DAY_LABELS">{{ d }}</div>
+            <button
+              *ngFor="let cell of calGrid; trackBy: trackByCell"
+              class="calendar-cell"
+              [class.other-month]="!cell.isCurrentMonth"
+              [class.today]="isToday(cell.date)"
+              [class.range-start]="isRangeStart(cell.date)"
+              [class.range-end]="isRangeEnd(cell.date)"
+              [class.in-range]="isInRange(cell.date)"
+              (click)="selectDate(cell)"
+              type="button"
+            >{{ cell.date.getDate() }}</button>
+          </div>
+        </div>
+        <div class="atp-range-display">
+          <span>Od: <strong>{{ dateFrom ? formatRangeDate(dateFrom) : '—' }}</strong></span>
+          <span class="material-icons" style="font-size:14px; opacity:0.5">arrow_forward</span>
+          <span>Do: <strong>{{ dateTo ? formatRangeDate(dateTo) : (dateFrom ? 'Izaberi kraj' : '—') }}</strong></span>
+        </div>
+      </div>
+
+      <!-- Note -->
+      <div class="atp-modal__field">
+        <label class="atp-modal__label">Poruka (opciono)</label>
+        <textarea
+          class="atp-modal__note"
+          [(ngModel)]="note"
+          placeholder="Napiši nešto o ovom mestu..."
+          rows="3"
+        ></textarea>
+      </div>
+
+      <!-- Error -->
+      <div class="atp-modal__error" *ngIf="error">
+        <span class="material-icons">error_outline</span>
+        {{ error }}
+      </div>
+
+      <!-- Actions -->
+      <div class="atp-modal__actions">
+        <button class="atp-modal__cancel" (click)="close()" type="button">Otkaži</button>
+        <button class="atp-modal__confirm" (click)="confirm()" [disabled]="saving" type="button">
+          <span class="material-icons spin" *ngIf="saving" style="font-size: 18px;">sync</span>
+          <span *ngIf="!saving">Dodaj</span>
+        </button>
+      </div>
+
+    </ng-container>
+  </div>
+</div>

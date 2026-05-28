@@ -46,6 +46,7 @@ import { RatingStats } from '../../../shared/components/rating-stats/rating-stat
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { ReviewDto } from '../../../core/models/home.model';
 import { ShareButton } from '../../../shared/components/share-button/share-button';
+import { AddToPlannerModal } from '../../../shared/components/add-to-planner-modal/add-to-planner-modal';
 
 type DetailTab = 'places' | 'events' | 'activities' | 'reviews';
 type TabItem = PlaceCard | EventCard | ActivityCard;
@@ -53,7 +54,7 @@ type TabItem = PlaceCard | EventCard | ActivityCard;
 @Component({
   selector: 'app-destination-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel, ShareButton],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel, ShareButton, AddToPlannerModal],
   templateUrl: './destination-detail.html',
   styleUrls: ['./destination-detail.css']
 })
@@ -93,6 +94,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
 
   isSaved = false;
   isSavedLoading = false;
+  showPlannerModal = false;
 
   showAllOpen = false;
   reviewsPanelOpen = false;
@@ -706,6 +708,14 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
 
   goBack(): void {
     this.location.back();
+  }
+
+  openPlannerModal(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+    this.showPlannerModal = true;
   }
 
   @HostListener('document:keydown.escape')

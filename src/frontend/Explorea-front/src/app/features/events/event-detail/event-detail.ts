@@ -21,6 +21,7 @@ import { RatingStats } from '../../../shared/components/rating-stats/rating-stat
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { PopularityService } from '../../../core/services/popularity.service';
 import { ShareButton } from '../../../shared/components/share-button/share-button';
+import { AddToPlannerModal } from '../../../shared/components/add-to-planner-modal/add-to-planner-modal';
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
@@ -45,7 +46,7 @@ const LIGHT = {
 @Component({
   selector: 'app-event-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, EventCard, ImageGallery, DetailFooter, ReviewCard, ReviewModal, RatingStats, ReviewsPanel, ShareButton],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, EventCard, ImageGallery, DetailFooter, ReviewCard, ReviewModal, RatingStats, ReviewsPanel, ShareButton, AddToPlannerModal],
   templateUrl: './event-detail.html',
   styleUrl: './event-detail.css',
 })
@@ -60,6 +61,7 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   isSaved = false;
   isSavedLoading = false;
+  showPlannerModal = false;
 
   hasReviewed = false;
   reviewFormOpen = false;
@@ -481,6 +483,14 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   goBack(): void {
     this.location.back();
+  }
+
+  openPlannerModal(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+    this.showPlannerModal = true;
   }
 
   navigateToEvents(): void {

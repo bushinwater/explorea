@@ -23,6 +23,7 @@ import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-p
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 import { ShareButton } from '../../../shared/components/share-button/share-button';
+import { AddToPlannerModal } from '../../../shared/components/add-to-planner-modal/add-to-planner-modal';
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 const DESKTOP_SIMILAR_LIMIT = 6;
@@ -49,7 +50,7 @@ const LIGHT = {
 @Component({
   selector: 'app-activity-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel, ShareButton],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel, ShareButton, AddToPlannerModal],
   templateUrl: './activity-detail.html',
   styleUrl: './activity-detail.css',
 })
@@ -74,6 +75,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
 
   isSaved = false;
   isSavedLoading = false;
+  showPlannerModal = false;
 
   hasReviewed = false;
   currentUserId = '';
@@ -487,6 +489,14 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
 
   goBack(): void {
     this.location.back();
+  }
+
+  openPlannerModal(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+    this.showPlannerModal = true;
   }
 
   @HostListener('document:keydown.escape')
