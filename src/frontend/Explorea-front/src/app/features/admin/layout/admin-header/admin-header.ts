@@ -86,6 +86,11 @@ export class AdminHeader implements OnInit, OnDestroy {
     );
   }
 
+  openSettings(): void {
+    this.showNotifications = false;
+    void this.router.navigate(['/admin/settings']);
+  }
+
   formatNotificationTime(value: string): string {
     const date = new Date(value);
 
