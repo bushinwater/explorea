@@ -76,6 +76,7 @@ export interface EventRow {
   name: string;
   organizer: string;
   type: EventType | null;
+  typeName: string | null;
   typeId: number | null;
   city: string | null;
   cityId: number | null;

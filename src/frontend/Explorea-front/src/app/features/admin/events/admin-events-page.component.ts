@@ -479,13 +479,24 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     return map[p];
   }
 
-  protected typeLabel(t: EventType | null): string {
+  protected typeLabel(typeId: number | null, t: EventType | null, typeName?: string | null): string {
+    if (typeId != null) {
+      const opt = this.eventTypeOptions().find(o => o.value === typeId);
+      if (opt) return opt.label;
+    }
+    if (typeName) return typeName;
     if (!t) return '—';
     const map: Record<EventType, string> = {
       concert: 'Koncert', tasting: 'Degustacija', conference: 'Konferencija',
       sport: 'Sport', exhibition: 'Izložba', other: 'Ostalo',
     };
-    return map[t];
+    return map[t] ?? '—';
+  }
+
+  protected evtActivityStatus(ev: EventRow): 'active' | 'inactive' {
+    const end = ev.endDate ?? ev.startDate;
+    const msSinceEnd = Date.now() - new Date(end).getTime();
+    return msSinceEnd <= 30 * 24 * 60 * 60 * 1000 ? 'active' : 'inactive';
   }
 
   protected typeIcon(t: EventType | null): string {

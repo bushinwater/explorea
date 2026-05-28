@@ -50,6 +50,7 @@ export interface PlaceRow {
   destination: string | null;
   avgRating: number;
   isFeatured: boolean;
+  hasRecentActivity: boolean;
   address: string | null;
   status: PlaceStatus;
   createdAt: string;
