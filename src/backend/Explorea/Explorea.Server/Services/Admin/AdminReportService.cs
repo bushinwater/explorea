@@ -51,10 +51,10 @@ namespace Explorea.Server.Services.Admin
 
         public async Task<List<DestinationsTableItemDto>> GetDestinationsTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
-            Guid currentUserId)
+            Guid currentUserId, string? filterStatus = null)
         {
             var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
-            return await _repo.GetDestinationsTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, destIds, placeOwnerUserId);
+            return await _repo.GetDestinationsTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, destIds, placeOwnerUserId, filterStatus);
         }
 
         public async Task<List<EntityTableRowDto>> GetEntityTableAsync(
@@ -63,10 +63,10 @@ namespace Explorea.Server.Services.Admin
             string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
             List<string>? filterExtraFilters,
             Guid currentUserId,
-            Guid? filterDestinationId = null)
+            Guid? filterDestinationId = null, string? filterStatus = null)
         {
             var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
-            return await _repo.GetEntityTableAsync(entity, sortBy, filterSubType, filterRegion, filterMinRating, filterDifficulty, filterMinPrice, filterMaxPrice, filterExtraFilters, destIds, placeOwnerUserId, filterDestinationId);
+            return await _repo.GetEntityTableAsync(entity, sortBy, filterSubType, filterRegion, filterMinRating, filterDifficulty, filterMinPrice, filterMaxPrice, filterExtraFilters, destIds, placeOwnerUserId, filterDestinationId, filterStatus);
         }
 
         public async Task<List<SubtypeOptionDto>> GetSubtypeOptionsAsync(string entity, Guid currentUserId)
@@ -83,10 +83,10 @@ namespace Explorea.Server.Services.Admin
 
         public async Task<List<AggregatePointDto>> GetAggregateAsync(
             string entity, string groupBy, string metric,
-            DateOnly? dateFrom, DateOnly? dateTo, Guid currentUserId, Guid? specificEntityId = null)
+            DateOnly? dateFrom, DateOnly? dateTo, Guid currentUserId, Guid? specificEntityId = null, string? filterStatus = null)
         {
             var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
-            return await _repo.GetAggregateAsync(entity, groupBy, metric, dateFrom, dateTo, destIds, placeOwnerUserId, specificEntityId);
+            return await _repo.GetAggregateAsync(entity, groupBy, metric, dateFrom, dateTo, destIds, placeOwnerUserId, specificEntityId, filterStatus);
         }
 
         public async Task<List<EntitySearchItemDto>> SearchEntitiesAsync(string entity, string q, Guid currentUserId)

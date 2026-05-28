@@ -374,7 +374,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected setListMode(mode: 'active' | 'deleted'): void {
     if (this.listMode() === mode) return;
     this.listMode.set(mode);
-    this.closeDetailsPanel();
+    if (this.isDetailsPanelOpen()) this.closeDetailsPanel();
     this.activeMenuId.set(null);
     this.patchFilter({ page: 1 });
     this.currentPage.set(1);

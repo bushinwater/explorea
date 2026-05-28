@@ -102,11 +102,10 @@ namespace Explorea.Server.Repositories.Implementations
 
         public async Task<List<DestinationsTableItemDto>> GetDestinationsTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
-            List<Guid>? destIds, Guid? placeOwnerUserId)
+            List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null)
         {
-            var q = _db.Destinations.Where(d => !d.IsDeleted);
-            if (destIds            != null) q = q.Where(d => destIds.Contains(d.Id));
-            if (placeOwnerUserId.HasValue)  q = q.Take(0);
+            var q = ScopeDestinations(destIds, filterStatus);
+            if (placeOwnerUserId.HasValue) q = q.Take(0);
             if (!string.IsNullOrEmpty(filterSubType))
                 q = q.Where(d => d.Type != null && d.Type.Name == filterSubType);
             if (!string.IsNullOrEmpty(filterRegion))
@@ -140,13 +139,13 @@ namespace Explorea.Server.Repositories.Implementations
             string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
             List<string>? filterExtraFilters,
             List<Guid>? destIds, Guid? placeOwnerUserId,
-            Guid? filterDestinationId = null)
+            Guid? filterDestinationId = null, string? filterStatus = null)
         {
             return entity switch
             {
-                "activities" => await GetActivitiesTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterDifficulty, filterMinPrice, filterMaxPrice, destIds, placeOwnerUserId, filterDestinationId),
-                "events"     => await GetEventsTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterMinPrice, filterMaxPrice, filterExtraFilters, destIds, placeOwnerUserId, filterDestinationId),
-                "places"     => await GetPlacesTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterExtraFilters, destIds, placeOwnerUserId, filterDestinationId),
+                "activities" => await GetActivitiesTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterDifficulty, filterMinPrice, filterMaxPrice, destIds, placeOwnerUserId, filterDestinationId, filterStatus),
+                "events"     => await GetEventsTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterMinPrice, filterMaxPrice, filterExtraFilters, destIds, placeOwnerUserId, filterDestinationId, filterStatus),
+                "places"     => await GetPlacesTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, filterExtraFilters, destIds, placeOwnerUserId, filterDestinationId, filterStatus),
                 _            => [],
             };
         }
@@ -227,9 +226,9 @@ namespace Explorea.Server.Repositories.Implementations
         private async Task<List<EntityTableRowDto>> GetActivitiesTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
             string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
-            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? filterDestinationId = null)
+            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? filterDestinationId = null, string? filterStatus = null)
         {
-            var q = ScopeActivities(destIds, placeOwnerUserId);
+            var q = ScopeActivities(destIds, placeOwnerUserId, filterStatus);
             if (filterDestinationId.HasValue)
                 q = q.Where(a => a.DestinationId == filterDestinationId.Value);
             if (!string.IsNullOrEmpty(filterSubType))
@@ -266,9 +265,9 @@ namespace Explorea.Server.Repositories.Implementations
         private async Task<List<EntityTableRowDto>> GetEventsTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
             decimal? filterMinPrice, decimal? filterMaxPrice, List<string>? filterExtraFilters,
-            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? filterDestinationId = null)
+            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? filterDestinationId = null, string? filterStatus = null)
         {
-            var q = ScopeEvents(destIds, placeOwnerUserId);
+            var q = ScopeEvents(destIds, placeOwnerUserId, filterStatus);
             if (filterDestinationId.HasValue)
                 q = q.Where(e => e.DestinationId == filterDestinationId.Value);
             if (!string.IsNullOrEmpty(filterSubType))
@@ -312,9 +311,9 @@ namespace Explorea.Server.Repositories.Implementations
         private async Task<List<EntityTableRowDto>> GetPlacesTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
             List<string>? filterExtraFilters,
-            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? filterDestinationId = null)
+            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? filterDestinationId = null, string? filterStatus = null)
         {
-            var q = ScopePlaces(destIds, placeOwnerUserId);
+            var q = ScopePlaces(destIds, placeOwnerUserId, filterStatus);
             if (filterDestinationId.HasValue)
                 q = q.Where(p => p.DestinationId == filterDestinationId.Value);
             if (!string.IsNullOrEmpty(filterSubType))
@@ -359,7 +358,7 @@ namespace Explorea.Server.Repositories.Implementations
             string entity, string groupBy, string metric,
             DateOnly? dateFrom, DateOnly? dateTo,
             List<Guid>? destIds, Guid? placeOwnerUserId,
-            Guid? specificEntityId = null)
+            Guid? specificEntityId = null, string? filterStatus = null)
         {
             // When a specific destination is selected, scope to just that one
             if (specificEntityId.HasValue && entity == "destinations")
@@ -375,24 +374,24 @@ namespace Explorea.Server.Repositories.Implementations
 
             return (entity, groupBy) switch
             {
-                ("destinations", "region")    => await AggDests_Region(metric, destIds),
-                ("destinations", "type")      => await AggDests_Type(metric, destIds),
-                ("destinations", "time")      => await AggDests_Time(metric, fromOff, toOff, destIds),
+                ("destinations", "region")    => await AggDests_Region(metric, destIds, filterStatus),
+                ("destinations", "type")      => await AggDests_Type(metric, destIds, filterStatus),
+                ("destinations", "time")      => await AggDests_Time(metric, fromOff, toOff, destIds, filterStatus),
 
-                ("activities", "category")    => await AggActivities_Category(metric, destIds, placeOwnerUserId),
-                ("activities", "destination") => await AggActivities_Destination(metric, destIds, placeOwnerUserId),
-                ("activities", "region")      => await AggActivities_Region(metric, destIds, placeOwnerUserId),
-                ("activities", "time")        => await AggActivities_Time(metric, fromOff, toOff, destIds, placeOwnerUserId, specificEntityId),
+                ("activities", "category")    => await AggActivities_Category(metric, destIds, placeOwnerUserId, filterStatus),
+                ("activities", "destination") => await AggActivities_Destination(metric, destIds, placeOwnerUserId, filterStatus),
+                ("activities", "region")      => await AggActivities_Region(metric, destIds, placeOwnerUserId, filterStatus),
+                ("activities", "time")        => await AggActivities_Time(metric, fromOff, toOff, destIds, placeOwnerUserId, specificEntityId, filterStatus),
 
-                ("events", "type")            => await AggEvents_Type(metric, destIds, placeOwnerUserId),
-                ("events", "destination")     => await AggEvents_Destination(metric, destIds, placeOwnerUserId),
-                ("events", "region")          => await AggEvents_Region(metric, destIds, placeOwnerUserId),
-                ("events", "time")            => await AggEvents_Time(metric, fromOff, toOff, destIds, placeOwnerUserId, specificEntityId),
+                ("events", "type")            => await AggEvents_Type(metric, destIds, placeOwnerUserId, filterStatus),
+                ("events", "destination")     => await AggEvents_Destination(metric, destIds, placeOwnerUserId, filterStatus),
+                ("events", "region")          => await AggEvents_Region(metric, destIds, placeOwnerUserId, filterStatus),
+                ("events", "time")            => await AggEvents_Time(metric, fromOff, toOff, destIds, placeOwnerUserId, specificEntityId, filterStatus),
 
-                ("places", "type")            => await AggPlaces_Type(metric, destIds, placeOwnerUserId),
-                ("places", "destination")     => await AggPlaces_Destination(metric, destIds, placeOwnerUserId),
-                ("places", "region")          => await AggPlaces_Region(metric, destIds, placeOwnerUserId),
-                ("places", "time")            => await AggPlaces_Time(metric, fromOff, toOff, destIds, placeOwnerUserId, specificEntityId),
+                ("places", "type")            => await AggPlaces_Type(metric, destIds, placeOwnerUserId, filterStatus),
+                ("places", "destination")     => await AggPlaces_Destination(metric, destIds, placeOwnerUserId, filterStatus),
+                ("places", "region")          => await AggPlaces_Region(metric, destIds, placeOwnerUserId, filterStatus),
+                ("places", "time")            => await AggPlaces_Time(metric, fromOff, toOff, destIds, placeOwnerUserId, specificEntityId, filterStatus),
 
                 ("reviews", "rating")         => await AggReviews_Rating(fromOff, toOff, destIds, placeOwnerUserId),
                 ("reviews", "entityType")     => await AggReviews_EntityType(fromOff, toOff, destIds, placeOwnerUserId),
@@ -408,10 +407,9 @@ namespace Explorea.Server.Repositories.Implementations
 
         // ─── Destinations ────────────────────────────────────────────────────────
 
-        private async Task<List<AggregatePointDto>> AggDests_Region(string metric, List<Guid>? destIds)
+        private async Task<List<AggregatePointDto>> AggDests_Region(string metric, List<Guid>? destIds, string? filterStatus = null)
         {
-            var q = _db.Destinations.Where(d => !d.IsDeleted);
-            if (destIds != null) q = q.Where(d => destIds.Contains(d.Id));
+            var q = ScopeDestinations(destIds, filterStatus);
 
             if (metric == "avgRating")
             {
@@ -441,10 +439,9 @@ namespace Explorea.Server.Repositories.Implementations
                 .OrderByDescending(x => x.Value).ToListAsync();
         }
 
-        private async Task<List<AggregatePointDto>> AggDests_Type(string metric, List<Guid>? destIds)
+        private async Task<List<AggregatePointDto>> AggDests_Type(string metric, List<Guid>? destIds, string? filterStatus = null)
         {
-            var q = _db.Destinations.Where(d => !d.IsDeleted);
-            if (destIds != null) q = q.Where(d => destIds.Contains(d.Id));
+            var q = ScopeDestinations(destIds, filterStatus);
 
             if (metric == "avgRating")
             {
@@ -475,7 +472,7 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         private async Task<List<AggregatePointDto>> AggDests_Time(
-            string metric, DateTimeOffset? from, DateTimeOffset? to, List<Guid>? destIds)
+            string metric, DateTimeOffset? from, DateTimeOffset? to, List<Guid>? destIds, string? filterStatus = null)
         {
             if (metric == "traffic")
             {
@@ -493,8 +490,7 @@ namespace Explorea.Server.Repositories.Implementations
                 if (destIds != null) revQ = revQ.Where(r => destIds.Contains(r.EntityId));
                 return await GroupByMonthAvgRating(revQ);
             }
-            var q = _db.Destinations.Where(d => !d.IsDeleted);
-            if (destIds != null) q = q.Where(d => destIds.Contains(d.Id));
+            var q = ScopeDestinations(destIds, filterStatus);
             if (from.HasValue) q = q.Where(d => d.CreatedAt >= from.Value);
             if (to.HasValue)   q = q.Where(d => d.CreatedAt < to.Value);
             return await GroupByMonth(q.Select(d => d.CreatedAt));
@@ -503,9 +499,9 @@ namespace Explorea.Server.Repositories.Implementations
         // ─── Activities ──────────────────────────────────────────────────────────
 
         private async Task<List<AggregatePointDto>> AggActivities_Category(
-            string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
+            string metric, List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null)
         {
-            var q = ScopeActivities(destIds, placeOwnerUserId);
+            var q = ScopeActivities(destIds, placeOwnerUserId, filterStatus);
 
             if (metric == "avgRating")
             {
@@ -536,9 +532,9 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         private async Task<List<AggregatePointDto>> AggActivities_Destination(
-            string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
+            string metric, List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null)
         {
-            var q = ScopeActivities(destIds, placeOwnerUserId);
+            var q = ScopeActivities(destIds, placeOwnerUserId, filterStatus);
             if (metric == "traffic")
             {
                 var rows = await q.Select(a => new { a.Id, Dest = a.Destination != null ? a.Destination.Name : "Bez destinacije" }).ToListAsync();
@@ -559,9 +555,9 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         private async Task<List<AggregatePointDto>> AggActivities_Region(
-            string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
+            string metric, List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null)
         {
-            var q = ScopeActivities(destIds, placeOwnerUserId);
+            var q = ScopeActivities(destIds, placeOwnerUserId, filterStatus);
             if (metric == "traffic")
             {
                 var rows = await q.Select(a => new { a.Id, Region = a.City != null && a.City.Region != null ? a.City.Region.Name : "Nepoznato" }).ToListAsync();
@@ -583,13 +579,13 @@ namespace Explorea.Server.Repositories.Implementations
 
         private async Task<List<AggregatePointDto>> AggActivities_Time(
             string metric, DateTimeOffset? from, DateTimeOffset? to,
-            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? specificEntityId = null)
+            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? specificEntityId = null, string? filterStatus = null)
         {
             if (metric == "traffic")
             {
                 var actIds = specificEntityId.HasValue
                     ? [specificEntityId.Value]
-                    : await ScopeActivities(destIds, placeOwnerUserId).Select(a => a.Id).ToListAsync();
+                    : await ScopeActivities(destIds, placeOwnerUserId, filterStatus).Select(a => a.Id).ToListAsync();
                 var logQ = _db.PopularityLogs.Where(l => l.EntityType == "activity" && actIds.Contains(l.EntityId));
                 if (from.HasValue) logQ = logQ.Where(l => l.CreatedAt >= from.Value);
                 if (to.HasValue)   logQ = logQ.Where(l => l.CreatedAt < to.Value);
@@ -599,7 +595,7 @@ namespace Explorea.Server.Repositories.Implementations
             {
                 var entityIds = specificEntityId.HasValue
                     ? [specificEntityId.Value]
-                    : await ScopeActivities(destIds, placeOwnerUserId).Select(a => a.Id).ToListAsync();
+                    : await ScopeActivities(destIds, placeOwnerUserId, filterStatus).Select(a => a.Id).ToListAsync();
                 var revQ = _db.Reviews.Where(r => !r.IsDeleted && !r.IsHidden && r.EntityType == "activity" && entityIds.Contains(r.EntityId));
                 if (from.HasValue) revQ = revQ.Where(r => r.CreatedAt >= from.Value);
                 if (to.HasValue)   revQ = revQ.Where(r => r.CreatedAt < to.Value);
@@ -607,7 +603,7 @@ namespace Explorea.Server.Repositories.Implementations
             }
             var q = specificEntityId.HasValue
                 ? _db.Activities.Where(a => a.Id == specificEntityId.Value && !a.IsDeleted)
-                : ScopeActivities(destIds, placeOwnerUserId);
+                : ScopeActivities(destIds, placeOwnerUserId, filterStatus);
             if (from.HasValue) q = q.Where(a => a.CreatedAt >= from.Value);
             if (to.HasValue)   q = q.Where(a => a.CreatedAt < to.Value);
             return await GroupByMonth(q.Select(a => a.CreatedAt));
@@ -616,9 +612,9 @@ namespace Explorea.Server.Repositories.Implementations
         // ─── Events ──────────────────────────────────────────────────────────────
 
         private async Task<List<AggregatePointDto>> AggEvents_Type(
-            string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
+            string metric, List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null)
         {
-            var q = ScopeEvents(destIds, placeOwnerUserId);
+            var q = ScopeEvents(destIds, placeOwnerUserId, filterStatus);
 
             if (metric == "avgRating")
             {
@@ -649,9 +645,9 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         private async Task<List<AggregatePointDto>> AggEvents_Destination(
-            string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
+            string metric, List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null)
         {
-            var q = ScopeEvents(destIds, placeOwnerUserId);
+            var q = ScopeEvents(destIds, placeOwnerUserId, filterStatus);
             if (metric == "traffic")
             {
                 var rows = await q.Select(e => new { e.Id, Dest = e.Destination != null ? e.Destination.Name : "Bez destinacije" }).ToListAsync();
@@ -672,9 +668,9 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         private async Task<List<AggregatePointDto>> AggEvents_Region(
-            string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
+            string metric, List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null)
         {
-            var q = ScopeEvents(destIds, placeOwnerUserId);
+            var q = ScopeEvents(destIds, placeOwnerUserId, filterStatus);
             if (metric == "traffic")
             {
                 var rows = await q.Select(e => new { e.Id, Region = e.City != null && e.City.Region != null ? e.City.Region.Name : "Nepoznato" }).ToListAsync();
@@ -696,13 +692,13 @@ namespace Explorea.Server.Repositories.Implementations
 
         private async Task<List<AggregatePointDto>> AggEvents_Time(
             string metric, DateTimeOffset? from, DateTimeOffset? to,
-            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? specificEntityId = null)
+            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? specificEntityId = null, string? filterStatus = null)
         {
             if (metric == "traffic")
             {
                 var evIds = specificEntityId.HasValue
                     ? [specificEntityId.Value]
-                    : await ScopeEvents(destIds, placeOwnerUserId).Select(e => e.Id).ToListAsync();
+                    : await ScopeEvents(destIds, placeOwnerUserId, filterStatus).Select(e => e.Id).ToListAsync();
                 var logQ = _db.PopularityLogs.Where(l => l.EntityType == "event" && evIds.Contains(l.EntityId));
                 if (from.HasValue) logQ = logQ.Where(l => l.CreatedAt >= from.Value);
                 if (to.HasValue)   logQ = logQ.Where(l => l.CreatedAt < to.Value);
@@ -712,7 +708,7 @@ namespace Explorea.Server.Repositories.Implementations
             {
                 var entityIds = specificEntityId.HasValue
                     ? [specificEntityId.Value]
-                    : await ScopeEvents(destIds, placeOwnerUserId).Select(e => e.Id).ToListAsync();
+                    : await ScopeEvents(destIds, placeOwnerUserId, filterStatus).Select(e => e.Id).ToListAsync();
                 var revQ = _db.Reviews.Where(r => !r.IsDeleted && !r.IsHidden && r.EntityType == "event" && entityIds.Contains(r.EntityId));
                 if (from.HasValue) revQ = revQ.Where(r => r.CreatedAt >= from.Value);
                 if (to.HasValue)   revQ = revQ.Where(r => r.CreatedAt < to.Value);
@@ -720,7 +716,7 @@ namespace Explorea.Server.Repositories.Implementations
             }
             var q = specificEntityId.HasValue
                 ? _db.Events.Where(e => e.Id == specificEntityId.Value && !e.IsDeleted)
-                : ScopeEvents(destIds, placeOwnerUserId);
+                : ScopeEvents(destIds, placeOwnerUserId, filterStatus);
             if (from.HasValue) q = q.Where(e => e.CreatedAt >= from.Value);
             if (to.HasValue)   q = q.Where(e => e.CreatedAt < to.Value);
             return await GroupByMonth(q.Select(e => e.CreatedAt));
@@ -729,9 +725,9 @@ namespace Explorea.Server.Repositories.Implementations
         // ─── Places ──────────────────────────────────────────────────────────────
 
         private async Task<List<AggregatePointDto>> AggPlaces_Type(
-            string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
+            string metric, List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null)
         {
-            var q = ScopePlaces(destIds, placeOwnerUserId);
+            var q = ScopePlaces(destIds, placeOwnerUserId, filterStatus);
 
             if (metric == "avgRating")
             {
@@ -762,9 +758,9 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         private async Task<List<AggregatePointDto>> AggPlaces_Destination(
-            string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
+            string metric, List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null)
         {
-            var q = ScopePlaces(destIds, placeOwnerUserId);
+            var q = ScopePlaces(destIds, placeOwnerUserId, filterStatus);
             if (metric == "traffic")
             {
                 var rows = await q.Select(p => new { p.Id, Dest = p.Destination != null ? p.Destination.Name : "Bez destinacije" }).ToListAsync();
@@ -785,9 +781,9 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         private async Task<List<AggregatePointDto>> AggPlaces_Region(
-            string metric, List<Guid>? destIds, Guid? placeOwnerUserId)
+            string metric, List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null)
         {
-            var q = ScopePlaces(destIds, placeOwnerUserId);
+            var q = ScopePlaces(destIds, placeOwnerUserId, filterStatus);
             if (metric == "traffic")
             {
                 var rows = await q.Select(p => new { p.Id, Region = p.City != null && p.City.Region != null ? p.City.Region.Name : "Nepoznato" }).ToListAsync();
@@ -809,13 +805,13 @@ namespace Explorea.Server.Repositories.Implementations
 
         private async Task<List<AggregatePointDto>> AggPlaces_Time(
             string metric, DateTimeOffset? from, DateTimeOffset? to,
-            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? specificEntityId = null)
+            List<Guid>? destIds, Guid? placeOwnerUserId, Guid? specificEntityId = null, string? filterStatus = null)
         {
             if (metric == "traffic")
             {
                 var placeIds = specificEntityId.HasValue
                     ? [specificEntityId.Value]
-                    : await ScopePlaces(destIds, placeOwnerUserId).Select(p => p.Id).ToListAsync();
+                    : await ScopePlaces(destIds, placeOwnerUserId, filterStatus).Select(p => p.Id).ToListAsync();
                 var logQ = _db.PopularityLogs.Where(l => l.EntityType == "place" && placeIds.Contains(l.EntityId));
                 if (from.HasValue) logQ = logQ.Where(l => l.CreatedAt >= from.Value);
                 if (to.HasValue)   logQ = logQ.Where(l => l.CreatedAt < to.Value);
@@ -825,7 +821,7 @@ namespace Explorea.Server.Repositories.Implementations
             {
                 var entityIds = specificEntityId.HasValue
                     ? [specificEntityId.Value]
-                    : await ScopePlaces(destIds, placeOwnerUserId).Select(p => p.Id).ToListAsync();
+                    : await ScopePlaces(destIds, placeOwnerUserId, filterStatus).Select(p => p.Id).ToListAsync();
                 var revQ = _db.Reviews.Where(r => !r.IsDeleted && !r.IsHidden && r.EntityType == "place" && entityIds.Contains(r.EntityId));
                 if (from.HasValue) revQ = revQ.Where(r => r.CreatedAt >= from.Value);
                 if (to.HasValue)   revQ = revQ.Where(r => r.CreatedAt < to.Value);
@@ -833,7 +829,7 @@ namespace Explorea.Server.Repositories.Implementations
             }
             var q = specificEntityId.HasValue
                 ? _db.Places.Where(p => p.Id == specificEntityId.Value && !p.IsDeleted)
-                : ScopePlaces(destIds, placeOwnerUserId);
+                : ScopePlaces(destIds, placeOwnerUserId, filterStatus);
             if (from.HasValue) q = q.Where(p => p.CreatedAt >= from.Value);
             if (to.HasValue)   q = q.Where(p => p.CreatedAt < to.Value);
             return await GroupByMonth(q.Select(p => p.CreatedAt));
@@ -1000,27 +996,74 @@ namespace Explorea.Server.Repositories.Implementations
 
         // ─── Scope helpers ───────────────────────────────────────────────────────
 
-        private IQueryable<Activity> ScopeActivities(List<Guid>? destIds, Guid? placeOwnerUserId)
+        private IQueryable<Activity> ScopeActivities(List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null)
         {
-            var q = _db.Activities.Where(a => !a.IsDeleted);
+            var q = _db.Activities.AsQueryable(); // global filter handles !IsDeleted
+            if (filterStatus == "active" || filterStatus == "inactive")
+            {
+                var cutoff    = DateTimeOffset.UtcNow.AddDays(-30);
+                var activeIds = _db.PopularityLogs
+                    .Where(l => l.EntityType == "activity" && l.CreatedAt >= cutoff)
+                    .Select(l => l.EntityId).Distinct();
+                q = filterStatus == "active"
+                    ? q.Where(a => activeIds.Contains(a.Id))
+                    : q.Where(a => !activeIds.Contains(a.Id));
+            }
             if (destIds != null)           q = q.Where(a => a.DestinationId.HasValue && destIds.Contains(a.DestinationId.Value));
             if (placeOwnerUserId.HasValue) q = q.Where(a => a.CreatedBy == placeOwnerUserId.Value);
             return q;
         }
 
-        private IQueryable<Event> ScopeEvents(List<Guid>? destIds, Guid? placeOwnerUserId)
+        private IQueryable<Event> ScopeEvents(List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null)
         {
-            var q = _db.Events.Where(e => !e.IsDeleted);
+            var q = _db.Events.AsQueryable(); // global filter handles !IsDeleted
+            if (filterStatus == "active" || filterStatus == "inactive")
+            {
+                var cutoff    = DateTimeOffset.UtcNow.AddDays(-30);
+                var activeIds = _db.PopularityLogs
+                    .Where(l => l.EntityType == "event" && l.CreatedAt >= cutoff)
+                    .Select(l => l.EntityId).Distinct();
+                q = filterStatus == "active"
+                    ? q.Where(e => activeIds.Contains(e.Id))
+                    : q.Where(e => !activeIds.Contains(e.Id));
+            }
             if (destIds != null)           q = q.Where(e => e.DestinationId.HasValue && destIds.Contains(e.DestinationId.Value));
             if (placeOwnerUserId.HasValue) q = q.Where(e => e.CreatedBy == placeOwnerUserId.Value);
             return q;
         }
 
-        private IQueryable<Place> ScopePlaces(List<Guid>? destIds, Guid? placeOwnerUserId)
+        private IQueryable<Place> ScopePlaces(List<Guid>? destIds, Guid? placeOwnerUserId, string? filterStatus = null)
         {
-            var q = _db.Places.Where(p => !p.IsDeleted);
+            var q = _db.Places.AsQueryable(); // global filter handles !IsDeleted
+            if (filterStatus == "active" || filterStatus == "inactive")
+            {
+                var cutoff    = DateTimeOffset.UtcNow.AddDays(-30);
+                var activeIds = _db.PopularityLogs
+                    .Where(l => l.EntityType == "place" && l.CreatedAt >= cutoff)
+                    .Select(l => l.EntityId).Distinct();
+                q = filterStatus == "active"
+                    ? q.Where(p => activeIds.Contains(p.Id))
+                    : q.Where(p => !activeIds.Contains(p.Id));
+            }
             if (destIds != null)           q = q.Where(p => p.DestinationId.HasValue && destIds.Contains(p.DestinationId.Value));
             if (placeOwnerUserId.HasValue) q = q.Where(p => p.CreatedBy == placeOwnerUserId.Value);
+            return q;
+        }
+
+        private IQueryable<Destination> ScopeDestinations(List<Guid>? destIds, string? filterStatus = null)
+        {
+            var q = _db.Destinations.AsQueryable(); // global filter handles !IsDeleted
+            if (filterStatus == "active" || filterStatus == "inactive")
+            {
+                var cutoff    = DateTimeOffset.UtcNow.AddDays(-30);
+                var activeIds = _db.PopularityLogs
+                    .Where(l => l.EntityType == "destination" && l.CreatedAt >= cutoff)
+                    .Select(l => l.EntityId).Distinct();
+                q = filterStatus == "active"
+                    ? q.Where(d => activeIds.Contains(d.Id))
+                    : q.Where(d => !activeIds.Contains(d.Id));
+            }
+            if (destIds != null) q = q.Where(d => destIds.Contains(d.Id));
             return q;
         }
 
