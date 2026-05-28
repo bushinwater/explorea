@@ -1204,11 +1204,13 @@ export class Search implements OnInit, OnDestroy {
     }
 
     this.showPlannerModal = true;
+    this.lockPageScroll();
     this.cdr.detectChanges();
   }
 
   cancelPlannerModal(): void {
     this.showPlannerModal = false;
+    this.unlockPageScroll();
     this.cdr.detectChanges();
   }
 
@@ -1249,7 +1251,7 @@ export class Search implements OnInit, OnDestroy {
         this.plannerModalSaving  = false;
         this.plannerModalSuccess = true;
         this.cdr.detectChanges();
-        setTimeout(() => { this.showPlannerModal = false; this.cdr.detectChanges(); }, 900);
+        setTimeout(() => { this.showPlannerModal = false; this.unlockPageScroll(); this.cdr.detectChanges(); }, 900);
       },
       error: (err) => {
         this.plannerModalSaving = false;
