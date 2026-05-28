@@ -5,6 +5,7 @@ using Explorea.Server.Data;
 using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Admin.Interfaces;
+using Explorea.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
@@ -18,6 +19,8 @@ namespace Explorea.Server.Services.Admin
         private readonly AppDbContext _context;
         private readonly ISavedItemCleanupService _savedItemCleanup;
         private readonly IOwnerChangeNotificationService _ownerChangeNotifications;
+        private readonly IEmailService _emailService;
+        private readonly ILogger<AdminPlaceService> _logger;
 
         private static readonly GeometryFactory _geometryFactory =
             new GeometryFactory(new PrecisionModel(), 4326);
@@ -28,7 +31,9 @@ namespace Explorea.Server.Services.Admin
             ISubmissionQueueRepository queueRepo,
             AppDbContext context,
             ISavedItemCleanupService savedItemCleanup,
-            IOwnerChangeNotificationService ownerChangeNotifications)
+            IOwnerChangeNotificationService ownerChangeNotifications,
+            IEmailService emailService,
+            ILogger<AdminPlaceService> logger)
         {
             _placeRepo = placeRepo;
             _userRepo = userRepo;
@@ -36,6 +41,8 @@ namespace Explorea.Server.Services.Admin
             _context = context;
             _savedItemCleanup = savedItemCleanup;
             _ownerChangeNotifications = ownerChangeNotifications;
+            _emailService = emailService;
+            _logger = logger;
         }
 
         public async Task<(List<AdminPlaceListDto> Items, int Total)> GetAllAsync(
@@ -369,6 +376,7 @@ namespace Explorea.Server.Services.Admin
             }
 
             var ownerId = place.CreatedBy;
+            var previousApprovalStatus = place.ApprovalStatus;
             var changedFields = new List<string>();
 
             if (dto.Name != null) { AddChangedField(changedFields, "naslov", place.Name, dto.Name); place.Name = dto.Name; }
@@ -492,6 +500,19 @@ namespace Explorea.Server.Services.Admin
 
             _placeRepo.Update(place);
             await _placeRepo.SaveChangesAsync();
+
+            if (previousApprovalStatus != place.ApprovalStatus &&
+                (place.ApprovalStatus == "approved" || place.ApprovalStatus == "rejected"))
+            {
+                changedFields.Remove("status");
+            }
+
+            await NotifyOwnerAboutApprovalDecisionAsync(
+                ownerId,
+                place.Name,
+                previousApprovalStatus,
+                place.ApprovalStatus);
+
             await _ownerChangeNotifications.NotifyOwnerAsync(
                 ownerId,
                 "objekat",
@@ -726,6 +747,43 @@ namespace Explorea.Server.Services.Admin
             if (!EqualityComparer<T>.Default.Equals(oldValue, newValue))
             {
                 fields.Add(label);
+            }
+        }
+
+        private async Task NotifyOwnerAboutApprovalDecisionAsync(
+            Guid? ownerId,
+            string placeName,
+            string previousStatus,
+            string currentStatus)
+        {
+            if (!ownerId.HasValue ||
+                previousStatus == currentStatus ||
+                (currentStatus != "approved" && currentStatus != "rejected"))
+            {
+                return;
+            }
+
+            var owner = await _context.Users.FirstOrDefaultAsync(user => user.Id == ownerId.Value);
+            if (string.IsNullOrWhiteSpace(owner?.Email))
+                return;
+
+            try
+            {
+                await _emailService.SendSubmittedEntityReviewedEmailAsync(
+                    owner.Email,
+                    owner.FirstName,
+                    "objekat",
+                    placeName,
+                    currentStatus == "approved",
+                    currentStatus == "rejected" ? "Objekat je odbijen od strane administratora." : null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed to send place approval decision email to {Email} for place {PlaceName}.",
+                    owner.Email,
+                    placeName);
             }
         }
     }

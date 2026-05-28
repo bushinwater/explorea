@@ -1,6 +1,8 @@
 using Explorea.API.DTOs.Admin.Queue;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Admin.Interfaces;
+using Explorea.Server.Services.Interfaces;
+using System.Text.Json;
 
 namespace Explorea.Server.Services.Admin
 {
@@ -9,14 +11,20 @@ namespace Explorea.Server.Services.Admin
         private readonly ISubmissionQueueRepository _queueRepo;
         private readonly IOrganizationAssignmentRepository _assignmentRepo;
         private readonly IAdminEventRepository _eventRepo;
+        private readonly IEmailService _emailService;
+        private readonly ILogger<AdminQueueService> _logger;
         public AdminQueueService(
             ISubmissionQueueRepository queueRepo,
             IOrganizationAssignmentRepository assignmentRepo,
-            IAdminEventRepository eventRepo)
+            IAdminEventRepository eventRepo,
+            IEmailService emailService,
+            ILogger<AdminQueueService> logger)
         {
             _queueRepo      = queueRepo;
             _assignmentRepo = assignmentRepo;
             _eventRepo = eventRepo;
+            _emailService = emailService;
+            _logger = logger;
         }
 
         public async Task<(List<QueueItemDto> Items, int Total)> GetQueueAsync(
@@ -66,6 +74,7 @@ namespace Explorea.Server.Services.Admin
             }
 
             await _queueRepo.SaveChangesAsync();
+            await NotifySubmitterAsync(item, approved: true, reason: null);
         }
 
         public async Task RejectByTOAsync(Guid queueItemId, Guid reviewerId, string reason)
@@ -95,6 +104,7 @@ namespace Explorea.Server.Services.Admin
             }
 
             await _queueRepo.SaveChangesAsync();
+            await NotifySubmitterAsync(item, approved: false, reason);
         }
 
         public async Task ApproveByOwnerAsync(Guid queueItemId, Guid ownerId)
@@ -110,6 +120,7 @@ namespace Explorea.Server.Services.Admin
             item.ReviewedByOwnerAt   = DateTimeOffset.UtcNow;
 
             await _queueRepo.SaveChangesAsync();
+            await NotifySubmitterAsync(item, approved: true, reason: null);
         }
 
         public async Task RejectByOwnerAsync(Guid queueItemId, Guid ownerId, string reason)
@@ -126,6 +137,79 @@ namespace Explorea.Server.Services.Admin
             item.RejectionReason   = reason;
 
             await _queueRepo.SaveChangesAsync();
+            await NotifySubmitterAsync(item, approved: false, reason);
+        }
+
+        private async Task NotifySubmitterAsync(
+            Explorea.API.Models.SubmissionQueue item,
+            bool approved,
+            string? reason)
+        {
+            if (string.IsNullOrWhiteSpace(item.SubmittedByUser?.Email))
+                return;
+
+            var entityName = await ResolveEntityNameAsync(item)
+                ?? item.Destination?.Name
+                ?? "Vas zahtev";
+
+            try
+            {
+                await _emailService.SendSubmittedEntityReviewedEmailAsync(
+                    item.SubmittedByUser.Email,
+                    item.SubmittedByUser.FirstName,
+                    ResolveEntityTypeLabel(item.EntityType),
+                    entityName,
+                    approved,
+                    reason);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed to send submission review email to {Email} for queue item {QueueItemId}.",
+                    item.SubmittedByUser.Email,
+                    item.Id);
+            }
+        }
+
+        private async Task<string?> ResolveEntityNameAsync(Explorea.API.Models.SubmissionQueue item)
+        {
+            if (item.EntityType.Equals("event", StringComparison.OrdinalIgnoreCase))
+            {
+                var eventEntity = await _eventRepo.GetAdminByIdAsync(item.EntityId);
+                if (!string.IsNullOrWhiteSpace(eventEntity?.Name))
+                    return eventEntity.Name;
+            }
+
+            if (!string.IsNullOrWhiteSpace(item.RequestPayload))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(item.RequestPayload);
+                    if (doc.RootElement.TryGetProperty("Name", out var name) &&
+                        name.ValueKind == JsonValueKind.String)
+                    {
+                        return name.GetString();
+                    }
+                }
+                catch (JsonException)
+                {
+                    return null;
+                }
+            }
+
+            return null;
+        }
+
+        private static string ResolveEntityTypeLabel(string entityType)
+        {
+            return entityType.ToLowerInvariant() switch
+            {
+                "place" => "objekat",
+                "event" => "dogadjaj",
+                "activity" => "aktivnost",
+                _ => "zahtev"
+            };
         }
 
         private static QueueItemDto MapToDto(Explorea.API.Models.SubmissionQueue q) => new()

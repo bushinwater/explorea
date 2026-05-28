@@ -14,6 +14,13 @@ namespace Explorea.Server.Services.Interfaces
             bool wasSaved,
             bool wasInPlanner,
             IEnumerable<string> plannerNotes);
+        Task SendSubmittedEntityReviewedEmailAsync(
+            string toEmail,
+            string firstName,
+            string entityType,
+            string entityName,
+            bool approved,
+            string? rejectionReason);
         Task SendOwnerEntityUpdatedEmailAsync(
             string toEmail,
             string firstName,

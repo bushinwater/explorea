@@ -439,6 +439,41 @@ namespace Explorea.Server.Services
             await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
         }
 
+        public async Task SendSubmittedEntityReviewedEmailAsync(
+            string toEmail,
+            string firstName,
+            string entityType,
+            string entityName,
+            bool approved,
+            string? rejectionReason)
+        {
+            var safeFirstName = WebUtility.HtmlEncode(firstName);
+            var safeEntityType = WebUtility.HtmlEncode(entityType);
+            var safeEntityName = WebUtility.HtmlEncode(entityName);
+            var subject = approved
+                ? $"{entityName} je odobren"
+                : $"{entityName} je odbijen";
+
+            var statusText = approved
+                ? $"Vas {safeEntityType} \"{safeEntityName}\" je odobren i bice prikazan korisnicima."
+                : $"Vas {safeEntityType} \"{safeEntityName}\" je odbijen.";
+
+            var reasonBlock = approved
+                ? string.Empty
+                : $"<p>Razlog odbijanja: {WebUtility.HtmlEncode(rejectionReason ?? "Zahtev ne ispunjava uslove za objavu.")}</p>";
+
+            var htmlBody = $@"
+                <html>
+                    <body>
+                        <p>Zdravo, {safeFirstName}!</p>
+                        <p>{statusText}</p>
+                        {reasonBlock}
+                    </body>
+                </html>";
+
+            await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
+        }
+
         public async Task SendOwnerEntityUpdatedEmailAsync(
             string toEmail,
             string firstName,
