@@ -239,10 +239,33 @@ namespace Explorea.Server.Services.Admin
         public async Task<AdminEventDetailDto> CreateAsync(AdminCreateEventDto dto, Guid createdBy)
         {
             var user = await _userRepo.GetByIdWithRoleAsync(createdBy);
-            if (user?.Role.Name != RoleNames.SuperAdmin)
-                throw new UnauthorizedAccessException("Only SuperAdmin can create events.");
+            if (user?.Role.Name != RoleNames.SuperAdmin &&
+                user?.Role.Name != RoleNames.PlaceOwner)
+            {
+                throw new UnauthorizedAccessException("Only SuperAdmin and PlaceOwner can create events.");
+            }
+
+            if (user.Role.Name == RoleNames.PlaceOwner)
+            {
+                if (!dto.DestinationId.HasValue)
+                    throw new UnauthorizedAccessException("Destination is required for owner event submissions.");
+
+                if (dto.PlaceId.HasValue)
+                {
+                    var ownsPlace = await _db.Places
+                        .IgnoreQueryFilters()
+                        .AnyAsync(place =>
+                            place.Id == dto.PlaceId.Value &&
+                            place.CreatedBy == createdBy &&
+                            !place.IsDeleted);
+
+                    if (!ownsPlace)
+                        throw new UnauthorizedAccessException("Place owners can attach events only to their own places.");
+                }
+            }
 
             var now = DateTimeOffset.UtcNow;
+            var visibility = user.Role.Name == RoleNames.PlaceOwner ? "pending" : "published";
 
             var ev = new Event
             {
@@ -264,6 +287,7 @@ namespace Explorea.Server.Services.Admin
                 PlaceId       = dto.PlaceId,
                 IsFeatured    = dto.IsFeatured,
                 ExtraFilters  = dto.ExtraFilters != null ? JsonSerializer.Serialize(dto.ExtraFilters) : null,
+                Visibility     = visibility,
                 CreatedAt     = now,
                 UpdatedAt     = now,
                 CreatedBy     = createdBy,
@@ -272,6 +296,39 @@ namespace Explorea.Server.Services.Admin
 
             await _eventRepo.AddAsync(ev);
             await _eventRepo.SaveChangesAsync();
+
+            if (user.Role.Name == RoleNames.PlaceOwner)
+            {
+                var queueItem = new SubmissionQueue
+                {
+                    Id = Guid.NewGuid(),
+                    EntityType = "event",
+                    EntityId = ev.Id,
+                    DestinationId = ev.DestinationId!.Value,
+                    LinkedPlaceId = ev.PlaceId,
+                    Status = "Pending",
+                    SubmittedByUserId = createdBy,
+                    SubmittedAt = now,
+                    RequestPayload = JsonSerializer.Serialize(new
+                    {
+                        ev.Name,
+                        ev.Description,
+                        ev.Address,
+                        ev.StartDatetime,
+                        ev.EndDatetime,
+                        ev.Price,
+                        ev.TicketUrl,
+                        ev.CityId,
+                        ev.CountryId,
+                        ev.DestinationId,
+                        ev.PlaceId,
+                        ev.ExtraFilters
+                    })
+                };
+
+                await _queueRepo.AddAsync(queueItem);
+                await _queueRepo.SaveChangesAsync();
+            }
 
             var created = await _eventRepo.GetAdminByIdAsync(ev.Id);
             return MapToDetailDto(created!);
