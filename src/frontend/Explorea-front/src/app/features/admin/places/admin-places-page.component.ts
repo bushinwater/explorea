@@ -141,6 +141,22 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.subscription.add(
+      this.route.queryParamMap.subscribe((params) => {
+        const openId = params.get('openId');
+        if (openId) {
+          const openName = params.get('openName') ?? '';
+          this.openDetailsPanel({ id: openId, name: openName } as unknown as PlaceRow);
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { openId: null, openName: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        }
+      }),
+    );
+
+    this.subscription.add(
       this.searchInput$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((value) => {
         const q = value.trim();
         this.patchFilter({ search: value, page: 1 });

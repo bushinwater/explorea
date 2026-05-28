@@ -142,6 +142,17 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         if (params.get('create') === 'true') {
           this.openCreateModal();
         }
+        const openId = params.get('openId');
+        if (openId) {
+          const openName = params.get('openName') ?? '';
+          this.openDetailsPanel({ id: openId, name: openName } as unknown as DestinationRow);
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { openId: null, openName: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        }
       }),
     );
 
@@ -447,6 +458,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected formatViews(views: number): string {
+    if (views == null) return '—';
     if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`;
     if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
     return views.toString();

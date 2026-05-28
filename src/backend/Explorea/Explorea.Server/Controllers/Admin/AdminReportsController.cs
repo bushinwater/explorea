@@ -130,6 +130,19 @@ namespace Explorea.Server.Controllers.Admin
             catch (NotSupportedException ex)       { return BadRequest(new { message = ex.Message }); }
         }
 
+        // GET /api/admin/reports/global-search?q=beo
+        [HttpGet("global-search")]
+        public async Task<IActionResult> GlobalSearch([FromQuery] string? q)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+                return Ok(Array.Empty<AdminGlobalSearchResultDto>());
+            try
+            {
+                return Ok(await _service.GlobalSearchAsync(q, GetCurrentUserId()));
+            }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+        }
+
         // GET /api/admin/reports/entity-search?entity=destinations&q=beo
         [HttpGet("entity-search")]
         public async Task<IActionResult> SearchEntities([FromQuery] string entity, [FromQuery] string q)

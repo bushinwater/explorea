@@ -1,3 +1,9 @@
+export interface AdminGlobalSearchResult {
+  entityType: 'destination' | 'activity' | 'event' | 'place';
+  id:         string;
+  name:       string;
+}
+
 export type ReportEntity      = 'destinations' | 'activities' | 'events' | 'places' | 'reviews' | 'users';
 export type ReportDimensionId = 'region' | 'category' | 'type' | 'destination' | 'rating' | 'entityType' | 'time' | 'gender' | 'ageGroup';
 export type ReportMetricId    = 'count' | 'traffic' | 'avgRating';

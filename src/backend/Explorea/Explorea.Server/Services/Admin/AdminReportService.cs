@@ -232,6 +232,27 @@ namespace Explorea.Server.Services.Admin
             return true;
         }
 
+        public async Task<List<AdminGlobalSearchResultDto>> GlobalSearchAsync(string q, Guid currentUserId)
+        {
+            var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
+
+            var entities  = new[] { "destinations", "activities", "events", "places" };
+            var singulars = new[] { "destination",  "activity",   "event",  "place"  };
+
+            var output = new List<AdminGlobalSearchResultDto>();
+            for (var i = 0; i < entities.Length; i++)
+            {
+                var items = await _repo.SearchEntitiesAsync(entities[i], q, destIds, placeOwnerUserId);
+                output.AddRange(items.Select(item => new AdminGlobalSearchResultDto
+                {
+                    EntityType = singulars[i],
+                    Id         = item.Id,
+                    Name       = item.Name,
+                }));
+            }
+            return output;
+        }
+
         // --- Private helpers ---
 
         private async Task<(List<Guid>? DestinationIds, Guid? PlaceOwnerUserId)> BuildScopeAsync(Guid userId)

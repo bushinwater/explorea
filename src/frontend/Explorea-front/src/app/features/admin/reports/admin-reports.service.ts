@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  AggregatePoint, CreateReportTemplateDto, DestinationsTableItem, EntityProfile,
+  AdminGlobalSearchResult, AggregatePoint, CreateReportTemplateDto, DestinationsTableItem, EntityProfile,
   EntitySearchItem, EntityTableRow, FilterDefinition, ReportInsights, ReportTemplateDto, SubtypeOption,
 } from './admin-reports.models';
 
@@ -11,6 +11,12 @@ export class AdminReportsService {
   private readonly base = '/api/admin/reports';
 
   constructor(private readonly http: HttpClient) {}
+
+  globalSearch(q: string): Observable<AdminGlobalSearchResult[]> {
+    return this.http.get<AdminGlobalSearchResult[]>(`${this.base}/global-search`, {
+      params: new HttpParams().set('q', q),
+    });
+  }
 
   getInsights(): Observable<ReportInsights> {
     return this.http.get<ReportInsights>(`${this.base}/insights`);

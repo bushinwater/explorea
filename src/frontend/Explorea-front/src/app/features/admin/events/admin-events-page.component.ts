@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { StatCardComponent } from '@shared/components';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
@@ -136,10 +137,28 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   constructor(
     private readonly eventsService: AdminEventsService,
     private readonly lookupService: LookupService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
   ) {}
 
   ngOnInit(): void {
+    this.subscription.add(
+      this.route.queryParamMap.subscribe((params) => {
+        const openId = params.get('openId');
+        if (openId) {
+          const openName = params.get('openName') ?? '';
+          this.openDetailsPanel({ id: openId, name: openName } as unknown as EventRow);
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { openId: null, openName: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        }
+      }),
+    );
+
     this.subscription.add(
       this.searchInput$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((value) => {
         const q = value.trim();
