@@ -1,7 +1,10 @@
 using Explorea.API.DTOs.Admin.Queue;
+using Explorea.Server.Data;
+using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Admin.Interfaces;
 using Explorea.Server.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace Explorea.Server.Services.Admin
@@ -13,32 +16,63 @@ namespace Explorea.Server.Services.Admin
         private readonly IAdminEventRepository _eventRepo;
         private readonly IEmailService _emailService;
         private readonly ILogger<AdminQueueService> _logger;
+        private readonly IUserRepository _userRepo;
+        private readonly AppDbContext _db;
         public AdminQueueService(
             ISubmissionQueueRepository queueRepo,
             IOrganizationAssignmentRepository assignmentRepo,
             IAdminEventRepository eventRepo,
             IEmailService emailService,
-            ILogger<AdminQueueService> logger)
+            ILogger<AdminQueueService> logger,
+            IUserRepository userRepo,
+            AppDbContext db)
         {
             _queueRepo      = queueRepo;
             _assignmentRepo = assignmentRepo;
             _eventRepo = eventRepo;
             _emailService = emailService;
             _logger = logger;
+            _userRepo = userRepo;
+            _db = db;
         }
 
         public async Task<(List<QueueItemDto> Items, int Total)> GetQueueAsync(
             Guid? destinationId, string? status, string? entityType, int page, int pageSize, Guid currentUserId)
         {
             // Ako je TO, može da vidi samo stavke za svoje destinacije
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId)
+                ?? throw new UnauthorizedAccessException("Current user was not found.");
+
+            if (user.Role.Name == RoleNames.PlaceOwner)
+            {
+                var ownerItems = await GetOwnerQueueAsync(currentUserId);
+                var filteredOwnerItems = ownerItems
+                    .Where(item =>
+                        (!destinationId.HasValue || item.DestinationId == destinationId.Value) &&
+                        (string.IsNullOrWhiteSpace(status) || item.Status == status) &&
+                        (string.IsNullOrWhiteSpace(entityType) || item.EntityType.Equals(entityType, StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+
+                return (
+                    filteredOwnerItems.Skip((page - 1) * pageSize).Take(pageSize).ToList(),
+                    filteredOwnerItems.Count);
+            }
+
+            var restrictToDestinationIds = await ResolveReviewerDestinationScopeAsync(user, currentUserId);
+
             if (destinationId.HasValue)
             {
-                var hasAccess = await _assignmentRepo.ExistsAsync(currentUserId, destinationId.Value);
-                if (!hasAccess)
+                if (restrictToDestinationIds != null && !restrictToDestinationIds.Contains(destinationId.Value))
                     return (new List<QueueItemDto>(), 0);
             }
 
-            var (items, total) = await _queueRepo.GetPagedAsync(destinationId, status, entityType, page, pageSize);
+            var (items, total) = await _queueRepo.GetPagedAsync(
+                destinationId,
+                status,
+                entityType,
+                page,
+                pageSize,
+                restrictToDestinationIds);
             return (items.Select(MapToDto).ToList(), total);
         }
 
@@ -56,8 +90,7 @@ namespace Explorea.Server.Services.Admin
             if (item.Status != "Pending")
                 throw new Exception("Only pending items can be approved.");
 
-            var hasAccess = await _assignmentRepo.ExistsAsync(reviewerId, item.DestinationId);
-            if (!hasAccess)
+            if (!await CanReviewAsAdminAsync(reviewerId, item.DestinationId))
                 throw new Exception("Access denied.");
 
             item.Status             = "ApprovedByTO";
@@ -85,8 +118,7 @@ namespace Explorea.Server.Services.Admin
             if (item.Status != "Pending")
                 throw new Exception("Only pending items can be rejected.");
 
-            var hasAccess = await _assignmentRepo.ExistsAsync(reviewerId, item.DestinationId);
-            if (!hasAccess)
+            if (!await CanReviewAsAdminAsync(reviewerId, item.DestinationId))
                 throw new Exception("Access denied.");
 
             item.Status             = "RejectedByTO";
@@ -115,6 +147,9 @@ namespace Explorea.Server.Services.Admin
             if (item.Status != "ApprovedByTO")
                 throw new Exception("Item must be approved by TO before owner review.");
 
+            if (!await CanReviewAsOwnerAsync(ownerId, item.LinkedPlaceId))
+                throw new Exception("Access denied.");
+
             item.Status              = "ApprovedByOwner";
             item.ReviewedByOwnerId   = ownerId;
             item.ReviewedByOwnerAt   = DateTimeOffset.UtcNow;
@@ -131,6 +166,9 @@ namespace Explorea.Server.Services.Admin
             if (item.Status != "ApprovedByTO")
                 throw new Exception("Item must be approved by TO before owner review.");
 
+            if (!await CanReviewAsOwnerAsync(ownerId, item.LinkedPlaceId))
+                throw new Exception("Access denied.");
+
             item.Status            = "RejectedByOwner";
             item.ReviewedByOwnerId = ownerId;
             item.ReviewedByOwnerAt = DateTimeOffset.UtcNow;
@@ -138,6 +176,65 @@ namespace Explorea.Server.Services.Admin
 
             await _queueRepo.SaveChangesAsync();
             await NotifySubmitterAsync(item, approved: false, reason);
+        }
+
+        private async Task<IReadOnlyCollection<Guid>?> ResolveReviewerDestinationScopeAsync(
+            Explorea.API.Models.User user,
+            Guid userId)
+        {
+            if (user.Role.Name == RoleNames.SuperAdmin)
+                return null;
+
+            if (user.Role.Name != RoleNames.TouristOrganization)
+                throw new UnauthorizedAccessException("Access denied.");
+
+            if (user.ManagedRegionId.HasValue)
+            {
+                return await _db.Destinations
+                    .IgnoreQueryFilters()
+                    .Where(destination =>
+                        !destination.IsDeleted &&
+                        destination.City != null &&
+                        destination.City.RegionId == user.ManagedRegionId.Value)
+                    .Select(destination => destination.Id)
+                    .ToListAsync();
+            }
+
+            var assignments = await _assignmentRepo.GetByUserIdAsync(userId);
+            return assignments.Select(assignment => assignment.DestinationId).ToList();
+        }
+
+        private async Task<bool> CanReviewAsAdminAsync(Guid reviewerId, Guid destinationId)
+        {
+            var reviewer = await _userRepo.GetByIdWithRoleAsync(reviewerId);
+            if (reviewer?.Role.Name == RoleNames.SuperAdmin)
+                return true;
+
+            if (reviewer?.Role.Name != RoleNames.TouristOrganization)
+                return false;
+
+            if (reviewer.ManagedRegionId.HasValue)
+            {
+                return await _db.Destinations
+                    .IgnoreQueryFilters()
+                    .AnyAsync(destination =>
+                        destination.Id == destinationId &&
+                        !destination.IsDeleted &&
+                        destination.City != null &&
+                        destination.City.RegionId == reviewer.ManagedRegionId.Value);
+            }
+
+            return await _assignmentRepo.ExistsAsync(reviewerId, destinationId);
+        }
+
+        private async Task<bool> CanReviewAsOwnerAsync(Guid ownerId, Guid? linkedPlaceId)
+        {
+            if (!linkedPlaceId.HasValue)
+                return false;
+
+            return await _db.Places
+                .IgnoreQueryFilters()
+                .AnyAsync(place => place.Id == linkedPlaceId.Value && place.CreatedBy == ownerId);
         }
 
         private async Task NotifySubmitterAsync(

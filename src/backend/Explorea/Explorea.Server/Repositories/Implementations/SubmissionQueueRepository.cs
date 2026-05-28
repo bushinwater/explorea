@@ -25,12 +25,25 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         public async Task<(List<SubmissionQueue> Items, int Total)> GetPagedAsync(
-            Guid? destinationId, string? status, string? entityType, int page, int pageSize)
+            Guid? destinationId,
+            string? status,
+            string? entityType,
+            int page,
+            int pageSize,
+            IReadOnlyCollection<Guid>? restrictToDestinationIds = null)
         {
             var query = _db.SubmissionQueue
                 .Include(q => q.Destination)
                 .Include(q => q.SubmittedByUser)
                 .AsQueryable();
+
+            if (restrictToDestinationIds != null)
+            {
+                if (restrictToDestinationIds.Count == 0)
+                    return (new List<SubmissionQueue>(), 0);
+
+                query = query.Where(q => restrictToDestinationIds.Contains(q.DestinationId));
+            }
 
             if (destinationId.HasValue)
                 query = query.Where(q => q.DestinationId == destinationId.Value);
