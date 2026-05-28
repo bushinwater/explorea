@@ -331,13 +331,49 @@ namespace Explorea.Server.Services
 
         public async Task SendSavedItemDeletedEmailAsync(string toEmail, string firstName, string entityName)
         {
+            await SendDeletedEntityReferenceEmailAsync(
+                toEmail,
+                firstName,
+                entityName,
+                wasSaved: true,
+                wasInPlanner: false,
+                plannerNotes: Array.Empty<string>());
+        }
+
+        public async Task SendDeletedEntityReferenceEmailAsync(
+            string toEmail,
+            string firstName,
+            string entityName,
+            bool wasSaved,
+            bool wasInPlanner,
+            IEnumerable<string> plannerNotes)
+        {
             var safeName = WebUtility.HtmlEncode(entityName);
+            var sourceText = (wasSaved, wasInPlanner) switch
+            {
+                (true, true) => "vasoj listi sacuvanih i planeru",
+                (true, false) => "vasoj listi sacuvanih",
+                (false, true) => "vasem planeru",
+                _ => "vasem nalogu"
+            };
+
+            var notes = plannerNotes
+                .Where(note => !string.IsNullOrWhiteSpace(note))
+                .Select(note => note.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var notesBlock = notes.Count == 0
+                ? string.Empty
+                : $"<p>Napomena iz planera: \"{WebUtility.HtmlEncode(string.Join("; ", notes))}\"</p>";
+
             var subject = $"{entityName} je obrisan iz sistema";
             var htmlBody = $@"
                 <html>
                     <body>
                         <p>Zdravo, {WebUtility.HtmlEncode(firstName)}!</p>
-                        <p>{safeName} koji je bio u vasoj listi sacuvanih je obrisan iz sistema.</p>
+                        <p>{safeName} koji je bio u {sourceText} je obrisan iz sistema.</p>
+                        {notesBlock}
                     </body>
                 </html>";
 
