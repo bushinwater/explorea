@@ -111,6 +111,53 @@ namespace Explorea.Server.Controllers
             return Ok(result);
         }
 
+        // GET /api/planner/expired-events
+        [HttpGet("expired-events")]
+        public async Task<IActionResult> GetExpiredEvents()
+        {
+            var userId = await GetCurrentUserId();
+            var plan = await _context.TripPlans
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.Name == "My Planner");
+
+            if (plan == null) return Ok(Array.Empty<object>());
+
+            var now = DateTimeOffset.UtcNow;
+            var todayStart = new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, TimeSpan.Zero);
+            var windowStart = todayStart.AddDays(-1);
+
+            var expiredEventsRaw = await (
+                from item in _context.TripPlanItems
+                join ev in _context.Events on item.EntityId equals ev.Id
+                where item.TripPlanId == plan.Id
+                    && item.EntityType == "event"
+                    && ev.EndDatetime < now
+                    && ev.EndDatetime >= windowStart
+                orderby ev.EndDatetime descending
+                select new
+                {
+                    id = item.Id,
+                    entityId = ev.Id,
+                    entityName = ev.Name,
+                    entitySlug = ev.Slug,
+                    plannedAt = item.PlannedAt,
+                    eventEndedAt = ev.EndDatetime,
+                })
+                .Take(10)
+                .ToListAsync();
+
+            var expiredEvents = expiredEventsRaw.Select(item => new
+            {
+                item.id,
+                item.entityId,
+                item.entityName,
+                item.entitySlug,
+                plannedAt = item.plannedAt.HasValue ? item.plannedAt.Value.ToString("yyyy-MM-dd") : null,
+                item.eventEndedAt,
+            });
+
+            return Ok(expiredEvents);
+        }
+
         // POST /api/planner/add
         [HttpPost("add")]
         public async Task<IActionResult> Add([FromBody] AddPlannerItemRequest request)

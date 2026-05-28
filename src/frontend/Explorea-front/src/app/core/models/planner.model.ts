@@ -20,3 +20,12 @@ export interface PlannerEventRef {
   startDatetime: string;
   endDatetime:   string;
 }
+
+export interface ExpiredPlannerEvent {
+  id:           string;
+  entityId:     string;
+  entityName:   string;
+  entitySlug:   string;
+  plannedAt:    string | null;
+  eventEndedAt: string;
+}

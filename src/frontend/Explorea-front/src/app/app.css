@@ -1,0 +1,163 @@
+.planner-expiry {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.planner-expiry__panel {
+  position: relative;
+  width: min(440px, 100%);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 18px;
+  background: #fff;
+  color: #102033;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  padding: 28px;
+}
+
+.planner-expiry__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.planner-expiry__close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.planner-expiry__icon {
+  display: inline-flex;
+  width: 54px;
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  border-radius: 16px;
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+.planner-expiry__icon .material-icons {
+  font-size: 30px;
+}
+
+.planner-expiry__content {
+  padding-right: 22px;
+}
+
+.planner-expiry__eyebrow {
+  margin: 0 0 6px;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.planner-expiry__title {
+  margin: 0;
+  color: #0f172a;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.planner-expiry__text {
+  margin: 12px 0 0;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.planner-expiry__text strong {
+  color: #0f172a;
+}
+
+.planner-expiry__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.planner-expiry__btn {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.planner-expiry__btn:disabled {
+  cursor: default;
+  opacity: 0.68;
+}
+
+.planner-expiry__btn .material-icons {
+  font-size: 19px;
+}
+
+.planner-expiry__btn--ghost {
+  border-color: #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+}
+
+.planner-expiry__btn--ghost:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.planner-expiry__btn--danger {
+  background: #e11d48;
+  color: #fff;
+}
+
+.planner-expiry__btn--danger:hover:not(:disabled) {
+  background: #be123c;
+}
+
+.planner-expiry__spin {
+  animation: planner-expiry-spin 0.9s linear infinite;
+}
+
+@keyframes planner-expiry-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 520px) {
+  .planner-expiry {
+    align-items: end;
+    padding: 16px;
+  }
+
+  .planner-expiry__panel {
+    padding: 24px;
+  }
+
+  .planner-expiry__actions,
+  .planner-expiry__btn {
+    width: 100%;
+  }
+}

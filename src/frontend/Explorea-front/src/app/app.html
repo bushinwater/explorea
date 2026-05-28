@@ -1,2 +1,56 @@
 <router-outlet></router-outlet>
 <app-chat-bubble></app-chat-bubble>
+
+<div
+  class="planner-expiry"
+  *ngIf="activeExpiredPlannerEvent as event"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="planner-expiry-title"
+>
+  <div class="planner-expiry__panel">
+    <button
+      class="planner-expiry__close"
+      type="button"
+      aria-label="Zatvori"
+      (click)="dismissExpiredPlannerEvent()"
+    >
+      <span class="material-icons">close</span>
+    </button>
+
+    <div class="planner-expiry__icon">
+      <span class="material-icons">event_busy</span>
+    </div>
+
+    <div class="planner-expiry__content">
+      <p class="planner-expiry__eyebrow">Vas planer</p>
+      <h2 id="planner-expiry-title" class="planner-expiry__title">Dogadjaj je istekao</h2>
+      <p class="planner-expiry__text">
+        Dogadjaj <strong>"{{ event.entityName }}"</strong> koji je bio sacuvan u Vasem planeru je istekao.
+      </p>
+    </div>
+
+    <div class="planner-expiry__actions">
+      <button
+        class="planner-expiry__btn planner-expiry__btn--ghost"
+        type="button"
+        [disabled]="removingExpiredPlannerEvent"
+        (click)="searchNewEvents()"
+      >
+        <span class="material-icons">search</span>
+        Pretrazi nove dogadjaje
+      </button>
+      <button
+        class="planner-expiry__btn planner-expiry__btn--danger"
+        type="button"
+        [disabled]="removingExpiredPlannerEvent"
+        (click)="removeExpiredPlannerEvent()"
+      >
+        <span class="material-icons" [class.planner-expiry__spin]="removingExpiredPlannerEvent">
+          {{ removingExpiredPlannerEvent ? 'sync' : 'delete' }}
+        </span>
+        Ukloni iz planera
+      </button>
+    </div>
+  </div>
+</div>
