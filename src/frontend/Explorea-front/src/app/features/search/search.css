@@ -1567,6 +1567,34 @@
   border-color: transparent;
 }
 
+.calendar-cell.range-start,
+.calendar-cell.range-end {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: transparent;
+}
+
+.calendar-cell.in-range {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  border-radius: 4px;
+  color: var(--color-primary);
+}
+
+.planner-range-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  padding-top: 2px;
+}
+
+.planner-range-display strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
 .planner-modal__note {
   width: 100%;
   padding: 8px 10px;

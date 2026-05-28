@@ -202,6 +202,27 @@ namespace Explorea.Server.Controllers
             return StatusCode(201, new { id = item.Id });
         }
 
+        // DELETE /api/planner/entity/{entityType}/{entityId}
+        [HttpDelete("entity/{entityType}/{entityId:guid}")]
+        public async Task<IActionResult> DeleteAllForEntity(string entityType, Guid entityId)
+        {
+            var userId = await GetCurrentUserId();
+            var plan   = await _context.TripPlans
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.Name == "My Planner");
+
+            if (plan == null) return NoContent();
+
+            var items = await _context.TripPlanItems
+                .Where(i => i.TripPlanId == plan.Id &&
+                            i.EntityType == entityType &&
+                            i.EntityId   == entityId)
+                .ToListAsync();
+
+            _context.TripPlanItems.RemoveRange(items);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
         // DELETE /api/planner/items/{id}
         [HttpDelete("items/{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)

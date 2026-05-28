@@ -5,7 +5,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, forkJoin } from 'rxjs';
+import { Subject, forkJoin, Observable } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { TranslateModule } from '@ngx-translate/core';
 import { Sidebar } from '../../layout/shell/sidebar/sidebar';
@@ -161,7 +161,9 @@ export class Search implements OnInit, OnDestroy {
   showPlannerModal      = false;
   plannerModalItem: SearchItem | null = null;
   plannerModalDays: { value: string; label: string }[] = [];
-  plannerModalSelectedDay = '';
+  plannerModalSelectedDays: string[] = [];  // for events (multi-select chips)
+  plannerModalDateFrom = '';               // for non-events (range start)
+  plannerModalDateTo   = '';               // for non-events (range end)
   plannerModalNote        = '';
   plannerModalSaving      = false;
   plannerModalSuccess     = false;
@@ -1107,7 +1109,16 @@ export class Search implements OnInit, OnDestroy {
   selectModalCalDate(cell: { date: Date; isCurrentMonth: boolean }): void {
     if (!cell.isCurrentMonth) return;
     const d = cell.date;
-    this.plannerModalSelectedDay = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (!this.plannerModalDateFrom || this.plannerModalDateTo) {
+      this.plannerModalDateFrom = str;
+      this.plannerModalDateTo   = '';
+    } else if (str >= this.plannerModalDateFrom) {
+      this.plannerModalDateTo = str;
+    } else {
+      this.plannerModalDateFrom = str;
+      this.plannerModalDateTo   = '';
+    }
     this.cdr.detectChanges();
   }
 
@@ -1116,10 +1127,32 @@ export class Search implements OnInit, OnDestroy {
     return date.getFullYear() === t.getFullYear() && date.getMonth() === t.getMonth() && date.getDate() === t.getDate();
   }
 
-  isModalCalSelected(date: Date): boolean {
-    if (!this.plannerModalSelectedDay) return false;
-    const [y, m, d] = this.plannerModalSelectedDay.split('-').map(Number);
+  isModalCalRangeStart(date: Date): boolean {
+    return !!this.plannerModalDateFrom && this.dateMatchesStr(date, this.plannerModalDateFrom);
+  }
+
+  isModalCalRangeEnd(date: Date): boolean {
+    return !!this.plannerModalDateTo && this.dateMatchesStr(date, this.plannerModalDateTo);
+  }
+
+  isModalCalInRange(date: Date): boolean {
+    if (!this.plannerModalDateFrom || !this.plannerModalDateTo) return false;
+    const str = this.dateToStr(date);
+    return str > this.plannerModalDateFrom && str < this.plannerModalDateTo;
+  }
+
+  private dateMatchesStr(date: Date, str: string): boolean {
+    const [y, m, d] = str.split('-').map(Number);
     return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
+  }
+
+  private dateToStr(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  formatRangeDate(str: string): string {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short' });
   }
 
   trackByModalCell(_: number, c: { date: Date }): string { return c.date.toISOString(); }
@@ -1158,10 +1191,14 @@ export class Search implements OnInit, OnDestroy {
       }
     }
 
-    this.plannerModalDays        = days;
-    this.plannerModalSelectedDay = days.length > 0 ? days[0].value : today;
+    this.plannerModalDays = days;
 
-    if (item.entityType !== 'event') {
+    if (item.entityType === 'event') {
+      this.plannerModalSelectedDays = days.length > 0 ? [days[0].value] : [];
+    } else {
+      this.plannerModalSelectedDays = [];
+      this.plannerModalDateFrom = '';
+      this.plannerModalDateTo   = '';
       this.modalCalViewDate = new Date();
       this.buildModalCalGrid();
     }
@@ -1175,16 +1212,37 @@ export class Search implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  togglePlannerModalDay(value: string): void {
+    const idx = this.plannerModalSelectedDays.indexOf(value);
+    this.plannerModalSelectedDays = idx >= 0
+      ? this.plannerModalSelectedDays.filter(d => d !== value)
+      : [...this.plannerModalSelectedDays, value];
+  }
+
   confirmPlannerModal(): void {
     if (!this.plannerModalItem || this.plannerModalSaving) return;
+    const item = this.plannerModalItem;
+
+    if (item.entityType === 'event' && this.plannerModalSelectedDays.length === 0) {
+      this.plannerModalError = 'Izaberi barem jedan dan.';
+      this.cdr.detectChanges();
+      return;
+    }
+    if (item.entityType !== 'event' && !this.plannerModalDateFrom) {
+      this.plannerModalError = 'Izaberi datum.';
+      this.cdr.detectChanges();
+      return;
+    }
+
     this.plannerModalSaving = true;
     this.plannerModalError  = '';
     this.cdr.detectChanges();
 
-    const item = this.plannerModalItem;
-    const obs = item.entityType === 'event'
-      ? this.plannerService.addEntry(item.entity.id, this.plannerModalSelectedDay, this.plannerModalNote)
-      : this.plannerService.addGenericEntry(item.entityType, item.entity.id, this.plannerModalSelectedDay, this.plannerModalNote);
+    const obs: Observable<unknown> = item.entityType === 'event'
+      ? forkJoin(this.plannerModalSelectedDays.map(d =>
+          this.plannerService.addEntry(item.entity.id, d, this.plannerModalNote)))
+      : forkJoin(this.buildDateRange(this.plannerModalDateFrom, this.plannerModalDateTo || this.plannerModalDateFrom)
+          .map(d => this.plannerService.addGenericEntry(item.entityType, item.entity.id, d, this.plannerModalNote)));
 
     obs.subscribe({
       next: () => {
@@ -1199,6 +1257,17 @@ export class Search implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  private buildDateRange(from: string, to: string): string[] {
+    const result: string[] = [];
+    const cur = new Date(from + 'T00:00:00');
+    const end = new Date(to + 'T00:00:00');
+    while (cur <= end) {
+      result.push(this.dateToStr(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    return result;
   }
 
   private lockPageScroll(): void {

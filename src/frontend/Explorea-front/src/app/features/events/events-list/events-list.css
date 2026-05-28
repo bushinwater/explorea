@@ -1218,6 +1218,22 @@
   color: var(--color-primary);
 }
 
+.planner-remove-all-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s;
+}
+
+.planner-remove-all-btn:hover { color: var(--color-danger); }
+.planner-remove-all-btn .material-icons { font-size: 18px; color: inherit; }
+
 .planner-entries {
   display: flex;
   flex-direction: column;
@@ -1299,6 +1315,13 @@
   text-overflow: ellipsis;
 }
 
+.planner-entry__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
 .planner-entry__remove {
   background: none;
   border: none;
@@ -1314,6 +1337,9 @@
 
 .planner-entry__remove:hover { color: var(--color-danger, #e53e3e); }
 .planner-entry__remove .material-icons { font-size: 18px; }
+
+.planner-entry__remove--all { opacity: 0.6; }
+.planner-entry__remove--all:hover { opacity: 1; color: var(--color-danger, #e53e3e); }
 
 /* ══════════════════════════════════════
    DESKTOP PLANNER BUTTON IN EVENT ROW

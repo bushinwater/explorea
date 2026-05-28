@@ -32,4 +32,8 @@ export class PlannerService {
   removeEntry(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/items/${id}`);
   }
+
+  removeAllEntriesForEntity(entityType: string, entityId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/entity/${entityType}/${entityId}`);
+  }
 }

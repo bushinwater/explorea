@@ -513,20 +513,20 @@
       </div>
 
       <ng-container *ngIf="!plannerModalSuccess">
-        <!-- Event with multiple days: day chips -->
+        <!-- Event with multiple days: day chips (multi-select) -->
         <div class="planner-modal__field" *ngIf="plannerModalDays.length > 1">
-          <label class="planner-modal__label">Izaberi dan</label>
+          <label class="planner-modal__label">Izaberi dane</label>
           <div class="planner-modal__day-chips">
             <button
               *ngFor="let d of plannerModalDays"
               class="planner-day-chip"
-              [class.active]="plannerModalSelectedDay === d.value"
-              (click)="plannerModalSelectedDay = d.value"
+              [class.active]="plannerModalSelectedDays.includes(d.value)"
+              (click)="togglePlannerModalDay(d.value)"
               type="button"
             >{{ d.label }}</button>
           </div>
         </div>
-        <!-- Non-event: calendar picker -->
+        <!-- Non-event: date range calendar -->
         <div class="planner-modal__field" *ngIf="plannerModalItem?.entityType !== 'event'">
           <div class="calendar-card">
             <div class="calendar-header">
@@ -545,11 +545,18 @@
                 class="calendar-cell"
                 [class.other-month]="!cell.isCurrentMonth"
                 [class.today]="isModalCalToday(cell.date)"
-                [class.selected]="isModalCalSelected(cell.date)"
+                [class.range-start]="isModalCalRangeStart(cell.date)"
+                [class.range-end]="isModalCalRangeEnd(cell.date)"
+                [class.in-range]="isModalCalInRange(cell.date)"
                 (click)="selectModalCalDate(cell)"
                 type="button"
               >{{ cell.date.getDate() }}</button>
             </div>
+          </div>
+          <div class="planner-range-display">
+            <span>Od: <strong>{{ plannerModalDateFrom ? formatRangeDate(plannerModalDateFrom) : '—' }}</strong></span>
+            <span class="material-icons" style="font-size:14px; opacity:0.5">arrow_forward</span>
+            <span>Do: <strong>{{ plannerModalDateTo ? formatRangeDate(plannerModalDateTo) : (plannerModalDateFrom ? 'Izaberi kraj' : '—') }}</strong></span>
           </div>
         </div>
 

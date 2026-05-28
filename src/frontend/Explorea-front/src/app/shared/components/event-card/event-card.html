@@ -10,7 +10,7 @@
     <div class="event-card__info">
       <span class="event-card__date">
         <span class="material-icons">calendar_today</span>
-        {{ formatDate(event.startDatetime) }}
+        {{ formatDateRange(event.startDatetime, event.endDatetime) }}
         <span class="event-card__time">{{ formatTime(event.startDatetime) }} – {{ formatTime(event.endDatetime) }}</span>
       </span>
       <span class="event-card__location">
@@ -37,7 +37,7 @@
     <div class="event-card__info">
       <span class="event-card__date">
         <span class="material-icons">calendar_today</span>
-        {{ formatDate(event.startDatetime) }}
+        {{ formatDateRange(event.startDatetime, event.endDatetime) }}
       </span>
       <span class="event-card__location">
         <span class="material-icons">location_on</span>
