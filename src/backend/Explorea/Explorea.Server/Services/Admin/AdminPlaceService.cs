@@ -244,6 +244,9 @@ namespace Explorea.Server.Services.Admin
 
             if (user?.Role.Name == RoleNames.PlaceOwner)
             {
+                if (!dto.DestinationId.HasValue)
+                    throw new UnauthorizedAccessException("Destination is required for owner place submissions.");
+
                 approvalStatus = "pending";
             }
             else if (user?.Role.Name == RoleNames.TouristOrganization)
@@ -282,6 +285,7 @@ namespace Explorea.Server.Services.Admin
                 Email = dto.Email,
                 WebsiteUrl = dto.WebsiteUrl,
                 IsFeatured = dto.IsFeatured,
+                ExtraFilters = dto.ExtraFilters != null ? JsonSerializer.Serialize(dto.ExtraFilters) : null,
                 ApprovalStatus = approvalStatus,
                 CreatedAt = now,
                 UpdatedAt = now,
@@ -347,6 +351,39 @@ namespace Explorea.Server.Services.Admin
 
             await _placeRepo.AddAsync(place);
             await _placeRepo.SaveChangesAsync();
+
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                await _queueRepo.AddAsync(new SubmissionQueue
+                {
+                    Id = Guid.NewGuid(),
+                    EntityType = "place",
+                    EntityId = place.Id,
+                    DestinationId = place.DestinationId!.Value,
+                    Status = "Pending",
+                    SubmittedByUserId = createdBy,
+                    SubmittedAt = now,
+                    RequestPayload = JsonSerializer.Serialize(new
+                    {
+                        place.Name,
+                        place.Description,
+                        place.Address,
+                        place.Latitude,
+                        place.Longitude,
+                        place.PriceRange,
+                        place.Phone,
+                        place.Email,
+                        place.WebsiteUrl,
+                        place.TypeId,
+                        place.CityId,
+                        place.CountryId,
+                        place.DestinationId,
+                        place.ExtraFilters
+                    })
+                });
+
+                await _queueRepo.SaveChangesAsync();
+            }
 
             var created = await _placeRepo.GetAdminByIdAsync(place.Id);
             return MapToDetailDto(created!);

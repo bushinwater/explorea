@@ -106,6 +106,17 @@ namespace Explorea.Server.Services.Admin
                 eventEntity.UpdatedBy = reviewerId;
             }
 
+            var placeEntity = await _db.Places
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(place => place.Id == item.EntityId);
+
+            if (placeEntity != null)
+            {
+                placeEntity.ApprovalStatus = "approved";
+                placeEntity.UpdatedAt = DateTimeOffset.UtcNow;
+                placeEntity.UpdatedBy = reviewerId;
+            }
+
             await _queueRepo.SaveChangesAsync();
             await NotifySubmitterAsync(item, approved: true, reason: null);
         }
@@ -133,6 +144,17 @@ namespace Explorea.Server.Services.Admin
                 eventEntity.Visibility = "rejected";
                 eventEntity.UpdatedAt = DateTimeOffset.UtcNow;
                 eventEntity.UpdatedBy = reviewerId;
+            }
+
+            var placeEntity = await _db.Places
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(place => place.Id == item.EntityId);
+
+            if (placeEntity != null)
+            {
+                placeEntity.ApprovalStatus = "rejected";
+                placeEntity.UpdatedAt = DateTimeOffset.UtcNow;
+                placeEntity.UpdatedBy = reviewerId;
             }
 
             await _queueRepo.SaveChangesAsync();
@@ -276,6 +298,18 @@ namespace Explorea.Server.Services.Admin
                 var eventEntity = await _eventRepo.GetAdminByIdAsync(item.EntityId);
                 if (!string.IsNullOrWhiteSpace(eventEntity?.Name))
                     return eventEntity.Name;
+            }
+
+            if (item.EntityType.Equals("place", StringComparison.OrdinalIgnoreCase))
+            {
+                var placeName = await _db.Places
+                    .IgnoreQueryFilters()
+                    .Where(place => place.Id == item.EntityId)
+                    .Select(place => place.Name)
+                    .FirstOrDefaultAsync();
+
+                if (!string.IsNullOrWhiteSpace(placeName))
+                    return placeName;
             }
 
             if (!string.IsNullOrWhiteSpace(item.RequestPayload))
