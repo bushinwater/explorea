@@ -35,6 +35,8 @@ interface ApiEventItem {
   type: string | null;
   city: string | null;
   destination: string | null;
+  destinationId: string | null;
+  placeId: string | null;
   startDatetime: string;
   endDatetime: string;
   price: number | null;
@@ -135,8 +137,10 @@ export class AdminEventsService {
     );
   }
 
-  getCities(): Observable<EventFilterOption<number>[]> {
-    return this.http.get<ApiLookupItem[]>('/api/cities').pipe(
+  getCities(regionId?: number): Observable<EventFilterOption<number>[]> {
+    let params = new HttpParams();
+    if (regionId != null) params = params.set('regionId', regionId);
+    return this.http.get<ApiLookupItem[]>('/api/cities', { params }).pipe(
       map((items) =>
         items.map((item) => ({
           value: item.id,
@@ -159,10 +163,13 @@ export class AdminEventsService {
   }
 
   getDestinations(regionId?: number): Observable<EventFilterOption<string>[]> {
-    let params = new HttpParams();
+    let params = new HttpParams().set('pageSize', '200');
     if (regionId != null) params = params.set('regionId', regionId);
-    return this.http.get<ApiDestinationLookupItem[]>('/api/destinations', { params }).pipe(
-      map((items) => items.map((item) => ({ value: item.id, label: item.name }))),
+    return this.http.get<any>('/api/admin/destinations', { params }).pipe(
+      map((res: any) => {
+        const items: any[] = Array.isArray(res) ? res : (res.items ?? []);
+        return items.map((item: any) => ({ value: String(item.id), label: item.name }));
+      }),
       catchError(() => of([])),
     );
   }
@@ -355,6 +362,10 @@ export class AdminEventsService {
       params = params.append('extraFilters', `${key}:${value}`);
     }
 
+    if (filters.sortBy !== 'none') {
+      params = params.set('sortBy', filters.sortBy);
+    }
+
     return this.http.get<ApiEventsResponse>('/api/admin/events', { params }).pipe(
       map((res) => ({
         total: res.total,
@@ -492,11 +503,12 @@ export class AdminEventsService {
       name: e.name,
       organizer: '—',
       type: this.mapType(e.type),
+      typeName: e.type,
       typeId: null,
       city: e.city,
       cityId: null,
-      destinationId: null,
-      placeId: null,
+      destinationId: e.destinationId ?? null,
+      placeId: e.placeId ?? null,
       venue: e.destination,
       startDate: e.startDatetime,
       endDate: e.endDatetime,
@@ -530,6 +542,7 @@ export class AdminEventsService {
       name: q.destinationName,
       organizer: q.submittedByName,
       type: null,
+      typeName: null,
       typeId: null,
       city: null,
       cityId: null,
@@ -575,6 +588,7 @@ export class AdminEventsService {
       name: e.name,
       organizer: base?.organizer ?? '—',
       type: this.mapType(e.type),
+      typeName: e.type,
       typeId: e.typeId ?? null,
       city: e.city,
       cityId: e.cityId ?? null,

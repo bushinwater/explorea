@@ -1,7 +1,7 @@
 <div class="activity-card">
   <div class="activity-card__image-wrap">
     <img [src]="activity.previewImageUrl" [alt]="activity.name" class="activity-card__image" loading="lazy" />
-    <span class="activity-card__category">{{ activity.category.name }}</span>
+    <span class="activity-card__category">{{ activity.category?.name }}</span>
   </div>
   <div class="activity-card__body">
     <h3 class="activity-card__name">{{ activity.name }}</h3>
@@ -13,7 +13,7 @@
       </span>
     </div>
     <div class="activity-card__footer">
-      <span class="activity-card__difficulty" [class]="'diff-' + activity.difficultyLevel.toLowerCase()">
+      <span class="activity-card__difficulty" [class]="'diff-' + (activity.difficultyLevel?.toLowerCase() ?? '')">
         {{ activity.difficultyLevel }}
       </span>
       <span *ngIf="activity.price" class="activity-card__price">{{ activity.price | number }} RSD</span>

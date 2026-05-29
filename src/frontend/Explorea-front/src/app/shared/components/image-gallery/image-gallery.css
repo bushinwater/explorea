@@ -123,6 +123,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: none;
 }
 
 .lightbox__img {
@@ -130,6 +131,9 @@
   max-height: 85vh;
   object-fit: contain;
   border-radius: 8px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .lightbox__close,

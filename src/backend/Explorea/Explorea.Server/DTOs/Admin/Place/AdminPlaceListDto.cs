@@ -13,6 +13,7 @@ namespace Explorea.API.DTOs.Admin.Place
         public string? Destination { get; set; }
         public decimal AvgRating { get; set; }
         public bool IsFeatured { get; set; }
+        public bool HasRecentActivity { get; set; }
         public string? Address { get; set; }
         public string Status { get; set; } = "approved";
         public Guid? CreatedBy { get; set; }

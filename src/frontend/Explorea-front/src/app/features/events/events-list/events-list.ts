@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
-import { Subject, Subscription } from 'rxjs';
+import { Subject, Subscription, forkJoin } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
@@ -88,7 +88,7 @@ export class EventsListPage implements OnInit, OnDestroy {
   showAddModal      = false;
   addModalRef: PlannerEventRef | null = null;
   addModalDays: { value: string; label: string }[] = [];
-  addModalSelectedDay = '';
+  addModalSelectedDays: string[] = [];
   addModalNote        = '';
   addModalSaving      = false;
   addModalSuccess     = false;
@@ -96,6 +96,7 @@ export class EventsListPage implements OnInit, OnDestroy {
 
   readonly DAY_LABELS = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub', 'Ned'];
 
+  private lockedScrollY = 0;
   private querySubject = new Subject<string>();
   private subs = new Subscription();
 
@@ -110,7 +111,7 @@ export class EventsListPage implements OnInit, OnDestroy {
   ) {}
 
   openAiRecommendation(): void {
-    this.chatBubbleService.openWithMessage('Koji dogadjaji su nadolazeći i koje mi preporučuješ?');
+    this.chatBubbleService.openWithMessage('Predloži mi događaje za ovaj vikend');
   }
 
   ngOnInit(): void {
@@ -236,8 +237,8 @@ export class EventsListPage implements OnInit, OnDestroy {
       items = items.filter(e =>
         fuzzyIncludes(q, e.name.toLowerCase()) ||
         fuzzyIncludes(q, (e.address ?? '').toLowerCase()) ||
-        fuzzyIncludes(q, e.city.name.toLowerCase()) ||
-        fuzzyIncludes(q, e.type.name.toLowerCase()),
+        fuzzyIncludes(q, (e.city?.name ?? '').toLowerCase()) ||
+        fuzzyIncludes(q, (e.type?.name ?? '').toLowerCase()),
       );
     }
 
@@ -455,6 +456,10 @@ export class EventsListPage implements OnInit, OnDestroy {
     return new Date(d).toLocaleTimeString('sr-Latn-RS', { hour: '2-digit', minute: '2-digit' });
   }
 
+  eventLocationLabel(event: EventCardModel): string {
+    return event.address || event.city?.name || 'Lokacija nije navedena';
+  }
+
   sortIcon(mode: SortMode): string {
     if (this.sortMode !== mode) return '';
     return this.sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward';
@@ -576,11 +581,13 @@ export class EventsListPage implements OnInit, OnDestroy {
   openDeleteConfirm(id: string): void {
     this.confirmDeleteId = id;
     this.confirmDeleteSaving = false;
+    this.lockPageScroll();
     this.cdr.detectChanges();
   }
 
   cancelDeleteConfirm(): void {
     this.confirmDeleteId = null;
+    this.unlockPageScroll();
     this.cdr.detectChanges();
   }
 
@@ -593,6 +600,7 @@ export class EventsListPage implements OnInit, OnDestroy {
         this.plannerEntries = this.plannerEntries.filter(e => e.id !== this.confirmDeleteId);
         this.confirmDeleteId = null;
         this.confirmDeleteSaving = false;
+        this.unlockPageScroll();
         this.loadPlannerDots();
         this.cdr.detectChanges();
       },
@@ -612,6 +620,62 @@ export class EventsListPage implements OnInit, OnDestroy {
       },
       error: () => {},
     });
+  }
+
+  removeEntityFromAllDays(entityType: string, entityId: string): void {
+    this.plannerService.removeAllEntriesForEntity(entityType, entityId).subscribe({
+      next: () => {
+        this.plannerEntries = this.plannerEntries.filter(e => !(e.entityType === entityType && e.entityId === entityId));
+        this.loadPlannerDots();
+        this.cdr.detectChanges();
+      },
+      error: () => {},
+    });
+  }
+
+  removeAllEntries(): void {
+    if (this.plannerEntries.length === 0) return;
+    forkJoin(this.plannerEntries.map(e => this.plannerService.removeEntry(e.id))).subscribe({
+      next: () => {
+        this.plannerEntries = [];
+        this.loadPlannerDots();
+        this.cdr.detectChanges();
+      },
+      error: () => {},
+    });
+  }
+
+  formatDateRange(start: string, end: string): string {
+    const s = new Date(start);
+    const e = end ? new Date(end) : s;
+    const same = s.getFullYear() === e.getFullYear() && s.getMonth() === e.getMonth() && s.getDate() === e.getDate();
+    if (same) return s.toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short', year: 'numeric' });
+    if (s.getFullYear() === e.getFullYear()) {
+      return `${s.toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short' })} – ${e.toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    }
+    return `${s.toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short', year: 'numeric' })} – ${e.toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  }
+
+  private lockPageScroll(): void {
+    if (document.body.style.position === 'fixed') return;
+    this.lockedScrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.lockedScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockPageScroll(): void {
+    if (document.body.style.position !== 'fixed') return;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo({ top: this.lockedScrollY, behavior: 'instant' as ScrollBehavior });
   }
 
   isPlannerSelected(date: Date): boolean {
@@ -666,21 +730,30 @@ export class EventsListPage implements OnInit, OnDestroy {
       });
     }
 
-    this.addModalDays        = days;
-    this.addModalSelectedDay = days[0].value;
-    this.showAddModal        = true;
+    this.addModalDays         = days;
+    this.addModalSelectedDays = days.length > 0 ? [days[0].value] : [];
+    this.showAddModal         = true;
+    this.lockPageScroll();
     this.cdr.detectChanges();
   }
 
   cancelAddModal(): void {
     this.showAddModal = false;
+    this.unlockPageScroll();
     this.cdr.detectChanges();
+  }
+
+  toggleAddModalDay(value: string): void {
+    const idx = this.addModalSelectedDays.indexOf(value);
+    this.addModalSelectedDays = idx >= 0
+      ? this.addModalSelectedDays.filter(d => d !== value)
+      : [...this.addModalSelectedDays, value];
   }
 
   confirmAddModal(): void {
     if (!this.addModalRef || this.addModalSaving) return;
-    if (!this.addModalSelectedDay) {
-      this.addModalError = 'Izaberi dan.';
+    if (this.addModalSelectedDays.length === 0) {
+      this.addModalError = 'Izaberi barem jedan dan.';
       this.cdr.detectChanges();
       return;
     }
@@ -688,7 +761,10 @@ export class EventsListPage implements OnInit, OnDestroy {
     this.addModalError  = '';
     this.cdr.detectChanges();
 
-    this.plannerService.addEntry(this.addModalRef.id, this.addModalSelectedDay, this.addModalNote).subscribe({
+    const ref = this.addModalRef;
+    forkJoin(
+      this.addModalSelectedDays.map(d => this.plannerService.addEntry(ref.id, d, this.addModalNote))
+    ).subscribe({
       next: () => {
         this.addModalSaving  = false;
         this.addModalSuccess = true;
@@ -696,6 +772,7 @@ export class EventsListPage implements OnInit, OnDestroy {
         this.cdr.detectChanges();
         setTimeout(() => {
           this.showAddModal = false;
+          this.unlockPageScroll();
           this.cdr.detectChanges();
         }, 900);
       },

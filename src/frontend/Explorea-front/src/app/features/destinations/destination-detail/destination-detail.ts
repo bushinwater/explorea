@@ -46,6 +46,7 @@ import { RatingStats } from '../../../shared/components/rating-stats/rating-stat
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { ReviewDto } from '../../../core/models/home.model';
 import { ShareButton } from '../../../shared/components/share-button/share-button';
+import { AddToPlannerModal } from '../../../shared/components/add-to-planner-modal/add-to-planner-modal';
 
 type DetailTab = 'places' | 'events' | 'activities' | 'reviews';
 type TabItem = PlaceCard | EventCard | ActivityCard;
@@ -53,7 +54,7 @@ type TabItem = PlaceCard | EventCard | ActivityCard;
 @Component({
   selector: 'app-destination-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel, ShareButton],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel, ShareButton, AddToPlannerModal],
   templateUrl: './destination-detail.html',
   styleUrls: ['./destination-detail.css']
 })
@@ -90,13 +91,17 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
 
   lightboxOpen = false;
   selectedImageIndex = 0;
+  private lightboxReady = false;
 
   isSaved = false;
   isSavedLoading = false;
+  showPlannerModal = false;
 
   showAllOpen = false;
   reviewsPanelOpen = false;
   private savedScrollY = 0;
+  private lightboxScrollY = 0;
+  private lightboxLockedBody = false;
 
   hasReviewed = false;
   reviewFormOpen = false;
@@ -133,7 +138,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     this.marker?.remove();
     this.map?.remove();
     this.themeObserver?.disconnect();
-    document.body.style.overflow = '';
+    this.unlockLightboxScroll();
   }
 
   private captureTitle(): void {
@@ -153,6 +158,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
 
   private loadDestination(slug: string): void {
     this.requestSub?.unsubscribe();
+    window.scrollTo({ top: 0, behavior: 'auto' });
 
     this.isLoading = true;
     this.error = null;
@@ -160,6 +166,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     this.selectedTab = 'places';
     this.lightboxOpen = false;
     this.selectedImageIndex = 0;
+    this.lightboxReady = false;
     this.showAllOpen = false;
     this.reviewFormOpen = false;
     this.titleCaptured = false;
@@ -181,6 +188,10 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
         this.popularityService.track('destination', data.id);
         this.cdr.detectChanges();
         this.captureTitle();
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'auto' });
+          this.lightboxReady = true;
+        }, 300);
         setTimeout(() => this.initMap(), 100);
         if (this.authService.isLoggedIn()) {
           this.savedService.check('destination', data.id).subscribe({
@@ -502,14 +513,15 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   }
 
   openLightbox(index: number): void {
+    if (!this.lightboxReady) return;
     this.selectedImageIndex = index;
     this.lightboxOpen = true;
-    document.body.style.overflow = 'hidden';
+    this.lockLightboxScroll();
   }
 
   closeLightbox(): void {
     this.lightboxOpen = false;
-    document.body.style.overflow = '';
+    this.unlockLightboxScroll();
   }
 
   prevImage(): void {
@@ -704,8 +716,42 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     return this.selectedTab === 'activities';
   }
 
+  private lockLightboxScroll(): void {
+    if (document.body.style.position === 'fixed') return;
+
+    this.lightboxScrollY = window.scrollY;
+    this.lightboxLockedBody = true;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.lightboxScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockLightboxScroll(): void {
+    if (!this.lightboxLockedBody) return;
+
+    this.lightboxLockedBody = false;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo({ top: this.lightboxScrollY, behavior: 'instant' as ScrollBehavior });
+  }
+
   goBack(): void {
     this.location.back();
+  }
+
+  openPlannerModal(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+    this.showPlannerModal = true;
   }
 
   @HostListener('document:keydown.escape')

@@ -86,6 +86,71 @@
   background: var(--color-surface-3);
 }
 
+/* ===== SEARCH DROPDOWN ===== */
+.header__search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 300;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.header__search-backdrop {
+  z-index: 299;
+}
+
+.header__search-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  transition: background 0.12s;
+}
+.header__search-item:last-child { border-bottom: 0; }
+.header__search-item:hover,
+.header__search-item--focused { background: var(--color-surface-3); }
+
+.header__search-item__icon {
+  font-size: 18px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.header__search-item__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.header__search-item__name {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header__search-item__type {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
 /* ===== RIGHT ===== */
 .header__right {
   display: flex;
@@ -314,16 +379,30 @@
   position: relative;
   width: 36px;
   height: 36px;
+  padding: 0;
+  border: none;
   border-radius: var(--radius-full);
   background: var(--color-primary);
   color: #fff;
   font-size: var(--font-size-sm);
   font-weight: 700;
+  font-family: inherit;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.18s, transform 0.18s;
+}
+
+.header__avatar:hover {
+  box-shadow: 0 0 0 3px var(--color-primary-muted);
+}
+
+.header__avatar:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .header__avatar-img {

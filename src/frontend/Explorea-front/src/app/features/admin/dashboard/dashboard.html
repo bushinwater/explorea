@@ -33,7 +33,20 @@
     </div>
   }
 
-  @for (row of visibleRows(); track row.id) {
+  <!-- New-row-top drop zone — create a new row above all existing rows -->
+  <div
+    id="new-row-zone-top"
+    cdkDropList
+    cdkDropListOrientation="horizontal"
+    [cdkDropListData]="newRowZoneTop"
+    (cdkDropListDropped)="onDrop($event)"
+    class="new-row-zone new-row-zone--top"
+    [class.new-row-zone--active]="dragging()">
+    <span class="material-icons">vertical_align_top</span>
+    <span>{{ ui.t('dashboard.row.new_top') }}</span>
+  </div>
+
+  @for (row of visibleRows(); track row.id; let rowIdx = $index) {
     <div
       [id]="row.id"
       cdkDropList
@@ -41,6 +54,15 @@
       [cdkDropListData]="row.items"
       (cdkDropListDropped)="onDrop($event)"
       class="dash-row">
+
+      <div class="dash-row__controls" *ngIf="!dragging()">
+        <button class="dash-row__ctrl-btn" [disabled]="rowIdx === 0" (click)="moveRowUp(rowIdx)" [title]="ui.t('dashboard.row.move_up')">
+          <span class="material-icons">keyboard_arrow_up</span>
+        </button>
+        <button class="dash-row__ctrl-btn" [disabled]="rowIdx === visibleRows().length - 1" (click)="moveRowDown(rowIdx)" [title]="ui.t('dashboard.row.move_down')">
+          <span class="material-icons">keyboard_arrow_down</span>
+        </button>
+      </div>
 
       @for (widget of row.items; track widget.id) {
 

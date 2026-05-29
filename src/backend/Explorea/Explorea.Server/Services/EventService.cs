@@ -107,13 +107,9 @@ namespace Explorea.Server.Services
                         Name = entity.Type.Name
                     },
 
-                City = entity.City == null
-                    ? null
-                    : new CityRefDto
-                    {
-                        Id = entity.City.Id,
-                        Name = entity.City.Name
-                    },
+                City = (entity.City ?? entity.Destination?.City) is { } city
+                    ? new CityRefDto { Id = city.Id, Name = city.Name }
+                    : null,
 
                 Country = entity.Country == null
                     ? null
@@ -300,13 +296,9 @@ namespace Explorea.Server.Services
                         Name = e.Type.Name
                     },
 
-                City = e.City == null
-                    ? null
-                    : new CityRefDto
-                    {
-                        Id = e.City.Id,
-                        Name = e.City.Name
-                    },
+                City = (e.City ?? e.Destination?.City) is { } eCity
+                    ? new CityRefDto { Id = eCity.Id, Name = eCity.Name }
+                    : null,
 
                 Country = e.Country == null
                     ? null

@@ -138,7 +138,8 @@ namespace Explorea.Server.Services.Admin
             Guid? destinationId, int? cityId, int? typeId,
             DateTimeOffset? startFrom, DateTimeOffset? startTo,
             List<string>? extraFilters,
-            int page, int pageSize, Guid currentUserId)
+            int page, int pageSize, Guid currentUserId,
+            string? sortBy = null)
         {
             var (restrictToDestinationIds, restrictToCityIds) =
                 await GetAccessRestrictionsAsync(currentUserId);
@@ -149,7 +150,7 @@ namespace Explorea.Server.Services.Admin
                 startFrom, startTo,
                 extraFilters,
                 restrictToDestinationIds, restrictToCityIds,
-                page, pageSize);
+                page, pageSize, sortBy);
 
             return (items.Select(MapToListDto).ToList(), total);
         }
@@ -170,7 +171,7 @@ namespace Explorea.Server.Services.Admin
                 .IgnoreQueryFilters()
                 .Include(e => e.City)
                 .Include(e => e.Type)
-                .Include(e => e.Destination)
+                .Include(e => e.Destination).ThenInclude(d => d!.City)
                 .Include(e => e.Images)
                 .Where(e => e.IsDeleted)
                 .AsQueryable();
@@ -240,9 +241,10 @@ namespace Explorea.Server.Services.Admin
         {
             var user = await _userRepo.GetByIdWithRoleAsync(createdBy);
             if (user?.Role.Name != RoleNames.SuperAdmin &&
+                user?.Role.Name != RoleNames.TouristOrganization &&
                 user?.Role.Name != RoleNames.PlaceOwner)
             {
-                throw new UnauthorizedAccessException("Only SuperAdmin and PlaceOwner can create events.");
+                throw new UnauthorizedAccessException("Only SuperAdmin, TouristOrganization and PlaceOwner can create events.");
             }
 
             Place? linkedPlace = null;
@@ -269,9 +271,17 @@ namespace Explorea.Server.Services.Admin
                 if (!resolvedDestinationId.HasValue)
                     throw new UnauthorizedAccessException("Destination is required for owner event submissions.");
             }
-
             var now = DateTimeOffset.UtcNow;
             var visibility = user.Role.Name == RoleNames.PlaceOwner ? "pending" : "published";
+
+            int? resolvedCityId = dto.CityId;
+            if (!resolvedCityId.HasValue && dto.DestinationId.HasValue)
+            {
+                resolvedCityId = await _db.Destinations
+                    .Where(d => d.Id == dto.DestinationId.Value)
+                    .Select(d => (int?)d.CityId)
+                    .FirstOrDefaultAsync();
+            }
 
             var ev = new Event
             {
@@ -287,7 +297,7 @@ namespace Explorea.Server.Services.Admin
                 Latitude      = dto.Latitude,
                 Longitude     = dto.Longitude,
                 TicketUrl     = dto.TicketUrl,
-                CityId        = dto.CityId,
+                CityId        = resolvedCityId,
                 CountryId     = dto.CountryId,
                 DestinationId = resolvedDestinationId,
                 PlaceId       = dto.PlaceId,
@@ -381,7 +391,16 @@ namespace Explorea.Server.Services.Admin
             if (dto.TicketUrl     != null) { AddChangedField(changedFields, "link za karte", target.TicketUrl, dto.TicketUrl); target.TicketUrl = dto.TicketUrl; }
             if (dto.CityId        != null) { AddChangedField(changedFields, "grad", target.CityId, dto.CityId); target.CityId = dto.CityId; }
             if (dto.CountryId     != null) { AddChangedField(changedFields, "drzava", target.CountryId, dto.CountryId); target.CountryId = dto.CountryId; }
-            if (dto.DestinationId != null) { AddChangedField(changedFields, "destinacija", target.DestinationId, dto.DestinationId); target.DestinationId = dto.DestinationId; }
+            if (dto.DestinationId != null)
+            {
+                AddChangedField(changedFields, "destinacija", target.DestinationId, dto.DestinationId);
+                target.DestinationId = dto.DestinationId;
+                var destCityId = await _db.Destinations
+                    .Where(d => d.Id == dto.DestinationId.Value)
+                    .Select(d => (int?)d.CityId)
+                    .FirstOrDefaultAsync();
+                if (destCityId.HasValue) target.CityId = destCityId;
+            }
             if (dto.PlaceId       != null) { AddChangedField(changedFields, "objekat", target.PlaceId, dto.PlaceId); target.PlaceId = dto.PlaceId; }
             if (dto.IsFeatured    != null) { AddChangedField(changedFields, "istaknuto", target.IsFeatured, dto.IsFeatured.Value); target.IsFeatured = dto.IsFeatured.Value; }
             if (dto.ExtraFilters  != null) target.ExtraFilters = JsonSerializer.Serialize(dto.ExtraFilters);
@@ -502,8 +521,10 @@ namespace Explorea.Server.Services.Admin
             Slug           = e.Slug,
             PreviewImageUrl= e.Images.OrderBy(i => i.SortOrder).FirstOrDefault()?.ImageUrl,
             Type           = e.Type?.Name,
-            City           = e.City?.Name,
+            City           = e.City?.Name ?? e.Destination?.City?.Name,
             Destination    = e.Destination?.Name,
+            DestinationId  = e.DestinationId,
+            PlaceId        = e.PlaceId,
             StartDatetime  = e.StartDatetime,
             EndDatetime    = e.EndDatetime,
             Price          = e.Price,

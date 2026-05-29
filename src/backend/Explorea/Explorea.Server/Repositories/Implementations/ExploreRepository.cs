@@ -4,6 +4,8 @@ using Explorea.Server.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
+using Npgsql;
+using NpgsqlTypes;
 using Activity = Explorea.API.Models.Activity;
 
 namespace Explorea.Server.Repositories.Implementations
@@ -21,7 +23,7 @@ namespace Explorea.Server.Repositories.Implementations
 
         public async Task<List<Destination>> GetNearbyDestinationsAsync(
             double? lat, double? lng, double radiusKm, int limit, decimal? minRating,
-            List<int>? destinationTypeIds = null, List<string>? extraFilters = null)
+            List<int>? destinationTypeIds = null, List<string>? extraFilters = null, int? regionId = null)
         {
             var query = _db.Destinations
                 .AsNoTracking()
@@ -41,11 +43,17 @@ namespace Explorea.Server.Repositories.Implementations
             if (destinationTypeIds?.Count > 0)
                 query = query.Where(d => d.TypeId != null && destinationTypeIds.Contains(d.TypeId.Value));
 
+            if (regionId.HasValue)
+                query = query.Where(d => d.City != null && d.City.RegionId == regionId.Value);
+
             var extraFiltersDict = ParseExtraFilters(extraFilters);
             foreach (var (key, value) in extraFiltersDict)
             {
                 var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-                query = query.Where(d => d.ExtraFilters != null && EF.Functions.JsonContains(d.ExtraFilters, snippet));
+                var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+                var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
+                    "SELECT id FROM destinations WHERE extra_filters @> @snippet", param).ToListAsync();
+                query = query.Where(d => matchingIds.Contains(d.Id));
             }
 
             return await query
@@ -59,7 +67,7 @@ namespace Explorea.Server.Repositories.Implementations
         public async Task<List<Place>> GetNearbyPlacesAsync(
             double? lat, double? lng, double radiusKm, int limit, decimal? minRating, bool? openNow,
             List<int>? placeTypeIds = null, decimal? minPrice = null, decimal? maxPrice = null,
-            List<string>? extraFilters = null)
+            List<string>? extraFilters = null, int? regionId = null)
         {
             var query = _db.Places
                 .AsNoTracking()
@@ -80,11 +88,17 @@ namespace Explorea.Server.Repositories.Implementations
             if (placeTypeIds?.Count > 0)
                 query = query.Where(p => p.TypeId != null && placeTypeIds.Contains(p.TypeId.Value));
 
+            if (regionId.HasValue)
+                query = query.Where(p => p.City != null && p.City.RegionId == regionId.Value);
+
             var extraFiltersDict = ParseExtraFilters(extraFilters);
             foreach (var (key, value) in extraFiltersDict)
             {
                 var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-                query = query.Where(p => p.ExtraFilters != null && EF.Functions.JsonContains(p.ExtraFilters, snippet));
+                var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+                var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
+                    "SELECT id FROM places WHERE extra_filters @> @snippet", param).ToListAsync();
+                query = query.Where(p => matchingIds.Contains(p.Id));
             }
 
             if (openNow == true)
@@ -111,7 +125,7 @@ namespace Explorea.Server.Repositories.Implementations
 
         public async Task<List<Event>> GetNearbyEventsAsync(
             double? lat, double? lng, double radiusKm, int limit,
-            decimal? minRating = null, List<int>? eventTypeIds = null, decimal? minPrice = null, decimal? maxPrice = null)
+            decimal? minRating = null, List<int>? eventTypeIds = null, decimal? minPrice = null, decimal? maxPrice = null, int? regionId = null)
         {
             var now = DateTimeOffset.UtcNow;
 
@@ -140,6 +154,9 @@ namespace Explorea.Server.Repositories.Implementations
             if (maxPrice.HasValue)
                 query = query.Where(e => e.Price == null || e.Price <= maxPrice.Value);
 
+            if (regionId.HasValue)
+                query = query.Where(e => e.City != null && e.City.RegionId == regionId.Value);
+
             return await query
                 .OrderByDescending(e => e.IsFeatured)
                 .ThenBy(e => e.StartDatetime)
@@ -150,7 +167,7 @@ namespace Explorea.Server.Repositories.Implementations
 
         public async Task<List<Activity>> GetNearbyActivitiesAsync(
             double? lat, double? lng, double radiusKm, int limit, decimal? minRating,
-            List<int>? activityCategoryIds = null)
+            List<int>? activityCategoryIds = null, int? regionId = null)
         {
             var query = _db.Activities
                 .AsNoTracking()
@@ -170,6 +187,9 @@ namespace Explorea.Server.Repositories.Implementations
 
             if (activityCategoryIds?.Count > 0)
                 query = query.Where(a => activityCategoryIds.Contains(a.CategoryId));
+
+            if (regionId.HasValue)
+                query = query.Where(a => a.City != null && a.City.RegionId == regionId.Value);
 
             return await query
                 .OrderByDescending(a => a.IsFeatured)

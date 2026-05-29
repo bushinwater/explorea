@@ -6,6 +6,7 @@ import {
   StatCardData, ActivityItem, ActivityStatus,
 } from '../models/admin.models';
 import { Observable, map } from 'rxjs';
+import { AdminUiPreferencesService } from './admin-ui-preferences.service';
 
 interface AdminPopularEntity {
   entityType: string;
@@ -48,33 +49,37 @@ interface AdminAiChatResponse {
   quickActions?: AiQuickAction[];
 }
 
-const QUICK_ACTIONS: Record<AdminRole, QuickAction[]> = {
+const QUICK_ACTION_KEYS: Record<AdminRole, (Omit<QuickAction, 'label'> & { labelKey: string })[]> = {
   super_admin: [
-    { id: 'add-dest',   icon: 'add_location_alt', label: 'Dodaj destinaciju',       route: '/admin/destinations?create=true', colorClass: 'primary' },
-    { id: 'users',      icon: 'people',           label: 'Upravljaj korisnicima',    route: '/admin/users',                   colorClass: 'info'    },
-    { id: 'activities', icon: 'hiking',           label: 'Pregled aktivnosti',        route: '/admin/activities',              colorClass: 'warning' },
-    { id: 'broadcast',  icon: 'campaign',         label: 'Broadcast obavestenje',    route: '/admin/notifications/broadcast', colorClass: 'accent'  },
+    { id: 'add-dest',   icon: 'add_location_alt', labelKey: 'dashboard.quickaction.add_dest',   route: '/admin/destinations?create=true', colorClass: 'primary' },
+    { id: 'users',      icon: 'people',           labelKey: 'dashboard.quickaction.users',       route: '/admin/users',                   colorClass: 'info'    },
+    { id: 'activities', icon: 'hiking',           labelKey: 'dashboard.quickaction.activities',  route: '/admin/activities',              colorClass: 'warning' },
+    { id: 'broadcast',  icon: 'campaign',         labelKey: 'dashboard.quickaction.broadcast',   route: '/admin/notifications/broadcast', colorClass: 'accent'  },
   ],
   tourist_organization: [
-    { id: 'add-event', icon: 'event_available', label: 'Dodaj dogadjaj',      route: '/admin/events?create=true', colorClass: 'primary' },
-    { id: 'region',    icon: 'tune',            label: 'Region podesavanja',   route: '/admin/settings',          colorClass: 'muted'   },
-    { id: 'reviews',   icon: 'rate_review',     label: 'Pregled recenzija',    route: '/admin/reviews',           colorClass: 'warning' },
-    { id: 'report',    icon: 'assessment',      label: 'Mesecni izvestaj',     route: '/admin/reports',           colorClass: 'info'    },
+    { id: 'add-event', icon: 'event_available', labelKey: 'dashboard.quickaction.add_event', route: '/admin/events?create=true', colorClass: 'primary' },
+    { id: 'region',    icon: 'tune',            labelKey: 'dashboard.quickaction.region',    route: '/admin/settings',          colorClass: 'muted'   },
+    { id: 'reviews',   icon: 'rate_review',     labelKey: 'dashboard.quickaction.reviews',   route: '/admin/reviews',           colorClass: 'warning' },
+    { id: 'report',    icon: 'assessment',      labelKey: 'dashboard.quickaction.report',    route: '/admin/reports',           colorClass: 'info'    },
   ],
   place_owner: [
-    { id: 'add-place', icon: 'add_business',    label: 'Dodaj objekat',  route: '/admin/places?create=true', colorClass: 'primary' },
-    { id: 'add-event', icon: 'event_available', label: 'Dodaj dogadjaj', route: '/admin/events?create=true', colorClass: 'info'    },
-    { id: 'reviews',   icon: 'rate_review',     label: 'Moje recenzije', route: '/admin/reviews',             colorClass: 'accent'  },
-    { id: 'support',   icon: 'support_agent',   label: 'Podrska',        route: '/admin/support',             colorClass: 'muted'   },
+    { id: 'dashboard', icon: 'dashboard',   labelKey: 'dashboard.quickaction.dashboard', route: '/admin/dashboard', colorClass: 'primary' },
+    { id: 'settings',  icon: 'settings',    labelKey: 'dashboard.quickaction.settings',  route: '/admin/settings',  colorClass: 'info'    },
+    { id: 'reviews',   icon: 'rate_review', labelKey: 'dashboard.quickaction.my_reviews',route: '/admin/reviews',   colorClass: 'accent'  },
+    { id: 'support',   icon: 'support',     labelKey: 'dashboard.quickaction.support',   route: '/admin/support',   colorClass: 'muted'   },
   ],
 };
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
   private readonly http = inject(HttpClient);
+  private readonly ui = inject(AdminUiPreferencesService);
 
   getQuickActions(role: AdminRole): QuickAction[] {
-    return QUICK_ACTIONS[role] ?? [];
+    return (QUICK_ACTION_KEYS[role] ?? []).map(a => ({
+      ...a,
+      label: this.ui.t(a.labelKey),
+    }));
   }
 
   getPendingCount(): Observable<number> {
@@ -89,15 +94,15 @@ export class DashboardService {
         {
           icon: role === 'place_owner' ? 'storefront' : 'people',
           value: this.formatNumber(overview.totalUsers),
-          label: role === 'place_owner' ? 'Moji objekti i dogadjaji' : 'Ukupno korisnika',
-          sublabel: `${this.formatNumber(overview.newUsersLast30Days)} novih u poslednjih 30 dana`,
+          label: this.ui.t('dashboard.stats.total_users'),
+          sublabel: this.ui.t('dashboard.stats.new_users_hint', { count: this.formatNumber(overview.newUsersLast30Days) }),
           color: 'primary',
         },
         {
           icon: role === 'place_owner' ? 'add_business' : 'person_add',
           value: this.formatNumber(overview.newUsersLast30Days),
-          label: role === 'place_owner' ? 'Novi unosi' : 'Novi korisnici',
-          sublabel: 'Poslednjih 30 dana',
+          label: this.ui.t('dashboard.stats.new_users_label'),
+          sublabel: this.ui.t('dashboard.stats.last_30d'),
           color: 'info',
         },
         {
@@ -114,8 +119,11 @@ export class DashboardService {
           value: overview.mostPopularEntity?.name ?? 'Nema podataka',
           label: role === 'place_owner' ? 'Najpopularniji unos' : 'Najpopularniji entitet',
           sublabel: overview.mostPopularEntity
-            ? `${this.entityTypeLabel(overview.mostPopularEntity.entityType)} - ${this.formatNumber(overview.mostPopularEntity.views)} pregleda`
-            : 'Nema zabelezenih pregleda',
+            ? this.ui.t('dashboard.stats.entity_views', {
+                type: this.entityTypeLabel(overview.mostPopularEntity.entityType),
+                views: this.formatNumber(overview.mostPopularEntity.views),
+              })
+            : this.ui.t('dashboard.stats.no_views'),
           color: 'accent',
         },
       ] as StatCardData[]),
@@ -139,7 +147,7 @@ export class DashboardService {
         avatarColor: this.activityColor(item.type),
         text: item.description,
         timestamp: this.formatTimeAgo(item.createdAt),
-        actionLabel: 'Detalji',
+        actionLabel: this.ui.t('dashboard.activity.details'),
         status: this.activityStatus(item.type),
       }))),
     );
@@ -187,13 +195,13 @@ export class DashboardService {
   }
 
   private entityTypeLabel(entityType: string): string {
-    const labels: Record<string, string> = {
-      destination: 'Destinacija',
-      place: 'Objekat',
-      event: 'Dogadjaj',
-      activity: 'Aktivnost',
+    const keyMap: Record<string, string> = {
+      destination: 'dashboard.entity.destination',
+      place:       'dashboard.entity.place',
+      event:       'dashboard.entity.event',
+      activity:    'dashboard.entity.activity',
     };
-    return labels[entityType] ?? entityType;
+    return this.ui.t(keyMap[entityType] ?? entityType);
   }
 
   private formatTrafficDate(date: string): string {
@@ -210,11 +218,11 @@ export class DashboardService {
     const timestamp = new Date(value).getTime();
     if (Number.isNaN(timestamp)) return '';
     const minutes = Math.max(1, Math.floor((Date.now() - timestamp) / 60000));
-    if (minutes < 60) return `pre ${minutes} min`;
+    if (minutes < 60) return this.ui.t('dashboard.time.minutes_ago', { value: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `pre ${hours} h`;
+    if (hours < 24) return this.ui.t('dashboard.time.hours_ago', { value: hours });
     const days = Math.floor(hours / 24);
-    return `pre ${days} dana`;
+    return this.ui.t('dashboard.time.days_ago', { value: days });
   }
 
   private activityStatus(type: string): ActivityStatus {

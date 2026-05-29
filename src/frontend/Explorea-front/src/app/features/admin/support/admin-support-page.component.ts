@@ -174,6 +174,16 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
     return labels[type];
   }
 
+  protected senderRoleLabel(role: string | null): string {
+    const labels: Record<string, string> = {
+      super_admin: 'Super Admin',
+      tourist_organization: 'Turisticka organizacija',
+      place_owner: 'Vlasnik objekta',
+      traveler: 'Putnik',
+    };
+    return role ? (labels[role] ?? role) : 'Nepoznato';
+  }
+
   protected relativeTime(isoDate: string): string {
     const diffMs = Date.now() - new Date(isoDate).getTime();
     const minutes = Math.max(1, Math.floor(diffMs / 60000));

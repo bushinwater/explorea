@@ -20,6 +20,7 @@ import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-p
 import { ReviewModal } from '../../../shared/components/review-modal/review-modal';
 import { ReviewDto } from '../../../core/models/home.model';
 import { ShareButton } from '../../../shared/components/share-button/share-button';
+import { AddToPlannerModal } from '../../../shared/components/add-to-planner-modal/add-to-planner-modal';
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
@@ -47,7 +48,7 @@ const LIGHT = {
   imports: [
     CommonModule, NgStyle, RouterModule, TranslateModule,
     Sidebar, BottomNav,
-    ReviewCard, RatingStats, ReviewsPanel, ReviewModal, ShareButton,
+    ReviewCard, RatingStats, ReviewsPanel, ReviewModal, ShareButton, AddToPlannerModal,
   ],
   templateUrl: './place-detail.html',
   styleUrl: './place-detail.css',
@@ -73,6 +74,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
 
   isSaved = false;
   isSavedLoading = false;
+  showPlannerModal = false;
   reviewsPanelOpen = false;
   reviewFormOpen = false;
   hasReviewed = false;
@@ -80,6 +82,8 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
 
   lightboxOpen = false;
   lightboxIndex = 0;
+  private lightboxScrollY = 0;
+  private lightboxLockedBody = false;
 
   scrollProgress = 0;
   titleCaptured = false;
@@ -151,7 +155,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     this.themeObserver?.disconnect();
     this.marker?.remove();
     this.map?.remove();
-    document.body.style.overflow = '';
+    this.unlockLightboxScroll();
   }
 
   private captureTitle(): void {
@@ -472,12 +476,12 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   openLightbox(index: number): void {
     this.lightboxIndex = index;
     this.lightboxOpen = true;
-    document.body.style.overflow = 'hidden';
+    this.lockLightboxScroll();
   }
 
   closeLightbox(): void {
     this.lightboxOpen = false;
-    document.body.style.overflow = '';
+    this.unlockLightboxScroll();
   }
 
   lightboxNext(): void {
@@ -490,6 +494,32 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     const total = this.galleryImages.length;
     if (!total) return;
     this.lightboxIndex = (this.lightboxIndex - 1 + total) % total;
+  }
+
+  private lockLightboxScroll(): void {
+    if (document.body.style.position === 'fixed') return;
+
+    this.lightboxScrollY = window.scrollY;
+    this.lightboxLockedBody = true;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.lightboxScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockLightboxScroll(): void {
+    if (!this.lightboxLockedBody) return;
+
+    this.lightboxLockedBody = false;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo({ top: this.lightboxScrollY, behavior: 'instant' as ScrollBehavior });
   }
 
   get currentLightboxImage(): string {
@@ -514,4 +544,12 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   incrementGuests(): void { this.guests++; }
   decrementGuests(): void { if (this.guests > 1) this.guests--; }
   goBack(): void { this.location.back(); }
+
+  openPlannerModal(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+    this.showPlannerModal = true;
+  }
 }

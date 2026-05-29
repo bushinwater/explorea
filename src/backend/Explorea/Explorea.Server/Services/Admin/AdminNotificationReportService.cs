@@ -1,6 +1,7 @@
 using Explorea.API.DTOs.Admin;
 using Explorea.API.Models;
 using Explorea.Server.Data;
+using Explorea.Server.Helpers;
 using Explorea.Server.Services.Admin.Interfaces;
 using Explorea.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,7 @@ namespace Explorea.Server.Services.Admin
         {
             var users = await _db.Users
                 .Include(user => user.Preferences)
+                .Include(user => user.Role)
                 .Where(user => user.IsActive)
                 .Where(user => user.Preferences != null)
                 .Where(user => user.Preferences!.NotificationsEnabled)
@@ -55,6 +57,31 @@ namespace Explorea.Server.Services.Admin
                 await _db.SaveChangesAsync();
 
             return sentCount;
+        }
+
+        public async Task<int> ForceSendReportAsync(Guid userId, DateTimeOffset now)
+        {
+            var user = await _db.Users
+                .Include(u => u.Preferences)
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+
+            if (user?.Preferences == null) return 0;
+
+            var preferences = user.Preferences;
+            var topics = ParseTopics(preferences.NotificationReportTopics);
+
+            if (topics.Count == 0)
+                topics = new List<string> { "weekly_summary" };
+
+            var reportData = await BuildReportDataAsync(user, preferences, now, topics);
+            await _emailService.SendAdminReportEmailAsync(user.Email, reportData);
+
+            preferences.NotificationReportsLastSentAt = now;
+            preferences.UpdatedAt = now;
+            await _db.SaveChangesAsync();
+
+            return 1;
         }
 
         private async Task<AdminReportEmailData> BuildReportDataAsync(
@@ -101,8 +128,13 @@ namespace Explorea.Server.Services.Admin
                 data.PendingPlacesCount = await _db.Places.AsNoTracking()
                     .CountAsync(p => !p.IsDeleted && p.ApprovalStatus.ToLower() == "pending");
 
+                var isSuperAdmin = user.Role?.Name == RoleNames.SuperAdmin;
                 data.OpenTicketsCount = await _db.SupportTickets.AsNoTracking()
-                    .CountAsync(t => t.Status == SupportTicketStatuses.Open);
+                    .CountAsync(t =>
+                        (t.Status == SupportTicketStatuses.Open || t.Status == SupportTicketStatuses.InProgress) &&
+                        (isSuperAdmin
+                            ? (t.IsEscalated || t.AssignedToUserId == user.Id)
+                            : t.AssignedToUserId == user.Id));
             }
 
             if (needsUsers)

@@ -286,6 +286,24 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
       });
     }
 
+    [HttpPost("notifications/reports/send-now")]
+    public async Task<IActionResult> ForceSendNotificationReport()
+    {
+      var userId = TryGetCurrentUserId();
+      if(userId == null) return Unauthorized();
+
+      var role = await GetCurrentUserRole(userId.Value);
+      if(role != "super_admin" && role != "admin") return Forbid();
+
+      var sentCount = await _notificationReportService.ForceSendReportAsync(userId.Value, DateTimeOffset.UtcNow);
+
+      return Ok(new AdminNotificationReportDispatchDto
+      {
+        SentCount = sentCount,
+        SentAt = DateTimeOffset.UtcNow
+      });
+    }
+
     [HttpGet("administration")]
     public async Task<IActionResult> GetAdministration()
     {

@@ -5,7 +5,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, forkJoin } from 'rxjs';
+import { Subject, forkJoin, Observable } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { TranslateModule } from '@ngx-translate/core';
 import { Sidebar } from '../../layout/shell/sidebar/sidebar';
@@ -161,7 +161,9 @@ export class Search implements OnInit, OnDestroy {
   showPlannerModal      = false;
   plannerModalItem: SearchItem | null = null;
   plannerModalDays: { value: string; label: string }[] = [];
-  plannerModalSelectedDay = '';
+  plannerModalSelectedDays: string[] = [];  // for events (multi-select chips)
+  plannerModalDateFrom = '';               // for non-events (range start)
+  plannerModalDateTo   = '';               // for non-events (range end)
   plannerModalNote        = '';
   plannerModalSaving      = false;
   plannerModalSuccess     = false;
@@ -192,10 +194,30 @@ export class Search implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.isLoggedIn = this.authService.isLoggedIn();
-    const state = history.state;
-    const fromHero = state?.fromHero === true;
+    const qp        = this.route.snapshot.queryParamMap;
+    const state     = history.state;
+    const fromHero  = state?.fromHero === true;
+    // URL params take priority when navigating back (they persist across navigation)
+    const hasUrlState = qp.has('q') || qp.has('type');
 
-    if (fromHero) {
+    if (hasUrlState) {
+      // Restore from URL query params (back navigation)
+      if (qp.get('q'))  this.query = qp.get('q')!;
+      const t = qp.get('type');
+      if (t && t !== 'sve') {
+        this.filterEntityType = t as 'destination' | 'place' | 'activity' | 'event';
+        this.activeChip = t;
+        this.activeTab  = t;
+      }
+      if (qp.get('nearby') === '1') this.nearbyEnabled = true;
+      if (qp.get('sort'))  this.sortBy  = qp.get('sort') as any;
+      if (qp.get('dir'))   this.sortDir = qp.get('dir') as any;
+      try {
+        const f = qp.get('filters');
+        if (f) this.filters = JSON.parse(decodeURIComponent(f));
+      } catch { /* ignore malformed */ }
+      if (this.query || this.filterEntityType) this.hasSearched = true;
+    } else if (fromHero) {
       if (state.query)  this.query = state.query;
       if (state.filters) this.filters = { ...state.filters };
       if (state.nearbyEnabled) this.nearbyEnabled = state.nearbyEnabled;
@@ -211,22 +233,22 @@ export class Search implements OnInit, OnDestroy {
       if (state.query || state.filterEntityType || (this.activeEntityTypes.length > 1)) {
         this.hasSearched = true;
       }
-    }
-
-    const typeParam = this.route.snapshot.queryParamMap.get('type');
-    const preselected = !fromHero && typeParam && ENTITY_TABS.some(t => t.key === typeParam) && typeParam !== 'sve';
-    if (preselected) {
-      this.activeChip       = typeParam!;
-      this.activeTab        = typeParam!;
-      this.hasSearched      = true;
-      this.filterEntityType = typeParam as 'destination' | 'place' | 'activity' | 'event';
+    } else {
+      const typeParam = qp.get('type');
+      const preselected = typeParam && ENTITY_TABS.some(t => t.key === typeParam) && typeParam !== 'sve';
+      if (preselected) {
+        this.activeChip       = typeParam!;
+        this.activeTab        = typeParam!;
+        this.hasSearched      = true;
+        this.filterEntityType = typeParam as 'destination' | 'place' | 'activity' | 'event';
+      }
     }
 
     this.loadIdleContent();
     this.loadUserLocation();
     this.loadLookups();
 
-    if (preselected || (fromHero && (this.query || this.filterEntityType || this.activeEntityTypes.length > 1))) {
+    if (this.hasSearched) {
       this.triggerSearch();
     }
 
@@ -419,6 +441,27 @@ export class Search implements OnInit, OnDestroy {
     );
   }
 
+  // ─── URL state sync ───────────────────────────────────────────────────────
+
+  private syncToUrl(): void {
+    const params: Record<string, string> = {};
+    if (this.query) params['q'] = this.query;
+    if (this.filterEntityType) params['type'] = this.filterEntityType;
+    if (this.nearbyEnabled) params['nearby'] = '1';
+    if (this.sortBy) { params['sort'] = this.sortBy; params['dir'] = this.sortDir; }
+    const f = this.filters;
+    const hasFilters =
+      f.minRating != null || f.minPrice != null || f.maxPrice != null ||
+      f.radiusKm  != null || f.openNow  != null ||
+      (f.placeTypeIds        ?? []).length > 0 ||
+      (f.activityCategoryIds ?? []).length > 0 ||
+      (f.eventTypeIds        ?? []).length > 0 ||
+      (f.destinationTypeIds  ?? []).length > 0 ||
+      Object.keys(f.extraFilters ?? {}).length > 0;
+    if (hasFilters) params['filters'] = encodeURIComponent(JSON.stringify(f));
+    this.router.navigate([], { queryParams: params, replaceUrl: true });
+  }
+
   // ─── Search execution ─────────────────────────────────────────────────────
 
   private triggerSearch(): void {
@@ -435,6 +478,7 @@ export class Search implements OnInit, OnDestroy {
    * - specific tab         → /api/search-page/list (server-side sort/filter/pagination)
    */
   private executeSearch(page: number, append: boolean): void {
+    if (page === 1 && !append) this.syncToUrl();
     if (this.activeTab === 'sve') {
 
       // Multi-entity with no query: parallel list calls per selected type
@@ -782,6 +826,9 @@ export class Search implements OnInit, OnDestroy {
       this.filterDefsTypeId = null;
     } else {
       this.filterEntityType = null;
+      this.draftFilters = { ...this.draftFilters, placeTypeIds: [], destinationTypeIds: [], activityCategoryIds: [], eventTypeIds: [], extraFilters: {} };
+      this.filterDefs = [];
+      this.filterDefsTypeId = null;
     }
     this.cdr.detectChanges();
   }
@@ -1107,7 +1154,16 @@ export class Search implements OnInit, OnDestroy {
   selectModalCalDate(cell: { date: Date; isCurrentMonth: boolean }): void {
     if (!cell.isCurrentMonth) return;
     const d = cell.date;
-    this.plannerModalSelectedDay = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (!this.plannerModalDateFrom || this.plannerModalDateTo) {
+      this.plannerModalDateFrom = str;
+      this.plannerModalDateTo   = '';
+    } else if (str >= this.plannerModalDateFrom) {
+      this.plannerModalDateTo = str;
+    } else {
+      this.plannerModalDateFrom = str;
+      this.plannerModalDateTo   = '';
+    }
     this.cdr.detectChanges();
   }
 
@@ -1116,10 +1172,32 @@ export class Search implements OnInit, OnDestroy {
     return date.getFullYear() === t.getFullYear() && date.getMonth() === t.getMonth() && date.getDate() === t.getDate();
   }
 
-  isModalCalSelected(date: Date): boolean {
-    if (!this.plannerModalSelectedDay) return false;
-    const [y, m, d] = this.plannerModalSelectedDay.split('-').map(Number);
+  isModalCalRangeStart(date: Date): boolean {
+    return !!this.plannerModalDateFrom && this.dateMatchesStr(date, this.plannerModalDateFrom);
+  }
+
+  isModalCalRangeEnd(date: Date): boolean {
+    return !!this.plannerModalDateTo && this.dateMatchesStr(date, this.plannerModalDateTo);
+  }
+
+  isModalCalInRange(date: Date): boolean {
+    if (!this.plannerModalDateFrom || !this.plannerModalDateTo) return false;
+    const str = this.dateToStr(date);
+    return str > this.plannerModalDateFrom && str < this.plannerModalDateTo;
+  }
+
+  private dateMatchesStr(date: Date, str: string): boolean {
+    const [y, m, d] = str.split('-').map(Number);
     return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
+  }
+
+  private dateToStr(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  formatRangeDate(str: string): string {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short' });
   }
 
   trackByModalCell(_: number, c: { date: Date }): string { return c.date.toISOString(); }
@@ -1158,40 +1236,67 @@ export class Search implements OnInit, OnDestroy {
       }
     }
 
-    this.plannerModalDays        = days;
-    this.plannerModalSelectedDay = days.length > 0 ? days[0].value : today;
+    this.plannerModalDays = days;
 
-    if (item.entityType !== 'event') {
+    if (item.entityType === 'event') {
+      this.plannerModalSelectedDays = days.length > 0 ? [days[0].value] : [];
+    } else {
+      this.plannerModalSelectedDays = [];
+      this.plannerModalDateFrom = '';
+      this.plannerModalDateTo   = '';
       this.modalCalViewDate = new Date();
       this.buildModalCalGrid();
     }
 
     this.showPlannerModal = true;
+    this.lockPageScroll();
     this.cdr.detectChanges();
   }
 
   cancelPlannerModal(): void {
     this.showPlannerModal = false;
+    this.unlockPageScroll();
     this.cdr.detectChanges();
+  }
+
+  togglePlannerModalDay(value: string): void {
+    const idx = this.plannerModalSelectedDays.indexOf(value);
+    this.plannerModalSelectedDays = idx >= 0
+      ? this.plannerModalSelectedDays.filter(d => d !== value)
+      : [...this.plannerModalSelectedDays, value];
   }
 
   confirmPlannerModal(): void {
     if (!this.plannerModalItem || this.plannerModalSaving) return;
+    const item = this.plannerModalItem;
+
+    if (item.entityType === 'event' && this.plannerModalSelectedDays.length === 0) {
+      this.plannerModalError = 'Izaberi barem jedan dan.';
+      this.cdr.detectChanges();
+      return;
+    }
+    if (item.entityType !== 'event' && !this.plannerModalDateFrom) {
+      this.plannerModalError = 'Izaberi datum.';
+      this.cdr.detectChanges();
+      return;
+    }
+
     this.plannerModalSaving = true;
     this.plannerModalError  = '';
     this.cdr.detectChanges();
 
-    const item = this.plannerModalItem;
-    const obs = item.entityType === 'event'
-      ? this.plannerService.addEntry(item.entity.id, this.plannerModalSelectedDay, this.plannerModalNote)
-      : this.plannerService.addGenericEntry(item.entityType, item.entity.id, this.plannerModalSelectedDay, this.plannerModalNote);
+    const obs: Observable<unknown> = item.entityType === 'event'
+      ? forkJoin(this.plannerModalSelectedDays.map(d =>
+          this.plannerService.addEntry(item.entity.id, d, this.plannerModalNote)))
+      : forkJoin(this.buildDateRange(this.plannerModalDateFrom, this.plannerModalDateTo || this.plannerModalDateFrom)
+          .map(d => this.plannerService.addGenericEntry(item.entityType, item.entity.id, d, this.plannerModalNote)));
 
     obs.subscribe({
       next: () => {
         this.plannerModalSaving  = false;
         this.plannerModalSuccess = true;
         this.cdr.detectChanges();
-        setTimeout(() => { this.showPlannerModal = false; this.cdr.detectChanges(); }, 900);
+        setTimeout(() => { this.showPlannerModal = false; this.unlockPageScroll(); this.cdr.detectChanges(); }, 900);
       },
       error: (err) => {
         this.plannerModalSaving = false;
@@ -1199,6 +1304,17 @@ export class Search implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  private buildDateRange(from: string, to: string): string[] {
+    const result: string[] = [];
+    const cur = new Date(from + 'T00:00:00');
+    const end = new Date(to + 'T00:00:00');
+    while (cur <= end) {
+      result.push(this.dateToStr(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    return result;
   }
 
   private lockPageScroll(): void {

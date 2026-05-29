@@ -2,6 +2,8 @@ using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace Explorea.Server.Repositories.Implementations
 {
@@ -15,14 +17,15 @@ namespace Explorea.Server.Repositories.Implementations
             DateTimeOffset? startFrom, DateTimeOffset? startTo,
             List<string>? extraFilters,
             List<Guid>? restrictToDestinationIds, List<int>? restrictToCityIds,
-            int page, int pageSize)
+            int page, int pageSize,
+            string? sortBy = null)
         {
             var query = _db.Events
                 .IgnoreQueryFilters()
                 .Include(e => e.City)
                 .Include(e => e.Type)
                 .Include(e => e.Country)
-                .Include(e => e.Destination)
+                .Include(e => e.Destination).ThenInclude(d => d!.City)
                 .Include(e => e.Images)
                 .Where(e => !e.IsDeleted && e.Visibility == "published")
                 .AsQueryable();
@@ -62,16 +65,24 @@ namespace Explorea.Server.Repositories.Implementations
                 foreach (var (key, value) in efDict)
                 {
                     var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-                    query = query.Where(e => e.ExtraFilters != null && EF.Functions.JsonContains(e.ExtraFilters, snippet));
+                    var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+                    var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
+                        "SELECT id FROM events WHERE extra_filters @> @snippet", param).ToListAsync();
+                    query = query.Where(e => matchingIds.Contains(e.Id));
                 }
             }
 
-            if (restrictToDestinationIds != null && restrictToCityIds != null)
+            if (restrictToDestinationIds != null || restrictToCityIds != null)
                 query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
                 
             var total = await query.CountAsync();
-            var items = await query
-                .OrderByDescending(e => e.StartDatetime)
+            var ordered = sortBy?.Trim().ToLower() switch
+            {
+                "updatedat_desc" => query.OrderByDescending(e => e.UpdatedAt),
+                "updatedat_asc"  => query.OrderBy(e => e.UpdatedAt),
+                _                => query.OrderByDescending(e => e.StartDatetime),
+            };
+            var items = await ordered
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -139,12 +150,12 @@ namespace Explorea.Server.Repositories.Implementations
             List<int>? restrictToCityIds
         )
         {
-            if(restrictToDestinationIds != null && restrictToCityIds != null)
+            if (restrictToCityIds != null || restrictToDestinationIds != null)
                 query = query.Where(e =>
-                    (e.DestinationId.HasValue && restrictToDestinationIds.Contains(e.DestinationId.Value))
-                    || (e.CityId.HasValue && restrictToCityIds.Contains(e.CityId.Value))
+                    (restrictToCityIds != null && e.CityId.HasValue && restrictToCityIds.Contains(e.CityId.Value))
+                    || (restrictToDestinationIds != null && e.DestinationId.HasValue && restrictToDestinationIds.Contains(e.DestinationId.Value))
                 );
-            
+
             return query;
         }
 

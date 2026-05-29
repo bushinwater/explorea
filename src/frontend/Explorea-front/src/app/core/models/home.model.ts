@@ -27,12 +27,12 @@ export interface EventCard {
   id: string;
   name: string;
   slug: string;
-  type: { id: number; name: string };
+  type: { id: number; name: string } | null;
   startDatetime: string;
   endDatetime: string;
   price: number | null;
   address: string;
-  city: City;
+  city: City | null;
   previewImageUrl: string;
   isFeatured: boolean;
   popularity?: number;
@@ -44,11 +44,11 @@ export interface ActivityCard {
   id: string;
   name: string;
   slug: string;
-  category: { id: number; name: string };
+  category: { id: number; name: string } | null;
   avgRating: number;
   durationMinutes: number;
   price: number | null;
-  difficultyLevel: string;
+  difficultyLevel: string | null;
   previewImageUrl: string;
 }
 

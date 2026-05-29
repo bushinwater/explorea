@@ -62,6 +62,10 @@ export class AdminPlacesService {
       params = params.set('amenityId', filters.amenityId);
     }
 
+    if (!deletedOnly && filters.sortBy !== 'none') {
+      params = params.set('sortBy', filters.sortBy);
+    }
+
     return this.http.get<PlacePagedResponse>(url, { params });
   }
 

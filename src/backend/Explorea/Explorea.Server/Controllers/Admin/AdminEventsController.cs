@@ -44,6 +44,7 @@ namespace Explorea.Server.Controllers.Admin
             [FromQuery] DateTimeOffset? startFrom,
             [FromQuery] DateTimeOffset? startTo,
             [FromQuery] List<string>? extraFilters,
+            [FromQuery] string? sortBy = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
@@ -51,7 +52,7 @@ namespace Explorea.Server.Controllers.Admin
             {
                 var userId = GetCurrentUserId();
                 var (items, total) = await _service.GetAllAsync(
-                    search, destinationId, cityId, typeId, startFrom, startTo, extraFilters, page, pageSize, userId);
+                    search, destinationId, cityId, typeId, startFrom, startTo, extraFilters, page, pageSize, userId, sortBy);
                 return Ok(new { total, items });
             }
             catch (UnauthorizedAccessException ex)

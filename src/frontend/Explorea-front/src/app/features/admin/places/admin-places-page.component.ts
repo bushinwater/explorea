@@ -12,6 +12,7 @@ import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
 import { FeedbackBannerComponent } from '../shared/components/feedback-banner/feedback-banner.component';
@@ -63,6 +64,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     regionId: 'all',
     minRating: null,
     amenityId: null,
+    sortBy: 'none',
     page: 1,
     pageSize: 20,
   });
@@ -121,6 +123,10 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     return role === 'super_admin' || role === 'tourist_organization';
   });
 
+  protected readonly lockedRegionId = computed(() =>
+    this.dashAuth.role() === 'tourist_organization' ? this.dashAuth.managedRegionId : null,
+  );
+
   protected readonly activeFilterCount = computed(() => {
     const f = this.filters();
     return [
@@ -149,9 +155,26 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     protected readonly authContext: AdminAuthContextService,
     private readonly auth: AuthService,
     protected readonly ui: AdminUiPreferencesService,
+    protected readonly dashAuth: DashboardAuthService,
   ) {}
 
   ngOnInit(): void {
+    this.subscription.add(
+      this.route.queryParamMap.subscribe((params) => {
+        const openId = params.get('openId');
+        if (openId) {
+          const openName = params.get('openName') ?? '';
+          this.openDetailsPanel({ id: openId, name: openName } as unknown as PlaceRow);
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { openId: null, openName: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        }
+      }),
+    );
+
     this.subscription.add(
       this.searchInput$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((value) => {
         const q = value.trim();
@@ -164,6 +187,8 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
       }),
     );
 
+    const rid = this.lockedRegionId();
+    if (rid !== null) this.patchFilter({ regionId: rid });
     this.loadStats();
     this.loadTypes();
     this.loadRegions();
@@ -235,10 +260,19 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
       regionId: 'all',
       minRating: null,
       amenityId: null,
+      sortBy: 'none',
       page: 1,
       pageSize: f.pageSize,
     }));
     this.currentPage.set(1);
+    this.loadPlaces();
+  }
+
+  protected toggleSort(): void {
+    const next: Record<string, 'none' | 'updatedAt_desc' | 'updatedAt_asc'> = {
+      none: 'updatedAt_desc', updatedAt_desc: 'updatedAt_asc', updatedAt_asc: 'none',
+    };
+    this.patchFilter({ sortBy: next[this.filters().sortBy], page: 1 });
     this.loadPlaces();
   }
 

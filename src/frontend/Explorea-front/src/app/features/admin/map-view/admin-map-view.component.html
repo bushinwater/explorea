@@ -8,13 +8,13 @@
     </div>
     <div class="topbar-stat">
       <span class="material-icons">location_on</span>
-      <span>Pinova: <strong>{{ pinCount }}</strong></span>
+      <span>{{ ui.t('map.pins_count') }} <strong>{{ pinCount }}</strong></span>
     </div>
 
     <!-- Filter toggle button -->
     <button class="topbar-filter-btn" [class.active]="filterPanelVisible || activeFilterCount > 0" type="button" (click)="filterPanelVisible = !filterPanelVisible">
       <span class="material-icons">tune</span>
-      Filteri
+      {{ ui.t('map.filters_btn') }}
       @if (activeFilterCount > 0) {
         <span class="topbar-filter-badge">{{ activeFilterCount }}</span>
       }
@@ -23,19 +23,19 @@
     <!-- Regions toggle -->
     <button class="topbar-satellite-btn" [class.active]="showRegions" type="button" (click)="toggleRegions()">
       <span class="material-icons">map</span>
-      Regioni
+      {{ ui.t('map.regions_btn') }}
     </button>
 
     <!-- Satellite toggle -->
     <button class="topbar-satellite-btn" [class.active]="isSatellite" type="button" (click)="toggleSatellite()">
       <span class="material-icons">satellite</span>
-      Satelit
+      {{ ui.t('map.satellite') }}
     </button>
 
 
     <div class="topbar-sync">
       <span class="sync-dot"></span>
-      Live
+      {{ ui.t('map.live') }}
     </div>
 
     @if (loading) {
@@ -61,7 +61,7 @@
 
   @if (selectedPin; as pin) {
     <article class="admin-map-pin-card">
-      <button class="pin-card-close" type="button" title="Zatvori" (click)="closePinCard()">
+      <button class="pin-card-close" type="button" [title]="ui.t('common.close')" (click)="closePinCard()">
         <span class="material-icons">close</span>
       </button>
 
@@ -90,22 +90,22 @@
       </div>
 
       <footer class="pin-card-actions">
-        <button class="pin-card-action" type="button" title="Otvori u turistickoj aplikaciji" (click)="openInTouristApp(pin)">
+        <button class="pin-card-action" type="button" [title]="ui.t('map.open_in_tourist_app')" (click)="openInTouristApp(pin)">
           <span class="material-icons">open_in_new</span>
-          <span>Otvori</span>
+          <span>{{ ui.t('common.open_in_app') }}</span>
         </button>
-        <button class="pin-card-action" type="button" title="Izmeni" (click)="editPin(pin)">
+        <button class="pin-card-action" type="button" [title]="ui.t('common.edit')" (click)="editPin(pin)">
           <span class="material-icons">edit</span>
-          <span>Izmeni</span>
+          <span>{{ ui.t('common.edit') }}</span>
         </button>
         <button
           class="pin-card-action pin-card-action--danger"
           type="button"
-          title="Obrisi"
+          [title]="ui.t('common.delete')"
           (click)="deletePin(pin)"
         >
           <span class="material-icons">delete</span>
-          <span>Obrisi</span>
+          <span>{{ ui.t('common.delete') }}</span>
         </button>
       </footer>
     </article>
@@ -129,7 +129,7 @@
   <div class="filter-panel__header">
     <div class="filter-panel__title-row">
       <span class="material-icons">tune</span>
-      <h2>Filteri</h2>
+      <h2>{{ ui.t('map.filters_btn') }}</h2>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       @if (activeFilterCount > 0) {
@@ -143,7 +143,7 @@
 
   <!-- Tip entiteta -->
   <div class="filter-group">
-    <span class="filter-group__label">Tip</span>
+    <span class="filter-group__label">{{ ui.t('map.type.label') }}</span>
     <div class="entity-type-grid">
       @for (et of entityTypes; track et.type) {
         <button
@@ -162,7 +162,7 @@
   <!-- Podtip -->
   @if (subcatEntityType && subcatsToShow.length > 0) {
     <div class="filter-group">
-      <span class="filter-group__label">Podtip</span>
+      <span class="filter-group__label">{{ ui.t('map.subtype') }}</span>
       <div class="filter-chips">
         @for (cat of subcatsToShow; track cat.id) {
           <button class="filter-chip" [class.active]="isSubcatSelected(cat.id)" type="button" (click)="toggleSubcat(cat.id)">
@@ -175,10 +175,10 @@
 
   <!-- Radno vreme -->
   <div class="filter-group">
-    <span class="filter-group__label">Radno vreme</span>
+    <span class="filter-group__label">{{ ui.t('map.working_hours') }}</span>
     <label class="toggle-row" (click)="openNowOnly = !openNowOnly; applyFilters()">
       <span class="material-icons toggle-icon">schedule</span>
-      <span class="toggle-label">Otvoreno sada</span>
+      <span class="toggle-label">{{ ui.t('map.open_now') }}</span>
       <div class="toggle-switch" [class.on]="openNowOnly">
         <div class="toggle-thumb"></div>
       </div>
@@ -187,7 +187,7 @@
 
   <!-- Minimalna ocena -->
   <div class="filter-group">
-    <span class="filter-group__label">Minimalna ocena</span>
+    <span class="filter-group__label">{{ ui.t('map.min_rating') }}</span>
     <div class="map-star-picker">
       @for (star of [1,2,3,4,5]; track star) {
         <button
@@ -204,7 +204,7 @@
       }
       <span class="map-star-label">
         @if (minRating) { {{ minRating }}+ ★ }
-        @else { Sve ocene }
+        @else { {{ ui.t('map.all_ratings') }} }
       </span>
     </div>
   </div>
@@ -219,7 +219,7 @@
   }
   @if (!filterDefsLoading && showExtraFilters && filterDefs.length > 0) {
     <div class="filter-group">
-      <span class="filter-group__label">Dodatni filteri</span>
+      <span class="filter-group__label">{{ ui.t('common.additional_filters') }}</span>
       <div class="filter-extra-list">
         @for (def of filterDefs; track def.filterKey) {
           @if (def.filterType === 'boolean') {
@@ -250,16 +250,16 @@
   <!-- Raspon cene -->
   @if (showPriceRange) {
     <div class="filter-group">
-      <span class="filter-group__label">Raspon cene (RSD)</span>
+      <span class="filter-group__label">{{ ui.t('map.price_range') }}</span>
       <div class="filter-price-row">
         <div class="filter-price-input">
-          <label class="filter-price-label">Min</label>
-          <input type="number" class="filter-input" placeholder="0" [(ngModel)]="minPrice" min="0" />
+          <label class="filter-price-label">{{ ui.t('map.price_min') }}</label>
+          <input type="number" class="filter-input" [placeholder]="ui.t('map.price_min')" [(ngModel)]="minPrice" min="0" />
         </div>
         <span class="filter-price-sep">—</span>
         <div class="filter-price-input">
-          <label class="filter-price-label">Max</label>
-          <input type="number" class="filter-input" placeholder="Bez limita" [(ngModel)]="maxPrice" min="0" />
+          <label class="filter-price-label">{{ ui.t('map.price_max') }}</label>
+          <input type="number" class="filter-input" [placeholder]="ui.t('map.no_limit')" [(ngModel)]="maxPrice" min="0" />
         </div>
       </div>
     </div>
@@ -268,8 +268,8 @@
   <!-- Akcije -->
   @if (activeFilterCount > 0) {
     <div class="filter-actions">
-      <button class="ghost-btn ghost-btn--sm" type="button" (click)="resetFilters()">Resetuj</button>
-      <button class="primary-btn" type="button" (click)="applyFilters()">Primeni</button>
+      <button class="ghost-btn ghost-btn--sm" type="button" (click)="resetFilters()">{{ ui.t('map.reset') }}</button>
+      <button class="primary-btn" type="button" (click)="applyFilters()">{{ ui.t('map.apply') }}</button>
     </div>
   }
 

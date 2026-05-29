@@ -2,6 +2,8 @@ using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace Explorea.Server.Repositories.Implementations
 {
@@ -58,7 +60,8 @@ namespace Explorea.Server.Repositories.Implementations
             int? restrictToRegionId,
             int page,
             int pageSize,
-            List<string>? extraFilters = null)
+            List<string>? extraFilters = null,
+            string? sortBy = null)
         {
             var query = _db.Destinations
                 .IgnoreQueryFilters() // admin vidi i soft-deleted
@@ -116,13 +119,21 @@ namespace Explorea.Server.Repositories.Implementations
                 foreach (var (key, value) in efDict)
                 {
                     var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-                    query = query.Where(d => d.ExtraFilters != null && EF.Functions.JsonContains(d.ExtraFilters, snippet));
+                    var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+                    var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
+                        "SELECT id FROM destinations WHERE extra_filters @> @snippet", param).ToListAsync();
+                    query = query.Where(d => matchingIds.Contains(d.Id));
                 }
             }
 
             var total = await query.CountAsync();
-            var items = await query
-                .OrderBy(d => d.Name)
+            var ordered = sortBy?.Trim().ToLower() switch
+            {
+                "updatedat_desc" => query.OrderByDescending(d => d.UpdatedAt),
+                "updatedat_asc"  => query.OrderBy(d => d.UpdatedAt),
+                _                => query.OrderBy(d => d.Name),
+            };
+            var items = await ordered
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();

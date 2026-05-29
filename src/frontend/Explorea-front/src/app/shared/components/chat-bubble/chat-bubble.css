@@ -333,7 +333,7 @@
 /* Mobile */
 @media (max-width: 768px) {
   .chat-bubble-wrapper {
-    bottom: 80px;
+    bottom: var(--chat-bubble-bottom-mobile, 80px);
     right: 16px;
   }
 

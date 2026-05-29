@@ -210,7 +210,7 @@ export class AdminSupportService {
       ...this.mapConversation(dto, isAssignedToMe),
       messages: dto.messages.map((m) => this.mapMessage(m)),
       assignedToName: dto.assignedToName ?? null,
-      region: null,
+      region: dto.ownerRegion ?? null,
       placeOwnerId: null,
     };
   }

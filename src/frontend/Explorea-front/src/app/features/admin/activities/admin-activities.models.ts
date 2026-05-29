@@ -84,6 +84,7 @@ export interface ActivityFilters {
   minRating: number | 'all';
   regionId: number | 'all';
   extraFilters: Record<string, string>;
+  sortBy: 'none' | 'updatedAt_desc' | 'updatedAt_asc';
   page: number;
   pageSize: number;
 }
@@ -123,6 +124,7 @@ export interface CreateActivityDto {
   longitude?: number;
   inclusions?: string[];
   extraFilters?: Record<string, string>;
+  organizerWebsite?: string | null;
 }
 
 export interface UpdateActivityDto {

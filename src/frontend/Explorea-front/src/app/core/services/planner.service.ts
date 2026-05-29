@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { PlannerDot, PlannerEntry } from '../models/planner.model';
+import { ExpiredPlannerEvent, PlannerDot, PlannerEntry } from '../models/planner.model';
 
 @Injectable({ providedIn: 'root' })
 export class PlannerService {
@@ -21,6 +21,10 @@ export class PlannerService {
     });
   }
 
+  getExpiredEvents(): Observable<ExpiredPlannerEvent[]> {
+    return this.http.get<ExpiredPlannerEvent[]>(`${this.base}/expired-events`);
+  }
+
   addEntry(eventId: string, plannedAt: string, note: string): Observable<{ id: string }> {
     return this.http.post<{ id: string }>(`${this.base}/add`, { eventId, plannedAt, note });
   }
@@ -31,5 +35,9 @@ export class PlannerService {
 
   removeEntry(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/items/${id}`);
+  }
+
+  removeAllEntriesForEntity(entityType: string, entityId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/entity/${entityType}/${entityId}`);
   }
 }

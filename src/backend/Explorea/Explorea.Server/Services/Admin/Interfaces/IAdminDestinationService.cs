@@ -16,7 +16,8 @@ namespace Explorea.Server.Services.Admin.Interfaces
             int page,
             int pageSize,
             Guid currentUserId,
-            List<string>? extraFilters = null);
+            List<string>? extraFilters = null,
+            string? sortBy = null);
 
         Task<(List<AdminDestinationListDto> Items, int Total)> GetDeletedAsync(
             string? search,

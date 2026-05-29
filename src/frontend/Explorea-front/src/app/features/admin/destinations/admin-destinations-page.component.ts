@@ -12,6 +12,7 @@ import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, interval } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
 import { FeedbackBannerComponent } from '../shared/components/feedback-banner/feedback-banner.component';
@@ -62,6 +63,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     region: 'all',
     minRating: null,
     extraFilters: {},
+    sortBy: 'none',
     page: 1,
     pageSize: 20,
   });
@@ -105,6 +107,10 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     () => this.authContext.context().role === 'super_admin',
   );
 
+  protected readonly lockedRegionId = computed(() =>
+    this.dashAuth.role() === 'tourist_organization' ? this.dashAuth.managedRegionId : null,
+  );
+
   protected readonly activeFilterCount = computed(() => {
     const f = this.filters();
     return [
@@ -134,6 +140,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
     protected readonly ui: AdminUiPreferencesService,
+    protected readonly dashAuth: DashboardAuthService,
   ) {}
 
   ngOnInit(): void {
@@ -141,6 +148,17 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       this.route.queryParamMap.subscribe((params) => {
         if (params.get('create') === 'true') {
           this.openCreateModal();
+        }
+        const openId = params.get('openId');
+        if (openId) {
+          const openName = params.get('openName') ?? '';
+          this.openDetailsPanel({ id: openId, name: openName } as unknown as DestinationRow);
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { openId: null, openName: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
         }
       }),
     );
@@ -239,11 +257,20 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       region: 'all',
       minRating: null,
       extraFilters: {},
+      sortBy: 'none',
       page: 1,
       pageSize: f.pageSize,
     }));
     this.filterDefs.set([]);
     this.currentPage.set(1);
+    this.loadDestinations();
+  }
+
+  protected toggleSort(): void {
+    const next: Record<string, 'none' | 'updatedAt_desc' | 'updatedAt_asc'> = {
+      none: 'updatedAt_desc', updatedAt_desc: 'updatedAt_asc', updatedAt_asc: 'none',
+    };
+    this.patchFilter({ sortBy: next[this.filters().sortBy], page: 1 });
     this.loadDestinations();
   }
 
@@ -447,6 +474,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected formatViews(views: number): string {
+    if (views == null) return '—';
     if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`;
     if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
     return views.toString();

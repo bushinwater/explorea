@@ -9,6 +9,9 @@
         <span class="material-icons">arrow_back</span>
       </button>
       <app-share-button [small]="true" />
+      <button class="circle-btn circle-btn--sm" type="button" (click)="openPlannerModal()">
+        <span class="material-icons">bookmark_add</span>
+      </button>
       <button class="circle-btn circle-btn--sm"
         [class.circle-btn--saved]="isSaved"
         [disabled]="isSavedLoading"
@@ -109,6 +112,9 @@
           </button>
           <div class="detail-hero__actions">
             <app-share-button />
+            <button class="circle-btn" type="button" (click)="openPlannerModal()">
+              <span class="material-icons">bookmark_add</span>
+            </button>
             <button class="circle-btn"
               [class.circle-btn--saved]="isSaved"
               [disabled]="isSavedLoading"
@@ -237,20 +243,6 @@
               }
             </div>
 
-            <!-- Amenities grid (desktop) -->
-            @if (extraFiltersEntries.length > 0) {
-              <div class="amenities-grid desktop-only">
-                @for (f of extraFiltersEntries; track f.key) {
-                  <div class="amenity-item">
-                    <span class="material-icons amenity-item__icon">{{ f.icon }}</span>
-                    <span class="amenity-item__name">
-                      {{ f.labelKey | translate }}
-                    </span>
-                  </div>
-                }
-              </div>
-            }
-
             <!-- Tabs -->
             <section class="tab-section">
               <div class="tabs-line">
@@ -284,17 +276,32 @@
                       }
                     </div>
                   }
+                  @if (extraFiltersEntries.length > 0) {
+                    <div class="offers-section">
+                      <h3 class="subsection__title">{{ 'PLACE_DETAIL.WHAT_OFFERS' | translate }}</h3>
+                      <div class="offers-chips-scroll">
+                        @for (f of extraFiltersEntries; track f.key) {
+                          <div class="offers-chip-card">
+                            <span class="material-icons offers-chip-card__icon">{{ f.icon }}</span>
+                            <span class="offers-chip-card__label">{{ f.labelKey | translate }}</span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
                   <div class="details-grid">
                     <div>
-                      <h3 class="subsection__title">{{ 'PLACE_DETAIL.WHAT_OFFERS' | translate }}</h3>
-                      <ul class="offers-list">
-                        @for (offer of place.whatOffers; track offer) {
-                          <li class="offers-list__item">
-                            <span class="material-icons">check_circle</span>
-                            {{ offer | translate }}
-                          </li>
-                        }
-                      </ul>
+                      @if (place.whatOffers.length > 0) {
+                        <h3 class="subsection__title">{{ 'PLACE_DETAIL.WHAT_OFFERS' | translate }}</h3>
+                        <ul class="offers-list">
+                          @for (offer of place.whatOffers; track offer) {
+                            <li class="offers-list__item">
+                              <span class="material-icons">check_circle</span>
+                              {{ offer | translate }}
+                            </li>
+                          }
+                        </ul>
+                      }
                     </div>
                     @if (place.houseRules.length) {
                       <div>
@@ -519,3 +526,11 @@
 
   <app-bottom-nav />
 </div>
+
+<app-add-to-planner-modal
+  *ngIf="showPlannerModal"
+  entityType="place"
+  [entityId]="place?.id ?? ''"
+  [entityName]="place?.name ?? ''"
+  (closed)="showPlannerModal = false"
+/>

@@ -34,8 +34,23 @@ export class EventCard {
     return d.toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
+  formatDateRange(start: string, end: string): string {
+    const s = new Date(start);
+    const e = end ? new Date(end) : s;
+    const same = s.getFullYear() === e.getFullYear() && s.getMonth() === e.getMonth() && s.getDate() === e.getDate();
+    if (same) return s.toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short', year: 'numeric' });
+    if (s.getFullYear() === e.getFullYear()) {
+      return `${s.toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short' })} – ${e.toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    }
+    return `${s.toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short', year: 'numeric' })} – ${e.toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  }
+
   formatTime(dateStr: string): string {
     const d = new Date(dateStr);
     return d.toLocaleTimeString('sr-Latn-RS', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  locationLabel(): string {
+    return this.event.address || this.event.city?.name || 'Lokacija nije navedena';
   }
 }

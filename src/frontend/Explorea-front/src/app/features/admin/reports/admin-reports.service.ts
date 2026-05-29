@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  AggregatePoint, CreateReportTemplateDto, DestinationsTableItem, EntityProfile,
+  AdminGlobalSearchResult, AggregatePoint, CreateReportTemplateDto, DestinationsTableItem, EntityProfile,
   EntitySearchItem, EntityTableRow, FilterDefinition, ReportInsights, ReportTemplateDto, SubtypeOption,
 } from './admin-reports.models';
 
@@ -12,6 +12,12 @@ export class AdminReportsService {
 
   constructor(private readonly http: HttpClient) {}
 
+  globalSearch(q: string): Observable<AdminGlobalSearchResult[]> {
+    return this.http.get<AdminGlobalSearchResult[]>(`${this.base}/global-search`, {
+      params: new HttpParams().set('q', q),
+    });
+  }
+
   getInsights(): Observable<ReportInsights> {
     return this.http.get<ReportInsights>(`${this.base}/insights`);
   }
@@ -20,6 +26,7 @@ export class AdminReportsService {
     entity: string, groupBy: string, metric: string,
     dateFrom: string | null, dateTo: string | null,
     specificEntityId?: string | null,
+    filterStatus?: string | null,
   ): Observable<AggregatePoint[]> {
     let params = new HttpParams()
       .set('entity',  entity)
@@ -28,6 +35,7 @@ export class AdminReportsService {
     if (dateFrom)          params = params.set('dateFrom',         dateFrom);
     if (dateTo)            params = params.set('dateTo',           dateTo);
     if (specificEntityId)  params = params.set('specificEntityId', specificEntityId);
+    if (filterStatus)      params = params.set('filterStatus',     filterStatus);
     return this.http.get<AggregatePoint[]>(`${this.base}/aggregate`, { params });
   }
 
@@ -46,11 +54,13 @@ export class AdminReportsService {
     filterSubType?: string | null,
     filterRegion?: string | null,
     filterMinRating?: string | null,
+    filterStatus?: string | null,
   ): Observable<DestinationsTableItem[]> {
     let params = new HttpParams().set('sortBy', sortBy);
     if (filterSubType)   params = params.set('filterSubType',   filterSubType);
     if (filterRegion)    params = params.set('filterRegion',    filterRegion);
     if (filterMinRating) params = params.set('filterMinRating', filterMinRating);
+    if (filterStatus)    params = params.set('filterStatus',    filterStatus);
     return this.http.get<DestinationsTableItem[]>(`${this.base}/destinations-table`, { params });
   }
 
@@ -65,6 +75,7 @@ export class AdminReportsService {
     filterMaxPrice?:       number | null,
     filterExtraFilters?:   string[] | null,
     filterDestinationId?:  string | null,
+    filterStatus?:         string | null,
   ): Observable<EntityTableRow[]> {
     let params = new HttpParams().set('entity', entity).set('sortBy', sortBy);
     if (filterSubType)         params = params.set('filterSubType',        filterSubType);
@@ -74,6 +85,7 @@ export class AdminReportsService {
     if (filterMinPrice != null) params = params.set('filterMinPrice',      String(filterMinPrice));
     if (filterMaxPrice != null) params = params.set('filterMaxPrice',      String(filterMaxPrice));
     if (filterDestinationId)   params = params.set('filterDestinationId',  filterDestinationId);
+    if (filterStatus)          params = params.set('filterStatus',         filterStatus);
     if (filterExtraFilters?.length) {
       filterExtraFilters.forEach(f => { params = params.append('filterExtraFilters', f); });
     }

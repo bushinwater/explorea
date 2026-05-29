@@ -36,11 +36,12 @@ namespace Explorea.Server.Controllers.Admin
             [FromQuery] string?  sortBy,
             [FromQuery] string?  filterSubType,
             [FromQuery] string?  filterRegion,
-            [FromQuery] decimal? filterMinRating)
+            [FromQuery] decimal? filterMinRating,
+            [FromQuery] string?  filterStatus)
         {
             try
             {
-                var data = await _service.GetDestinationsTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, GetCurrentUserId());
+                var data = await _service.GetDestinationsTableAsync(sortBy, filterSubType, filterRegion, filterMinRating, GetCurrentUserId(), filterStatus);
                 return Ok(data);
             }
             catch (UnauthorizedAccessException ex)
@@ -61,7 +62,8 @@ namespace Explorea.Server.Controllers.Admin
             [FromQuery] decimal?      filterMinPrice,
             [FromQuery] decimal?      filterMaxPrice,
             [FromQuery] List<string>? filterExtraFilters,
-            [FromQuery] Guid?         filterDestinationId)
+            [FromQuery] Guid?         filterDestinationId,
+            [FromQuery] string?       filterStatus)
         {
             try
             {
@@ -71,7 +73,7 @@ namespace Explorea.Server.Controllers.Admin
                     filterDifficulty, filterMinPrice, filterMaxPrice,
                     filterExtraFilters,
                     GetCurrentUserId(),
-                    filterDestinationId);
+                    filterDestinationId, filterStatus);
                 return Ok(data);
             }
             catch (UnauthorizedAccessException ex)
@@ -116,15 +118,29 @@ namespace Explorea.Server.Controllers.Admin
             [FromQuery] string  metric,
             [FromQuery] DateOnly? dateFrom,
             [FromQuery] DateOnly? dateTo,
-            [FromQuery] Guid?   specificEntityId)
+            [FromQuery] Guid?   specificEntityId,
+            [FromQuery] string? filterStatus)
         {
             try
             {
-                var data = await _service.GetAggregateAsync(entity, groupBy, metric, dateFrom, dateTo, GetCurrentUserId(), specificEntityId);
+                var data = await _service.GetAggregateAsync(entity, groupBy, metric, dateFrom, dateTo, GetCurrentUserId(), specificEntityId, filterStatus);
                 return Ok(data);
             }
             catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
             catch (NotSupportedException ex)       { return BadRequest(new { message = ex.Message }); }
+        }
+
+        // GET /api/admin/reports/global-search?q=beo
+        [HttpGet("global-search")]
+        public async Task<IActionResult> GlobalSearch([FromQuery] string? q)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+                return Ok(Array.Empty<AdminGlobalSearchResultDto>());
+            try
+            {
+                return Ok(await _service.GlobalSearchAsync(q, GetCurrentUserId()));
+            }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
         }
 
         // GET /api/admin/reports/entity-search?entity=destinations&q=beo

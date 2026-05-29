@@ -54,7 +54,8 @@ namespace Explorea.Server.Services.Admin
             int page,
             int pageSize,
             Guid currentUserId,
-            List<string>? extraFilters = null)
+            List<string>? extraFilters = null,
+            string? sortBy = null)
         {
             List<Guid>? restrictToIds = null;
             int? restrictToRegionId = null;
@@ -110,7 +111,8 @@ namespace Explorea.Server.Services.Admin
                 restrictToRegionId,
                 page,
                 pageSize,
-                extraFilters);
+                extraFilters,
+                sortBy);
 
             var viewCounts = await GetViewCountsAsync(items);
             return (items.Select(d => MapToListDto(d, viewCounts)).ToList(), total);
@@ -370,8 +372,8 @@ namespace Explorea.Server.Services.Admin
         public async Task<AdminDestinationListDto> CreateAsync(AdminCreateDestinationDto dto, Guid createdBy)
         {
             var user = await _userRepo.GetByIdWithRoleAsync(createdBy);
-            if (user?.Role.Name != RoleNames.SuperAdmin)
-                throw new UnauthorizedAccessException("Only SuperAdmin can create destinations.");
+            if (user?.Role.Name != RoleNames.SuperAdmin && user?.Role.Name != RoleNames.TouristOrganization)
+                throw new UnauthorizedAccessException("Only SuperAdmin or TouristOrganization can create destinations.");
 
             var now = DateTimeOffset.UtcNow;
 

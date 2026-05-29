@@ -393,7 +393,7 @@
     "HOST_PREFIX": "Smeštaj kod domaćina",
     "SHOW_MORE": "Prikaži više",
     "SHOW_LESS": "Prikaži manje",
-    "WHAT_OFFERS": "Šta ovaj smeštaj nudi",
+    "WHAT_OFFERS": "Šta ovaj objekat nudi",
     "HOUSE_RULES": "Pravila kuće",
     "LOCATION": "Lokacija",
     "OPEN_MAPS": "Otvori u Google Mapama",
@@ -504,7 +504,7 @@
     },
     "ENTITY_TYPES": {
       "DESTINATIONS": "Destinacije",
-      "PLACES": "Objekti",
+      "PLACES": "Mesta",
       "ACTIVITIES": "Aktivnosti",
       "EVENTS": "Događaji"
     },

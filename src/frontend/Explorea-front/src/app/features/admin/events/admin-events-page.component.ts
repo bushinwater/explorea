@@ -11,6 +11,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
+import { DashboardAuthService } from '../core/services/dashboard-auth.service';
+import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { effect, untracked } from '@angular/core';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
 import { FeedbackBannerComponent } from '../shared/components/feedback-banner/feedback-banner.component';
@@ -61,6 +64,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     destinationId: null,
     extraFilters: {},
     tab: 'active',
+    sortBy: 'none',
     page: 1,
     pageSize: 20,
   });
@@ -111,6 +115,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     const role = this.auth.getRole();
     return role === 'super_admin' || role === 'place_owner';
   });
+
+  protected readonly lockedRegionId = computed(() =>
+    this.dashAuth.role() === 'tourist_organization' ? this.dashAuth.managedRegionId : null,
+  );
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.total() / this.filters().pageSize)),
   );
@@ -138,7 +146,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     const a = this.confirmAction();
     if (a === 'approve') return 'Organizator će biti obavešten da je njihov događaj odobren.';
     if (a === 'reject') return 'Ova akcija se ne može poništiti. Organizator će biti obavešten o odbijanju.';
-    if (a === 'delete') return `Događaj "${this.selectedEvent()?.name ?? ''}" će biti trajno obrisan.`;
+    if (a === 'delete') return `Da li sigurno želiš da ukloniš događaj "${this.selectedEvent()?.name ?? ''}"? Događaj će biti premešten u sekciju "Obrisano" gde ostaje 30 dana pre trajnog brisanja.`;
     return 'Vlasnik objekta će dobiti zahtev za odobrenje.';
   });
 
@@ -149,9 +157,34 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
     private readonly auth: AuthService,
-  ) {}
+    protected readonly dashAuth: DashboardAuthService,
+    protected readonly ui: AdminUiPreferencesService,
+  ) {
+    effect(() => {
+      const rid = this.lockedRegionId();
+      if (rid !== null) {
+        untracked(() => this.loadFilterOptions());
+      }
+    });
+  }
 
   ngOnInit(): void {
+    this.subscription.add(
+      this.route.queryParamMap.subscribe((params) => {
+        const openId = params.get('openId');
+        if (openId) {
+          const openName = params.get('openName') ?? '';
+          this.openDetailsPanel({ id: openId, name: openName } as unknown as EventRow);
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { openId: null, openName: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        }
+      }),
+    );
+
     this.subscription.add(
       this.searchInput$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((value) => {
         const q = value.trim();
@@ -164,7 +197,6 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       }),
     );
     this.loadStats();
-    this.loadFilterOptions();
     this.subscription.add(
       this.route.queryParamMap.subscribe((params) => {
         if (params.get('create') === 'true') {
@@ -178,6 +210,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
         }
       }),
     );
+    // Za TO korisnike: ako profil nije još učitan, effect će pozvati loadFilterOptions kad stigne
+    if (this.lockedRegionId() !== null || this.dashAuth.role() !== 'tourist_organization') {
+      this.loadFilterOptions();
+    }
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
     this.loadEvents(openEditId ? (items) => {
       const ev = items.find(e => e.id === openEditId);
@@ -241,11 +277,20 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       destinationId: null,
       extraFilters: {},
       tab: f.tab,
+      sortBy: 'none',
       page: 1,
       pageSize: f.pageSize,
     }));
     this.filterDefs.set([]);
     this.currentPage.set(1);
+    this.loadEvents();
+  }
+
+  protected toggleSort(): void {
+    const next: Record<string, 'none' | 'updatedAt_desc' | 'updatedAt_asc'> = {
+      none: 'updatedAt_desc', updatedAt_desc: 'updatedAt_asc', updatedAt_asc: 'none',
+    };
+    this.patchFilter({ sortBy: next[this.filters().sortBy], page: 1 });
     this.loadEvents();
   }
 
@@ -485,13 +530,24 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     return map[p];
   }
 
-  protected typeLabel(t: EventType | null): string {
+  protected typeLabel(typeId: number | null, t: EventType | null, typeName?: string | null): string {
+    if (typeId != null) {
+      const opt = this.eventTypeOptions().find(o => o.value === typeId);
+      if (opt) return opt.label;
+    }
+    if (typeName) return typeName;
     if (!t) return '—';
     const map: Record<EventType, string> = {
       concert: 'Koncert', tasting: 'Degustacija', conference: 'Konferencija',
       sport: 'Sport', exhibition: 'Izložba', other: 'Ostalo',
     };
-    return map[t];
+    return map[t] ?? '—';
+  }
+
+  protected evtActivityStatus(ev: EventRow): 'active' | 'inactive' {
+    const end = ev.endDate ?? ev.startDate;
+    const msSinceEnd = Date.now() - new Date(end).getTime();
+    return msSinceEnd <= 30 * 24 * 60 * 60 * 1000 ? 'active' : 'inactive';
   }
 
   protected typeIcon(t: EventType | null): string {
@@ -692,6 +748,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   }
 
   private loadFilterOptions(): void {
+    const regionId = this.lockedRegionId() ?? undefined;
     this.subscription.add(
       this.eventsService.getEventTypes().subscribe({
         next: (r) => this.eventTypeOptions.set(r),
@@ -699,13 +756,13 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       }),
     );
     this.subscription.add(
-      this.eventsService.getCities().subscribe({
+      this.eventsService.getCities(regionId).subscribe({
         next: (c) => this.cityOptions.set(c),
         error: () => this.cityOptions.set([]),
       }),
     );
     this.subscription.add(
-      this.eventsService.getDestinations().subscribe({
+      this.eventsService.getDestinations(regionId).subscribe({
         next: (d) => this.destinationOptions.set(d),
         error: () => this.destinationOptions.set([]),
       }),

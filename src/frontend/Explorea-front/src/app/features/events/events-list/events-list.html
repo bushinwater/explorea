@@ -120,7 +120,15 @@
         </div>
 
         <!-- AI banner -->
-        <div class="ai-banner" *ngIf="!hasMore && !loadingMore && !loading">
+        <div
+          class="ai-banner"
+          *ngIf="!hasMore && !loadingMore && !loading"
+          role="button"
+          tabindex="0"
+          (click)="openAiRecommendation()"
+          (keydown.enter)="openAiRecommendation()"
+          (keydown.space)="openAiRecommendation()"
+        >
           <span class="material-icons ai-banner__icon">auto_awesome</span>
           <div class="ai-banner__text">
             <strong>{{ 'EVENTS.AI_BANNER_TITLE' | translate }}</strong>
@@ -215,6 +223,9 @@
               <div class="planner-entries-header">
                 <span class="material-icons">event</span>
                 <span>{{ plannerSelectedDateLabel }}</span>
+                <button class="planner-remove-all-btn" *ngIf="plannerEntries.length > 0" (click)="removeAllEntries()" type="button" title="Obriši sve">
+                  <span class="material-icons">delete_sweep</span>
+                </button>
               </div>
               <div *ngIf="plannerEntriesLoading" class="loading-more">
                 <span class="material-icons spin">sync</span>
@@ -232,9 +243,14 @@
                     <a class="planner-entry__name" [routerLink]="getEntryRoute(entry)">{{ entry.entityName }}</a>
                     <p class="planner-entry__note" *ngIf="entry.note">{{ entry.note }}</p>
                   </div>
-                  <button class="planner-entry__remove" (click)="removeEntry(entry.id)" title="Ukloni">
-                    <span class="material-icons">delete_outline</span>
-                  </button>
+                  <div class="planner-entry__actions">
+                    <button class="planner-entry__remove" (click)="removeEntry(entry.id)" title="Ukloni za ovaj dan">
+                      <span class="material-icons">delete_outline</span>
+                    </button>
+                    <button class="planner-entry__remove planner-entry__remove--all" (click)="removeEntityFromAllDays(entry.entityType, entry.entityId)" title="Ukloni iz svih dana">
+                      <span class="material-icons">delete_forever</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </ng-container>
@@ -286,7 +302,15 @@
           <span class="material-icons spin">sync</span>
         </div>
 
-        <div class="ai-banner" *ngIf="!hasMore && !loadingMore && !loading">
+        <div
+          class="ai-banner"
+          *ngIf="!hasMore && !loadingMore && !loading"
+          role="button"
+          tabindex="0"
+          (click)="openAiRecommendation()"
+          (keydown.enter)="openAiRecommendation()"
+          (keydown.space)="openAiRecommendation()"
+        >
           <span class="material-icons ai-banner__icon">auto_awesome</span>
           <div class="ai-banner__text">
             <strong>{{ 'EVENTS.AI_BANNER_TITLE' | translate }}</strong>
@@ -427,6 +451,9 @@
                 <div class="planner-entries-header">
                   <span class="material-icons">event</span>
                   <span>{{ plannerSelectedDateLabel }}</span>
+                  <button class="planner-remove-all-btn" *ngIf="plannerEntries.length > 0" (click)="removeAllEntries()" type="button" title="Obriši sve za ovaj dan">
+                    <span class="material-icons">delete_sweep</span>
+                  </button>
                 </div>
                 <div *ngIf="plannerEntriesLoading" class="loading-more" style="padding: 8px 0;">
                   <span class="material-icons spin">sync</span>
@@ -444,9 +471,14 @@
                       <a class="planner-entry__name" [routerLink]="getEntryRoute(entry)">{{ entry.entityName }}</a>
                       <p class="planner-entry__note" *ngIf="entry.note">{{ entry.note }}</p>
                     </div>
-                    <button class="planner-entry__remove" (click)="openDeleteConfirm(entry.id)" title="Ukloni">
-                      <span class="material-icons">delete_outline</span>
-                    </button>
+                    <div class="planner-entry__actions">
+                      <button class="planner-entry__remove" (click)="openDeleteConfirm(entry.id)" title="Ukloni za ovaj dan">
+                        <span class="material-icons">delete_outline</span>
+                      </button>
+                      <button class="planner-entry__remove planner-entry__remove--all" (click)="removeEntityFromAllDays(entry.entityType, entry.entityId)" title="Ukloni iz svih dana">
+                        <span class="material-icons">delete_forever</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </ng-container>
@@ -531,14 +563,14 @@
               >
                 <div class="desktop-event-row__image-wrap">
                   <img [src]="e.previewImageUrl" [alt]="e.name" loading="lazy" />
-                  <span class="event-card__type-badge">{{ e.type.name }}</span>
+                  <span class="event-card__type-badge">{{ e.type?.name }}</span>
                 </div>
                 <div class="desktop-event-row__body">
                   <h3 class="desktop-event-row__name">{{ e.name }}</h3>
                   <div class="desktop-event-row__meta">
                     <span>
                       <span class="material-icons">calendar_today</span>
-                      {{ formatDate(e.startDatetime) }}
+                      {{ formatDateRange(e.startDatetime, e.endDatetime) }}
                     </span>
                     <span>
                       <span class="material-icons">schedule</span>
@@ -546,7 +578,7 @@
                     </span>
                     <span>
                       <span class="material-icons">location_on</span>
-                      {{ e.address || e.city.name }}
+                      {{ eventLocationLabel(e) }}
                     </span>
                   </div>
                 </div>
@@ -599,13 +631,13 @@
 
       <ng-container *ngIf="!addModalSuccess">
         <div class="planner-modal__field" *ngIf="addModalDays.length > 1">
-          <label class="planner-modal__label">Izaberi dan</label>
+          <label class="planner-modal__label">Izaberi dane</label>
           <div class="planner-modal__day-chips">
             <button
               *ngFor="let d of addModalDays"
               class="planner-day-chip"
-              [class.active]="addModalSelectedDay === d.value"
-              (click)="addModalSelectedDay = d.value"
+              [class.active]="addModalSelectedDays.includes(d.value)"
+              (click)="toggleAddModalDay(d.value)"
               type="button"
             >{{ d.label }}</button>
           </div>

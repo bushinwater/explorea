@@ -67,6 +67,10 @@ export class AdminActivitiesService {
       }
     }
 
+    if (!deletedOnly && filters.sortBy !== 'none') {
+      params = params.set('sortBy', filters.sortBy);
+    }
+
     return this.http.get<ActivityPagedResponse>(url, { params });
   }
 

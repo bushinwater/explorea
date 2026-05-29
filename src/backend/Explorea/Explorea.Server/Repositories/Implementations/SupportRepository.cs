@@ -66,7 +66,8 @@ namespace Explorea.Server.Repositories.Implementations
         public async Task<SupportTicket?> GetTicketDetailAsync(Guid ticketId, bool includeInternalMessages)
         {
             var query = _db.SupportTickets
-                .Include(t => t.OwnerUser)
+                .Include(t => t.OwnerUser).ThenInclude(u => u!.Role)
+                .Include(t => t.OwnerUser).ThenInclude(u => u!.ManagedRegion)
                 .Include(t => t.AssignedToUser)
                 .Include(t => t.CreatedByAdmin)
                 .Include(t => t.EscalatedByUser)

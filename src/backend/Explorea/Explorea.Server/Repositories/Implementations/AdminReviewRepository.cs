@@ -2,6 +2,8 @@ using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace Explorea.Server.Repositories.Implementations
 {
@@ -24,7 +26,9 @@ namespace Explorea.Server.Repositories.Implementations
             List<int>? restrictToCityIds,
             Guid? placeOwnerUserId,
             int page,
-            int pageSize)
+            int pageSize,
+            string? search = null,
+            List<string>? extraFilters = null)
         {
             var query = _db.Reviews
                 .Include(r => r.User)
@@ -168,6 +172,62 @@ namespace Explorea.Server.Repositories.Implementations
                 query = query.Where(r =>
                     (r.EntityType == "place" && ownerPlaceIds.Contains(r.EntityId)) ||
                     (r.EntityType == "event" && ownerEventIds.Contains(r.EntityId)));
+            }
+
+            // Pretraga po nazivu entiteta
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                if (entityType == "destination")
+                {
+                    var ids = _db.Destinations.IgnoreQueryFilters().Where(d => d.Name.ToLower().Contains(s)).Select(d => d.Id);
+                    query = query.Where(r => ids.Contains(r.EntityId));
+                }
+                else if (entityType == "place")
+                {
+                    var ids = _db.Places.IgnoreQueryFilters().Where(p => p.Name.ToLower().Contains(s)).Select(p => p.Id);
+                    query = query.Where(r => ids.Contains(r.EntityId));
+                }
+                else if (entityType == "event")
+                {
+                    var ids = _db.Events.IgnoreQueryFilters().Where(e => e.Name.ToLower().Contains(s)).Select(e => e.Id);
+                    query = query.Where(r => ids.Contains(r.EntityId));
+                }
+                else if (entityType == "activity")
+                {
+                    var ids = _db.Activities.IgnoreQueryFilters().Where(a => a.Name.ToLower().Contains(s)).Select(a => a.Id);
+                    query = query.Where(r => ids.Contains(r.EntityId));
+                }
+                else
+                {
+                    var dIds = _db.Destinations.IgnoreQueryFilters().Where(d => d.Name.ToLower().Contains(s)).Select(d => d.Id);
+                    var pIds = _db.Places.IgnoreQueryFilters().Where(p => p.Name.ToLower().Contains(s)).Select(p => p.Id);
+                    var eIds = _db.Events.IgnoreQueryFilters().Where(e => e.Name.ToLower().Contains(s)).Select(e => e.Id);
+                    var aIds = _db.Activities.IgnoreQueryFilters().Where(a => a.Name.ToLower().Contains(s)).Select(a => a.Id);
+                    query = query.Where(r =>
+                        (r.EntityType == "destination" && dIds.Contains(r.EntityId)) ||
+                        (r.EntityType == "place"       && pIds.Contains(r.EntityId)) ||
+                        (r.EntityType == "event"       && eIds.Contains(r.EntityId)) ||
+                        (r.EntityType == "activity"    && aIds.Contains(r.EntityId)));
+                }
+            }
+
+            // Extra filteri po atributima objekta (samo za tip "place")
+            if (extraFilters?.Count > 0 && entityType == "place")
+            {
+                var efDict = extraFilters
+                    .Select(f => f.Split(':', 2))
+                    .Where(p => p.Length == 2)
+                    .ToDictionary(p => p[0], p => p[1]);
+
+                foreach (var (key, value) in efDict)
+                {
+                    var snippet = $"{{\"{key}\": {value.ToLower()}}}";
+                    var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+                    var matchingPlaceIds = await _db.Database.SqlQueryRaw<Guid>(
+                        "SELECT id FROM places WHERE extra_filters @> @snippet", param).ToListAsync();
+                    query = query.Where(r => r.EntityType == "place" && matchingPlaceIds.Contains(r.EntityId));
+                }
             }
 
             var total = await query.CountAsync();

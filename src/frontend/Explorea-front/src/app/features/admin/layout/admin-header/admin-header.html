@@ -17,11 +17,39 @@
 
   <!-- Center: search -->
   <div class="header__search-wrap">
-    <span class="material-icons header__search-icon">search</span>
+    <span class="material-icons header__search-icon">
+      {{ searchLoading() ? 'sync' : 'search' }}
+    </span>
     <input
+      #searchInputEl
       class="header__search-input"
       type="text"
-      [placeholder]="ui.t('shell.search')" />
+      autocomplete="off"
+      [placeholder]="ui.t('shell.search')"
+      (input)="onSearchInput($any($event.target).value)"
+      (focus)="searchResults().length && searchOpen.set(true)"
+      (blur)="$event.relatedTarget === null && closeSearch()"
+      (keydown)="onSearchKeyDown($event)" />
+
+    @if (searchOpen()) {
+      <div class="header__search-dropdown">
+        @for (result of searchResults(); track result.id) {
+          <button
+            class="header__search-item"
+            [class.header__search-item--focused]="focusedIndex() === $index"
+            type="button"
+            (mousedown)="$event.preventDefault()"
+            (click)="openResult(result); $event.stopPropagation()">
+            <span class="header__search-item__icon material-icons">{{ entityIcon(result.entityType) }}</span>
+            <span class="header__search-item__text">
+              <span class="header__search-item__name">{{ result.name }}</span>
+              <span class="header__search-item__type">{{ entityLabel(result.entityType) }}</span>
+            </span>
+          </button>
+        }
+      </div>
+      <div class="header__backdrop header__search-backdrop" (mousedown)="closeSearch()"></div>
+    }
   </div>
 
   <!-- Right: notification + user + avatar -->
@@ -36,7 +64,7 @@
       }
     </button>
 
-    <!-- User block — click to switch role (demo) -->
+    <!-- User block -->
     @if (showNotifications) {
       <section class="header__notifications-dropdown">
         <header class="header__notifications-header">
@@ -82,7 +110,12 @@
         <span class="header__user-name">{{ auth.userName }}</span>
         <span class="header__user-role">{{ ui.t('shell.role.' + auth.role()) }}</span>
       </div>
-      <div class="header__avatar" [title]="auth.userName">
+      <button
+        class="header__avatar"
+        type="button"
+        [title]="auth.userName"
+        [attr.aria-label]="ui.t('sidebar.settings')"
+        (click)="openSettings()">
         @if (auth.profileImageUrl) {
           <img [src]="auth.profileImageUrl" [alt]="auth.userName" class="header__avatar-img" />
         } @else {
@@ -93,7 +126,7 @@
             <span class="material-icons header__avatar-spin">sync</span>
           </div>
         }
-      </div>
+      </button>
     </div>
 
   </div>

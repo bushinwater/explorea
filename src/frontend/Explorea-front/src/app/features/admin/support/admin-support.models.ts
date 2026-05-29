@@ -131,6 +131,7 @@ export interface BackendTicketDetailDto extends BackendTicketListItemDto {
   escalatedByUserId: string | null;
   resolvedAt: string | null;
   closedAt: string | null;
+  ownerRegion?: string | null;
   messages: BackendMessageDto[];
 }
 

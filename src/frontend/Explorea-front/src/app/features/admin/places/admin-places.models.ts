@@ -50,6 +50,7 @@ export interface PlaceRow {
   destination: string | null;
   avgRating: number;
   isFeatured: boolean;
+  hasRecentActivity: boolean;
   address: string | null;
   status: PlaceStatus;
   createdAt: string;
@@ -135,6 +136,7 @@ export interface PlaceFilters {
   regionId: number | 'all';
   minRating: number | null;
   amenityId: number | null;
+  sortBy: 'none' | 'updatedAt_desc' | 'updatedAt_asc';
   page: number;
   pageSize: number;
 }

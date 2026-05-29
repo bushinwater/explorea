@@ -613,6 +613,26 @@
   text-decoration: line-through;
 }
 
+/* ===== ACTIVITY STATUS PILL ===== */
+.evts-act-status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.evts-act-status--active {
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.evts-act-status--inactive {
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
 /* ===== ROW ACTIONS (dest-row pattern) ===== */
 .row-actions {
   display: inline-flex;

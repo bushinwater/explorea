@@ -42,6 +42,12 @@ export class AdminReviewsService {
     } else if (filters.visibility === 'hidden') {
       params = params.set('isHidden', 'true');
     }
+    if (filters.search) {
+      params = params.set('search', filters.search);
+    }
+    for (const ef of filters.extraFilters) {
+      params = params.append('extraFilters', ef);
+    }
 
     return this.http.get<ReviewPagedResponse>(this.api, { params });
   }

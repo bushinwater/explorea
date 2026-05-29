@@ -11,7 +11,7 @@
         class="nav-item"
         [routerLink]="item.route"
         routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
+        [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' }"
         (click)="closeSidebar()">
         <span class="material-icons nav-icon">{{ item.icon }}</span>
         <span class="nav-label">{{ ui.t(item.labelKey) }}</span>

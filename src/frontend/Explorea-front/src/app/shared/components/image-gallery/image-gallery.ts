@@ -1,4 +1,4 @@
-import { Component, Input, HostListener } from '@angular/core';
+import { Component, Input, HostListener, ChangeDetectorRef, NgZone, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface GalleryImage {
@@ -13,17 +13,23 @@ export interface GalleryImage {
   templateUrl: './image-gallery.html',
   styleUrl: './image-gallery.css',
 })
-export class ImageGallery {
+export class ImageGallery implements OnDestroy {
+  constructor(private cdr: ChangeDetectorRef, private ngZone: NgZone) {}
+
   @Input() images: GalleryImage[] = [];
   @Input() viewAllLabel = 'Vidi sve';
-  /** When > 0, only this many thumbnails are shown; "Vidi sve" opens the lightbox. */
   @Input() maxPreview = 0;
-  /** When true, shows a 3-image grid on desktop (1 large + 2 small), horizontal scroll on mobile. */
   @Input() gridLayout = false;
 
   lightboxOpen = false;
   lightboxIndex = 0;
   showAll = false;
+  private lightboxScrollY = 0;
+  private lightboxLockedBody = false;
+
+  private touchStartX = 0;
+  private touchStartY = 0;
+  private touchSwipeDone = false;
 
   get visibleImages(): GalleryImage[] {
     return this.maxPreview > 0 ? this.images.slice(0, this.maxPreview) : this.images;
@@ -50,7 +56,7 @@ export class ImageGallery {
   openLightbox(index: number): void {
     this.lightboxIndex = index;
     this.lightboxOpen = true;
-    document.body.style.overflow = 'hidden';
+    this.lockLightboxScroll();
   }
 
   onViewAll(): void {
@@ -62,8 +68,13 @@ export class ImageGallery {
   }
 
   closeLightbox(): void {
+    if (this.touchSwipeDone) return;
     this.lightboxOpen = false;
-    document.body.style.overflow = '';
+    this.unlockLightboxScroll();
+  }
+
+  ngOnDestroy(): void {
+    this.unlockLightboxScroll();
   }
 
   prev(): void {
@@ -91,5 +102,48 @@ export class ImageGallery {
   @HostListener('document:keydown.arrowRight')
   onRight(): void {
     if (this.lightboxOpen) this.next();
+  }
+
+  onImgTouchStart(event: TouchEvent): void {
+    this.touchStartX = event.touches[0].clientX;
+    this.touchStartY = event.touches[0].clientY;
+  }
+
+  onImgTouchEnd(event: TouchEvent): void {
+    const dx = event.changedTouches[0].clientX - this.touchStartX;
+    const dy = event.changedTouches[0].clientY - this.touchStartY;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+    this.ngZone.run(() => {
+      if (dx < 0) this.next();
+      else this.prev();
+      this.touchSwipeDone = true;
+      setTimeout(() => { this.touchSwipeDone = false; }, 500);
+    });
+  }
+
+  private lockLightboxScroll(): void {
+    if (document.body.style.position === 'fixed') return;
+
+    this.lightboxScrollY = window.scrollY;
+    this.lightboxLockedBody = true;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.lightboxScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockLightboxScroll(): void {
+    if (!this.lightboxLockedBody) return;
+
+    this.lightboxLockedBody = false;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo({ top: this.lightboxScrollY, behavior: 'instant' as ScrollBehavior });
   }
 }
