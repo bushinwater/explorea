@@ -1,4 +1,4 @@
-import { Component, Input, HostListener, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, Input, HostListener, ChangeDetectorRef, NgZone, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface GalleryImage {
@@ -13,7 +13,7 @@ export interface GalleryImage {
   templateUrl: './image-gallery.html',
   styleUrl: './image-gallery.css',
 })
-export class ImageGallery {
+export class ImageGallery implements OnDestroy {
   constructor(private cdr: ChangeDetectorRef, private ngZone: NgZone) {}
 
   @Input() images: GalleryImage[] = [];
@@ -24,6 +24,8 @@ export class ImageGallery {
   lightboxOpen = false;
   lightboxIndex = 0;
   showAll = false;
+  private lightboxScrollY = 0;
+  private lightboxLockedBody = false;
 
   private touchStartX = 0;
   private touchStartY = 0;
@@ -54,7 +56,7 @@ export class ImageGallery {
   openLightbox(index: number): void {
     this.lightboxIndex = index;
     this.lightboxOpen = true;
-    document.body.style.overflow = 'hidden';
+    this.lockLightboxScroll();
   }
 
   onViewAll(): void {
@@ -68,7 +70,11 @@ export class ImageGallery {
   closeLightbox(): void {
     if (this.touchSwipeDone) return;
     this.lightboxOpen = false;
-    document.body.style.overflow = '';
+    this.unlockLightboxScroll();
+  }
+
+  ngOnDestroy(): void {
+    this.unlockLightboxScroll();
   }
 
   prev(): void {
@@ -113,5 +119,31 @@ export class ImageGallery {
       this.touchSwipeDone = true;
       setTimeout(() => { this.touchSwipeDone = false; }, 500);
     });
+  }
+
+  private lockLightboxScroll(): void {
+    if (document.body.style.position === 'fixed') return;
+
+    this.lightboxScrollY = window.scrollY;
+    this.lightboxLockedBody = true;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.lightboxScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockLightboxScroll(): void {
+    if (!this.lightboxLockedBody) return;
+
+    this.lightboxLockedBody = false;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo({ top: this.lightboxScrollY, behavior: 'instant' as ScrollBehavior });
   }
 }

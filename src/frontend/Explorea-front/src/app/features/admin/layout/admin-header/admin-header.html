@@ -110,7 +110,12 @@
         <span class="header__user-name">{{ auth.userName }}</span>
         <span class="header__user-role">{{ ui.t('shell.role.' + auth.role()) }}</span>
       </div>
-      <div class="header__avatar" [title]="auth.userName">
+      <button
+        class="header__avatar"
+        type="button"
+        [title]="auth.userName"
+        [attr.aria-label]="ui.t('sidebar.settings')"
+        (click)="openSettings()">
         @if (auth.profileImageUrl) {
           <img [src]="auth.profileImageUrl" [alt]="auth.userName" class="header__avatar-img" />
         } @else {
@@ -121,7 +126,7 @@
             <span class="material-icons header__avatar-spin">sync</span>
           </div>
         }
-      </div>
+      </button>
     </div>
 
   </div>

@@ -82,6 +82,8 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
 
   lightboxOpen = false;
   lightboxIndex = 0;
+  private lightboxScrollY = 0;
+  private lightboxLockedBody = false;
 
   scrollProgress = 0;
   titleCaptured = false;
@@ -153,7 +155,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     this.themeObserver?.disconnect();
     this.marker?.remove();
     this.map?.remove();
-    document.body.style.overflow = '';
+    this.unlockLightboxScroll();
   }
 
   private captureTitle(): void {
@@ -474,12 +476,12 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   openLightbox(index: number): void {
     this.lightboxIndex = index;
     this.lightboxOpen = true;
-    document.body.style.overflow = 'hidden';
+    this.lockLightboxScroll();
   }
 
   closeLightbox(): void {
     this.lightboxOpen = false;
-    document.body.style.overflow = '';
+    this.unlockLightboxScroll();
   }
 
   lightboxNext(): void {
@@ -492,6 +494,32 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     const total = this.galleryImages.length;
     if (!total) return;
     this.lightboxIndex = (this.lightboxIndex - 1 + total) % total;
+  }
+
+  private lockLightboxScroll(): void {
+    if (document.body.style.position === 'fixed') return;
+
+    this.lightboxScrollY = window.scrollY;
+    this.lightboxLockedBody = true;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.lightboxScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockLightboxScroll(): void {
+    if (!this.lightboxLockedBody) return;
+
+    this.lightboxLockedBody = false;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo({ top: this.lightboxScrollY, behavior: 'instant' as ScrollBehavior });
   }
 
   get currentLightboxImage(): string {
