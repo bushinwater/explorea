@@ -541,11 +541,7 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
 
   onSearchKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter') {
-      if (this.showDropdown && this.searchResults.length > 0) {
-        this.onSelectResult(this.searchResults[0]);
-      } else {
-        this.onSearch();
-      }
+      this.onSearch();
     }
     if (event.key === 'Escape') {
       this.showDropdown = false;

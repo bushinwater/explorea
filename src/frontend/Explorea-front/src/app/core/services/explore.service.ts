@@ -36,6 +36,7 @@ export interface ExploreParams {
   minPrice?: number;
   maxPrice?: number;
   extraFilters?: Record<string, string>;
+  regionId?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -75,6 +76,8 @@ export class ExploreService {
     const ef = params.extraFilters ?? {};
     for (const [key, value] of Object.entries(ef))
       httpParams = httpParams.append('extraFilters', `${key}:${value}`);
+
+    if (params.regionId !== undefined) httpParams = httpParams.set('regionId', params.regionId);
 
     return this.http.get<ExploreMapResult>(`${this.api}/map`, { params: httpParams });
   }

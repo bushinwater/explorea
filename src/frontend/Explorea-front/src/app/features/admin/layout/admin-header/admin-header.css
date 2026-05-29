@@ -379,6 +379,7 @@
   position: relative;
   width: 36px;
   height: 36px;
+  padding: 0;
   border: none;
   border-radius: var(--radius-full);
   background: var(--color-primary);

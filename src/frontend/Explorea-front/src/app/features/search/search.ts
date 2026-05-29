@@ -194,10 +194,30 @@ export class Search implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.isLoggedIn = this.authService.isLoggedIn();
-    const state = history.state;
-    const fromHero = state?.fromHero === true;
+    const qp        = this.route.snapshot.queryParamMap;
+    const state     = history.state;
+    const fromHero  = state?.fromHero === true;
+    // URL params take priority when navigating back (they persist across navigation)
+    const hasUrlState = qp.has('q') || qp.has('type');
 
-    if (fromHero) {
+    if (hasUrlState) {
+      // Restore from URL query params (back navigation)
+      if (qp.get('q'))  this.query = qp.get('q')!;
+      const t = qp.get('type');
+      if (t && t !== 'sve') {
+        this.filterEntityType = t as 'destination' | 'place' | 'activity' | 'event';
+        this.activeChip = t;
+        this.activeTab  = t;
+      }
+      if (qp.get('nearby') === '1') this.nearbyEnabled = true;
+      if (qp.get('sort'))  this.sortBy  = qp.get('sort') as any;
+      if (qp.get('dir'))   this.sortDir = qp.get('dir') as any;
+      try {
+        const f = qp.get('filters');
+        if (f) this.filters = JSON.parse(decodeURIComponent(f));
+      } catch { /* ignore malformed */ }
+      if (this.query || this.filterEntityType) this.hasSearched = true;
+    } else if (fromHero) {
       if (state.query)  this.query = state.query;
       if (state.filters) this.filters = { ...state.filters };
       if (state.nearbyEnabled) this.nearbyEnabled = state.nearbyEnabled;
@@ -213,22 +233,22 @@ export class Search implements OnInit, OnDestroy {
       if (state.query || state.filterEntityType || (this.activeEntityTypes.length > 1)) {
         this.hasSearched = true;
       }
-    }
-
-    const typeParam = this.route.snapshot.queryParamMap.get('type');
-    const preselected = !fromHero && typeParam && ENTITY_TABS.some(t => t.key === typeParam) && typeParam !== 'sve';
-    if (preselected) {
-      this.activeChip       = typeParam!;
-      this.activeTab        = typeParam!;
-      this.hasSearched      = true;
-      this.filterEntityType = typeParam as 'destination' | 'place' | 'activity' | 'event';
+    } else {
+      const typeParam = qp.get('type');
+      const preselected = typeParam && ENTITY_TABS.some(t => t.key === typeParam) && typeParam !== 'sve';
+      if (preselected) {
+        this.activeChip       = typeParam!;
+        this.activeTab        = typeParam!;
+        this.hasSearched      = true;
+        this.filterEntityType = typeParam as 'destination' | 'place' | 'activity' | 'event';
+      }
     }
 
     this.loadIdleContent();
     this.loadUserLocation();
     this.loadLookups();
 
-    if (preselected || (fromHero && (this.query || this.filterEntityType || this.activeEntityTypes.length > 1))) {
+    if (this.hasSearched) {
       this.triggerSearch();
     }
 
@@ -421,6 +441,27 @@ export class Search implements OnInit, OnDestroy {
     );
   }
 
+  // ─── URL state sync ───────────────────────────────────────────────────────
+
+  private syncToUrl(): void {
+    const params: Record<string, string> = {};
+    if (this.query) params['q'] = this.query;
+    if (this.filterEntityType) params['type'] = this.filterEntityType;
+    if (this.nearbyEnabled) params['nearby'] = '1';
+    if (this.sortBy) { params['sort'] = this.sortBy; params['dir'] = this.sortDir; }
+    const f = this.filters;
+    const hasFilters =
+      f.minRating != null || f.minPrice != null || f.maxPrice != null ||
+      f.radiusKm  != null || f.openNow  != null ||
+      (f.placeTypeIds        ?? []).length > 0 ||
+      (f.activityCategoryIds ?? []).length > 0 ||
+      (f.eventTypeIds        ?? []).length > 0 ||
+      (f.destinationTypeIds  ?? []).length > 0 ||
+      Object.keys(f.extraFilters ?? {}).length > 0;
+    if (hasFilters) params['filters'] = encodeURIComponent(JSON.stringify(f));
+    this.router.navigate([], { queryParams: params, replaceUrl: true });
+  }
+
   // ─── Search execution ─────────────────────────────────────────────────────
 
   private triggerSearch(): void {
@@ -437,6 +478,7 @@ export class Search implements OnInit, OnDestroy {
    * - specific tab         → /api/search-page/list (server-side sort/filter/pagination)
    */
   private executeSearch(page: number, append: boolean): void {
+    if (page === 1 && !append) this.syncToUrl();
     if (this.activeTab === 'sve') {
 
       // Multi-entity with no query: parallel list calls per selected type

@@ -350,6 +350,24 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
+  protected isMultiFilterActive(key: string, value: string): boolean {
+    const stored = this.modalExtraFilters()[key] ?? '';
+    return stored.split(',').map(v => v.trim()).includes(value);
+  }
+
+  protected toggleMultiFilter(key: string, value: string): void {
+    this.modalExtraFilters.update(ef => {
+      const copy = { ...ef };
+      const current = (copy[key] ?? '').split(',').map(v => v.trim()).filter(Boolean);
+      const idx = current.indexOf(value);
+      if (idx >= 0) current.splice(idx, 1);
+      else current.push(value);
+      if (current.length === 0) delete copy[key];
+      else copy[key] = current.join(',');
+      return copy;
+    });
+  }
+
   protected toggleAddFilter(): void { this.showAddFilter.update(v => !v); }
 
   protected addNewFilter(): void {

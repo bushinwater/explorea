@@ -1323,3 +1323,42 @@
   .lightbox__nav--right { right: 12px; }
   .lightbox__close { top: 12px; right: 12px; }
 }
+
+/* Offers horizontal scroll cards (in details tab) */
+.offers-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.offers-chips-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+.offers-chips-scroll::-webkit-scrollbar { display: none; }
+
+.offers-chip-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  flex-shrink: 0;
+  min-width: 80px;
+  text-align: center;
+}
+
+.offers-chip-card__icon {
+  font-size: 22px;
+  color: var(--color-primary);
+}
+
+.offers-chip-card__label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}

@@ -126,16 +126,14 @@
                       />
                       {{ fd.filterLabel }}
                     </label>
-                  } @else if (fd.filterType === 'select' || fd.filterType === 'multi_select') {
+                  } @else if (fd.filterType === 'select') {
                     <div class="ev-filter-select-group">
                       <span class="ev-filter-select-label">{{ fd.filterLabel }}</span>
                       <div class="ev-filter-opts">
                         @for (opt of fd.options; track opt.optionValue) {
                           <label
                             class="ev-filter-chip"
-                            [class.ev-filter-chip--active]="
-                              modalExtraFilters()[fd.filterKey] === opt.optionValue
-                            "
+                            [class.ev-filter-chip--active]="modalExtraFilters()[fd.filterKey] === opt.optionValue"
                           >
                             <input
                               type="radio"
@@ -143,6 +141,25 @@
                               [value]="opt.optionValue"
                               [checked]="modalExtraFilters()[fd.filterKey] === opt.optionValue"
                               (change)="updateModalExtraFilter(fd.filterKey, opt.optionValue)"
+                            />
+                            {{ opt.optionLabel }}
+                          </label>
+                        }
+                      </div>
+                    </div>
+                  } @else if (fd.filterType === 'multi_select') {
+                    <div class="ev-filter-select-group">
+                      <span class="ev-filter-select-label">{{ fd.filterLabel }}</span>
+                      <div class="ev-filter-opts">
+                        @for (opt of fd.options; track opt.optionValue) {
+                          <label
+                            class="ev-filter-chip"
+                            [class.ev-filter-chip--active]="isMultiFilterActive(fd.filterKey, opt.optionValue)"
+                          >
+                            <input
+                              type="checkbox"
+                              [checked]="isMultiFilterActive(fd.filterKey, opt.optionValue)"
+                              (change)="toggleMultiFilter(fd.filterKey, opt.optionValue)"
                             />
                             {{ opt.optionLabel }}
                           </label>

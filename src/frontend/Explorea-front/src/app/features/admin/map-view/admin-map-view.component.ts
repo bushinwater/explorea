@@ -481,6 +481,11 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
     if (this.subcatEntityType === 'event'        && this.selectedSubcatIds.length > 0) params.eventTypeIds         = this.selectedSubcatIds;
     if (this.subcatEntityType === 'destination'  && this.selectedSubcatIds.length > 0) params.destinationTypeIds   = this.selectedSubcatIds;
 
+    if (this.auth.role() === 'tourist_organization') {
+      const rid = this.auth.managedRegionId;
+      if (rid !== null) params.regionId = rid;
+    }
+
     this.exploreService.getMapMarkers(params).subscribe({
       next: result => {
         this.pins = result.markers;
