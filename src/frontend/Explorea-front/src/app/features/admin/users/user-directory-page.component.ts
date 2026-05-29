@@ -17,6 +17,7 @@ import { AdminUserDirectoryService } from '@shared/services';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { UserCreateModalComponent } from './user-create-modal.component';
 import { UserEditModalComponent } from './user-edit-modal.component';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
@@ -143,6 +144,7 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
     private readonly adminUserDirectoryService: AdminUserDirectoryService,
     protected readonly authContext: AdminAuthContextService,
     protected readonly ui: AdminUiPreferencesService,
+    private readonly dashboardAuth: DashboardAuthService,
   ) {}
 
   ngOnInit(): void {
@@ -354,6 +356,8 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
   }
 
   protected canManageUser(user: UserDirectoryUser): boolean {
+    if (user.id === this.dashboardAuth.currentUserId) return false;
+
     const context = this.authContext.context();
 
     if (context.role === 'super_admin') return true;

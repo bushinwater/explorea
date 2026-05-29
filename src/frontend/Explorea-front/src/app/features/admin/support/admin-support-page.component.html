@@ -363,6 +363,20 @@
             <dd>{{ ticket.userName }}</dd>
           </div>
 
+          @if (ticket.senderRole) {
+            <div class="support-details__row">
+              <dt>Rola</dt>
+              <dd>{{ senderRoleLabel(ticket.senderRole) }}</dd>
+            </div>
+          }
+
+          @if (ticket.senderRole === 'tourist_organization' && ticket.region) {
+            <div class="support-details__row">
+              <dt>Region</dt>
+              <dd>{{ ticket.region }}</dd>
+            </div>
+          }
+
           <div class="support-details__row">
             <dt>Tema</dt>
             <dd>{{ ticket.subject }}</dd>

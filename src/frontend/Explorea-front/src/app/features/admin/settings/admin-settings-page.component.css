@@ -1371,3 +1371,103 @@
     align-items: flex-start;
   }
 }
+
+/* ── Moderation rules modal ─────────────────────────────────── */
+
+.moderation-rules-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1900;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(8px);
+}
+
+.moderation-rules-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(680px, 100%);
+  max-height: calc(100dvh - 48px);
+  border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+  border-radius: 22px;
+  background: var(--color-surface);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+  overflow: hidden;
+}
+
+.moderation-rules-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 0;
+  flex-shrink: 0;
+}
+
+.moderation-rules-modal__header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.35rem;
+  line-height: 1.15;
+}
+
+.moderation-rules-modal__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.moderation-rule-section {
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  border-radius: 14px;
+  padding: 16px 18px;
+  background: color-mix(in srgb, var(--color-bg) 50%, transparent);
+}
+
+.moderation-rule-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.moderation-rule-section h3 .material-icons {
+  font-size: 1.1rem;
+  color: var(--color-primary);
+}
+
+.moderation-rule-section ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.moderation-rule-section li {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.moderation-rule-section em {
+  color: var(--color-text-primary);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.moderation-rules-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px 24px;
+  flex-shrink: 0;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+}

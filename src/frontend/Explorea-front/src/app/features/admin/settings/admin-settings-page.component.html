@@ -101,7 +101,6 @@
             <h2>Informacije o profilu</h2>
             <p>Ažuriraj lične podatke ulogovanog admina.</p>
           </div>
-          <span class="profile-form__badge">Backend Data</span>
         </header>
 
         <div class="profile-form__grid">
@@ -170,8 +169,6 @@
           <p class="settings-inline-message settings-inline-message--success">{{ preferencesSuccessMessage() }}</p>
           }
         </div>
-
-        <span class="profile-form__badge">Backend Data</span>
       </section>
 
       <section class="preferences-grid">
@@ -268,8 +265,6 @@
           <p class="settings-inline-message settings-inline-message--success">{{ notificationsSuccessMessage() }}</p>
           }
         </div>
-
-        <span class="profile-form__badge">Backend data</span>
       </section>
 
       <section class="notification-channel-grid">
@@ -425,8 +420,6 @@
           <p class="settings-inline-message settings-inline-message--error">{{ administrationErrorMessage() }}</p>
           }
         </div>
-
-        <span class="profile-form__badge">Backend overview</span>
       </section>
 
       <section class="administration-stats-grid">
@@ -498,7 +491,9 @@
               <p>{{ setting.description }}</p>
             </div>
 
-            <button class="btn btn-secondary" type="button">
+            <button class="btn btn-secondary" type="button"
+              [disabled]="!setting.route && !setting.popup"
+              (click)="onSettingAction(setting)">
               {{ setting.actionLabel }}
             </button>
           </article>
@@ -592,6 +587,76 @@
           <span class="material-icons">check</span>
           {{ isProfilePhotoUploading() ? 'Uploading...' : 'Primeni' }}
         </button>
+      </footer>
+    </section>
+  </div>
+  }
+
+  @if (showModerationRulesModal()) {
+  <div class="moderation-rules-backdrop" (click)="closeModerationRulesModal()">
+    <section class="moderation-rules-modal" role="dialog" aria-modal="true" aria-labelledby="moderation-rules-title" (click)="$event.stopPropagation()">
+      <header class="moderation-rules-modal__header">
+        <div>
+          <p class="section-eyebrow">Administracija</p>
+          <h2 id="moderation-rules-title">Pravila moderacije</h2>
+        </div>
+        <button class="profile-photo-cropper__close" type="button" (click)="closeModerationRulesModal()" aria-label="Zatvori">
+          <span class="material-icons">close</span>
+        </button>
+      </header>
+
+      <div class="moderation-rules-modal__body">
+        <article class="moderation-rule-section">
+          <h3><span class="material-icons">place</span> Mesta i objekti</h3>
+          <ul>
+            <li>Svaki objekat mora imati jasnu adresu, kontakt i bar jednu fotografiju pre odobravanja.</li>
+            <li>Naziv mora biti jedinstven u okviru istog grada — duplikati se odbijaju automatski.</li>
+            <li>Objekti bez aktivnosti duže od 6 meseci prelaze u status <em>neaktivan</em> i podležu ponovnoj proveri.</li>
+            <li>Place Owner može imati najviše 10 aktivnih objekata bez posebnog odobrenja superadmina.</li>
+          </ul>
+        </article>
+
+        <article class="moderation-rule-section">
+          <h3><span class="material-icons">star</span> Recenzije</h3>
+          <ul>
+            <li>Recenzija koja sadrži uvredljiv jezik, lične napade ili nepristojne slike mora biti uklonjena u roku od 24h od prijave.</li>
+            <li>Recenzija ispod ocene 2 automatski dobija oznaku za pregled — moderator je dužan da je proveri.</li>
+            <li>Vlasnik objekta ne sme da piše recenzije za sopstveni objekat ni putem drugog naloga.</li>
+            <li>Skrivanje recenzije bez opravdanog razloga podleže reviziji superadmina.</li>
+          </ul>
+        </article>
+
+        <article class="moderation-rule-section">
+          <h3><span class="material-icons">event</span> Dogadjaji i aktivnosti</h3>
+          <ul>
+            <li>Dogadjaj mora imati tačan datum, lokaciju i opis pre nego što bude prikazan putnicima.</li>
+            <li>Prošli dogadjaji se arhiviraju automatski 48h nakon završetka.</li>
+            <li>Aktivnosti sa cenom moraju imati navedenu valutu i uslove otkazivanja.</li>
+          </ul>
+        </article>
+
+        <article class="moderation-rule-section">
+          <h3><span class="material-icons">group</span> Korisnici i nalozi</h3>
+          <ul>
+            <li>Turisticka organizacija upravlja samo korisnicima i sadržajem u svom regionu.</li>
+            <li>Nalog suspendovan više od 3 puta zbog kršenja pravila može biti trajno onemogućen.</li>
+            <li>Promena uloge (role) korisnika moguća je isključivo putem superadmina.</li>
+            <li>Lični podaci korisnika smeju da budu korišćeni samo u svrhe rada platforme, u skladu sa GDPR-om.</li>
+          </ul>
+        </article>
+
+        <article class="moderation-rule-section">
+          <h3><span class="material-icons">support_agent</span> Podrška</h3>
+          <ul>
+            <li>Svaki tiket mora dobiti odgovor u roku od 48h od prijema.</li>
+            <li>Eskalirani tiketi imaju prioritet i rešavaju se u roku od 24h.</li>
+            <li>Tiketi koji sadrže pritužbe na admina automatski se prosledjuju superadminu.</li>
+          </ul>
+        </article>
+      </div>
+
+      <footer class="moderation-rules-modal__footer">
+        <button class="btn btn-primary" type="button" (click)="closeModerationRulesModal()">Zatvori</button>
       </footer>
     </section>
   </div>

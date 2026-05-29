@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { AdminProfileService } from '../core/services/admin-profile.service';
 import { Subscription } from 'rxjs';
@@ -68,7 +69,7 @@ type NotificationChannelKey =
 @Component({
   selector: 'app-admin-settings-page',
   standalone: true,
-  imports: [CommonModule, ImageCropperComponent],
+  imports: [CommonModule, RouterModule, ImageCropperComponent],
   templateUrl: './admin-settings-page.component.html',
   styleUrl: './admin-settings-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -106,6 +107,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
   readonly isAdministrationLoading = signal(false);
   readonly administrationErrorMessage = signal('');
+  readonly showModerationRulesModal = signal(false);
 
   readonly isNewsletterExporting = signal(false);
 
@@ -235,13 +237,15 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       title: 'Upravljanje admin ulogama',
       description: 'Superadmin može da kontroliše dozvole, regione i pristup drugim adminima.',
       actionLabel: 'Otvori korisnike',
+      route: '/admin/users',
     },
     {
       icon: 'rule',
       title: 'Pravila moderacije',
       description:
         'Podesi osnovna pravila za odobravanje destinacija, mesta, događaja i aktivnosti.',
-      actionLabel: 'Podesi pravila',
+      actionLabel: 'Pogledaj pravila',
+      popup: 'moderation-rules',
     },
   ]);
 
@@ -285,6 +289,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     private readonly adminSettingsService: AdminSettingsService,
     private readonly ui: AdminUiPreferencesService,
     private readonly adminProfileService: AdminProfileService,
+    protected readonly router: Router,
   ) {}
 
   ngOnDestroy(): void {
@@ -505,19 +510,31 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     this.notificationsErrorMessage.set('');
   }
 
+  protected onSettingAction(setting: AdminAdministrationSettingDto): void {
+    if (setting.popup === 'moderation-rules') {
+      this.showModerationRulesModal.set(true);
+    } else if (setting.route) {
+      this.router.navigate([setting.route]);
+    }
+  }
+
+  protected closeModerationRulesModal(): void {
+    this.showModerationRulesModal.set(false);
+  }
+
   protected sendTestReport(): void {
     this.isTestReportSending.set(true);
     this.testReportResult.set(null);
 
     this.subscription.add(
-      this.adminSettingsService.sendDueReports().subscribe({
+      this.adminSettingsService.forceSendReport().subscribe({
         next: (result) => {
           this.isTestReportSending.set(false);
           this.testReportResult.set({
             ok: true,
             message: result.sentCount > 0
-              ? `Poslato ${result.sentCount} izveštaj(a).`
-              : 'Nema izveštaja za slanje (proveri podešavanja ili spam folder).',
+              ? `Izveštaj je poslat — proveri inbox (može biti u spam-u).`
+              : 'Nema podataka za izveštaj, ali nije došlo do greške.',
           });
         },
         error: () => {
@@ -642,7 +659,9 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
       this.adminSettingsService.getAdministration().subscribe({
         next: (overview) => {
           this.administrationStats.set(overview.stats);
-          this.administrationSettings.set(overview.settings);
+          const localActions = this.administrationSettings().map((s) => ({ route: s.route, popup: s.popup }));
+          const merged = overview.settings.map((s, i) => ({ ...s, ...localActions[i] }));
+          this.administrationSettings.set(merged);
           this.systemToggles.set(overview.systemToggles);
           this.isAdministrationLoading.set(false);
         },

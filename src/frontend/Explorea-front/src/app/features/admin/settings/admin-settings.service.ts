@@ -76,6 +76,8 @@ export interface AdminAdministrationSettingDto {
   title: string;
   description: string;
   actionLabel: string;
+  route?: string;
+  popup?: string;
 }
 
 export interface AdminSystemToggleDto {
@@ -128,6 +130,10 @@ export class AdminSettingsService {
 
   sendDueReports(): Observable<{ sentCount: number; sentAt: string }> {
     return this.http.post<{ sentCount: number; sentAt: string }>(`${this.api}/notifications/reports/send-due`, {});
+  }
+
+  forceSendReport(): Observable<{ sentCount: number; sentAt: string }> {
+    return this.http.post<{ sentCount: number; sentAt: string }>(`${this.api}/notifications/reports/send-now`, {});
   }
 
   deleteProfilePhoto(): Observable<AdminProfileDto> {

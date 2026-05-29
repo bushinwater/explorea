@@ -269,6 +269,8 @@ namespace Explorea.Server.Services.Admin
                 LastActivityAt = ticket.LastActivityAt,
                 ResolvedAt = ticket.ResolvedAt,
                 ClosedAt = ticket.ClosedAt,
+                SenderRole = ticket.OwnerUser?.Role?.Name,
+                OwnerRegion = ticket.OwnerUser?.ManagedRegion?.Name,
                 Messages = messages
                     .OrderBy(m => m.CreatedAt)
                     .Select(m => MapMessage(m, FormatUserName(m.SenderUser)))

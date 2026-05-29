@@ -57,6 +57,30 @@ namespace Explorea.Server.Services.Admin
             return sentCount;
         }
 
+        public async Task<int> ForceSendReportAsync(Guid userId, DateTimeOffset now)
+        {
+            var user = await _db.Users
+                .Include(u => u.Preferences)
+                .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+
+            if (user?.Preferences == null) return 0;
+
+            var preferences = user.Preferences;
+            var topics = ParseTopics(preferences.NotificationReportTopics);
+
+            if (topics.Count == 0)
+                topics = new List<string> { "weekly_summary" };
+
+            var reportData = await BuildReportDataAsync(user, preferences, now, topics);
+            await _emailService.SendAdminReportEmailAsync(user.Email, reportData);
+
+            preferences.NotificationReportsLastSentAt = now;
+            preferences.UpdatedAt = now;
+            await _db.SaveChangesAsync();
+
+            return 1;
+        }
+
         private async Task<AdminReportEmailData> BuildReportDataAsync(
             User user,
             UserPreferences prefs,

@@ -21,6 +21,8 @@ namespace Explorea.API.DTOs.Support
         public DateTimeOffset LastActivityAt { get; set; }
         public DateTimeOffset? ResolvedAt { get; set; }
         public DateTimeOffset? ClosedAt { get; set; }
+        public string? SenderRole { get; set; }
+        public string? OwnerRegion { get; set; }
         public List<SupportMessageDto> Messages { get; set; } = new();
     }
 }
