@@ -33,6 +33,7 @@ import { AdminPlacesService } from './admin-places.service';
 import { PlaceCreateModalComponent } from './admin-place-create-modal.component';
 import { PlaceEditModalComponent } from './admin-place-edit-modal.component';
 import { MapPreviewComponent } from '../shared/components/map-preview/map-preview.component';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-admin-places-page',
@@ -103,20 +104,20 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   );
 
   protected readonly isSuperAdmin = computed(
-    () => this.authContext.context().role === 'super_admin',
+    () => this.auth.getRole() === 'super_admin',
   );
 
   protected readonly isPlaceOwner = computed(
-    () => this.authContext.context().role === 'place_owner',
+    () => this.auth.getRole() === 'place_owner',
   );
 
   protected readonly canReviewOwnerSubmissions = computed(() => {
-    const role = this.authContext.context().role;
+    const role = this.auth.getRole();
     return role === 'super_admin' || role === 'tourist_organization';
   });
 
   protected readonly canSeeRegionFilter = computed(() => {
-    const role = this.authContext.context().role;
+    const role = this.auth.getRole();
     return role === 'super_admin' || role === 'tourist_organization';
   });
 
@@ -146,6 +147,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
+    private readonly auth: AuthService,
     protected readonly ui: AdminUiPreferencesService,
   ) {}
 

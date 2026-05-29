@@ -13,7 +13,7 @@ import {
   signal,
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import {
@@ -458,6 +458,9 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
     if (startDate && endDate && endDate <= startDate) errs.push('Datum završetka mora biti posle datuma početka.');
     const price = f.price.trim() ? Number(f.price.trim().replace(',', '.')) : null;
     if (price !== null && (isNaN(price) || price < 0)) errs.push('Cena mora biti pozitivan broj.');
+    if (this.requiresOwnerDocuments && !f.destinationId && !f.placeId) {
+      errs.push('Izaberite destinaciju ili svoj objekat za koji vezujete dogadjaj.');
+    }
     if (this.requiresOwnerDocuments && !this.hasRequiredOwnerDocuments()) {
       errs.push('Dodaj licni dokument i dokaz vlasnistva ili ovlascenja.');
     }
@@ -512,9 +515,9 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
             finishCreate();
           }
         },
-        error: () => {
+        error: (error: HttpErrorResponse) => {
           this.isSaving.set(false);
-          this.errors.set(['Kreiranje nije uspelo. Proverite podatke i pokušajte ponovo.']);
+          this.errors.set([this.createErrorMessage(error)]);
         },
       }),
     );
@@ -674,6 +677,17 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
   private hasRequiredOwnerDocuments(): boolean {
     const documents = this.ownerDocuments();
     return !!documents['identity'] && !!documents['authorization'];
+  }
+
+  private createErrorMessage(error: HttpErrorResponse): string {
+    const serverMessage = typeof error.error?.message === 'string' ? error.error.message : '';
+    if (serverMessage.includes('Destination is required')) {
+      return 'Izaberite destinaciju ili svoj objekat za koji vezujete dogadjaj.';
+    }
+    if (serverMessage.includes('attach events only to their own places')) {
+      return 'Dogadjaj mozete povezati samo sa svojim objektom.';
+    }
+    return serverMessage || 'Kreiranje nije uspelo. Proverite podatke i pokusajte ponovo.';
   }
 
   private ownerDocumentEntries(): Array<[string, File]> {

@@ -31,6 +31,7 @@ import { EventCreateModalComponent } from './admin-event-create-modal.component'
 import { EventEditModalComponent } from './admin-event-edit-modal.component';
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 import { MapPreviewComponent } from '../shared/components/map-preview/map-preview.component';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-admin-events-page',
@@ -101,13 +102,13 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly detailsReviews   = signal<ReviewItem[]>([]);
 
   protected readonly isSuperAdmin = computed(
-    () => this.authContext.context().role === 'super_admin',
+    () => this.auth.getRole() === 'super_admin',
   );
   protected readonly isPlaceOwner = computed(
-    () => this.authContext.context().role === 'place_owner',
+    () => this.auth.getRole() === 'place_owner',
   );
   protected readonly canCreateEvent = computed(() => {
-    const role = this.authContext.context().role;
+    const role = this.auth.getRole();
     return role === 'super_admin' || role === 'place_owner';
   });
   protected readonly totalPages = computed(() =>
@@ -147,6 +148,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
+    private readonly auth: AuthService,
   ) {}
 
   ngOnInit(): void {

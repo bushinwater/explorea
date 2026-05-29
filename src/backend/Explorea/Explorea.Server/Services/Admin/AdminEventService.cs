@@ -245,23 +245,29 @@ namespace Explorea.Server.Services.Admin
                 throw new UnauthorizedAccessException("Only SuperAdmin and PlaceOwner can create events.");
             }
 
+            Place? linkedPlace = null;
+
+            if (dto.PlaceId.HasValue)
+            {
+                linkedPlace = await _db.Places
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(place => place.Id == dto.PlaceId.Value && !place.IsDeleted);
+            }
+
+            var resolvedDestinationId = dto.DestinationId ?? linkedPlace?.DestinationId;
+
             if (user.Role.Name == RoleNames.PlaceOwner)
             {
-                if (!dto.DestinationId.HasValue)
-                    throw new UnauthorizedAccessException("Destination is required for owner event submissions.");
-
                 if (dto.PlaceId.HasValue)
                 {
-                    var ownsPlace = await _db.Places
-                        .IgnoreQueryFilters()
-                        .AnyAsync(place =>
-                            place.Id == dto.PlaceId.Value &&
-                            place.CreatedBy == createdBy &&
-                            !place.IsDeleted);
+                    var ownsPlace = linkedPlace?.CreatedBy == createdBy;
 
                     if (!ownsPlace)
                         throw new UnauthorizedAccessException("Place owners can attach events only to their own places.");
                 }
+
+                if (!resolvedDestinationId.HasValue)
+                    throw new UnauthorizedAccessException("Destination is required for owner event submissions.");
             }
 
             var now = DateTimeOffset.UtcNow;
@@ -283,7 +289,7 @@ namespace Explorea.Server.Services.Admin
                 TicketUrl     = dto.TicketUrl,
                 CityId        = dto.CityId,
                 CountryId     = dto.CountryId,
-                DestinationId = dto.DestinationId,
+                DestinationId = resolvedDestinationId,
                 PlaceId       = dto.PlaceId,
                 IsFeatured    = dto.IsFeatured,
                 ExtraFilters  = dto.ExtraFilters != null ? JsonSerializer.Serialize(dto.ExtraFilters) : null,
