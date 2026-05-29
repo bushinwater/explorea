@@ -11,7 +11,7 @@
     <a class="activity-item" *ngFor="let activity of activities" [routerLink]="['/activities', activity.slug]">
       <div class="activity-item__image-wrap">
         <img [src]="activity.previewImageUrl" [alt]="activity.name" class="activity-item__image" loading="lazy" />
-        <span class="activity-item__category">{{ activity.category.name }}</span>
+        <span class="activity-item__category">{{ activity.category?.name }}</span>
         <div class="activity-item__overlay">
           <span class="activity-item__name">{{ activity.name }}</span>
           <div class="activity-item__meta">

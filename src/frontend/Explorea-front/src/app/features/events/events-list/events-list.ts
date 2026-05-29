@@ -237,8 +237,8 @@ export class EventsListPage implements OnInit, OnDestroy {
       items = items.filter(e =>
         fuzzyIncludes(q, e.name.toLowerCase()) ||
         fuzzyIncludes(q, (e.address ?? '').toLowerCase()) ||
-        fuzzyIncludes(q, e.city.name.toLowerCase()) ||
-        fuzzyIncludes(q, e.type.name.toLowerCase()),
+        fuzzyIncludes(q, (e.city?.name ?? '').toLowerCase()) ||
+        fuzzyIncludes(q, (e.type?.name ?? '').toLowerCase()),
       );
     }
 

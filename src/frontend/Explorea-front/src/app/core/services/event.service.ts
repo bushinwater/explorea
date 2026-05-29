@@ -96,7 +96,7 @@ export class EventService {
   getEvents(params: EventFilterParams): Observable<EventListResponse> {
     if (this.useMock) {
       let filtered = [...MOCK_EVENTS];
-      if (params.typeId) filtered = filtered.filter(e => e.type.id === params.typeId);
+      if (params.typeId) filtered = filtered.filter(e => e.type?.id === params.typeId);
       if (params.freeOnly) filtered = filtered.filter(e => !e.price);
       return of({ items: filtered, total: filtered.length });
     }
