@@ -659,6 +659,9 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
   setActiveTab(tab: SettingsTab): void {
     this.activeTab.set(tab);
+    if (tab === 'administration' && this.auth.role() === 'super_admin') {
+      this.loadAdministration();
+    }
   }
 
   private loadProfile(): void {

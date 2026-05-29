@@ -318,9 +318,26 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
         .Distinct()
         .CountAsync();
 
-      var pendingPlaceRequestsCount = await _db.Places
+      var pendingQueueRequestsCount = await _db.SubmissionQueue
         .AsNoTracking()
-        .CountAsync(place => !place.IsDeleted && place.ApprovalStatus.ToLower() == "pending");
+        .CountAsync(request =>
+          request.Status.ToLower() == "pending" &&
+          (request.EntityType.ToLower() == "place" || request.EntityType.ToLower() == "event"));
+
+      var pendingQueuePlaceIds = await _db.SubmissionQueue
+        .AsNoTracking()
+        .Where(request => request.Status.ToLower() == "pending" && request.EntityType.ToLower() == "place")
+        .Select(request => request.EntityId)
+        .ToListAsync();
+
+      var pendingLegacyPlaceRequestsCount = await _db.Places
+        .AsNoTracking()
+        .CountAsync(place =>
+          !place.IsDeleted &&
+          place.ApprovalStatus.ToLower() == "pending" &&
+          !pendingQueuePlaceIds.Contains(place.Id));
+
+      var pendingUserRequestsCount = pendingQueueRequestsCount + pendingLegacyPlaceRequestsCount;
 
       var response = new AdminAdministrationOverviewDto
       {
@@ -337,8 +354,8 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
           {
               Icon = "pending_actions",
               Label = "Zahtevi na cekanju",
-              Value = pendingPlaceRequestsCount.ToString(),
-              Description = "Objekti iz places tabele koji cekaju odobravanje."
+              Value = pendingUserRequestsCount.ToString(),
+              Description = "Objekti i dogadjaji koje su korisnici poslali i cekaju odobravanje."
           }
         },
         Settings = new List<AdminAdministrationSettingDto>
