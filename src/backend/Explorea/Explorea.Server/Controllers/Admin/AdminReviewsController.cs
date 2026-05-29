@@ -30,6 +30,8 @@ namespace Explorea.Server.Controllers.Admin
             [FromQuery] int? minAge,
             [FromQuery] int? maxAge,
             [FromQuery] bool? isHidden,
+            [FromQuery] string? search,
+            [FromQuery] List<string>? extraFilters,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
@@ -39,7 +41,7 @@ namespace Explorea.Server.Controllers.Admin
                 var (items, total) = await _service.GetAllAsync(
                     entityType, subtypeId, cityId, regionId, minRating, maxRating,
                     gender, minAge, maxAge, isHidden,
-                    page, pageSize, userId);
+                    page, pageSize, userId, search, extraFilters);
                 return Ok(new { total, items });
             }
             catch (UnauthorizedAccessException ex)

@@ -34,6 +34,8 @@ export interface ReviewFilters {
   minRating: number | null;
   maxRating: number | null;
   visibility: ReviewVisibility;
+  search: string | null;
+  extraFilters: string[];
   page: number;
   pageSize: number;
 }

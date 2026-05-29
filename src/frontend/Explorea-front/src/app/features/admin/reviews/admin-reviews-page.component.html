@@ -70,6 +70,18 @@
                 }
               </div>
 
+              <!-- Search input -->
+              <div class="rv-filter-section">
+                <label class="rv-filter-section__label">Pretraga</label>
+                <input
+                  class="rv-filter-select"
+                  type="text"
+                  placeholder="Naziv entiteta..."
+                  [value]="filters().search ?? ''"
+                  (input)="applySearch($any($event.target).value)"
+                />
+              </div>
+
               <!-- Entity type filter (not for PlaceOwner) -->
               @if (showEntityTypeFilter()) {
                 <div class="rv-filter-section">
@@ -110,6 +122,42 @@
                 </div>
               }
 
+              <!-- Extra filters per subtype (e.g. WiFi, parking for places) -->
+              @if (filterDefs().length > 0) {
+                <div class="rv-filter-section">
+                  <label class="rv-filter-section__label">Karakteristike</label>
+                  <div class="rv-extra-filters">
+                    @for (def of filterDefs(); track def.id) {
+                      @if (def.filterType === 'boolean') {
+                        <label class="rv-extra-filter-item">
+                          <input
+                            type="checkbox"
+                            class="rv-extra-filter-checkbox"
+                            [checked]="isExtraFilterActive(def.filterKey, 'true')"
+                            (change)="applyExtraFilter(def.filterKey, 'true', $any($event.target).checked)"
+                          />
+                          {{ def.filterLabel }}
+                        </label>
+                      } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
+                        <div class="rv-extra-filter-select-wrap">
+                          <label class="rv-extra-filter-select-label">{{ def.filterLabel }}</label>
+                          <select
+                            class="rv-filter-select"
+                            [value]="getExtraFilterValue(def.filterKey)"
+                            (change)="applyExtraFilter(def.filterKey, $any($event.target).value, !!$any($event.target).value)"
+                          >
+                            <option value="">Svi</option>
+                            @for (opt of def.options; track opt.optionValue) {
+                              <option [value]="opt.optionValue">{{ opt.optionLabel }}</option>
+                            }
+                          </select>
+                        </div>
+                      }
+                    }
+                  </div>
+                </div>
+              }
+
               <!-- Region filter (only for SuperAdmin) -->
               @if (showRegionFilter()) {
                 <div class="rv-filter-section">
@@ -124,6 +172,14 @@
                       <option [value]="r.id">{{ r.name }}</option>
                     }
                   </select>
+                </div>
+              }
+
+              <!-- Readonly region label for TO -->
+              @if (isTouristOrg() && profileService.profile()?.managedRegionName) {
+                <div class="rv-filter-section">
+                  <label class="rv-filter-section__label">Regija</label>
+                  <span class="rv-filter-readonly">{{ profileService.profile()?.managedRegionName }}</span>
                 </div>
               }
 

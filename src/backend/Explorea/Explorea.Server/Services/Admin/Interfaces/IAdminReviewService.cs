@@ -17,7 +17,9 @@ namespace Explorea.Server.Services.Admin.Interfaces
             bool? isHidden,
             int page,
             int pageSize,
-            Guid currentUserId);
+            Guid currentUserId,
+            string? search = null,
+            List<string>? extraFilters = null);
 
         Task<AdminReviewListDto?> GetByIdAsync(Guid id, Guid currentUserId);
         Task<bool> HideAsync(Guid id, Guid currentUserId);
