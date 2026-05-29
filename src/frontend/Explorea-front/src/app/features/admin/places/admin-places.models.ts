@@ -105,6 +105,7 @@ export interface PlaceDetail {
   images: PlaceImage[];
   amenities: PlaceAmenity[];
   workingDays: PlaceWorkingDay[];
+  documents: OwnerSubmissionDocument[];
   extraFilters?: Record<string, string>;
   reviews?: PlaceReview[];
   createdAt: string;

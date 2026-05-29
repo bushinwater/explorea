@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { finalize } from 'rxjs';
 import {
   ConfirmDialogComponent,
   EmptyStateComponent,
@@ -105,21 +106,30 @@ export class AdminObjectRequestDetailComponent implements OnInit {
 
   protected submitAction(): void {
     const action = this.pendingAction();
+    if (!action) return;
+
     this.isSubmitting.set(true);
 
-    setTimeout(() => {
-      if (action === 'approve') {
-        this.service.approveRequest(this.adminComment());
-        this.successMessage.set(this.ui.t('requests.success.approved'));
-      } else if (action === 'decline') {
-        this.service.rejectRequest(this.adminComment());
-        this.successMessage.set(this.ui.t('requests.success.rejected'));
-      }
-      this.isSubmitting.set(false);
-      this.isConfirmOpen.set(false);
-      this.pendingAction.set(null);
-      setTimeout(() => this.successMessage.set(''), 4000);
-    }, 600);
+    const request$ = action === 'approve'
+      ? this.service.approveRequest(this.adminComment())
+      : this.service.rejectRequest(this.adminComment());
+
+    request$.pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
+      next: () => {
+        this.successMessage.set(
+          action === 'approve'
+            ? this.ui.t('requests.success.approved')
+            : this.ui.t('requests.success.rejected'),
+        );
+        this.isConfirmOpen.set(false);
+        this.pendingAction.set(null);
+        setTimeout(() => this.successMessage.set(''), 4000);
+      },
+      error: () => {
+        this.errorMessage.set('Akcija nije uspela. Pokusajte ponovo.');
+        setTimeout(() => this.errorMessage.set(''), 4000);
+      },
+    });
   }
 
   protected downloadDoc(doc: { url: string }): void {

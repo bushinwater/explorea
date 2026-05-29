@@ -170,6 +170,14 @@ export class AdminPlacesService {
     return this.http.post<void>(`${this.base}/${id}/restore`, {});
   }
 
+  approvePlace(id: string): Observable<void> {
+    return this.http.put<void>(`${this.base}/${id}/approve`, {});
+  }
+
+  rejectPlace(id: string, reason = 'Zahtev za objekat je odbijen od strane administratora.'): Observable<void> {
+    return this.http.put<void>(`${this.base}/${id}/reject`, { reason });
+  }
+
   uploadImage(placeId: string, file: File): Observable<PlaceImage> {
     const formData = new FormData();
     formData.append('file', file);

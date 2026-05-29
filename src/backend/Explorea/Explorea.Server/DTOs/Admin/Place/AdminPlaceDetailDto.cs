@@ -1,5 +1,7 @@
 namespace Explorea.API.DTOs.Admin.Place
 {
+    using Explorea.API.DTOs.Admin;
+
     public class AdminPlaceDetailDto
     {
         public Guid Id { get; set; }
@@ -35,6 +37,7 @@ namespace Explorea.API.DTOs.Admin.Place
         public List<AdminPlaceImageDto> Images { get; set; } = new();
         public List<AdminPlaceAmenityDto> Amenities { get; set; } = new();
         public List<AdminPlaceWorkingDayDto> WorkingDays { get; set; } = new();
+        public List<OwnerSubmissionDocumentDto> Documents { get; set; } = new();
 
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }

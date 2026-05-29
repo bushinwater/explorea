@@ -18,15 +18,18 @@ namespace Explorea.Server.Controllers.Admin
     public class AdminPlacesController : ControllerBase
     {
         private readonly IAdminPlaceService _placeService;
+        private readonly IAdminQueueService _queueService;
         private readonly AppDbContext _context;
         private readonly ICloudinaryService _cloudinary;
 
         public AdminPlacesController(
             IAdminPlaceService placeService,
+            IAdminQueueService queueService,
             AppDbContext context,
             ICloudinaryService cloudinary)
         {
             _placeService = placeService;
+            _queueService = queueService;
             _context = context;
             _cloudinary = cloudinary;
         }
@@ -123,6 +126,7 @@ namespace Explorea.Server.Controllers.Admin
                 var userId = GetCurrentUserId();
                 var result = await _placeService.GetByIdAsync(id, userId);
                 if (result == null) return NotFound();
+                result.Documents = await GetOwnerDocumentsAsync("place", id);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException ex)
@@ -298,6 +302,66 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpPut("{id}/approve")]
+        public async Task<IActionResult> Approve(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var queueItem = await _context.SubmissionQueue
+                    .FirstOrDefaultAsync(q =>
+                        q.EntityType == "place" &&
+                        q.EntityId == id &&
+                        q.Status == "Pending");
+
+                if (queueItem == null) return NotFound(new { message = "Pending place request not found." });
+
+                await _queueService.ApproveByTOAsync(queueItem.Id, userId);
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}/reject")]
+        public async Task<IActionResult> Reject(Guid id, [FromBody] RejectPlaceDto dto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var queueItem = await _context.SubmissionQueue
+                    .FirstOrDefaultAsync(q =>
+                        q.EntityType == "place" &&
+                        q.EntityId == id &&
+                        q.Status == "Pending");
+
+                if (queueItem == null) return NotFound(new { message = "Pending place request not found." });
+
+                await _queueService.RejectByTOAsync(
+                    queueItem.Id,
+                    userId,
+                    string.IsNullOrWhiteSpace(dto.Reason)
+                        ? "Zahtev za objekat je odbijen od strane administratora."
+                        : dto.Reason.Trim());
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("{id}/documents")]
         public async Task<IActionResult> UploadDocument(Guid id, [FromForm] IFormFile file, [FromForm] string documentType)
         {
@@ -402,10 +466,32 @@ namespace Explorea.Server.Controllers.Admin
                 : "other";
         }
 
+        private async Task<List<OwnerSubmissionDocumentDto>> GetOwnerDocumentsAsync(string entityType, Guid entityId)
+        {
+            return await _context.OwnerSubmissionDocuments
+                .Where(document => document.EntityType == entityType && document.EntityId == entityId)
+                .OrderBy(document => document.CreatedAt)
+                .Select(document => new OwnerSubmissionDocumentDto
+                {
+                    Id = document.Id,
+                    DocumentType = document.DocumentType,
+                    DocumentUrl = document.DocumentUrl,
+                    FileName = document.FileName,
+                    ContentType = document.ContentType,
+                    CreatedAt = document.CreatedAt
+                })
+                .ToListAsync();
+        }
+
         private Guid GetCurrentUserId()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return Guid.Parse(claim!);
         }
+    }
+
+    public class RejectPlaceDto
+    {
+        public string Reason { get; set; } = string.Empty;
     }
 }
