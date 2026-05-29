@@ -166,6 +166,28 @@
           }
         </div>
 
+        @if (requiresOwnerDocuments) {
+          <div class="edit-field">
+            <label class="edit-field__label">Dokumenti za proveru <span class="edit-field__required">*</span></label>
+            <label class="ev-add-filter-btn">
+              <span class="material-icons" style="font-size:16px">upload_file</span>
+              {{ ownerDocumentName('identity') || 'Licni dokument / verifikacija identiteta' }}
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" hidden (change)="onOwnerDocumentSelected('identity', $event)" />
+            </label>
+            <label class="ev-add-filter-btn">
+              <span class="material-icons" style="font-size:16px">upload_file</span>
+              {{ ownerDocumentName('authorization') || 'Dokaz vlasnistva ili ovlascenja' }}
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" hidden (change)="onOwnerDocumentSelected('authorization', $event)" />
+            </label>
+            <label class="ev-add-filter-btn">
+              <span class="material-icons" style="font-size:16px">upload_file</span>
+              {{ ownerDocumentName('license') || 'Licenca/dozvola ako je potrebna' }}
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" hidden (change)="onOwnerDocumentSelected('license', $event)" />
+            </label>
+            <p class="ev-filter-empty">Obavezna su prva dva dokumenta. Licenca/dozvola je potrebna samo ako vazi za ovaj tip objekta.</p>
+          </div>
+        }
+
         <!-- Location cascade -->
         <div class="ev-location-section">
           @if (isSuperAdmin) {

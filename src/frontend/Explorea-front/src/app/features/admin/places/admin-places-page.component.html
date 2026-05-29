@@ -24,6 +24,7 @@
     [regions]="regions()"
     [countries]="countries()"
     [isSuperAdmin]="isSuperAdmin()"
+    [requiresOwnerDocuments]="isPlaceOwner()"
     (cancel)="closeCreateModal()"
     (created)="onPlaceCreated($event)"
   />

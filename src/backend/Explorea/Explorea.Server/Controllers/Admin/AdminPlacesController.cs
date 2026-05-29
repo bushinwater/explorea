@@ -1,7 +1,9 @@
 using System.Security.Claims;
+using Explorea.API.DTOs.Admin;
 using Explorea.API.DTOs.Admin.Place;
 using Explorea.API.Models;
 using Explorea.Server.Data;
+using Explorea.Server.Helpers;
 using Explorea.Server.Services.Admin.Interfaces;
 using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -296,6 +298,38 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpPost("{id}/documents")]
+        public async Task<IActionResult> UploadDocument(Guid id, [FromForm] IFormFile file, [FromForm] string documentType)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var place = await _context.Places
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(p => p.Id == id);
+
+                if (place == null) return NotFound();
+
+                var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId);
+                if (user?.Role.Name != RoleNames.PlaceOwner)
+                    return StatusCode(403, new { message = "Access denied." });
+
+                if (place.CreatedBy != userId)
+                    return StatusCode(403, new { message = "Mozete dodavati dokumente samo za svoje objekte." });
+
+                var document = await UploadOwnerDocumentAsync("place", id, userId, file, documentType);
+                return Ok(document);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.ToString() });
+            }
+        }
+
         [HttpDelete("{id}/images/{imageId}")]
         public async Task<IActionResult> DeleteImage(Guid id, Guid imageId)
         {
@@ -315,6 +349,57 @@ namespace Explorea.Server.Controllers.Admin
             {
                 return BadRequest(new { message = ex.ToString() });
             }
+        }
+
+        private async Task<OwnerSubmissionDocumentDto> UploadOwnerDocumentAsync(
+            string entityType,
+            Guid entityId,
+            Guid userId,
+            IFormFile file,
+            string documentType)
+        {
+            if (file == null || file.Length == 0)
+                throw new ArgumentException("Dokument je obavezan.");
+
+            if (file.Length > 10 * 1024 * 1024)
+                throw new ArgumentException("Dokument mora biti manji od 10 MB.");
+
+            var normalizedType = NormalizeDocumentType(documentType);
+            var url = await _cloudinary.UploadRawAsync(file, $"explorea/owner-documents/{entityType}");
+
+            var document = new OwnerSubmissionDocument
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                EntityType = entityType,
+                EntityId = entityId,
+                DocumentType = normalizedType,
+                DocumentUrl = url,
+                FileName = file.FileName,
+                ContentType = file.ContentType,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+
+            await _context.OwnerSubmissionDocuments.AddAsync(document);
+            await _context.SaveChangesAsync();
+
+            return new OwnerSubmissionDocumentDto
+            {
+                Id = document.Id,
+                DocumentType = document.DocumentType,
+                DocumentUrl = document.DocumentUrl,
+                FileName = document.FileName,
+                ContentType = document.ContentType,
+                CreatedAt = document.CreatedAt
+            };
+        }
+
+        private static string NormalizeDocumentType(string? documentType)
+        {
+            var value = documentType?.Trim().ToLowerInvariant();
+            return value is "identity" or "authorization" or "license" or "other"
+                ? value
+                : "other";
         }
 
         private Guid GetCurrentUserId()

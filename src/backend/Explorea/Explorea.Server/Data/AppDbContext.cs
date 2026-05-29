@@ -75,6 +75,7 @@ namespace Explorea.Server.Data
         public DbSet<SupportTicket> SupportTickets { get; set; }
         public DbSet<SupportMessage> SupportMessages { get; set; }
         public DbSet<ReportTemplate> ReportTemplates { get; set; }
+        public DbSet<OwnerSubmissionDocument> OwnerSubmissionDocuments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -106,6 +107,16 @@ namespace Explorea.Server.Data
                     .WithMany()
                     .HasForeignKey(log => log.ActorId)
                     .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<OwnerSubmissionDocument>(entity =>
+            {
+                entity.HasIndex(d => new { d.EntityType, d.EntityId });
+                entity.HasIndex(d => new { d.UserId, d.CreatedAt });
+                entity.HasOne(d => d.User)
+                    .WithMany()
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // ---- Composite primary keys ----

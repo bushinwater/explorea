@@ -103,6 +103,9 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly isSuperAdmin = computed(
     () => this.authContext.context().role === 'super_admin',
   );
+  protected readonly isPlaceOwner = computed(
+    () => this.authContext.context().role === 'place_owner',
+  );
   protected readonly canCreateEvent = computed(() => {
     const role = this.authContext.context().role;
     return role === 'super_admin' || role === 'place_owner';

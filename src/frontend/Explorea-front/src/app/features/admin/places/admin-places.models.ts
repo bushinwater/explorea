@@ -182,6 +182,15 @@ export interface CreatePlaceDto {
   extraFilters?: Record<string, string>;
 }
 
+export interface OwnerSubmissionDocument {
+  id: string;
+  documentType: string;
+  documentUrl: string;
+  fileName: string | null;
+  contentType: string | null;
+  createdAt: string;
+}
+
 export interface UpdatePlaceDto {
   name?: string;
   slug?: string;

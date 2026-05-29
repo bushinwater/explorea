@@ -191,6 +191,28 @@
               placeholder="Kratak opis događaja..."></textarea>
           </div>
 
+          @if (requiresOwnerDocuments) {
+            <div class="edit-field ev-field--full">
+              <label class="edit-field__label">Dokumenti za proveru <span class="edit-field__required">*</span></label>
+              <label class="ev-add-filter-btn">
+                <span class="material-icons">upload_file</span>
+                {{ ownerDocumentName('identity') || 'Licni dokument / verifikacija identiteta' }}
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" hidden (change)="onOwnerDocumentSelected('identity', $event)" />
+              </label>
+              <label class="ev-add-filter-btn">
+                <span class="material-icons">upload_file</span>
+                {{ ownerDocumentName('authorization') || 'Ovlascenje za dogadjaj ili prostor' }}
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" hidden (change)="onOwnerDocumentSelected('authorization', $event)" />
+              </label>
+              <label class="ev-add-filter-btn">
+                <span class="material-icons">upload_file</span>
+                {{ ownerDocumentName('license') || 'Licenca/dozvola ako je potrebna' }}
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" hidden (change)="onOwnerDocumentSelected('license', $event)" />
+              </label>
+              <p class="ev-filter-empty">Obavezna su prva dva dokumenta. Licenca/dozvola je potrebna samo ako vazi za ovaj tip dogadjaja.</p>
+            </div>
+          }
+
           <label class="ev-checkbox ev-field--full">
             <input type="checkbox" [checked]="form().isFeatured"
               (change)="updateFeatured($any($event.target).checked)" />

@@ -14,6 +14,7 @@ import {
   PlaceReview,
   PlaceStats,
   PlaceTypeOption,
+  OwnerSubmissionDocument,
   RegionOption,
   UpdatePlaceDto,
 } from './admin-places.models';
@@ -173,6 +174,13 @@ export class AdminPlacesService {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post<PlaceImage>(`${this.base}/${placeId}/images`, formData);
+  }
+
+  uploadDocument(placeId: string, documentType: string, file: File): Observable<OwnerSubmissionDocument> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('documentType', documentType);
+    return this.http.post<OwnerSubmissionDocument>(`${this.base}/${placeId}/documents`, formData);
   }
 
   setHeroImage(placeId: string, imageId: string): Observable<void> {

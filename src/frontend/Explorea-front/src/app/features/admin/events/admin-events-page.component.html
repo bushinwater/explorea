@@ -9,6 +9,7 @@
   <app-event-create-modal
     [eventTypeOptions]="eventTypeOptions()"
     [closing]="isCreateClosing()"
+    [requiresOwnerDocuments]="isPlaceOwner()"
     (cancel)="closeCreateModal()"
     (created)="onEventCreated($event)"
   />

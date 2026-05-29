@@ -105,6 +105,10 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     () => this.authContext.context().role === 'super_admin',
   );
 
+  protected readonly isPlaceOwner = computed(
+    () => this.authContext.context().role === 'place_owner',
+  );
+
   protected readonly canSeeRegionFilter = computed(() => {
     const role = this.authContext.context().role;
     return role === 'super_admin' || role === 'tourist_organization';

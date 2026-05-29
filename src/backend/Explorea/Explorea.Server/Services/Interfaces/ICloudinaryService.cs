@@ -4,5 +4,6 @@ namespace Explorea.Server.Services.Interfaces
     {
         Task<string> UploadImageAsync(IFormFile file, string folder);
         Task<string> UploadLandscapeAsync(IFormFile file, string folder);
+        Task<string> UploadRawAsync(IFormFile file, string folder);
     }
 }

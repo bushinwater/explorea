@@ -1,4 +1,5 @@
 using Explorea.API.DTOs.Admin.Queue;
+using Explorea.API.DTOs.Admin;
 using Explorea.Server.Data;
 using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
@@ -73,13 +74,17 @@ namespace Explorea.Server.Services.Admin
                 page,
                 pageSize,
                 restrictToDestinationIds);
-            return (items.Select(MapToDto).ToList(), total);
+            var dtos = items.Select(MapToDto).ToList();
+            await FillDocumentsAsync(dtos);
+            return (dtos, total);
         }
 
         public async Task<List<QueueItemDto>> GetOwnerQueueAsync(Guid currentUserId)
         {
             var items = await _queueRepo.GetPendingOwnerReviewAsync(currentUserId);
-            return items.Select(MapToDto).ToList();
+            var dtos = items.Select(MapToDto).ToList();
+            await FillDocumentsAsync(dtos);
+            return dtos;
         }
 
         public async Task ApproveByTOAsync(Guid queueItemId, Guid reviewerId)
@@ -92,6 +97,9 @@ namespace Explorea.Server.Services.Admin
 
             if (!await CanReviewAsAdminAsync(reviewerId, item.DestinationId))
                 throw new Exception("Access denied.");
+
+            if (!await HasRequiredOwnerDocumentsAsync(item))
+                throw new Exception("Owner submission requires identity and authorization documents before approval.");
 
             item.Status             = "ApprovedByTO";
             item.ReviewedByTOUserId = reviewerId;
@@ -249,6 +257,26 @@ namespace Explorea.Server.Services.Admin
             return await _assignmentRepo.ExistsAsync(reviewerId, destinationId);
         }
 
+        private async Task<bool> HasRequiredOwnerDocumentsAsync(Explorea.API.Models.SubmissionQueue item)
+        {
+            if (!item.EntityType.Equals("place", StringComparison.OrdinalIgnoreCase) &&
+                !item.EntityType.Equals("event", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var submitter = await _userRepo.GetByIdWithRoleAsync(item.SubmittedByUserId);
+            if (submitter?.Role.Name != RoleNames.PlaceOwner)
+                return true;
+
+            var documentTypes = await _db.OwnerSubmissionDocuments
+                .Where(document =>
+                    document.EntityId == item.EntityId &&
+                    document.EntityType == item.EntityType)
+                .Select(document => document.DocumentType)
+                .ToListAsync();
+
+            return documentTypes.Contains("identity") && documentTypes.Contains("authorization");
+        }
+
         private async Task<bool> CanReviewAsOwnerAsync(Guid ownerId, Guid? linkedPlaceId)
         {
             if (!linkedPlaceId.HasValue)
@@ -361,5 +389,41 @@ namespace Explorea.Server.Services.Admin
             ReviewedByTOAt    = q.ReviewedByTOAt,
             ReviewedByOwnerAt = q.ReviewedByOwnerAt
         };
+
+        private async Task FillDocumentsAsync(List<QueueItemDto> items)
+        {
+            if (items.Count == 0)
+                return;
+
+            var entityIds = items.Select(i => i.EntityId).Distinct().ToList();
+            var documents = await _db.OwnerSubmissionDocuments
+                .Where(document => entityIds.Contains(document.EntityId))
+                .OrderBy(document => document.CreatedAt)
+                .Select(document => new
+                {
+                    document.EntityType,
+                    document.EntityId,
+                    Dto = new OwnerSubmissionDocumentDto
+                    {
+                        Id = document.Id,
+                        DocumentType = document.DocumentType,
+                        DocumentUrl = document.DocumentUrl,
+                        FileName = document.FileName,
+                        ContentType = document.ContentType,
+                        CreatedAt = document.CreatedAt
+                    }
+                })
+                .ToListAsync();
+
+            foreach (var item in items)
+            {
+                item.Documents = documents
+                    .Where(document =>
+                        document.EntityId == item.EntityId &&
+                        document.EntityType.Equals(item.EntityType, StringComparison.OrdinalIgnoreCase))
+                    .Select(document => document.Dto)
+                    .ToList();
+            }
+        }
     }
 }
