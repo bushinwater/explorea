@@ -111,7 +111,7 @@ export class EventsListPage implements OnInit, OnDestroy {
   ) {}
 
   openAiRecommendation(): void {
-    this.chatBubbleService.openWithMessage('Koji dogadjaji su nadolazeći i koje mi preporučuješ?');
+    this.chatBubbleService.openWithMessage('Predloži mi događaje za ovaj vikend');
   }
 
   ngOnInit(): void {
@@ -237,7 +237,7 @@ export class EventsListPage implements OnInit, OnDestroy {
       items = items.filter(e =>
         fuzzyIncludes(q, e.name.toLowerCase()) ||
         fuzzyIncludes(q, (e.address ?? '').toLowerCase()) ||
-        fuzzyIncludes(q, e.city.name.toLowerCase()) ||
+        fuzzyIncludes(q, (e.city?.name ?? '').toLowerCase()) ||
         fuzzyIncludes(q, e.type.name.toLowerCase()),
       );
     }
@@ -454,6 +454,10 @@ export class EventsListPage implements OnInit, OnDestroy {
 
   formatTime(d: string): string {
     return new Date(d).toLocaleTimeString('sr-Latn-RS', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  eventLocationLabel(event: EventCardModel): string {
+    return event.address || event.city?.name || 'Lokacija nije navedena';
   }
 
   sortIcon(mode: SortMode): string {

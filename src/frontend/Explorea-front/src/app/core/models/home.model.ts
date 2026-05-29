@@ -32,7 +32,7 @@ export interface EventCard {
   endDatetime: string;
   price: number | null;
   address: string;
-  city: City;
+  city: City | null;
   previewImageUrl: string;
   isFeatured: boolean;
   popularity?: number;

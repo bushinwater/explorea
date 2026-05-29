@@ -15,7 +15,7 @@
       </span>
       <span class="event-card__location">
         <span class="material-icons">location_on</span>
-        {{ event.address || event.city.name }}
+        {{ locationLabel() }}
       </span>
     </div>
     <div class="event-card__footer">
@@ -41,7 +41,7 @@
       </span>
       <span class="event-card__location">
         <span class="material-icons">location_on</span>
-        {{ event.city.name }}
+        {{ locationLabel() }}
       </span>
     </div>
     <div class="event-card__footer">

@@ -120,7 +120,15 @@
         </div>
 
         <!-- AI banner -->
-        <div class="ai-banner" *ngIf="!hasMore && !loadingMore && !loading">
+        <div
+          class="ai-banner"
+          *ngIf="!hasMore && !loadingMore && !loading"
+          role="button"
+          tabindex="0"
+          (click)="openAiRecommendation()"
+          (keydown.enter)="openAiRecommendation()"
+          (keydown.space)="openAiRecommendation()"
+        >
           <span class="material-icons ai-banner__icon">auto_awesome</span>
           <div class="ai-banner__text">
             <strong>{{ 'EVENTS.AI_BANNER_TITLE' | translate }}</strong>
@@ -294,7 +302,15 @@
           <span class="material-icons spin">sync</span>
         </div>
 
-        <div class="ai-banner" *ngIf="!hasMore && !loadingMore && !loading">
+        <div
+          class="ai-banner"
+          *ngIf="!hasMore && !loadingMore && !loading"
+          role="button"
+          tabindex="0"
+          (click)="openAiRecommendation()"
+          (keydown.enter)="openAiRecommendation()"
+          (keydown.space)="openAiRecommendation()"
+        >
           <span class="material-icons ai-banner__icon">auto_awesome</span>
           <div class="ai-banner__text">
             <strong>{{ 'EVENTS.AI_BANNER_TITLE' | translate }}</strong>
@@ -562,7 +578,7 @@
                     </span>
                     <span>
                       <span class="material-icons">location_on</span>
-                      {{ e.address || e.city.name }}
+                      {{ eventLocationLabel(e) }}
                     </span>
                   </div>
                 </div>

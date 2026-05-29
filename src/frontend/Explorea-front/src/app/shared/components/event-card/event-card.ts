@@ -49,4 +49,8 @@ export class EventCard {
     const d = new Date(dateStr);
     return d.toLocaleTimeString('sr-Latn-RS', { hour: '2-digit', minute: '2-digit' });
   }
+
+  locationLabel(): string {
+    return this.event.address || this.event.city?.name || 'Lokacija nije navedena';
+  }
 }
