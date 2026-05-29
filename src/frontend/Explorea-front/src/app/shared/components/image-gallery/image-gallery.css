@@ -131,6 +131,9 @@
   max-height: 85vh;
   object-fit: contain;
   border-radius: 8px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .lightbox__close,

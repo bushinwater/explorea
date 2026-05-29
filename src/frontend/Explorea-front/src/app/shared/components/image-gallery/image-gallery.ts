@@ -1,4 +1,4 @@
-import { Component, Input, HostListener, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, HostListener, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface GalleryImage {
@@ -14,13 +14,11 @@ export interface GalleryImage {
   styleUrl: './image-gallery.css',
 })
 export class ImageGallery {
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(private cdr: ChangeDetectorRef, private ngZone: NgZone) {}
 
   @Input() images: GalleryImage[] = [];
   @Input() viewAllLabel = 'Vidi sve';
-  /** When > 0, only this many thumbnails are shown; "Vidi sve" opens the lightbox. */
   @Input() maxPreview = 0;
-  /** When true, shows a 3-image grid on desktop (1 large + 2 small), horizontal scroll on mobile. */
   @Input() gridLayout = false;
 
   lightboxOpen = false;
@@ -28,6 +26,7 @@ export class ImageGallery {
   showAll = false;
 
   private touchStartX = 0;
+  private touchStartY = 0;
   private touchSwipeDone = false;
 
   get visibleImages(): GalleryImage[] {
@@ -99,21 +98,20 @@ export class ImageGallery {
     if (this.lightboxOpen) this.next();
   }
 
-  @HostListener('document:touchstart', ['$event'])
-  onDocumentTouchStart(event: TouchEvent): void {
-    if (!this.lightboxOpen) return;
-    this.touchStartX = event.changedTouches[0].clientX;
+  onImgTouchStart(event: TouchEvent): void {
+    this.touchStartX = event.touches[0].clientX;
+    this.touchStartY = event.touches[0].clientY;
   }
 
-  @HostListener('document:touchend', ['$event'])
-  onDocumentTouchEnd(event: TouchEvent): void {
-    if (!this.lightboxOpen) return;
+  onImgTouchEnd(event: TouchEvent): void {
     const dx = event.changedTouches[0].clientX - this.touchStartX;
-    if (Math.abs(dx) < 40) return;
-    if (dx < 0) this.next();
-    else this.prev();
-    this.cdr.markForCheck();
-    this.touchSwipeDone = true;
-    setTimeout(() => { this.touchSwipeDone = false; }, 400);
+    const dy = event.changedTouches[0].clientY - this.touchStartY;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+    this.ngZone.run(() => {
+      if (dx < 0) this.next();
+      else this.prev();
+      this.touchSwipeDone = true;
+      setTimeout(() => { this.touchSwipeDone = false; }, 500);
+    });
   }
 }
