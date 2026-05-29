@@ -62,10 +62,10 @@ const QUICK_ACTIONS: Record<AdminRole, QuickAction[]> = {
     { id: 'report',    icon: 'assessment',      label: 'Mesecni izvestaj',     route: '/admin/reports',           colorClass: 'info'    },
   ],
   place_owner: [
-    { id: 'dashboard', icon: 'dashboard',   label: 'Pregled naloga', route: '/admin/dashboard', colorClass: 'primary' },
-    { id: 'settings',  icon: 'settings',    label: 'Podesavanja',    route: '/admin/settings',  colorClass: 'info'    },
-    { id: 'reviews',   icon: 'rate_review', label: 'Moje recenzije', route: '/admin/reviews',   colorClass: 'accent'  },
-    { id: 'support',   icon: 'support',     label: 'Podrska',        route: '/admin/support',   colorClass: 'muted'   },
+    { id: 'add-place', icon: 'add_business',    label: 'Dodaj objekat',  route: '/admin/places?create=true', colorClass: 'primary' },
+    { id: 'add-event', icon: 'event_available', label: 'Dodaj dogadjaj', route: '/admin/events?create=true', colorClass: 'info'    },
+    { id: 'reviews',   icon: 'rate_review',     label: 'Moje recenzije', route: '/admin/reviews',             colorClass: 'accent'  },
+    { id: 'support',   icon: 'support_agent',   label: 'Podrska',        route: '/admin/support',             colorClass: 'muted'   },
   ],
 };
 
@@ -83,36 +83,36 @@ export class DashboardService {
     );
   }
 
-  getOverviewStats(): Observable<StatCardData[]> {
+  getOverviewStats(role: AdminRole): Observable<StatCardData[]> {
     return this.http.get<AdminStatsOverview>('/api/admin/stats/overview').pipe(
       map((overview) => [
         {
-          icon: 'people',
+          icon: role === 'place_owner' ? 'storefront' : 'people',
           value: this.formatNumber(overview.totalUsers),
-          label: 'Ukupno korisnika',
+          label: role === 'place_owner' ? 'Moji objekti i dogadjaji' : 'Ukupno korisnika',
           sublabel: `${this.formatNumber(overview.newUsersLast30Days)} novih u poslednjih 30 dana`,
           color: 'primary',
         },
         {
-          icon: 'person_add',
+          icon: role === 'place_owner' ? 'add_business' : 'person_add',
           value: this.formatNumber(overview.newUsersLast30Days),
-          label: 'Novi korisnici',
+          label: role === 'place_owner' ? 'Novi unosi' : 'Novi korisnici',
           sublabel: 'Poslednjih 30 dana',
           color: 'info',
         },
         {
-          icon: 'location_on',
+          icon: role === 'place_owner' ? 'verified' : 'location_on',
           value: this.formatNumber(overview.activeDestinations),
-          label: 'Aktivne destinacije',
+          label: role === 'place_owner' ? 'Aktivni unosi' : 'Aktivne destinacije',
           sublabel: overview.mostPopularDestination
-            ? `Najpopularnija: ${overview.mostPopularDestination.name}`
-            : 'Nema pregleda destinacija',
+            ? `${role === 'place_owner' ? 'Najpopularnija destinacija' : 'Najpopularnija'}: ${overview.mostPopularDestination.name}`
+            : role === 'place_owner' ? 'Nema pregleda povezanih destinacija' : 'Nema pregleda destinacija',
           color: 'warning',
         },
         {
           icon: 'trending_up',
           value: overview.mostPopularEntity?.name ?? 'Nema podataka',
-          label: 'Najpopularniji entitet',
+          label: role === 'place_owner' ? 'Najpopularniji unos' : 'Najpopularniji entitet',
           sublabel: overview.mostPopularEntity
             ? `${this.entityTypeLabel(overview.mostPopularEntity.entityType)} - ${this.formatNumber(overview.mostPopularEntity.views)} pregleda`
             : 'Nema zabelezenih pregleda',

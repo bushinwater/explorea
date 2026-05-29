@@ -156,6 +156,19 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.loadTypes();
     this.loadRegions();
     this.loadCountries();
+    this.subscription.add(
+      this.route.queryParamMap.subscribe((params) => {
+        if (params.get('create') === 'true') {
+          this.openCreateModal();
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { create: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        }
+      }),
+    );
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
     this.loadPlaces(openEditId ? (items) => {
       const place = items.find(p => p.id === openEditId);

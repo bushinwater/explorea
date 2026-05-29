@@ -7,6 +7,7 @@ import {
   computed,
   signal,
 } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
@@ -102,6 +103,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly isSuperAdmin = computed(
     () => this.authContext.context().role === 'super_admin',
   );
+  protected readonly canCreateEvent = computed(() => {
+    const role = this.authContext.context().role;
+    return role === 'super_admin' || role === 'place_owner';
+  });
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.total() / this.filters().pageSize)),
   );
@@ -136,6 +141,8 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   constructor(
     private readonly eventsService: AdminEventsService,
     private readonly lookupService: LookupService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
   ) {}
 
@@ -153,6 +160,19 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     );
     this.loadStats();
     this.loadFilterOptions();
+    this.subscription.add(
+      this.route.queryParamMap.subscribe((params) => {
+        if (params.get('create') === 'true') {
+          this.openCreateDialog();
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { create: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        }
+      }),
+    );
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
     this.loadEvents(openEditId ? (items) => {
       const ev = items.find(e => e.id === openEditId);

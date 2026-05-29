@@ -155,7 +155,7 @@
           }
         </div>
 
-        @if (isSuperAdmin() && filters().tab !== 'deleted') {
+        @if (canCreateEvent() && filters().tab !== 'deleted') {
           <button class="evts-btn-primary" type="button" (click)="openCreateDialog()">
             <span class="material-icons">add</span>
             Novi događaj

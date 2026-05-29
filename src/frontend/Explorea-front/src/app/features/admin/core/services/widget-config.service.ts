@@ -6,7 +6,7 @@ const STORAGE_KEY = 'explorea_widget_config';
 const DEFAULT_CONFIGS: Record<AdminRole, WidgetConfig[]> = {
   super_admin: [
     { id: 'stat-cards',    label: 'Statistike',           zone: 'main', visible: true,  order: 0, cols: 4, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
-    { id: 'traffic-chart', label: 'Analitika saobraćaja', zone: 'main', visible: true,  order: 1, cols: 3, roles: ['super_admin', 'tourist_organization'] },
+    { id: 'traffic-chart', label: 'Analitika saobraćaja', zone: 'main', visible: true,  order: 1, cols: 3, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
     { id: 'ai-panel',      label: 'AI Asistent',          zone: 'side', visible: true,  order: 2, cols: 1, roles: ['super_admin', 'tourist_organization'] },
     { id: 'activity-feed', label: 'Nedavne aktivnosti',   zone: 'main', visible: true,  order: 3, cols: 2, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
     { id: 'quick-actions', label: 'Brze akcije',          zone: 'main', visible: true,  order: 4, cols: 2, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
@@ -14,7 +14,7 @@ const DEFAULT_CONFIGS: Record<AdminRole, WidgetConfig[]> = {
   ],
   tourist_organization: [
     { id: 'stat-cards',    label: 'Statistike',           zone: 'main', visible: true,  order: 0, cols: 4, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
-    { id: 'traffic-chart', label: 'Analitika saobraćaja', zone: 'main', visible: true,  order: 1, cols: 3, roles: ['super_admin', 'tourist_organization'] },
+    { id: 'traffic-chart', label: 'Analitika saobraćaja', zone: 'main', visible: true,  order: 1, cols: 3, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
     { id: 'ai-panel',      label: 'AI Asistent',          zone: 'side', visible: true,  order: 2, cols: 1, roles: ['super_admin', 'tourist_organization'] },
     { id: 'activity-feed', label: 'Nedavne aktivnosti',   zone: 'main', visible: true,  order: 3, cols: 2, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
     { id: 'quick-actions', label: 'Brze akcije',          zone: 'main', visible: true,  order: 4, cols: 2, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
@@ -22,9 +22,9 @@ const DEFAULT_CONFIGS: Record<AdminRole, WidgetConfig[]> = {
   ],
   place_owner: [
     { id: 'stat-cards',    label: 'Statistike',           zone: 'main', visible: true,  order: 0, cols: 4, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
-    { id: 'activity-feed', label: 'Nedavne aktivnosti',   zone: 'main', visible: true,  order: 1, cols: 2, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
-    { id: 'quick-actions', label: 'Brze akcije',          zone: 'main', visible: true,  order: 2, cols: 2, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
-    { id: 'traffic-chart', label: 'Analitika saobraćaja', zone: 'main', visible: false, order: 3, cols: 3, roles: ['super_admin', 'tourist_organization'] },
+    { id: 'traffic-chart', label: 'Analitika saobraćaja', zone: 'main', visible: true,  order: 1, cols: 3, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
+    { id: 'activity-feed', label: 'Nedavne aktivnosti',   zone: 'main', visible: true,  order: 2, cols: 2, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
+    { id: 'quick-actions', label: 'Brze akcije',          zone: 'main', visible: true,  order: 3, cols: 2, roles: ['super_admin', 'tourist_organization', 'place_owner'] },
     { id: 'ai-panel',      label: 'AI Asistent',          zone: 'side', visible: false, order: 4, cols: 1, roles: ['super_admin', 'tourist_organization'] },
     { id: 'system-status', label: 'Status sistema',       zone: 'side', visible: false, order: 5, cols: 1, roles: ['super_admin'] },
   ],
@@ -47,10 +47,16 @@ export class WidgetConfigService {
       if (raw) {
         const saved: WidgetConfig[] = JSON.parse(raw);
         const defaults = DEFAULT_CONFIGS[role];
+        const defaultsById = new Map(defaults.map(w => [w.id, w]));
         const savedIds = new Set(saved.map(w => w.id));
         const merged = saved.map(w => ({
+          ...(defaultsById.get(w.id) ?? w),
           ...w,
-          cols: w.cols ?? DEFAULT_COLS[w.id] ?? 2,
+          roles: defaultsById.get(w.id)?.roles ?? w.roles,
+          cols: w.cols ?? defaultsById.get(w.id)?.cols ?? DEFAULT_COLS[w.id] ?? 2,
+          visible: role === 'place_owner' && w.id === 'traffic-chart' && !w.roles.includes('place_owner')
+            ? true
+            : w.visible,
         }));
         for (const def of defaults) {
           if (!savedIds.has(def.id)) merged.push(def);

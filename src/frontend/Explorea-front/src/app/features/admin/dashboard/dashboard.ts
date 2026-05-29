@@ -223,7 +223,7 @@ export class Dashboard implements OnInit, OnDestroy {
 
   private loadOverviewStats(role: AdminRole): void {
     this.statsSubscription?.unsubscribe();
-    this.statsSubscription = this.dashService.getOverviewStats().subscribe({
+    this.statsSubscription = this.dashService.getOverviewStats(role).subscribe({
       next: (stats) => {
         this.data.update((current) => current ? { ...current, stats } : current);
         this.cdr.markForCheck();
