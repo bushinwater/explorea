@@ -254,7 +254,7 @@ namespace Explorea.Server.Services.Admin
             var query = _db.SupportTickets.AsQueryable();
 
             if (user.Role.Name == RoleNames.SuperAdmin)
-                return query;
+                return query.Where(t => t.IsEscalated || t.AssignedToUserId == user.Id);
 
             return query.Where(t =>
                 t.AssignedToUserId == user.Id ||

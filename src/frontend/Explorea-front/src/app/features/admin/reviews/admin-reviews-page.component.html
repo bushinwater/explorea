@@ -44,7 +44,7 @@
           <button
             class="btn btn-ghost btn-sm rv-filter-btn"
             [class.rv-filter-btn--active]="activeFilterCount() > 0"
-            (click)="toggleFilter($event)"
+            (click)="isFilterOpen.set(!isFilterOpen()); $event.stopPropagation()"
           >
             <span class="material-icons">filter_list</span>
             {{ ui.t('reviews.filter.btn') }}
@@ -57,8 +57,6 @@
           @if (isFilterOpen()) {
             <div
               class="rv-filter-panel"
-              [style.top.px]="filterPanelTop()"
-              [style.right]="filterPanelRight() + 'px'"
               (click)="$event.stopPropagation()"
             >
               <div class="rv-filter-panel__header">
@@ -73,13 +71,16 @@
               <!-- Search input -->
               <div class="rv-filter-section">
                 <label class="rv-filter-section__label">Pretraga</label>
-                <input
-                  class="rv-filter-select"
-                  type="text"
-                  placeholder="Naziv entiteta..."
-                  [value]="filters().search ?? ''"
-                  (input)="applySearch($any($event.target).value)"
-                />
+                <div class="rv-filter-input-wrap">
+                  <span class="material-icons rv-filter-input-wrap__icon">search</span>
+                  <input
+                    class="rv-filter-input"
+                    type="text"
+                    placeholder="Naziv entiteta..."
+                    [value]="filters().search ?? ''"
+                    (input)="applySearch($any($event.target).value)"
+                  />
+                </div>
               </div>
 
               <!-- Entity type filter (not for PlaceOwner) -->
@@ -106,51 +107,60 @@
               @if (showSubtypeFilter()) {
                 <div class="rv-filter-section">
                   <label class="rv-filter-section__label">{{ subtypeLabel() }}</label>
-                  <select
-                    class="rv-filter-select"
-                    [value]="filters().subtypeId ?? ''"
-                    (change)="applySubtype($any($event.target).value)"
-                  >
-                    <option value="">Svi</option>
+                  <div class="rv-filter-chips">
+                    <button
+                      class="rv-chip"
+                      [class.rv-chip--active]="filters().subtypeId === null"
+                      (click)="applySubtype('')"
+                    >Svi</button>
                     @for (s of subtypes(); track s.id) {
-                      <option [value]="s.id">{{ s.name }}</option>
+                      <button
+                        class="rv-chip"
+                        [class.rv-chip--active]="filters().subtypeId === s.id"
+                        (click)="applySubtype(s.id.toString())"
+                      >{{ s.name }}</button>
                     }
-                    @if (!subtypes().length) {
-                      <option value="" disabled>Učitavanje...</option>
-                    }
-                  </select>
+                  </div>
                 </div>
               }
 
-              <!-- Extra filters per subtype (e.g. WiFi, parking for places) -->
+              <!-- Extra filters per subtype — toggles like places amenities -->
               @if (filterDefs().length > 0) {
-                <div class="rv-filter-section">
+                <div class="rv-filter-section rv-filter-section--extra">
                   <label class="rv-filter-section__label">Karakteristike</label>
-                  <div class="rv-extra-filters">
+                  <div class="rv-extra-list">
                     @for (def of filterDefs(); track def.id) {
                       @if (def.filterType === 'boolean') {
-                        <label class="rv-extra-filter-item">
-                          <input
-                            type="checkbox"
-                            class="rv-extra-filter-checkbox"
-                            [checked]="isExtraFilterActive(def.filterKey, 'true')"
-                            (change)="applyExtraFilter(def.filterKey, 'true', $any($event.target).checked)"
-                          />
-                          {{ def.filterLabel }}
+                        <label class="rv-extra-item">
+                          <span class="rv-extra-item__label">{{ def.filterLabel }}</span>
+                          <button
+                            class="rv-toggle-btn"
+                            [class.rv-toggle-btn--on]="isExtraFilterActive(def.filterKey, 'true')"
+                            type="button"
+                            (click)="applyExtraFilter(def.filterKey, 'true', !isExtraFilterActive(def.filterKey, 'true'))"
+                          >
+                            <span class="rv-toggle-track">
+                              <span class="rv-toggle-thumb"></span>
+                            </span>
+                          </button>
                         </label>
                       } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
-                        <div class="rv-extra-filter-select-wrap">
-                          <label class="rv-extra-filter-select-label">{{ def.filterLabel }}</label>
-                          <select
-                            class="rv-filter-select"
-                            [value]="getExtraFilterValue(def.filterKey)"
-                            (change)="applyExtraFilter(def.filterKey, $any($event.target).value, !!$any($event.target).value)"
-                          >
-                            <option value="">Svi</option>
+                        <div class="rv-filter-section">
+                          <label class="rv-filter-section__label">{{ def.filterLabel }}</label>
+                          <div class="rv-filter-chips">
+                            <button
+                              class="rv-chip"
+                              [class.rv-chip--active]="!getExtraFilterValue(def.filterKey)"
+                              (click)="applyExtraFilter(def.filterKey, '', false)"
+                            >Svi</button>
                             @for (opt of def.options; track opt.optionValue) {
-                              <option [value]="opt.optionValue">{{ opt.optionLabel }}</option>
+                              <button
+                                class="rv-chip"
+                                [class.rv-chip--active]="getExtraFilterValue(def.filterKey) === opt.optionValue"
+                                (click)="applyExtraFilter(def.filterKey, opt.optionValue, true)"
+                              >{{ opt.optionLabel }}</button>
                             }
-                          </select>
+                          </div>
                         </div>
                       }
                     }
@@ -162,16 +172,20 @@
               @if (showRegionFilter()) {
                 <div class="rv-filter-section">
                   <label class="rv-filter-section__label">Regija</label>
-                  <select
-                    class="rv-filter-select"
-                    [value]="filters().regionId ?? ''"
-                    (change)="applyRegion($any($event.target).value)"
-                  >
-                    <option value="">Sve regije</option>
+                  <div class="rv-filter-chips">
+                    <button
+                      class="rv-chip"
+                      [class.rv-chip--active]="filters().regionId === null"
+                      (click)="applyRegion('')"
+                    >Sve</button>
                     @for (r of regions(); track r.id) {
-                      <option [value]="r.id">{{ r.name }}</option>
+                      <button
+                        class="rv-chip"
+                        [class.rv-chip--active]="filters().regionId === r.id"
+                        (click)="applyRegion(r.id.toString())"
+                      >{{ r.name }}</button>
                     }
-                  </select>
+                  </div>
                 </div>
               }
 
@@ -179,59 +193,56 @@
               @if (isTouristOrg() && profileService.profile()?.managedRegionName) {
                 <div class="rv-filter-section">
                   <label class="rv-filter-section__label">Regija</label>
-                  <span class="rv-filter-readonly">{{ profileService.profile()?.managedRegionName }}</span>
+                  <div class="rv-filter-chips">
+                    <button class="rv-chip rv-chip--active">{{ profileService.profile()?.managedRegionName }}</button>
+                  </div>
                 </div>
               }
 
               <!-- City filter -->
-              @if (!isPlaceOwner()) {
+              @if (!isPlaceOwner() && cities().length > 0) {
                 <div class="rv-filter-section">
                   <label class="rv-filter-section__label">Grad</label>
-                  <select
-                    class="rv-filter-select"
-                    [value]="filters().cityId ?? ''"
-                    (change)="applyCity($any($event.target).value)"
-                  >
-                    <option value="">Svi gradovi</option>
+                  <div class="rv-filter-chips">
+                    <button
+                      class="rv-chip"
+                      [class.rv-chip--active]="filters().cityId === null"
+                      (click)="applyCity('')"
+                    >Svi</button>
                     @for (c of cities(); track c.id) {
-                      <option [value]="c.id">{{ c.name }}</option>
+                      <button
+                        class="rv-chip"
+                        [class.rv-chip--active]="filters().cityId === c.id"
+                        (click)="applyCity(c.id.toString())"
+                      >{{ c.name }}</button>
                     }
-                    @if (!cities().length && filters().regionId === null) {
-                      <option value="" disabled>Izaberi regiju za gradove</option>
-                    }
-                  </select>
+                  </div>
                 </div>
               }
 
-              <!-- Rating filter -->
+              <!-- Rating filter — star picker -->
               <div class="rv-filter-section">
                 <label class="rv-filter-section__label">{{ ui.t('reviews.filter.rating') }}</label>
-                <div class="rv-rating-range">
-                  <select
-                    class="rv-filter-select"
-                    [value]="filters().minRating ?? ''"
-                    (change)="applyMinRating($any($event.target).value)"
-                  >
-                    <option value="">{{ ui.t('reviews.filter.rating.min') }}</option>
-                    <option value="1">1★</option>
-                    <option value="2">2★</option>
-                    <option value="3">3★</option>
-                    <option value="4">4★</option>
-                    <option value="5">5★</option>
-                  </select>
-                  <span class="rv-rating-range__sep">—</span>
-                  <select
-                    class="rv-filter-select"
-                    [value]="filters().maxRating ?? ''"
-                    (change)="applyMaxRating($any($event.target).value)"
-                  >
-                    <option value="">{{ ui.t('reviews.filter.rating.max') }}</option>
-                    <option value="1">1★</option>
-                    <option value="2">2★</option>
-                    <option value="3">3★</option>
-                    <option value="4">4★</option>
-                    <option value="5">5★</option>
-                  </select>
+                <div class="rv-star-picker">
+                  @for (star of stars; track star) {
+                    <button
+                      class="rv-star-btn"
+                      [class.rv-star-btn--on]="star <= (hoverRating() ?? filters().minRating ?? 0)"
+                      (mouseenter)="hoverRating.set(star)"
+                      (mouseleave)="hoverRating.set(null)"
+                      (click)="applyMinRating(star)"
+                      [title]="star + '+ zvezdice'"
+                    >
+                      <span class="material-icons">star</span>
+                    </button>
+                  }
+                  <span class="rv-star-label">
+                    @if (filters().minRating) {
+                      {{ filters().minRating }}+ ★
+                    } @else {
+                      Sve ocene
+                    }
+                  </span>
                 </div>
               </div>
 
@@ -255,7 +266,6 @@
                 </div>
               }
             </div>
-            <div class="rv-filter-backdrop" (click)="isFilterOpen.set(false)"></div>
           }
         </div>
       </div>

@@ -240,13 +240,53 @@ namespace Explorea.Server.Services.Admin
                 .Take(take)
                 .ToListAsync();
 
-            return reviews.Select(r => new AdminRecentActivityDto
+            var entityIds = reviews.Select(r => r.EntityId).ToHashSet();
+
+            var destNames = await _db.Destinations
+                .IgnoreQueryFilters()
+                .Where(d => entityIds.Contains(d.Id))
+                .Select(d => new { d.Id, d.Name })
+                .ToDictionaryAsync(d => d.Id, d => d.Name);
+
+            var placeNames = await _db.Places
+                .IgnoreQueryFilters()
+                .Where(p => entityIds.Contains(p.Id))
+                .Select(p => new { p.Id, p.Name })
+                .ToDictionaryAsync(p => p.Id, p => p.Name);
+
+            var eventNames = await _db.Events
+                .IgnoreQueryFilters()
+                .Where(e => entityIds.Contains(e.Id))
+                .Select(e => new { e.Id, e.Name })
+                .ToDictionaryAsync(e => e.Id, e => e.Name);
+
+            var activityNames = await _db.Activities
+                .IgnoreQueryFilters()
+                .Where(a => entityIds.Contains(a.Id))
+                .Select(a => new { a.Id, a.Name })
+                .ToDictionaryAsync(a => a.Id, a => a.Name);
+
+            return reviews.Select(r =>
             {
-                Id = $"review-created-{r.Id}",
-                Type = "review_created",
-                Description = $"{r.User.FirstName} {r.User.LastName} je dodao recenziju ({r.Rating}/5) za {EntityTypeLabel(r.EntityType).ToLower()}",
-                CreatedAt = r.CreatedAt,
-                ActorId = r.UserId
+                var entityName = r.EntityType.ToLowerInvariant() switch
+                {
+                    "destination" => destNames.GetValueOrDefault(r.EntityId),
+                    "place" => placeNames.GetValueOrDefault(r.EntityId),
+                    "event" => eventNames.GetValueOrDefault(r.EntityId),
+                    "activity" => activityNames.GetValueOrDefault(r.EntityId),
+                    _ => null
+                };
+                var entityLabel = EntityTypeLabel(r.EntityType).ToLower();
+                var entityDesc = entityName != null ? $"{entityLabel} \"{entityName}\"" : entityLabel;
+
+                return new AdminRecentActivityDto
+                {
+                    Id = $"review-created-{r.Id}",
+                    Type = "review_created",
+                    Description = $"{r.User.FirstName} {r.User.LastName} je dodao recenziju ({r.Rating}/5) za {entityDesc}",
+                    CreatedAt = r.CreatedAt,
+                    ActorId = r.UserId
+                };
             }).ToList();
         }
 

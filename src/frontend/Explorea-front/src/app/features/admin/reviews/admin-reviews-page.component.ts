@@ -71,9 +71,10 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
   protected readonly isLoading = signal(false);
   protected readonly isStatsLoading = signal(false);
   protected readonly isFilterOpen = signal(false);
-  protected readonly filterPanelTop = signal(0);
-  protected readonly filterPanelRight = signal(0);
+  protected readonly hoverRating = signal<number | null>(null);
   protected readonly activeMenuId = signal<string | null>(null);
+
+  protected readonly stars = [1, 2, 3, 4, 5];
   protected readonly isDeleteDialogOpen = signal(false);
   protected readonly isDeleting = signal(false);
   protected readonly isReplyDialogOpen = signal(false);
@@ -191,19 +192,6 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
     this.subscription.unsubscribe();
   }
 
-  protected toggleFilter(event: MouseEvent): void {
-    event.stopPropagation();
-    if (this.isFilterOpen()) {
-      this.isFilterOpen.set(false);
-      return;
-    }
-    const btn = event.currentTarget as HTMLElement;
-    const rect = btn.getBoundingClientRect();
-    this.filterPanelTop.set(rect.bottom + 6);
-    this.filterPanelRight.set(window.innerWidth - rect.right);
-    this.isFilterOpen.set(true);
-  }
-
   protected applyEntityType(value: EntityType | 'all'): void {
     this.patchFilter({ entityType: value, subtypeId: null, extraFilters: [], page: 1 });
     this.subtypes.set([]);
@@ -238,13 +226,9 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
     this.loadReviews();
   }
 
-  protected applyMinRating(rawValue: string): void {
-    this.patchFilter({ minRating: rawValue ? +rawValue : null, page: 1 });
-    this.loadReviews();
-  }
-
-  protected applyMaxRating(rawValue: string): void {
-    this.patchFilter({ maxRating: rawValue ? +rawValue : null, page: 1 });
+  protected applyMinRating(star: number): void {
+    const current = this.filters().minRating;
+    this.patchFilter({ minRating: current === star ? null : star, maxRating: null, page: 1 });
     this.loadReviews();
   }
 
