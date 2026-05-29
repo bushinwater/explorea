@@ -45,6 +45,12 @@ namespace Explorea.Server.Services.Admin
 
         public async Task<AdminEventStatsDto> GetStatsDtoAsync(Guid currentUserId)
         {
+            var currentUser = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            if (currentUser?.Role.Name == RoleNames.PlaceOwner)
+            {
+                return await GetOwnerStatsDtoAsync(currentUserId);
+            }
+
             var (restrictToDestinationIds, restrictToCityIds) =
                 await GetAccessRestrictionsAsync(currentUserId);
             
@@ -141,6 +147,23 @@ namespace Explorea.Server.Services.Admin
             int page, int pageSize, Guid currentUserId,
             string? sortBy = null)
         {
+            var currentUser = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            if (currentUser?.Role.Name == RoleNames.PlaceOwner)
+            {
+                return await GetOwnerEventsAsync(
+                    search,
+                    destinationId,
+                    cityId,
+                    typeId,
+                    startFrom,
+                    startTo,
+                    extraFilters,
+                    page,
+                    pageSize,
+                    currentUserId,
+                    sortBy);
+            }
+
             var (restrictToDestinationIds, restrictToCityIds) =
                 await GetAccessRestrictionsAsync(currentUserId);
 
@@ -164,6 +187,19 @@ namespace Explorea.Server.Services.Admin
             int pageSize,
             Guid currentUserId)
         {
+            var currentUser = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            if (currentUser?.Role.Name == RoleNames.PlaceOwner)
+            {
+                return await GetOwnerDeletedEventsAsync(
+                    search,
+                    destinationId,
+                    cityId,
+                    typeId,
+                    page,
+                    pageSize,
+                    currentUserId);
+            }
+
             var (restrictToDestinationIds, restrictToCityIds) =
                 await GetAccessRestrictionsAsync(currentUserId);
 
@@ -228,6 +264,15 @@ namespace Explorea.Server.Services.Admin
 
                 return MapToDetailDto(ev);
             }
+            else if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                var ev = await _eventRepo.GetAdminByIdAsync(id);
+                if (ev == null) return null;
+
+                return await EventBelongsToOwnerAsync(currentUserId, ev)
+                    ? MapToDetailDto(ev)
+                    : null;
+            }
             else if (user?.Role.Name != RoleNames.SuperAdmin)
             {
                 throw new UnauthorizedAccessException("Access denied.");
@@ -275,10 +320,10 @@ namespace Explorea.Server.Services.Admin
             var visibility = user.Role.Name == RoleNames.PlaceOwner ? "pending" : "published";
 
             int? resolvedCityId = dto.CityId;
-            if (!resolvedCityId.HasValue && dto.DestinationId.HasValue)
+            if (!resolvedCityId.HasValue && resolvedDestinationId.HasValue)
             {
                 resolvedCityId = await _db.Destinations
-                    .Where(d => d.Id == dto.DestinationId.Value)
+                    .Where(d => d.Id == resolvedDestinationId.Value)
                     .Select(d => (int?)d.CityId)
                     .FirstOrDefaultAsync();
             }
@@ -466,6 +511,224 @@ namespace Explorea.Server.Services.Admin
         }
 
         // ---- Helpers ----
+
+        private async Task<AdminEventStatsDto> GetOwnerStatsDtoAsync(Guid ownerId)
+        {
+            var activeCount = await BuildOwnerEventScope(ownerId)
+                .Where(e => !e.IsDeleted && e.Visibility == "published")
+                .CountAsync();
+
+            var pendingCount = await _db.SubmissionQueue.CountAsync(q =>
+                q.EntityType == "event" &&
+                q.SubmittedByUserId == ownerId &&
+                q.Status == "Pending");
+
+            var rejectedCount = await _db.SubmissionQueue.CountAsync(q =>
+                q.EntityType == "event" &&
+                q.SubmittedByUserId == ownerId &&
+                (q.Status == "RejectedByTO" || q.Status == "RejectedByOwner"));
+
+            var now = DateTimeOffset.UtcNow;
+            var monthStart = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
+
+            var approvedThisMonth = await _db.SubmissionQueue.CountAsync(q =>
+                q.EntityType == "event" &&
+                q.SubmittedByUserId == ownerId &&
+                (q.Status == "ApprovedByTO" || q.Status == "ApprovedByOwner") &&
+                q.ReviewedByTOAt >= monthStart);
+
+            return new AdminEventStatsDto
+            {
+                ActiveRequests = activeCount,
+                ActiveRequestsTrend = string.Empty,
+                PendingApproval = pendingCount,
+                PendingApprovalHint = "Zahtevi na cekanju",
+                ApprovedThisMonth = approvedThisMonth,
+                ApprovedThisMonthTrend = "Odobreno ovog meseca",
+                Rejected = rejectedCount,
+                RejectedNote = "Odbijeni zahtevi",
+                TabPendingCount = pendingCount,
+                TabActiveCount = activeCount
+            };
+        }
+
+        private async Task<(List<AdminEventListDto> Items, int Total)> GetOwnerEventsAsync(
+            string? search,
+            Guid? destinationId,
+            int? cityId,
+            int? typeId,
+            DateTimeOffset? startFrom,
+            DateTimeOffset? startTo,
+            List<string>? extraFilters,
+            int page,
+            int pageSize,
+            Guid ownerId,
+            string? sortBy)
+        {
+            var query = BuildOwnerEventScope(ownerId)
+                .Where(e => !e.IsDeleted && e.Visibility == "published");
+
+            query = ApplyOwnerEventFilters(query, search, destinationId, cityId, typeId, startFrom, startTo);
+            query = IncludeEventRelations(query);
+
+            var ordered = sortBy?.Trim().ToLower() switch
+            {
+                "updatedat_desc" => query.OrderByDescending(e => e.UpdatedAt),
+                "updatedat_asc"  => query.OrderBy(e => e.UpdatedAt),
+                _                => query.OrderByDescending(e => e.StartDatetime),
+            };
+
+            var items = await ordered.ToListAsync();
+            if (extraFilters?.Count > 0)
+            {
+                items = items.Where(e => MatchesExtraFilters(e, extraFilters)).ToList();
+            }
+
+            var total = items.Count;
+            var paged = items
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(MapToListDto)
+                .ToList();
+
+            return (paged, total);
+        }
+
+        private async Task<(List<AdminEventListDto> Items, int Total)> GetOwnerDeletedEventsAsync(
+            string? search,
+            Guid? destinationId,
+            int? cityId,
+            int? typeId,
+            int page,
+            int pageSize,
+            Guid ownerId)
+        {
+            var query = BuildOwnerEventScope(ownerId)
+                .Where(e => e.IsDeleted);
+
+            query = ApplyOwnerEventFilters(query, search, destinationId, cityId, typeId, null, null);
+            query = IncludeEventRelations(query);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(e => e.DeletedAt ?? e.UpdatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items.Select(MapToListDto).ToList(), total);
+        }
+
+        private IQueryable<Event> BuildOwnerEventScope(Guid ownerId)
+        {
+            var ownerPlaceIds = _db.Places
+                .IgnoreQueryFilters()
+                .Where(place => !place.IsDeleted && place.CreatedBy == ownerId)
+                .Select(place => place.Id);
+
+            return _db.Events
+                .IgnoreQueryFilters()
+                .Where(e =>
+                    e.CreatedBy == ownerId ||
+                    (e.PlaceId.HasValue && ownerPlaceIds.Contains(e.PlaceId.Value)));
+        }
+
+        private static IQueryable<Event> ApplyOwnerEventFilters(
+            IQueryable<Event> query,
+            string? search,
+            Guid? destinationId,
+            int? cityId,
+            int? typeId,
+            DateTimeOffset? startFrom,
+            DateTimeOffset? startTo)
+        {
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(e =>
+                    e.Name.ToLower().Contains(term) ||
+                    (e.Description != null && e.Description.ToLower().Contains(term)) ||
+                    (e.Address != null && e.Address.ToLower().Contains(term)) ||
+                    (e.City != null && e.City.Name.ToLower().Contains(term)) ||
+                    (e.Destination != null && e.Destination.Name.ToLower().Contains(term)) ||
+                    (e.Type != null && e.Type.Name.ToLower().Contains(term)));
+            }
+
+            if (destinationId.HasValue)
+                query = query.Where(e => e.DestinationId == destinationId.Value);
+
+            if (cityId.HasValue)
+                query = query.Where(e => e.CityId == cityId.Value);
+
+            if (typeId.HasValue)
+                query = query.Where(e => e.TypeId == typeId.Value);
+
+            if (startFrom.HasValue)
+                query = query.Where(e => e.StartDatetime >= startFrom.Value);
+
+            if (startTo.HasValue)
+                query = query.Where(e => e.StartDatetime <= startTo.Value);
+
+            return query;
+        }
+
+        private static IQueryable<Event> IncludeEventRelations(IQueryable<Event> query)
+        {
+            return query
+                .Include(e => e.City)
+                .Include(e => e.Type)
+                .Include(e => e.Country)
+                .Include(e => e.Destination).ThenInclude(d => d!.City)
+                .Include(e => e.Images);
+        }
+
+        private async Task<bool> EventBelongsToOwnerAsync(Guid ownerId, Event ev)
+        {
+            if (ev.CreatedBy == ownerId) return true;
+            if (!ev.PlaceId.HasValue) return false;
+
+            return await _db.Places
+                .IgnoreQueryFilters()
+                .AnyAsync(place => place.Id == ev.PlaceId.Value && !place.IsDeleted && place.CreatedBy == ownerId);
+        }
+
+        private static bool MatchesExtraFilters(Event ev, List<string> rawFilters)
+        {
+            var requested = ParseExtraFilters(rawFilters);
+            if (requested.Count == 0) return true;
+            if (string.IsNullOrWhiteSpace(ev.ExtraFilters)) return false;
+
+            Dictionary<string, string>? stored;
+            try
+            {
+                stored = JsonSerializer.Deserialize<Dictionary<string, string>>(ev.ExtraFilters);
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+
+            if (stored == null) return false;
+
+            return requested.All(filter =>
+                stored.TryGetValue(filter.Key, out var value) &&
+                string.Equals(value, filter.Value, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static Dictionary<string, string> ParseExtraFilters(List<string>? raw)
+        {
+            var dict = new Dictionary<string, string>();
+            if (raw == null) return dict;
+
+            foreach (var entry in raw)
+            {
+                var idx = entry.IndexOf(':');
+                if (idx > 0)
+                    dict[entry[..idx]] = entry[(idx + 1)..];
+            }
+
+            return dict;
+        }
 
         private async Task<bool> HasTOAccessToEvent(Guid userId, Event ev)
         {

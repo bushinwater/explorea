@@ -113,7 +113,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   );
   protected readonly canCreateEvent = computed(() => {
     const role = this.auth.getRole();
-    return role === 'super_admin' || role === 'place_owner';
+    return role === 'super_admin' || role === 'tourist_organization' || role === 'place_owner';
   });
 
   protected readonly lockedRegionId = computed(() =>
