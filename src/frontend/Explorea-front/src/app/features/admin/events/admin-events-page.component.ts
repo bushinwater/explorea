@@ -130,7 +130,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     const a = this.confirmAction();
     if (a === 'approve') return 'Organizator će biti obavešten da je njihov događaj odobren.';
     if (a === 'reject') return 'Ova akcija se ne može poništiti. Organizator će biti obavešten o odbijanju.';
-    if (a === 'delete') return `Događaj "${this.selectedEvent()?.name ?? ''}" će biti trajno obrisan.`;
+    if (a === 'delete') return `Da li sigurno želiš da ukloniš događaj "${this.selectedEvent()?.name ?? ''}"? Događaj će biti premešten u sekciju "Obrisano" gde ostaje 30 dana pre trajnog brisanja.`;
     return 'Vlasnik objekta će dobiti zahtev za odobrenje.';
   });
 

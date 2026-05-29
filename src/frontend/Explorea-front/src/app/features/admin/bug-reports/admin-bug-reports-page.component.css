@@ -1,0 +1,235 @@
+:host { display: block; }
+
+.bug-reports-page {
+  padding: var(--sp-6);
+  max-width: 900px;
+}
+
+/* ===== HEADER ===== */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+}
+.page-header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+.page-header__icon {
+  font-size: 32px;
+  color: var(--color-primary);
+}
+.page-header__title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 2px;
+}
+.page-header__subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+.page-header__badge {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+/* ===== FILTERS ===== */
+.filters-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+  flex-wrap: wrap;
+}
+.filters-bar__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+.status-tabs {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.status-tab {
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.status-tab:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.status-tab--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+/* ===== STATES ===== */
+.loading-row, .error-row, .empty-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-6);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+.error-row { color: var(--color-danger); }
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== REPORT CARD ===== */
+.reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.report-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.report-card:hover { border-color: var(--color-primary); }
+.report-card--expanded { border-color: var(--color-primary); }
+
+.report-card__header {
+  padding: var(--sp-4) var(--sp-5);
+  cursor: pointer;
+}
+.report-card__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+.report-card__date {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+.report-card__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.report-card__subject {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.report-card__chevron {
+  color: var(--color-text-muted);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.report-card__email {
+  margin-top: var(--sp-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.report-card__body {
+  padding: 0 var(--sp-5) var(--sp-4);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--sp-4);
+}
+.report-card__description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  line-height: 1.6;
+  margin: 0 0 var(--sp-4);
+}
+.report-card__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.report-actions__label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  margin-right: var(--sp-1);
+}
+.report-action-btn {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.report-action-btn:hover:not([disabled]) { border-color: var(--color-primary); color: var(--color-primary); }
+.report-action-btn--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  cursor: default;
+}
+.report-action-btn[disabled]:not(.report-action-btn--active) { opacity: 0.4; cursor: default; }
+
+/* ===== STATUS PILLS ===== */
+.report-status {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.report-status--open { color: var(--color-warning); border: 1px solid var(--color-warning); }
+.report-status--in_progress { color: var(--color-primary); border: 1px solid var(--color-primary); }
+.report-status--resolved { color: var(--color-success, #16a34a); border: 1px solid var(--color-success, #16a34a); }
+.report-status--closed { color: var(--color-text-muted); border: 1px solid var(--color-border); }
+
+/* ===== PAGINATION ===== */
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  justify-content: center;
+  margin-top: var(--sp-6);
+}
+.pagination__btn {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.pagination__btn:not([disabled]):hover { border-color: var(--color-primary); color: var(--color-primary); }
+.pagination__btn[disabled] { opacity: 0.4; cursor: default; }
+.pagination__info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
