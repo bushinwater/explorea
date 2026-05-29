@@ -84,6 +84,7 @@ export interface DestinationFilters {
   region: string | 'all';
   minRating: number | null;
   extraFilters: Record<string, string>;
+  sortBy: 'none' | 'updatedAt_desc' | 'updatedAt_asc';
   page: number;
   pageSize: number;
 }

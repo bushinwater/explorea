@@ -25,7 +25,8 @@ namespace Explorea.Server.Repositories.Implementations
             Guid? restrictToOwner,
             int? restrictToRegionId,
             int page,
-            int pageSize)
+            int pageSize,
+            string? sortBy = null)
         {
             var query = _db.Places
                 .Include(p => p.Images)
@@ -74,9 +75,13 @@ namespace Explorea.Server.Repositories.Implementations
                 query = query.Where(p => p.AmenityLinks.Any(al => al.AmenityId == amenityId.Value));
 
             var total = await query.CountAsync();
-
-            var items = await query
-                .OrderByDescending(p => p.UpdatedAt)
+            var ordered = sortBy?.Trim().ToLower() switch
+            {
+                "updatedat_desc" => query.OrderByDescending(p => p.UpdatedAt),
+                "updatedat_asc"  => query.OrderBy(p => p.UpdatedAt),
+                _                => query.OrderBy(p => p.Name),
+            };
+            var items = await ordered
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();

@@ -60,6 +60,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     destinationId: null,
     extraFilters: {},
     tab: 'active',
+    sortBy: 'none',
     page: 1,
     pageSize: 20,
   });
@@ -235,11 +236,20 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       destinationId: null,
       extraFilters: {},
       tab: f.tab,
+      sortBy: 'none',
       page: 1,
       pageSize: f.pageSize,
     }));
     this.filterDefs.set([]);
     this.currentPage.set(1);
+    this.loadEvents();
+  }
+
+  protected toggleSort(): void {
+    const next: Record<string, 'none' | 'updatedAt_desc' | 'updatedAt_asc'> = {
+      none: 'updatedAt_desc', updatedAt_desc: 'updatedAt_asc', updatedAt_asc: 'none',
+    };
+    this.patchFilter({ sortBy: next[this.filters().sortBy], page: 1 });
     this.loadEvents();
   }
 

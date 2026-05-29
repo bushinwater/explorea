@@ -53,6 +53,16 @@
             (input)="updateSearch($any($event.target).value)" />
         </div>
 
+        <!-- Sort button -->
+        <button class="btn btn-ghost btn-sm"
+          [class.activity-filter-btn--active]="filters().sortBy !== 'none'"
+          (click)="toggleSort()" title="Sortiraj po datumu izmene">
+          <span class="material-icons" style="font-size:18px">
+            {{ filters().sortBy === 'updatedAt_asc' ? 'arrow_upward' : filters().sortBy === 'updatedAt_desc' ? 'arrow_downward' : 'swap_vert' }}
+          </span>
+          {{ filters().sortBy === 'updatedAt_asc' ? 'Izmenjeno ↑' : filters().sortBy === 'updatedAt_desc' ? 'Izmenjeno ↓' : 'Sortiraj' }}
+        </button>
+
         <!-- Filter button -->
         <div class="activity-filter-wrap">
           <button class="btn btn-ghost btn-sm activity-filter-btn"
@@ -758,14 +768,6 @@
         </div>
 
         <div class="edit-field">
-          <label class="edit-field__label">Slug <span class="edit-field__required">*</span></label>
-          <input class="edit-field__input" type="text"
-            [value]="createForm().slug"
-            (input)="updateCreateField('slug', $any($event.target).value)"
-            placeholder="naziv-aktivnosti" />
-        </div>
-
-        <div class="edit-field">
           <label class="edit-field__label">Kategorija <span class="edit-field__required">*</span></label>
           <div class="ev-type-row">
             <select class="edit-field__select"
@@ -831,12 +833,7 @@
                   [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
                 <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
                   [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
-                <select class="edit-field__select" [value]="newFilterType()"
-                  (change)="newFilterType.set($any($event.target).value)">
-                  <option value="boolean">Da/Ne</option>
-                  <option value="select">Izbor</option>
-                  <option value="multi_select">Višestruki izbor</option>
-                </select>
+
                 <button class="ev-add-inline-form__submit" type="button"
                   [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
                   (click)="addNewFilter()">
@@ -859,12 +856,7 @@
                   [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
                 <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
                   [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
-                <select class="edit-field__select" [value]="newFilterType()"
-                  (change)="newFilterType.set($any($event.target).value)">
-                  <option value="boolean">Da/Ne</option>
-                  <option value="select">Izbor</option>
-                  <option value="multi_select">Višestruki izbor</option>
-                </select>
+
                 <button class="ev-add-inline-form__submit" type="button"
                   [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
                   (click)="addNewFilter()">
@@ -1136,7 +1128,7 @@
       Otkaži
     </button>
     <button class="edit-modal__btn edit-modal__btn--save" type="button"
-      [disabled]="isSubmitting() || !createForm().name.trim() || !createForm().slug.trim() || !createForm().categoryId || (!managedRegion() && !selectedCountryId()) || (!managedRegion() && modalRegionId() === 'all')"
+      [disabled]="isSubmitting() || !createForm().name.trim() || !createForm().categoryId || (!managedRegion() && !selectedCountryId()) || (!managedRegion() && modalRegionId() === 'all')"
       (click)="submitCreate()">
       @if (isSubmitting()) {
         <span class="material-icons edit-modal__spin">sync</span>

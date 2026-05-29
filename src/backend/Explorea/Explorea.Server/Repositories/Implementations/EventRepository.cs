@@ -27,7 +27,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .AsNoTracking()
                 .Include(e => e.Type)
                 .Include(e => e.City)
-                .Include(e => e.Destination)
+                .Include(e => e.Destination).ThenInclude(d => d!.City)
                 .Include(e => e.Place)
                 .Include(e => e.Country)
                 .Include(e => e.Images)
@@ -100,6 +100,7 @@ namespace Explorea.Server.Repositories.Implementations
         {
             var query = _set
                 .Include(e => e.City)
+                .Include(e => e.Destination).ThenInclude(d => d!.City)
                 .Include(e => e.Type)
                 .Include(e => e.Country)
                 .Include(e => e.Images)

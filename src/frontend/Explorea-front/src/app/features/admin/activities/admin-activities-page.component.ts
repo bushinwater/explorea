@@ -98,6 +98,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     minRating: 'all',
     regionId: 'all',
     extraFilters: {},
+    sortBy: 'none',
     page: 1,
     pageSize: 20,
   });
@@ -369,6 +370,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       minRating: 'all',
       regionId: mr ? mr.id : 'all',
       extraFilters: {},
+      sortBy: 'none',
       page: 1,
       pageSize: f.pageSize,
     }));
@@ -377,6 +379,15 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.syncFiltersToQueryParams();
     this.loadActivities();
   }
+
+  protected toggleSort(): void {
+    const next: Record<string, 'none' | 'updatedAt_desc' | 'updatedAt_asc'> = {
+      none: 'updatedAt_desc', updatedAt_desc: 'updatedAt_asc', updatedAt_asc: 'none',
+    };
+    this.patchFilter({ sortBy: next[this.filters().sortBy], page: 1 });
+    this.loadActivities();
+  }
+
 
   protected setListMode(mode: 'active' | 'deleted'): void {
     if (this.listMode() === mode) return;
@@ -933,7 +944,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected submitCreate(): void {
     const form = this.createForm();
-    if (!form.name.trim() || !form.slug.trim() || !form.categoryId) return;
+    if (!form.name.trim() || !form.categoryId) return;
     if (!this.managedRegion() && !this.selectedCountryId()) return;
     if (!this.managedRegion() && this.modalRegionId() === 'all') return;
 
@@ -945,6 +956,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     const ef = this.modalExtraFilters();
     const dto: CreateActivityDto = {
       ...form,
+      slug: this.toSlug(form.name),
       latitude: lat ?? undefined,
       longitude: lng ?? undefined,
       inclusions: inclusions.length ? inclusions : undefined,
@@ -1227,6 +1239,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       minRating: this.parseMinRating(qp.get('minRating')),
       regionId: this.parsePositiveInt(qp.get('regionId'), 0) || 'all',
       extraFilters,
+      sortBy: 'none',
       page,
       pageSize,
     });
@@ -1662,5 +1675,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
     this.loadActivities();
     this.loadStats();
+  }
+
+  private toSlug(name: string): string {
+    return `${name.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'dj').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'activity'}-${Date.now().toString(36)}`;
   }
 }

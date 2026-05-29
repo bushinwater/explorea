@@ -126,6 +126,7 @@ export interface EventFilters {
   destinationId: string | null;
   extraFilters: Record<string, string>;
   tab: EventsTab;
+  sortBy: 'none' | 'updatedAt_desc' | 'updatedAt_asc';
   page: number;
   pageSize: number;
 }

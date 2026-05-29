@@ -103,12 +103,7 @@
                     [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
                   <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
                     [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
-                  <select class="edit-field__select" [value]="newFilterType()"
-                    (change)="newFilterType.set($any($event.target).value)">
-                    <option value="boolean">Da/Ne</option>
-                    <option value="select">Izbor</option>
-                    <option value="multi_select">Višestruki izbor</option>
-                  </select>
+
                   <button class="ev-add-inline-form__submit" type="button"
                     [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()">
@@ -133,12 +128,7 @@
                     [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
                   <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
                     [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
-                  <select class="edit-field__select" [value]="newFilterType()"
-                    (change)="newFilterType.set($any($event.target).value)">
-                    <option value="boolean">Da/Ne</option>
-                    <option value="select">Izbor</option>
-                    <option value="multi_select">Višestruki izbor</option>
-                  </select>
+
                   <button class="ev-add-inline-form__submit" type="button"
                     [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()">

@@ -62,6 +62,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     regionId: 'all',
     minRating: null,
     amenityId: null,
+    sortBy: 'none',
     page: 1,
     pageSize: 20,
   });
@@ -226,10 +227,19 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
       regionId: 'all',
       minRating: null,
       amenityId: null,
+      sortBy: 'none',
       page: 1,
       pageSize: f.pageSize,
     }));
     this.currentPage.set(1);
+    this.loadPlaces();
+  }
+
+  protected toggleSort(): void {
+    const next: Record<string, 'none' | 'updatedAt_desc' | 'updatedAt_asc'> = {
+      none: 'updatedAt_desc', updatedAt_desc: 'updatedAt_asc', updatedAt_asc: 'none',
+    };
+    this.patchFilter({ sortBy: next[this.filters().sortBy], page: 1 });
     this.loadPlaces();
   }
 

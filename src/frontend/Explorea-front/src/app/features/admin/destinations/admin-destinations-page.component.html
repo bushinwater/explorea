@@ -103,6 +103,16 @@
           />
         </div>
 
+        <!-- Sort button -->
+        <button class="btn btn-ghost btn-sm"
+          [class.dest-filter-btn--active]="filters().sortBy !== 'none'"
+          (click)="toggleSort()" title="Sortiraj po datumu izmene">
+          <span class="material-icons" style="font-size:18px">
+            {{ filters().sortBy === 'updatedAt_asc' ? 'arrow_upward' : filters().sortBy === 'updatedAt_desc' ? 'arrow_downward' : 'swap_vert' }}
+          </span>
+          {{ filters().sortBy === 'updatedAt_asc' ? 'Izmenjeno ↑' : filters().sortBy === 'updatedAt_desc' ? 'Izmenjeno ↓' : 'Sortiraj' }}
+        </button>
+
         <!-- Filter button -->
         <div class="dest-filter-wrap">
           <button

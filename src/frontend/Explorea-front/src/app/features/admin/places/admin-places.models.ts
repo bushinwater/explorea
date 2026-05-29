@@ -135,6 +135,7 @@ export interface PlaceFilters {
   regionId: number | 'all';
   minRating: number | null;
   amenityId: number | null;
+  sortBy: 'none' | 'updatedAt_desc' | 'updatedAt_asc';
   page: number;
   pageSize: number;
 }

@@ -156,7 +156,12 @@ namespace Explorea.Server.Services.Admin
         }
       }
 
-      activitiesQuery = activitiesQuery.OrderByDescending(a => a.CreatedAt);
+      activitiesQuery = query.SortBy?.Trim().ToLower() switch
+      {
+          "updatedat_desc" => activitiesQuery.OrderByDescending(a => a.UpdatedAt),
+          "updatedat_asc"  => activitiesQuery.OrderBy(a => a.UpdatedAt),
+          _                => activitiesQuery.OrderByDescending(a => a.CreatedAt),
+      };
 
       var total = await activitiesQuery.CountAsync();
 

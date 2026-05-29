@@ -339,6 +339,10 @@ export class AdminEventsService {
       params = params.append('extraFilters', `${key}:${value}`);
     }
 
+    if (filters.sortBy !== 'none') {
+      params = params.set('sortBy', filters.sortBy);
+    }
+
     return this.http.get<ApiEventsResponse>('/api/admin/events', { params }).pipe(
       map((res) => ({
         total: res.total,

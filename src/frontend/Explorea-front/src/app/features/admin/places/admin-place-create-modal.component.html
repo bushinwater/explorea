@@ -130,13 +130,7 @@
                     (input)="newFilterLabel.set($any($event.target).value)" />
                 </div>
                 <div class="ev-add-filter-row ev-add-filter-row--actions">
-                  <select class="edit-field__select"
-                    [value]="newFilterType()"
-                    (change)="newFilterType.set($any($event.target).value)">
-                    <option value="boolean">Da / Ne (kvačica)</option>
-                    <option value="select">Izbor jedne vrednosti</option>
-                    <option value="multi_select">Višestruki izbor</option>
-                  </select>
+
                   <button class="ev-add-inline-form__submit" type="button"
                     [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()">

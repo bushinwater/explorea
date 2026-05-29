@@ -62,6 +62,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     region: 'all',
     minRating: null,
     extraFilters: {},
+    sortBy: 'none',
     page: 1,
     pageSize: 20,
   });
@@ -250,11 +251,20 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       region: 'all',
       minRating: null,
       extraFilters: {},
+      sortBy: 'none',
       page: 1,
       pageSize: f.pageSize,
     }));
     this.filterDefs.set([]);
     this.currentPage.set(1);
+    this.loadDestinations();
+  }
+
+  protected toggleSort(): void {
+    const next: Record<string, 'none' | 'updatedAt_desc' | 'updatedAt_asc'> = {
+      none: 'updatedAt_desc', updatedAt_desc: 'updatedAt_asc', updatedAt_asc: 'none',
+    };
+    this.patchFilter({ sortBy: next[this.filters().sortBy], page: 1 });
     this.loadDestinations();
   }
 

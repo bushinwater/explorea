@@ -74,7 +74,8 @@ namespace Explorea.Server.Services.Admin
                 restrictToOwner,
                 restrictToRegionId,
                 query.Page,
-                query.PageSize);
+                query.PageSize,
+                query.SortBy);
 
             var thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30);
             var pageIds = items.Select(p => p.Id).ToList();
