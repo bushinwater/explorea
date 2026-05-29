@@ -441,6 +441,8 @@ namespace Explorea.Server.Services.Admin
             Type           = e.Type?.Name,
             City           = e.City?.Name,
             Destination    = e.Destination?.Name,
+            DestinationId  = e.DestinationId,
+            PlaceId        = e.PlaceId,
             StartDatetime  = e.StartDatetime,
             EndDatetime    = e.EndDatetime,
             Price          = e.Price,

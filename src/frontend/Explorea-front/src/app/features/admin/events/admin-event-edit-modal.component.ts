@@ -191,15 +191,47 @@ export class EventEditModalComponent implements OnInit, AfterViewInit, OnDestroy
           this.images.set([...(detail.imageItems ?? [])]);
           const heroImg = detail.imageItems?.find(i => i.imageUrl === detail.heroImageUrl);
           this.heroImageId.set(heroImg?.id ?? detail.imageItems?.[0]?.id ?? null);
-          // Refresh typeId and extraFilters from full detail
+          // Refresh typeId, extraFilters, destinationId and placeId from full detail
           const freshTypeId = detail.typeId;
           const freshExtraFilters = detail.extraFilters ?? {};
+          const freshDestId = detail.destinationId;
+          const freshPlaceId = detail.placeId;
           this.form.update(f => ({
             ...f,
             typeId: freshTypeId ?? f.typeId,
             extraFilters: Object.keys(freshExtraFilters).length ? freshExtraFilters : f.extraFilters,
+            destinationId: freshDestId ?? f.destinationId,
+            placeId: freshPlaceId ?? f.placeId,
           }));
           if (freshTypeId !== null) this.loadFilterDefs(freshTypeId);
+          // If list item didn't have destinationId, populate cascade from detail
+          if (freshDestId && !ev.destinationId) {
+            this.sub.add(
+              this.eventsService.getDestinationById(freshDestId).subscribe({
+                next: dest => {
+                  if (dest) {
+                    this.selectedDestName.set(dest.name);
+                    this.destinationQuery.set(dest.name);
+                    if (dest.countryId != null) this.selectedCountryId.set(dest.countryId);
+                    if (dest.regionId != null) this.selectedRegionId.set(dest.regionId);
+                  }
+                  this.cdr.detectChanges();
+                },
+                error: () => {},
+              }),
+            );
+          }
+          if (freshPlaceId && !ev.placeId) {
+            this.sub.add(
+              this.eventsService.getPlaceById(freshPlaceId).subscribe({
+                next: place => {
+                  if (place) { this.selectedPlaceName.set(place.name); this.placeQuery.set(place.name); }
+                  this.cdr.detectChanges();
+                },
+                error: () => {},
+              }),
+            );
+          }
           this.cdr.detectChanges();
         },
         error: () => {

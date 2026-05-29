@@ -34,6 +34,8 @@ interface ApiEventItem {
   type: string | null;
   city: string | null;
   destination: string | null;
+  destinationId: string | null;
+  placeId: string | null;
   startDatetime: string;
   endDatetime: string;
   price: number | null;
@@ -478,8 +480,8 @@ export class AdminEventsService {
       typeId: null,
       city: e.city,
       cityId: null,
-      destinationId: null,
-      placeId: null,
+      destinationId: e.destinationId ?? null,
+      placeId: e.placeId ?? null,
       venue: e.destination,
       startDate: e.startDatetime,
       endDate: e.endDatetime,

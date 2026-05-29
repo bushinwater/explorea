@@ -53,12 +53,65 @@ namespace Explorea.Server.Repositories.Implementations
 
         public async Task<string?> GetTopRegionAsync(List<Guid>? destIds, Guid? placeOwnerUserId)
         {
-            var q = _db.Destinations
+            // Use PopularityLogs (actual visit events) across all entity types,
+            // grouped by region, to find the region with the most real visits.
+            var isPlaceOwner = placeOwnerUserId.HasValue;
+
+            // ── Destinations (skipped for place-owner scope) ──────────────────
+            var destBase = _db.Destinations
                 .Where(d => !d.IsDeleted && d.City != null && d.City.Region != null);
-            if (destIds != null) q = q.Where(d => destIds.Contains(d.Id));
-            return await q
-                .GroupBy(d => d.City!.Region!.Name)
-                .OrderByDescending(g => g.Sum(d => (long)d.Popularity))
+            if (destIds != null)
+                destBase = destBase.Where(d => destIds.Contains(d.Id));
+
+            var dq = _db.PopularityLogs
+                .Where(l => l.EntityType == "destination" && !isPlaceOwner)
+                .Join(destBase, l => l.EntityId, d => d.Id,
+                      (l, d) => new { Region = d.City!.Region!.Name, l.Points });
+
+            // ── Activities (skipped for place-owner scope) ────────────────────
+            var actBase = _db.Activities
+                .Where(a => !a.IsDeleted && a.City != null && a.City.Region != null);
+            if (destIds != null)
+                actBase = actBase.Where(a => a.DestinationId != null && destIds.Contains(a.DestinationId.Value));
+
+            var aq = _db.PopularityLogs
+                .Where(l => l.EntityType == "activity" && !isPlaceOwner)
+                .Join(actBase, l => l.EntityId, a => a.Id,
+                      (l, a) => new { Region = a.City!.Region!.Name, l.Points });
+
+            // ── Events (skipped for place-owner scope) ────────────────────────
+            var evBase = _db.Events
+                .Where(e => !e.IsDeleted && e.City != null && e.City.Region != null);
+            if (destIds != null)
+                evBase = evBase.Where(e => e.DestinationId != null && destIds.Contains(e.DestinationId.Value));
+
+            var eq = _db.PopularityLogs
+                .Where(l => l.EntityType == "event" && !isPlaceOwner)
+                .Join(evBase, l => l.EntityId, e => e.Id,
+                      (l, e) => new { Region = e.City!.Region!.Name, l.Points });
+
+            // ── Places ────────────────────────────────────────────────────────
+            var placeBase = _db.Places
+                .Where(p => !p.IsDeleted && p.City != null && p.City.Region != null);
+            if (destIds != null)
+                placeBase = placeBase.Where(p => p.DestinationId != null && destIds.Contains(p.DestinationId.Value));
+            else if (isPlaceOwner)
+                placeBase = placeBase.Where(p => p.CreatedBy == placeOwnerUserId!.Value);
+
+            var pq = _db.PopularityLogs
+                .Where(l => l.EntityType == "place")
+                .Join(placeBase, l => l.EntityId, p => p.Id,
+                      (l, p) => new { Region = p.City!.Region!.Name, l.Points });
+
+            // ── UNION ALL → group by region → top by visit points ─────────────
+            var combined = dq
+                .Concat(aq)
+                .Concat(eq)
+                .Concat(pq);
+
+            return await combined
+                .GroupBy(x => x.Region)
+                .OrderByDescending(g => g.Sum(x => (long)x.Points))
                 .Select(g => g.Key)
                 .FirstOrDefaultAsync();
         }

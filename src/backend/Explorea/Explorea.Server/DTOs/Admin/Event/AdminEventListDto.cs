@@ -9,6 +9,8 @@ namespace Explorea.API.DTOs.Admin.Event
         public string?         Type           { get; set; }
         public string?         City           { get; set; }
         public string?         Destination    { get; set; }
+        public Guid?           DestinationId  { get; set; }
+        public Guid?           PlaceId        { get; set; }
         public DateTimeOffset  StartDatetime  { get; set; }
         public DateTimeOffset  EndDatetime    { get; set; }
         public decimal?        Price          { get; set; }
