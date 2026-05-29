@@ -45,7 +45,8 @@ namespace Explorea.Server.Services.Admin
             string? entityType, int? subtypeId, int? cityId, int? regionId,
             short? minRating, short? maxRating,
             string? gender, int? minAge, int? maxAge,
-            bool? isHidden, int page, int pageSize, Guid currentUserId)
+            bool? isHidden, int page, int pageSize, Guid currentUserId,
+            string? search = null, List<string>? extraFilters = null)
         {
             List<Guid>? restrictToDestinationIds = null;
             List<int>?  restrictToCityIds        = null;
@@ -80,7 +81,7 @@ namespace Explorea.Server.Services.Admin
             var (items, total) = await _reviewRepo.GetAdminPagedAsync(
                 entityType, subtypeId, cityId, regionId, minRating, maxRating, gender, minAge, maxAge,
                 isHidden, restrictToDestinationIds, restrictToCityIds, placeOwnerUserId,
-                page, pageSize);
+                page, pageSize, search, extraFilters);
 
             var dtos = await EnrichWithEntityNamesAsync(items);
             return (dtos, total);

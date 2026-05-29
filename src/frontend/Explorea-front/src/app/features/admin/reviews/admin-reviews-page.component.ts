@@ -13,6 +13,8 @@ import { Subscription } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
+import { AdminProfileService } from '../core/services/admin-profile.service';
+import { FilterDefinition } from '../../../core/services/lookup.service';
 import {
   EmptyStateComponent,
   FeedbackBannerComponent,
@@ -56,6 +58,8 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
     minRating: null,
     maxRating: null,
     visibility: 'all',
+    search: null,
+    extraFilters: [],
     page: 1,
     pageSize: 10,
   });
@@ -85,6 +89,7 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
   protected readonly regions = signal<LookupOption[]>([]);
   protected readonly cities = signal<LookupOption[]>([]);
   protected readonly subtypes = signal<LookupOption[]>([]);
+  protected readonly filterDefs = signal<FilterDefinition[]>([]);
 
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.total() / this.filters().pageSize)),
@@ -134,6 +139,8 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
       f.visibility !== 'all',
       f.regionId !== null,
       f.cityId !== null,
+      !!f.search,
+      f.extraFilters.length > 0,
     ].filter(Boolean).length;
   });
 
@@ -163,14 +170,21 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
     private readonly http: HttpClient,
     private readonly router: Router,
     private readonly dashboardAuth: DashboardAuthService,
+    protected readonly profileService: AdminProfileService,
   ) {}
 
   ngOnInit(): void {
-    this.loadStats();
-    this.loadReviews();
     if (this.isSuperAdmin()) {
       this.loadRegions();
+    } else if (this.isTouristOrg()) {
+      const regionId = this.profileService.profile()?.managedRegionId ?? null;
+      if (regionId !== null) {
+        this.patchFilter({ regionId });
+        this.loadCities(regionId);
+      }
     }
+    this.loadStats();
+    this.loadReviews();
   }
 
   ngOnDestroy(): void {
@@ -191,8 +205,9 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
   }
 
   protected applyEntityType(value: EntityType | 'all'): void {
-    this.patchFilter({ entityType: value, subtypeId: null, page: 1 });
+    this.patchFilter({ entityType: value, subtypeId: null, extraFilters: [], page: 1 });
     this.subtypes.set([]);
+    this.filterDefs.set([]);
     if (value !== 'all' && value !== 'destination') {
       this.loadSubtypes(value);
     }
@@ -200,7 +215,11 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
   }
 
   protected applySubtype(rawValue: string): void {
-    this.patchFilter({ subtypeId: rawValue ? +rawValue : null, page: 1 });
+    this.patchFilter({ subtypeId: rawValue ? +rawValue : null, extraFilters: [], page: 1 });
+    this.filterDefs.set([]);
+    if (rawValue && this.filters().entityType === 'place') {
+      this.loadFilterDefs('place', +rawValue);
+    }
     this.loadReviews();
   }
 
@@ -235,20 +254,27 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
   }
 
   protected resetFilters(): void {
+    const toRegionId = this.isTouristOrg() ? (this.profileService.profile()?.managedRegionId ?? null) : null;
     this.filters.update((f) => ({
       entityType: 'all',
       subtypeId: null,
-      regionId: null,
+      regionId: toRegionId,
       cityId: null,
       minRating: null,
       maxRating: null,
       visibility: 'all',
+      search: null,
+      extraFilters: [],
       page: 1,
       pageSize: f.pageSize,
     }));
     this.currentPage.set(1);
     this.cities.set([]);
     this.subtypes.set([]);
+    this.filterDefs.set([]);
+    if (toRegionId !== null) {
+      this.loadCities(toRegionId);
+    }
     this.loadReviews();
   }
 
@@ -385,6 +411,27 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected applySearch(rawValue: string): void {
+    this.patchFilter({ search: rawValue.trim() || null, page: 1 });
+    this.loadReviews();
+  }
+
+  protected applyExtraFilter(key: string, value: string, checked: boolean): void {
+    const current = this.filters().extraFilters.filter((ef) => !ef.startsWith(`${key}:`));
+    const updated = checked ? [...current, `${key}:${value}`] : current;
+    this.patchFilter({ extraFilters: updated, page: 1 });
+    this.loadReviews();
+  }
+
+  protected isExtraFilterActive(key: string, value: string): boolean {
+    return this.filters().extraFilters.includes(`${key}:${value}`);
+  }
+
+  protected getExtraFilterValue(key: string): string {
+    const match = this.filters().extraFilters.find((ef) => ef.startsWith(`${key}:`));
+    return match ? match.slice(key.length + 1) : '';
+  }
+
   protected navigateToAdminEntity(review: ReviewRow): void {
     const routeMap: Record<EntityType, string> = {
       destination: '/admin/destinations',
@@ -394,7 +441,9 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
     };
     const route = routeMap[review.entityType];
     if (route) {
-      this.router.navigate([route], { state: { openEditId: review.entityId } });
+      this.router.navigate([route], {
+        queryParams: { openId: review.entityId, openName: review.entityName ?? '' },
+      });
     }
   }
 
@@ -508,6 +557,19 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
         next: (c) => this.cities.set(c),
         error: () => {},
       }),
+    );
+  }
+
+  private loadFilterDefs(entityType: string, typeId: number): void {
+    this.subscription.add(
+      this.http
+        .get<FilterDefinition[]>('/api/filter-definitions', {
+          params: { entityType, typeId },
+        })
+        .subscribe({
+          next: (defs) => this.filterDefs.set(defs),
+          error: () => this.filterDefs.set([]),
+        }),
     );
   }
 

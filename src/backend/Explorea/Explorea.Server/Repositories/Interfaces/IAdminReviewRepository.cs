@@ -19,7 +19,9 @@ namespace Explorea.Server.Repositories.Interfaces
             List<int>? restrictToCityIds,
             Guid? placeOwnerUserId,
             int page,
-            int pageSize);
+            int pageSize,
+            string? search = null,
+            List<string>? extraFilters = null);
 
         Task<Review?> GetAdminByIdAsync(Guid id);
         void Update(Review review);

@@ -6,6 +6,8 @@ using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Admin.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace Explorea.Server.Services.Admin
 {
@@ -152,7 +154,10 @@ namespace Explorea.Server.Services.Admin
         foreach (var (key, value) in efDict)
         {
           var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-          activitiesQuery = activitiesQuery.Where(a => a.ExtraData != null && EF.Functions.JsonContains(a.ExtraData, snippet));
+          var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+          var matchingIds = await _context.Database.SqlQueryRaw<Guid>(
+              "SELECT id FROM activities WHERE extra_data @> @snippet", param).ToListAsync();
+          activitiesQuery = activitiesQuery.Where(a => matchingIds.Contains(a.Id));
         }
       }
 

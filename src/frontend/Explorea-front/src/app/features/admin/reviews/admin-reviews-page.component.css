@@ -223,6 +223,10 @@
   border-color: var(--color-primary);
 }
 
+input.rv-filter-select {
+  cursor: text;
+}
+
 .rv-filter-backdrop {
   position: fixed;
   inset: 0;
@@ -736,4 +740,50 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* ===== FILTER EXTRAS ===== */
+.rv-filter-readonly {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-style: italic;
+}
+
+.rv-extra-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.rv-extra-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.rv-extra-filter-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.rv-extra-filter-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rv-extra-filter-select-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
