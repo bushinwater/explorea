@@ -124,6 +124,7 @@ export interface CreateActivityDto {
   longitude?: number;
   inclusions?: string[];
   extraFilters?: Record<string, string>;
+  organizerWebsite?: string | null;
 }
 
 export interface UpdateActivityDto {

@@ -115,8 +115,10 @@ export class AdminUiPreferencesService {
   }
 
   private readLanguage(): AdminLanguage | null {
-    const savedLanguage = localStorage.getItem(this.languageStorageKey);
-    return savedLanguage === 'sr' || savedLanguage === 'en' ? savedLanguage : null;
+    const saved = localStorage.getItem(this.languageStorageKey);
+    if (saved === 'sr' || saved === 'en') return saved;
+    const appLang = localStorage.getItem('language');
+    return appLang === 'sr' || appLang === 'en' ? appLang : null;
   }
 
   // private readTheme(): string | null {

@@ -50,7 +50,7 @@ export class TrafficChart implements AfterViewInit, OnChanges, OnDestroy {
         labels: this.data.map(d => d.day),
         datasets: [
           {
-            label: 'Pregledi',
+            label: this.ui.t('dashboard.traffic.views'),
             data: this.data.map(d => d.views),
             borderColor: '#28694c',
             backgroundColor: gradient1,

@@ -11,6 +11,9 @@ import { StatCardComponent } from '@shared/components';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
+import { DashboardAuthService } from '../core/services/dashboard-auth.service';
+import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { effect, untracked } from '@angular/core';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
 import { FeedbackBannerComponent } from '../shared/components/feedback-banner/feedback-banner.component';
@@ -104,6 +107,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly isSuperAdmin = computed(
     () => this.authContext.context().role === 'super_admin',
   );
+
+  protected readonly lockedRegionId = computed(() =>
+    this.dashAuth.role() === 'tourist_organization' ? this.dashAuth.managedRegionId : null,
+  );
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.total() / this.filters().pageSize)),
   );
@@ -141,7 +148,16 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
-  ) {}
+    protected readonly dashAuth: DashboardAuthService,
+    protected readonly ui: AdminUiPreferencesService,
+  ) {
+    effect(() => {
+      const rid = this.lockedRegionId();
+      if (rid !== null) {
+        untracked(() => this.loadFilterOptions());
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.subscription.add(
@@ -172,7 +188,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       }),
     );
     this.loadStats();
-    this.loadFilterOptions();
+    // Za TO korisnike: ako profil nije još učitan, effect će pozvati loadFilterOptions kad stigne
+    if (this.lockedRegionId() !== null || this.dashAuth.role() !== 'tourist_organization') {
+      this.loadFilterOptions();
+    }
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
     this.loadEvents(openEditId ? (items) => {
       const ev = items.find(e => e.id === openEditId);
@@ -707,6 +726,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   }
 
   private loadFilterOptions(): void {
+    const regionId = this.lockedRegionId() ?? undefined;
     this.subscription.add(
       this.eventsService.getEventTypes().subscribe({
         next: (r) => this.eventTypeOptions.set(r),
@@ -714,13 +734,13 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       }),
     );
     this.subscription.add(
-      this.eventsService.getCities().subscribe({
+      this.eventsService.getCities(regionId).subscribe({
         next: (c) => this.cityOptions.set(c),
         error: () => this.cityOptions.set([]),
       }),
     );
     this.subscription.add(
-      this.eventsService.getDestinations().subscribe({
+      this.eventsService.getDestinations(regionId).subscribe({
         next: (d) => this.destinationOptions.set(d),
         error: () => this.destinationOptions.set([]),
       }),

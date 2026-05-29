@@ -178,6 +178,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     difficultyLevel: '',
     cityId: undefined,
     destinationId: undefined,
+    organizerWebsite: null,
   });
 
   protected readonly totalPages = computed(() =>
@@ -531,7 +532,12 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.modalRegionId.set(mr ? mr.id : 'all');
     this.selectedInterestIds.set([]);
     this.newInclusionText.set('');
-    this.selectedCountryId.set(null);
+    if (mr) {
+      const region = this.regions().find(r => r.id === mr.id);
+      this.selectedCountryId.set(region?.countryId ?? null);
+    } else {
+      this.selectedCountryId.set(null);
+    }
     this.modalExtraFilters.set({});
     this.modalFilterDefs.set([]);
     this.showAddCategory.set(false);

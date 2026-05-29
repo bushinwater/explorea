@@ -6,9 +6,11 @@ import {
   ElementRef,
   EventEmitter,
   Input,
+  OnChanges,
   OnDestroy,
   OnInit,
   Output,
+  SimpleChanges,
   ViewChild,
   computed,
   signal,
@@ -30,6 +32,7 @@ import {
 } from './admin-events.models';
 import { AdminEventsService } from './admin-events.service';
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
+import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
 const MAX_IMAGES = 10;
@@ -75,9 +78,10 @@ interface EditForm {
   templateUrl: './admin-event-edit-modal.component.html',
   styleUrl: './admin-event-modal.component.css',
 })
-export class EventEditModalComponent implements OnInit, AfterViewInit, OnDestroy {
+export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   @Input({ required: true }) event!: EventRow;
   @Input() eventTypeOptions: EventFilterOption<number>[] = [];
+  @Input() lockedRegionId: number | null = null;
   @Input() closing = false;
 
   @Output() cancel = new EventEmitter<void>();
@@ -163,6 +167,7 @@ export class EventEditModalComponent implements OnInit, AfterViewInit, OnDestroy
     private readonly lookupService: LookupService,
     private readonly http: HttpClient,
     private readonly cdr: ChangeDetectorRef,
+    protected readonly ui: AdminUiPreferencesService,
   ) {}
 
   ngOnInit(): void {
@@ -293,7 +298,12 @@ export class EventEditModalComponent implements OnInit, AfterViewInit, OnDestroy
       next: c => { this.countries.set(c); this.cdr.detectChanges(); }, error: () => {},
     }));
     this.sub.add(this.eventsService.getRegionsWithCountry().subscribe({
-      next: r => { this.allRegions.set(r); this.cdr.detectChanges(); }, error: () => {},
+      next: r => {
+        this.allRegions.set(r);
+        this.applyRegionLock();
+        this.cdr.detectChanges();
+      },
+      error: () => {},
     }));
   }
 
@@ -324,6 +334,22 @@ export class EventEditModalComponent implements OnInit, AfterViewInit, OnDestroy
       const lng = this.mapLongitude();
       this.initMap(lat ?? undefined, lng ?? undefined);
     }, 50);
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['lockedRegionId'] && this.lockedRegionId !== null) {
+      this.applyRegionLock();
+    }
+  }
+
+  private applyRegionLock(): void {
+    if (this.lockedRegionId === null) return;
+    const region = this.allRegions().find(r => r.id === this.lockedRegionId);
+    if (region) {
+      this.selectedRegionId.set(region.id);
+      if (region.countryId != null) this.selectedCountryId.set(region.countryId);
+      this.cdr.detectChanges();
+    }
   }
 
   ngOnDestroy(): void {

@@ -67,7 +67,7 @@ namespace Explorea.Server.Repositories.Implementations
                 }
             }
 
-            if (restrictToDestinationIds != null && restrictToCityIds != null)
+            if (restrictToDestinationIds != null || restrictToCityIds != null)
                 query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
                 
             var total = await query.CountAsync();
@@ -145,12 +145,12 @@ namespace Explorea.Server.Repositories.Implementations
             List<int>? restrictToCityIds
         )
         {
-            if(restrictToDestinationIds != null && restrictToCityIds != null)
+            if (restrictToCityIds != null || restrictToDestinationIds != null)
                 query = query.Where(e =>
-                    (e.DestinationId.HasValue && restrictToDestinationIds.Contains(e.DestinationId.Value))
-                    || (e.CityId.HasValue && restrictToCityIds.Contains(e.CityId.Value))
+                    (restrictToCityIds != null && e.CityId.HasValue && restrictToCityIds.Contains(e.CityId.Value))
+                    || (restrictToDestinationIds != null && e.DestinationId.HasValue && restrictToDestinationIds.Contains(e.DestinationId.Value))
                 );
-            
+
             return query;
         }
 

@@ -240,8 +240,8 @@ namespace Explorea.Server.Services.Admin
         public async Task<AdminEventDetailDto> CreateAsync(AdminCreateEventDto dto, Guid createdBy)
         {
             var user = await _userRepo.GetByIdWithRoleAsync(createdBy);
-            if (user?.Role.Name != RoleNames.SuperAdmin)
-                throw new UnauthorizedAccessException("Only SuperAdmin can create events.");
+            if (user?.Role.Name != RoleNames.SuperAdmin && user?.Role.Name != RoleNames.TouristOrganization)
+                throw new UnauthorizedAccessException("Only SuperAdmin or TouristOrganization can create events.");
 
             var now = DateTimeOffset.UtcNow;
 

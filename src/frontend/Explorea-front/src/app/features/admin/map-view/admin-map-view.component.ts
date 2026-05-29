@@ -101,6 +101,7 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
   private themeObserver?: MutationObserver;
   private lightStyle: any;
   private darkStyle: any;
+  private currentMapTheme: 'dark' | 'light' = 'dark';
 
   pins: ExploreMarker[] = [];
   loading = false;
@@ -404,6 +405,7 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
     this.lightStyle = this.buildThemedStyle(base, LIGHT);
     this.darkStyle  = this.buildThemedStyle(base, DARK);
 
+    this.currentMapTheme = this.isDark ? 'dark' : 'light';
     this.map = new maplibregl.Map({
       container: this.mapContainer.nativeElement,
       style: this.isDark ? this.darkStyle : this.lightStyle,
@@ -575,13 +577,19 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
   private watchTheme(): void {
     this.themeObserver = new MutationObserver(() => {
       if (!this.map || this.isSatellite) return;
-      const style = this.isDark ? this.darkStyle : this.lightStyle;
+      const wantTheme = this.isDark ? 'dark' : 'light';
+      if (wantTheme === this.currentMapTheme) return;
+      this.currentMapTheme = wantTheme;
+      const style = wantTheme === 'dark' ? this.darkStyle : this.lightStyle;
       if (!style) return;
       this.map.setStyle(style);
       this.map.once('style.load', () => {
         this.add3DBuildings();
         this.addMarkers();
-        if (this.showRegions && this.regionData) this.applyRegionLayers();
+        if (this.showRegions && this.regionData) {
+          this.applyRegionLayers();
+          if (this.regionData.regions.length === 1) this.fitToRegion(this.regionData.regions[0]);
+        }
       });
     });
     this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
@@ -606,16 +614,58 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
         this.regionLegend = data.regions.map(r => ({
           id: r.id, name: r.name, color: REGION_COLORS[r.id] ?? '#888',
         }));
-        if (this.showRegions) this.applyRegionLayers();
         this.cdr.detectChanges();
+        const apply = () => {
+          if (this.showRegions) this.applyRegionLayers();
+          if (data.regions.length === 1) this.fitToRegion(data.regions[0]);
+        };
+        if (this.map.getStyle()) {
+          apply();
+        } else {
+          this.map.once('style.load', apply);
+        }
       },
       error: () => {},
     });
   }
 
+  private fitToRegion(region: RegionGeoItem): void {
+    try {
+      const geom = JSON.parse(region.boundaryGeoJson);
+      const coords = this.extractCoords(geom);
+      if (!coords.length) return;
+      let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+      for (const c of coords) {
+        if (c[0] < minLng) minLng = c[0];
+        if (c[0] > maxLng) maxLng = c[0];
+        if (c[1] < minLat) minLat = c[1];
+        if (c[1] > maxLat) maxLat = c[1];
+      }
+      this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, duration: 800, maxZoom: 10 });
+    } catch (e) {
+      console.error('fitToRegion error', e);
+    }
+  }
+
+  private extractCoords(geom: any): number[][] {
+    if (!geom) return [];
+    switch (geom.type) {
+      case 'Point':       return [geom.coordinates];
+      case 'LineString':
+      case 'MultiPoint':  return geom.coordinates ?? [];
+      case 'Polygon':
+      case 'MultiLineString': return (geom.coordinates ?? []).flat(1);
+      case 'MultiPolygon':    return (geom.coordinates ?? []).flat(2);
+      case 'GeometryCollection':
+        return (geom.geometries ?? []).flatMap((g: any) => this.extractCoords(g));
+      default: return [];
+    }
+  }
+
   private applyRegionLayers(): void {
-    if (!this.regionData || !this.map.isStyleLoaded()) return;
+    if (!this.regionData || !this.map.getStyle()) return;
     const beforeId = this.firstSymbolLayerId();
+    const isSingle = this.regionData.regions.length === 1;
 
     this.regionData.regions.forEach(region => {
       const color = REGION_COLORS[region.id] ?? '#888888';
@@ -631,14 +681,12 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
       }
       if (!this.map.getLayer(fillId)) {
         this.map.addLayer(
-          { id: fillId, type: 'fill', source: srcId, paint: { 'fill-color': color, 'fill-opacity': 0.1 } } as any,
-          beforeId,
+          { id: fillId, type: 'fill', source: srcId, paint: { 'fill-color': color, 'fill-opacity': isSingle ? 0.35 : 0.1 } } as any,
         );
       }
       if (!this.map.getLayer(lineId)) {
         this.map.addLayer(
-          { id: lineId, type: 'line', source: srcId, paint: { 'line-color': color, 'line-width': 1.5, 'line-opacity': 0.8 } } as any,
-          beforeId,
+          { id: lineId, type: 'line', source: srcId, paint: { 'line-color': color, 'line-width': isSingle ? 3 : 1.5, 'line-opacity': 1 } } as any,
         );
       }
     });

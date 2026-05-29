@@ -5,9 +5,11 @@ import {
   ElementRef,
   EventEmitter,
   Input,
+  OnChanges,
   OnDestroy,
   OnInit,
   Output,
+  SimpleChanges,
   ViewChild,
   computed,
   signal,
@@ -52,8 +54,9 @@ const LIGHT = {
   templateUrl: './admin-destination-create-modal.component.html',
   styleUrl: './admin-destination-edit-modal.component.css',
 })
-export class DestinationCreateModalComponent implements OnInit, OnDestroy {
+export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDestroy {
   @Input() types: TypeOption[] = [];
+  @Input() lockedRegionId: number | null = null;
   @Output() cancel       = new EventEmitter<void>();
   @Output() created      = new EventEmitter<DestinationRow>();
   @Output() typeCreated  = new EventEmitter<TypeOption>();
@@ -132,7 +135,11 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.localTypes.set([...this.types]);
-    this.svc.getRegions().subscribe(r => { this.localRegions.set(r); this.cdr.detectChanges(); });
+    this.svc.getRegions().subscribe(r => {
+      this.localRegions.set(r);
+      this.applyRegionLock();
+      this.cdr.detectChanges();
+    });
     this.svc.getCountries().subscribe(c => { this.localCountries.set(c); this.cdr.detectChanges(); });
     this.svc.getAllInterestTags().subscribe(tags => { this.allInterestTags.set(tags); this.cdr.detectChanges(); });
     this.form.controls.countryId.valueChanges.subscribe(val => {
@@ -160,11 +167,31 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
     setTimeout(() => this.initMap(), 50);
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['lockedRegionId'] && this.localRegions().length > 0) {
+      this.applyRegionLock();
+    }
+  }
+
   ngOnDestroy(): void {
     this.sub.unsubscribe();
     this.themeObserver?.disconnect();
     this.map?.remove();
     this.pendingImages().forEach(p => URL.revokeObjectURL(p.url));
+  }
+
+  private applyRegionLock(): void {
+    if (this.lockedRegionId === null) return;
+    const region = this.localRegions().find(r => r.id === this.lockedRegionId);
+    const countryId = region?.countryId ?? null;
+    this.selectedCountryId.set(countryId);
+    this.form.patchValue({
+      regionId:  this.lockedRegionId.toString(),
+      countryId: countryId ? countryId.toString() : null,
+    });
+    this.form.controls.regionId.disable();
+    this.form.controls.countryId.disable();
+    this.cdr.detectChanges();
   }
 
   protected toggleInterest(id: number): void {
@@ -219,7 +246,7 @@ export class DestinationCreateModalComponent implements OnInit, OnDestroy {
     this.isSaving.set(true);
     this.error.set('');
 
-    const v = this.form.value;
+    const v = this.form.getRawValue();
     this.sub.add(
       this.svc.createDestination({
         name:        v.name!,

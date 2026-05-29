@@ -25,8 +25,8 @@ export class SystemStatus {
   get overallLabel(): string {
     return {
       ok: this.ui.t('dashboard.status.ok'),
-      warning: 'Upozorenje',
-      critical: 'Kriticno',
+      warning: this.ui.t('dashboard.status.warning'),
+      critical: this.ui.t('dashboard.status.critical'),
     }[this.overallLevel];
   }
 
