@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChangeDetectorRef } from '@angular/core';
@@ -11,7 +11,7 @@ import { BugReportService } from '../../../core/services/bug-report.service';
   templateUrl: './bug-report-modal.html',
   styleUrl: './bug-report-modal.css',
 })
-export class BugReportModal {
+export class BugReportModal implements OnInit, OnDestroy {
   @Input() isLoggedIn = false;
   @Output() closed = new EventEmitter<void>();
 
@@ -29,12 +29,21 @@ export class BugReportModal {
 
   private bugReportService = inject(BugReportService);
   private cdr = inject(ChangeDetectorRef);
+  private lockedScrollY = 0;
 
   private static readonly EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
     this.close();
+  }
+
+  ngOnInit(): void {
+    this.lockPageScroll();
+  }
+
+  ngOnDestroy(): void {
+    this.unlockPageScroll();
   }
 
   close(): void {
@@ -100,5 +109,29 @@ export class BugReportModal {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  private lockPageScroll(): void {
+    if (document.body.style.position === 'fixed') return;
+
+    this.lockedScrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.lockedScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockPageScroll(): void {
+    if (document.body.style.position !== 'fixed') return;
+
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo({ top: this.lockedScrollY, behavior: 'instant' as ScrollBehavior });
   }
 }
