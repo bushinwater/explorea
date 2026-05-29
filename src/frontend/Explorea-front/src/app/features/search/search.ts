@@ -784,6 +784,9 @@ export class Search implements OnInit, OnDestroy {
       this.filterDefsTypeId = null;
     } else {
       this.filterEntityType = null;
+      this.draftFilters = { ...this.draftFilters, placeTypeIds: [], destinationTypeIds: [], activityCategoryIds: [], eventTypeIds: [], extraFilters: {} };
+      this.filterDefs = [];
+      this.filterDefsTypeId = null;
     }
     this.cdr.detectChanges();
   }

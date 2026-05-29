@@ -54,7 +54,8 @@ namespace Explorea.Server.Services.Admin
             int page,
             int pageSize,
             Guid currentUserId,
-            List<string>? extraFilters = null)
+            List<string>? extraFilters = null,
+            string? sortBy = null)
         {
             List<Guid>? restrictToIds = null;
             int? restrictToRegionId = null;
@@ -110,7 +111,8 @@ namespace Explorea.Server.Services.Admin
                 restrictToRegionId,
                 page,
                 pageSize,
-                extraFilters);
+                extraFilters,
+                sortBy);
 
             var viewCounts = await GetViewCountsAsync(items);
             return (items.Select(d => MapToListDto(d, viewCounts)).ToList(), total);

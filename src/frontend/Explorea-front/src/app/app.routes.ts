@@ -8,6 +8,7 @@ import { guestGuard } from './core/guards/guest-guard';
 import { ActivityDetailComponent } from './features/activities/activity-detail/activity-detail';
 import { AdminActivitiesPageComponent } from './features/admin/activities/admin-activities-page.component';
 import { AdminActivityLogPageComponent } from './features/admin/activity-log/admin-activity-log-page.component';
+import { AdminBugReportsPageComponent } from './features/admin/bug-reports/admin-bug-reports-page.component';
 import { Dashboard } from './features/admin/dashboard/dashboard';
 import { AdminDestinationsPageComponent } from './features/admin/destinations/admin-destinations-page.component';
 import { AdminEventsPageComponent } from './features/admin/events/admin-events-page.component';
@@ -89,6 +90,7 @@ export const routes: Routes = [
         component: UserDirectoryPageComponent,
         canActivate: [adminPageAccessGuard, adminUsersAccessGuard],
       },
+      { path: 'bug-reports', component: AdminBugReportsPageComponent, canActivate: [adminPageAccessGuard] },
       { path: '**', redirectTo: 'dashboard' },
     ],
   },

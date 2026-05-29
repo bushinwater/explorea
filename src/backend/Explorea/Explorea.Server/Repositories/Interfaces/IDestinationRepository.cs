@@ -22,7 +22,8 @@ namespace Explorea.Server.Repositories.Interfaces
             int? restrictToRegionId,
             int page,
             int pageSize,
-            List<string>? extraFilters = null);
+            List<string>? extraFilters = null,
+            string? sortBy = null);
         Task<Destination?> GetAdminByIdAsync(Guid id);
         Task<List<int>> GetCityIdsByDestinationsAsync(List<Guid> destinationIds);
     }

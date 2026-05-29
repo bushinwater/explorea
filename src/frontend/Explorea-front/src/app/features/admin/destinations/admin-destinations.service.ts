@@ -110,6 +110,10 @@ export class AdminDestinationsService {
       params = params.set('visibility', filters.status);
     }
 
+    if (!deletedOnly && filters.sortBy !== 'none') {
+      params = params.set('sortBy', filters.sortBy);
+    }
+
     return this.http.get<ApiDestinationResponse>(url, { params }).pipe(
       map((response) => ({
         total: response.total,

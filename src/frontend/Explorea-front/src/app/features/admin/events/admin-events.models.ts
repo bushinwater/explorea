@@ -76,6 +76,7 @@ export interface EventRow {
   name: string;
   organizer: string;
   type: EventType | null;
+  typeName: string | null;
   typeId: number | null;
   city: string | null;
   cityId: number | null;
@@ -125,6 +126,7 @@ export interface EventFilters {
   destinationId: string | null;
   extraFilters: Record<string, string>;
   tab: EventsTab;
+  sortBy: 'none' | 'updatedAt_desc' | 'updatedAt_asc';
   page: number;
   pageSize: number;
 }

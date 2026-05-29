@@ -63,6 +63,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     region: 'all',
     minRating: null,
     extraFilters: {},
+    sortBy: 'none',
     page: 1,
     pageSize: 20,
   });
@@ -147,6 +148,17 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       this.route.queryParamMap.subscribe((params) => {
         if (params.get('create') === 'true') {
           this.openCreateModal();
+        }
+        const openId = params.get('openId');
+        if (openId) {
+          const openName = params.get('openName') ?? '';
+          this.openDetailsPanel({ id: openId, name: openName } as unknown as DestinationRow);
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { openId: null, openName: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
         }
       }),
     );
@@ -245,11 +257,20 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       region: 'all',
       minRating: null,
       extraFilters: {},
+      sortBy: 'none',
       page: 1,
       pageSize: f.pageSize,
     }));
     this.filterDefs.set([]);
     this.currentPage.set(1);
+    this.loadDestinations();
+  }
+
+  protected toggleSort(): void {
+    const next: Record<string, 'none' | 'updatedAt_desc' | 'updatedAt_asc'> = {
+      none: 'updatedAt_desc', updatedAt_desc: 'updatedAt_asc', updatedAt_asc: 'none',
+    };
+    this.patchFilter({ sortBy: next[this.filters().sortBy], page: 1 });
     this.loadDestinations();
   }
 
@@ -453,6 +474,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected formatViews(views: number): string {
+    if (views == null) return '—';
     if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`;
     if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
     return views.toString();

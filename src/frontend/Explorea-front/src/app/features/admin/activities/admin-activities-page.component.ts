@@ -98,6 +98,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     minRating: 'all',
     regionId: 'all',
     extraFilters: {},
+    sortBy: 'none',
     page: 1,
     pageSize: 20,
   });
@@ -245,6 +246,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    const openId   = this.route.snapshot.queryParamMap.get('openId');
+    const openName = this.route.snapshot.queryParamMap.get('openName') ?? '';
+
     this.hydrateFiltersFromQueryParams();
     const initialCatId = this.filters().categoryId;
     if (initialCatId !== 'all') this.loadFilterDefs(initialCatId);
@@ -295,6 +299,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       const activity = items.find(a => a.id === openEditId);
       if (activity) this.openEditFromRow(activity);
     } : undefined);
+
+    if (openId) {
+      this.openDetailsPanel({ id: openId, name: openName } as unknown as ActivityRow);
+    }
   }
 
   ngOnDestroy(): void {
@@ -363,6 +371,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       minRating: 'all',
       regionId: mr ? mr.id : 'all',
       extraFilters: {},
+      sortBy: 'none',
       page: 1,
       pageSize: f.pageSize,
     }));
@@ -372,10 +381,19 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.loadActivities();
   }
 
+  protected toggleSort(): void {
+    const next: Record<string, 'none' | 'updatedAt_desc' | 'updatedAt_asc'> = {
+      none: 'updatedAt_desc', updatedAt_desc: 'updatedAt_asc', updatedAt_asc: 'none',
+    };
+    this.patchFilter({ sortBy: next[this.filters().sortBy], page: 1 });
+    this.loadActivities();
+  }
+
+
   protected setListMode(mode: 'active' | 'deleted'): void {
     if (this.listMode() === mode) return;
     this.listMode.set(mode);
-    this.closeDetailsPanel();
+    if (this.isDetailsPanelOpen()) this.closeDetailsPanel();
     this.activeMenuId.set(null);
     this.patchFilter({ page: 1 });
     this.currentPage.set(1);
@@ -932,7 +950,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected submitCreate(): void {
     const form = this.createForm();
-    if (!form.name.trim() || !form.slug.trim() || !form.categoryId) return;
+    if (!form.name.trim() || !form.categoryId) return;
     if (!this.managedRegion() && !this.selectedCountryId()) return;
     if (!this.managedRegion() && this.modalRegionId() === 'all') return;
 
@@ -944,6 +962,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     const ef = this.modalExtraFilters();
     const dto: CreateActivityDto = {
       ...form,
+      slug: this.toSlug(form.name),
       latitude: lat ?? undefined,
       longitude: lng ?? undefined,
       inclusions: inclusions.length ? inclusions : undefined,
@@ -1070,6 +1089,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   protected categoryIcon(categoryName: string): string {
+    if (!categoryName) return 'directions_run';
     const lower = categoryName.toLowerCase();
     if (lower.includes('pešač') || lower.includes('planinaren') || lower.includes('hiking')) return 'hiking';
     if (lower.includes('vod') || lower.includes('kajak') || lower.includes('water')) return 'kayaking';
@@ -1081,6 +1101,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   protected thumbColor(categoryName: string): string {
+    if (!categoryName) return '#3a5a6b';
     const lower = categoryName.toLowerCase();
     if (lower.includes('pešač') || lower.includes('planinaren') || lower.includes('hiking')) return '#1f5c3a';
     if (lower.includes('vod') || lower.includes('kajak') || lower.includes('water')) return '#1e4d7b';
@@ -1224,6 +1245,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       minRating: this.parseMinRating(qp.get('minRating')),
       regionId: this.parsePositiveInt(qp.get('regionId'), 0) || 'all',
       extraFilters,
+      sortBy: 'none',
       page,
       pageSize,
     });
@@ -1659,5 +1681,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
     this.loadActivities();
     this.loadStats();
+  }
+
+  private toSlug(name: string): string {
+    return `${name.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'dj').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'activity'}-${Date.now().toString(36)}`;
   }
 }

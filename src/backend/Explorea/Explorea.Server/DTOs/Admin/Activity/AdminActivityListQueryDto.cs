@@ -36,6 +36,9 @@ namespace Explorea.API.DTOs.Admin.Activity
         // "key:value" pairs applied as JSONB contains on ExtraData
         public List<string>? ExtraFilters { get; set; }
 
+        // "updatedAt_desc" | "updatedAt_asc" | null
+        public string? SortBy { get; set; }
+
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 17;
     }

@@ -34,6 +34,8 @@ interface ApiEventItem {
   type: string | null;
   city: string | null;
   destination: string | null;
+  destinationId: string | null;
+  placeId: string | null;
   startDatetime: string;
   endDatetime: string;
   price: number | null;
@@ -342,6 +344,10 @@ export class AdminEventsService {
       params = params.append('extraFilters', `${key}:${value}`);
     }
 
+    if (filters.sortBy !== 'none') {
+      params = params.set('sortBy', filters.sortBy);
+    }
+
     return this.http.get<ApiEventsResponse>('/api/admin/events', { params }).pipe(
       map((res) => ({
         total: res.total,
@@ -479,11 +485,12 @@ export class AdminEventsService {
       name: e.name,
       organizer: '—',
       type: this.mapType(e.type),
+      typeName: e.type,
       typeId: null,
       city: e.city,
       cityId: null,
-      destinationId: null,
-      placeId: null,
+      destinationId: e.destinationId ?? null,
+      placeId: e.placeId ?? null,
       venue: e.destination,
       startDate: e.startDatetime,
       endDate: e.endDatetime,
@@ -517,6 +524,7 @@ export class AdminEventsService {
       name: q.destinationName,
       organizer: q.submittedByName,
       type: null,
+      typeName: null,
       typeId: null,
       city: null,
       cityId: null,
@@ -556,6 +564,7 @@ export class AdminEventsService {
       name: e.name,
       organizer: base?.organizer ?? '—',
       type: this.mapType(e.type),
+      typeName: e.type,
       typeId: e.typeId ?? null,
       city: e.city,
       cityId: e.cityId ?? null,

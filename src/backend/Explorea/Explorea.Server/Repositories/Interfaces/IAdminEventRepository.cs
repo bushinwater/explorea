@@ -10,7 +10,8 @@ namespace Explorea.Server.Repositories.Interfaces
             DateTimeOffset? startFrom, DateTimeOffset? startTo,
             List<string>? extraFilters,
             List<Guid>? restrictToDestinationIds, List<int>? restrictToCityIds,
-            int page, int pageSize);
+            int page, int pageSize,
+            string? sortBy = null);
 
         Task<int> CountActiveAsync(
             List<Guid>? restrictToDestinationsIds,

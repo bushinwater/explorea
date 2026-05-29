@@ -58,7 +58,8 @@ namespace Explorea.Server.Repositories.Implementations
             int? restrictToRegionId,
             int page,
             int pageSize,
-            List<string>? extraFilters = null)
+            List<string>? extraFilters = null,
+            string? sortBy = null)
         {
             var query = _db.Destinations
                 .IgnoreQueryFilters() // admin vidi i soft-deleted
@@ -121,8 +122,13 @@ namespace Explorea.Server.Repositories.Implementations
             }
 
             var total = await query.CountAsync();
-            var items = await query
-                .OrderBy(d => d.Name)
+            var ordered = sortBy?.Trim().ToLower() switch
+            {
+                "updatedat_desc" => query.OrderByDescending(d => d.UpdatedAt),
+                "updatedat_asc"  => query.OrderBy(d => d.UpdatedAt),
+                _                => query.OrderBy(d => d.Name),
+            };
+            var items = await ordered
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();

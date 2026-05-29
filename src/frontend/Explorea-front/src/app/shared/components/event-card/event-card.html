@@ -2,7 +2,7 @@
 <div *ngIf="listMode" class="event-card event-card--list" [routerLink]="['/events', event.slug]">
   <div class="event-card__image-wrap event-card__image-wrap--list">
     <img [src]="event.previewImageUrl" [alt]="event.name" class="event-card__image" loading="lazy" />
-    <span class="event-card__type-badge">{{ event.type.name }}</span>
+    <span class="event-card__type-badge">{{ event.type?.name }}</span>
     <span *ngIf="!event.price" class="event-card__free-badge">Besplatno</span>
   </div>
   <div class="event-card__body event-card__body--list">
@@ -15,7 +15,7 @@
       </span>
       <span class="event-card__location">
         <span class="material-icons">location_on</span>
-        {{ event.address || event.city.name }}
+        {{ event.address || event.city?.name }}
       </span>
     </div>
     <div class="event-card__footer">
@@ -29,7 +29,7 @@
 <div *ngIf="!listMode" class="event-card" [class.event-card--full-width]="fullWidth" [routerLink]="['/events', event.slug]">
   <div class="event-card__image-wrap">
     <img [src]="event.previewImageUrl" [alt]="event.name" class="event-card__image" loading="lazy" />
-    <span class="event-card__type-badge">{{ event.type.name }}</span>
+    <span class="event-card__type-badge">{{ event.type?.name }}</span>
     <span *ngIf="!event.price" class="event-card__free-badge">Besplatno</span>
   </div>
   <div class="event-card__body">
@@ -41,7 +41,7 @@
       </span>
       <span class="event-card__location">
         <span class="material-icons">location_on</span>
-        {{ event.city.name }}
+        {{ event.city?.name }}
       </span>
     </div>
     <div class="event-card__footer">

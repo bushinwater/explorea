@@ -15,7 +15,8 @@ namespace Explorea.Server.Repositories.Interfaces
             Guid? restrictToOwner,
             int? restrictToRegionId,
             int page,
-            int pageSize);
+            int pageSize,
+            string? sortBy = null);
 
         Task<Place?> GetAdminByIdAsync(Guid id);
 

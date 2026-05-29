@@ -18,6 +18,7 @@ const ADMIN_PAGE_ROLES: Record<string, AdminRole[]> = {
   settings: ['super_admin', 'tourist_organization', 'place_owner'],
   support: ['super_admin', 'tourist_organization', 'place_owner'],
   users: ['super_admin'],
+  'bug-reports': ['super_admin'],
 };
 
 export const adminPageAccessGuard: CanActivateFn = (route) => {

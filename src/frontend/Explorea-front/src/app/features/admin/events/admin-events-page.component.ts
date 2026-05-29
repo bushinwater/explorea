@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { StatCardComponent } from '@shared/components';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
@@ -62,6 +63,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     destinationId: null,
     extraFilters: {},
     tab: 'active',
+    sortBy: 'none',
     page: 1,
     pageSize: 20,
   });
@@ -136,13 +138,15 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     const a = this.confirmAction();
     if (a === 'approve') return 'Organizator će biti obavešten da je njihov događaj odobren.';
     if (a === 'reject') return 'Ova akcija se ne može poništiti. Organizator će biti obavešten o odbijanju.';
-    if (a === 'delete') return `Događaj "${this.selectedEvent()?.name ?? ''}" će biti trajno obrisan.`;
+    if (a === 'delete') return `Da li sigurno želiš da ukloniš događaj "${this.selectedEvent()?.name ?? ''}"? Događaj će biti premešten u sekciju "Obrisano" gde ostaje 30 dana pre trajnog brisanja.`;
     return 'Vlasnik objekta će dobiti zahtev za odobrenje.';
   });
 
   constructor(
     private readonly eventsService: AdminEventsService,
     private readonly lookupService: LookupService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
     protected readonly dashAuth: DashboardAuthService,
     protected readonly ui: AdminUiPreferencesService,
@@ -156,6 +160,22 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.subscription.add(
+      this.route.queryParamMap.subscribe((params) => {
+        const openId = params.get('openId');
+        if (openId) {
+          const openName = params.get('openName') ?? '';
+          this.openDetailsPanel({ id: openId, name: openName } as unknown as EventRow);
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { openId: null, openName: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        }
+      }),
+    );
+
     this.subscription.add(
       this.searchInput$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((value) => {
         const q = value.trim();
@@ -235,11 +255,20 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       destinationId: null,
       extraFilters: {},
       tab: f.tab,
+      sortBy: 'none',
       page: 1,
       pageSize: f.pageSize,
     }));
     this.filterDefs.set([]);
     this.currentPage.set(1);
+    this.loadEvents();
+  }
+
+  protected toggleSort(): void {
+    const next: Record<string, 'none' | 'updatedAt_desc' | 'updatedAt_asc'> = {
+      none: 'updatedAt_desc', updatedAt_desc: 'updatedAt_asc', updatedAt_asc: 'none',
+    };
+    this.patchFilter({ sortBy: next[this.filters().sortBy], page: 1 });
     this.loadEvents();
   }
 
@@ -479,13 +508,24 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     return map[p];
   }
 
-  protected typeLabel(t: EventType | null): string {
+  protected typeLabel(typeId: number | null, t: EventType | null, typeName?: string | null): string {
+    if (typeId != null) {
+      const opt = this.eventTypeOptions().find(o => o.value === typeId);
+      if (opt) return opt.label;
+    }
+    if (typeName) return typeName;
     if (!t) return '—';
     const map: Record<EventType, string> = {
       concert: 'Koncert', tasting: 'Degustacija', conference: 'Konferencija',
       sport: 'Sport', exhibition: 'Izložba', other: 'Ostalo',
     };
-    return map[t];
+    return map[t] ?? '—';
+  }
+
+  protected evtActivityStatus(ev: EventRow): 'active' | 'inactive' {
+    const end = ev.endDate ?? ev.startDate;
+    const msSinceEnd = Date.now() - new Date(end).getTime();
+    return msSinceEnd <= 30 * 24 * 60 * 60 * 1000 ? 'active' : 'inactive';
   }
 
   protected typeIcon(t: EventType | null): string {

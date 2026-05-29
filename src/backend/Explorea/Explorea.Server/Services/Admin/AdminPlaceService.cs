@@ -74,9 +74,19 @@ namespace Explorea.Server.Services.Admin
                 restrictToOwner,
                 restrictToRegionId,
                 query.Page,
-                query.PageSize);
+                query.PageSize,
+                query.SortBy);
 
-            return (items.Select(MapToListDto).ToList(), total);
+            var thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30);
+            var pageIds = items.Select(p => p.Id).ToList();
+            var recentlyActiveIds = (await _context.PopularityLogs
+                .Where(l => l.EntityType == "place" && pageIds.Contains(l.EntityId) && l.CreatedAt >= thirtyDaysAgo)
+                .Select(l => l.EntityId)
+                .Distinct()
+                .ToListAsync())
+                .ToHashSet();
+
+            return (items.Select(p => MapToListDto(p, recentlyActiveIds)).ToList(), total);
         }
 
         public async Task<(List<AdminPlaceListDto> Items, int Total)> GetDeletedAsync(
@@ -139,7 +149,7 @@ namespace Explorea.Server.Services.Admin
                 .Take(query.PageSize)
                 .ToListAsync();
 
-            return (items.Select(MapToListDto).ToList(), total);
+            return (items.Select(p => MapToListDto(p)).ToList(), total);
         }
 
         public async Task<AdminPlaceStatsDto> GetStatsAsync(Guid currentUserId)
@@ -632,7 +642,7 @@ namespace Explorea.Server.Services.Admin
             return _geometryFactory.CreatePoint(new Coordinate(lng, lat));
         }
 
-        private static AdminPlaceListDto MapToListDto(Place p) => new()
+        private static AdminPlaceListDto MapToListDto(Place p, HashSet<Guid>? recentlyActiveIds = null) => new()
         {
             Id = p.Id,
             Name = p.Name,
@@ -645,6 +655,7 @@ namespace Explorea.Server.Services.Admin
             Destination = p.Destination?.Name,
             AvgRating = p.AvgRating,
             IsFeatured = p.IsFeatured,
+            HasRecentActivity = recentlyActiveIds?.Contains(p.Id) ?? false,
             Address = p.Address,
             Status = p.ApprovalStatus,
             CreatedBy = p.CreatedBy,

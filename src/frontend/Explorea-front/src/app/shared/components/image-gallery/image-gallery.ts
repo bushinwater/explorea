@@ -1,4 +1,4 @@
-import { Component, Input, HostListener } from '@angular/core';
+import { Component, Input, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface GalleryImage {
@@ -14,6 +14,8 @@ export interface GalleryImage {
   styleUrl: './image-gallery.css',
 })
 export class ImageGallery {
+  constructor(private cdr: ChangeDetectorRef) {}
+
   @Input() images: GalleryImage[] = [];
   @Input() viewAllLabel = 'Vidi sve';
   /** When > 0, only this many thumbnails are shown; "Vidi sve" opens the lightbox. */
@@ -24,6 +26,9 @@ export class ImageGallery {
   lightboxOpen = false;
   lightboxIndex = 0;
   showAll = false;
+
+  private touchStartX = 0;
+  private touchSwipeDone = false;
 
   get visibleImages(): GalleryImage[] {
     return this.maxPreview > 0 ? this.images.slice(0, this.maxPreview) : this.images;
@@ -62,6 +67,7 @@ export class ImageGallery {
   }
 
   closeLightbox(): void {
+    if (this.touchSwipeDone) return;
     this.lightboxOpen = false;
     document.body.style.overflow = '';
   }
@@ -91,5 +97,23 @@ export class ImageGallery {
   @HostListener('document:keydown.arrowRight')
   onRight(): void {
     if (this.lightboxOpen) this.next();
+  }
+
+  @HostListener('document:touchstart', ['$event'])
+  onDocumentTouchStart(event: TouchEvent): void {
+    if (!this.lightboxOpen) return;
+    this.touchStartX = event.changedTouches[0].clientX;
+  }
+
+  @HostListener('document:touchend', ['$event'])
+  onDocumentTouchEnd(event: TouchEvent): void {
+    if (!this.lightboxOpen) return;
+    const dx = event.changedTouches[0].clientX - this.touchStartX;
+    if (Math.abs(dx) < 40) return;
+    if (dx < 0) this.next();
+    else this.prev();
+    this.cdr.markForCheck();
+    this.touchSwipeDone = true;
+    setTimeout(() => { this.touchSwipeDone = false; }, 400);
   }
 }

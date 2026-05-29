@@ -163,6 +163,17 @@
           </div>
         }
 
+        @if (entity() !== 'reviews' && entity() !== 'users') {
+          <div class="rp-config-section">
+            <span class="rp-config-section__label">Status</span>
+            <div class="rp-pills">
+              <button class="rp-pill" [class.rp-pill--active]="chartStatus() === null"       (click)="chartStatus.set(null)">Svi</button>
+              <button class="rp-pill" [class.rp-pill--active]="chartStatus() === 'active'"   (click)="chartStatus.set('active')">Aktivni</button>
+              <button class="rp-pill" [class.rp-pill--active]="chartStatus() === 'inactive'" (click)="chartStatus.set('inactive')">Neaktivni</button>
+            </div>
+          </div>
+        }
+
         <button class="btn btn-primary rp-generate-btn" [disabled]="loading()" (click)="generate()">
           @if (loading()) {
             <span class="rp-spinner"></span> Ucitavanje...
@@ -487,6 +498,14 @@
     }
 
     <div class="rp-dest-toolbar">
+      <div class="rp-dest-sort">
+        <span class="rp-config-section__label" style="margin-bottom: 0">Status</span>
+        <div class="rp-pills">
+          <button class="rp-pill" [class.rp-pill--active]="tableStatus() === null"       (click)="tableStatus.set(null)">Svi</button>
+          <button class="rp-pill" [class.rp-pill--active]="tableStatus() === 'active'"   (click)="tableStatus.set('active')">Aktivni</button>
+          <button class="rp-pill" [class.rp-pill--active]="tableStatus() === 'inactive'" (click)="tableStatus.set('inactive')">Neaktivni</button>
+        </div>
+      </div>
       <div class="rp-dest-sort">
         <span class="rp-config-section__label" style="margin-bottom: 0">Sortiraj po</span>
         <div class="rp-pills">

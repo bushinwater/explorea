@@ -121,9 +121,14 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
       this.map = undefined;
       this.cdr.detectChanges();
 
+      document.documentElement.style.removeProperty('--chat-bubble-bottom-mobile');
+
       this.activityService.getBySlug(this.slug).subscribe({
         next: (data) => {
           this.activity = data;
+          if (data.organizerWebsite) {
+            document.documentElement.style.setProperty('--chat-bubble-bottom-mobile', '150px');
+          }
           this.loading = false;
           window.scrollTo({ top: 0, behavior: 'auto' });
           this.popularityService.track('activity', data.id);
@@ -158,6 +163,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
     document.body.style.top = '';
     document.body.style.width = '';
     document.body.style.overflow = '';
+    document.documentElement.style.removeProperty('--chat-bubble-bottom-mobile');
   }
 
   private captureTitle(): void {

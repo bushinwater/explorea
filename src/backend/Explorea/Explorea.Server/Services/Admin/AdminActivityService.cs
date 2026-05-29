@@ -156,9 +156,16 @@ namespace Explorea.Server.Services.Admin
         }
       }
 
-      activitiesQuery = activitiesQuery.OrderByDescending(a => a.CreatedAt);
+      activitiesQuery = query.SortBy?.Trim().ToLower() switch
+      {
+          "updatedat_desc" => activitiesQuery.OrderByDescending(a => a.UpdatedAt),
+          "updatedat_asc"  => activitiesQuery.OrderBy(a => a.UpdatedAt),
+          _                => activitiesQuery.OrderByDescending(a => a.CreatedAt),
+      };
 
       var total = await activitiesQuery.CountAsync();
+
+      var thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30);
 
       var items = await activitiesQuery
         .Skip((query.Page - 1) * query.PageSize)
@@ -194,7 +201,10 @@ namespace Explorea.Server.Services.Admin
           Popularity = a.Popularity,
 
           IsFeatured = a.IsFeatured,
-          IsActive   = !a.IsDeleted,
+          IsActive   = _context.PopularityLogs.Any(l =>
+            l.EntityType == "activity" &&
+            l.EntityId == a.Id &&
+            l.CreatedAt >= thirtyDaysAgo),
 
           PreviewImageUrl = a.Images
             .OrderBy(i => i.SortOrder)

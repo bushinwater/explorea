@@ -36,6 +36,7 @@ namespace Explorea.Server.Controllers.Admin
             [FromQuery] decimal? maxRating,
             [FromQuery] bool? isFeatured,
             [FromQuery] List<string>? extraFilters,
+            [FromQuery] string? sortBy = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 15)
         {
@@ -54,7 +55,8 @@ namespace Explorea.Server.Controllers.Admin
                     page,
                     pageSize,
                     userId,
-                    extraFilters);
+                    extraFilters,
+                    sortBy);
                 return Ok(new { total, items });
             }
             catch (UnauthorizedAccessException ex)

@@ -1,0 +1,103 @@
+<div class="bug-reports-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-header__left">
+      <span class="material-icons page-header__icon">bug_report</span>
+      <div>
+        <h1 class="page-header__title">{{ ui.t('bug_reports.title') }}</h1>
+        <p class="page-header__subtitle">{{ ui.t('bug_reports.subtitle') }}</p>
+      </div>
+    </div>
+    <div class="page-header__badge" *ngIf="!isLoading()">
+      {{ total() }} {{ ui.t('bug_reports.count') }}
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <span class="filters-bar__label">{{ ui.t('bug_reports.filter_status') }}:</span>
+    <div class="status-tabs">
+      <button
+        *ngFor="let s of statusOptions"
+        class="status-tab"
+        [class.status-tab--active]="statusFilter() === s"
+        (click)="onStatusFilterChange(s)">
+        {{ s === 'all' ? ui.t('bug_reports.status_all') : statusLabel(s) }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-row" *ngIf="isLoading()">
+    <span class="spinner"></span>
+    <span>{{ ui.t('bug_reports.loading') }}</span>
+  </div>
+
+  <!-- Error -->
+  <div class="error-row" *ngIf="error() && !isLoading()">
+    <span class="material-icons">error</span>
+    {{ error() }}
+  </div>
+
+  <!-- Empty -->
+  <div class="empty-row" *ngIf="!isLoading() && !error() && items().length === 0">
+    <span class="material-icons">check_circle</span>
+    <span>{{ ui.t('bug_reports.empty') }}</span>
+  </div>
+
+  <!-- List -->
+  <div class="reports-list" *ngIf="!isLoading() && items().length > 0">
+    <div
+      *ngFor="let item of items()"
+      class="report-card"
+      [class.report-card--expanded]="expandedId() === item.id">
+
+      <div class="report-card__header" (click)="toggleExpand(item.id)">
+        <div class="report-card__meta">
+          <span class="report-status report-status--{{ item.status }}">{{ statusLabel(item.status) }}</span>
+          <span class="report-card__date">{{ formatDate(item.createdAt) }}</span>
+        </div>
+        <div class="report-card__title-row">
+          <span class="report-card__subject">{{ item.subject }}</span>
+          <span class="material-icons report-card__chevron">
+            {{ expandedId() === item.id ? 'expand_less' : 'expand_more' }}
+          </span>
+        </div>
+        <div class="report-card__email" *ngIf="item.email">
+          <span class="material-icons" style="font-size:13px;vertical-align:middle">email</span>
+          {{ item.email }}
+        </div>
+      </div>
+
+      <div class="report-card__body" *ngIf="expandedId() === item.id">
+        <p class="report-card__description">{{ item.description }}</p>
+
+        <div class="report-card__actions">
+          <span class="report-actions__label">{{ ui.t('bug_reports.set_status') }}:</span>
+          <button
+            *ngFor="let s of ['open', 'in_progress', 'resolved', 'closed']"
+            class="report-action-btn report-action-btn--{{ s }}"
+            [class.report-action-btn--active]="item.status === s"
+            [disabled]="item.status === s || updatingId() === item.id"
+            (click)="setStatus(item, s)">
+            {{ statusLabel(s) }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="totalPages > 1 && !isLoading()">
+    <button class="pagination__btn" [disabled]="page() === 1" (click)="load(page() - 1)">
+      <span class="material-icons">chevron_left</span>
+    </button>
+    <span class="pagination__info">{{ page() }} / {{ totalPages }}</span>
+    <button class="pagination__btn" [disabled]="page() === totalPages" (click)="load(page() + 1)">
+      <span class="material-icons">chevron_right</span>
+    </button>
+  </div>
+
+</div>

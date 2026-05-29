@@ -32,7 +32,6 @@
 }
 
 <div class="place-page">
-
   <!-- ===== STATS ROW ===== -->
   <div class="place-stats">
     <app-stat-card
@@ -64,7 +63,6 @@
 
   <!-- ===== MAIN TABLE CARD ===== -->
   <div class="place-card">
-
     <!-- Card header -->
     <div class="place-card__header">
       <div class="place-card__title-group">
@@ -88,6 +86,31 @@
           />
         </div>
 
+        <!-- Sort button -->
+        <button
+          class="btn btn-ghost btn-sm"
+          [class.place-filter-btn--active]="filters().sortBy !== 'none'"
+          (click)="toggleSort()"
+          title="Sortiraj po datumu izmene"
+        >
+          <span class="material-icons" style="font-size: 18px">
+            {{
+              filters().sortBy === 'updatedAt_asc'
+                ? 'arrow_upward'
+                : filters().sortBy === 'updatedAt_desc'
+                  ? 'arrow_downward'
+                  : 'swap_vert'
+            }}
+          </span>
+          {{
+            filters().sortBy === 'updatedAt_asc'
+              ? 'Izmenjeno ↑'
+              : filters().sortBy === 'updatedAt_desc'
+                ? 'Izmenjeno ↓'
+                : 'Sortiraj'
+          }}
+        </button>
+
         <!-- Filter button -->
         <div class="place-filter-wrap">
           <button
@@ -108,7 +131,9 @@
               <div class="place-filter-panel__header">
                 <span class="place-filter-panel__title">{{ ui.t('places.filter.title') }}</span>
                 @if (activeFilterCount() > 0) {
-                  <button class="place-filter-panel__reset" (click)="resetFilters()">{{ ui.t('places.filter.reset') }}</button>
+                  <button class="place-filter-panel__reset" (click)="resetFilters()">
+                    {{ ui.t('places.filter.reset') }}
+                  </button>
                 }
               </div>
 
@@ -137,7 +162,9 @@
 
               <!-- Status filter -->
               <div class="place-filter-section">
-                <label class="place-filter-section__label">{{ ui.t('places.filter.status') }}</label>
+                <label class="place-filter-section__label">{{
+                  ui.t('places.filter.status')
+                }}</label>
                 <div class="place-filter-chips">
                   @for (s of statuses; track s.value) {
                     <button
@@ -154,7 +181,9 @@
               <!-- Region filter (role-gated) -->
               @if (canSeeRegionFilter()) {
                 <div class="place-filter-section">
-                  <label class="place-filter-section__label">{{ ui.t('places.filter.region') }}</label>
+                  <label class="place-filter-section__label">{{
+                    ui.t('places.filter.region')
+                  }}</label>
                   <div class="place-filter-chips">
                     <button
                       class="place-chip"
@@ -178,36 +207,42 @@
 
               <!-- Additional filters (amenities — only when a type is selected) -->
               @if (filters().typeId !== 'all' && amenities().length > 0) {
-              <div class="place-filter-section place-filter-section--extra">
-                <label class="place-filter-section__label">{{ ui.t('common.additional_filters') }}</label>
-                <div class="place-extra-list">
-                  @for (a of amenities(); track a.id) {
-                    <label class="place-extra-item">
-                      <span class="place-extra-item__label">{{ a.name }}</span>
-                      <button
-                        class="place-toggle-btn"
-                        [class.place-toggle-btn--on]="filters().amenityId === a.id"
-                        type="button"
-                        (click)="applyAmenity(a.id)"
-                      >
-                        <span class="place-toggle-track">
-                          <span class="place-toggle-thumb"></span>
-                        </span>
-                      </button>
-                    </label>
-                  }
+                <div class="place-filter-section place-filter-section--extra">
+                  <label class="place-filter-section__label">{{
+                    ui.t('common.additional_filters')
+                  }}</label>
+                  <div class="place-extra-list">
+                    @for (a of amenities(); track a.id) {
+                      <label class="place-extra-item">
+                        <span class="place-extra-item__label">{{ a.name }}</span>
+                        <button
+                          class="place-toggle-btn"
+                          [class.place-toggle-btn--on]="filters().amenityId === a.id"
+                          type="button"
+                          (click)="applyAmenity(a.id)"
+                        >
+                          <span class="place-toggle-track">
+                            <span class="place-toggle-thumb"></span>
+                          </span>
+                        </button>
+                      </label>
+                    }
+                  </div>
                 </div>
-              </div>
               }
 
               <!-- Rating filter — star picker -->
               <div class="place-filter-section">
-                <label class="place-filter-section__label">{{ ui.t('places.filter.rating') }}</label>
+                <label class="place-filter-section__label">{{
+                  ui.t('places.filter.rating')
+                }}</label>
                 <div class="place-star-picker">
                   @for (star of stars; track star) {
                     <button
                       class="place-star-btn"
-                      [class.place-star-btn--on]="star <= (hoverRating() ?? filters().minRating ?? 0)"
+                      [class.place-star-btn--on]="
+                        star <= (hoverRating() ?? filters().minRating ?? 0)
+                      "
                       (mouseenter)="hoverRating.set(star)"
                       (mouseleave)="hoverRating.set(null)"
                       (click)="applyMinRating(star)"
@@ -217,8 +252,11 @@
                     </button>
                   }
                   <span class="place-star-label">
-                    @if (filters().minRating) { {{ filters().minRating }}+ ★ }
-                    @else { {{ ui.t('common.all_ratings') }} }
+                    @if (filters().minRating) {
+                      {{ filters().minRating }}+ ★
+                    } @else {
+                      {{ ui.t('common.all_ratings') }}
+                    }
                   </span>
                 </div>
               </div>
@@ -238,10 +276,18 @@
     </div>
 
     <div class="place-filter-chips place-list-mode-tabs">
-      <button class="place-chip" [class.place-chip--active]="listMode() === 'active'" (click)="setListMode('active')">
+      <button
+        class="place-chip"
+        [class.place-chip--active]="listMode() === 'active'"
+        (click)="setListMode('active')"
+      >
         {{ ui.t('places.tabs.active') }}
       </button>
-      <button class="place-chip" [class.place-chip--active]="listMode() === 'deleted'" (click)="setListMode('deleted')">
+      <button
+        class="place-chip"
+        [class.place-chip--active]="listMode() === 'deleted'"
+        (click)="setListMode('deleted')"
+      >
         {{ ui.t('places.tabs.deleted') }}
       </button>
     </div>
@@ -264,14 +310,21 @@
               <th class="place-th">{{ ui.t('places.table.location') }}</th>
               <th class="place-th">{{ ui.t('places.table.rating') }}</th>
               <th class="place-th">{{ ui.t('places.table.status') }}</th>
-              <th class="place-th">{{ listMode() === 'deleted' ? ui.t('common.deleted') : ui.t('places.table.updated') }}</th>
+              <th class="place-th">
+                {{
+                  listMode() === 'deleted' ? ui.t('common.deleted') : ui.t('places.table.updated')
+                }}
+              </th>
               <th class="place-th"></th>
             </tr>
           </thead>
           <tbody>
             @for (place of places(); track place.id) {
-              <tr class="place-row" [class.place-row--selected]="detailsPanelRow()?.id === place.id" (click)="openDetailsPanel(place)">
-
+              <tr
+                class="place-row"
+                [class.place-row--selected]="detailsPanelRow()?.id === place.id"
+                (click)="openDetailsPanel(place)"
+              >
                 <!-- Name + address + thumb -->
                 <td class="place-td">
                   <div class="place-name-cell">
@@ -286,7 +339,9 @@
                         class="place-thumb"
                         [style.background-color]="placeThumbColor(place.type)"
                       >
-                        <span class="material-icons place-thumb__icon">{{ placeIcon(place.type) }}</span>
+                        <span class="material-icons place-thumb__icon">{{
+                          placeIcon(place.type)
+                        }}</span>
                       </div>
                     }
                     <div class="place-name-info">
@@ -339,7 +394,15 @@
                 <!-- Status -->
                 <td class="place-td">
                   @if (listMode() === 'deleted') {
-                    <span class="place-status place-status--deleted">{{ ui.t('common.deleted') }}</span>
+                    <span class="place-status place-status--deleted">Obrisano</span>
+                  } @else if (place.status === 'approved') {
+                    <span
+                      class="place-status place-status--{{
+                        place.hasRecentActivity ? 'active' : 'inactive'
+                      }}"
+                    >
+                      {{ place.hasRecentActivity ? 'Aktivno' : 'Neaktivno' }}
+                    </span>
                   } @else {
                     <span class="place-status place-status--{{ place.status }}">
                       {{ statusLabel(place.status) }}
@@ -351,7 +414,13 @@
                 <td class="place-td">
                   <div class="place-updated">
                     <span class="material-icons">calendar_today</span>
-                    {{ timeAgo(listMode() === 'deleted' ? (place.deletedAt ?? place.updatedAt) : place.updatedAt) }}
+                    {{
+                      timeAgo(
+                        listMode() === 'deleted'
+                          ? (place.deletedAt ?? place.updatedAt)
+                          : place.updatedAt
+                      )
+                    }}
                   </div>
                 </td>
 
@@ -377,7 +446,11 @@
                       >
                         <span class="material-icons">open_in_new</span>
                       </a>
-                      <button class="btn-icon" [title]="ui.t('common.edit')" (click)="openEdit(place)">
+                      <button
+                        class="btn-icon"
+                        [title]="ui.t('common.edit')"
+                        (click)="openEdit(place)"
+                      >
                         <span class="material-icons">edit</span>
                       </button>
                       <button
@@ -390,7 +463,6 @@
                     }
                   </div>
                 </td>
-
               </tr>
             }
           </tbody>
@@ -431,15 +503,19 @@
         </div>
       </div>
     }
-
   </div>
 </div>
 
 <!-- ===== PLACE DETAILS PANEL ===== -->
 @if ((isDetailsPanelOpen() || isPanelClosing()) && detailsPanelRow(); as place) {
   <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
-  <aside class="ddp-panel" [class.ddp-panel--closing]="isPanelClosing()" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-
+  <aside
+    class="ddp-panel"
+    [class.ddp-panel--closing]="isPanelClosing()"
+    role="dialog"
+    aria-modal="true"
+    (click)="$event.stopPropagation()"
+  >
     <header class="ddp-header">
       <div class="ddp-header__title-group">
         @if (place.previewImageUrl) {
@@ -457,7 +533,9 @@
           <h2 class="ddp-header__name">{{ place.name }}</h2>
           <p class="ddp-header__location">
             <span class="material-icons">location_on</span>
-            {{ place.city || place.region || place.address || ui.t('places.details.unknown_location') }}
+            {{
+              place.city || place.region || place.address || ui.t('places.details.unknown_location')
+            }}
           </p>
         </div>
       </div>
@@ -473,7 +551,6 @@
           {{ ui.t('common.loading') }}
         </div>
       } @else {
-
         <!-- Gallery -->
         @if (detailsPanelDetail()?.images?.length) {
           <div class="ddp-gallery">
@@ -504,7 +581,15 @@
         <!-- Badges -->
         <div class="ddp-badges">
           @if (listMode() === 'deleted') {
-            <span class="place-status place-status--deleted">{{ ui.t('common.deleted') }}</span>
+            <span class="place-status place-status--deleted">Obrisano</span>
+          } @else if (place.status === 'approved') {
+            <span
+              class="place-status place-status--{{
+                place.hasRecentActivity ? 'active' : 'inactive'
+              }}"
+            >
+              {{ place.hasRecentActivity ? 'Aktivno' : 'Neaktivno' }}
+            </span>
           } @else {
             <span class="place-status place-status--{{ place.status }}">
               {{ statusLabel(place.status) }}
@@ -531,7 +616,7 @@
               @for (tag of detailsPanelInterests(); track tag.id) {
                 <span class="ddp-interest-chip">
                   @if (tag.icon) {
-                    <span class="material-icons" style="font-size:14px">{{ tag.icon }}</span>
+                    <span class="material-icons" style="font-size: 14px">{{ tag.icon }}</span>
                   }
                   {{ tag.name }}
                 </span>
@@ -543,10 +628,7 @@
         <!-- Description -->
         @if (detailsPanelDetail()?.description) {
           <div class="ddp-description-wrap">
-            <p
-              class="ddp-description"
-              [class.ddp-description--collapsed]="!descriptionExpanded()"
-            >
+            <p class="ddp-description" [class.ddp-description--collapsed]="!descriptionExpanded()">
               {{ detailsPanelDetail()!.description }}
             </p>
             @if ((detailsPanelDetail()!.description?.length ?? 0) > 160) {
@@ -641,7 +723,11 @@
                 <div class="place-review">
                   <div class="place-review__header">
                     @if (review.authorAvatarUrl) {
-                      <img class="place-review__avatar" [src]="review.authorAvatarUrl" [alt]="review.authorName" />
+                      <img
+                        class="place-review__avatar"
+                        [src]="review.authorAvatarUrl"
+                        [alt]="review.authorName"
+                      />
                     } @else {
                       <div class="place-review__avatar place-review__avatar--placeholder">
                         {{ review.authorName[0] }}
@@ -653,8 +739,11 @@
                     </div>
                     <div class="place-review__stars">
                       @for (star of starArray(review.rating); track star) {
-                        <span class="material-icons place-review__star"
-                          [class.place-review__star--filled]="star <= review.rating">star</span>
+                        <span
+                          class="material-icons place-review__star"
+                          [class.place-review__star--filled]="star <= review.rating"
+                          >star</span
+                        >
                       }
                     </div>
                   </div>
@@ -666,13 +755,16 @@
             </div>
           }
         </div>
-
       }
     </div>
 
     <footer class="ddp-footer">
       @if (listMode() === 'deleted') {
-        <button class="btn btn-ghost btn-sm ddp-footer__restore" [disabled]="isRestoring()" (click)="restorePlace(place)">
+        <button
+          class="btn btn-ghost btn-sm ddp-footer__restore"
+          [disabled]="isRestoring()"
+          (click)="restorePlace(place)"
+        >
           <span class="material-icons">restore</span>
           {{ ui.t('common.restore') }}
         </button>
@@ -696,7 +788,6 @@
         </button>
       }
     </footer>
-
   </aside>
 }
 

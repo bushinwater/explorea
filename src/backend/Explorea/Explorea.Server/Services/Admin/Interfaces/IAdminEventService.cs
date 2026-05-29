@@ -9,7 +9,8 @@ namespace Explorea.Server.Services.Admin.Interfaces
             Guid? destinationId, int? cityId, int? typeId,
             DateTimeOffset? startFrom, DateTimeOffset? startTo,
             List<string>? extraFilters,
-            int page, int pageSize, Guid currentUserId);
+            int page, int pageSize, Guid currentUserId,
+            string? sortBy = null);
 
         Task<(List<AdminEventListDto> Items, int Total)> GetDeletedAsync(
             string? search,

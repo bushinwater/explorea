@@ -52,6 +52,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   readonly loading        = signal(false);
   readonly error          = signal<string | null>(null);
   readonly chartData      = signal<AggregatePoint[] | null>(null);
+  readonly chartStatus    = signal<string | null>(null);
 
   // ─── Entity search ───────────────────────────────────────────────────────
   readonly selectedEntityId    = signal<string | null>(null);
@@ -102,6 +103,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   readonly filterDefsLoading     = signal(false);
   readonly extraFilters          = signal<Record<string, string>>({});
   readonly filterOptionsLoading  = signal(false);
+  readonly tableStatus           = signal<string | null>(null);
 
   // ─── PDF Queue ───────────────────────────────────────────────────────────
 
@@ -392,7 +394,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
       });
     }
 
-    this.svc.getAggregate(this.entity(), this.dimension(), this.metric(), dateFrom, dateTo, specificEntityId)
+    this.svc.getAggregate(this.entity(), this.dimension(), this.metric(), dateFrom, dateTo, specificEntityId, this.chartStatus())
       .subscribe({
         next: data => {
           this.loading.set(false);
@@ -516,6 +518,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     this.filterDefs.set([]);
     this.extraFilters.set({});
     this.subtypeOptionsWithId.set([]);
+    this.tableStatus.set(null);
     this.loadFilterOptions(e);
   }
 
@@ -676,6 +679,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
       this.svc.getDestinationsTable(
         this.destSortBy(),
         this.filterSubType(), this.filterRegion(), this.filterMinRating(),
+        this.tableStatus(),
       ).subscribe({
         next: data => { this.destTableLoading.set(false); this.destTableData.set(data); this.cdr.detectChanges(); },
         error: () => { this.destTableLoading.set(false); this.destTableError.set('Greška pri učitavanju.'); this.cdr.detectChanges(); },
@@ -690,6 +694,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
           this.filterDifficulty(), this.filterMinPrice(), this.filterMaxPrice(),
           extraArr.length ? extraArr : null,
           this.flatDestId(),
+          this.tableStatus(),
         ).pipe(map(data => ({
           entity,
           label: FLAT_TABLE_ENTITIES.find(x => x.id === entity)!.label,

@@ -27,22 +27,34 @@
 }
 
 <div class="evts-page">
-
   <!-- ===== STATS ROW ===== -->
   <div class="evts-stats">
-    <app-stat-card [label]="ui.t('events.stats.activeRequests')" [value]="stats()?.activeRequests ?? 0"
-      [trend]="stats()?.activeRequestsTrend ?? ''" />
-    <app-stat-card [label]="ui.t('events.stats.pendingApproval')" [value]="stats()?.pendingApproval ?? 0"
-      [hint]="stats()?.pendingApprovalHint ?? ''" tone="danger" />
-    <app-stat-card [label]="ui.t('events.stats.approvedThisMonth')" [value]="stats()?.approvedThisMonth ?? 0"
-      tone="success" />
-    <app-stat-card [label]="ui.t('events.stats.rejected')" [value]="stats()?.rejected ?? 0" [hint]="stats()?.rejectedNote ?? ''"
-      tone="danger" />
+    <app-stat-card
+      [label]="ui.t('events.stats.activeRequests')"
+      [value]="stats()?.activeRequests ?? 0"
+      [trend]="stats()?.activeRequestsTrend ?? ''"
+    />
+    <app-stat-card
+      [label]="ui.t('events.stats.pendingApproval')"
+      [value]="stats()?.pendingApproval ?? 0"
+      [hint]="stats()?.pendingApprovalHint ?? ''"
+      tone="danger"
+    />
+    <app-stat-card
+      [label]="ui.t('events.stats.approvedThisMonth')"
+      [value]="stats()?.approvedThisMonth ?? 0"
+      tone="success"
+    />
+    <app-stat-card
+      [label]="ui.t('events.stats.rejected')"
+      [value]="stats()?.rejected ?? 0"
+      [hint]="stats()?.rejectedNote ?? ''"
+      tone="danger"
+    />
   </div>
 
   <!-- ===== TABLE CARD ===== -->
   <div class="evts-card">
-
     <!-- Header -->
     <div class="evts-card__header">
       <div class="evts-card__title-group">
@@ -56,14 +68,46 @@
       <div class="evts-card__actions">
         <div class="evts-search-wrap">
           <span class="material-icons evts-search-wrap__icon">search</span>
-          <input class="evts-search" type="search" [placeholder]="ui.t('events.search.placeholder')"
+          <input
+            class="evts-search"
+            type="search"
+            [placeholder]="ui.t('events.search.placeholder')"
             [value]="filters().search"
-            (input)="updateSearch($any($event.target).value)" />
+            (input)="updateSearch($any($event.target).value)"
+          />
         </div>
 
+        <!-- Sort button -->
+        <button
+          class="btn btn-ghost btn-sm"
+          [class.evts-filter-btn--active]="filters().sortBy !== 'none'"
+          (click)="toggleSort()"
+          title="Sortiraj po datumu izmene"
+        >
+          <span class="material-icons" style="font-size: 18px">
+            {{
+              filters().sortBy === 'updatedAt_asc'
+                ? 'arrow_upward'
+                : filters().sortBy === 'updatedAt_desc'
+                  ? 'arrow_downward'
+                  : 'swap_vert'
+            }}
+          </span>
+          {{
+            filters().sortBy === 'updatedAt_asc'
+              ? 'Izmenjeno ↑'
+              : filters().sortBy === 'updatedAt_desc'
+                ? 'Izmenjeno ↓'
+                : 'Sortiraj'
+          }}
+        </button>
+
         <div class="evts-filter-wrap">
-          <button class="evts-filter-btn" [class.evts-filter-btn--active]="activeFilterCount() > 0"
-            (click)="isFilterOpen.set(!isFilterOpen()); $event.stopPropagation()">
+          <button
+            class="evts-filter-btn"
+            [class.evts-filter-btn--active]="activeFilterCount() > 0"
+            (click)="isFilterOpen.set(!isFilterOpen()); $event.stopPropagation()"
+          >
             <span class="material-icons">filter_list</span>
             {{ ui.t('events.filter.btn') }}
             @if (activeFilterCount() > 0) {
@@ -76,18 +120,30 @@
               <div class="evts-filter-panel__header">
                 <span class="evts-filter-panel__title">{{ ui.t('events.filter.title') }}</span>
                 @if (activeFilterCount() > 0) {
-                  <button class="evts-filter-panel__reset" (click)="resetFilters()">{{ ui.t('events.filter.reset') }}</button>
+                  <button class="evts-filter-panel__reset" (click)="resetFilters()">
+                    {{ ui.t('events.filter.reset') }}
+                  </button>
                 }
               </div>
 
               <div class="evts-filter-section">
                 <label class="evts-filter-section__label">{{ ui.t('events.filter.type') }}</label>
                 <div class="evts-filter-chips">
-                  <button class="evts-chip" [class.evts-chip--active]="filters().typeId === null"
-                    (click)="applyType(null)">Svi tipovi</button>
+                  <button
+                    class="evts-chip"
+                    [class.evts-chip--active]="filters().typeId === null"
+                    (click)="applyType(null)"
+                  >
+                    Svi tipovi
+                  </button>
                   @for (type of eventTypeOptions(); track type.value) {
-                    <button class="evts-chip" [class.evts-chip--active]="filters().typeId === type.value"
-                      (click)="applyType(type.value)">{{ type.label }}</button>
+                    <button
+                      class="evts-chip"
+                      [class.evts-chip--active]="filters().typeId === type.value"
+                      (click)="applyType(type.value)"
+                    >
+                      {{ type.label }}
+                    </button>
                   }
                 </div>
               </div>
@@ -95,30 +151,54 @@
               <div class="evts-filter-section">
                 <label class="evts-filter-section__label">{{ ui.t('events.filter.city') }}</label>
                 <div class="evts-filter-chips">
-                  <button class="evts-chip" [class.evts-chip--active]="filters().cityId === null"
-                    (click)="applyCity(null)">{{ ui.t('events.filter.all_cities') }}</button>
+                  <button
+                    class="evts-chip"
+                    [class.evts-chip--active]="filters().cityId === null"
+                    (click)="applyCity(null)"
+                  >
+                    {{ ui.t('events.filter.all_cities') }}
+                  </button>
                   @for (city of cityOptions(); track city.value) {
-                    <button class="evts-chip" [class.evts-chip--active]="filters().cityId === city.value"
-                      (click)="applyCity(city.value)">{{ city.label }}</button>
+                    <button
+                      class="evts-chip"
+                      [class.evts-chip--active]="filters().cityId === city.value"
+                      (click)="applyCity(city.value)"
+                    >
+                      {{ city.label }}
+                    </button>
                   }
                 </div>
               </div>
 
               <div class="evts-filter-section">
-                <label class="evts-filter-section__label">{{ ui.t('events.filter.destination') }}</label>
+                <label class="evts-filter-section__label">{{
+                  ui.t('events.filter.destination')
+                }}</label>
                 <div class="evts-filter-chips">
-                  <button class="evts-chip" [class.evts-chip--active]="filters().destinationId === null"
-                    (click)="applyDestination(null)">{{ ui.t('events.filter.all_destinations') }}</button>
+                  <button
+                    class="evts-chip"
+                    [class.evts-chip--active]="filters().destinationId === null"
+                    (click)="applyDestination(null)"
+                  >
+                    {{ ui.t('events.filter.all_destinations') }}
+                  </button>
                   @for (destination of destinationOptions(); track destination.value) {
-                    <button class="evts-chip" [class.evts-chip--active]="filters().destinationId === destination.value"
-                      (click)="applyDestination(destination.value)">{{ destination.label }}</button>
+                    <button
+                      class="evts-chip"
+                      [class.evts-chip--active]="filters().destinationId === destination.value"
+                      (click)="applyDestination(destination.value)"
+                    >
+                      {{ destination.label }}
+                    </button>
                   }
                 </div>
               </div>
 
               @if (filterDefs().length > 0) {
                 <div class="evts-filter-section evts-filter-section--extra">
-                  <label class="evts-filter-section__label">{{ ui.t('common.additional_filters') }}</label>
+                  <label class="evts-filter-section__label">{{
+                    ui.t('common.additional_filters')
+                  }}</label>
                   <div class="evts-extra-list">
                     @for (def of filterDefs(); track def.id) {
                       @if (def.filterType === 'boolean') {
@@ -126,22 +206,31 @@
                           <span class="evts-extra-item__label">{{ def.filterLabel }}</span>
                           <button
                             class="evts-toggle-btn"
-                            [class.evts-toggle-btn--on]="filters().extraFilters[def.filterKey] === 'true'"
+                            [class.evts-toggle-btn--on]="
+                              filters().extraFilters[def.filterKey] === 'true'
+                            "
                             type="button"
-                            (click)="applyExtraFilter(def.filterKey, 'true')">
+                            (click)="applyExtraFilter(def.filterKey, 'true')"
+                          >
                             <span class="evts-toggle-track">
                               <span class="evts-toggle-thumb"></span>
                             </span>
                           </button>
                         </label>
-                      } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
+                      } @else if (
+                        def.filterType === 'select' || def.filterType === 'multi_select'
+                      ) {
                         <div class="evts-extra-select-group">
                           <span class="evts-extra-item__label">{{ def.filterLabel }}</span>
                           <div class="evts-filter-chips">
                             @for (opt of def.options; track opt.optionValue) {
-                              <button class="evts-chip"
-                                [class.evts-chip--active]="filters().extraFilters[def.filterKey] === opt.optionValue"
-                                (click)="applyExtraFilter(def.filterKey, opt.optionValue)">
+                              <button
+                                class="evts-chip"
+                                [class.evts-chip--active]="
+                                  filters().extraFilters[def.filterKey] === opt.optionValue
+                                "
+                                (click)="applyExtraFilter(def.filterKey, opt.optionValue)"
+                              >
                                 {{ opt.optionLabel }}
                               </button>
                             }
@@ -168,25 +257,42 @@
 
     <!-- Body -->
     <div class="evts-card__body">
-
       <!-- Tabs -->
       <div class="evts-tabs">
-        <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'active'" (click)="setTab('active')">
+        <button
+          class="evts-tab"
+          [class.evts-tab--active]="filters().tab === 'active'"
+          (click)="setTab('active')"
+        >
           {{ ui.t('events.tabs.active_events') }}
           @if (stats()?.tabActiveCount) {
-            <span class="evts-tab__badge evts-tab__badge--green">{{ stats()!.tabActiveCount }}</span>
+            <span class="evts-tab__badge evts-tab__badge--green">{{
+              stats()!.tabActiveCount
+            }}</span>
           }
         </button>
-        <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'pending'" (click)="setTab('pending')">
+        <button
+          class="evts-tab"
+          [class.evts-tab--active]="filters().tab === 'pending'"
+          (click)="setTab('pending')"
+        >
           {{ ui.t('events.tabs.pending') }}
           @if (stats()?.tabPendingCount) {
             <span class="evts-tab__badge">{{ stats()!.tabPendingCount }}</span>
           }
         </button>
-        <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'history'" (click)="setTab('history')">
+        <button
+          class="evts-tab"
+          [class.evts-tab--active]="filters().tab === 'history'"
+          (click)="setTab('history')"
+        >
           {{ ui.t('events.tabs.history') }}
         </button>
-        <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'deleted'" (click)="setTab('deleted')">
+        <button
+          class="evts-tab"
+          [class.evts-tab--active]="filters().tab === 'deleted'"
+          (click)="setTab('deleted')"
+        >
           {{ ui.t('events.tabs.deleted') }}
         </button>
       </div>
@@ -196,16 +302,19 @@
         @if (isLoading()) {
           <app-table-skeleton [rows]="6" />
         } @else if (!events().length) {
-          <app-empty-state title="Nema događaja" description="Nema događaja koji odgovaraju trenutnim filterima." />
+          <app-empty-state
+            title="Nema događaja"
+            description="Nema događaja koji odgovaraju trenutnim filterima."
+          />
         } @else {
           <table class="evts-table">
             <thead>
               <tr>
-                <th class="evts-th">{{ ui.t('events.table.event') }}</th>
-                <th class="evts-th evts-th--hide-sm">{{ ui.t('events.table.type') }}</th>
-                <th class="evts-th evts-th--hide-md">{{ ui.t('events.table.location') }}</th>
-                <th class="evts-th evts-th--hide-sm">{{ ui.t('events.table.date') }}</th>
-                <th class="evts-th evts-th--hide-md evts-th--center">{{ ui.t('common.rating') }}</th>
+                <th class="evts-th">Događaj</th>
+                <th class="evts-th evts-th--hide-sm">Tip</th>
+                <th class="evts-th evts-th--hide-md">Aktivnost</th>
+                <th class="evts-th evts-th--hide-sm">Datum</th>
+                <th class="evts-th evts-th--hide-md evts-th--center">Ocena</th>
                 @if (filters().tab !== 'active') {
                   <th class="evts-th">{{ ui.t('events.table.status') }}</th>
                 }
@@ -214,11 +323,19 @@
             </thead>
             <tbody>
               @for (ev of events(); track rowKey(ev)) {
-                <tr class="evts-row" [class.evts-row--selected]="isSelected(ev)" (click)="openDetailsPanel(ev)">
+                <tr
+                  class="evts-row"
+                  [class.evts-row--selected]="isSelected(ev)"
+                  (click)="openDetailsPanel(ev)"
+                >
                   <td class="evts-td">
                     <div class="evts-name-cell">
                       @if (ev.heroImageUrl) {
-                        <img class="evts-thumb evts-thumb--img" [src]="ev.heroImageUrl" [alt]="ev.name" />
+                        <img
+                          class="evts-thumb evts-thumb--img"
+                          [src]="ev.heroImageUrl"
+                          [alt]="ev.name"
+                        />
                       } @else {
                         <div class="evts-thumb" [style.background-color]="thumbColor(ev.type)">
                           <span class="material-icons">{{ typeIcon(ev.type) }}</span>
@@ -242,20 +359,27 @@
                   </td>
                   <td class="evts-td evts-td--hide-sm">
                     <span class="evts-type-label">
-                      <span class="material-icons evts-type-label__icon">{{ typeIcon(ev.type) }}</span>
-                      {{ typeLabel(ev.type) }}
+                      <span class="material-icons evts-type-label__icon">{{
+                        typeIcon(ev.type)
+                      }}</span>
+                      {{ typeLabel(ev.typeId, ev.type, ev.typeName) }}
                     </span>
                   </td>
                   <td class="evts-td evts-td--hide-md">
-                    <span class="evts-location" [title]="locationLabel(ev)">
-                      <span class="material-icons">location_on</span>
-                      <span class="evts-location__text">{{ locationLabel(ev) }}</span>
+                    <span class="evts-act-status evts-act-status--{{ evtActivityStatus(ev) }}">
+                      {{ evtActivityStatus(ev) === 'active' ? 'Aktivno' : 'Neaktivno' }}
                     </span>
                   </td>
                   <td class="evts-td evts-td--hide-sm">
                     <span class="evts-date">
                       <span class="material-icons">calendar_today</span>
-                      {{ formatDate(filters().tab === 'deleted' ? (ev.deletedAt ?? ev.startDate) : ev.startDate) }}
+                      {{
+                        formatDate(
+                          filters().tab === 'deleted'
+                            ? (ev.deletedAt ?? ev.startDate)
+                            : ev.startDate
+                        )
+                      }}
                     </span>
                   </td>
                   <td class="evts-td evts-td--hide-md evts-td--center">
@@ -270,30 +394,51 @@
                   </td>
                   @if (filters().tab !== 'active') {
                     <td class="evts-td">
-                      <span class="evts-status evts-status--{{ ev.status }}">{{ statusLabel(ev.status) }}</span>
+                      <span class="evts-status evts-status--{{ ev.status }}">{{
+                        statusLabel(ev.status)
+                      }}</span>
                     </td>
                   }
                   <td class="evts-td evts-td--actions" (click)="$event.stopPropagation()">
                     <div class="row-actions">
                       @if (filters().tab === 'deleted') {
                         @if (isSuperAdmin()) {
-                          <button class="btn-icon btn-icon--restore" [title]="ui.t('common.restore')" (click)="restoreEvent(ev)" [disabled]="isRestoring()">
+                          <button
+                            class="btn-icon btn-icon--restore"
+                            [title]="ui.t('common.restore')"
+                            (click)="restoreEvent(ev)"
+                            [disabled]="isRestoring()"
+                          >
                             <span class="material-icons">restore</span>
                           </button>
                         }
                       } @else {
                         @if (ev.slug) {
-                          <a class="btn-icon" [title]="ui.t('common.open_in_app')" [href]="'/events/' + ev.slug" target="_blank" rel="noopener">
+                          <a
+                            class="btn-icon"
+                            [title]="ui.t('common.open_in_app')"
+                            [href]="'/events/' + ev.slug"
+                            target="_blank"
+                            rel="noopener"
+                          >
                             <span class="material-icons">open_in_new</span>
                           </a>
                         }
                         @if (isSuperAdmin() && ev.status === 'active') {
-                          <button class="btn-icon" [title]="ui.t('common.edit')" (click)="openEditFromRow(ev)">
+                          <button
+                            class="btn-icon"
+                            [title]="ui.t('common.edit')"
+                            (click)="openEditFromRow(ev)"
+                          >
                             <span class="material-icons">edit</span>
                           </button>
                         }
                         @if (isSuperAdmin()) {
-                          <button class="btn-icon btn-icon--danger" [title]="ui.t('common.delete')" (click)="openDeleteFromRow(ev)">
+                          <button
+                            class="btn-icon btn-icon--danger"
+                            [title]="ui.t('common.delete')"
+                            (click)="openDeleteFromRow(ev)"
+                          >
                             <span class="material-icons">delete</span>
                           </button>
                         }
@@ -312,41 +457,64 @@
         <div class="evts-pagination">
           <span class="evts-pagination__info">{{ visibleRangeText() }}</span>
           <div class="evts-pagination__pages">
-            <button class="evts-page-btn evts-page-btn--nav" [disabled]="currentPage() <= 1"
-              (click)="goToPage(currentPage() - 1)">
+            <button
+              class="evts-page-btn evts-page-btn--nav"
+              [disabled]="currentPage() <= 1"
+              (click)="goToPage(currentPage() - 1)"
+            >
               <span class="material-icons">chevron_left</span>
             </button>
             @for (page of pageNumbers(); track page) {
-              <button class="evts-page-btn" [class.evts-page-btn--active]="page === currentPage()"
-                (click)="goToPage(page)">{{ page }}</button>
+              <button
+                class="evts-page-btn"
+                [class.evts-page-btn--active]="page === currentPage()"
+                (click)="goToPage(page)"
+              >
+                {{ page }}
+              </button>
             }
-            <button class="evts-page-btn evts-page-btn--nav" [disabled]="currentPage() >= totalPages()"
-              (click)="goToPage(currentPage() + 1)">
+            <button
+              class="evts-page-btn evts-page-btn--nav"
+              [disabled]="currentPage() >= totalPages()"
+              (click)="goToPage(currentPage() + 1)"
+            >
               <span class="material-icons">chevron_right</span>
             </button>
           </div>
         </div>
       }
-
     </div>
 
     @if (isConfirmOpen()) {
-      <app-confirm-dialog [title]="confirmTitle()" [description]="confirmDesc()" [isLoading]="isActioning()"
-        (confirm)="confirmActionSubmit()" (cancel)="cancelAction()" />
+      <app-confirm-dialog
+        [title]="confirmTitle()"
+        [description]="confirmDesc()"
+        [isLoading]="isActioning()"
+        (confirm)="confirmActionSubmit()"
+        (cancel)="cancelAction()"
+      />
     }
-
   </div>
 </div>
 
 <!-- ===== EVENT DETAILS PANEL (ddp-panel style) ===== -->
 @if ((isPanelOpen() || isPanelClosing()) && selectedEvent(); as ev) {
   <div class="ddp-backdrop" (click)="closeDetailsPanel()"></div>
-  <aside class="ddp-panel" [class.ddp-panel--closing]="isPanelClosing()" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-
+  <aside
+    class="ddp-panel"
+    [class.ddp-panel--closing]="isPanelClosing()"
+    role="dialog"
+    aria-modal="true"
+    (click)="$event.stopPropagation()"
+  >
     <header class="ddp-header">
       <div class="ddp-header__title-group">
         @if (ev.heroImageUrl) {
-          <img class="ddp-header__icon ddp-header__icon--img" [src]="ev.heroImageUrl" [alt]="ev.name" />
+          <img
+            class="ddp-header__icon ddp-header__icon--img"
+            [src]="ev.heroImageUrl"
+            [alt]="ev.name"
+          />
         } @else {
           <div class="ddp-header__icon" [style.background-color]="thumbColor(ev.type)">
             <span class="material-icons">{{ typeIcon(ev.type) }}</span>
@@ -366,7 +534,6 @@
     </header>
 
     <div class="ddp-body">
-
       <!-- Gallery -->
       @if (ev.imageItems.length > 0) {
         <div class="ddp-gallery">
@@ -401,7 +568,7 @@
         @if (ev.type) {
           <span class="evts-type-label">
             <span class="material-icons evts-type-label__icon">{{ typeIcon(ev.type) }}</span>
-            {{ typeLabel(ev.type) }}
+            {{ typeLabel(ev.typeId, ev.type, ev.typeName) }}
           </span>
         }
         @if (ev.isFeatured) {
@@ -427,7 +594,9 @@
           <div class="ddp-interests-scroll">
             @for (tag of detailsInterests(); track tag.id) {
               <span class="ddp-interest-chip">
-                @if (tag.icon) { <span class="material-icons">{{ tag.icon }}</span> }
+                @if (tag.icon) {
+                  <span class="material-icons">{{ tag.icon }}</span>
+                }
                 {{ tag.name }}
               </span>
             }
@@ -471,7 +640,9 @@
           <div class="ddp-grid__item ddp-grid__item--full">
             <span class="ddp-grid__label">{{ ui.t('events.details.ticket') }}</span>
             <span class="ddp-grid__value">
-              <a [href]="ev.ticketUrl" target="_blank" rel="noopener" class="ddp-link">{{ ev.ticketUrl }}</a>
+              <a [href]="ev.ticketUrl" target="_blank" rel="noopener" class="ddp-link">{{
+                ev.ticketUrl
+              }}</a>
             </span>
           </div>
         }
@@ -490,8 +661,11 @@
             {{ ev.description }}
           </p>
           @if (ev.description.length > 160) {
-            <button class="ddp-description__toggle" type="button"
-              (click)="descriptionExpanded.set(!descriptionExpanded())">
+            <button
+              class="ddp-description__toggle"
+              type="button"
+              (click)="descriptionExpanded.set(!descriptionExpanded())"
+            >
               {{ descriptionExpanded() ? ui.t('common.show_less') : ui.t('common.show_more') }}
             </button>
           }
@@ -526,7 +700,11 @@
               <div class="ddp-review-card">
                 <div class="ddp-review-card__header">
                   @if (review.authorAvatarUrl) {
-                    <img class="ddp-review-card__avatar" [src]="review.authorAvatarUrl" [alt]="review.authorName" />
+                    <img
+                      class="ddp-review-card__avatar"
+                      [src]="review.authorAvatarUrl"
+                      [alt]="review.authorName"
+                    />
                   } @else {
                     <div class="ddp-review-card__avatar ddp-review-card__avatar--placeholder">
                       {{ review.authorName[0] }}
@@ -539,8 +717,11 @@
                 </div>
                 <div class="ddp-review-card__stars">
                   @for (star of starArray(); track star) {
-                    <span class="material-icons ddp-review-card__star"
-                      [class.ddp-review-card__star--filled]="star <= review.rating">star</span>
+                    <span
+                      class="material-icons ddp-review-card__star"
+                      [class.ddp-review-card__star--filled]="star <= review.rating"
+                      >star</span
+                    >
                   }
                 </div>
                 @if (review.comment) {
@@ -560,7 +741,8 @@
             {{ ui.t('events.panel.coordination') }}
           </h4>
           <p class="ddp-coordination__hint">
-            Ovaj lokalitet je u privatnom vlasništvu. Pre odobrenja, prosledite zahtev vlasniku na uvid.
+            Ovaj lokalitet je u privatnom vlasništvu. Pre odobrenja, prosledite zahtev vlasniku na
+            uvid.
           </p>
           <button class="ddp-forward-btn" (click)="initiateAction('forward')">
             <span class="material-icons">send</span>
@@ -568,20 +750,28 @@
           </button>
         </div>
       }
-
     </div>
 
     <footer class="ddp-footer">
       @if (filters().tab === 'deleted') {
         @if (isSuperAdmin()) {
-          <button class="btn btn-ghost btn-sm ddp-footer__restore" (click)="restoreEvent(ev)" [disabled]="isRestoring()">
+          <button
+            class="btn btn-ghost btn-sm ddp-footer__restore"
+            (click)="restoreEvent(ev)"
+            [disabled]="isRestoring()"
+          >
             <span class="material-icons">restore</span>
             {{ ui.t('common.restore') }}
           </button>
         }
       } @else {
         @if (ev.slug) {
-          <a class="btn btn-ghost btn-sm" [href]="'/events/' + ev.slug" target="_blank" rel="noopener">
+          <a
+            class="btn btn-ghost btn-sm"
+            [href]="'/events/' + ev.slug"
+            target="_blank"
+            rel="noopener"
+          >
             <span class="material-icons">open_in_new</span>
             {{ ui.t('common.open') }}
           </a>
@@ -591,7 +781,10 @@
             <span class="material-icons">edit</span>
             {{ ui.t('common.edit') }}
           </button>
-          <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="initiateAction('delete')">
+          <button
+            class="btn btn-ghost btn-sm ddp-footer__danger"
+            (click)="initiateAction('delete')"
+          >
             <span class="material-icons">delete</span>
             {{ ui.t('common.delete') }}
           </button>
@@ -608,6 +801,5 @@
         }
       }
     </footer>
-
   </aside>
 }

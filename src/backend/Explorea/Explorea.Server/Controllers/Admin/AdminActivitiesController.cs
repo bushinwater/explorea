@@ -112,6 +112,21 @@ namespace Explorea.Server.Controllers.Admin
             return Ok(categories);
         }
 
+        [HttpPost("categories")]
+        public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.Name))
+                return BadRequest(new { message = "Name is required." });
+
+            var now = DateTimeOffset.UtcNow;
+            var cat = new ActivityCategory { Name = req.Name.Trim(), CreatedAt = now, UpdatedAt = now };
+            _context.ActivityCategories.Add(cat);
+            await _context.SaveChangesAsync();
+            return Ok(new { id = cat.Id, name = cat.Name });
+        }
+
+        public record CreateCategoryRequest(string Name);
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
