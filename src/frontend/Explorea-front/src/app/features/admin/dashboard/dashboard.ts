@@ -49,7 +49,8 @@ export class Dashboard implements OnInit, OnDestroy {
 
   // SIGNAL — so Angular OnPush detects any mutation immediately
   visibleRows: WritableSignal<DashRow[]> = signal([]);
-  newRowZone:  WidgetConfig[]            = [];
+  newRowZone:    WidgetConfig[]          = [];
+  newRowZoneTop: WidgetConfig[]          = [];
   hiddenWidgets: WidgetConfig[]          = [];
 
   private nextRowId = 0;
@@ -155,8 +156,9 @@ export class Dashboard implements OnInit, OnDestroy {
           id: `row-${i}`,
           items: items.sort((a, b) => a.order - b.order),
         }));
-      this.nextRowId  = rows.length;
-      this.newRowZone = [];
+      this.nextRowId     = rows.length;
+      this.newRowZone    = [];
+      this.newRowZoneTop = [];
       this.visibleRows.set(rows);
       return;
     }
@@ -179,8 +181,9 @@ export class Dashboard implements OnInit, OnDestroy {
     }
     if (items.length > 0) rows.push({ id: `row-${ri}`, items });
 
-    this.nextRowId  = ri + 1;
-    this.newRowZone = [];
+    this.nextRowId     = ri + 1;
+    this.newRowZone    = [];
+    this.newRowZoneTop = [];
     this.visibleRows.set(rows);
   }
 
@@ -202,7 +205,7 @@ export class Dashboard implements OnInit, OnDestroy {
 
   // IDs for panelList → connects the customizer palette to all dashboard rows
   get panelListIds(): string[] {
-    return ['new-row-zone', ...this.visibleRows().map(r => r.id)];
+    return ['new-row-zone', 'new-row-zone-top', ...this.visibleRows().map(r => r.id)];
   }
 
   // ===== Drawer helpers =====
@@ -296,6 +299,27 @@ export class Dashboard implements OnInit, OnDestroy {
 
   // ===== Drag =====
 
+  moveRowUp(rowIndex: number): void {
+    if (rowIndex === 0) return;
+    this.visibleRows.update(rows => {
+      const updated = [...rows];
+      [updated[rowIndex - 1], updated[rowIndex]] = [updated[rowIndex], updated[rowIndex - 1]];
+      return updated;
+    });
+    this.syncFromRows();
+  }
+
+  moveRowDown(rowIndex: number): void {
+    const rows = this.visibleRows();
+    if (rowIndex >= rows.length - 1) return;
+    this.visibleRows.update(r => {
+      const updated = [...r];
+      [updated[rowIndex], updated[rowIndex + 1]] = [updated[rowIndex + 1], updated[rowIndex]];
+      return updated;
+    });
+    this.syncFromRows();
+  }
+
   onDragStarted(): void { this.dragging.set(true); }
 
   onDragEnded(): void { this.dragging.set(false); }
@@ -317,6 +341,15 @@ export class Dashboard implements OnInit, OnDestroy {
       this.visibleRows.update(rows => [
         ...rows.map(r => r.id === fromId ? { ...r, items: [...r.items] } : r),
         { id: `row-${this.nextRowId++}`, items: [widget] },
+      ]);
+
+    } else if (toId === 'new-row-zone-top') {
+      transferArrayItem(event.previousContainer.data, event.container.data, event.previousIndex, 0);
+      const widget   = this.newRowZoneTop.splice(0, 1)[0];
+      widget.visible = true;
+      this.visibleRows.update(rows => [
+        { id: `row-${this.nextRowId++}`, items: [widget] },
+        ...rows.map(r => r.id === fromId ? { ...r, items: [...r.items] } : r),
       ]);
 
     } else {

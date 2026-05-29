@@ -44,7 +44,7 @@ export class Register implements OnInit {
   registrationDone = false;
   resendSent = false;
   loading = false;
-  socialLoading: 'google' | 'facebook' | null = null;
+  socialLoading: 'google' | null = null;
   activeModal: 'terms' | 'privacy' | null = null;
 
   readonly termsSections = [
@@ -70,8 +70,6 @@ export class Register implements OnInit {
     'nigger', 'nigga', 'niger', 'fuck', 'shit', 'dick', 'cunt', 'bitch', 'asshole',
     'retard', 'faggot', 'pussy', 'cock', 'whore', 'slut',
   ];
-
-  private static readonly FB_APP_ID = '2054189815159488';
 
   constructor(
     private authService: AuthService,
@@ -110,61 +108,7 @@ export class Register implements OnInit {
     client.requestAccessToken();
   }
 
-  registerWithFacebook() {
-    const redirectUri = `${window.location.origin}/auth/facebook/callback`;
-    const url = `https://www.facebook.com/dialog/oauth?client_id=${Register.FB_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=public_profile,email&response_type=code`;
-
-    const width = 600, height = 700;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-    const popup = window.open(url, 'facebook-register', `width=${width},height=${height},left=${left},top=${top}`);
-
-    this.socialLoading = 'facebook';
-    this.cdr.detectChanges();
-
-    const handler = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type !== 'facebook-oauth-code') return;
-      window.removeEventListener('message', handler);
-      clearInterval(closedCheck);
-      if (!event.data.code) {
-        this.socialLoading = null;
-        this.cdr.detectChanges();
-        return;
-      }
-      this.authService.socialLogin({ provider: 'facebook', code: event.data.code, redirectUri }).subscribe({
-        next: (response) => {
-          this.authService.saveTokens(response);
-          if (response.needsProfileCompletion) {
-            this.router.navigate(['/complete-profile']);
-          } else if (response.needsInterests) {
-            this.router.navigate(['/interests']);
-          } else {
-            this.router.navigate(['/profile']);
-          }
-        },
-        error: () => {
-          this.socialLoading = null;
-          this.error = 'LOGIN.ERROR';
-          this.cdr.detectChanges();
-        },
-      });
-    };
-    window.addEventListener('message', handler);
-
-    const closedCheck = setInterval(() => {
-      if (popup?.closed) {
-        clearInterval(closedCheck);
-        window.removeEventListener('message', handler);
-        if (this.socialLoading === 'facebook') {
-          this.socialLoading = null;
-          this.cdr.detectChanges();
-        }
-      }
-    }, 500);
-  }
-
-  private handleSocialLogin(provider: 'google' | 'facebook', token: string) {
+  private handleSocialLogin(provider: 'google', token: string) {
     this.authService.socialLogin({ provider, token }).subscribe({
       next: (response) => {
         if (response.socialPendingToken) {

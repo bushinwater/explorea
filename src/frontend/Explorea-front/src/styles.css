@@ -240,6 +240,10 @@
 .floating-title--arrived {
   color: var(--color-text-primary);
   text-shadow: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: calc(100vw - 250px);
 }
 
 @media (max-width: 768px) {
@@ -249,6 +253,10 @@
     white-space: normal;
     max-width: calc(100vw - 40px);
     line-height: 1.15;
+  }
+  .floating-title--arrived {
+    white-space: nowrap;
+    max-width: calc(100vw - 155px);
   }
 }
 
