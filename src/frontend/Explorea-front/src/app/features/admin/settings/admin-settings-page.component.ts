@@ -107,6 +107,8 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   readonly isAdministrationLoading = signal(false);
   readonly administrationErrorMessage = signal('');
 
+  readonly isNewsletterExporting = signal(false);
+
   readonly toast = signal<SettingsToastState | null>(null);
   readonly tabs: SettingsTabItem[] = [
     {
@@ -651,6 +653,26 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  exportNewsletterEmails(): void {
+    if (this.isNewsletterExporting()) return;
+    this.isNewsletterExporting.set(true);
+    this.adminSettingsService.exportNewsletterEmails().subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'newsletter-subscribers.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+        this.isNewsletterExporting.set(false);
+      },
+      error: () => {
+        this.showToast('error', 'Izvoz emailova nije uspeo.');
+        this.isNewsletterExporting.set(false);
+      },
+    });
   }
 
   visibleTabs(): SettingsTabItem[] {

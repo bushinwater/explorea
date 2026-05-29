@@ -448,6 +448,38 @@
       <section class="administration-panel">
         <header class="administration-panel__header">
           <div>
+            <p class="section-eyebrow">Newsletter</p>
+            <h3>Pretplatnici na newsletter</h3>
+            <p>Preuzmi listu email adresa svih pretplatnika na Explorea newsletter u CSV formatu.</p>
+          </div>
+        </header>
+        <div class="administration-control-grid">
+          <article class="administration-control-card">
+            <div class="administration-control-card__icon">
+              <span class="material-icons">mail_outline</span>
+            </div>
+            <div class="administration-control-card__content">
+              <h4>Izvezi listu pretplatnika</h4>
+              <p>Preuzmi CSV fajl sa svim email adresama registrovanim za Explorea newsletter.</p>
+            </div>
+            <button class="btn btn-secondary" type="button"
+              [disabled]="isNewsletterExporting()"
+              (click)="exportNewsletterEmails()">
+              @if (isNewsletterExporting()) {
+                <span class="material-icons">sync</span>
+                Izvozim...
+              } @else {
+                <span class="material-icons">download</span>
+                Izvezi CSV
+              }
+            </button>
+          </article>
+        </div>
+      </section>
+
+      <section class="administration-panel">
+        <header class="administration-panel__header">
+          <div>
             <p class="section-eyebrow">Sistemske kontrole</p>
             <h3>Administrativne oblasti</h3>
             <p>Brzi pregled najvažnijih oblasti koje superadmin može da kontroliše.</p>

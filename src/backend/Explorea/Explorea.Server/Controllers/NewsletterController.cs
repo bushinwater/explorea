@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Security.Claims;
+using System.Text;
 
 namespace Explorea.Server.Controllers
 {
@@ -15,13 +16,16 @@ namespace Explorea.Server.Controllers
     {
         private readonly INewsletterService _newsletterService;
         private readonly IUserRepository _userRepository;
+        private readonly INewsletterRepository _newsletterRepository;
 
         public NewsletterController(
             INewsletterService newsletterService,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            INewsletterRepository newsletterRepository)
         {
             _newsletterService = newsletterService;
             _userRepository = userRepository;
+            _newsletterRepository = newsletterRepository;
         }
 
         [HttpPost("subscribe")]
@@ -97,6 +101,32 @@ namespace Explorea.Server.Controllers
 
                 var sentCount = await _newsletterService.SendTestNewsletterAsync();
                 return Ok(new { message = "Test newsletter sent successfully.", sentCount });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize]
+        [HttpGet("export-emails")]
+        public async Task<IActionResult> ExportEmails()
+        {
+            try
+            {
+                var currentUser = await GetCurrentUserAsync();
+
+                if (!CanSendNewsletter(currentUser.Role?.Name))
+                    return Forbid();
+
+                var emails = await _newsletterRepository.GetAllEmailsAsync();
+                var csv = new StringBuilder();
+                csv.AppendLine("email");
+                foreach (var email in emails)
+                    csv.AppendLine(email);
+
+                var bytes = Encoding.UTF8.GetBytes(csv.ToString());
+                return File(bytes, "text/csv", "newsletter-subscribers.csv");
             }
             catch (Exception ex)
             {

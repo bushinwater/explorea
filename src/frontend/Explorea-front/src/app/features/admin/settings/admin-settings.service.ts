@@ -133,4 +133,8 @@ export class AdminSettingsService {
   deleteProfilePhoto(): Observable<AdminProfileDto> {
     return this.http.delete<AdminProfileDto>(`${this.api}/profile-photo`);
   }
+
+  exportNewsletterEmails(): Observable<Blob> {
+    return this.http.get('/api/newsletter/export-emails', { responseType: 'blob' });
+  }
 }

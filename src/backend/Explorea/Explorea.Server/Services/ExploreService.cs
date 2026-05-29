@@ -20,7 +20,8 @@ namespace Explorea.Server.Services
             decimal? minRating, bool? openNow,
             List<int>? placeTypeIds = null, List<int>? activityCategoryIds = null,
             List<int>? eventTypeIds = null, List<int>? destinationTypeIds = null,
-            decimal? minPrice = null, decimal? maxPrice = null, List<string>? extraFilters = null)
+            decimal? minPrice = null, decimal? maxPrice = null, List<string>? extraFilters = null,
+            int? regionId = null)
         {
             radiusKm = Math.Clamp(radiusKm, 1, 200);
             limit = Math.Clamp(limit, 1, 500);
@@ -32,7 +33,7 @@ namespace Explorea.Server.Services
             if (type == "all" || type == "destination")
             {
                 var destinations = await _exploreRepository
-                    .GetNearbyDestinationsAsync(lat, lng, radiusKm, perTypeLimit, minRating, destinationTypeIds, extraFilters);
+                    .GetNearbyDestinationsAsync(lat, lng, radiusKm, perTypeLimit, minRating, destinationTypeIds, extraFilters, regionId);
 
                 markers.AddRange(destinations.Select(MapDestination));
             }
@@ -40,7 +41,7 @@ namespace Explorea.Server.Services
             if (type == "all" || type == "place")
             {
                 var places = await _exploreRepository
-                    .GetNearbyPlacesAsync(lat, lng, radiusKm, perTypeLimit, minRating, openNow, placeTypeIds, minPrice, maxPrice, extraFilters);
+                    .GetNearbyPlacesAsync(lat, lng, radiusKm, perTypeLimit, minRating, openNow, placeTypeIds, minPrice, maxPrice, extraFilters, regionId);
 
                 markers.AddRange(places.Select(MapPlace));
             }
@@ -48,7 +49,7 @@ namespace Explorea.Server.Services
             if (type == "all" || type == "event")
             {
                 var events = await _exploreRepository
-                    .GetNearbyEventsAsync(lat, lng, radiusKm, perTypeLimit, minRating, eventTypeIds, minPrice, maxPrice);
+                    .GetNearbyEventsAsync(lat, lng, radiusKm, perTypeLimit, minRating, eventTypeIds, minPrice, maxPrice, regionId);
 
                 markers.AddRange(events.Select(MapEvent));
             }
@@ -56,7 +57,7 @@ namespace Explorea.Server.Services
             if (type == "all" || type == "activity")
             {
                 var activities = await _exploreRepository
-                    .GetNearbyActivitiesAsync(lat, lng, radiusKm, perTypeLimit, minRating, activityCategoryIds);
+                    .GetNearbyActivitiesAsync(lat, lng, radiusKm, perTypeLimit, minRating, activityCategoryIds, regionId);
 
                 markers.AddRange(activities.Select(MapActivity));
             }

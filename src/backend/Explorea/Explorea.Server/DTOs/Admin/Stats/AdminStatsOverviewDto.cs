@@ -27,6 +27,7 @@ namespace Explorea.API.DTOs.Admin.Stats
     {
         public string Label { get; set; } = string.Empty;
         public string Detail { get; set; } = string.Empty;
+        public string? DetailKey { get; set; }
         public string Level { get; set; } = "ok";
         public int? Percentage { get; set; }
     }
