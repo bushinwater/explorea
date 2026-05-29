@@ -150,12 +150,21 @@
             </div>
           }
 
+          <label class="ev-checkbox ev-field--full">
+            <input type="checkbox"
+              [checked]="form().extraFilters['free_entry'] === 'true'"
+              (change)="updateExtraFilter('free_entry', $any($event.target).checked)" />
+            <span>Besplatan ulaz</span>
+          </label>
+
+          @if (form().extraFilters['free_entry'] !== 'true') {
           <div class="edit-field">
             <label class="edit-field__label" for="ev-e-price">Cena (RSD)</label>
             <input id="ev-e-price" class="edit-field__input" type="number" min="0" step="0.01"
               [value]="form().price"
               (input)="updateText('price', $any($event.target).value)" />
           </div>
+          }
 
           <div class="edit-field">
             <label class="edit-field__label" for="ev-e-ticket">Ticket URL</label>
@@ -227,6 +236,7 @@
         <div class="edit-field">
           <label class="edit-field__label" for="ev-e-country">Zemlja</label>
           <select id="ev-e-country" class="edit-field__select" [value]="selectedCountryId() ?? ''"
+            [disabled]="lockedRegionId !== null"
             (change)="updateCountry($any($event.target).value)">
             <option value="">Sve zemlje</option>
             @for (c of countries(); track c.id) {
@@ -238,6 +248,7 @@
         <div class="edit-field">
           <label class="edit-field__label" for="ev-e-region">Regija</label>
           <select id="ev-e-region" class="edit-field__select" [value]="selectedRegionId() ?? ''"
+            [disabled]="lockedRegionId !== null"
             (change)="updateRegion($any($event.target).value)">
             <option value="">Sve regije</option>
             @for (r of filteredRegions(); track r.id) {

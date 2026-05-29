@@ -13,6 +13,7 @@
     [regions]="regions()"
     [countries]="countries()"
     [isSuperAdmin]="isSuperAdmin()"
+    [lockedRegionId]="lockedRegionId()"
     (cancel)="closeEditModal()"
     (saved)="onEditSaved($event)"
   />
@@ -24,6 +25,7 @@
     [regions]="regions()"
     [countries]="countries()"
     [isSuperAdmin]="isSuperAdmin()"
+    [lockedRegionId]="lockedRegionId()"
     (cancel)="closeCreateModal()"
     (created)="onPlaceCreated($event)"
   />

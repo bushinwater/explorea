@@ -884,6 +884,14 @@
             placeholder="Kratak opis aktivnosti"></textarea>
         </div>
 
+        <div class="edit-field">
+          <label class="edit-field__label">Sajt organizatora</label>
+          <input class="edit-field__input" type="url"
+            [value]="createForm().organizerWebsite ?? ''"
+            (input)="updateCreateField('organizerWebsite', $any($event.target).value || null)"
+            placeholder="https://..." />
+        </div>
+
         <div class="edit-field__row">
           <div class="edit-field">
             <label class="edit-field__label">Cena (RSD)</label>
@@ -937,7 +945,24 @@
       <!-- Right: location + extras -->
       <div class="edit-modal__map-col">
 
-        @if (isSuperAdmin()) {
+        @if (managedRegion(); as mr) {
+          @if (countries().find(c => c.id === selectedCountryId()); as country) {
+            <div class="edit-field">
+              <label class="edit-field__label">Država</label>
+              <div class="edit-field__locked">
+                <span class="material-icons" style="font-size:14px;vertical-align:middle;margin-right:4px">lock</span>
+                {{ country.name }}
+              </div>
+            </div>
+          }
+          <div class="edit-field">
+            <label class="edit-field__label">Region</label>
+            <div class="edit-field__locked">
+              <span class="material-icons" style="font-size:14px;vertical-align:middle;margin-right:4px">lock</span>
+              {{ mr.name }}
+            </div>
+          </div>
+        } @else {
           <div class="edit-field">
             <label class="edit-field__label">Država <span class="edit-field__required">*</span></label>
             <select class="edit-field__select"
@@ -959,14 +984,6 @@
                 <option [value]="r.id" [selected]="modalRegionId() === r.id">{{ r.name }}</option>
               }
             </select>
-          </div>
-        } @else if (managedRegion(); as mr) {
-          <div class="edit-field">
-            <label class="edit-field__label">Region</label>
-            <div class="edit-field__locked">
-              <span class="material-icons" style="font-size:14px;vertical-align:middle;margin-right:4px">lock</span>
-              {{ mr.name }}
-            </div>
           </div>
         }
 

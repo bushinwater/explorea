@@ -50,6 +50,10 @@ export class DashboardAuthService {
     }
   }
 
+  get managedRegionId(): number | null {
+    return this.profileService.profile()?.managedRegionId ?? null;
+  }
+
   get userRegion(): string {
     const role = this._role();
     const profile = this.profileService.profile();

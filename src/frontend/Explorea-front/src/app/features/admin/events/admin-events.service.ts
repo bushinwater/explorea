@@ -124,8 +124,10 @@ export class AdminEventsService {
     );
   }
 
-  getCities(): Observable<EventFilterOption<number>[]> {
-    return this.http.get<ApiLookupItem[]>('/api/cities').pipe(
+  getCities(regionId?: number): Observable<EventFilterOption<number>[]> {
+    let params = new HttpParams();
+    if (regionId != null) params = params.set('regionId', regionId);
+    return this.http.get<ApiLookupItem[]>('/api/cities', { params }).pipe(
       map((items) =>
         items.map((item) => ({
           value: item.id,
@@ -148,10 +150,13 @@ export class AdminEventsService {
   }
 
   getDestinations(regionId?: number): Observable<EventFilterOption<string>[]> {
-    let params = new HttpParams();
+    let params = new HttpParams().set('pageSize', '200');
     if (regionId != null) params = params.set('regionId', regionId);
-    return this.http.get<ApiDestinationLookupItem[]>('/api/destinations', { params }).pipe(
-      map((items) => items.map((item) => ({ value: item.id, label: item.name }))),
+    return this.http.get<any>('/api/admin/destinations', { params }).pipe(
+      map((res: any) => {
+        const items: any[] = Array.isArray(res) ? res : (res.items ?? []);
+        return items.map((item: any) => ({ value: String(item.id), label: item.name }));
+      }),
       catchError(() => of([])),
     );
   }

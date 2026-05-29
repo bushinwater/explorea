@@ -5,9 +5,11 @@ import {
   ElementRef,
   EventEmitter,
   Input,
+  OnChanges,
   OnDestroy,
   OnInit,
   Output,
+  SimpleChanges,
   ViewChild,
   computed,
   signal,
@@ -52,10 +54,11 @@ const LIGHT = {
   templateUrl: './admin-destination-edit-modal.component.html',
   styleUrl: './admin-destination-edit-modal.component.css',
 })
-export class DestinationEditModalComponent implements OnInit, OnDestroy {
+export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestroy {
   @Input() row!: DestinationRow;
   @Input() types: TypeOption[] = [];
   @Input() closing = false;
+  @Input() lockedRegionId: number | null = null;
   @Output() cancel      = new EventEmitter<void>();
   @Output() saved       = new EventEmitter<DestinationRow>();
   @Output() typeCreated = new EventEmitter<TypeOption>();
@@ -185,6 +188,10 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
               this.originalHeroImageId = heroImg.id;
             }
           }
+          if (this.lockedRegionId !== null) {
+            this.form.controls.regionId.disable();
+            this.form.controls.countryId.disable();
+          }
           this.isLoading.set(false);
           this.cdr.detectChanges();
           setTimeout(() => this.initMap(detail.latitude, detail.longitude), 50);
@@ -196,6 +203,14 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['lockedRegionId'] && this.lockedRegionId !== null) {
+      this.form.controls.regionId.disable();
+      this.form.controls.countryId.disable();
+      this.cdr.detectChanges();
+    }
   }
 
   ngOnDestroy(): void {
@@ -388,7 +403,7 @@ export class DestinationEditModalComponent implements OnInit, OnDestroy {
     this.isSaving.set(true);
     this.error.set('');
 
-    const v = this.form.value;
+    const v = this.form.getRawValue();
     this.sub.add(
       this.svc
         .updateDestination(this.row.id, {

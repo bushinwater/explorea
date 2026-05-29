@@ -192,6 +192,7 @@
                 </label>
                 <select class="edit-field__select"
                   [value]="selectedCountryId() ?? ''"
+                  [disabled]="lockedRegionId !== null"
                   (change)="onCountryChange($any($event.target).value)">
                   <option value="" disabled>Izaberi državu</option>
                   @for (c of countries; track c.id) {

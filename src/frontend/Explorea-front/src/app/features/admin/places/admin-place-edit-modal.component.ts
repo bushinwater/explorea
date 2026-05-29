@@ -5,9 +5,11 @@ import {
   ElementRef,
   EventEmitter,
   Input,
+  OnChanges,
   OnDestroy,
   OnInit,
   Output,
+  SimpleChanges,
   ViewChild,
   computed,
   signal,
@@ -62,12 +64,13 @@ const LIGHT = {
   templateUrl: './admin-place-edit-modal.component.html',
   styleUrl: './admin-place-edit-modal.component.css',
 })
-export class PlaceEditModalComponent implements OnInit, OnDestroy {
+export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
   @Input() row!: PlaceRow;
   @Input() types: PlaceTypeOption[] = [];
   @Input() regions: RegionOption[] = [];
   @Input() countries: CountryOption[] = [];
   @Input() isSuperAdmin = false;
+  @Input() lockedRegionId: number | null = null;
   @Output() cancel = new EventEmitter<void>();
   @Output() saved  = new EventEmitter<PlaceDetail>();
 
@@ -159,6 +162,13 @@ export class PlaceEditModalComponent implements OnInit, OnDestroy {
     private readonly cdr: ChangeDetectorRef,
   ) {}
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['lockedRegionId'] && this.lockedRegionId !== null) {
+      this.form.controls.regionId.disable();
+      this.cdr.detectChanges();
+    }
+  }
+
   ngOnInit(): void {
     this.loadInterestTags();
     this.sub.add(
@@ -208,6 +218,9 @@ export class PlaceEditModalComponent implements OnInit, OnDestroy {
             if (region) {
               this.form.patchValue({ regionId: String(region.id) });
               this.loadCities(region.id, detail.cityId ?? undefined);
+              if (this.selectedCountryId() == null && region.countryId != null) {
+                this.selectedCountryId.set(region.countryId);
+              }
             } else {
               this.loadCities(undefined, detail.cityId ?? undefined);
             }
@@ -217,6 +230,10 @@ export class PlaceEditModalComponent implements OnInit, OnDestroy {
 
           if (detail.typeId != null) {
             this.loadFilterDefs(detail.typeId);
+          }
+
+          if (this.lockedRegionId !== null) {
+            this.form.controls.regionId.disable();
           }
 
           this.isLoading.set(false);
@@ -297,7 +314,7 @@ export class PlaceEditModalComponent implements OnInit, OnDestroy {
     }
     this.searchDebounce = setTimeout(() => {
       this.isSearchingDestination.set(true);
-      const regionId = this.form.value.regionId ? +this.form.value.regionId : undefined;
+      const regionId = this.form.getRawValue().regionId ? +this.form.getRawValue().regionId! : undefined;
       this.sub.add(
         this.svc.searchDestinations(query.trim(), regionId).subscribe({
           next: results => {

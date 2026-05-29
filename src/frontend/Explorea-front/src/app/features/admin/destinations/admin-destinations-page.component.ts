@@ -12,6 +12,7 @@ import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, interval } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
 import { FeedbackBannerComponent } from '../shared/components/feedback-banner/feedback-banner.component';
@@ -105,6 +106,10 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     () => this.authContext.context().role === 'super_admin',
   );
 
+  protected readonly lockedRegionId = computed(() =>
+    this.dashAuth.role() === 'tourist_organization' ? this.dashAuth.managedRegionId : null,
+  );
+
   protected readonly activeFilterCount = computed(() => {
     const f = this.filters();
     return [
@@ -134,6 +139,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
     protected readonly ui: AdminUiPreferencesService,
+    protected readonly dashAuth: DashboardAuthService,
   ) {}
 
   ngOnInit(): void {

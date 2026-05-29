@@ -12,6 +12,7 @@ import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
 import { FeedbackBannerComponent } from '../shared/components/feedback-banner/feedback-banner.component';
@@ -110,6 +111,10 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     return role === 'super_admin' || role === 'tourist_organization';
   });
 
+  protected readonly lockedRegionId = computed(() =>
+    this.dashAuth.role() === 'tourist_organization' ? this.dashAuth.managedRegionId : null,
+  );
+
   protected readonly activeFilterCount = computed(() => {
     const f = this.filters();
     return [
@@ -137,6 +142,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
     protected readonly ui: AdminUiPreferencesService,
+    protected readonly dashAuth: DashboardAuthService,
   ) {}
 
   ngOnInit(): void {
@@ -152,6 +158,8 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
       }),
     );
 
+    const rid = this.lockedRegionId();
+    if (rid !== null) this.patchFilter({ regionId: rid });
     this.loadStats();
     this.loadTypes();
     this.loadRegions();

@@ -11,6 +11,7 @@
     [row]="selectedDestination()!"
     [types]="types()"
     [closing]="isEditModalClosing()"
+    [lockedRegionId]="lockedRegionId()"
     (cancel)="closeEditModal()"
     (saved)="onEditSaved($event)"
     (typeCreated)="onTypeCreated($event)"
@@ -20,6 +21,7 @@
 @if (isCreateModalOpen()) {
   <app-destination-create-modal
     [types]="types()"
+    [lockedRegionId]="lockedRegionId()"
     (cancel)="closeCreateModal()"
     (created)="onDestinationCreated($event)"
     (typeCreated)="onTypeCreated($event)"

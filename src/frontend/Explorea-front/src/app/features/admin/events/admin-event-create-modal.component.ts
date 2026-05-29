@@ -6,8 +6,10 @@ import {
   ElementRef,
   EventEmitter,
   Input,
+  OnChanges,
   OnDestroy,
   Output,
+  SimpleChanges,
   ViewChild,
   computed,
   signal,
@@ -74,8 +76,9 @@ interface EventForm {
   templateUrl: './admin-event-create-modal.component.html',
   styleUrl: './admin-event-modal.component.css',
 })
-export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
+export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() eventTypeOptions: EventFilterOption<number>[] = [];
+  @Input() lockedRegionId: number | null = null;
   @Input() closing = false;
 
   @Output() cancel = new EventEmitter<void>();
@@ -163,6 +166,12 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
     private readonly cdr: ChangeDetectorRef,
   ) {}
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['lockedRegionId'] && this.lockedRegionId !== null) {
+      this.applyRegionLock();
+    }
+  }
+
   ngAfterViewInit(): void {
     this.sub.add(
       this.destSearch$.pipe(debounceTime(300), distinctUntilChanged()).subscribe(q => {
@@ -194,8 +203,23 @@ export class EventCreateModalComponent implements AfterViewInit, OnDestroy {
       next: c => { this.countries.set(c); this.cdr.detectChanges(); }, error: () => {},
     }));
     this.sub.add(this.eventsService.getRegionsWithCountry().subscribe({
-      next: r => { this.allRegions.set(r); this.cdr.detectChanges(); }, error: () => {},
+      next: r => {
+        this.allRegions.set(r);
+        this.applyRegionLock();
+        this.cdr.detectChanges();
+      },
+      error: () => {},
     }));
+  }
+
+  private applyRegionLock(): void {
+    if (this.lockedRegionId === null) return;
+    const region = this.allRegions().find(r => r.id === this.lockedRegionId);
+    if (region) {
+      this.selectedRegionId.set(region.id);
+      if (region.countryId != null) this.selectedCountryId.set(region.countryId);
+      this.cdr.detectChanges();
+    }
   }
 
   ngOnDestroy(): void {

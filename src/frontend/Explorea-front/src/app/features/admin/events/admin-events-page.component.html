@@ -8,6 +8,7 @@
 @if (isCreateOpen() || isCreateClosing()) {
   <app-event-create-modal
     [eventTypeOptions]="eventTypeOptions()"
+    [lockedRegionId]="lockedRegionId()"
     [closing]="isCreateClosing()"
     (cancel)="closeCreateModal()"
     (created)="onEventCreated($event)"
@@ -18,6 +19,7 @@
   <app-event-edit-modal
     [event]="selectedEvent()!"
     [eventTypeOptions]="eventTypeOptions()"
+    [lockedRegionId]="lockedRegionId()"
     [closing]="isEditClosing()"
     (cancel)="closeEditModal()"
     (saved)="onEditSaved($event)"

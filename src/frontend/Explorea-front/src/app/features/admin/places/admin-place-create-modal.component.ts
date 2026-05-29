@@ -5,9 +5,11 @@ import {
   ElementRef,
   EventEmitter,
   Input,
+  OnChanges,
   OnDestroy,
   OnInit,
   Output,
+  SimpleChanges,
   ViewChild,
   computed,
   signal,
@@ -62,11 +64,12 @@ const LIGHT = {
   templateUrl: './admin-place-create-modal.component.html',
   styleUrl: './admin-place-edit-modal.component.css',
 })
-export class PlaceCreateModalComponent implements OnInit, OnDestroy {
+export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
   @Input() types: PlaceTypeOption[] = [];
   @Input() regions: RegionOption[] = [];
   @Input() countries: CountryOption[] = [];
   @Input() isSuperAdmin = false;
+  @Input() lockedRegionId: number | null = null;
   @Output() cancel  = new EventEmitter<void>();
   @Output() created = new EventEmitter<PlaceDetail>();
 
@@ -151,8 +154,15 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
     private readonly profileSvc: AdminProfileService,
   ) {}
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['lockedRegionId'] && this.lockedRegionId !== null) {
+      this.applyRegionLock();
+    }
+  }
+
   ngOnInit(): void {
-    this.loadCities();
+    this.applyRegionLock();
+    if (this.lockedRegionId === null) this.loadCities();
     this.loadInterestTags();
     setTimeout(() => this.initMap(), 50);
 
@@ -174,6 +184,16 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
     this.themeObserver?.disconnect();
     this.map?.remove();
     this.pendingImages().forEach(p => URL.revokeObjectURL(p.url));
+  }
+
+  private applyRegionLock(): void {
+    if (this.lockedRegionId === null) return;
+    const region = this.regions.find(r => r.id === this.lockedRegionId);
+    this.form.patchValue({ regionId: String(this.lockedRegionId) });
+    if (region?.countryId != null) this.selectedCountryId.set(region.countryId);
+    this.form.controls.regionId.disable();
+    this.loadCities(this.lockedRegionId);
+    this.cdr.detectChanges();
   }
 
   protected requestClose(): void {
@@ -232,7 +252,7 @@ export class PlaceCreateModalComponent implements OnInit, OnDestroy {
     }
     this.searchDebounce = setTimeout(() => {
       this.isSearchingDestination.set(true);
-      const regionId = this.form.value.regionId ? +this.form.value.regionId : undefined;
+      const regionId = this.form.getRawValue().regionId ? +this.form.getRawValue().regionId! : undefined;
       this.sub.add(
         this.svc.searchDestinations(query.trim(), regionId).subscribe({
           next: results => {
