@@ -64,14 +64,16 @@ export class App implements OnDestroy {
     if (!item || this.removingExpiredPlannerEvent) return;
 
     this.removingExpiredPlannerEvent = true;
+    this.showNextExpiredPlannerEvent();
+    this.removingExpiredPlannerEvent = false;
+
     this.subscription.add(
       this.plannerService.removeEntry(item.id).subscribe({
-        next: () => {
-          this.removingExpiredPlannerEvent = false;
-          this.showNextExpiredPlannerEvent();
-        },
         error: () => {
-          this.removingExpiredPlannerEvent = false;
+          if (!this.activeExpiredPlannerEvent) {
+            this.expiredPlannerEvents = [item, ...this.expiredPlannerEvents];
+            this.activeExpiredPlannerEvent = item;
+          }
         },
       }),
     );

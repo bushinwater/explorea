@@ -23,10 +23,10 @@
     </div>
 
     <div class="planner-expiry__content">
-      <p class="planner-expiry__eyebrow">Vas planer</p>
-      <h2 id="planner-expiry-title" class="planner-expiry__title">Dogadjaj je istekao</h2>
+      <p class="planner-expiry__eyebrow">Vaš planer</p>
+      <h2 id="planner-expiry-title" class="planner-expiry__title">Događaj je istekao</h2>
       <p class="planner-expiry__text">
-        Dogadjaj <strong>"{{ event.entityName }}"</strong> koji je bio sacuvan u Vasem planeru je istekao.
+        Događaj <strong>"{{ event.entityName }}"</strong> koji je bio sačuvan u Vašem planeru je istekao.
       </p>
     </div>
 
@@ -38,10 +38,10 @@
         (click)="searchNewEvents()"
       >
         <span class="material-icons">search</span>
-        Pretrazi nove dogadjaje
+        Pretraži nove događaje
       </button>
       <button
-        class="planner-expiry__btn planner-expiry__btn--danger"
+        class="planner-expiry__btn planner-expiry__btn--primary"
         type="button"
         [disabled]="removingExpiredPlannerEvent"
         (click)="removeExpiredPlannerEvent()"

@@ -5,17 +5,17 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(15, 23, 42, 0.42);
+  background: color-mix(in srgb, var(--color-bg) 72%, transparent);
 }
 
 .planner-expiry__panel {
   position: relative;
   width: min(440px, 100%);
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  border: 1px solid var(--color-border);
   border-radius: 18px;
-  background: #fff;
-  color: #102033;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-lg);
   padding: 28px;
 }
 
@@ -31,13 +31,13 @@
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #64748b;
+  color: var(--color-text-secondary);
   cursor: pointer;
 }
 
 .planner-expiry__close:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: var(--color-surface-3);
+  color: var(--color-text-primary);
 }
 
 .planner-expiry__icon {
@@ -48,8 +48,8 @@
   justify-content: center;
   margin-bottom: 18px;
   border-radius: 16px;
-  background: #fff1f2;
-  color: #e11d48;
+  background: var(--color-primary-muted);
+  color: var(--color-primary);
 }
 
 .planner-expiry__icon .material-icons {
@@ -62,7 +62,7 @@
 
 .planner-expiry__eyebrow {
   margin: 0 0 6px;
-  color: #0f766e;
+  color: var(--color-primary);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -71,20 +71,20 @@
 
 .planner-expiry__title {
   margin: 0;
-  color: #0f172a;
+  color: var(--color-text-primary);
   font-size: 24px;
   line-height: 1.2;
 }
 
 .planner-expiry__text {
   margin: 12px 0 0;
-  color: #475569;
+  color: var(--color-text-secondary);
   font-size: 15px;
   line-height: 1.55;
 }
 
 .planner-expiry__text strong {
-  color: #0f172a;
+  color: var(--color-text-primary);
 }
 
 .planner-expiry__actions {
@@ -119,22 +119,22 @@
 }
 
 .planner-expiry__btn--ghost {
-  border-color: #cbd5e1;
-  background: #fff;
-  color: #0f172a;
+  border-color: var(--color-border);
+  background: transparent;
+  color: var(--color-text-primary);
 }
 
 .planner-expiry__btn--ghost:hover:not(:disabled) {
-  background: #f8fafc;
+  background: var(--color-surface-3);
 }
 
-.planner-expiry__btn--danger {
-  background: #e11d48;
+.planner-expiry__btn--primary {
+  background: var(--color-primary);
   color: #fff;
 }
 
-.planner-expiry__btn--danger:hover:not(:disabled) {
-  background: #be123c;
+.planner-expiry__btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover, var(--color-primary));
 }
 
 .planner-expiry__spin {
