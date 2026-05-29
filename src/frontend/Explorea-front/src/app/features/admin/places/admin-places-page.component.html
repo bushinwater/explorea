@@ -179,7 +179,7 @@
               <!-- Additional filters (amenities — only when a type is selected) -->
               @if (filters().typeId !== 'all' && amenities().length > 0) {
               <div class="place-filter-section place-filter-section--extra">
-                <label class="place-filter-section__label">Dodatni filteri</label>
+                <label class="place-filter-section__label">{{ ui.t('common.additional_filters') }}</label>
                 <div class="place-extra-list">
                   @for (a of amenities(); track a.id) {
                     <label class="place-extra-item">
@@ -218,7 +218,7 @@
                   }
                   <span class="place-star-label">
                     @if (filters().minRating) { {{ filters().minRating }}+ ★ }
-                    @else { Sve ocene }
+                    @else { {{ ui.t('common.all_ratings') }} }
                   </span>
                 </div>
               </div>
@@ -239,10 +239,10 @@
 
     <div class="place-filter-chips place-list-mode-tabs">
       <button class="place-chip" [class.place-chip--active]="listMode() === 'active'" (click)="setListMode('active')">
-        Aktivni
+        {{ ui.t('places.tabs.active') }}
       </button>
       <button class="place-chip" [class.place-chip--active]="listMode() === 'deleted'" (click)="setListMode('deleted')">
-        Obrisani
+        {{ ui.t('places.tabs.deleted') }}
       </button>
     </div>
 
@@ -264,7 +264,7 @@
               <th class="place-th">{{ ui.t('places.table.location') }}</th>
               <th class="place-th">{{ ui.t('places.table.rating') }}</th>
               <th class="place-th">{{ ui.t('places.table.status') }}</th>
-              <th class="place-th">{{ listMode() === 'deleted' ? 'Obrisano' : ui.t('places.table.updated') }}</th>
+              <th class="place-th">{{ listMode() === 'deleted' ? ui.t('common.deleted') : ui.t('places.table.updated') }}</th>
               <th class="place-th"></th>
             </tr>
           </thead>
@@ -339,7 +339,7 @@
                 <!-- Status -->
                 <td class="place-td">
                   @if (listMode() === 'deleted') {
-                    <span class="place-status place-status--deleted">Obrisano</span>
+                    <span class="place-status place-status--deleted">{{ ui.t('common.deleted') }}</span>
                   } @else {
                     <span class="place-status place-status--{{ place.status }}">
                       {{ statusLabel(place.status) }}
@@ -361,7 +361,7 @@
                     @if (listMode() === 'deleted') {
                       <button
                         class="btn-icon btn-icon--restore"
-                        title="Vrati"
+                        [title]="ui.t('places.actions.restore')"
                         [disabled]="isRestoring()"
                         (click)="restorePlace(place)"
                       >
@@ -370,19 +370,19 @@
                     } @else {
                       <a
                         class="btn-icon"
-                        title="Otvori u aplikaciji"
+                        [title]="ui.t('places.actions.open_in_app')"
                         [href]="'/places/' + place.slug"
                         target="_blank"
                         rel="noopener"
                       >
                         <span class="material-icons">open_in_new</span>
                       </a>
-                      <button class="btn-icon" title="Izmeni" (click)="openEdit(place)">
+                      <button class="btn-icon" [title]="ui.t('common.edit')" (click)="openEdit(place)">
                         <span class="material-icons">edit</span>
                       </button>
                       <button
                         class="btn-icon btn-icon--danger"
-                        title="Obriši"
+                        [title]="ui.t('common.delete')"
                         (click)="openDeleteDialog(place)"
                       >
                         <span class="material-icons">delete</span>
@@ -457,7 +457,7 @@
           <h2 class="ddp-header__name">{{ place.name }}</h2>
           <p class="ddp-header__location">
             <span class="material-icons">location_on</span>
-            {{ place.city || place.region || place.address || 'Nepoznata lokacija' }}
+            {{ place.city || place.region || place.address || ui.t('places.details.unknown_location') }}
           </p>
         </div>
       </div>
@@ -470,7 +470,7 @@
       @if (isDetailLoading()) {
         <div class="ddp-loading">
           <span class="material-icons ddp-loading__icon">sync</span>
-          Učitavanje...
+          {{ ui.t('common.loading') }}
         </div>
       } @else {
 
@@ -504,7 +504,7 @@
         <!-- Badges -->
         <div class="ddp-badges">
           @if (listMode() === 'deleted') {
-            <span class="place-status place-status--deleted">Obrisano</span>
+            <span class="place-status place-status--deleted">{{ ui.t('common.deleted') }}</span>
           } @else {
             <span class="place-status place-status--{{ place.status }}">
               {{ statusLabel(place.status) }}
@@ -519,7 +519,7 @@
           @if (place.isFeatured) {
             <span class="place-badge-featured">
               <span class="material-icons">stars</span>
-              Istaknuto
+              {{ ui.t('common.featured') }}
             </span>
           }
         </div>
@@ -555,7 +555,7 @@
                 type="button"
                 (click)="descriptionExpanded.set(!descriptionExpanded())"
               >
-                {{ descriptionExpanded() ? 'Prikaži manje' : 'Prikaži više' }}
+                {{ descriptionExpanded() ? ui.t('common.show_less') : ui.t('common.show_more') }}
               </button>
             }
           </div>
@@ -564,38 +564,38 @@
         <!-- Detail grid -->
         <div class="ddp-grid">
           <div class="ddp-grid__item">
-            <span class="ddp-grid__label">Tip</span>
+            <span class="ddp-grid__label">{{ ui.t('places.details.type') }}</span>
             <span class="ddp-grid__value">{{ place.type || '—' }}</span>
           </div>
           <div class="ddp-grid__item">
-            <span class="ddp-grid__label">Region</span>
+            <span class="ddp-grid__label">{{ ui.t('common.region') }}</span>
             <span class="ddp-grid__value">{{ place.region || '—' }}</span>
           </div>
           <div class="ddp-grid__item">
-            <span class="ddp-grid__label">Grad</span>
+            <span class="ddp-grid__label">{{ ui.t('common.city') }}</span>
             <span class="ddp-grid__value">{{ place.city || '—' }}</span>
           </div>
           <div class="ddp-grid__item">
-            <span class="ddp-grid__label">Ocena</span>
+            <span class="ddp-grid__label">{{ ui.t('common.rating') }}</span>
             <span class="ddp-grid__value">
               {{ place.avgRating ? formatRating(place.avgRating) + ' / 5' : '—' }}
             </span>
           </div>
           @if (detailsPanelDetail()?.address) {
             <div class="ddp-grid__item ddp-grid__item--full">
-              <span class="ddp-grid__label">Adresa</span>
+              <span class="ddp-grid__label">{{ ui.t('places.details.address') }}</span>
               <span class="ddp-grid__value">{{ detailsPanelDetail()!.address }}</span>
             </div>
           }
           @if (detailsPanelDetail()?.phone) {
             <div class="ddp-grid__item">
-              <span class="ddp-grid__label">Telefon</span>
+              <span class="ddp-grid__label">{{ ui.t('places.details.phone') }}</span>
               <span class="ddp-grid__value">{{ detailsPanelDetail()!.phone }}</span>
             </div>
           }
           @if (detailsPanelDetail()?.websiteUrl) {
             <div class="ddp-grid__item">
-              <span class="ddp-grid__label">Website</span>
+              <span class="ddp-grid__label">{{ ui.t('places.details.website') }}</span>
               <span class="ddp-grid__value">
                 <a
                   [href]="detailsPanelDetail()!.websiteUrl!"
@@ -610,13 +610,13 @@
           }
           @if (detailsPanelDetail()?.priceRange) {
             <div class="ddp-grid__item">
-              <span class="ddp-grid__label">Cena</span>
+              <span class="ddp-grid__label">{{ ui.t('places.details.price_range') }}</span>
               <span class="ddp-grid__value">{{ detailsPanelDetail()!.priceRange }}</span>
             </div>
           }
           @if (detailsPanelDetail()?.latitude != null) {
             <div class="ddp-grid__item ddp-grid__item--full">
-              <span class="ddp-grid__label">Lokacija</span>
+              <span class="ddp-grid__label">{{ ui.t('common.location') }}</span>
               <app-admin-map-preview
                 [latitude]="detailsPanelDetail()!.latitude"
                 [longitude]="detailsPanelDetail()!.longitude"
@@ -628,13 +628,13 @@
         <!-- Reviews -->
         <div class="place-details-section">
           <h4 class="place-details-section__title">
-            Recenzije
+            {{ ui.t('common.reviews') }}
             @if (detailsPanelReviews().length > 0) {
               <span class="place-details-section__count">({{ detailsPanelReviews().length }})</span>
             }
           </h4>
           @if (!detailsPanelReviews().length) {
-            <p class="place-details-empty">Nema recenzija za ovaj objekat.</p>
+            <p class="place-details-empty">{{ ui.t('places.details.no_reviews') }}</p>
           } @else {
             <div class="place-reviews">
               @for (review of detailsPanelReviews(); track review.createdAt) {
@@ -674,7 +674,7 @@
       @if (listMode() === 'deleted') {
         <button class="btn btn-ghost btn-sm ddp-footer__restore" [disabled]="isRestoring()" (click)="restorePlace(place)">
           <span class="material-icons">restore</span>
-          Vrati
+          {{ ui.t('common.restore') }}
         </button>
       } @else {
         <a
@@ -684,15 +684,15 @@
           rel="noopener"
         >
           <span class="material-icons">open_in_new</span>
-          Otvori
+          {{ ui.t('common.open') }}
         </a>
         <button class="btn btn-ghost btn-sm" (click)="openEditFromPanel()">
           <span class="material-icons">edit</span>
-          Izmeni
+          {{ ui.t('common.edit') }}
         </button>
         <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="openDeleteFromPanel()">
           <span class="material-icons">delete</span>
-          Obriši
+          {{ ui.t('common.delete') }}
         </button>
       }
     </footer>

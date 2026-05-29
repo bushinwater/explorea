@@ -5,8 +5,8 @@
     <div class="edit-modal__title-block">
       <span class="material-icons edit-modal__title-icon">event</span>
       <div>
-        <h2 class="edit-modal__title">Kreiraj interni događaj</h2>
-        <p class="edit-modal__subtitle">Događaj će biti odmah dodat kao aktivan.</p>
+        <h2 class="edit-modal__title">{{ ui.t('events.btn.create') }}</h2>
+        <p class="edit-modal__subtitle">{{ ui.t('events.modal.create_subtitle') }}</p>
       </div>
     </div>
     <button class="edit-modal__close" type="button" (click)="cancel.emit()">
@@ -26,55 +26,52 @@
     @if (isCreated()) {
       <div class="edit-modal__created-banner">
         <span class="material-icons">check_circle</span>
-        Događaj „{{ createdRow()!.name }}" je kreiran. Možeš dodati slike.
+        {{ ui.t('events.modal.event_created') }}
       </div>
     }
 
     <div class="edit-modal__cols">
 
-      <!-- Left: form fields -->
       <div class="edit-modal__form-col">
         <div class="ev-form-grid">
 
           <div class="edit-field ev-field--full">
-            <label class="edit-field__label" for="ev-c-name">Naziv <span class="edit-field__required">*</span></label>
+            <label class="edit-field__label" for="ev-c-name">{{ ui.t('common.name_label') }} <span class="edit-field__required">*</span></label>
             <input id="ev-c-name" class="edit-field__input" type="text" [value]="form().name"
               (input)="updateText('name', $any($event.target).value)"
               placeholder="npr. Letnji koncert 2026" />
           </div>
 
-          <!-- Type + add new type -->
           <div class="edit-field ev-field--full">
-            <label class="edit-field__label" for="ev-c-type">Tip <span class="edit-field__required">*</span></label>
+            <label class="edit-field__label" for="ev-c-type">{{ ui.t('events.modal.type') }} <span class="edit-field__required">*</span></label>
             <div class="ev-type-row">
               <select id="ev-c-type" class="edit-field__select"
                 (change)="updateType($any($event.target).value)">
-                <option value="" [selected]="form().typeId === null">Izaberi tip</option>
+                <option value="" [selected]="form().typeId === null">{{ ui.t('events.modal.select_type') }}</option>
                 @for (t of allTypeOptions; track t.value) {
                   <option [value]="t.value" [selected]="form().typeId === t.value">{{ t.label }}</option>
                 }
               </select>
-              <button class="ev-add-inline-btn" type="button" (click)="toggleAddType()" title="Dodaj novi tip">
+              <button class="ev-add-inline-btn" type="button" (click)="toggleAddType()" [title]="ui.t('events.modal.add_type_btn')">
                 <span class="material-icons">{{ showAddType() ? 'close' : 'add' }}</span>
               </button>
             </div>
             @if (showAddType()) {
               <div class="ev-add-inline-form">
-                <input class="edit-field__input" type="text" placeholder="Naziv novog tipa"
+                <input class="edit-field__input" type="text" [placeholder]="ui.t('events.modal.type_ph')"
                   [value]="newTypeName()" (input)="newTypeName.set($any($event.target).value)" />
                 <button class="ev-add-inline-form__submit" type="button"
                   [disabled]="!newTypeName().trim() || isAddingType()" (click)="addNewType()">
                   @if (isAddingType()) { <span class="material-icons edit-modal__spin">sync</span> }
-                  @else { Dodaj }
+                  @else { {{ ui.t('common.add') }} }
                 </button>
               </div>
             }
           </div>
 
-          <!-- Extra filters (shown when type selected and defs loaded) -->
           @if (filterDefs().length) {
             <div class="edit-field ev-field--full">
-              <label class="edit-field__label">Kategorije / filteri</label>
+              <label class="edit-field__label">{{ ui.t('common.filter_defs_label') }}</label>
               <div class="ev-filter-defs">
                 @for (def of filterDefs(); track def.id) {
                   @if (def.filterType === 'boolean') {
@@ -103,25 +100,25 @@
               </div>
               <button class="ev-add-filter-btn" type="button" (click)="toggleAddFilter()">
                 <span class="material-icons">{{ showAddFilter() ? 'close' : 'tune' }}</span>
-                {{ showAddFilter() ? 'Otkaži' : 'Dodaj filter' }}
+                {{ showAddFilter() ? ui.t('confirm.cancel') : ui.t('common.add_filter_btn') }}
               </button>
               @if (showAddFilter()) {
                 <div class="ev-add-inline-form ev-add-inline-form--filter">
-                  <input class="edit-field__input" type="text" placeholder="Ključ (npr. has_parking)"
+                  <input class="edit-field__input" type="text" [placeholder]="ui.t('common.filter_key_ph')"
                     [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
-                  <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
+                  <input class="edit-field__input" type="text" [placeholder]="ui.t('common.filter_name_ph')"
                     [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
                   <select class="edit-field__select" [value]="newFilterType()"
                     (change)="newFilterType.set($any($event.target).value)">
-                    <option value="boolean">Da/Ne</option>
-                    <option value="select">Izbor</option>
-                    <option value="multi_select">Višestruki izbor</option>
+                    <option value="boolean">{{ ui.t('common.filter_bool') }}</option>
+                    <option value="select">{{ ui.t('common.filter_select') }}</option>
+                    <option value="multi_select">{{ ui.t('common.filter_multiselect') }}</option>
                   </select>
                   <button class="ev-add-inline-form__submit" type="button"
                     [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()">
                     @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
-                    @else { Dodaj filter }
+                    @else { {{ ui.t('common.add_filter_btn') }} }
                   </button>
                 </div>
               }
@@ -129,29 +126,29 @@
           }
           @if (!filterDefs().length && form().typeId !== null) {
             <div class="edit-field ev-field--full">
-              <label class="edit-field__label">Kategorije / filteri</label>
-              <div class="ev-filter-empty">Nema definisanih filtera za ovaj tip.</div>
+              <label class="edit-field__label">{{ ui.t('common.filter_defs_label') }}</label>
+              <div class="ev-filter-empty">{{ ui.t('common.no_filter_defs') }}</div>
               <button class="ev-add-filter-btn" type="button" (click)="toggleAddFilter()">
                 <span class="material-icons">{{ showAddFilter() ? 'close' : 'tune' }}</span>
-                {{ showAddFilter() ? 'Otkaži' : 'Dodaj filter' }}
+                {{ showAddFilter() ? ui.t('confirm.cancel') : ui.t('common.add_filter_btn') }}
               </button>
               @if (showAddFilter()) {
                 <div class="ev-add-inline-form ev-add-inline-form--filter">
-                  <input class="edit-field__input" type="text" placeholder="Ključ (npr. has_parking)"
+                  <input class="edit-field__input" type="text" [placeholder]="ui.t('common.filter_key_ph')"
                     [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
-                  <input class="edit-field__input" type="text" placeholder="Naziv (npr. Parking)"
+                  <input class="edit-field__input" type="text" [placeholder]="ui.t('common.filter_name_ph')"
                     [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
                   <select class="edit-field__select" [value]="newFilterType()"
                     (change)="newFilterType.set($any($event.target).value)">
-                    <option value="boolean">Da/Ne</option>
-                    <option value="select">Izbor</option>
-                    <option value="multi_select">Višestruki izbor</option>
+                    <option value="boolean">{{ ui.t('common.filter_bool') }}</option>
+                    <option value="select">{{ ui.t('common.filter_select') }}</option>
+                    <option value="multi_select">{{ ui.t('common.filter_multiselect') }}</option>
                   </select>
                   <button class="ev-add-inline-form__submit" type="button"
                     [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()">
                     @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
-                    @else { Dodaj filter }
+                    @else { {{ ui.t('common.add_filter_btn') }} }
                   </button>
                 </div>
               }
@@ -162,12 +159,12 @@
             <input type="checkbox"
               [checked]="form().extraFilters['free_entry'] === 'true'"
               (change)="updateExtraFilter('free_entry', $any($event.target).checked)" />
-            <span>Besplatan ulaz</span>
+            <span>{{ ui.t('events.modal.free_entry') }}</span>
           </label>
 
           @if (form().extraFilters['free_entry'] !== 'true') {
           <div class="edit-field">
-            <label class="edit-field__label" for="ev-c-price">Cena (RSD)</label>
+            <label class="edit-field__label" for="ev-c-price">{{ ui.t('common.price_rsd') }}</label>
             <input id="ev-c-price" class="edit-field__input" type="number" min="0" step="0.01"
               [value]="form().price"
               (input)="updateText('price', $any($event.target).value)" placeholder="0" />
@@ -175,50 +172,49 @@
           }
 
           <div class="edit-field">
-            <label class="edit-field__label" for="ev-c-ticket">Ticket URL</label>
+            <label class="edit-field__label" for="ev-c-ticket">{{ ui.t('events.modal.ticket_url') }}</label>
             <input id="ev-c-ticket" class="edit-field__input" type="url" [value]="form().ticketUrl"
               (input)="updateText('ticketUrl', $any($event.target).value)" placeholder="https://..." />
           </div>
 
           <div class="edit-field">
-            <label class="edit-field__label" for="ev-c-start">Početak <span class="edit-field__required">*</span></label>
+            <label class="edit-field__label" for="ev-c-start">{{ ui.t('events.modal.start') }} <span class="edit-field__required">*</span></label>
             <input id="ev-c-start" class="edit-field__input" type="datetime-local" [value]="form().startDatetime"
               (input)="updateText('startDatetime', $any($event.target).value)" />
           </div>
 
           <div class="edit-field">
-            <label class="edit-field__label" for="ev-c-end">Završetak <span class="edit-field__required">*</span></label>
+            <label class="edit-field__label" for="ev-c-end">{{ ui.t('events.modal.end') }} <span class="edit-field__required">*</span></label>
             <input id="ev-c-end" class="edit-field__input" type="datetime-local" [value]="form().endDatetime"
               [min]="form().startDatetime"
               (input)="updateText('endDatetime', $any($event.target).value)" />
           </div>
 
           <div class="edit-field ev-field--full">
-            <label class="edit-field__label" for="ev-c-desc">Opis</label>
+            <label class="edit-field__label" for="ev-c-desc">{{ ui.t('common.description_label') }}</label>
             <textarea id="ev-c-desc" class="edit-field__textarea" rows="4" [value]="form().description"
               (input)="updateText('description', $any($event.target).value)"
-              placeholder="Kratak opis događaja..."></textarea>
+              [placeholder]="ui.t('events.modal.desc_ph')"></textarea>
           </div>
 
           <label class="ev-checkbox ev-field--full">
             <input type="checkbox" [checked]="form().isFeatured"
               (change)="updateFeatured($any($event.target).checked)" />
-            <span>Istaknut događaj</span>
+            <span>{{ ui.t('events.modal.featured') }}</span>
           </label>
 
         </div>
       </div>
 
-      <!-- Right: address + map -->
       <div class="edit-modal__map-col">
         <div class="edit-field">
-          <label class="edit-field__label">Adresa / koordinate</label>
+          <label class="edit-field__label">{{ ui.t('events.modal.address_section') }}</label>
           <div class="edit-modal__address-row">
             <input class="edit-field__input" type="text" [value]="form().address"
               (input)="updateText('address', $any($event.target).value)"
               (keydown.enter)="$event.preventDefault(); geocode()"
-              placeholder="Unesi adresu za pretragu..." />
-            <button class="edit-modal__geo-btn" type="button" (click)="geocode()" [disabled]="isGeocoding()" title="Pronađi koordinate">
+              [placeholder]="ui.t('events.modal.address_ph')" />
+            <button class="edit-modal__geo-btn" type="button" (click)="geocode()" [disabled]="isGeocoding()" [title]="ui.t('common.find_coords')">
               @if (isGeocoding()) {
                 <span class="material-icons edit-modal__spin">sync</span>
               } @else {
@@ -233,21 +229,20 @@
           }
         </div>
         <div #mapEl class="edit-modal__map"></div>
-        <p class="edit-modal__map-hint">Klikni na mapu ili prevuci pin da postaviš lokaciju.</p>
+        <p class="edit-modal__map-hint">{{ ui.t('common.map_hint') }}</p>
       </div>
 
     </div>
 
-    <!-- Location cascade: Country → Region → Destination → Place -->
     <div class="ev-location-section">
       <div class="ev-location-grid">
 
         <div class="edit-field">
-          <label class="edit-field__label" for="ev-c-country">Zemlja</label>
+          <label class="edit-field__label" for="ev-c-country">{{ ui.t('common.country') }}</label>
           <select id="ev-c-country" class="edit-field__select" [value]="selectedCountryId() ?? ''"
             [disabled]="lockedRegionId !== null"
             (change)="updateCountry($any($event.target).value)">
-            <option value="">Sve zemlje</option>
+            <option value="">{{ ui.t('common.all_countries') }}</option>
             @for (c of countries(); track c.id) {
               <option [value]="c.id">{{ c.name }}</option>
             }
@@ -255,11 +250,11 @@
         </div>
 
         <div class="edit-field">
-          <label class="edit-field__label" for="ev-c-region">Regija</label>
+          <label class="edit-field__label" for="ev-c-region">{{ ui.t('events.modal.region_label') }}</label>
           <select id="ev-c-region" class="edit-field__select" [value]="selectedRegionId() ?? ''"
             [disabled]="lockedRegionId !== null"
             (change)="updateRegion($any($event.target).value)">
-            <option value="">Sve regije</option>
+            <option value="">{{ ui.t('common.all_regions') }}</option>
             @for (r of filteredRegions(); track r.id) {
               <option [value]="r.id">{{ r.name }}</option>
             }
@@ -267,7 +262,7 @@
         </div>
 
         <div class="edit-field ev-location-full">
-          <label class="edit-field__label">Destinacija</label>
+          <label class="edit-field__label">{{ ui.t('common.destination') }}</label>
           <div class="ev-search-field">
             <span class="material-icons ev-search-field__icon">place</span>
             <input class="edit-field__input ev-search-field__input" type="text"
@@ -275,12 +270,12 @@
               (input)="onDestinationInput($any($event.target).value)"
               (focus)="showDestResults.set(destinationResults().length > 0)"
               (blur)="hideDestResults()"
-              placeholder="Pretraži destinaciju..." />
+              [placeholder]="ui.t('common.search_destination')" />
             @if (isSearchingDest()) {
               <span class="material-icons ev-search-field__spinner edit-modal__spin">sync</span>
             }
             @if (form().destinationId) {
-              <button class="ev-search-field__clear" type="button" (click)="clearDestination()" title="Obriši">
+              <button class="ev-search-field__clear" type="button" (click)="clearDestination()" [title]="ui.t('common.delete')">
                 <span class="material-icons">close</span>
               </button>
             }
@@ -301,7 +296,7 @@
         </div>
 
         <div class="edit-field ev-location-full">
-          <label class="edit-field__label">Objekat (nije obavezno)</label>
+          <label class="edit-field__label">{{ ui.t('events.modal.place_optional') }}</label>
           <div class="ev-search-field">
             <span class="material-icons ev-search-field__icon">apartment</span>
             <input class="edit-field__input ev-search-field__input" type="text"
@@ -309,12 +304,12 @@
               (input)="onPlaceInput($any($event.target).value)"
               (focus)="showPlaceResults.set(placeResults().length > 0)"
               (blur)="hidePlaceResults()"
-              placeholder="Pretraži objekat..." />
+              [placeholder]="ui.t('common.search_place')" />
             @if (isSearchingPlaces()) {
               <span class="material-icons ev-search-field__spinner edit-modal__spin">sync</span>
             }
             @if (form().placeId) {
-              <button class="ev-search-field__clear" type="button" (click)="clearPlaceOnly()" title="Obriši">
+              <button class="ev-search-field__clear" type="button" (click)="clearPlaceOnly()" [title]="ui.t('common.delete')">
                 <span class="material-icons">close</span>
               </button>
             }
@@ -337,11 +332,10 @@
       </div>
     </div>
 
-    <!-- Interests -->
     <div class="edit-modal__interests-section">
       <div class="edit-modal__interests-header">
         <span class="edit-field__label">
-          Interesovanja
+          {{ ui.t('common.interests') }}
           <span class="edit-field__counter">{{ selectedInterestIds().length }} / 3</span>
         </span>
       </div>
@@ -358,17 +352,16 @@
       </div>
     </div>
 
-    <!-- Images -->
     <div class="edit-modal__images-section">
       <div class="edit-modal__images-header">
         <span class="edit-field__label">
-          Slike
+          {{ ui.t('common.images') }}
           <span class="edit-field__counter">{{ images().length + pendingImages().length }} / {{ MAX_IMAGES }}</span>
         </span>
         @if ((images().length + pendingImages().length) < MAX_IMAGES) {
-          <label class="edit-modal__add-img-btn" title="Dodaj sliku">
+          <label class="edit-modal__add-img-btn" [title]="ui.t('common.add_images_btn')">
             <span class="material-icons">add_photo_alternate</span>
-            Dodaj
+            {{ ui.t('common.add_images_btn') }}
             <input type="file" accept="image/*" multiple hidden (change)="onFilesSelected($event)" />
           </label>
         }
@@ -412,7 +405,7 @@
         @if (images().length === 0 && pendingImages().length === 0 && uploadingCount() === 0) {
           <div class="edit-modal__images-empty">
             <span class="material-icons">image_not_supported</span>
-            Nema slika
+            {{ ui.t('common.no_images') }}
           </div>
         }
       </div>
@@ -422,20 +415,20 @@
 
   <footer class="edit-modal__footer">
     @if (!isCreated()) {
-      <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="cancel.emit()">Otkaži</button>
+      <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="cancel.emit()">{{ ui.t('confirm.cancel') }}</button>
       <button class="edit-modal__btn edit-modal__btn--save" type="button" [disabled]="isSaving()" (click)="submit()">
         @if (isSaving()) {
           <span class="material-icons edit-modal__spin">sync</span>
-          Kreiranje...
+          {{ ui.t('events.modal.btn_creating') }}
         } @else {
           <span class="material-icons">add</span>
-          Kreiraj događaj
+          {{ ui.t('events.modal.btn_create') }}
         }
       </button>
     } @else {
       <button class="edit-modal__btn edit-modal__btn--save" type="button" (click)="finish()">
         <span class="material-icons">check</span>
-        Završi
+        {{ ui.t('common.finish') }}
       </button>
     }
   </footer>

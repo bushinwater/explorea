@@ -30,13 +30,13 @@
 
   <!-- ===== STATS ROW ===== -->
   <div class="evts-stats">
-    <app-stat-card label="Aktivni zahtevi" [value]="stats()?.activeRequests ?? 0"
+    <app-stat-card [label]="ui.t('events.stats.activeRequests')" [value]="stats()?.activeRequests ?? 0"
       [trend]="stats()?.activeRequestsTrend ?? ''" />
-    <app-stat-card label="Potrebno odobrenje" [value]="stats()?.pendingApproval ?? 0"
+    <app-stat-card [label]="ui.t('events.stats.pendingApproval')" [value]="stats()?.pendingApproval ?? 0"
       [hint]="stats()?.pendingApprovalHint ?? ''" tone="danger" />
-    <app-stat-card label="Odobreno ovog meseca" [value]="stats()?.approvedThisMonth ?? 0"
+    <app-stat-card [label]="ui.t('events.stats.approvedThisMonth')" [value]="stats()?.approvedThisMonth ?? 0"
       tone="success" />
-    <app-stat-card label="Odbijeno" [value]="stats()?.rejected ?? 0" [hint]="stats()?.rejectedNote ?? ''"
+    <app-stat-card [label]="ui.t('events.stats.rejected')" [value]="stats()?.rejected ?? 0" [hint]="stats()?.rejectedNote ?? ''"
       tone="danger" />
   </div>
 
@@ -48,15 +48,15 @@
       <div class="evts-card__title-group">
         <div class="evts-card__title-row">
           <span class="material-icons evts-card__title-icon">event</span>
-          <h2 class="evts-card__title">Upravljanje Događajima</h2>
+          <h2 class="evts-card__title">{{ ui.t('events.title') }}</h2>
         </div>
-        <p class="evts-card__subtitle">Pregledajte zahteve organizacija, odobrite termine i komunicirajte sa vlasnicima.</p>
+        <p class="evts-card__subtitle">{{ ui.t('events.subtitle') }}</p>
       </div>
 
       <div class="evts-card__actions">
         <div class="evts-search-wrap">
           <span class="material-icons evts-search-wrap__icon">search</span>
-          <input class="evts-search" type="search" placeholder="Filtriraj po imenu..."
+          <input class="evts-search" type="search" [placeholder]="ui.t('events.search.placeholder')"
             [value]="filters().search"
             (input)="updateSearch($any($event.target).value)" />
         </div>
@@ -65,7 +65,7 @@
           <button class="evts-filter-btn" [class.evts-filter-btn--active]="activeFilterCount() > 0"
             (click)="isFilterOpen.set(!isFilterOpen()); $event.stopPropagation()">
             <span class="material-icons">filter_list</span>
-            Filter
+            {{ ui.t('events.filter.btn') }}
             @if (activeFilterCount() > 0) {
               <span class="evts-filter-badge">{{ activeFilterCount() }}</span>
             }
@@ -74,14 +74,14 @@
           @if (isFilterOpen()) {
             <div class="evts-filter-panel" (click)="$event.stopPropagation()">
               <div class="evts-filter-panel__header">
-                <span class="evts-filter-panel__title">Filteri</span>
+                <span class="evts-filter-panel__title">{{ ui.t('events.filter.title') }}</span>
                 @if (activeFilterCount() > 0) {
-                  <button class="evts-filter-panel__reset" (click)="resetFilters()">Resetuj sve</button>
+                  <button class="evts-filter-panel__reset" (click)="resetFilters()">{{ ui.t('events.filter.reset') }}</button>
                 }
               </div>
 
               <div class="evts-filter-section">
-                <label class="evts-filter-section__label">Tip</label>
+                <label class="evts-filter-section__label">{{ ui.t('events.filter.type') }}</label>
                 <div class="evts-filter-chips">
                   <button class="evts-chip" [class.evts-chip--active]="filters().typeId === null"
                     (click)="applyType(null)">Svi tipovi</button>
@@ -93,10 +93,10 @@
               </div>
 
               <div class="evts-filter-section">
-                <label class="evts-filter-section__label">Grad</label>
+                <label class="evts-filter-section__label">{{ ui.t('events.filter.city') }}</label>
                 <div class="evts-filter-chips">
                   <button class="evts-chip" [class.evts-chip--active]="filters().cityId === null"
-                    (click)="applyCity(null)">Svi gradovi</button>
+                    (click)="applyCity(null)">{{ ui.t('events.filter.all_cities') }}</button>
                   @for (city of cityOptions(); track city.value) {
                     <button class="evts-chip" [class.evts-chip--active]="filters().cityId === city.value"
                       (click)="applyCity(city.value)">{{ city.label }}</button>
@@ -105,10 +105,10 @@
               </div>
 
               <div class="evts-filter-section">
-                <label class="evts-filter-section__label">Destinacija</label>
+                <label class="evts-filter-section__label">{{ ui.t('events.filter.destination') }}</label>
                 <div class="evts-filter-chips">
                   <button class="evts-chip" [class.evts-chip--active]="filters().destinationId === null"
-                    (click)="applyDestination(null)">Sve destinacije</button>
+                    (click)="applyDestination(null)">{{ ui.t('events.filter.all_destinations') }}</button>
                   @for (destination of destinationOptions(); track destination.value) {
                     <button class="evts-chip" [class.evts-chip--active]="filters().destinationId === destination.value"
                       (click)="applyDestination(destination.value)">{{ destination.label }}</button>
@@ -118,7 +118,7 @@
 
               @if (filterDefs().length > 0) {
                 <div class="evts-filter-section evts-filter-section--extra">
-                  <label class="evts-filter-section__label">Dodatni filteri</label>
+                  <label class="evts-filter-section__label">{{ ui.t('common.additional_filters') }}</label>
                   <div class="evts-extra-list">
                     @for (def of filterDefs(); track def.id) {
                       @if (def.filterType === 'boolean') {
@@ -160,7 +160,7 @@
         @if (isSuperAdmin() && filters().tab !== 'deleted') {
           <button class="evts-btn-primary" type="button" (click)="openCreateDialog()">
             <span class="material-icons">add</span>
-            Novi događaj
+            {{ ui.t('events.btn.create') }}
           </button>
         }
       </div>
@@ -172,22 +172,22 @@
       <!-- Tabs -->
       <div class="evts-tabs">
         <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'active'" (click)="setTab('active')">
-          Aktivni događaji
+          {{ ui.t('events.tabs.active_events') }}
           @if (stats()?.tabActiveCount) {
             <span class="evts-tab__badge evts-tab__badge--green">{{ stats()!.tabActiveCount }}</span>
           }
         </button>
         <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'pending'" (click)="setTab('pending')">
-          Zahtevi na čekanju
+          {{ ui.t('events.tabs.pending') }}
           @if (stats()?.tabPendingCount) {
             <span class="evts-tab__badge">{{ stats()!.tabPendingCount }}</span>
           }
         </button>
         <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'history'" (click)="setTab('history')">
-          Istorija
+          {{ ui.t('events.tabs.history') }}
         </button>
         <button class="evts-tab" [class.evts-tab--active]="filters().tab === 'deleted'" (click)="setTab('deleted')">
-          Obrisani
+          {{ ui.t('events.tabs.deleted') }}
         </button>
       </div>
 
@@ -201,13 +201,13 @@
           <table class="evts-table">
             <thead>
               <tr>
-                <th class="evts-th">Događaj</th>
-                <th class="evts-th evts-th--hide-sm">Tip</th>
-                <th class="evts-th evts-th--hide-md">Lokacija</th>
-                <th class="evts-th evts-th--hide-sm">Datum</th>
-                <th class="evts-th evts-th--hide-md evts-th--center">Ocena</th>
+                <th class="evts-th">{{ ui.t('events.table.event') }}</th>
+                <th class="evts-th evts-th--hide-sm">{{ ui.t('events.table.type') }}</th>
+                <th class="evts-th evts-th--hide-md">{{ ui.t('events.table.location') }}</th>
+                <th class="evts-th evts-th--hide-sm">{{ ui.t('events.table.date') }}</th>
+                <th class="evts-th evts-th--hide-md evts-th--center">{{ ui.t('common.rating') }}</th>
                 @if (filters().tab !== 'active') {
-                  <th class="evts-th">Status</th>
+                  <th class="evts-th">{{ ui.t('events.table.status') }}</th>
                 }
                 <th class="evts-th evts-th--actions"></th>
               </tr>
@@ -277,23 +277,23 @@
                     <div class="row-actions">
                       @if (filters().tab === 'deleted') {
                         @if (isSuperAdmin()) {
-                          <button class="btn-icon btn-icon--restore" title="Vrati" (click)="restoreEvent(ev)" [disabled]="isRestoring()">
+                          <button class="btn-icon btn-icon--restore" [title]="ui.t('common.restore')" (click)="restoreEvent(ev)" [disabled]="isRestoring()">
                             <span class="material-icons">restore</span>
                           </button>
                         }
                       } @else {
                         @if (ev.slug) {
-                          <a class="btn-icon" title="Otvori u aplikaciji" [href]="'/events/' + ev.slug" target="_blank" rel="noopener">
+                          <a class="btn-icon" [title]="ui.t('common.open_in_app')" [href]="'/events/' + ev.slug" target="_blank" rel="noopener">
                             <span class="material-icons">open_in_new</span>
                           </a>
                         }
                         @if (isSuperAdmin() && ev.status === 'active') {
-                          <button class="btn-icon" title="Izmeni" (click)="openEditFromRow(ev)">
+                          <button class="btn-icon" [title]="ui.t('common.edit')" (click)="openEditFromRow(ev)">
                             <span class="material-icons">edit</span>
                           </button>
                         }
                         @if (isSuperAdmin()) {
-                          <button class="btn-icon btn-icon--danger" title="Obriši" (click)="openDeleteFromRow(ev)">
+                          <button class="btn-icon btn-icon--danger" [title]="ui.t('common.delete')" (click)="openDeleteFromRow(ev)">
                             <span class="material-icons">delete</span>
                           </button>
                         }
@@ -394,7 +394,7 @@
       <!-- Badges -->
       <div class="ddp-badges">
         @if (filters().tab === 'deleted') {
-          <span class="evts-status evts-status--deleted">Obrisano</span>
+          <span class="evts-status evts-status--deleted">{{ ui.t('common.deleted') }}</span>
         } @else {
           <span class="evts-status evts-status--{{ ev.status }}">{{ statusLabel(ev.status) }}</span>
         }
@@ -407,7 +407,7 @@
         @if (ev.isFeatured) {
           <span class="ddp-badge-featured">
             <span class="material-icons">star</span>
-            Istaknuto
+            {{ ui.t('common.featured') }}
           </span>
         }
       </div>
@@ -423,7 +423,7 @@
       <!-- Interests -->
       @if (detailsInterests().length) {
         <div class="ddp-interests">
-          <span class="ddp-grid__label">Interesovanja</span>
+          <span class="ddp-grid__label">{{ ui.t('common.interests') }}</span>
           <div class="ddp-interests-scroll">
             @for (tag of detailsInterests(); track tag.id) {
               <span class="ddp-interest-chip">
@@ -438,38 +438,38 @@
       <!-- Detail grid -->
       <div class="ddp-grid">
         <div class="ddp-grid__item">
-          <span class="ddp-grid__label">Početak</span>
+          <span class="ddp-grid__label">{{ ui.t('events.details.start') }}</span>
           <span class="ddp-grid__value">{{ formatDate(ev.startDate) }}</span>
         </div>
         <div class="ddp-grid__item">
-          <span class="ddp-grid__label">Završetak</span>
+          <span class="ddp-grid__label">{{ ui.t('events.details.end') }}</span>
           <span class="ddp-grid__value">{{ formatDate(ev.endDate) }}</span>
         </div>
         <div class="ddp-grid__item">
-          <span class="ddp-grid__label">Cena</span>
+          <span class="ddp-grid__label">{{ ui.t('common.price') }}</span>
           <span class="ddp-grid__value">{{ formatPrice(ev.price) }}</span>
         </div>
         @if (ev.expectedGuests) {
           <div class="ddp-grid__item">
-            <span class="ddp-grid__label">Očekivano gostiju</span>
+            <span class="ddp-grid__label">{{ ui.t('events.details.guests') }}</span>
             <span class="ddp-grid__value">{{ formatNumber(ev.expectedGuests) }}</span>
           </div>
         }
         @if (ev.address) {
           <div class="ddp-grid__item ddp-grid__item--full">
-            <span class="ddp-grid__label">Adresa</span>
+            <span class="ddp-grid__label">{{ ui.t('common.address') }}</span>
             <span class="ddp-grid__value">{{ ev.address }}</span>
           </div>
         }
         @if (ev.avgRating > 0) {
           <div class="ddp-grid__item">
-            <span class="ddp-grid__label">Ocena</span>
+            <span class="ddp-grid__label">{{ ui.t('common.rating') }}</span>
             <span class="ddp-grid__value">{{ formatRating(ev.avgRating) }} / 5</span>
           </div>
         }
         @if (ev.ticketUrl) {
           <div class="ddp-grid__item ddp-grid__item--full">
-            <span class="ddp-grid__label">Kupovina karata</span>
+            <span class="ddp-grid__label">{{ ui.t('events.details.ticket') }}</span>
             <span class="ddp-grid__value">
               <a [href]="ev.ticketUrl" target="_blank" rel="noopener" class="ddp-link">{{ ev.ticketUrl }}</a>
             </span>
@@ -477,7 +477,7 @@
         }
         @if (ev.latitude != null && ev.longitude != null) {
           <div class="ddp-grid__item ddp-grid__item--full">
-            <span class="ddp-grid__label">Lokacija</span>
+            <span class="ddp-grid__label">{{ ui.t('common.location') }}</span>
             <app-admin-map-preview [latitude]="ev.latitude" [longitude]="ev.longitude" />
           </div>
         }
@@ -492,7 +492,7 @@
           @if (ev.description.length > 160) {
             <button class="ddp-description__toggle" type="button"
               (click)="descriptionExpanded.set(!descriptionExpanded())">
-              {{ descriptionExpanded() ? 'Prikaži manje' : 'Prikaži više' }}
+              {{ descriptionExpanded() ? ui.t('common.show_less') : ui.t('common.show_more') }}
             </button>
           }
         </div>
@@ -513,13 +513,13 @@
       <!-- Reviews -->
       <div class="ddp-reviews-section">
         <h4 class="ddp-section-label">
-          Recenzije
+          {{ ui.t('common.reviews') }}
           @if (detailsReviews().length > 0) {
             <span class="ddp-section-count">({{ detailsReviews().length }})</span>
           }
         </h4>
         @if (!detailsReviews().length) {
-          <p class="ddp-reviews-empty">Nema recenzija za ovaj događaj.</p>
+          <p class="ddp-reviews-empty">{{ ui.t('events.details.no_reviews') }}</p>
         } @else {
           <div class="ddp-reviews-scroll">
             @for (review of detailsReviews(); track review.createdAt) {
@@ -557,7 +557,7 @@
         <div class="ddp-coordination">
           <h4 class="ddp-section-title">
             <span class="material-icons">send</span>
-            Koordinacija sa vlasnikom
+            {{ ui.t('events.panel.coordination') }}
           </h4>
           <p class="ddp-coordination__hint">
             Ovaj lokalitet je u privatnom vlasništvu. Pre odobrenja, prosledite zahtev vlasniku na uvid.
@@ -576,34 +576,34 @@
         @if (isSuperAdmin()) {
           <button class="btn btn-ghost btn-sm ddp-footer__restore" (click)="restoreEvent(ev)" [disabled]="isRestoring()">
             <span class="material-icons">restore</span>
-            Vrati
+            {{ ui.t('common.restore') }}
           </button>
         }
       } @else {
         @if (ev.slug) {
           <a class="btn btn-ghost btn-sm" [href]="'/events/' + ev.slug" target="_blank" rel="noopener">
             <span class="material-icons">open_in_new</span>
-            Otvori
+            {{ ui.t('common.open') }}
           </a>
         }
         @if (isSuperAdmin() && ev.status === 'active') {
           <button class="btn btn-ghost btn-sm" (click)="openEdit()">
             <span class="material-icons">edit</span>
-            Izmeni
+            {{ ui.t('common.edit') }}
           </button>
           <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="initiateAction('delete')">
             <span class="material-icons">delete</span>
-            Obriši
+            {{ ui.t('common.delete') }}
           </button>
         }
         @if (ev.status === 'pending') {
           <button class="ddp-approve-btn" (click)="initiateAction('approve')">
             <span class="material-icons">check_circle</span>
-            Odobri
+            {{ ui.t('events.panel.approve') }}
           </button>
           <button class="ddp-reject-btn" (click)="initiateAction('reject')">
             <span class="material-icons">cancel</span>
-            Odbij
+            {{ ui.t('events.panel.reject') }}
           </button>
         }
       }

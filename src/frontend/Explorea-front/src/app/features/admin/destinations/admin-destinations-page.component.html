@@ -34,20 +34,20 @@
     <app-stat-card
       [label]="ui.t('destinations.stats.totalViews')"
       [value]="formatBigNumber(stats()?.totalViews ?? 0)"
-      hint="Ukupno iz pregleda"
+      [hint]="ui.t('destinations.stats.total_from_view')"
     />
 
     <app-stat-card
       [label]="ui.t('destinations.stats.inactive')"
       [value]="stats()?.inactiveCount ?? 0"
-      hint="Bez klika 30 dana"
+      [hint]="ui.t('destinations.stats.inactive_30d')"
       tone="danger"
     />
 
     <app-stat-card
       [label]="ui.t('destinations.stats.added30Days')"
       [value]="addedLast30DaysValue()"
-      hint="Dodato u poslednjih 30 dana"
+      [hint]="ui.t('destinations.stats.added_30d')"
       tone="neutral"
     />
 
@@ -55,8 +55,8 @@
     <article class="dest-stat-chart">
       <div class="dest-stat-chart__top">
         <div>
-          <p class="dest-stat-chart__label">Najpopularnija</p>
-          <p class="dest-stat-chart__value">{{ stats()?.mostPopularName || 'Nema podataka' }}</p>
+          <p class="dest-stat-chart__label">{{ ui.t('destinations.stats.most_popular') }}</p>
+          <p class="dest-stat-chart__value">{{ stats()?.mostPopularName || ui.t('destinations.stats.no_data') }}</p>
         </div>
         <span class="dest-stat-chart__views">{{ formatViews(stats()?.mostPopularViews ?? 0) }}</span>
       </div>
@@ -74,7 +74,7 @@
             <span class="dest-top-list__views">{{ formatViews(item.views) }}</span>
           </li>
         } @empty {
-          <li class="dest-top-list__empty">Nema podataka</li>
+          <li class="dest-top-list__empty">{{ ui.t('destinations.stats.no_data') }}</li>
         }
       </ol>
     </article>
@@ -144,7 +144,7 @@
                     [class.dest-chip--active]="filters().category === 'all'"
                     (click)="applyCategory('all')"
                   >
-                    Sve kategorije
+                    {{ ui.t('common.all_categories') }}
                   </button>
                   @for (type of types(); track type.id) {
                     <button
@@ -206,7 +206,7 @@
               <!-- Dynamic extra filters (loaded when a specific type is selected) -->
               @if (filterDefs().length > 0) {
               <div class="dest-filter-section dest-filter-section--extra">
-                <label class="dest-filter-section__label">Dodatni filteri</label>
+                <label class="dest-filter-section__label">{{ ui.t('common.additional_filters') }}</label>
                 <div class="dest-extra-list">
                   @for (def of filterDefs(); track def.id) {
                     @if (def.filterType === 'boolean') {
@@ -244,7 +244,7 @@
 
               <!-- Rating filter — star picker -->
               <div class="dest-filter-section">
-                <label class="dest-filter-section__label">Prosečna ocena</label>
+                <label class="dest-filter-section__label">{{ ui.t('destinations.filter.avg_rating') }}</label>
                 <div class="dest-star-picker">
                   @for (star of stars; track star) {
                     <button
@@ -260,7 +260,7 @@
                   }
                   <span class="dest-star-label">
                     @if (filters().minRating) { {{ filters().minRating }}+ ★ }
-                    @else { Sve ocene }
+                    @else { {{ ui.t('common.all_ratings') }} }
                   </span>
                 </div>
               </div>
@@ -281,10 +281,10 @@
 
     <div class="dest-filter-chips dest-list-mode-tabs">
       <button class="dest-chip" [class.dest-chip--active]="listMode() === 'active'" (click)="setListMode('active')">
-        Aktivne
+        {{ ui.t('destinations.tabs.active') }}
       </button>
       <button class="dest-chip" [class.dest-chip--active]="listMode() === 'deleted'" (click)="setListMode('deleted')">
-        Obrisane
+        {{ ui.t('destinations.tabs.deleted') }}
       </button>
     </div>
 
@@ -305,8 +305,8 @@
               <th class="dest-th">{{ ui.t('destinations.table.category') }}</th>
               <th class="dest-th">{{ ui.t('destinations.table.status') }}</th>
               <th class="dest-th dest-th--right">{{ ui.t('destinations.table.views') }}</th>
-              <th class="dest-th dest-th--center">Ocena</th>
-              <th class="dest-th">{{ listMode() === 'deleted' ? 'Obrisano' : ui.t('destinations.table.updated') }}</th>
+              <th class="dest-th dest-th--center">{{ ui.t('common.rating') }}</th>
+              <th class="dest-th">{{ listMode() === 'deleted' ? ui.t('common.deleted') : ui.t('destinations.table.updated') }}</th>
               <th class="dest-th"></th>
             </tr>
           </thead>
@@ -346,7 +346,7 @@
                 <!-- Status -->
                 <td class="dest-td">
                   @if (listMode() === 'deleted') {
-                    <span class="dest-status dest-status--deleted">Obrisano</span>
+                    <span class="dest-status dest-status--deleted">{{ ui.t('common.deleted') }}</span>
                   } @else {
                     <span class="dest-status dest-status--{{ dest.status }}">
                       {{ statusLabel(dest.status) }}
@@ -384,7 +384,7 @@
                     @if (listMode() === 'deleted') {
                       <button
                         class="btn-icon btn-icon--restore"
-                        title="Vrati"
+                        [title]="ui.t('destinations.actions.restore')"
                         [disabled]="isRestoring()"
                         (click)="restoreDestination(dest)"
                       >
@@ -393,7 +393,7 @@
                     } @else {
                       <a
                         class="btn-icon"
-                        title="Otvori u aplikaciji"
+                        [title]="ui.t('destinations.actions.open_in_app')"
                         [href]="'/destinations/' + dest.slug"
                         target="_blank"
                         rel="noopener"
@@ -402,14 +402,14 @@
                       </a>
                       <button
                         class="btn-icon"
-                        title="Izmeni"
+                        [title]="ui.t('common.edit')"
                         (click)="openEdit(dest)"
                       >
                         <span class="material-icons">edit</span>
                       </button>
                       <button
                         class="btn-icon btn-icon--danger"
-                        title="Obriši"
+                        [title]="ui.t('common.delete')"
                         (click)="openDeleteDialog(dest)"
                       >
                         <span class="material-icons">delete</span>
@@ -492,7 +492,7 @@
       @if (isDetailLoading()) {
         <div class="ddp-loading">
           <span class="material-icons ddp-loading__icon">sync</span>
-          Učitavanje...
+          {{ ui.t('common.loading') }}
         </div>
       } @else {
 
@@ -521,7 +521,7 @@
         <!-- Badges -->
         <div class="ddp-badges">
           @if (listMode() === 'deleted') {
-            <span class="dest-status dest-status--deleted">Obrisano</span>
+            <span class="dest-status dest-status--deleted">{{ ui.t('common.deleted') }}</span>
           } @else {
             <span class="dest-status dest-status--{{ dest.status }}">{{ statusLabel(dest.status) }}</span>
           }
@@ -536,7 +536,7 @@
         <!-- Interests -->
         @if (detailsPanelInterests().length) {
           <div class="ddp-interests">
-            <span class="ddp-grid__label">Interesovanja</span>
+            <span class="ddp-grid__label">{{ ui.t('common.interests') }}</span>
             <div class="ddp-interests-scroll">
               @for (tag of detailsPanelInterests(); track tag.id) {
                 <span class="ddp-interest-chip">
@@ -556,7 +556,7 @@
             </p>
             @if ((detailsPanelDetail()!.description?.length ?? 0) > 160) {
               <button class="ddp-description__toggle" type="button" (click)="descriptionExpanded.set(!descriptionExpanded())">
-                {{ descriptionExpanded() ? 'Prikaži manje' : 'Prikaži više' }}
+                {{ descriptionExpanded() ? ui.t('common.show_less') : ui.t('common.show_more') }}
               </button>
             }
           </div>
@@ -565,24 +565,24 @@
         <!-- Detail grid -->
         <div class="ddp-grid">
           <div class="ddp-grid__item">
-            <span class="ddp-grid__label">Kategorija</span>
+            <span class="ddp-grid__label">{{ ui.t('common.category') }}</span>
             <span class="ddp-grid__value">{{ dest.typeName || categoryLabel(dest.category) }}</span>
           </div>
           <div class="ddp-grid__item">
-            <span class="ddp-grid__label">Region</span>
+            <span class="ddp-grid__label">{{ ui.t('common.region') }}</span>
             <span class="ddp-grid__value">{{ dest.region || '—' }}</span>
           </div>
           <div class="ddp-grid__item">
-            <span class="ddp-grid__label">Pregleda</span>
+            <span class="ddp-grid__label">{{ ui.t('destinations.details.views') }}</span>
             <span class="ddp-grid__value">{{ formatViews(dest.views) }}</span>
           </div>
           <div class="ddp-grid__item">
-            <span class="ddp-grid__label">Ocena</span>
+            <span class="ddp-grid__label">{{ ui.t('common.rating') }}</span>
             <span class="ddp-grid__value">{{ dest.avgRating ? formatRating(dest.avgRating) + ' / 5' : '—' }}</span>
           </div>
           @if (detailsPanelDetail()?.latitude != null) {
             <div class="ddp-grid__item ddp-grid__item--full">
-              <span class="ddp-grid__label">Lokacija</span>
+              <span class="ddp-grid__label">{{ ui.t('common.location') }}</span>
               <app-admin-map-preview
                 [latitude]="detailsPanelDetail()!.latitude"
                 [longitude]="detailsPanelDetail()!.longitude"
@@ -594,13 +594,13 @@
         <!-- Reviews -->
         <div class="ddp-reviews-section">
           <h4 class="ddp-section-label">
-            Recenzije
+            {{ ui.t('common.reviews') }}
             @if (detailsPanelReviews().length > 0) {
               <span class="ddp-section-count">({{ detailsPanelReviews().length }})</span>
             }
           </h4>
           @if (!detailsPanelReviews().length) {
-            <p class="ddp-reviews-empty">Nema recenzija za ovu destinaciju.</p>
+            <p class="ddp-reviews-empty">{{ ui.t('destinations.details.no_reviews') }}</p>
           } @else {
             <div class="ddp-reviews-scroll">
               @for (review of detailsPanelReviews(); track review.createdAt) {
@@ -640,22 +640,22 @@
       @if (listMode() === 'deleted') {
         <button class="btn btn-ghost btn-sm ddp-footer__restore" [disabled]="isRestoring()" (click)="restoreDestination(dest)">
           <span class="material-icons">restore</span>
-          Vrati
+          {{ ui.t('common.restore') }}
         </button>
       } @else {
         <a class="btn btn-ghost btn-sm"
           [href]="'/destinations/' + dest.slug"
           target="_blank" rel="noopener">
           <span class="material-icons">open_in_new</span>
-          Otvori
+          {{ ui.t('common.open') }}
         </a>
         <button class="btn btn-ghost btn-sm" (click)="openEditFromPanel()">
           <span class="material-icons">edit</span>
-          Izmeni
+          {{ ui.t('common.edit') }}
         </button>
         <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="openDeleteFromPanel()">
           <span class="material-icons">delete</span>
-          Obriši
+          {{ ui.t('common.delete') }}
         </button>
       }
     </footer>

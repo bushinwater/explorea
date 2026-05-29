@@ -31,6 +31,7 @@ import {
 } from './admin-events.models';
 import { AdminEventsService } from './admin-events.service';
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
+import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
 const MAX_IMAGES = 10;
@@ -164,6 +165,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     private readonly lookupService: LookupService,
     private readonly http: HttpClient,
     private readonly cdr: ChangeDetectorRef,
+    protected readonly ui: AdminUiPreferencesService,
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {

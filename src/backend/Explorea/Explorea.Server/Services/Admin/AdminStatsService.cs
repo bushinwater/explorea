@@ -128,33 +128,36 @@ namespace Explorea.Server.Services.Admin
             var storageConfigured = IsStorageConfigured();
             var lastError = _errorLogService.GetLastError();
 
+            var pending = pendingDestinations + pendingSubmissions;
             var items = new List<AdminSystemStatusItemDto>
             {
                 new()
                 {
-                    Label = "Baza podataka",
-                    Detail = databaseAvailable ? "Dostupna" : "Nedostupna",
+                    Label = "system.db",
+                    Detail = databaseAvailable ? "system.db.ok" : "system.db.error",
                     Level = databaseAvailable ? "ok" : "critical",
                     Percentage = databaseAvailable ? 100 : 0
                 },
                 new()
                 {
-                    Label = "Storage",
-                    Detail = storageConfigured ? "Konfigurisan" : "Nije konfigurisan",
+                    Label = "system.storage",
+                    Detail = storageConfigured ? "system.storage.ok" : "system.storage.error",
                     Level = storageConfigured ? "ok" : "warning",
                     Percentage = storageConfigured ? 100 : 0
                 },
                 new()
                 {
-                    Label = "Destinacije na cekanju",
-                    Detail = $"{pendingDestinations + pendingSubmissions} zahteva",
-                    Level = pendingDestinations + pendingSubmissions > 0 ? "warning" : "ok",
-                    Percentage = Math.Min(100, (pendingDestinations + pendingSubmissions) * 10)
+                    Label = "system.pending_dest",
+                    Detail = $"{pending}",
+                    DetailKey = "system.pending_dest.detail",
+                    Level = pending > 0 ? "warning" : "ok",
+                    Percentage = Math.Min(100, pending * 10)
                 },
                 new()
                 {
-                    Label = "Otvoreni tiketi",
-                    Detail = $"{openTickets} aktivnih",
+                    Label = "system.open_tickets",
+                    Detail = $"{openTickets}",
+                    DetailKey = "system.open_tickets.detail",
                     Level = openTickets > 10 ? "critical" : openTickets > 0 ? "warning" : "ok",
                     Percentage = Math.Min(100, openTickets * 10)
                 }
@@ -163,14 +166,14 @@ namespace Explorea.Server.Services.Admin
             items.Add(lastError == null
                 ? new AdminSystemStatusItemDto
                 {
-                    Label = "Poslednja serverska greska",
-                    Detail = "Nema zabelezenih 500 gresaka",
+                    Label = "system.last_error",
+                    Detail = "system.last_error.none",
                     Level = "ok",
                     Percentage = 0
                 }
                 : new AdminSystemStatusItemDto
                 {
-                    Label = "Poslednja serverska greska",
+                    Label = "system.last_error",
                     Detail = $"{lastError.Method} {lastError.Path} - {lastError.Message}",
                     Level = "critical",
                     Percentage = 100

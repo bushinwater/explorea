@@ -11,6 +11,7 @@ import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
+import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { effect, untracked } from '@angular/core';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
@@ -144,6 +145,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     private readonly lookupService: LookupService,
     protected readonly authContext: AdminAuthContextService,
     protected readonly dashAuth: DashboardAuthService,
+    protected readonly ui: AdminUiPreferencesService,
   ) {
     effect(() => {
       const rid = this.lockedRegionId();
