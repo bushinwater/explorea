@@ -123,6 +123,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: none;
 }
 
 .lightbox__img {

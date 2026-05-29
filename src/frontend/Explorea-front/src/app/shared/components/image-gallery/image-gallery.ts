@@ -1,4 +1,4 @@
-import { Component, Input, HostListener } from '@angular/core';
+import { Component, Input, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface GalleryImage {
@@ -14,6 +14,8 @@ export interface GalleryImage {
   styleUrl: './image-gallery.css',
 })
 export class ImageGallery {
+  constructor(private cdr: ChangeDetectorRef) {}
+
   @Input() images: GalleryImage[] = [];
   @Input() viewAllLabel = 'Vidi sve';
   /** When > 0, only this many thumbnails are shown; "Vidi sve" opens the lightbox. */
@@ -110,6 +112,7 @@ export class ImageGallery {
     if (Math.abs(dx) < 40) return;
     if (dx < 0) this.next();
     else this.prev();
+    this.cdr.markForCheck();
     this.touchSwipeDone = true;
     setTimeout(() => { this.touchSwipeDone = false; }, 400);
   }
