@@ -9,6 +9,8 @@ using Explorea.Server.Data;
 using Explorea.Server.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace Explorea.Server.Repositories.Implementations
 {
@@ -522,8 +524,10 @@ namespace Explorea.Server.Repositories.Implementations
       foreach (var (key, value) in extraFiltersDict)
       {
         var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-        destinationsQuery = destinationsQuery.Where(d =>
-            d.ExtraFilters != null && EF.Functions.JsonContains(d.ExtraFilters, snippet));
+        var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+        var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
+            "SELECT id FROM destinations WHERE extra_filters @> @snippet", param).ToListAsync();
+        destinationsQuery = destinationsQuery.Where(d => matchingIds.Contains(d.Id));
       }
 
       var userPoint = BuildUserPoint(query.UserLat, query.UserLng);
@@ -680,8 +684,10 @@ namespace Explorea.Server.Repositories.Implementations
       foreach (var (key, value) in extraFiltersDict)
       {
         var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-        eventsQuery = eventsQuery.Where(e =>
-            e.ExtraFilters != null && EF.Functions.JsonContains(e.ExtraFilters, snippet));
+        var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+        var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
+            "SELECT id FROM events WHERE extra_filters @> @snippet", param).ToListAsync();
+        eventsQuery = eventsQuery.Where(e => matchingIds.Contains(e.Id));
       }
 
       if (query.RadiusKm.HasValue && userPoint != null)
@@ -848,8 +854,10 @@ namespace Explorea.Server.Repositories.Implementations
       foreach (var (key, value) in extraFiltersDict)
       {
         var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-        placesQuery = placesQuery.Where(p =>
-            p.ExtraFilters != null && EF.Functions.JsonContains(p.ExtraFilters, snippet));
+        var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+        var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
+            "SELECT id FROM places WHERE extra_filters @> @snippet", param).ToListAsync();
+        placesQuery = placesQuery.Where(p => matchingIds.Contains(p.Id));
       }
 
       if (query.RadiusKm.HasValue && userPoint != null)

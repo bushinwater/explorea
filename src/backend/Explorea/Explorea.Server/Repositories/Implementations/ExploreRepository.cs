@@ -4,6 +4,8 @@ using Explorea.Server.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
+using Npgsql;
+using NpgsqlTypes;
 using Activity = Explorea.API.Models.Activity;
 
 namespace Explorea.Server.Repositories.Implementations
@@ -45,7 +47,10 @@ namespace Explorea.Server.Repositories.Implementations
             foreach (var (key, value) in extraFiltersDict)
             {
                 var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-                query = query.Where(d => d.ExtraFilters != null && EF.Functions.JsonContains(d.ExtraFilters, snippet));
+                var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+                var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
+                    "SELECT id FROM destinations WHERE extra_filters @> @snippet", param).ToListAsync();
+                query = query.Where(d => matchingIds.Contains(d.Id));
             }
 
             return await query
@@ -84,7 +89,10 @@ namespace Explorea.Server.Repositories.Implementations
             foreach (var (key, value) in extraFiltersDict)
             {
                 var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-                query = query.Where(p => p.ExtraFilters != null && EF.Functions.JsonContains(p.ExtraFilters, snippet));
+                var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+                var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
+                    "SELECT id FROM places WHERE extra_filters @> @snippet", param).ToListAsync();
+                query = query.Where(p => matchingIds.Contains(p.Id));
             }
 
             if (openNow == true)

@@ -2,6 +2,8 @@ using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace Explorea.Server.Repositories.Implementations
 {
@@ -63,7 +65,10 @@ namespace Explorea.Server.Repositories.Implementations
                 foreach (var (key, value) in efDict)
                 {
                     var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-                    query = query.Where(e => e.ExtraFilters != null && EF.Functions.JsonContains(e.ExtraFilters, snippet));
+                    var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+                    var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
+                        "SELECT id FROM events WHERE extra_filters @> @snippet", param).ToListAsync();
+                    query = query.Where(e => matchingIds.Contains(e.Id));
                 }
             }
 

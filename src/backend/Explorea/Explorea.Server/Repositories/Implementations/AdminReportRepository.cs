@@ -3,6 +3,8 @@ using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 using Activity = Explorea.API.Models.Activity;
 
 namespace Explorea.Server.Repositories.Implementations
@@ -337,7 +339,10 @@ namespace Explorea.Server.Repositories.Implementations
                 foreach (var kvp in dict)
                 {
                     var snippet = $"{{\"{kvp.Key}\": {kvp.Value.ToLower()}}}";
-                    q = q.Where(e => e.ExtraFilters != null && EF.Functions.JsonContains(e.ExtraFilters, snippet));
+                    var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+                    var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
+                        "SELECT id FROM events WHERE extra_filters @> @snippet", param).ToListAsync();
+                    q = q.Where(e => matchingIds.Contains(e.Id));
                 }
             }
 
@@ -381,7 +386,10 @@ namespace Explorea.Server.Repositories.Implementations
                 foreach (var kvp in dict)
                 {
                     var snippet = $"{{\"{kvp.Key}\": {kvp.Value.ToLower()}}}";
-                    q = q.Where(p => p.ExtraFilters != null && EF.Functions.JsonContains(p.ExtraFilters, snippet));
+                    var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
+                    var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
+                        "SELECT id FROM places WHERE extra_filters @> @snippet", param).ToListAsync();
+                    q = q.Where(p => matchingIds.Contains(p.Id));
                 }
             }
 
