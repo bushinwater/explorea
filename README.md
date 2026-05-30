@@ -11,7 +11,7 @@ email: test.tosumadija@gmail.com
 pass: 123
 
 Korisnicki nalozi:
-email: test.korisnik@gmail.com
+email: test.korisnik1@gmail.com
 pass: 123
 
 email: test.korisnik2@gmail.com
