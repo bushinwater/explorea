@@ -73,7 +73,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .AsNoTracking()
                 .Include(p => p.Type)
                 .Include(p => p.Images)
-                .Where(p => !p.IsDeleted);
+                .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved");
 
             if (lat.HasValue && lng.HasValue)
             {
@@ -133,7 +133,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .AsNoTracking()
                 .Include(e => e.Type)
                 .Include(e => e.Images)
-                .Where(e => !e.IsDeleted && e.EndDatetime >= now);
+                .Where(e => !e.IsDeleted && e.Visibility == "published" && e.EndDatetime >= now);
 
             if (lat.HasValue && lng.HasValue)
             {
@@ -211,7 +211,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .AsNoTracking()
                 .Include(p => p.Type)
                 .Include(p => p.Images)
-                .Where(p => !p.IsDeleted && p.Slug == slug)
+                .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved" && p.Slug == slug)
                 .FirstOrDefaultAsync();
 
         public async Task<Event?> GetEventBySlugAsync(string slug)
@@ -221,7 +221,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .AsNoTracking()
                 .Include(e => e.Type)
                 .Include(e => e.Images)
-                .Where(e => !e.IsDeleted && e.EndDatetime >= now && e.Slug == slug)
+                .Where(e => !e.IsDeleted && e.Visibility == "published" && e.EndDatetime >= now && e.Slug == slug)
                 .FirstOrDefaultAsync();
         }
 

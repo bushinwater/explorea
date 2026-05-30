@@ -75,6 +75,7 @@ namespace Explorea.Server.Repositories.Implementations
             // Vrati stavke koje čekaju odobrenje PlaceOwnera —
             // tj. status je ApprovedByTO i linked_place_id pripada ovom owneru
             var ownedPlaceIds = await _db.Places
+                .IgnoreQueryFilters()
                 .Where(p => p.CreatedBy == ownerId)
                 .Select(p => p.Id)
                 .ToListAsync();
@@ -82,9 +83,11 @@ namespace Explorea.Server.Repositories.Implementations
             return await _db.SubmissionQueue
                 .Include(q => q.Destination)
                 .Include(q => q.SubmittedByUser)
-                .Where(q => q.LinkedPlaceId != null
-                         && q.Status == "ApprovedByTO"
-                         && ownedPlaceIds.Contains(q.LinkedPlaceId!.Value))
+                .Where(q =>
+                    q.SubmittedByUserId == ownerId ||
+                    (q.LinkedPlaceId != null &&
+                     q.Status == "ApprovedByTO" &&
+                     ownedPlaceIds.Contains(q.LinkedPlaceId!.Value)))
                 .OrderByDescending(q => q.SubmittedAt)
                 .ToListAsync();
         }

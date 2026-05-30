@@ -96,7 +96,16 @@ namespace Explorea.Server.Services
             if (result.Error != null)
                 throw new Exception($"Cloudinary upload failed: {result.Error.Message}");
 
-            return result.SecureUrl.ToString();
+            var secureUrl = result.SecureUrl.ToString();
+            return IsPdf(file)
+                ? secureUrl.Replace("/upload/", "/upload/fl_attachment/")
+                : secureUrl;
+        }
+
+        private static bool IsPdf(IFormFile file)
+        {
+            return file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) ||
+                   Path.GetExtension(file.FileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
