@@ -59,6 +59,10 @@ namespace Explorea.Server.Controllers.Admin
             {
                 return StatusCode(403, new { message = ex.Message });
             }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // GET /api/admin/events/{id}
@@ -75,6 +79,10 @@ namespace Explorea.Server.Controllers.Admin
             catch (UnauthorizedAccessException ex)
             {
                 return StatusCode(403, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -397,11 +405,25 @@ namespace Explorea.Server.Controllers.Admin
             {
                 Id = document.Id,
                 DocumentType = document.DocumentType,
-                DocumentUrl = document.DocumentUrl,
+                DocumentUrl = BuildDocumentDeliveryUrl(document.DocumentUrl, document.ContentType, document.FileName),
                 FileName = document.FileName,
                 ContentType = document.ContentType,
                 CreatedAt = document.CreatedAt
             };
+        }
+
+        private static string BuildDocumentDeliveryUrl(string url, string? contentType, string? fileName)
+        {
+            var isPdf =
+                contentType?.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) == true ||
+                (!string.IsNullOrWhiteSpace(fileName) &&
+                    Path.GetExtension(fileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase)) ||
+                url.Contains(".pdf", StringComparison.OrdinalIgnoreCase);
+
+            if (!isPdf || url.Contains("/fl_attachment/", StringComparison.OrdinalIgnoreCase))
+                return url;
+
+            return url.Replace("/upload/", "/upload/fl_attachment/");
         }
 
         private static string NormalizeDocumentType(string? documentType)

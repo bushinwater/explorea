@@ -454,12 +454,20 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
           Email = user.Email,
           Role = NormalizeRole(user.Role.Name),
           RoleLabel = FormatRoleLabel(user.Role.Name),
-          Region = user.ManagedRegion?.Name ?? "Sve regije",
+          Region = ResolveRegionLabel(user),
           Status = user.IsActive ? "Active" : "Inactive",
           MemberSince = ResolveMemberSince(user),
           ProfileImageUrl = user.ProfileImageUrl,
           Bio = user.Bio
       };
+    }
+
+    private static string ResolveRegionLabel(User user)
+    {
+      if (NormalizeRole(user.Role.Name) == "tourist_organization")
+        return user.ManagedRegion?.Name ?? "Nije dodeljena regija";
+
+      return user.ManagedRegion?.Name ?? "Sve regije";
     }
 
     private static string FormatRoleLabel(string role)

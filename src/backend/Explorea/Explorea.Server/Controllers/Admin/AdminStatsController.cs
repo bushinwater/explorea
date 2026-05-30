@@ -53,8 +53,8 @@ namespace Explorea.Server.Controllers.Admin
             try
             {
                 var userId = GetCurrentUserId();
-                var count = await _service.GetPendingCountAsync(userId);
-                return Ok(new { count });
+                var count = await _service.GetPendingCountBreakdownAsync(userId);
+                return Ok(count);
             }
             catch (UnauthorizedAccessException ex)
             {
