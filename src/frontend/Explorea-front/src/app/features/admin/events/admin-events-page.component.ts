@@ -7,8 +7,8 @@ import {
   computed,
   signal,
 } from '@angular/core';
-import { StatCardComponent } from '@shared/components';
 import { ActivatedRoute, Router } from '@angular/router';
+import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
@@ -34,6 +34,7 @@ import { EventCreateModalComponent } from './admin-event-create-modal.component'
 import { EventEditModalComponent } from './admin-event-edit-modal.component';
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 import { MapPreviewComponent } from '../shared/components/map-preview/map-preview.component';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-admin-events-page',
@@ -105,8 +106,15 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly detailsReviews   = signal<ReviewItem[]>([]);
 
   protected readonly isSuperAdmin = computed(
-    () => this.authContext.context().role === 'super_admin',
+    () => this.auth.getRole() === 'super_admin',
   );
+  protected readonly isPlaceOwner = computed(
+    () => this.auth.getRole() === 'place_owner',
+  );
+  protected readonly canCreateEvent = computed(() => {
+    const role = this.auth.getRole();
+    return role === 'super_admin' || role === 'tourist_organization' || role === 'place_owner';
+  });
 
   protected readonly lockedRegionId = computed(() =>
     this.dashAuth.role() === 'tourist_organization' ? this.dashAuth.managedRegionId : null,
@@ -148,6 +156,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
+    private readonly auth: AuthService,
     protected readonly dashAuth: DashboardAuthService,
     protected readonly ui: AdminUiPreferencesService,
   ) {
@@ -163,12 +172,25 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.route.queryParamMap.subscribe((params) => {
         const openId = params.get('openId');
+        const tabParam = params.get('tab') as EventsTab | null;
+        if (tabParam && ['active', 'pending', 'history', 'deleted'].includes(tabParam)) {
+          this.patchFilter({ tab: tabParam, page: 1 });
+          this.loadEvents();
+        }
+
         if (openId) {
           const openName = params.get('openName') ?? '';
           this.openDetailsPanel({ id: openId, name: openName } as unknown as EventRow);
           void this.router.navigate([], {
             relativeTo: this.route,
-            queryParams: { openId: null, openName: null },
+            queryParams: { openId: null, openName: null, tab: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        } else if (tabParam) {
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { tab: null },
             queryParamsHandling: 'merge',
             replaceUrl: true,
           });
@@ -188,6 +210,19 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       }),
     );
     this.loadStats();
+    this.subscription.add(
+      this.route.queryParamMap.subscribe((params) => {
+        if (params.get('create') === 'true') {
+          this.openCreateDialog();
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { create: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        }
+      }),
+    );
     // Za TO korisnike: ako profil nije još učitan, effect će pozvati loadFilterOptions kad stigne
     if (this.lockedRegionId() !== null || this.dashAuth.role() !== 'tourist_organization') {
       this.loadFilterOptions();
@@ -438,7 +473,9 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     if (action === 'delete') {
       this.isActioning.set(true);
       this.subscription.add(
-        this.eventsService.deleteEvent(ev.id)
+        (ev.queueId && ev.status === 'pending'
+          ? this.eventsService.deleteQueueRequest(ev.queueId)
+          : this.eventsService.deleteEvent(ev.id))
           .pipe(finalize(() => this.isActioning.set(false)))
           .subscribe({
             next: () => {
@@ -451,8 +488,8 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
               this.loadEvents();
               setTimeout(() => this.successMessage.set(''), 4000);
             },
-            error: () => {
-              this.errorMessage.set('Brisanje nije uspelo.');
+            error: (err) => {
+              this.errorMessage.set(err?.error?.message ?? 'Brisanje nije uspelo.');
               setTimeout(() => this.errorMessage.set(''), 4000);
             },
           }),
@@ -484,8 +521,8 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
           this.loadEvents();
           setTimeout(() => this.successMessage.set(''), 4000);
         },
-        error: () => {
-          this.errorMessage.set('Došlo je do greške. Pokušajte ponovo.');
+        error: (err) => {
+          this.errorMessage.set(err?.error?.message ?? 'Došlo je do greške. Pokušajte ponovo.');
           setTimeout(() => this.errorMessage.set(''), 4000);
         },
       }),

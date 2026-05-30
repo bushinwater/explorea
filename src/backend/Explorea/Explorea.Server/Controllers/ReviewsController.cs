@@ -145,15 +145,25 @@ namespace Explorea.Server.Controllers
 
             if (review == null) return NotFound();
 
+            var ownerPlaceIds = _db.Places.IgnoreQueryFilters()
+                .Where(p => p.CreatedBy == userId)
+                .Select(p => p.Id);
+
             bool isOwner = review.EntityType == "place"
-                ? await _db.Places.AnyAsync(p => p.Id == review.EntityId && p.CreatedBy == userId)
-                : await _db.Events.AnyAsync(e => e.Id == review.EntityId && e.CreatedBy == userId);
+                ? await ownerPlaceIds.ContainsAsync(review.EntityId)
+                : await _db.Events.IgnoreQueryFilters()
+                    .AnyAsync(e =>
+                        e.Id == review.EntityId &&
+                        (e.CreatedBy == userId ||
+                         (e.PlaceId.HasValue && ownerPlaceIds.Contains(e.PlaceId.Value))));
 
             if (!isOwner)
                 return StatusCode(403, new { message = "Možete odgovarati samo na recenzije vaših objekata ili događaja." });
 
             review.OwnerReply   = dto.Reply.Trim();
             review.OwnerReplyAt = DateTimeOffset.UtcNow;
+            review.UpdatedAt = DateTimeOffset.UtcNow;
+            review.UpdatedBy = userId;
             await _db.SaveChangesAsync();
 
             return Ok(new { ownerReply = review.OwnerReply, ownerReplyAt = review.OwnerReplyAt });

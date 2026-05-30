@@ -10,6 +10,7 @@
     [eventTypeOptions]="eventTypeOptions()"
     [lockedRegionId]="lockedRegionId()"
     [closing]="isCreateClosing()"
+    [requiresOwnerDocuments]="isPlaceOwner()"
     (cancel)="closeCreateModal()"
     (created)="onEventCreated($event)"
   />
@@ -246,7 +247,7 @@
           }
         </div>
 
-        @if (isSuperAdmin() && filters().tab !== 'deleted') {
+        @if (canCreateEvent() && filters().tab !== 'deleted') {
           <button class="evts-btn-primary" type="button" (click)="openCreateDialog()">
             <span class="material-icons">add</span>
             {{ ui.t('events.btn.create') }}
@@ -423,6 +424,22 @@
                           >
                             <span class="material-icons">open_in_new</span>
                           </a>
+                        }
+                        @if (isSuperAdmin() && ev.status === 'pending') {
+                          <button
+                            class="btn-icon"
+                            [title]="ui.t('events.panel.approve')"
+                            (click)="selectedEvent.set(ev); initiateAction('approve')"
+                          >
+                            <span class="material-icons">check_circle</span>
+                          </button>
+                          <button
+                            class="btn-icon"
+                            [title]="ui.t('events.panel.reject')"
+                            (click)="selectedEvent.set(ev); initiateAction('reject')"
+                          >
+                            <span class="material-icons">cancel</span>
+                          </button>
                         }
                         @if (isSuperAdmin() && ev.status === 'active') {
                           <button

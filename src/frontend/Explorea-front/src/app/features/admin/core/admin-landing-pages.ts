@@ -30,7 +30,7 @@ export const ADMIN_LANDING_PAGE_OPTIONS: AdminLandingPageOption[] = [
     value: 'events',
     label: 'Dogadjaji',
     route: '/admin/events',
-    roles: ['super_admin', 'tourist_organization'],
+    roles: ['super_admin', 'tourist_organization', 'place_owner'],
   },
   {
     value: 'activities',

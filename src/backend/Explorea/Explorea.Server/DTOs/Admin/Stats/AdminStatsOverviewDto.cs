@@ -32,6 +32,13 @@ namespace Explorea.API.DTOs.Admin.Stats
         public int? Percentage { get; set; }
     }
 
+    public class AdminPendingCountDto
+    {
+        public int Count { get; set; }
+        public int EventCount { get; set; }
+        public int PlaceCount { get; set; }
+    }
+
     public class AdminLastServerErrorDto
     {
         public string Message { get; set; } = string.Empty;

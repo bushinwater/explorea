@@ -331,13 +331,49 @@ namespace Explorea.Server.Services
 
         public async Task SendSavedItemDeletedEmailAsync(string toEmail, string firstName, string entityName)
         {
+            await SendDeletedEntityReferenceEmailAsync(
+                toEmail,
+                firstName,
+                entityName,
+                wasSaved: true,
+                wasInPlanner: false,
+                plannerNotes: Array.Empty<string>());
+        }
+
+        public async Task SendDeletedEntityReferenceEmailAsync(
+            string toEmail,
+            string firstName,
+            string entityName,
+            bool wasSaved,
+            bool wasInPlanner,
+            IEnumerable<string> plannerNotes)
+        {
             var safeName = WebUtility.HtmlEncode(entityName);
+            var sourceText = (wasSaved, wasInPlanner) switch
+            {
+                (true, true) => "vasoj listi sacuvanih i planeru",
+                (true, false) => "vasoj listi sacuvanih",
+                (false, true) => "vasem planeru",
+                _ => "vasem nalogu"
+            };
+
+            var notes = plannerNotes
+                .Where(note => !string.IsNullOrWhiteSpace(note))
+                .Select(note => note.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var notesBlock = notes.Count == 0
+                ? string.Empty
+                : $"<p>Napomena iz planera: \"{WebUtility.HtmlEncode(string.Join("; ", notes))}\"</p>";
+
             var subject = $"{entityName} je obrisan iz sistema";
             var htmlBody = $@"
                 <html>
                     <body>
                         <p>Zdravo, {WebUtility.HtmlEncode(firstName)}!</p>
-                        <p>{safeName} koji je bio u vasoj listi sacuvanih je obrisan iz sistema.</p>
+                        <p>{safeName} koji je bio u {sourceText} je obrisan iz sistema.</p>
+                        {notesBlock}
                     </body>
                 </html>";
 
@@ -399,6 +435,41 @@ namespace Explorea.Server.Services
   </table>
 </body>
 </html>";
+
+            await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
+        }
+
+        public async Task SendSubmittedEntityReviewedEmailAsync(
+            string toEmail,
+            string firstName,
+            string entityType,
+            string entityName,
+            bool approved,
+            string? rejectionReason)
+        {
+            var safeFirstName = WebUtility.HtmlEncode(firstName);
+            var safeEntityType = WebUtility.HtmlEncode(entityType);
+            var safeEntityName = WebUtility.HtmlEncode(entityName);
+            var subject = approved
+                ? $"{entityName} je odobren"
+                : $"{entityName} je odbijen";
+
+            var statusText = approved
+                ? $"Vas {safeEntityType} \"{safeEntityName}\" je odobren i bice prikazan korisnicima."
+                : $"Vas {safeEntityType} \"{safeEntityName}\" je odbijen.";
+
+            var reasonBlock = approved
+                ? string.Empty
+                : $"<p>Razlog odbijanja: {WebUtility.HtmlEncode(rejectionReason ?? "Zahtev ne ispunjava uslove za objavu.")}</p>";
+
+            var htmlBody = $@"
+                <html>
+                    <body>
+                        <p>Zdravo, {safeFirstName}!</p>
+                        <p>{statusText}</p>
+                        {reasonBlock}
+                    </body>
+                </html>";
 
             await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
         }

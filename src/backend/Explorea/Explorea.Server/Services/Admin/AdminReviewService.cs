@@ -100,7 +100,7 @@ namespace Explorea.Server.Services.Admin
             }
             else if (user?.Role.Name == RoleNames.PlaceOwner)
             {
-                if (review.EntityType != "place")
+                if (!await PlaceOwnerHasAccessToReview(currentUserId, review))
                     return null;
             }
             else if (user?.Role.Name != RoleNames.SuperAdmin)
@@ -290,6 +290,30 @@ namespace Explorea.Server.Services.Admin
                 return destinationIds.Contains(review.EntityId);
 
             return true;
+        }
+
+        private async Task<bool> PlaceOwnerHasAccessToReview(Guid ownerId, Review review)
+        {
+            if (review.EntityType == "place")
+            {
+                return await _db.Places.IgnoreQueryFilters()
+                    .AnyAsync(p => p.Id == review.EntityId && p.CreatedBy == ownerId);
+            }
+
+            if (review.EntityType == "event")
+            {
+                var ownerPlaceIds = _db.Places.IgnoreQueryFilters()
+                    .Where(p => p.CreatedBy == ownerId)
+                    .Select(p => p.Id);
+
+                return await _db.Events.IgnoreQueryFilters()
+                    .AnyAsync(e =>
+                        e.Id == review.EntityId &&
+                        (e.CreatedBy == ownerId ||
+                         (e.PlaceId.HasValue && ownerPlaceIds.Contains(e.PlaceId.Value))));
+            }
+
+            return false;
         }
 
         private static AdminReviewListDto MapToDto(Review r)

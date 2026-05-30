@@ -21,6 +21,7 @@ namespace Explorea.API.DTOs.Admin.Place
         public string? WebsiteUrl { get; set; }
 
         public bool IsFeatured { get; set; }
+        public Dictionary<string, string>? ExtraFilters { get; set; }
 
         public List<AdminCreatePlaceImageDto> Images { get; set; } = new();
         public List<int> AmenityIds { get; set; } = new();

@@ -8,7 +8,7 @@
       <div class="alert-card__title">{{ ui.t('dashboard.alert.title') }}</div>
       <div class="alert-card__desc">{{ ui.t('dashboard.alert.pending', { count: data()?.pendingCount ?? 0 }) }}</div>
     </div>
-    <button class="alert-card__cta">{{ ui.t('dashboard.alert.cta') }}</button>
+    <button class="alert-card__cta" type="button" (click)="openPendingRequests()">{{ ui.t('dashboard.alert.cta') }}</button>
     <button class="alert-card__close" (click)="alertDismissed.set(true)" [title]="ui.t('modal.close')">
       <span class="material-icons">close</span>
     </button>

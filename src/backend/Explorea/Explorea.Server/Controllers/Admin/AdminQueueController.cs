@@ -63,6 +63,15 @@ namespace Explorea.Server.Controllers.Admin
             return Ok();
         }
 
+        // DELETE /api/admin/queue/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var userId = GetCurrentUserId();
+            await _service.DeleteAsync(id, userId);
+            return NoContent();
+        }
+
         // POST /api/admin/queue/{id}/owner-approve
         [HttpPost("{id}/owner-approve")]
         public async Task<IActionResult> ApproveByOwner(Guid id)

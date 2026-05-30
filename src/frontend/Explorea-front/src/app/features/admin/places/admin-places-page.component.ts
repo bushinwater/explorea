@@ -34,6 +34,7 @@ import { AdminPlacesService } from './admin-places.service';
 import { PlaceCreateModalComponent } from './admin-place-create-modal.component';
 import { PlaceEditModalComponent } from './admin-place-edit-modal.component';
 import { MapPreviewComponent } from '../shared/components/map-preview/map-preview.component';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-admin-places-page',
@@ -84,6 +85,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   protected readonly isDeleteDialogOpen = signal(false);
   protected readonly isDeleting     = signal(false);
   protected readonly isRestoring    = signal(false);
+  protected readonly isReviewing    = signal(false);
   protected readonly isEditModalOpen   = signal(false);
   protected readonly isCreateModalOpen = signal(false);
   protected readonly selectedPlace  = signal<PlaceRow | null>(null);
@@ -104,11 +106,20 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   );
 
   protected readonly isSuperAdmin = computed(
-    () => this.authContext.context().role === 'super_admin',
+    () => this.auth.getRole() === 'super_admin',
   );
 
+  protected readonly isPlaceOwner = computed(
+    () => this.auth.getRole() === 'place_owner',
+  );
+
+  protected readonly canReviewOwnerSubmissions = computed(() => {
+    const role = this.auth.getRole();
+    return role === 'super_admin' || role === 'tourist_organization';
+  });
+
   protected readonly canSeeRegionFilter = computed(() => {
-    const role = this.authContext.context().role;
+    const role = this.auth.getRole();
     return role === 'super_admin' || role === 'tourist_organization';
   });
 
@@ -131,7 +142,6 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     { value: 'all',      label: 'Svi statusi' },
     { value: 'approved', label: 'Aktivno' },
     { value: 'pending',  label: 'Na čekanju' },
-    { value: 'inactive', label: 'Neaktivno' },
     { value: 'rejected', label: 'Odbijeno' },
   ];
 
@@ -142,6 +152,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     protected readonly authContext: AdminAuthContextService,
+    private readonly auth: AuthService,
     protected readonly ui: AdminUiPreferencesService,
     protected readonly dashAuth: DashboardAuthService,
   ) {}
@@ -150,6 +161,18 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.route.queryParamMap.subscribe((params) => {
         const openId = params.get('openId');
+        const statusParam = params.get('status') as PlaceStatus | 'all' | null;
+        if (statusParam && ['all', 'approved', 'pending', 'rejected'].includes(statusParam)) {
+          this.patchFilter({ status: statusParam, page: 1 });
+          this.loadPlaces();
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { status: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        }
+
         if (openId) {
           const openName = params.get('openName') ?? '';
           this.openDetailsPanel({ id: openId, name: openName } as unknown as PlaceRow);
@@ -181,6 +204,19 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.loadTypes();
     this.loadRegions();
     this.loadCountries();
+    this.subscription.add(
+      this.route.queryParamMap.subscribe((params) => {
+        if (params.get('create') === 'true') {
+          this.openCreateModal();
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { create: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        }
+      }),
+    );
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
     this.loadPlaces(openEditId ? (items) => {
       const place = items.find(p => p.id === openEditId);
@@ -331,6 +367,52 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected approvePlace(place: PlaceRow): void {
+    if (!this.canReviewOwnerSubmissions() || place.status !== 'pending' || this.isReviewing()) return;
+
+    this.isReviewing.set(true);
+    this.subscription.add(
+      this.placesService.approvePlace(place.id).subscribe({
+        next: () => {
+          this.isReviewing.set(false);
+          this.successMessage.set(`"${place.name}" je uspesno odobren.`);
+          this.closeDetailsPanel();
+          this.loadPlaces();
+          this.loadStats();
+          setTimeout(() => this.successMessage.set(''), 4000);
+        },
+        error: (err) => {
+          this.isReviewing.set(false);
+          this.errorMessage.set(err?.error?.message ?? 'Odobravanje objekta nije uspelo.');
+          setTimeout(() => this.errorMessage.set(''), 5000);
+        },
+      }),
+    );
+  }
+
+  protected rejectPlace(place: PlaceRow): void {
+    if (!this.canReviewOwnerSubmissions() || place.status !== 'pending' || this.isReviewing()) return;
+
+    this.isReviewing.set(true);
+    this.subscription.add(
+      this.placesService.rejectPlace(place.id).subscribe({
+        next: () => {
+          this.isReviewing.set(false);
+          this.successMessage.set(`Zahtev za "${place.name}" je odbijen.`);
+          this.closeDetailsPanel();
+          this.loadPlaces();
+          this.loadStats();
+          setTimeout(() => this.successMessage.set(''), 4000);
+        },
+        error: () => {
+          this.isReviewing.set(false);
+          this.errorMessage.set('Odbijanje objekta nije uspelo.');
+          setTimeout(() => this.errorMessage.set(''), 5000);
+        },
+      }),
+    );
+  }
+
   protected openDetailsPanel(place: PlaceRow): void {
 
     this.detailsPanelRow.set(place);
@@ -450,6 +532,16 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
       rejected: 'Odbijeno',
     };
     return map[status] ?? status;
+  }
+
+  protected ownerDocumentLabel(type: string): string {
+    const map: Record<string, string> = {
+      identity: 'Licni dokument',
+      authorization: 'Dokaz vlasnistva/ovlascenja',
+      license: 'Licenca/dozvola',
+      other: 'Dokument',
+    };
+    return map[type] ?? 'Dokument';
   }
 
   protected placeIcon(typeName: string | null): string {

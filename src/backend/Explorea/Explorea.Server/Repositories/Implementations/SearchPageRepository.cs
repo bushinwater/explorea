@@ -166,7 +166,7 @@ namespace Explorea.Server.Repositories.Implementations
           .AsNoTracking()
           .Include(e => e.City)
           .Include(e => e.Type)
-          .Where(e => e.EndDatetime >= now)
+          .Where(e => !e.IsDeleted && e.Visibility == "published" && e.EndDatetime >= now)
           .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))
@@ -252,6 +252,7 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(p => p.Type)
         .Include(p => p.WorkingDays)
           .ThenInclude(wd => wd.Intervals)
+        .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved")
         .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))
@@ -620,7 +621,7 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(e => e.City)
         .Include(e => e.Type)
         .Include(e => e.Destination)
-        .Where(e => !e.IsDeleted && e.EndDatetime >= now)
+        .Where(e => !e.IsDeleted && e.Visibility == "published" && e.EndDatetime >= now)
         .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))
@@ -789,7 +790,7 @@ namespace Explorea.Server.Repositories.Implementations
           .Include(p => p.Type)
           .Include(p => p.WorkingDays)
               .ThenInclude(wd => wd.Intervals)
-          .Where(p => !p.IsDeleted)
+          .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved")
           .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))

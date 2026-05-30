@@ -106,6 +106,7 @@ export interface PlaceDetail {
   images: PlaceImage[];
   amenities: PlaceAmenity[];
   workingDays: PlaceWorkingDay[];
+  documents: OwnerSubmissionDocument[];
   extraFilters?: Record<string, string>;
   reviews?: PlaceReview[];
   createdAt: string;
@@ -182,6 +183,15 @@ export interface CreatePlaceDto {
   websiteUrl?: string;
   isFeatured?: boolean;
   extraFilters?: Record<string, string>;
+}
+
+export interface OwnerSubmissionDocument {
+  id: string;
+  documentType: string;
+  documentUrl: string;
+  fileName: string | null;
+  contentType: string | null;
+  createdAt: string;
 }
 
 export interface UpdatePlaceDto {

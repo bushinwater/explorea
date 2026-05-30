@@ -25,12 +25,25 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         public async Task<(List<SubmissionQueue> Items, int Total)> GetPagedAsync(
-            Guid? destinationId, string? status, string? entityType, int page, int pageSize)
+            Guid? destinationId,
+            string? status,
+            string? entityType,
+            int page,
+            int pageSize,
+            IReadOnlyCollection<Guid>? restrictToDestinationIds = null)
         {
             var query = _db.SubmissionQueue
                 .Include(q => q.Destination)
                 .Include(q => q.SubmittedByUser)
                 .AsQueryable();
+
+            if (restrictToDestinationIds != null)
+            {
+                if (restrictToDestinationIds.Count == 0)
+                    return (new List<SubmissionQueue>(), 0);
+
+                query = query.Where(q => restrictToDestinationIds.Contains(q.DestinationId));
+            }
 
             if (destinationId.HasValue)
                 query = query.Where(q => q.DestinationId == destinationId.Value);
@@ -62,6 +75,7 @@ namespace Explorea.Server.Repositories.Implementations
             // Vrati stavke koje čekaju odobrenje PlaceOwnera —
             // tj. status je ApprovedByTO i linked_place_id pripada ovom owneru
             var ownedPlaceIds = await _db.Places
+                .IgnoreQueryFilters()
                 .Where(p => p.CreatedBy == ownerId)
                 .Select(p => p.Id)
                 .ToListAsync();
@@ -69,9 +83,11 @@ namespace Explorea.Server.Repositories.Implementations
             return await _db.SubmissionQueue
                 .Include(q => q.Destination)
                 .Include(q => q.SubmittedByUser)
-                .Where(q => q.LinkedPlaceId != null
-                         && q.Status == "ApprovedByTO"
-                         && ownedPlaceIds.Contains(q.LinkedPlaceId!.Value))
+                .Where(q =>
+                    q.SubmittedByUserId == ownerId ||
+                    (q.LinkedPlaceId != null &&
+                     q.Status == "ApprovedByTO" &&
+                     ownedPlaceIds.Contains(q.LinkedPlaceId!.Value)))
                 .OrderByDescending(q => q.SubmittedAt)
                 .ToListAsync();
         }

@@ -1,3 +1,8 @@
+:host {
+  display: block;
+  margin-top: auto;
+}
+
 .detail-footer {
   background: var(--color-footer);
   border-top: 1px solid var(--color-border);

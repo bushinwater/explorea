@@ -13,6 +13,8 @@ namespace Explorea.Server.Services.Admin.Interfaces
 
         Task RejectByTOAsync(Guid queueItemId, Guid reviewerId, string reason);
 
+        Task DeleteAsync(Guid queueItemId, Guid reviewerId);
+
         Task ApproveByOwnerAsync(Guid queueItemId, Guid ownerId);
 
         Task RejectByOwnerAsync(Guid queueItemId, Guid ownerId, string reason);

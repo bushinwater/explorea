@@ -1,5 +1,7 @@
 namespace Explorea.API.DTOs.Admin.Queue
 {
+    using Explorea.API.DTOs.Admin;
+
     public class QueueItemDto
     {
         public Guid Id { get; set; }
@@ -15,5 +17,6 @@ namespace Explorea.API.DTOs.Admin.Queue
         public string? RejectionReason { get; set; }
         public DateTimeOffset? ReviewedByTOAt { get; set; }
         public DateTimeOffset? ReviewedByOwnerAt { get; set; }
+        public List<OwnerSubmissionDocumentDto> Documents { get; set; } = new();
     }
 }

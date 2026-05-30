@@ -21,7 +21,7 @@ namespace Explorea.Server.Controllers
         public async Task<IActionResult> GetAll([FromQuery] int? cityId, [FromQuery] int? typeId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
             var query = _db.Places
-                .Where(p => !p.IsDeleted)
+                .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved")
                 .Include(p => p.Images)
                 .Include(p => p.Type)
                 .Include(p => p.City)
@@ -44,7 +44,7 @@ namespace Explorea.Server.Controllers
         public async Task<IActionResult> GetBySlug(string slug)
         {
             var place = await _db.Places
-                .Where(p => p.Slug == slug && !p.IsDeleted)
+                .Where(p => p.Slug == slug && !p.IsDeleted && p.ApprovalStatus == "approved")
                 .Include(p => p.Images.OrderBy(i => i.SortOrder))
                 .Include(p => p.Type)
                 .Include(p => p.City)
@@ -140,7 +140,7 @@ namespace Explorea.Server.Controllers
         private async Task<IEnumerable<object>> GetSimilarPlacesAsync(Place current, int limit)
         {
             var query = _db.Places
-                .Where(p => !p.IsDeleted && p.Id != current.Id)
+                .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved" && p.Id != current.Id)
                 .Include(p => p.Images.OrderBy(i => i.SortOrder))
                 .Include(p => p.Type)
                 .Include(p => p.City)

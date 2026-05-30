@@ -78,14 +78,14 @@
           <button class="btn btn-secondary" type="button"
             [disabled]="isProfilePhotoUploading() || isProfilePhotoDeleting()" (click)="profilePhotoInput.click()">
             <span class="material-icons">photo_camera</span>
-            {{ isProfilePhotoUploading() ? 'Uploading...' : 'Upload New Photo' }}
+            {{ isProfilePhotoUploading() ? 'Otpremanje...' : 'Otpremi novu sliku' }}
           </button>
 
           <button class="profile-card__delete" type="button"
             [disabled]="!adminProfile().profileImageUrl || isProfilePhotoUploading() || isProfilePhotoDeleting()"
             (click)="deleteProfilePhoto()">
             <span class="material-icons">delete</span>
-            {{ isProfilePhotoDeleting() ? 'Deleting...' : 'Delete Photo' }}
+            {{ isProfilePhotoDeleting() ? 'Brisanje...' : 'Obriši sliku' }}
           </button>
         </div>
       </aside>
@@ -97,7 +97,7 @@
           }
 
           <div>
-            <p class="profile-form__eyebrow">Profile</p>
+            <p class="profile-form__eyebrow">Profil</p>
             <h2>Informacije o profilu</h2>
             <p>Ažuriraj lične podatke ulogovanog admina.</p>
           </div>
@@ -137,12 +137,12 @@
         <footer class="profile-form__actions">
           <button class="btn btn-secondary" type="button" [disabled]="isProfileSaving()"
             (click)="resetProfileChanges()">
-            Reset Changes
+            Poništi izmene
           </button>
 
           <button class="btn btn-primary" type="button" [disabled]="isProfileSaving()" (click)="saveProfile()">
             <span class="material-icons">save</span>
-            {{ isProfileSaving() ? 'Saving...' : 'Save Profile' }}
+            {{ isProfileSaving() ? 'Čuvanje...' : 'Sačuvaj profil' }}
           </button>
         </footer>
       </section>
@@ -153,7 +153,7 @@
     <div class="preferences-tab">
       <section class="preferences-hero">
         <div>
-          <p class="section-eyebrow">App Preferences</p>
+          <p class="section-eyebrow">Podešavanja aplikacije</p>
           <h2>Izgled i ponašanje aplikacije</h2>
           <p>Podesi kako admin panel izgleda i kako se ponaša tokom svakodnevnog rada.</p>
 
@@ -234,7 +234,7 @@
       <footer class="preferences-actions">
         <button class="btn btn-secondary" type="button" [disabled]="isPreferencesSaving()"
           (click)="resetPreferencesChanges()">
-          Reset Changes
+          Poništi izmene
         </button>
 
         <button class="btn btn-primary" type="button" [disabled]="isPreferencesSaving()" (click)="savePreferences()">
@@ -249,7 +249,7 @@
     <div class="notifications-tab">
       <section class="notifications-hero">
         <div>
-          <p class="section-eyebrow">Notifications</p>
+          <p class="section-eyebrow">Obaveštenja</p>
           <h2>Podešavanja obaveštenja</h2>
           <p>Izaberi kako i kada admin prima obaveštenja o važnim promenama na platformi.</p>
 
@@ -391,13 +391,13 @@
       <footer class="notifications-actions">
         <button class="btn btn-secondary" type="button" [disabled]="isNotificationsSaving()"
           (click)="resetNotificationChanges()">
-          Reset Changes
+          Poništi izmene
         </button>
 
         <button class="btn btn-primary" type="button" [disabled]="isNotificationsSaving()"
           (click)="saveNotifications()">
           <span class="material-icons">save</span>
-          {{ isNotificationsSaving() ? 'Saving...' : 'Save Notifications' }}
+          {{ isNotificationsSaving() ? 'Čuvanje...' : 'Sačuvaj obaveštenja' }}
         </button>
       </footer>
     </div>
@@ -408,7 +408,7 @@
     <div class="administration-tab">
       <section class="administration-hero">
         <div>
-          <p class="section-eyebrow">Administration</p>
+          <p class="section-eyebrow">Administracija</p>
           <h2>Sistemska podešavanja</h2>
           <p>Centralno mesto za superadmin kontrole, bezbednosne opcije i sistemske parametre.</p>
 
@@ -533,19 +533,19 @@
 
       <footer class="administration-actions">
         <button class="btn btn-secondary" type="button">
-          Reset Changes
+          Poništi izmene
         </button>
 
         <button class="btn btn-primary" type="button">
           <span class="material-icons">save</span>
-          Save Administration
+          Sačuvaj administraciju
         </button>
       </footer>
     </div>
     } @else {
     <div class="settings-placeholder">
       <span class="material-icons">lock</span>
-      <h2>Administration nije dostupna</h2>
+      <h2>Administracija nije dostupna</h2>
       <p>Ova podešavanja su vidljiva samo superadmin korisnicima.</p>
     </div>
     }
@@ -562,7 +562,7 @@
           <h2 id="profile-photo-cropper-title">Podesi izgled slike</h2>
         </div>
 
-        <button class="profile-photo-cropper__close" type="button" (click)="cancelProfilePhotoCrop()" aria-label="Close cropper">
+        <button class="profile-photo-cropper__close" type="button" (click)="cancelProfilePhotoCrop()" aria-label="Zatvori cropper">
           <span class="material-icons">close</span>
         </button>
       </header>
@@ -585,7 +585,7 @@
 
         <button class="btn btn-primary" type="button" [disabled]="isProfilePhotoUploading()" (click)="confirmProfilePhotoCrop()">
           <span class="material-icons">check</span>
-          {{ isProfilePhotoUploading() ? 'Uploading...' : 'Primeni' }}
+          {{ isProfilePhotoUploading() ? 'Otpremanje...' : 'Primeni' }}
         </button>
       </footer>
     </section>

@@ -35,11 +35,37 @@ namespace Explorea.Server.Services.Admin
             var user = await _userRepository.GetByIdWithRoleAsync(currentUserId)
                 ?? throw new UnauthorizedAccessException("Current user was not found.");
 
-            if (user.Role.Name != RoleNames.SuperAdmin && user.Role.Name != RoleNames.TouristOrganization)
+            if (user.Role.Name != RoleNames.SuperAdmin &&
+                user.Role.Name != RoleNames.TouristOrganization &&
+                user.Role.Name != RoleNames.PlaceOwner)
                 throw new UnauthorizedAccessException("Access denied.");
 
             var now = DateTimeOffset.UtcNow;
             var recentCutoff = now.AddDays(-30);
+
+            if (user.Role.Name == RoleNames.PlaceOwner)
+            {
+                var placeQuery = BuildOwnerPlaceScope(currentUserId);
+                var eventQuery = BuildOwnerEventScope(currentUserId);
+
+                var totalPlaces = await placeQuery.CountAsync();
+                var totalEvents = await eventQuery.CountAsync();
+                var activePlaces = await placeQuery.CountAsync(p => p.ApprovalStatus == "approved");
+                var activeEvents = await eventQuery.CountAsync(e =>
+                    e.Visibility == "published" || e.Visibility == "active");
+                var mostPopularOwnerEntity = await GetMostPopularOwnerEntityAsync(currentUserId);
+
+                return new AdminStatsOverviewDto
+                {
+                    TotalUsers = totalPlaces + totalEvents,
+                    NewUsersLast30Days =
+                        await placeQuery.CountAsync(p => p.CreatedAt >= recentCutoff) +
+                        await eventQuery.CountAsync(e => e.CreatedAt >= recentCutoff),
+                    ActiveDestinations = activePlaces + activeEvents,
+                    MostPopularDestination = await GetMostPopularOwnerDestinationAsync(currentUserId),
+                    MostPopularEntity = mostPopularOwnerEntity
+                };
+            }
 
             var destinationQuery = await BuildDestinationScopeAsync(user, currentUserId);
             var destinationIdsQuery = destinationQuery.Select(d => d.Id);
@@ -65,12 +91,46 @@ namespace Explorea.Server.Services.Admin
             var user = await _userRepository.GetByIdWithRoleAsync(currentUserId)
                 ?? throw new UnauthorizedAccessException("Current user was not found.");
 
-            if (user.Role.Name != RoleNames.SuperAdmin && user.Role.Name != RoleNames.TouristOrganization)
+            if (user.Role.Name != RoleNames.SuperAdmin &&
+                user.Role.Name != RoleNames.TouristOrganization &&
+                user.Role.Name != RoleNames.PlaceOwner)
                 throw new UnauthorizedAccessException("Access denied.");
 
             var clampedDays = Math.Clamp(days, 1, 90);
             var today = DateTime.UtcNow.Date;
             var startDate = today.AddDays(-(clampedDays - 1));
+
+            if (user.Role.Name == RoleNames.PlaceOwner)
+            {
+                var ownerPlaceIdsQuery = BuildOwnerPlaceScope(currentUserId).Select(p => p.Id);
+                var ownerEventIdsQuery = BuildOwnerEventScope(currentUserId).Select(e => e.Id);
+
+                var ownerViewsByDate = await _db.PopularityLogs
+                    .Where(l =>
+                        l.Source == "click" &&
+                        l.CreatedAt >= startDate &&
+                        ((l.EntityType == "place" && ownerPlaceIdsQuery.Contains(l.EntityId)) ||
+                         (l.EntityType == "event" && ownerEventIdsQuery.Contains(l.EntityId))))
+                    .GroupBy(l => l.CreatedAt.Date)
+                    .Select(g => new
+                    {
+                        Date = g.Key,
+                        Views = g.Count()
+                    })
+                    .ToDictionaryAsync(x => x.Date, x => x.Views);
+
+                return Enumerable.Range(0, clampedDays)
+                    .Select(offset =>
+                    {
+                        var date = startDate.AddDays(offset);
+                        return new AdminTrafficPointDto
+                        {
+                            Date = date.ToString("yyyy-MM-dd"),
+                            Views = ownerViewsByDate.GetValueOrDefault(date, 0)
+                        };
+                    })
+                    .ToList();
+            }
 
             var destinationQuery = await BuildDestinationScopeAsync(user, currentUserId);
             var destinationIdsQuery = destinationQuery.Select(d => d.Id);
@@ -184,6 +244,12 @@ namespace Explorea.Server.Services.Admin
 
         public async Task<int> GetPendingCountAsync(Guid currentUserId)
         {
+            var breakdown = await GetPendingCountBreakdownAsync(currentUserId);
+            return breakdown.Count;
+        }
+
+        public async Task<AdminPendingCountDto> GetPendingCountBreakdownAsync(Guid currentUserId)
+        {
             var user = await _userRepository.GetByIdWithRoleAsync(currentUserId)
                 ?? throw new UnauthorizedAccessException("Current user was not found.");
 
@@ -191,22 +257,52 @@ namespace Explorea.Server.Services.Admin
             {
                 var destinationQuery = await BuildDestinationScopeAsync(user, currentUserId);
                 var destinationIdsQuery = destinationQuery.Select(d => d.Id);
-                return await _db.SubmissionQueue.CountAsync(q =>
-                    q.Status == "Pending" && destinationIdsQuery.Contains(q.DestinationId));
+                var eventCount = await _db.SubmissionQueue.CountAsync(q =>
+                    q.Status == "Pending" &&
+                    q.EntityType.ToLower() == "event" &&
+                    destinationIdsQuery.Contains(q.DestinationId));
+                var pendingPlaceCount = await _db.SubmissionQueue.CountAsync(q =>
+                    q.Status == "Pending" &&
+                    q.EntityType.ToLower() == "place" &&
+                    destinationIdsQuery.Contains(q.DestinationId));
+
+                return new AdminPendingCountDto
+                {
+                    Count = eventCount + pendingPlaceCount,
+                    EventCount = eventCount,
+                    PlaceCount = pendingPlaceCount
+                };
             }
 
             // place_owner: count their own pending submissions + pending places they created
-            var pendingSubmissions = await _db.SubmissionQueue.CountAsync(q =>
-                q.Status == "Pending" && q.SubmittedByUserId == currentUserId);
+            var pendingEventSubmissions = await _db.SubmissionQueue.CountAsync(q =>
+                q.Status == "Pending" &&
+                q.EntityType.ToLower() == "event" &&
+                q.SubmittedByUserId == currentUserId);
+            var pendingPlaceSubmissions = await _db.SubmissionQueue.CountAsync(q =>
+                q.Status == "Pending" &&
+                q.EntityType.ToLower() == "place" &&
+                q.SubmittedByUserId == currentUserId);
+
+            var queuedPlaceIds = _db.SubmissionQueue
+                .Where(q => q.EntityType == "place" && q.SubmittedByUserId == currentUserId)
+                .Select(q => q.EntityId);
 
             var pendingPlaces = await _db.Places
                 .IgnoreQueryFilters()
                 .CountAsync(p =>
                     !p.IsDeleted &&
                     p.CreatedBy == currentUserId &&
-                    p.ApprovalStatus == "pending");
+                    p.ApprovalStatus == "pending" &&
+                    !queuedPlaceIds.Contains(p.Id));
 
-            return pendingSubmissions + pendingPlaces;
+            var placeCount = pendingPlaceSubmissions + pendingPlaces;
+            return new AdminPendingCountDto
+            {
+                Count = pendingEventSubmissions + placeCount,
+                EventCount = pendingEventSubmissions,
+                PlaceCount = placeCount
+            };
         }
 
         private async Task<IQueryable<Destination>> BuildDestinationScopeAsync(User user, Guid currentUserId)
@@ -262,6 +358,25 @@ namespace Explorea.Server.Services.Admin
                 (t.LinkedContextType == SupportLinkedContextTypes.Destination &&
                  t.LinkedContextId.HasValue &&
                  destinationIdsQuery.Contains(t.LinkedContextId.Value)));
+        }
+
+        private IQueryable<Place> BuildOwnerPlaceScope(Guid ownerId)
+        {
+            return _db.Places
+                .IgnoreQueryFilters()
+                .Where(p => !p.IsDeleted && p.CreatedBy == ownerId);
+        }
+
+        private IQueryable<Event> BuildOwnerEventScope(Guid ownerId)
+        {
+            var ownerPlaceIdsQuery = BuildOwnerPlaceScope(ownerId).Select(p => p.Id);
+
+            return _db.Events
+                .IgnoreQueryFilters()
+                .Where(e =>
+                    !e.IsDeleted &&
+                    (e.CreatedBy == ownerId ||
+                     (e.PlaceId.HasValue && ownerPlaceIdsQuery.Contains(e.PlaceId.Value))));
         }
 
         private bool IsStorageConfigured()
@@ -340,6 +455,94 @@ namespace Explorea.Server.Services.Admin
             }
 
             return null;
+        }
+
+        private async Task<AdminPopularEntityDto?> GetMostPopularOwnerDestinationAsync(Guid ownerId)
+        {
+            var ownerPlaceDestinationIds = BuildOwnerPlaceScope(ownerId)
+                .Where(p => p.DestinationId.HasValue)
+                .Select(p => p.DestinationId!.Value);
+
+            var ownerEventDestinationIds = BuildOwnerEventScope(ownerId)
+                .Where(e => e.DestinationId.HasValue)
+                .Select(e => e.DestinationId!.Value);
+
+            var top = await _db.PopularityLogs
+                .Where(l =>
+                    l.EntityType == "destination" &&
+                    l.Source == "click" &&
+                    (ownerPlaceDestinationIds.Contains(l.EntityId) ||
+                     ownerEventDestinationIds.Contains(l.EntityId)))
+                .GroupBy(l => l.EntityId)
+                .Select(g => new { EntityId = g.Key, Views = g.Count() })
+                .OrderByDescending(x => x.Views)
+                .FirstOrDefaultAsync();
+
+            if (top == null)
+                return null;
+
+            var name = await _db.Destinations
+                .IgnoreQueryFilters()
+                .Where(d => d.Id == top.EntityId && !d.IsDeleted)
+                .Select(d => d.Name)
+                .FirstOrDefaultAsync();
+
+            return string.IsNullOrWhiteSpace(name)
+                ? null
+                : new AdminPopularEntityDto
+                {
+                    EntityType = "destination",
+                    EntityId = top.EntityId,
+                    Name = name,
+                    Views = top.Views
+                };
+        }
+
+        private async Task<AdminPopularEntityDto?> GetMostPopularOwnerEntityAsync(Guid ownerId)
+        {
+            var ownerPlaceIdsQuery = BuildOwnerPlaceScope(ownerId).Select(p => p.Id);
+            var ownerEventIdsQuery = BuildOwnerEventScope(ownerId).Select(e => e.Id);
+
+            var top = await _db.PopularityLogs
+                .Where(l =>
+                    l.Source == "click" &&
+                    ((l.EntityType == "place" && ownerPlaceIdsQuery.Contains(l.EntityId)) ||
+                     (l.EntityType == "event" && ownerEventIdsQuery.Contains(l.EntityId))))
+                .GroupBy(l => new { l.EntityType, l.EntityId })
+                .Select(g => new
+                {
+                    g.Key.EntityType,
+                    g.Key.EntityId,
+                    Views = g.Count()
+                })
+                .OrderByDescending(x => x.Views)
+                .FirstOrDefaultAsync();
+
+            if (top == null)
+                return null;
+
+            var name = top.EntityType switch
+            {
+                "place" => await BuildOwnerPlaceScope(ownerId)
+                    .Where(p => p.Id == top.EntityId)
+                    .Select(p => p.Name)
+                    .FirstOrDefaultAsync(),
+                "event" => await BuildOwnerEventScope(ownerId)
+                    .Where(e => e.Id == top.EntityId)
+                    .Select(e => e.Name)
+                    .FirstOrDefaultAsync(),
+                _ => null
+            };
+
+            return string.IsNullOrWhiteSpace(name)
+                ? null
+                : new AdminPopularEntityDto
+                {
+                    EntityType = top.EntityType,
+                    EntityId = top.EntityId,
+                    Name = name,
+                    Views = top.Views
+                };
         }
 
         private async Task<AdminPopularEntityDto?> ResolvePopularEntityAsync(

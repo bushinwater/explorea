@@ -15,7 +15,7 @@ import {
   signal,
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import {
@@ -81,6 +81,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   @Input() eventTypeOptions: EventFilterOption<number>[] = [];
   @Input() lockedRegionId: number | null = null;
   @Input() closing = false;
+  @Input() requiresOwnerDocuments = false;
 
   @Output() cancel = new EventEmitter<void>();
   @Output() created = new EventEmitter<EventRow>();
@@ -101,6 +102,11 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   protected readonly isSettingHero = signal(false);
   protected readonly pendingImages    = signal<{ file: File; url: string }[]>([]);
   protected readonly pendingHeroIndex = signal<number>(0);
+  protected readonly ownerDocuments = signal<Record<string, File | null>>({
+    identity: null,
+    authorization: null,
+    license: null,
+  });
 
   protected readonly allInterestTags = signal<InterestTagOption[]>([]);
   protected readonly selectedInterestIds = signal<number[]>([]);
@@ -478,6 +484,12 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     if (startDate && endDate && endDate <= startDate) errs.push('Datum završetka mora biti posle datuma početka.');
     const price = f.price.trim() ? Number(f.price.trim().replace(',', '.')) : null;
     if (price !== null && (isNaN(price) || price < 0)) errs.push('Cena mora biti pozitivan broj.');
+    if (this.requiresOwnerDocuments && !f.destinationId && !f.placeId) {
+      errs.push('Izaberite destinaciju ili svoj objekat za koji vezujete dogadjaj.');
+    }
+    if (this.requiresOwnerDocuments && !this.hasRequiredOwnerDocuments()) {
+      errs.push('Dodaj licni dokument i dokaz vlasnistva ili ovlascenja.');
+    }
     if (errs.length) { this.errors.set(errs); return; }
 
     const payload: CreateEventPayload = {
@@ -506,10 +518,21 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
       this.eventsService.createEvent(payload).subscribe({
         next: row => {
           const finishCreate = () => {
-            this.isSaving.set(false);
-            this.createdRow.set(row);
-            this.uploadPendingImages(row.id);
-            this.cdr.detectChanges();
+            this.uploadPendingDocuments(
+              row.id,
+              () => {
+                this.isSaving.set(false);
+                this.createdRow.set(row);
+                this.uploadPendingImages(row.id);
+                this.cdr.detectChanges();
+              },
+              () => {
+                this.isSaving.set(false);
+                this.createdRow.set(row);
+                this.errors.set(['Dogadjaj je kreiran, ali otpremanje dokumenta nije uspelo.']);
+                this.cdr.detectChanges();
+              },
+            );
           };
           const ids = this.selectedInterestIds();
           if (ids.length > 0) {
@@ -518,9 +541,9 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
             finishCreate();
           }
         },
-        error: () => {
+        error: (error: HttpErrorResponse) => {
           this.isSaving.set(false);
-          this.errors.set(['Kreiranje nije uspelo. Proverite podatke i pokušajte ponovo.']);
+          this.errors.set([this.createErrorMessage(error)]);
         },
       }),
     );
@@ -638,6 +661,68 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     });
   }
 
+  protected onOwnerDocumentSelected(type: string, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      this.errors.set(['Dokument mora biti manji od 10 MB.']);
+      this.cdr.detectChanges();
+      return;
+    }
+    this.ownerDocuments.update(current => ({ ...current, [type]: file }));
+    this.cdr.detectChanges();
+  }
+
+  protected ownerDocumentName(type: string): string {
+    return this.ownerDocuments()[type]?.name ?? '';
+  }
+
+  private uploadPendingDocuments(eventId: string, onDone: () => void, onError: () => void): void {
+    const documents = this.ownerDocumentEntries();
+    if (!documents.length) {
+      onDone();
+      return;
+    }
+
+    let done = 0;
+    documents.forEach(([type, file]) => {
+      this.sub.add(
+        this.eventsService.uploadEventDocument(eventId, type, file).subscribe({
+          next: () => {
+            done++;
+            if (done === documents.length) onDone();
+          },
+          error: onError,
+        }),
+      );
+    });
+  }
+
+  private hasRequiredOwnerDocuments(): boolean {
+    const documents = this.ownerDocuments();
+    return !!documents['identity'] && !!documents['authorization'];
+  }
+
+  private createErrorMessage(error: HttpErrorResponse): string {
+    const serverMessage = typeof error.error?.message === 'string' ? error.error.message : '';
+    if (serverMessage.includes('Destination is required')) {
+      return 'Izaberite destinaciju ili svoj objekat za koji vezujete dogadjaj.';
+    }
+    if (serverMessage.includes('attach events only to their own places')) {
+      return 'Dogadjaj mozete povezati samo sa svojim objektom.';
+    }
+    return serverMessage || 'Kreiranje nije uspelo. Proverite podatke i pokusajte ponovo.';
+  }
+
+  private ownerDocumentEntries(): Array<[string, File]> {
+    if (!this.requiresOwnerDocuments) return [];
+
+    return Object.entries(this.ownerDocuments())
+      .filter((entry): entry is [string, File] => entry[1] instanceof File);
+  }
+
   private loadFilterDefs(typeId: number): void {
     this.sub.add(
       this.lookupService.getFilterDefinitions('event', typeId).subscribe({
@@ -690,7 +775,20 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   }
 
   private emptyForm(): EventForm {
-    return { name: '', description: '', typeId: null, startDatetime: '', endDatetime: '', price: '', address: '', destinationId: null, placeId: null, ticketUrl: '', isFeatured: false, extraFilters: {} };
+    return {
+      name: '',
+      description: '',
+      typeId: null,
+      startDatetime: '',
+      endDatetime: '',
+      price: '',
+      address: '',
+      destinationId: null,
+      placeId: null,
+      ticketUrl: '',
+      isFeatured: false,
+      extraFilters: {}
+    };
   }
 
   private toSlug(name: string): string {

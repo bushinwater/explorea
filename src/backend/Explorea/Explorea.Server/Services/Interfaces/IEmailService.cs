@@ -7,6 +7,20 @@ namespace Explorea.Server.Services.Interfaces
         Task SendNewsletterEmailAsync(IEnumerable<string> toEmails, string subject, string htmlBody);
         Task SendAdminReportEmailAsync(string toEmail, Explorea.API.DTOs.Admin.AdminReportEmailData data);
         Task SendSavedItemDeletedEmailAsync(string toEmail, string firstName, string entityName);
+        Task SendDeletedEntityReferenceEmailAsync(
+            string toEmail,
+            string firstName,
+            string entityName,
+            bool wasSaved,
+            bool wasInPlanner,
+            IEnumerable<string> plannerNotes);
+        Task SendSubmittedEntityReviewedEmailAsync(
+            string toEmail,
+            string firstName,
+            string entityType,
+            string entityName,
+            bool approved,
+            string? rejectionReason);
         Task SendOwnerEntityUpdatedEmailAsync(
             string toEmail,
             string firstName,

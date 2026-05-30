@@ -18,7 +18,10 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(e => e.Type)
                 .Include(e => e.Country)
                 .Include(e => e.Images)
-                .FirstOrDefaultAsync(e => e.Slug == slug);
+                .FirstOrDefaultAsync(e =>
+                    e.Slug == slug &&
+                    !e.IsDeleted &&
+                    e.Visibility == "published");
         }
 
         public async Task<Event?> GetEventDetailsBySlugAsync(string slug)
@@ -33,7 +36,10 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(e => e.Images)
                 .Include(e => e.InterestTags)
                     .ThenInclude(link => link.InterestTag)
-                .FirstOrDefaultAsync(e => e.Slug == slug);
+                .FirstOrDefaultAsync(e =>
+                    e.Slug == slug &&
+                    !e.IsDeleted &&
+                    e.Visibility == "published");
         }
 
         public async Task<List<Review>> GetEventReviewsAsync(Guid eventId, int take = 15)
@@ -65,6 +71,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .Where(e =>
                     e.Id != eventEntity.Id &&
                     !e.IsDeleted &&
+                    e.Visibility == "published" &&
                     (
                         e.TypeId == eventEntity.TypeId ||
                         (hasTagIds && e.InterestTags.Any(t => eventTagIds.Contains(t.InterestTagId))) ||
@@ -104,6 +111,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(e => e.Type)
                 .Include(e => e.Country)
                 .Include(e => e.Images)
+                .Where(e => !e.IsDeleted && e.Visibility == "published")
                 .AsQueryable();
 
             if (cityId.HasValue)
@@ -145,7 +153,11 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(e => e.Type)
                 .Include(e => e.Country)
                 .Include(e => e.Images)
-                .Where(e => e.StartDatetime < nextMonthStartUtc && e.EndDatetime >= monthStartUtc)
+                .Where(e =>
+                    !e.IsDeleted &&
+                    e.Visibility == "published" &&
+                    e.StartDatetime < nextMonthStartUtc &&
+                    e.EndDatetime >= monthStartUtc)
                 .OrderBy(e => e.StartDatetime)
                 .ToListAsync();
         }
@@ -165,7 +177,11 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(e => e.Type)
                 .Include(e => e.Country)
                 .Include(e => e.Images)
-                .Where(e => e.StartDatetime < nextMonthStartUtc && e.EndDatetime >= monthStartUtc)
+                .Where(e =>
+                    !e.IsDeleted &&
+                    e.Visibility == "published" &&
+                    e.StartDatetime < nextMonthStartUtc &&
+                    e.EndDatetime >= monthStartUtc)
                 .AsQueryable();
 
             if (cityId.HasValue)

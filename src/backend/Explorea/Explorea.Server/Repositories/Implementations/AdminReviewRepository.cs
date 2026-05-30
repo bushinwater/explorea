@@ -159,10 +159,19 @@ namespace Explorea.Server.Repositories.Implementations
             // Restrikcija za PlaceOwner — vidi samo recenzije za svoje objekte
             if (placeOwnerUserId.HasValue)
             {
-                var ownerPlaceIds = _db.Places
+                var ownerPlaceIds = _db.Places.IgnoreQueryFilters()
                     .Where(p => p.CreatedBy == placeOwnerUserId.Value)
                     .Select(p => p.Id);
-                query = query.Where(r => r.EntityType == "place" && ownerPlaceIds.Contains(r.EntityId));
+
+                var ownerEventIds = _db.Events.IgnoreQueryFilters()
+                    .Where(e =>
+                        e.CreatedBy == placeOwnerUserId.Value ||
+                        (e.PlaceId.HasValue && ownerPlaceIds.Contains(e.PlaceId.Value)))
+                    .Select(e => e.Id);
+
+                query = query.Where(r =>
+                    (r.EntityType == "place" && ownerPlaceIds.Contains(r.EntityId)) ||
+                    (r.EntityType == "event" && ownerEventIds.Contains(r.EntityId)));
             }
 
             // Pretraga po nazivu entiteta

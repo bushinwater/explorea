@@ -60,6 +60,8 @@ export interface EventDocument {
   id: string;
   name: string;
   url: string;
+  type?: string;
+  uploadedAt?: string;
 }
 
 export interface EventImageItem {
@@ -154,6 +156,15 @@ export interface CreateEventPayload {
   ticketUrl: string | null;
   isFeatured: boolean;
   extraFilters?: Record<string, string>;
+}
+
+export interface OwnerSubmissionDocument {
+  id: string;
+  documentType: string;
+  documentUrl: string;
+  fileName: string | null;
+  contentType: string | null;
+  createdAt: string;
 }
 
 export interface UpdateEventPayload {

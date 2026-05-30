@@ -78,6 +78,10 @@ namespace Explorea.Server.Services.Admin
             {
                 await SyncInactiveVisibilityAsync();
             }
+            else if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                visibility = string.IsNullOrWhiteSpace(visibility) ? "active" : visibility;
+            }
             else
             {
                 throw new UnauthorizedAccessException("Access denied.");
@@ -301,6 +305,19 @@ namespace Explorea.Server.Services.Admin
                     .ToListAsync();
             }
 
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                return await _db.Regions
+                    .OrderBy(r => r.Name)
+                    .Select(r => new AdminDestinationLookupDto
+                    {
+                        Id        = r.Id,
+                        Name      = r.Name,
+                        CountryId = r.CountryId
+                    })
+                    .ToListAsync();
+            }
+
             if (user?.Role.Name != RoleNames.TouristOrganization)
                 throw new UnauthorizedAccessException("Access denied.");
 
@@ -359,6 +376,14 @@ namespace Explorea.Server.Services.Admin
             {
                 var hasAccess = await HasDestinationAccessAsync(user, currentUserId, id);
                 if (!hasAccess) return null;
+            }
+            else if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                var ownerDestination = await _destinationRepo.GetAdminByIdAsync(id);
+                if (ownerDestination == null || ownerDestination.IsDeleted || !IsPublicDestination(ownerDestination))
+                    return null;
+
+                return MapToListDto(ownerDestination);
             }
             else if (user?.Role.Name != RoleNames.SuperAdmin)
             {
@@ -543,6 +568,12 @@ namespace Explorea.Server.Services.Admin
                                 : JsonSerializer.Deserialize<Dictionary<string, string>>(d.ExtraFilters),
             DeletedAt       = d.DeletedAt
         };
+
+        private static bool IsPublicDestination(Destination destination)
+        {
+            var visibility = destination.Visibility?.Trim().ToLowerInvariant();
+            return visibility is "active" or "published";
+        }
 
         private async Task<Dictionary<Guid, int>> GetViewCountsAsync(List<Destination> destinations)
         {

@@ -1,7 +1,9 @@
 using System.Security.Claims;
+using Explorea.API.DTOs.Admin;
 using Explorea.API.DTOs.Admin.Place;
 using Explorea.API.Models;
 using Explorea.Server.Data;
+using Explorea.Server.Helpers;
 using Explorea.Server.Services.Admin.Interfaces;
 using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -16,15 +18,18 @@ namespace Explorea.Server.Controllers.Admin
     public class AdminPlacesController : ControllerBase
     {
         private readonly IAdminPlaceService _placeService;
+        private readonly IAdminQueueService _queueService;
         private readonly AppDbContext _context;
         private readonly ICloudinaryService _cloudinary;
 
         public AdminPlacesController(
             IAdminPlaceService placeService,
+            IAdminQueueService queueService,
             AppDbContext context,
             ICloudinaryService cloudinary)
         {
             _placeService = placeService;
+            _queueService = queueService;
             _context = context;
             _cloudinary = cloudinary;
         }
@@ -121,6 +126,7 @@ namespace Explorea.Server.Controllers.Admin
                 var userId = GetCurrentUserId();
                 var result = await _placeService.GetByIdAsync(id, userId);
                 if (result == null) return NotFound();
+                result.Documents = await GetOwnerDocumentsAsync("place", id);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException ex)
@@ -296,6 +302,98 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpPut("{id}/approve")]
+        public async Task<IActionResult> Approve(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var queueItem = await _context.SubmissionQueue
+                    .FirstOrDefaultAsync(q =>
+                        q.EntityType == "place" &&
+                        q.EntityId == id &&
+                        q.Status == "Pending");
+
+                if (queueItem == null) return NotFound(new { message = "Pending place request not found." });
+
+                await _queueService.ApproveByTOAsync(queueItem.Id, userId);
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}/reject")]
+        public async Task<IActionResult> Reject(Guid id, [FromBody] RejectPlaceDto dto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var queueItem = await _context.SubmissionQueue
+                    .FirstOrDefaultAsync(q =>
+                        q.EntityType == "place" &&
+                        q.EntityId == id &&
+                        q.Status == "Pending");
+
+                if (queueItem == null) return NotFound(new { message = "Pending place request not found." });
+
+                await _queueService.RejectByTOAsync(
+                    queueItem.Id,
+                    userId,
+                    string.IsNullOrWhiteSpace(dto.Reason)
+                        ? "Zahtev za objekat je odbijen od strane administratora."
+                        : dto.Reason.Trim());
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("{id}/documents")]
+        public async Task<IActionResult> UploadDocument(Guid id, [FromForm] IFormFile file, [FromForm] string documentType)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var place = await _context.Places
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(p => p.Id == id);
+
+                if (place == null) return NotFound();
+
+                var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId);
+                if (user?.Role.Name != RoleNames.PlaceOwner)
+                    return StatusCode(403, new { message = "Access denied." });
+
+                if (place.CreatedBy != userId)
+                    return StatusCode(403, new { message = "Mozete dodavati dokumente samo za svoje objekte." });
+
+                var document = await UploadOwnerDocumentAsync("place", id, userId, file, documentType);
+                return Ok(document);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.ToString() });
+            }
+        }
+
         [HttpDelete("{id}/images/{imageId}")]
         public async Task<IActionResult> DeleteImage(Guid id, Guid imageId)
         {
@@ -317,10 +415,97 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        private async Task<OwnerSubmissionDocumentDto> UploadOwnerDocumentAsync(
+            string entityType,
+            Guid entityId,
+            Guid userId,
+            IFormFile file,
+            string documentType)
+        {
+            if (file == null || file.Length == 0)
+                throw new ArgumentException("Dokument je obavezan.");
+
+            if (file.Length > 10 * 1024 * 1024)
+                throw new ArgumentException("Dokument mora biti manji od 10 MB.");
+
+            var normalizedType = NormalizeDocumentType(documentType);
+            var url = await _cloudinary.UploadRawAsync(file, $"explorea/owner-documents/{entityType}");
+
+            var document = new OwnerSubmissionDocument
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                EntityType = entityType,
+                EntityId = entityId,
+                DocumentType = normalizedType,
+                DocumentUrl = url,
+                FileName = file.FileName,
+                ContentType = file.ContentType,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+
+            await _context.OwnerSubmissionDocuments.AddAsync(document);
+            await _context.SaveChangesAsync();
+
+            return new OwnerSubmissionDocumentDto
+            {
+                Id = document.Id,
+                DocumentType = document.DocumentType,
+                DocumentUrl = BuildDocumentDeliveryUrl(document.DocumentUrl, document.ContentType, document.FileName),
+                FileName = document.FileName,
+                ContentType = document.ContentType,
+                CreatedAt = document.CreatedAt
+            };
+        }
+
+        private static string NormalizeDocumentType(string? documentType)
+        {
+            var value = documentType?.Trim().ToLowerInvariant();
+            return value is "identity" or "authorization" or "license" or "other"
+                ? value
+                : "other";
+        }
+
+        private async Task<List<OwnerSubmissionDocumentDto>> GetOwnerDocumentsAsync(string entityType, Guid entityId)
+        {
+            return await _context.OwnerSubmissionDocuments
+                .Where(document => document.EntityType == entityType && document.EntityId == entityId)
+                .OrderBy(document => document.CreatedAt)
+                .Select(document => new OwnerSubmissionDocumentDto
+                {
+                    Id = document.Id,
+                    DocumentType = document.DocumentType,
+                    DocumentUrl = BuildDocumentDeliveryUrl(document.DocumentUrl, document.ContentType, document.FileName),
+                    FileName = document.FileName,
+                    ContentType = document.ContentType,
+                    CreatedAt = document.CreatedAt
+                })
+                .ToListAsync();
+        }
+
+        private static string BuildDocumentDeliveryUrl(string url, string? contentType, string? fileName)
+        {
+            var isPdf =
+                contentType?.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) == true ||
+                (!string.IsNullOrWhiteSpace(fileName) &&
+                    Path.GetExtension(fileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase)) ||
+                url.Contains(".pdf", StringComparison.OrdinalIgnoreCase);
+
+            if (!isPdf || url.Contains("/fl_attachment/", StringComparison.OrdinalIgnoreCase))
+                return url;
+
+            return url.Replace("/upload/", "/upload/fl_attachment/");
+        }
+
         private Guid GetCurrentUserId()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return Guid.Parse(claim!);
         }
+    }
+
+    public class RejectPlaceDto
+    {
+        public string Reason { get; set; } = string.Empty;
     }
 }

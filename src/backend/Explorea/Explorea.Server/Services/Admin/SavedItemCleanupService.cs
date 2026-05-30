@@ -31,37 +31,75 @@ namespace Explorea.Server.Services.Admin
                 .Where(item => item.EntityType == entityType && item.EntityId == entityId)
                 .ToListAsync();
 
-            if (savedItems.Count == 0) return;
+            var plannerItems = await _db.TripPlanItems
+                .Include(item => item.TripPlan)
+                    .ThenInclude(plan => plan.User)
+                .Where(item => item.EntityType == entityType && item.EntityId == entityId)
+                .ToListAsync();
 
-            var recipients = savedItems
-                .Select(item => item.User)
-                .Where(user => !string.IsNullOrWhiteSpace(user.Email))
-                .GroupBy(user => user.Email.Trim().ToLowerInvariant())
-                .Select(group => group.First())
+            if (savedItems.Count == 0 && plannerItems.Count == 0) return;
+
+            var savedRecipients = savedItems.Select(item => new CleanupRecipient(
+                item.User,
+                WasSaved: true,
+                WasInPlanner: false,
+                PlannerNote: null));
+
+            var plannerRecipients = plannerItems.Select(item => new CleanupRecipient(
+                item.TripPlan.User,
+                WasSaved: false,
+                WasInPlanner: true,
+                PlannerNote: item.Note));
+
+            var recipients = savedRecipients
+                .Concat(plannerRecipients)
+                .Where(item => !string.IsNullOrWhiteSpace(item.User.Email))
+                .GroupBy(item => item.User.Email.Trim().ToLowerInvariant())
+                .Select(group => new
+                {
+                    User = group.First().User,
+                    WasSaved = group.Any(item => item.WasSaved),
+                    WasInPlanner = group.Any(item => item.WasInPlanner),
+                    PlannerNotes = group
+                        .Where(item => item.WasInPlanner && !string.IsNullOrWhiteSpace(item.PlannerNote))
+                        .Select(item => item.PlannerNote!)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList()
+                })
                 .ToList();
 
             _db.SavedItems.RemoveRange(savedItems);
+            _db.TripPlanItems.RemoveRange(plannerItems);
             await _db.SaveChangesAsync();
 
-            foreach (var user in recipients)
+            foreach (var recipient in recipients)
             {
                 try
                 {
-                    await _emailService.SendSavedItemDeletedEmailAsync(
-                        user.Email,
-                        user.FirstName,
-                        entityName);
+                    await _emailService.SendDeletedEntityReferenceEmailAsync(
+                        recipient.User.Email,
+                        recipient.User.FirstName,
+                        entityName,
+                        recipient.WasSaved,
+                        recipient.WasInPlanner,
+                        recipient.PlannerNotes);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(
                         ex,
                         "Failed to send saved item deletion email to {Email} for {EntityType} {EntityId}.",
-                        user.Email,
+                        recipient.User.Email,
                         entityType,
                         entityId);
                 }
             }
         }
+
+        private sealed record CleanupRecipient(
+            Explorea.API.Models.User User,
+            bool WasSaved,
+            bool WasInPlanner,
+            string? PlannerNote);
     }
 }

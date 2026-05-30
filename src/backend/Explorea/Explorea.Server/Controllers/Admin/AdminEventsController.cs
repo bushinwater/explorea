@@ -1,6 +1,8 @@
+using Explorea.API.DTOs.Admin;
 using Explorea.API.DTOs.Admin.Event;
 using Explorea.API.Models;
 using Explorea.Server.Data;
+using Explorea.Server.Helpers;
 using Explorea.Server.Services.Admin.Interfaces;
 using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -57,6 +59,10 @@ namespace Explorea.Server.Controllers.Admin
             {
                 return StatusCode(403, new { message = ex.Message });
             }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // GET /api/admin/events/{id}
@@ -73,6 +79,10 @@ namespace Explorea.Server.Controllers.Admin
             catch (UnauthorizedAccessException ex)
             {
                 return StatusCode(403, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -277,6 +287,46 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpPost("{id}/documents")]
+        public async Task<IActionResult> UploadDocument(Guid id, [FromForm] IFormFile file, [FromForm] string documentType)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var ev = await _context.Events
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(e => e.Id == id);
+
+                if (ev == null) return NotFound();
+
+                var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId);
+                if (user?.Role.Name != RoleNames.PlaceOwner)
+                    return StatusCode(403, new { message = "Access denied." });
+
+                var ownerPlaceIds = _context.Places
+                    .IgnoreQueryFilters()
+                    .Where(p => p.CreatedBy == userId)
+                    .Select(p => p.Id);
+
+                var isOwnerEvent = ev.CreatedBy == userId ||
+                    (ev.PlaceId.HasValue && await ownerPlaceIds.ContainsAsync(ev.PlaceId.Value));
+
+                if (!isOwnerEvent)
+                    return StatusCode(403, new { message = "Mozete dodavati dokumente samo za svoje dogadjaje." });
+
+                var document = await UploadOwnerDocumentAsync("event", id, userId, file, documentType);
+                return Ok(document);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.ToString() });
+            }
+        }
+
         // DELETE /api/admin/events/{id}/images/{imageId}
         [HttpDelete("{id}/images/{imageId}")]
         public async Task<IActionResult> DeleteImage(Guid id, Guid imageId)
@@ -317,6 +367,71 @@ namespace Explorea.Server.Controllers.Admin
                 })
                 .ToListAsync();
             return Ok(reviews);
+        }
+
+        private async Task<OwnerSubmissionDocumentDto> UploadOwnerDocumentAsync(
+            string entityType,
+            Guid entityId,
+            Guid userId,
+            IFormFile file,
+            string documentType)
+        {
+            if (file == null || file.Length == 0)
+                throw new ArgumentException("Dokument je obavezan.");
+
+            if (file.Length > 10 * 1024 * 1024)
+                throw new ArgumentException("Dokument mora biti manji od 10 MB.");
+
+            var normalizedType = NormalizeDocumentType(documentType);
+            var url = await _cloudinary.UploadRawAsync(file, $"explorea/owner-documents/{entityType}");
+
+            var document = new OwnerSubmissionDocument
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                EntityType = entityType,
+                EntityId = entityId,
+                DocumentType = normalizedType,
+                DocumentUrl = url,
+                FileName = file.FileName,
+                ContentType = file.ContentType,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+
+            await _context.OwnerSubmissionDocuments.AddAsync(document);
+            await _context.SaveChangesAsync();
+
+            return new OwnerSubmissionDocumentDto
+            {
+                Id = document.Id,
+                DocumentType = document.DocumentType,
+                DocumentUrl = BuildDocumentDeliveryUrl(document.DocumentUrl, document.ContentType, document.FileName),
+                FileName = document.FileName,
+                ContentType = document.ContentType,
+                CreatedAt = document.CreatedAt
+            };
+        }
+
+        private static string BuildDocumentDeliveryUrl(string url, string? contentType, string? fileName)
+        {
+            var isPdf =
+                contentType?.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) == true ||
+                (!string.IsNullOrWhiteSpace(fileName) &&
+                    Path.GetExtension(fileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase)) ||
+                url.Contains(".pdf", StringComparison.OrdinalIgnoreCase);
+
+            if (!isPdf || url.Contains("/fl_attachment/", StringComparison.OrdinalIgnoreCase))
+                return url;
+
+            return url.Replace("/upload/", "/upload/fl_attachment/");
+        }
+
+        private static string NormalizeDocumentType(string? documentType)
+        {
+            var value = documentType?.Trim().ToLowerInvariant();
+            return value is "identity" or "authorization" or "license" or "other"
+                ? value
+                : "other";
         }
 
         private Guid GetCurrentUserId()

@@ -39,8 +39,15 @@ interface AdminRecentActivity {
 interface AdminSystemStatusItem {
   label: string;
   detail: string;
+  detailKey?: string | null;
   level: 'ok' | 'warning' | 'critical';
   percentage?: number | null;
+}
+
+interface AdminPendingCount {
+  count: number;
+  eventCount: number;
+  placeCount: number;
 }
 
 interface AdminAiChatResponse {
@@ -63,10 +70,10 @@ const QUICK_ACTION_KEYS: Record<AdminRole, (Omit<QuickAction, 'label'> & { label
     { id: 'report',    icon: 'assessment',      labelKey: 'dashboard.quickaction.report',    route: '/admin/reports',           colorClass: 'info'    },
   ],
   place_owner: [
-    { id: 'dashboard', icon: 'dashboard',   labelKey: 'dashboard.quickaction.dashboard', route: '/admin/dashboard', colorClass: 'primary' },
-    { id: 'settings',  icon: 'settings',    labelKey: 'dashboard.quickaction.settings',  route: '/admin/settings',  colorClass: 'info'    },
-    { id: 'reviews',   icon: 'rate_review', labelKey: 'dashboard.quickaction.my_reviews',route: '/admin/reviews',   colorClass: 'accent'  },
-    { id: 'support',   icon: 'support',     labelKey: 'dashboard.quickaction.support',   route: '/admin/support',   colorClass: 'muted'   },
+    { id: 'add-place', icon: 'add_business',    labelKey: 'dashboard.quickaction.add_place',  route: '/admin/places?create=true', colorClass: 'primary' },
+    { id: 'add-event', icon: 'event_available', labelKey: 'dashboard.quickaction.add_event',  route: '/admin/events?create=true', colorClass: 'info'    },
+    { id: 'reviews',   icon: 'rate_review',     labelKey: 'dashboard.quickaction.my_reviews', route: '/admin/reviews',            colorClass: 'accent'  },
+    { id: 'support',   icon: 'support',         labelKey: 'dashboard.quickaction.support',    route: '/admin/support',            colorClass: 'muted'   },
   ],
 };
 
@@ -82,42 +89,40 @@ export class DashboardService {
     }));
   }
 
-  getPendingCount(): Observable<number> {
-    return this.http.get<{ count: number }>('/api/admin/stats/pending-count').pipe(
-      map(r => r.count),
-    );
+  getPendingCount(): Observable<AdminPendingCount> {
+    return this.http.get<AdminPendingCount>('/api/admin/stats/pending-count');
   }
 
-  getOverviewStats(): Observable<StatCardData[]> {
+  getOverviewStats(role: AdminRole): Observable<StatCardData[]> {
     return this.http.get<AdminStatsOverview>('/api/admin/stats/overview').pipe(
       map((overview) => [
         {
-          icon: 'people',
+          icon: role === 'place_owner' ? 'storefront' : 'people',
           value: this.formatNumber(overview.totalUsers),
           label: this.ui.t('dashboard.stats.total_users'),
           sublabel: this.ui.t('dashboard.stats.new_users_hint', { count: this.formatNumber(overview.newUsersLast30Days) }),
           color: 'primary',
         },
         {
-          icon: 'person_add',
+          icon: role === 'place_owner' ? 'add_business' : 'person_add',
           value: this.formatNumber(overview.newUsersLast30Days),
           label: this.ui.t('dashboard.stats.new_users_label'),
           sublabel: this.ui.t('dashboard.stats.last_30d'),
           color: 'info',
         },
         {
-          icon: 'location_on',
+          icon: role === 'place_owner' ? 'verified' : 'location_on',
           value: this.formatNumber(overview.activeDestinations),
-          label: this.ui.t('dashboard.stats.active_dest'),
+          label: this.ui.t(role === 'place_owner' ? 'dashboard.stats.active_entries' : 'dashboard.stats.active_dest'),
           sublabel: overview.mostPopularDestination
-            ? this.ui.t('dashboard.stats.most_popular_dest', { name: overview.mostPopularDestination.name })
-            : this.ui.t('dashboard.stats.no_dest_views'),
+            ? this.ui.t(role === 'place_owner' ? 'dashboard.stats.owner_most_popular_dest' : 'dashboard.stats.most_popular_dest', { name: overview.mostPopularDestination.name })
+            : this.ui.t(role === 'place_owner' ? 'dashboard.stats.owner_no_dest_views' : 'dashboard.stats.no_dest_views'),
           color: 'warning',
         },
         {
           icon: 'trending_up',
           value: overview.mostPopularEntity?.name ?? this.ui.t('dashboard.stats.no_entity'),
-          label: this.ui.t('dashboard.stats.popular_entity'),
+          label: this.ui.t(role === 'place_owner' ? 'dashboard.stats.owner_popular_entity' : 'dashboard.stats.popular_entity'),
           sublabel: overview.mostPopularEntity
             ? this.ui.t('dashboard.stats.entity_views', {
                 type: this.entityTypeLabel(overview.mostPopularEntity.entityType),
@@ -156,8 +161,8 @@ export class DashboardService {
   getSystemStatus(): Observable<SystemStatusItem[]> {
     return this.http.get<AdminSystemStatusItem[]>('/api/admin/stats/system-status').pipe(
       map((items) => items.map((item) => ({
-        label: item.label,
-        detail: item.detail,
+        label: this.ui.t(item.label),
+        detail: item.detailKey ? this.ui.t(item.detailKey, { count: item.detail }) : this.ui.t(item.detail),
         level: item.level,
         percentage: item.percentage ?? undefined,
       }))),

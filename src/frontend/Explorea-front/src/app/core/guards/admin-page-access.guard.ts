@@ -7,7 +7,7 @@ const ADMIN_PAGE_ROLES: Record<string, AdminRole[]> = {
   dashboard: ['super_admin', 'tourist_organization', 'place_owner'],
   'map-view': ['super_admin', 'tourist_organization'],
   destinations: ['super_admin', 'tourist_organization'],
-  events: ['super_admin', 'tourist_organization'],
+  events: ['super_admin', 'tourist_organization', 'place_owner'],
   activities: ['super_admin', 'tourist_organization'],
   places: ['super_admin', 'tourist_organization', 'place_owner'],
   'activity-log': ['super_admin'],

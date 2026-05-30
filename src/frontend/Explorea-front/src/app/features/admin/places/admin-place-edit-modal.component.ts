@@ -142,7 +142,6 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
   protected readonly statusOptions = [
     { value: 'approved', label: 'Aktivno' },
     { value: 'pending',  label: 'Na čekanju' },
-    { value: 'inactive', label: 'Neaktivno' },
     { value: 'rejected', label: 'Odbijeno' },
   ];
 

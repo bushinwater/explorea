@@ -18,6 +18,7 @@ import {
   DestinationSearchItem,
   PlaceSearchItem,
   ReviewItem,
+  OwnerSubmissionDocument,
 } from './admin-events.models';
 import { FilterDefinition } from '../../../core/services/lookup.service';
 
@@ -65,6 +66,16 @@ interface ApiQueueItem {
   rejectionReason: string | null;
   reviewedByTOAt: string | null;
   reviewedByOwnerAt: string | null;
+  documents?: ApiOwnerSubmissionDocument[];
+}
+
+interface ApiOwnerSubmissionDocument {
+  id: string;
+  documentType: string;
+  documentUrl: string;
+  fileName: string | null;
+  contentType: string | null;
+  createdAt: string;
 }
 
 interface ApiLookupItem {
@@ -295,10 +306,21 @@ export class AdminEventsService {
     return this.http.delete<void>(`/api/admin/events/${id}`);
   }
 
+  deleteQueueRequest(queueId: string): Observable<void> {
+    return this.http.delete<void>(`/api/admin/queue/${queueId}`);
+  }
+
   uploadEventImage(id: string, file: File): Observable<EventImageItem> {
     const form = new FormData();
     form.append('file', file);
     return this.http.post<EventImageItem>(`/api/admin/events/${id}/images`, form);
+  }
+
+  uploadEventDocument(id: string, documentType: string, file: File): Observable<OwnerSubmissionDocument> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('documentType', documentType);
+    return this.http.post<OwnerSubmissionDocument>(`/api/admin/events/${id}/documents`, form);
   }
 
   setHeroEventImage(id: string, imageId: string): Observable<void> {
@@ -516,12 +538,13 @@ export class AdminEventsService {
   }
 
   private mapQueueItem(q: ApiQueueItem): EventRow {
+    const fallbackName = q.destinationName || `Zahtev ${q.id.substring(0, 6).toUpperCase()}`;
     return {
       id: q.entityId,
       queueId: q.id,
       eventNumber: `Q-${q.id.substring(0, 6).toUpperCase()}`,
       slug: '',
-      name: q.destinationName,
+      name: fallbackName,
       organizer: q.submittedByName,
       type: null,
       typeName: null,
@@ -530,7 +553,7 @@ export class AdminEventsService {
       cityId: null,
       destinationId: q.destinationId ?? null,
       placeId: null,
-      venue: q.destinationName,
+      venue: q.destinationName || null,
       startDate: q.submittedAt,
       endDate: null,
       priority: null,
@@ -546,7 +569,13 @@ export class AdminEventsService {
       ticketUrl: null,
       isFeatured: false,
       avgRating: 0,
-      documents: [],
+      documents: (q.documents ?? []).map((doc: ApiOwnerSubmissionDocument) => ({
+        id: doc.id,
+        name: this.documentLabel(doc),
+        url: doc.documentUrl,
+        type: doc.documentType,
+        uploadedAt: doc.createdAt,
+      })),
       ownerName: q.linkedPlaceId ? 'Vlasnik objekta' : null,
       region: null,
       rejectionReason: q.rejectionReason,
@@ -627,5 +656,16 @@ export class AdminEventsService {
       RejectedByOwner: 'rejected',
     };
     return map[status] ?? 'pending';
+  }
+
+  private documentLabel(doc: ApiOwnerSubmissionDocument): string {
+    const labels: Record<string, string> = {
+      identity: 'Licni dokument',
+      authorization: 'Dokaz vlasnistva/ovlascenja',
+      license: 'Licenca/dozvola',
+      other: 'Dokument',
+    };
+
+    return doc.fileName || labels[doc.documentType] || 'Dokument';
   }
 }

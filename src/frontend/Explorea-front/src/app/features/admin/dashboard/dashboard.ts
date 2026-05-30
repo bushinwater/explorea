@@ -3,6 +3,7 @@ import {
   OnDestroy, OnInit, WritableSignal, effect, signal, untracked,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import {
   CdkDropListGroup, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
@@ -64,6 +65,8 @@ export class Dashboard implements OnInit, OnDestroy {
   private systemStatusSubscription?: Subscription;
   private aiInsightsSubscription?: Subscription;
   private pendingCountSubscription?: Subscription;
+  private pendingEventCount = 0;
+  private pendingPlaceCount = 0;
 
   private readonly onMouseMove = this.handleResizeMove.bind(this);
   private readonly onMouseUp   = this.handleResizeEnd.bind(this);
@@ -75,6 +78,7 @@ export class Dashboard implements OnInit, OnDestroy {
     private widgetConfig: WidgetConfigService,
     private cdr:          ChangeDetectorRef,
     public  ui:           AdminUiPreferencesService,
+    private router:       Router,
   ) {
     effect(() => {
       const role = this.auth.role();
@@ -100,6 +104,15 @@ export class Dashboard implements OnInit, OnDestroy {
     });
   }
 
+  openPendingRequests(): void {
+    if (this.pendingEventCount > 0) {
+      void this.router.navigate(['/admin/events'], { queryParams: { tab: 'pending' } });
+      return;
+    }
+
+    void this.router.navigate(['/admin/places'], { queryParams: { status: 'pending' } });
+  }
+
   ngOnInit(): void {}
 
   ngOnDestroy(): void {
@@ -116,8 +129,10 @@ export class Dashboard implements OnInit, OnDestroy {
   private loadPendingCount(): void {
     this.pendingCountSubscription?.unsubscribe();
     this.pendingCountSubscription = this.dashService.getPendingCount().subscribe({
-      next: (count) => {
-        this.data.update((current) => current ? { ...current, pendingCount: count } : current);
+      next: (pending) => {
+        this.pendingEventCount = pending.eventCount;
+        this.pendingPlaceCount = pending.placeCount;
+        this.data.update((current) => current ? { ...current, pendingCount: pending.count } : current);
         this.cdr.markForCheck();
       },
     });
@@ -226,7 +241,7 @@ export class Dashboard implements OnInit, OnDestroy {
 
   private loadOverviewStats(role: AdminRole): void {
     this.statsSubscription?.unsubscribe();
-    this.statsSubscription = this.dashService.getOverviewStats().subscribe({
+    this.statsSubscription = this.dashService.getOverviewStats(role).subscribe({
       next: (stats) => {
         this.data.update((current) => current ? { ...current, stats } : current);
         this.cdr.markForCheck();

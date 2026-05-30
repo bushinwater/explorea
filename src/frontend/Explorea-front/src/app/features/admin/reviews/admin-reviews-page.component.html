@@ -355,7 +355,15 @@
 
                 <!-- Comment -->
                 <td class="rv-td rv-td--comment">
-                  {{ truncateComment(review.comment) }}
+                  <div class="rv-comment-cell">
+                    <span>{{ truncateComment(review.comment) }}</span>
+                    @if (review.ownerReply) {
+                      <div class="rv-owner-reply">
+                        <span class="material-icons">reply</span>
+                        <span>{{ truncateComment(review.ownerReply, 120) }}</span>
+                      </div>
+                    }
+                  </div>
                 </td>
 
                 <!-- Date -->

@@ -46,12 +46,16 @@ namespace Explorea.Server.Repositories.Implementations
             .Include(p => p.Type)
             .Include(p => p.Images)
             .Where(p => 
+                !p.IsDeleted &&
+                p.ApprovalStatus == "approved" &&
+                (
                 EF.Functions.ILike(p.Name, contains) ||
                 (p.Description != null && EF.Functions.ILike(p.Description, contains)) ||
                 (p.Address != null && EF.Functions.ILike(p.Address, contains)) ||
                 (p.City != null && EF.Functions.ILike(p.City.Name, contains)) ||
                 (p.Destination != null && EF.Functions.ILike(p.Destination.Name, contains)) ||
                 (p.Type != null && EF.Functions.ILike(p.Type.Name, contains))
+                )
             )
             .OrderByDescending(p => p.IsFeatured)
             .ThenByDescending(p => p.AvgRating)
@@ -71,6 +75,10 @@ namespace Explorea.Server.Repositories.Implementations
             .Include(e => e.Type)
             .Include(e => e.Images)
             .Where(e => 
+                !e.IsDeleted &&
+                e.Visibility == "published" &&
+                e.EndDatetime >= now &&
+                (
                 EF.Functions.ILike(e.Name, contains) ||
                 (e.Description != null && EF.Functions.ILike(e.Description, contains)) ||
                 (e.Address != null && EF.Functions.ILike(e.Address, contains)) ||
@@ -78,6 +86,7 @@ namespace Explorea.Server.Repositories.Implementations
                 (e.Destination != null && EF.Functions.ILike(e.Destination.Name, contains)) ||
                 (e.Place != null && EF.Functions.ILike(e.Place.Name, contains)) ||
                 EF.Functions.ILike(e.Type.Name, contains)
+                )
             )
             .OrderByDescending(e => e.IsFeatured)
             .ThenByDescending(e => e.StartDatetime)
@@ -136,7 +145,9 @@ namespace Explorea.Server.Repositories.Implementations
 
             if (type == "all" || type == "place")
             {
-                var query = _db.Places.Include(p => p.City).Include(p => p.Type).AsQueryable();
+                var query = _db.Places.Include(p => p.City).Include(p => p.Type)
+                    .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved")
+                    .AsQueryable();
                 if (!string.IsNullOrEmpty(q))
                     query = query.Where(p => p.Name.Contains(q));
                 if (cityId.HasValue)
@@ -148,7 +159,9 @@ namespace Explorea.Server.Repositories.Implementations
 
             if (type == "all" || type == "event")
             {
-                var query = _db.Events.Include(e => e.City).Include(e => e.Type).AsQueryable();
+                var query = _db.Events.Include(e => e.City).Include(e => e.Type)
+                    .Where(e => !e.IsDeleted && e.Visibility == "published")
+                    .AsQueryable();
                 if (!string.IsNullOrEmpty(q))
                     query = query.Where(e => e.Name.Contains(q));
                 if (cityId.HasValue)
@@ -186,7 +199,7 @@ namespace Explorea.Server.Repositories.Implementations
             {
                 places = await _db.Places
                     .Include(p => p.Type)
-                    .Where(p => p.Latitude != 0 && p.Longitude != 0)
+                    .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved" && p.Latitude != 0 && p.Longitude != 0)
                     .ToListAsync();
             }
 
@@ -194,7 +207,7 @@ namespace Explorea.Server.Repositories.Implementations
             {
                 events = await _db.Events
                     .Include(e => e.Type)
-                    .Where(e => e.Latitude != null && e.Longitude != null)
+                    .Where(e => !e.IsDeleted && e.Visibility == "published" && e.Latitude != null && e.Longitude != null)
                     .ToListAsync();
             }
 
@@ -242,7 +255,7 @@ namespace Explorea.Server.Repositories.Implementations
         .AsNoTracking()
         .Include(p => p.Type)
         .Include(p => p.Images)
-        .Where(p => !p.IsDeleted)
+        .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved")
         .OrderByDescending(p => p.IsFeatured)
         .ThenByDescending(p => p.AvgRating)
         .ThenBy(p => p.Name)
@@ -257,7 +270,7 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(e => e.Type)
         .Include(e => e.City)
         .Include(e => e.Images)
-        .Where(e => !e.IsDeleted && e.EndDatetime >= now)
+        .Where(e => !e.IsDeleted && e.Visibility == "published" && e.EndDatetime >= now)
         .OrderByDescending(e => e.IsFeatured)
         .ThenBy(e => e.StartDatetime)
         .ThenBy(e => e.Name)
@@ -389,7 +402,7 @@ namespace Explorea.Server.Repositories.Implementations
             .Include(p => p.Destination)
             .Include(p => p.Type)
             .Include(p => p.Images)
-            .Where(p => ids.Contains(p.Id))
+            .Where(p => ids.Contains(p.Id) && !p.IsDeleted && p.ApprovalStatus == "approved")
             .ToDictionaryAsync(p => p.Id);
 
         return rows
@@ -443,6 +456,7 @@ namespace Explorea.Server.Repositories.Implementations
             LEFT JOIN destinations d ON d.id = p.destination_id AND d.is_deleted = FALSE
             LEFT JOIN place_types pt ON pt.id = p.type_id
             WHERE p.is_deleted = FALSE
+              AND p.approval_status = 'approved'
               AND (
                     p.search_vector @@ websearch_to_tsquery('simple', @q)
                  OR p.name ILIKE @contains
@@ -550,7 +564,7 @@ namespace Explorea.Server.Repositories.Implementations
             .Include(e => e.Place)        
             .Include(e => e.Type)        
             .Include(e => e.Images)
-            .Where(e => ids.Contains(e.Id))
+            .Where(e => ids.Contains(e.Id) && !e.IsDeleted && e.Visibility == "published")
             .ToDictionaryAsync(e => e.Id);
 
         return rows
@@ -610,6 +624,7 @@ namespace Explorea.Server.Repositories.Implementations
         LEFT JOIN places p ON p.id = e.place_id AND p.is_deleted = FALSE
         INNER JOIN event_types et ON et.id = e.type_id
         WHERE e.is_deleted = FALSE
+          AND e.visibility = 'published'
           AND e.end_datetime >= @now
           AND (
                 e.search_vector @@ websearch_to_tsquery('simple', @q)

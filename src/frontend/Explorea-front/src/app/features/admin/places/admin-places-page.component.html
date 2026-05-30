@@ -25,6 +25,7 @@
     [regions]="regions()"
     [countries]="countries()"
     [isSuperAdmin]="isSuperAdmin()"
+    [requiresOwnerDocuments]="isPlaceOwner()"
     [lockedRegionId]="lockedRegionId()"
     (cancel)="closeCreateModal()"
     (created)="onPlaceCreated($event)"
@@ -396,12 +397,8 @@
                   @if (listMode() === 'deleted') {
                     <span class="place-status place-status--deleted">Obrisano</span>
                   } @else if (place.status === 'approved') {
-                    <span
-                      class="place-status place-status--{{
-                        place.hasRecentActivity ? 'active' : 'inactive'
-                      }}"
-                    >
-                      {{ place.hasRecentActivity ? 'Aktivno' : 'Neaktivno' }}
+                    <span class="place-status place-status--approved">
+                      {{ statusLabel(place.status) }}
                     </span>
                   } @else {
                     <span class="place-status place-status--{{ place.status }}">
@@ -453,6 +450,14 @@
                       >
                         <span class="material-icons">edit</span>
                       </button>
+                      @if (canReviewOwnerSubmissions() && place.status === 'pending') {
+                        <button class="btn-icon btn-icon--restore" title="Odobri" [disabled]="isReviewing()" (click)="approvePlace(place)">
+                          <span class="material-icons">check_circle</span>
+                        </button>
+                        <button class="btn-icon btn-icon--danger" title="Odbij" [disabled]="isReviewing()" (click)="rejectPlace(place)">
+                          <span class="material-icons">cancel</span>
+                        </button>
+                      }
                       <button
                         class="btn-icon btn-icon--danger"
                         [title]="ui.t('common.delete')"
@@ -583,12 +588,8 @@
           @if (listMode() === 'deleted') {
             <span class="place-status place-status--deleted">Obrisano</span>
           } @else if (place.status === 'approved') {
-            <span
-              class="place-status place-status--{{
-                place.hasRecentActivity ? 'active' : 'inactive'
-              }}"
-            >
-              {{ place.hasRecentActivity ? 'Aktivno' : 'Neaktivno' }}
+            <span class="place-status place-status--approved">
+              {{ statusLabel(place.status) }}
             </span>
           } @else {
             <span class="place-status place-status--{{ place.status }}">
@@ -707,6 +708,30 @@
           }
         </div>
 
+        @if ((detailsPanelDetail()?.documents?.length ?? 0) > 0) {
+          <div class="place-details-section">
+            <h4 class="place-details-section__title">
+              Dokumenti vlasnika
+              <span class="place-details-section__count">({{ detailsPanelDetail()!.documents.length }})</span>
+            </h4>
+            <div class="place-reviews">
+              @for (doc of detailsPanelDetail()!.documents; track doc.id) {
+                <a class="place-review" [href]="doc.documentUrl" target="_blank" rel="noopener">
+                  <div class="place-review__header">
+                    <div class="place-review__avatar place-review__avatar--placeholder">
+                      <span class="material-icons">description</span>
+                    </div>
+                    <div class="place-review__meta">
+                      <span class="place-review__author">{{ doc.fileName || ownerDocumentLabel(doc.documentType) }}</span>
+                      <span class="place-review__date">{{ ownerDocumentLabel(doc.documentType) }}</span>
+                    </div>
+                  </div>
+                </a>
+              }
+            </div>
+          </div>
+        }
+
         <!-- Reviews -->
         <div class="place-details-section">
           <h4 class="place-details-section__title">
@@ -782,6 +807,16 @@
           <span class="material-icons">edit</span>
           {{ ui.t('common.edit') }}
         </button>
+        @if (canReviewOwnerSubmissions() && place.status === 'pending') {
+          <button class="btn btn-ghost btn-sm ddp-footer__restore" [disabled]="isReviewing()" (click)="approvePlace(place)">
+            <span class="material-icons">check_circle</span>
+            Odobri
+          </button>
+          <button class="btn btn-ghost btn-sm ddp-footer__danger" [disabled]="isReviewing()" (click)="rejectPlace(place)">
+            <span class="material-icons">cancel</span>
+            Odbij
+          </button>
+        }
         <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="openDeleteFromPanel()">
           <span class="material-icons">delete</span>
           {{ ui.t('common.delete') }}

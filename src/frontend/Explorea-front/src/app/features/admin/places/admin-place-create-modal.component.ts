@@ -69,6 +69,7 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
   @Input() regions: RegionOption[] = [];
   @Input() countries: CountryOption[] = [];
   @Input() isSuperAdmin = false;
+  @Input() requiresOwnerDocuments = false;
   @Input() lockedRegionId: number | null = null;
   @Output() cancel  = new EventEmitter<void>();
   @Output() created = new EventEmitter<PlaceDetail>();
@@ -134,6 +135,11 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
 
   protected readonly pendingImages     = signal<{ file: File; url: string }[]>([]);
   protected readonly pendingHeroIndex  = signal<number>(0);
+  protected readonly ownerDocuments = signal<Record<string, File | null>>({
+    identity: null,
+    authorization: null,
+    license: null,
+  });
 
   protected readonly allTypeOptions = computed(() => [...this.types, ...this.extraTypes()]);
 
@@ -510,6 +516,10 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
       this.error.set('Država je obavezna.');
       return;
     }
+    if (this.requiresOwnerDocuments && !this.hasRequiredOwnerDocuments()) {
+      this.error.set('Dodaj licni dokument i dokaz vlasnistva ili ovlascenja.');
+      return;
+    }
     if (this.isSaving()) return;
     this.isSaving.set(true);
     this.error.set('');
@@ -547,12 +557,35 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
     );
   }
 
+  protected onOwnerDocumentSelected(type: string, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      this.error.set('Dokument mora biti manji od 10 MB.');
+      this.cdr.detectChanges();
+      return;
+    }
+    this.ownerDocuments.update(current => ({ ...current, [type]: file }));
+    this.cdr.detectChanges();
+  }
+
+  protected removeOwnerDocument(type: string): void {
+    this.ownerDocuments.update(current => ({ ...current, [type]: null }));
+  }
+
+  protected ownerDocumentName(type: string): string {
+    return this.ownerDocuments()[type]?.name ?? '';
+  }
+
   // ── Private helpers ─────────────────────────────────────────────────────
   private uploadPendingAndFinish(detail: PlaceDetail): void {
     const pending     = this.pendingImages();
     const heroIdx     = this.pendingHeroIndex();
     const interestIds = this.selectedInterestIds();
-    const total = pending.length + (interestIds.length > 0 ? 1 : 0);
+    const documents = this.ownerDocumentEntries();
+    const total = pending.length + documents.length + (interestIds.length > 0 ? 1 : 0);
 
     if (total === 0) {
       this.isSaving.set(false);
@@ -578,11 +611,28 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
         }),
       );
     });
+    documents.forEach(([type, file]) => {
+      this.sub.add(
+        this.svc.uploadDocument(detail.id, type, file).subscribe({ next: onDone, error: onDone }),
+      );
+    });
     if (interestIds.length > 0) {
       this.sub.add(
         this.svc.setPlaceInterests(detail.id, interestIds).subscribe({ next: onDone, error: onDone }),
       );
     }
+  }
+
+  private hasRequiredOwnerDocuments(): boolean {
+    const documents = this.ownerDocuments();
+    return !!documents['identity'] && !!documents['authorization'];
+  }
+
+  private ownerDocumentEntries(): Array<[string, File]> {
+    if (!this.requiresOwnerDocuments) return [];
+
+    return Object.entries(this.ownerDocuments())
+      .filter((entry): entry is [string, File] => entry[1] instanceof File);
   }
 
   private uploadFile(placeId: string, file: File): void {

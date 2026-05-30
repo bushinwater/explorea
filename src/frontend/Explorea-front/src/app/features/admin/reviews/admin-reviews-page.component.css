@@ -313,6 +313,29 @@
   font-style: italic;
 }
 
+.rv-comment-cell {
+  display: grid;
+  gap: 8px;
+}
+
+.rv-owner-reply {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-light, var(--color-border));
+  border-radius: 8px;
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  font-style: normal;
+}
+
+.rv-owner-reply .material-icons {
+  flex: 0 0 auto;
+  font-size: 16px;
+  color: var(--color-primary);
+}
+
 .rv-td--actions {
   width: 48px;
 }
