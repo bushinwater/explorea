@@ -169,6 +169,42 @@ namespace Explorea.Server.Services.Admin
             await NotifySubmitterAsync(item, approved: false, reason);
         }
 
+        public async Task DeleteAsync(Guid queueItemId, Guid reviewerId)
+        {
+            var item = await _queueRepo.GetByIdAsync(queueItemId)
+                ?? throw new Exception("Queue item not found.");
+
+            if (item.Status != "Pending")
+                throw new Exception("Only pending requests can be deleted.");
+
+            if (!await CanReviewAsAdminAsync(reviewerId, item.DestinationId))
+                throw new UnauthorizedAccessException("Access denied.");
+
+            var eventEntity = await _eventRepo.GetAdminByIdAsync(item.EntityId);
+            if (eventEntity != null)
+            {
+                eventEntity.IsDeleted = true;
+                eventEntity.DeletedAt = DateTimeOffset.UtcNow;
+                eventEntity.UpdatedAt = DateTimeOffset.UtcNow;
+                eventEntity.UpdatedBy = reviewerId;
+            }
+
+            var placeEntity = await _db.Places
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(place => place.Id == item.EntityId);
+
+            if (placeEntity != null)
+            {
+                placeEntity.IsDeleted = true;
+                placeEntity.DeletedAt = DateTimeOffset.UtcNow;
+                placeEntity.UpdatedAt = DateTimeOffset.UtcNow;
+                placeEntity.UpdatedBy = reviewerId;
+            }
+
+            _db.SubmissionQueue.Remove(item);
+            await _db.SaveChangesAsync();
+        }
+
         public async Task ApproveByOwnerAsync(Guid queueItemId, Guid ownerId)
         {
             var item = await _queueRepo.GetByIdAsync(queueItemId)
@@ -407,7 +443,7 @@ namespace Explorea.Server.Services.Admin
                     {
                         Id = document.Id,
                         DocumentType = document.DocumentType,
-                        DocumentUrl = document.DocumentUrl,
+                        DocumentUrl = BuildDocumentDeliveryUrl(document.DocumentUrl, document.ContentType, document.FileName),
                         FileName = document.FileName,
                         ContentType = document.ContentType,
                         CreatedAt = document.CreatedAt
@@ -424,6 +460,20 @@ namespace Explorea.Server.Services.Admin
                     .Select(document => document.Dto)
                     .ToList();
             }
+        }
+
+        private static string BuildDocumentDeliveryUrl(string url, string? contentType, string? fileName)
+        {
+            var isPdf =
+                contentType?.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) == true ||
+                (!string.IsNullOrWhiteSpace(fileName) &&
+                    Path.GetExtension(fileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase)) ||
+                url.Contains(".pdf", StringComparison.OrdinalIgnoreCase);
+
+            if (!isPdf || url.Contains("/fl_attachment/", StringComparison.OrdinalIgnoreCase))
+                return url;
+
+            return url.Replace("/upload/", "/upload/fl_attachment/");
         }
     }
 }

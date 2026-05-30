@@ -792,6 +792,17 @@ namespace Explorea.Server.Services.Admin
 
         private static void AddChangedField<T>(ICollection<string> fields, string label, T oldValue, T newValue)
         {
+            if (oldValue is string || newValue is string)
+            {
+                var oldNormalized = string.IsNullOrWhiteSpace(oldValue as string) ? string.Empty : ((string)(object)oldValue!).Trim();
+                var newNormalized = string.IsNullOrWhiteSpace(newValue as string) ? string.Empty : ((string)(object)newValue!).Trim();
+                if (!string.Equals(oldNormalized, newNormalized, StringComparison.Ordinal))
+                {
+                    fields.Add(label);
+                }
+                return;
+            }
+
             if (!EqualityComparer<T>.Default.Equals(oldValue, newValue))
             {
                 fields.Add(label);

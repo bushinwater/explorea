@@ -244,6 +244,12 @@ namespace Explorea.Server.Services.Admin
 
         public async Task<int> GetPendingCountAsync(Guid currentUserId)
         {
+            var breakdown = await GetPendingCountBreakdownAsync(currentUserId);
+            return breakdown.Count;
+        }
+
+        public async Task<AdminPendingCountDto> GetPendingCountBreakdownAsync(Guid currentUserId)
+        {
             var user = await _userRepository.GetByIdWithRoleAsync(currentUserId)
                 ?? throw new UnauthorizedAccessException("Current user was not found.");
 
@@ -251,22 +257,52 @@ namespace Explorea.Server.Services.Admin
             {
                 var destinationQuery = await BuildDestinationScopeAsync(user, currentUserId);
                 var destinationIdsQuery = destinationQuery.Select(d => d.Id);
-                return await _db.SubmissionQueue.CountAsync(q =>
-                    q.Status == "Pending" && destinationIdsQuery.Contains(q.DestinationId));
+                var eventCount = await _db.SubmissionQueue.CountAsync(q =>
+                    q.Status == "Pending" &&
+                    q.EntityType.ToLower() == "event" &&
+                    destinationIdsQuery.Contains(q.DestinationId));
+                var pendingPlaceCount = await _db.SubmissionQueue.CountAsync(q =>
+                    q.Status == "Pending" &&
+                    q.EntityType.ToLower() == "place" &&
+                    destinationIdsQuery.Contains(q.DestinationId));
+
+                return new AdminPendingCountDto
+                {
+                    Count = eventCount + pendingPlaceCount,
+                    EventCount = eventCount,
+                    PlaceCount = pendingPlaceCount
+                };
             }
 
             // place_owner: count their own pending submissions + pending places they created
-            var pendingSubmissions = await _db.SubmissionQueue.CountAsync(q =>
-                q.Status == "Pending" && q.SubmittedByUserId == currentUserId);
+            var pendingEventSubmissions = await _db.SubmissionQueue.CountAsync(q =>
+                q.Status == "Pending" &&
+                q.EntityType.ToLower() == "event" &&
+                q.SubmittedByUserId == currentUserId);
+            var pendingPlaceSubmissions = await _db.SubmissionQueue.CountAsync(q =>
+                q.Status == "Pending" &&
+                q.EntityType.ToLower() == "place" &&
+                q.SubmittedByUserId == currentUserId);
+
+            var queuedPlaceIds = _db.SubmissionQueue
+                .Where(q => q.EntityType == "place" && q.SubmittedByUserId == currentUserId)
+                .Select(q => q.EntityId);
 
             var pendingPlaces = await _db.Places
                 .IgnoreQueryFilters()
                 .CountAsync(p =>
                     !p.IsDeleted &&
                     p.CreatedBy == currentUserId &&
-                    p.ApprovalStatus == "pending");
+                    p.ApprovalStatus == "pending" &&
+                    !queuedPlaceIds.Contains(p.Id));
 
-            return pendingSubmissions + pendingPlaces;
+            var placeCount = pendingPlaceSubmissions + pendingPlaces;
+            return new AdminPendingCountDto
+            {
+                Count = pendingEventSubmissions + placeCount,
+                EventCount = pendingEventSubmissions,
+                PlaceCount = placeCount
+            };
         }
 
         private async Task<IQueryable<Destination>> BuildDestinationScopeAsync(User user, Guid currentUserId)
