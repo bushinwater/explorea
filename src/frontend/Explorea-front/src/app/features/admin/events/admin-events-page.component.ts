@@ -172,12 +172,25 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.route.queryParamMap.subscribe((params) => {
         const openId = params.get('openId');
+        const tabParam = params.get('tab') as EventsTab | null;
+        if (tabParam && ['active', 'pending', 'history', 'deleted'].includes(tabParam)) {
+          this.patchFilter({ tab: tabParam, page: 1 });
+          this.loadEvents();
+        }
+
         if (openId) {
           const openName = params.get('openName') ?? '';
           this.openDetailsPanel({ id: openId, name: openName } as unknown as EventRow);
           void this.router.navigate([], {
             relativeTo: this.route,
-            queryParams: { openId: null, openName: null },
+            queryParams: { openId: null, openName: null, tab: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        } else if (tabParam) {
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { tab: null },
             queryParamsHandling: 'merge',
             replaceUrl: true,
           });
@@ -460,7 +473,9 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     if (action === 'delete') {
       this.isActioning.set(true);
       this.subscription.add(
-        this.eventsService.deleteEvent(ev.id)
+        (ev.queueId && ev.status === 'pending'
+          ? this.eventsService.deleteQueueRequest(ev.queueId)
+          : this.eventsService.deleteEvent(ev.id))
           .pipe(finalize(() => this.isActioning.set(false)))
           .subscribe({
             next: () => {
@@ -473,8 +488,8 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
               this.loadEvents();
               setTimeout(() => this.successMessage.set(''), 4000);
             },
-            error: () => {
-              this.errorMessage.set('Brisanje nije uspelo.');
+            error: (err) => {
+              this.errorMessage.set(err?.error?.message ?? 'Brisanje nije uspelo.');
               setTimeout(() => this.errorMessage.set(''), 4000);
             },
           }),
@@ -506,8 +521,8 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
           this.loadEvents();
           setTimeout(() => this.successMessage.set(''), 4000);
         },
-        error: () => {
-          this.errorMessage.set('Došlo je do greške. Pokušajte ponovo.');
+        error: (err) => {
+          this.errorMessage.set(err?.error?.message ?? 'Došlo je do greške. Pokušajte ponovo.');
           setTimeout(() => this.errorMessage.set(''), 4000);
         },
       }),

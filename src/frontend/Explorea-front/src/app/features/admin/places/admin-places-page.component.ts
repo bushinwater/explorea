@@ -142,7 +142,6 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     { value: 'all',      label: 'Svi statusi' },
     { value: 'approved', label: 'Aktivno' },
     { value: 'pending',  label: 'Na čekanju' },
-    { value: 'inactive', label: 'Neaktivno' },
     { value: 'rejected', label: 'Odbijeno' },
   ];
 
@@ -162,6 +161,18 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.route.queryParamMap.subscribe((params) => {
         const openId = params.get('openId');
+        const statusParam = params.get('status') as PlaceStatus | 'all' | null;
+        if (statusParam && ['all', 'approved', 'pending', 'rejected'].includes(statusParam)) {
+          this.patchFilter({ status: statusParam, page: 1 });
+          this.loadPlaces();
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { status: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        }
+
         if (openId) {
           const openName = params.get('openName') ?? '';
           this.openDetailsPanel({ id: openId, name: openName } as unknown as PlaceRow);

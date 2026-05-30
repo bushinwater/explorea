@@ -425,6 +425,22 @@
                             <span class="material-icons">open_in_new</span>
                           </a>
                         }
+                        @if (isSuperAdmin() && ev.status === 'pending') {
+                          <button
+                            class="btn-icon"
+                            [title]="ui.t('events.panel.approve')"
+                            (click)="selectedEvent.set(ev); initiateAction('approve')"
+                          >
+                            <span class="material-icons">check_circle</span>
+                          </button>
+                          <button
+                            class="btn-icon"
+                            [title]="ui.t('events.panel.reject')"
+                            (click)="selectedEvent.set(ev); initiateAction('reject')"
+                          >
+                            <span class="material-icons">cancel</span>
+                          </button>
+                        }
                         @if (isSuperAdmin() && ev.status === 'active') {
                           <button
                             class="btn-icon"

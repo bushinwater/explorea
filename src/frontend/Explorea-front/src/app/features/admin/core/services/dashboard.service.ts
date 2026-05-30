@@ -39,8 +39,15 @@ interface AdminRecentActivity {
 interface AdminSystemStatusItem {
   label: string;
   detail: string;
+  detailKey?: string | null;
   level: 'ok' | 'warning' | 'critical';
   percentage?: number | null;
+}
+
+interface AdminPendingCount {
+  count: number;
+  eventCount: number;
+  placeCount: number;
 }
 
 interface AdminAiChatResponse {
@@ -82,10 +89,8 @@ export class DashboardService {
     }));
   }
 
-  getPendingCount(): Observable<number> {
-    return this.http.get<{ count: number }>('/api/admin/stats/pending-count').pipe(
-      map(r => r.count),
-    );
+  getPendingCount(): Observable<AdminPendingCount> {
+    return this.http.get<AdminPendingCount>('/api/admin/stats/pending-count');
   }
 
   getOverviewStats(role: AdminRole): Observable<StatCardData[]> {
@@ -156,8 +161,8 @@ export class DashboardService {
   getSystemStatus(): Observable<SystemStatusItem[]> {
     return this.http.get<AdminSystemStatusItem[]>('/api/admin/stats/system-status').pipe(
       map((items) => items.map((item) => ({
-        label: item.label,
-        detail: item.detail,
+        label: this.ui.t(item.label),
+        detail: item.detailKey ? this.ui.t(item.detailKey, { count: item.detail }) : this.ui.t(item.detail),
         level: item.level,
         percentage: item.percentage ?? undefined,
       }))),

@@ -397,12 +397,8 @@
                   @if (listMode() === 'deleted') {
                     <span class="place-status place-status--deleted">Obrisano</span>
                   } @else if (place.status === 'approved') {
-                    <span
-                      class="place-status place-status--{{
-                        place.hasRecentActivity ? 'active' : 'inactive'
-                      }}"
-                    >
-                      {{ place.hasRecentActivity ? 'Aktivno' : 'Neaktivno' }}
+                    <span class="place-status place-status--approved">
+                      {{ statusLabel(place.status) }}
                     </span>
                   } @else {
                     <span class="place-status place-status--{{ place.status }}">
@@ -592,12 +588,8 @@
           @if (listMode() === 'deleted') {
             <span class="place-status place-status--deleted">Obrisano</span>
           } @else if (place.status === 'approved') {
-            <span
-              class="place-status place-status--{{
-                place.hasRecentActivity ? 'active' : 'inactive'
-              }}"
-            >
-              {{ place.hasRecentActivity ? 'Aktivno' : 'Neaktivno' }}
+            <span class="place-status place-status--approved">
+              {{ statusLabel(place.status) }}
             </span>
           } @else {
             <span class="place-status place-status--{{ place.status }}">

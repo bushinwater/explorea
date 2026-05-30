@@ -115,25 +115,25 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   readonly tabs: SettingsTabItem[] = [
     {
       id: 'profile',
-      label: 'Profile',
+      label: 'Profil',
       description: 'Lični podaci i status admin naloga.',
       icon: 'person',
     },
     {
       id: 'preferences',
-      label: 'App Preferences',
+      label: 'Podešavanja aplikacije',
       description: 'Izgled i ponašanje aplikacije.',
       icon: 'tune',
     },
     {
       id: 'notifications',
-      label: 'Notifications',
+      label: 'Obaveštenja',
       description: 'Podešavanja obaveštenja.',
       icon: 'notifications',
     },
     {
       id: 'administration',
-      label: 'Administration',
+      label: 'Administracija',
       description: 'Sistemska podešavanja.',
       icon: 'admin_panel_settings',
       superAdminOnly: true,

@@ -418,7 +418,12 @@
         </div>
 
         <div class="edit-field ev-location-full">
-          <label class="edit-field__label">{{ ui.t('common.destination') }}</label>
+          <label class="edit-field__label">
+            {{ ui.t('common.destination') }}
+            @if (requiresOwnerDocuments) {
+              <span class="edit-field__required">*</span>
+            }
+          </label>
           <div class="ev-search-field">
             <span class="material-icons ev-search-field__icon">place</span>
             <input
@@ -467,7 +472,12 @@
         </div>
 
         <div class="edit-field ev-location-full">
-          <label class="edit-field__label">{{ ui.t('events.modal.place_optional') }}</label>
+          <label class="edit-field__label">
+            {{ requiresOwnerDocuments ? 'Objekat ili destinacija' : ui.t('events.modal.place_optional') }}
+            @if (requiresOwnerDocuments) {
+              <span class="edit-field__required">*</span>
+            }
+          </label>
           <div class="ev-search-field">
             <span class="material-icons ev-search-field__icon">apartment</span>
             <input

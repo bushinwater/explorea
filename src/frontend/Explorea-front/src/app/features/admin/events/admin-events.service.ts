@@ -306,6 +306,10 @@ export class AdminEventsService {
     return this.http.delete<void>(`/api/admin/events/${id}`);
   }
 
+  deleteQueueRequest(queueId: string): Observable<void> {
+    return this.http.delete<void>(`/api/admin/queue/${queueId}`);
+  }
+
   uploadEventImage(id: string, file: File): Observable<EventImageItem> {
     const form = new FormData();
     form.append('file', file);
@@ -534,12 +538,13 @@ export class AdminEventsService {
   }
 
   private mapQueueItem(q: ApiQueueItem): EventRow {
+    const fallbackName = q.destinationName || `Zahtev ${q.id.substring(0, 6).toUpperCase()}`;
     return {
       id: q.entityId,
       queueId: q.id,
       eventNumber: `Q-${q.id.substring(0, 6).toUpperCase()}`,
       slug: '',
-      name: q.destinationName,
+      name: fallbackName,
       organizer: q.submittedByName,
       type: null,
       typeName: null,
@@ -548,7 +553,7 @@ export class AdminEventsService {
       cityId: null,
       destinationId: q.destinationId ?? null,
       placeId: null,
-      venue: q.destinationName,
+      venue: q.destinationName || null,
       startDate: q.submittedAt,
       endDate: null,
       priority: null,
