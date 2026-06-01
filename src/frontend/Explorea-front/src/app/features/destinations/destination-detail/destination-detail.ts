@@ -92,6 +92,9 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   lightboxOpen = false;
   selectedImageIndex = 0;
   private lightboxReady = false;
+  private touchStartX = 0;
+  private touchStartY = 0;
+  private touchSwipeDone = false;
 
   isSaved = false;
   isSavedLoading = false;
@@ -520,6 +523,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   }
 
   closeLightbox(): void {
+    if (this.touchSwipeDone) return;
     this.lightboxOpen = false;
     this.unlockLightboxScroll();
   }
@@ -534,6 +538,23 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     const total = this.galleryImages.length;
     if (!total) return;
     this.selectedImageIndex = (this.selectedImageIndex + 1) % total;
+  }
+
+  onLightboxTouchStart(event: TouchEvent): void {
+    this.touchStartX = event.touches[0].clientX;
+    this.touchStartY = event.touches[0].clientY;
+  }
+
+  onLightboxTouchEnd(event: TouchEvent): void {
+    const dx = event.changedTouches[0].clientX - this.touchStartX;
+    const dy = event.changedTouches[0].clientY - this.touchStartY;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+
+    if (dx < 0) this.nextImage();
+    else this.prevImage();
+
+    this.touchSwipeDone = true;
+    setTimeout(() => { this.touchSwipeDone = false; }, 500);
   }
 
   get currentLightboxImage(): string {

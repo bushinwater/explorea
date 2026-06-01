@@ -170,7 +170,11 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(e => e.City)
         .Include(e => e.Country)
         .Include(e => e.Images)
-        .Where(e => e.EndDatetime >= now && (cityId == null || e.CityId == cityId))
+        .Where(e =>
+          !e.IsDeleted &&
+          e.Visibility == "published" &&
+          e.EndDatetime >= now &&
+          (cityId == null || e.CityId == cityId))
         .AsQueryable();
 
     query = userPoint != null
