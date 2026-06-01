@@ -43,6 +43,7 @@ interface ApiEventItem {
   price: number | null;
   avgRating: number;
   isFeatured: boolean;
+  recursAnnually: boolean;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
@@ -114,6 +115,7 @@ interface ApiEventDetailItem {
   avgRating: number;
   popularity: number;
   isFeatured: boolean;
+  recursAnnually: boolean;
   images: { id: string; imageUrl: string; sortOrder: number }[];
   createdAt: string;
   updatedAt: string;
@@ -558,6 +560,7 @@ export class AdminEventsService {
       longitude: null,
       ticketUrl: null,
       isFeatured: e.isFeatured,
+      recursAnnually: e.recursAnnually ?? false,
       avgRating: e.avgRating ?? 0,
       documents: [],
       ownerName: null,
@@ -598,6 +601,7 @@ export class AdminEventsService {
       longitude: null,
       ticketUrl: null,
       isFeatured: false,
+      recursAnnually: false,
       avgRating: 0,
       documents: (q.documents ?? []).map((doc: ApiOwnerSubmissionDocument) => ({
         id: doc.id,
@@ -644,6 +648,7 @@ export class AdminEventsService {
       longitude: e.longitude ?? null,
       ticketUrl: e.ticketUrl ?? null,
       isFeatured: e.isFeatured ?? false,
+      recursAnnually: e.recursAnnually ?? false,
       avgRating: e.avgRating ?? 0,
       documents: base?.documents ?? [],
       ownerName: base?.ownerName ?? (e.placeId ? 'Vlasnik objekta' : null),

@@ -99,6 +99,7 @@ export interface EventRow {
   longitude: number | null;
   ticketUrl: string | null;
   isFeatured: boolean;
+  recursAnnually: boolean;
   avgRating: number;
   documents: EventDocument[];
   ownerName: string | null;
@@ -156,6 +157,7 @@ export interface CreateEventPayload {
   longitude: number | null;
   ticketUrl: string | null;
   isFeatured: boolean;
+  recursAnnually: boolean;
   extraFilters?: Record<string, string>;
 }
 
@@ -184,6 +186,7 @@ export interface UpdateEventPayload {
   placeId?: string | null;
   ticketUrl?: string | null;
   isFeatured?: boolean;
+  recursAnnually?: boolean;
   extraFilters?: Record<string, string>;
 }
 

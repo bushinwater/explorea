@@ -66,6 +66,7 @@ interface EventForm {
   placeId: string | null;
   ticketUrl: string;
   isFeatured: boolean;
+  recursAnnually: boolean;
   extraFilters: Record<string, string>;
 }
 
@@ -260,6 +261,10 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
 
   protected updateFeatured(checked: boolean): void {
     this.form.update(f => ({ ...f, isFeatured: checked }));
+  }
+
+  protected updateRecursAnnually(checked: boolean): void {
+    this.form.update(f => ({ ...f, recursAnnually: checked }));
   }
 
   // Country → Region cascade
@@ -509,6 +514,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
       longitude: this.mapLongitude(),
       ticketUrl: f.ticketUrl.trim() || null,
       isFeatured: f.isFeatured,
+      recursAnnually: f.recursAnnually,
       extraFilters: Object.keys(f.extraFilters).length ? f.extraFilters : undefined,
     };
 
@@ -787,6 +793,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
       placeId: null,
       ticketUrl: '',
       isFeatured: false,
+      recursAnnually: false,
       extraFilters: {}
     };
   }
