@@ -47,6 +47,7 @@ namespace Explorea.API.Models
         [Column("popularity")] public int Popularity { get; set; } = 0;
 
         [Column("is_featured")] public bool IsFeatured { get; set; } = false;
+        [Column("recurs_annually")] public bool RecursAnnually { get; set; } = false;
         [Column("is_deleted")] public bool IsDeleted { get; set; } = false;
 
         [Column("extra_filters", TypeName = "jsonb")]

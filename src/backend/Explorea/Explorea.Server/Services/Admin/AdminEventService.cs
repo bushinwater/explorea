@@ -403,6 +403,7 @@ namespace Explorea.Server.Services.Admin
                 DestinationId = resolvedDestinationId,
                 PlaceId       = dto.PlaceId,
                 IsFeatured    = dto.IsFeatured,
+                RecursAnnually = dto.RecursAnnually,
                 ExtraFilters  = dto.ExtraFilters != null ? JsonSerializer.Serialize(dto.ExtraFilters) : null,
                 Visibility     = visibility,
                 CreatedAt     = now,
@@ -504,6 +505,7 @@ namespace Explorea.Server.Services.Admin
             }
             if (dto.PlaceId       != null) { AddChangedField(changedFields, "objekat", target.PlaceId, dto.PlaceId); target.PlaceId = dto.PlaceId; }
             if (dto.IsFeatured    != null) { AddChangedField(changedFields, "istaknuto", target.IsFeatured, dto.IsFeatured.Value); target.IsFeatured = dto.IsFeatured.Value; }
+            if (dto.RecursAnnually != null) { AddChangedField(changedFields, "ponavlja se svake godine", target.RecursAnnually, dto.RecursAnnually.Value); target.RecursAnnually = dto.RecursAnnually.Value; }
             if (dto.ExtraFilters  != null) target.ExtraFilters = JsonSerializer.Serialize(dto.ExtraFilters);
 
             target.UpdatedAt = DateTimeOffset.UtcNow;
@@ -953,6 +955,7 @@ namespace Explorea.Server.Services.Admin
             Price          = e.Price,
             AvgRating      = e.AvgRating,
             IsFeatured     = e.IsFeatured,
+            RecursAnnually = e.RecursAnnually,
             CreatedAt      = e.CreatedAt,
             UpdatedAt      = e.UpdatedAt,
             DeletedAt      = e.DeletedAt
@@ -984,6 +987,7 @@ namespace Explorea.Server.Services.Admin
             AvgRating      = e.AvgRating,
             Popularity     = e.Popularity,
             IsFeatured     = e.IsFeatured,
+            RecursAnnually = e.RecursAnnually,
             Images         = e.Images.OrderBy(i => i.SortOrder)
                                 .Select(i => new AdminEventImageDto { Id = i.Id, ImageUrl = i.ImageUrl, SortOrder = i.SortOrder })
                                 .ToList(),
