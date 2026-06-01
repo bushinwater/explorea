@@ -430,6 +430,12 @@
                             {{ ev.city }}
                           </span>
                         }
+                        @if (ev.recursAnnually) {
+                          <span class="evts-name-info__annual">
+                            <span class="material-icons">event_repeat</span>
+                            Svake godine
+                          </span>
+                        }
                       </div>
                     </div>
                   </td>
@@ -680,6 +686,12 @@
           <span class="ddp-badge-featured">
             <span class="material-icons">star</span>
             {{ ui.t('common.featured') }}
+          </span>
+        }
+        @if (ev.recursAnnually) {
+          <span class="ddp-badge-annual">
+            <span class="material-icons">event_repeat</span>
+            Svake godine
           </span>
         }
       </div>
