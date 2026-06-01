@@ -58,6 +58,10 @@ namespace Explorea.Server.Services.Admin
                 restrictToDestinationIds,
                 restrictToCityIds
             );
+            var expiredCount = await _eventRepo.CountExpiredAsync(
+                restrictToDestinationIds,
+                restrictToCityIds
+            );
 
             var pendingCount = await _queueRepo.CountAsync(
                 entityType: "event",
@@ -104,7 +108,8 @@ namespace Explorea.Server.Services.Admin
                 RejectedNote = "Odbijeni zahtevi",
 
                 TabPendingCount = pendingCount,
-                TabActiveCount = activeCount
+                TabActiveCount = activeCount,
+                TabExpiredCount = expiredCount
             };
         }
 
@@ -243,6 +248,57 @@ namespace Explorea.Server.Services.Admin
             var total = await query.CountAsync();
             var items = await query
                 .OrderByDescending(e => e.DeletedAt ?? e.UpdatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items.Select(MapToListDto).ToList(), total);
+        }
+
+        public async Task<(List<AdminEventListDto> Items, int Total)> GetExpiredAsync(
+            string? search,
+            Guid? destinationId,
+            int? cityId,
+            int? typeId,
+            int page,
+            int pageSize,
+            Guid currentUserId)
+        {
+            var currentUser = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            if (currentUser?.Role.Name == RoleNames.PlaceOwner)
+            {
+                return await GetOwnerExpiredEventsAsync(
+                    search,
+                    destinationId,
+                    cityId,
+                    typeId,
+                    page,
+                    pageSize,
+                    currentUserId);
+            }
+
+            var (restrictToDestinationIds, restrictToCityIds) =
+                await GetAccessRestrictionsAsync(currentUserId);
+
+            var query = IncludeEventRelations(_db.Events
+                .IgnoreQueryFilters()
+                .Where(e =>
+                    !e.IsDeleted &&
+                    e.Visibility == "published" &&
+                    e.EndDatetime < DateTimeOffset.UtcNow));
+
+            query = ApplyOwnerEventFilters(query, search, destinationId, cityId, typeId, null, null);
+
+            if (restrictToDestinationIds != null || restrictToCityIds != null)
+            {
+                query = query.Where(e =>
+                    (restrictToDestinationIds != null && e.DestinationId.HasValue && restrictToDestinationIds.Contains(e.DestinationId.Value)) ||
+                    (restrictToCityIds != null && e.CityId.HasValue && restrictToCityIds.Contains(e.CityId.Value)));
+            }
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(e => e.EndDatetime)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -515,7 +571,16 @@ namespace Explorea.Server.Services.Admin
         private async Task<AdminEventStatsDto> GetOwnerStatsDtoAsync(Guid ownerId)
         {
             var activeCount = await BuildOwnerEventScope(ownerId)
-                .Where(e => !e.IsDeleted && e.Visibility == "published")
+                .Where(e =>
+                    !e.IsDeleted &&
+                    e.Visibility == "published" &&
+                    e.EndDatetime >= DateTimeOffset.UtcNow)
+                .CountAsync();
+            var expiredCount = await BuildOwnerEventScope(ownerId)
+                .Where(e =>
+                    !e.IsDeleted &&
+                    e.Visibility == "published" &&
+                    e.EndDatetime < DateTimeOffset.UtcNow)
                 .CountAsync();
 
             var pendingCount = await _db.SubmissionQueue.CountAsync(q =>
@@ -548,7 +613,8 @@ namespace Explorea.Server.Services.Admin
                 Rejected = rejectedCount,
                 RejectedNote = "Odbijeni zahtevi",
                 TabPendingCount = pendingCount,
-                TabActiveCount = activeCount
+                TabActiveCount = activeCount,
+                TabExpiredCount = expiredCount
             };
         }
 
@@ -566,7 +632,10 @@ namespace Explorea.Server.Services.Admin
             string? sortBy)
         {
             var query = BuildOwnerEventScope(ownerId)
-                .Where(e => !e.IsDeleted && e.Visibility == "published");
+                .Where(e =>
+                    !e.IsDeleted &&
+                    e.Visibility == "published" &&
+                    e.EndDatetime >= DateTimeOffset.UtcNow);
 
             query = ApplyOwnerEventFilters(query, search, destinationId, cityId, typeId, startFrom, startTo);
             query = IncludeEventRelations(query);
@@ -612,6 +681,34 @@ namespace Explorea.Server.Services.Admin
             var total = await query.CountAsync();
             var items = await query
                 .OrderByDescending(e => e.DeletedAt ?? e.UpdatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items.Select(MapToListDto).ToList(), total);
+        }
+
+        private async Task<(List<AdminEventListDto> Items, int Total)> GetOwnerExpiredEventsAsync(
+            string? search,
+            Guid? destinationId,
+            int? cityId,
+            int? typeId,
+            int page,
+            int pageSize,
+            Guid ownerId)
+        {
+            var query = BuildOwnerEventScope(ownerId)
+                .Where(e =>
+                    !e.IsDeleted &&
+                    e.Visibility == "published" &&
+                    e.EndDatetime < DateTimeOffset.UtcNow);
+
+            query = ApplyOwnerEventFilters(query, search, destinationId, cityId, typeId, null, null);
+            query = IncludeEventRelations(query);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(e => e.EndDatetime)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();

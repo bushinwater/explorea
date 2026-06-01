@@ -221,6 +221,34 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpGet("expired")]
+        public async Task<IActionResult> GetExpired(
+            [FromQuery] string? search,
+            [FromQuery] Guid? destinationId,
+            [FromQuery] int? cityId,
+            [FromQuery] int? typeId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var (items, total) = await _service.GetExpiredAsync(
+                    search,
+                    destinationId,
+                    cityId,
+                    typeId,
+                    page,
+                    pageSize,
+                    userId);
+                return Ok(new { total, items });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
         // POST /api/admin/events/{id}/images
         [HttpPost("{id}/images")]
         public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
