@@ -430,12 +430,6 @@
                             {{ ev.city }}
                           </span>
                         }
-                        @if (ev.recursAnnually) {
-                          <span class="evts-name-info__annual">
-                            <span class="material-icons">event_repeat</span>
-                            Svake godine
-                          </span>
-                        }
                       </div>
                     </div>
                   </td>
@@ -462,6 +456,11 @@
                             : ev.startDate
                         )
                       }}
+                      @if (ev.recursAnnually) {
+                        <span class="evts-date__annual" title="Obeležava se svake godine">
+                          <span class="material-icons">event_repeat</span>
+                        </span>
+                      }
                     </span>
                   </td>
                   <td class="evts-td evts-td--hide-md evts-td--center">

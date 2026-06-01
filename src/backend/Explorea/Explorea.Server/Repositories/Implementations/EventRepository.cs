@@ -99,6 +99,7 @@ namespace Explorea.Server.Repositories.Implementations
                         (double)e.AvgRating / 5.0
                 })
                 .OrderByDescending(x => x.Score)
+                .ThenBy(x => x.Event.StartDatetime)
                 .Take(take)
                 .Select(x => x.Event)
                 .ToList();

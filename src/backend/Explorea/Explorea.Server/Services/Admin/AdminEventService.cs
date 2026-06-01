@@ -440,6 +440,7 @@ namespace Explorea.Server.Services.Admin
                         ev.CountryId,
                         ev.DestinationId,
                         ev.PlaceId,
+                        ev.RecursAnnually,
                         ev.ExtraFilters
                     })
                 };

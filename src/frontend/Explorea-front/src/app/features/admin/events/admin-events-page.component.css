@@ -519,19 +519,6 @@
 
 .evts-name-info__sub .material-icons { font-size: 12px; }
 
-.evts-name-info__annual {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  width: max-content;
-  max-width: 160px;
-  color: #0f766e;
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
-.evts-name-info__annual .material-icons { font-size: 12px; }
-
 /* Type label */
 .evts-type-label {
   display: flex;
@@ -576,6 +563,21 @@
 
 .evts-location .material-icons,
 .evts-date .material-icons { font-size: 14px; }
+
+.evts-date__annual {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: rgba(20, 184, 166, 0.12);
+  color: #0f766e;
+  flex-shrink: 0;
+}
+
+.evts-date__annual .material-icons { font-size: 13px; }
 
 .evts-rating {
   display: inline-flex;

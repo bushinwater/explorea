@@ -322,7 +322,9 @@ namespace Explorea.Server.Services
                 {
                     var eventIds = eventMatches.Select(x => x.Id).ToList();
                     var events = await _db.Events
-                        .Where(e => eventIds.Contains(e.Id) && e.EndDatetime >= DateTimeOffset.UtcNow)
+                        .Where(e => eventIds.Contains(e.Id)
+                            && e.Visibility == "published"
+                            && e.EndDatetime >= DateTimeOffset.UtcNow)
                         .Select(e => new {
                             e.Id,
                             e.Name,
@@ -402,8 +404,12 @@ namespace Explorea.Server.Services
                     })
                     .ToListAsync();
 
+                var now = DateTimeOffset.UtcNow;
                 var topEvents = await _db.Events
-                     .OrderByDescending(e => e.Popularity).ThenByDescending(e => e.AvgRating)
+                     .Where(e => !e.IsDeleted && e.Visibility == "published" && e.EndDatetime >= now)
+                     .OrderBy(e => e.StartDatetime)
+                     .ThenByDescending(e => e.Popularity)
+                     .ThenByDescending(e => e.AvgRating)
                      .Take(3)
                      .Select(e => new ForYouItemDto
                      {
