@@ -38,6 +38,8 @@ namespace Explorea.Server.Services.Admin.Interfaces
 
         Task<AdminEventDetailDto?> UpdateAsync(Guid id, AdminUpdateEventDto dto, Guid updatedBy);
 
+        Task<AdminEventDetailDto?> RenewAsync(Guid id, AdminRenewEventDto dto, Guid currentUserId);
+
         Task<bool> DeleteAsync(Guid id, Guid currentUserId);
 
         Task<bool> RestoreAsync(Guid id, Guid currentUserId);

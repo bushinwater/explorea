@@ -184,6 +184,30 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpPost("{id}/renew")]
+        public async Task<IActionResult> Renew(Guid id, [FromBody] AdminRenewEventDto dto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var renewed = await _service.RenewAsync(id, dto, userId);
+                if (renewed == null) return NotFound();
+                return Ok(renewed);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpGet("stats")]
         public async Task<IActionResult> GetStats()
         {

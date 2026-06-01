@@ -566,6 +566,58 @@ namespace Explorea.Server.Services.Admin
             return true;
         }
 
+        public async Task<AdminEventDetailDto?> RenewAsync(Guid id, AdminRenewEventDto dto, Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+
+            if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                var accessEvent = await _eventRepo.GetAdminByIdAsync(id);
+                if (accessEvent == null) return null;
+
+                if (!await HasTOAccessToEvent(currentUserId, accessEvent))
+                    throw new UnauthorizedAccessException("You do not have access to this event.");
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Only SuperAdmin or TouristOrganization can renew events.");
+            }
+
+            var ev = await _eventRepo.GetAdminByIdAsync(id);
+            if (ev == null || ev.IsDeleted) return null;
+
+            var now = DateTimeOffset.UtcNow;
+            if (ev.EndDatetime >= now)
+                throw new InvalidOperationException("Event has not expired.");
+
+            var duration = ev.EndDatetime - ev.StartDatetime;
+            DateTimeOffset newStart;
+
+            if (dto.StartDatetime.HasValue)
+            {
+                newStart = dto.StartDatetime.Value;
+                if (newStart <= now)
+                    throw new ArgumentException("New event date must be in the future.");
+            }
+            else
+            {
+                newStart = ev.StartDatetime.AddYears(1);
+                while (newStart + duration <= now)
+                    newStart = newStart.AddYears(1);
+            }
+
+            ev.StartDatetime = newStart;
+            ev.EndDatetime = newStart + duration;
+            ev.UpdatedAt = now;
+            ev.UpdatedBy = currentUserId;
+
+            _eventRepo.Update(ev);
+            await _eventRepo.SaveChangesAsync();
+
+            var updated = await _eventRepo.GetAdminByIdAsync(id);
+            return MapToDetailDto(updated!);
+        }
+
         // ---- Helpers ----
 
         private async Task<AdminEventStatsDto> GetOwnerStatsDtoAsync(Guid ownerId)
