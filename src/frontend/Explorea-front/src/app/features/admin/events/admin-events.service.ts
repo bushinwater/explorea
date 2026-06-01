@@ -263,6 +263,10 @@ export class AdminEventsService {
       return this.fetchDeletedEvents(filters);
     }
 
+    if (filters.tab === 'expired') {
+      return this.fetchExpiredEvents(filters);
+    }
+
     if (filters.tab === 'active') {
       return this.fetchActiveEvents(filters);
     }
@@ -393,6 +397,25 @@ export class AdminEventsService {
       map((res) => ({
         total: res.total,
         items: res.items.map((e) => this.mapEventItem(e, 'deleted')),
+      })),
+    );
+  }
+
+  private fetchExpiredEvents(filters: EventFilters): Observable<EventPagedResponse> {
+    let params = new HttpParams().set('page', filters.page).set('pageSize', filters.pageSize);
+
+    if (filters.search.trim()) params = params.set('search', filters.search.trim());
+
+    if (filters.typeId !== null) params = params.set('typeId', filters.typeId);
+
+    if (filters.cityId !== null) params = params.set('cityId', filters.cityId);
+
+    if (filters.destinationId !== null) params = params.set('destinationId', filters.destinationId);
+
+    return this.http.get<ApiEventsResponse>('/api/admin/events/expired', { params }).pipe(
+      map((res) => ({
+        total: res.total,
+        items: res.items.map((e) => this.mapEventItem(e, 'expired')),
       })),
     );
   }

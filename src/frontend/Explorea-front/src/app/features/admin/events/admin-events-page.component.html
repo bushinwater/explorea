@@ -247,7 +247,7 @@
           }
         </div>
 
-        @if (canCreateEvent() && filters().tab !== 'deleted') {
+        @if (canCreateEvent() && filters().tab !== 'deleted' && filters().tab !== 'expired') {
           <button class="evts-btn-primary" type="button" (click)="openCreateDialog()">
             <span class="material-icons">add</span>
             {{ ui.t('events.btn.create') }}
@@ -288,6 +288,16 @@
           (click)="setTab('history')"
         >
           {{ ui.t('events.tabs.history') }}
+        </button>
+        <button
+          class="evts-tab"
+          [class.evts-tab--active]="filters().tab === 'expired'"
+          (click)="setTab('expired')"
+        >
+          Istekli
+          @if (stats()?.tabExpiredCount) {
+            <span class="evts-tab__badge">{{ stats()!.tabExpiredCount }}</span>
+          }
         </button>
         <button
           class="evts-tab"
@@ -413,6 +423,8 @@
                             <span class="material-icons">restore</span>
                           </button>
                         }
+                      } @else if (filters().tab === 'expired') {
+                        <span class="evts-status evts-status--expired">Isteklo</span>
                       } @else {
                         @if (ev.slug) {
                           <a
@@ -781,6 +793,8 @@
             {{ ui.t('common.restore') }}
           </button>
         }
+      } @else if (filters().tab === 'expired') {
+        <span class="evts-status evts-status--expired">Isteklo</span>
       } @else {
         @if (ev.slug) {
           <a

@@ -46,10 +46,10 @@ export interface PlaceSearchItem {
   longitude?: number | null;
 }
 
-export type EventStatus = 'pending' | 'active' | 'rejected' | 'forwarded' | 'deleted';
+export type EventStatus = 'pending' | 'active' | 'rejected' | 'forwarded' | 'deleted' | 'expired';
 export type EventType = 'concert' | 'tasting' | 'conference' | 'sport' | 'exhibition' | 'other';
 export type EventPriority = 'low' | 'medium' | 'high';
-export type EventsTab = 'pending' | 'active' | 'history' | 'deleted';
+export type EventsTab = 'pending' | 'active' | 'history' | 'expired' | 'deleted';
 
 export interface EventFilterOption<TValue extends string | number = string | number> {
   value: TValue;
@@ -119,6 +119,7 @@ export interface EventStats {
   rejectedNote: string;
   tabPendingCount: number;
   tabActiveCount: number;
+  tabExpiredCount: number;
 }
 
 export interface EventFilters {

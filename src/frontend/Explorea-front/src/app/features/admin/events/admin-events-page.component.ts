@@ -173,7 +173,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       this.route.queryParamMap.subscribe((params) => {
         const openId = params.get('openId');
         const tabParam = params.get('tab') as EventsTab | null;
-        if (tabParam && ['active', 'pending', 'history', 'deleted'].includes(tabParam)) {
+        if (tabParam && ['active', 'pending', 'history', 'expired', 'deleted'].includes(tabParam)) {
           this.patchFilter({ tab: tabParam, page: 1 });
           this.loadEvents();
         }
@@ -587,6 +587,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       pending: 'Čeka', active: 'Odobreno', rejected: 'Odbijeno', forwarded: 'Prosleđeno',
     };
     map['deleted'] = 'Obrisano';
+    map['expired'] = 'Isteklo';
     return map[s] ?? s;
   }
 

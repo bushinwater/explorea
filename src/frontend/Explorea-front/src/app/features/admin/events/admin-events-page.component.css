@@ -613,6 +613,12 @@
   text-decoration: line-through;
 }
 
+.evts-status--expired {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.26);
+}
+
 /* ===== ACTIVITY STATUS PILL ===== */
 .evts-act-status {
   display: inline-block;
