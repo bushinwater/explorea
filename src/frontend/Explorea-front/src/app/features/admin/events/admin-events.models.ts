@@ -186,3 +186,7 @@ export interface UpdateEventPayload {
   isFeatured?: boolean;
   extraFilters?: Record<string, string>;
 }
+
+export interface RenewEventPayload {
+  startDatetime?: string | null;
+}

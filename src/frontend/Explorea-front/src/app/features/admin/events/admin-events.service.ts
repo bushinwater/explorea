@@ -19,6 +19,7 @@ import {
   PlaceSearchItem,
   ReviewItem,
   OwnerSubmissionDocument,
+  RenewEventPayload,
 } from './admin-events.models';
 import { FilterDefinition } from '../../../core/services/lookup.service';
 
@@ -303,6 +304,12 @@ export class AdminEventsService {
   updateEvent(id: string, payload: UpdateEventPayload): Observable<EventRow> {
     return this.http
       .put<ApiEventDetailItem>(`/api/admin/events/${id}`, payload)
+      .pipe(map((event) => this.mapEventDetail(event)));
+  }
+
+  renewEvent(id: string, payload: RenewEventPayload = {}): Observable<EventRow> {
+    return this.http
+      .post<ApiEventDetailItem>(`/api/admin/events/${id}/renew`, payload)
       .pipe(map((event) => this.mapEventDetail(event)));
   }
 
