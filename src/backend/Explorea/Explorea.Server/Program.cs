@@ -161,6 +161,7 @@ builder.Services.AddHostedService<SupportRetentionService>();
 builder.Services.AddHostedService<UserPurgeService>();
 builder.Services.AddHostedService<DatabaseBackupService>();
 builder.Services.AddHostedService<NotificationReportBackgroundService>();
+builder.Services.AddHostedService<EventAnnualRecurrenceService>();
 
 builder.Services.AddMcpServer()
     .WithHttpTransport()
