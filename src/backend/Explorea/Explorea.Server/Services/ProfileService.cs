@@ -322,7 +322,7 @@ namespace Explorea.Server.Services
                 {
                     var eventIds = eventMatches.Select(x => x.Id).ToList();
                     var events = await _db.Events
-                        .Where(e => eventIds.Contains(e.Id))
+                        .Where(e => eventIds.Contains(e.Id) && e.EndDatetime >= DateTimeOffset.UtcNow)
                         .Select(e => new {
                             e.Id,
                             e.Name,
