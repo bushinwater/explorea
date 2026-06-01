@@ -173,9 +173,14 @@ namespace Explorea.Server.Repositories.Implementations
         .Where(e => e.EndDatetime >= now && (cityId == null || e.CityId == cityId))
         .AsQueryable();
 
-    query = query.OrderBy(e => e.StartDatetime)
-                 .ThenByDescending(e => e.IsFeatured)
-                 .ThenByDescending(e => e.Popularity);
+    query = userPoint != null
+        ? query.OrderBy(e => e.Location != null ? e.Location.Distance(userPoint) : double.MaxValue)
+               .ThenByDescending(e => e.IsFeatured)
+               .ThenByDescending(e => e.Popularity)
+               .ThenBy(e => e.StartDatetime)
+        : query.OrderBy(e => e.StartDatetime)
+               .ThenByDescending(e => e.IsFeatured)
+               .ThenByDescending(e => e.Popularity);
 
     return await query.Take(take).ToListAsync();
   }
