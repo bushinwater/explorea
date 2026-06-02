@@ -417,13 +417,15 @@
                       >
                         <span class="material-icons">edit</span>
                       </button>
-                      <button
-                        class="btn-icon btn-icon--danger"
-                        [title]="ui.t('common.delete')"
-                        (click)="openDeleteDialog(dest)"
-                      >
-                        <span class="material-icons">delete</span>
-                      </button>
+                      @if (isSuperAdmin() || dashAuth.role() === 'tourist_organization') {
+                        <button
+                          class="btn-icon btn-icon--danger"
+                          [title]="ui.t('common.delete')"
+                          (click)="openDeleteDialog(dest)"
+                        >
+                          <span class="material-icons">delete</span>
+                        </button>
+                      }
                     }
                   </div>
                 </td>
@@ -663,10 +665,12 @@
           <span class="material-icons">edit</span>
           {{ ui.t('common.edit') }}
         </button>
-        <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="openDeleteFromPanel()">
-          <span class="material-icons">delete</span>
-          {{ ui.t('common.delete') }}
-        </button>
+        @if (isSuperAdmin() || dashAuth.role() === 'tourist_organization') {
+          <button class="btn btn-ghost btn-sm ddp-footer__danger" (click)="openDeleteFromPanel()">
+            <span class="material-icons">delete</span>
+            {{ ui.t('common.delete') }}
+          </button>
+        }
       }
     </footer>
 
@@ -687,4 +691,15 @@
     (cancel)="closeDeleteDialog()"
     (confirm)="confirmDelete()"
   ></app-confirm-dialog>
+}
+
+<!-- ===== DEPENDENCY DELETE DIALOG ===== -->
+@if (isDependencyDialogOpen() && selectedDestination()) {
+  <app-dependency-delete-dialog
+    [entityId]="selectedDestination()!.id"
+    [entityName]="selectedDestination()!.name"
+    entityType="destination"
+    (closed)="closeDependencyDialog()"
+    (deleted)="onDependencyDeleted()"
+  />
 }

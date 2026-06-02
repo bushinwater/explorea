@@ -1,0 +1,117 @@
+<app-modal-shell [title]="titleText()" [description]="descriptionText()" (close)="requestClose()">
+  @if (isLoading() && deps().items.length === 0) {
+    <div class="dep-loading">
+      <span class="material-icons dep-loading__icon">hourglass_empty</span>
+      <span>Učitavanje...</span>
+    </div>
+  } @else {
+    <!-- Tabs (only for destination with multiple dep types) -->
+    @if (tabsVisible().length > 1) {
+      <div class="dep-tabs">
+        @for (tab of tabsVisible(); track tab.key) {
+          <button
+            class="dep-tab"
+            [class.dep-tab--active]="activeTab() === tab.key"
+            type="button"
+            (click)="setTab(tab.key)"
+          >
+            {{ tab.label }}
+            <span class="dep-tab__badge">{{ tab.count }}</span>
+          </button>
+        }
+      </div>
+    }
+
+    <!-- Items list -->
+    <div class="dep-list">
+      @if (deps().items.length === 0 && !isLoading()) {
+        <div class="dep-empty">Nema vezanih entiteta u ovoj kategoriji.</div>
+      }
+      @for (item of deps().items; track item.id) {
+        <div class="dep-item">
+          <div class="dep-item__info">
+            @if (item.previewImageUrl) {
+              <img class="dep-item__thumb dep-item__thumb--img" [src]="item.previewImageUrl" [alt]="item.name" />
+            } @else {
+              <div class="dep-item__thumb dep-item__thumb--placeholder">
+                <span class="material-icons">
+                  {{ item.entityType === 'event' ? 'event' : item.entityType === 'place' ? 'storefront' : 'hiking' }}
+                </span>
+              </div>
+            }
+            <div class="dep-item__text">
+              <span class="dep-item__name">{{ item.name }}</span>
+              <span class="dep-item__meta">
+                @if (item.typeLabel) { <span>{{ item.typeLabel }}</span> }
+                @if (item.city) { <span class="dep-item__meta-sep">•</span><span>{{ item.city }}</span> }
+                @if (item.startDate) { <span class="dep-item__meta-sep">•</span><span>{{ formatDate(item.startDate) }}</span> }
+                @if (item.avgRating > 0) {
+                  <span class="dep-item__meta-sep">•</span>
+                  <span class="dep-item__rating"><span class="material-icons dep-item__star">star</span>{{ formatRating(item.avgRating) }}</span>
+                }
+                @if (item.viaPlaceName) {
+                  <span class="dep-item__via">
+                    <span class="material-icons dep-item__via-icon">info</span>{{ item.viaPlaceName }}
+                  </span>
+                }
+              </span>
+            </div>
+          </div>
+          <button
+            class="dep-item__delete"
+            type="button"
+            title="Obriši"
+            [disabled]="deletingItemId() === item.id || isCascadeDeleting()"
+            (click)="deleteItem(item)"
+          >
+            @if (deletingItemId() === item.id) {
+              <span class="material-icons dep-spin">hourglass_empty</span>
+            } @else {
+              <span class="material-icons">delete</span>
+            }
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="dep-pagination">
+        <button
+          class="dep-page-btn"
+          [disabled]="page() <= 1"
+          (click)="goToPage(page() - 1)"
+        >
+          <span class="material-icons">chevron_left</span>
+        </button>
+        <span class="dep-page-info">{{ page() }} / {{ totalPages() }}</span>
+        <button
+          class="dep-page-btn"
+          [disabled]="page() >= totalPages()"
+          (click)="goToPage(page() + 1)"
+        >
+          <span class="material-icons">chevron_right</span>
+        </button>
+      </div>
+    }
+
+    <!-- Bottom actions -->
+    <div class="dep-actions">
+      <button class="btn btn-secondary" type="button" (click)="requestClose()">
+        Otkaži
+      </button>
+      <button
+        class="btn btn-danger"
+        type="button"
+        [disabled]="isCascadeDeleting()"
+        (click)="confirmCascadeDelete()"
+      >
+        @if (isCascadeDeleting()) {
+          Brisanje...
+        } @else {
+          {{ cascadeLabel() }}
+        }
+      </button>
+    </div>
+  }
+</app-modal-shell>
