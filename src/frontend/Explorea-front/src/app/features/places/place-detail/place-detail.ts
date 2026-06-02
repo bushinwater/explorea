@@ -452,12 +452,15 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
       spa: 'spa', gym: 'fitness_center', restaurant: 'restaurant',
       roomService: 'room_service', bar: 'local_bar', elevator: 'elevator',
     };
+    const builtInKeys = new Set(Object.keys(iconMap));
     return Object.entries(f)
       .filter(([, v]) => v === true || (typeof v === 'string' && v))
       .map(([k]) => {
-        // 'has_wifi' → 'WIFI', 'has_pet_friendly' → 'PET_FRIENDLY'
         const amenityName = k.replace(/^has_/, '').toUpperCase();
-        return { key: k, icon: iconMap[k] ?? 'check_circle', labelKey: 'PLACE_DETAIL.AMENITIES.' + amenityName };
+        const labelKey = builtInKeys.has(k)
+          ? 'PLACE_DETAIL.AMENITIES.' + amenityName
+          : k.replace(/^has_/, '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        return { key: k, icon: iconMap[k] ?? 'check_circle', labelKey };
       });
   }
 

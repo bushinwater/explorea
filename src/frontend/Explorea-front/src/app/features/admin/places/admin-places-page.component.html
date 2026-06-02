@@ -284,6 +284,15 @@
       >
         {{ ui.t('places.tabs.active') }}
       </button>
+      @if (canReviewOwnerSubmissions()) {
+        <button
+          class="place-chip"
+          [class.place-chip--active]="listMode() === 'pending'"
+          (click)="setListMode('pending')"
+        >
+          {{ ui.t('places.tabs.pending') }}
+        </button>
+      }
       <button
         class="place-chip"
         [class.place-chip--active]="listMode() === 'deleted'"
@@ -352,6 +361,11 @@
                           <span class="material-icons">location_on</span>
                           {{ place.address }}
                         </span>
+                      } @else if (place.city || place.destination) {
+                        <span class="place-name-info__address">
+                          <span class="material-icons">location_on</span>
+                          {{ place.city || place.destination }}
+                        </span>
                       }
                     </div>
                   </div>
@@ -374,7 +388,10 @@
                     @if (place.city) {
                       <span class="place-location__city">{{ place.city }}</span>
                     }
-                    @if (!place.region && !place.city) {
+                    @if (!place.region && !place.city && place.destination) {
+                      <span class="place-location__city">{{ place.destination }}</span>
+                    }
+                    @if (!place.region && !place.city && !place.destination) {
                       <span>—</span>
                     }
                   </div>
@@ -452,10 +469,10 @@
                       </button>
                       @if (canReviewOwnerSubmissions() && place.status === 'pending') {
                         <button class="btn-icon btn-icon--restore" title="Odobri" [disabled]="isReviewing()" (click)="approvePlace(place)">
-                          <span class="material-icons">check_circle</span>
+                          <span class="material-icons" [class.place-spin]="isReviewing()">{{ isReviewing() ? 'sync' : 'check_circle' }}</span>
                         </button>
                         <button class="btn-icon btn-icon--danger" title="Odbij" [disabled]="isReviewing()" (click)="rejectPlace(place)">
-                          <span class="material-icons">cancel</span>
+                          <span class="material-icons">{{ isReviewing() ? 'hourglass_empty' : 'cancel' }}</span>
                         </button>
                       }
                       <button
@@ -809,11 +826,11 @@
         </button>
         @if (canReviewOwnerSubmissions() && place.status === 'pending') {
           <button class="btn btn-ghost btn-sm ddp-footer__restore" [disabled]="isReviewing()" (click)="approvePlace(place)">
-            <span class="material-icons">check_circle</span>
+            <span class="material-icons" [class.place-spin]="isReviewing()">{{ isReviewing() ? 'sync' : 'check_circle' }}</span>
             Odobri
           </button>
           <button class="btn btn-ghost btn-sm ddp-footer__danger" [disabled]="isReviewing()" (click)="rejectPlace(place)">
-            <span class="material-icons">cancel</span>
+            <span class="material-icons">{{ isReviewing() ? 'hourglass_empty' : 'cancel' }}</span>
             Odbij
           </button>
         }

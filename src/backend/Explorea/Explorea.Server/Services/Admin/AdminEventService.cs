@@ -356,11 +356,10 @@ namespace Explorea.Server.Services.Admin
             };
 
             await _eventRepo.AddAsync(ev);
-            await _eventRepo.SaveChangesAsync();
 
             if (user.Role.Name == RoleNames.PlaceOwner)
             {
-                var queueItem = new SubmissionQueue
+                await _queueRepo.AddAsync(new SubmissionQueue
                 {
                     Id = Guid.NewGuid(),
                     EntityType = "event",
@@ -385,11 +384,10 @@ namespace Explorea.Server.Services.Admin
                         ev.PlaceId,
                         ev.ExtraFilters
                     })
-                };
-
-                await _queueRepo.AddAsync(queueItem);
-                await _queueRepo.SaveChangesAsync();
+                });
             }
+
+            await _eventRepo.SaveChangesAsync();
 
             var created = await _eventRepo.GetAdminByIdAsync(ev.Id);
             return MapToDetailDto(created!);

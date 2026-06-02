@@ -20,6 +20,7 @@ export interface ActivityRow {
   city: string | null;
   regionId: number | null;
   region: string | null;
+  destination: string | null;
   price: number | null;
   durationMinutes: number | null;
   durationGroup: string | null;
@@ -57,6 +58,7 @@ export interface ActivityDetail extends ActivityRow {
   cityName: string | null;
   regionId: number | null;
   regionName: string | null;
+  countryId: number | null;
   categoryName: string;
   seasonName: string | null;
   destinationId: string | null;
@@ -119,6 +121,7 @@ export interface CreateActivityDto {
   durationMinutes?: number;
   difficultyLevel?: string;
   cityId?: number;
+  countryId?: number | null;
   destinationId?: string;
   latitude?: number;
   longitude?: number;

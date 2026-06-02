@@ -70,7 +70,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly places    = signal<PlaceRow[]>([]);
-  protected readonly listMode  = signal<'active' | 'deleted'>('active');
+  protected readonly listMode  = signal<'active' | 'pending' | 'deleted'>('active');
   protected readonly stats     = signal<PlaceStats | null>(null);
   protected readonly types     = signal<PlaceTypeOption[]>([]);
   protected readonly regions   = signal<RegionOption[]>([]);
@@ -143,6 +143,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     { value: 'approved', label: 'Aktivno' },
     { value: 'pending',  label: 'Na čekanju' },
     { value: 'rejected', label: 'Odbijeno' },
+    { value: 'inactive', label: 'Neaktivno' },
   ];
 
   protected readonly stars = [1, 2, 3, 4, 5];
@@ -162,7 +163,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
       this.route.queryParamMap.subscribe((params) => {
         const openId = params.get('openId');
         const statusParam = params.get('status') as PlaceStatus | 'all' | null;
-        if (statusParam && ['all', 'approved', 'pending', 'rejected'].includes(statusParam)) {
+        if (statusParam && ['all', 'approved', 'pending', 'rejected', 'inactive'].includes(statusParam)) {
           this.patchFilter({ status: statusParam, page: 1 });
           this.loadPlaces();
           void this.router.navigate([], {
@@ -287,7 +288,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.loadPlaces();
   }
 
-  protected setListMode(mode: 'active' | 'deleted'): void {
+  protected setListMode(mode: 'active' | 'pending' | 'deleted'): void {
     if (this.listMode() === mode) return;
     this.listMode.set(mode);
     this.closeDetailsPanel();
@@ -304,7 +305,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   }
 
   protected openCreateModal(): void {
-    if (this.listMode() === 'deleted') return;
+    if (this.listMode() === 'deleted' || this.listMode() === 'pending') return;
     this.isCreateModalOpen.set(true);
   }
 
@@ -611,9 +612,12 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   private loadPlaces(afterLoad?: (items: PlaceRow[]) => void): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
-    const request = this.listMode() === 'deleted'
+    const mode = this.listMode();
+    const request = mode === 'deleted'
       ? this.placesService.getDeletedPlaces(this.filters())
-      : this.placesService.getPlaces(this.filters());
+      : mode === 'pending'
+        ? this.placesService.getPlaces({ ...this.filters(), status: 'pending' })
+        : this.placesService.getPlaces(this.filters());
 
     this.subscription.add(
       request.subscribe({

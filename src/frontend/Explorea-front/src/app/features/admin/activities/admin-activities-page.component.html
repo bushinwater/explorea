@@ -467,7 +467,7 @@
                 <td class="activity-td">
                   <div class="activity-updated">
                     <span class="material-icons">location_on</span>
-                    {{ activity.region ?? '—' }}{{ activity.city ? ' / ' + activity.city : '' }}
+                    {{ activity.region ?? activity.destination ?? '—' }}{{ activity.city ? ' / ' + activity.city : '' }}
                   </div>
                 </td>
 
@@ -516,7 +516,9 @@
                         [disabled]="isRestoring()"
                         (click)="restoreActivity(activity)"
                       >
-                        <span class="material-icons">restore</span>
+                        <span class="material-icons" [class.activity-details-loading__icon]="isRestoring()">
+                          {{ isRestoring() ? 'sync' : 'restore' }}
+                        </span>
                       </button>
                     } @else {
                       <a
@@ -789,7 +791,10 @@
 
             <div class="ddp-grid__item ddp-grid__item--full">
               <span class="ddp-grid__label">{{ ui.t('common.location') }}</span>
-              <app-admin-map-preview [latitude]="detail.latitude" [longitude]="detail.longitude" />
+              <app-admin-map-preview
+                [latitude]="detail.latitude ?? detailFallbackLat()"
+                [longitude]="detail.longitude ?? detailFallbackLng()"
+              />
             </div>
 
             <div class="ddp-grid__item ddp-grid__item--full">
@@ -877,8 +882,10 @@
               [disabled]="isRestoring()"
               (click)="restoreActivity(detail)"
             >
-              <span class="material-icons">restore</span>
-              {{ ui.t('common.restore') }}
+              <span class="material-icons" [class.activity-details-loading__icon]="isRestoring()">
+                {{ isRestoring() ? 'sync' : 'restore' }}
+              </span>
+              {{ isRestoring() ? ui.t('common.restoring') : ui.t('common.restore') }}
             </button>
             <button class="btn btn-ghost btn-sm" type="button" (click)="closeDetailsPanel()">
               {{ ui.t('common.close') }}
@@ -1087,13 +1094,6 @@
                   <input
                     class="edit-field__input"
                     type="text"
-                    [placeholder]="ui.t('common.filter_key_ph')"
-                    [value]="newFilterKey()"
-                    (input)="newFilterKey.set($any($event.target).value)"
-                  />
-                  <input
-                    class="edit-field__input"
-                    type="text"
                     [placeholder]="ui.t('common.filter_name_ph')"
                     [value]="newFilterLabel()"
                     (input)="newFilterLabel.set($any($event.target).value)"
@@ -1102,9 +1102,7 @@
                   <button
                     class="ev-add-inline-form__submit"
                     type="button"
-                    [disabled]="
-                      !newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()
-                    "
+                    [disabled]="!newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()"
                   >
                     @if (isAddingFilter()) {
@@ -1128,13 +1126,6 @@
                   <input
                     class="edit-field__input"
                     type="text"
-                    [placeholder]="ui.t('common.filter_key_ph')"
-                    [value]="newFilterKey()"
-                    (input)="newFilterKey.set($any($event.target).value)"
-                  />
-                  <input
-                    class="edit-field__input"
-                    type="text"
                     [placeholder]="ui.t('common.filter_name_ph')"
                     [value]="newFilterLabel()"
                     (input)="newFilterLabel.set($any($event.target).value)"
@@ -1143,9 +1134,7 @@
                   <button
                     class="ev-add-inline-form__submit"
                     type="button"
-                    [disabled]="
-                      !newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()
-                    "
+                    [disabled]="!newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()"
                   >
                     @if (isAddingFilter()) {
@@ -1229,7 +1218,7 @@
             >
               <option value="">{{ ui.t('activities.modal.no_difficulty') }}</option>
               @for (d of difficulties().slice(1); track d.value) {
-                <option [value]="d.value">{{ d.label }}</option>
+                <option [value]="d.value" [selected]="createForm().difficultyLevel === d.value">{{ d.label }}</option>
               }
             </select>
           </div>
@@ -1337,15 +1326,10 @@
                 class="edit-field__input dest-search-input"
                 type="text"
                 [value]="destinationSearchText()"
-                [disabled]="isSuperAdmin() && modalRegionId() === 'all'"
                 (input)="updateDestinationSearch($any($event.target).value)"
                 (blur)="closeDestinationDropdownDelayed()"
                 (focus)="destinationDropdownOpen.set(destinationResults().length > 0)"
-                [placeholder]="
-                  isSuperAdmin() && modalRegionId() === 'all'
-                    ? 'Izaberi region prvo...'
-                    : 'Pretraži destinaciju po imenu...'
-                "
+                placeholder="Pretraži destinaciju po imenu..."
               />
               @if (createForm().destinationId) {
                 <button

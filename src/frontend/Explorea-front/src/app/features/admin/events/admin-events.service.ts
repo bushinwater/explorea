@@ -211,6 +211,20 @@ export class AdminEventsService {
     );
   }
 
+  getMyPlaces(): Observable<PlaceSearchItem[]> {
+    return this.http.get<any[]>('/api/admin/places/my').pipe(
+      map(items => items.map((item: any): PlaceSearchItem => ({
+        id: item.id,
+        name: item.name,
+        destinationId: null,
+        destinationName: null,
+        regionId: null,
+        countryId: null,
+      }))),
+      catchError(() => of([])),
+    );
+  }
+
   searchPlaces(query: string, destinationId?: string): Observable<PlaceSearchItem[]> {
     let params = new HttpParams().set('search', query).set('pageSize', '15');
     if (destinationId != null) params = params.set('destinationId', destinationId);
@@ -252,10 +266,14 @@ export class AdminEventsService {
     );
   }
 
-  createFilterDefinition(typeId: number, filterKey: string, filterLabel: string, filterType: string): Observable<FilterDefinition> {
+  createFilterDefinition(typeId: number, filterLabel: string, filterType: string): Observable<FilterDefinition> {
     return this.http.post<FilterDefinition>('/api/admin/filter-definitions', {
-      entityType: 'event', typeId, filterKey, filterLabel, filterType,
+      entityType: 'event', typeId, filterLabel, filterType,
     });
+  }
+
+  deleteFilterDefinition(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/admin/filter-definitions/${id}`);
   }
 
   getEvents(filters: EventFilters): Observable<EventPagedResponse> {

@@ -387,12 +387,15 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.isCreateOpen.set(false);
       this.isCreateClosing.set(false);
-      this.successMessage.set('Interni događaj je uspešno kreiran.');
-      this.patchFilter({ tab: 'active', search: '', typeId: null, cityId: null, destinationId: null, extraFilters: {}, page: 1 });
+      const owner = this.isPlaceOwner();
+      this.successMessage.set(owner ? 'Zahtev za događaj je podnet. Čeka se odobrenje.' : 'Interni događaj je uspešno kreiran.');
+      this.patchFilter({ tab: owner ? 'pending' : 'active', search: '', typeId: null, cityId: null, destinationId: null, extraFilters: {}, page: 1 });
       this.filterDefs.set([]);
       this.currentPage.set(1);
-      this.selectedEvent.set(row);
-      this.isPanelOpen.set(true);
+      if (!owner) {
+        this.selectedEvent.set(row);
+        this.isPanelOpen.set(true);
+      }
       this.loadStats();
       this.loadEvents();
       setTimeout(() => this.successMessage.set(''), 4000);

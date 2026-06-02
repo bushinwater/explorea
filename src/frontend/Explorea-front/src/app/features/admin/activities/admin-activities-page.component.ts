@@ -143,6 +143,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly editHeroImageId = signal<string | null>(null);
   protected readonly mapLatitude = signal<number | null>(null);
   protected readonly mapLongitude = signal<number | null>(null);
+  protected readonly detailFallbackLat = signal<number | null>(null);
+  protected readonly detailFallbackLng = signal<number | null>(null);
   protected readonly mapAddress = signal('');
   protected readonly isGeocoding = signal(false);
   protected readonly destinationSearchText = signal('');
@@ -163,7 +165,6 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly isAddingCategory = signal(false);
   protected readonly extraCategories = signal<CategoryOption[]>([]);
   protected readonly showAddFilter = signal(false);
-  protected readonly newFilterKey = signal('');
   protected readonly newFilterLabel = signal('');
   protected readonly newFilterType = signal('boolean');
   protected readonly isAddingFilter = signal(false);
@@ -440,6 +441,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           if (this.selectedActivity()?.id === activity.id) {
             this.closeDetailsPanel();
           }
+          this.activities.update(items => items.filter(a => a.id !== activity.id));
+          this.total.update(t => Math.max(0, t - 1));
           this.loadActivities();
         },
         error: () => {
@@ -457,7 +460,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         next: () => {
           this.isRestoring.set(false);
           this.successMessage.set(`„${activity.name}" je uspešno vraćena.`);
-          this.closeDetailsPanel();
+          if (this.isDetailsPanelOpen()) this.closeDetailsPanel();
+          this.activities.update(items => items.filter(a => a.id !== activity.id));
+          this.total.update(t => Math.max(0, t - 1));
           this.loadActivities();
         },
         error: () => {
@@ -483,6 +488,19 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       this.activitiesService.getById(activity.id).subscribe({
         next: (detail) => {
           this.selectedActivityDetail.set(detail);
+          this.detailFallbackLat.set(null);
+          this.detailFallbackLng.set(null);
+          if (detail.latitude == null && detail.destinationId) {
+            this.subscription.add(
+              this.activitiesService.getDestination(detail.destinationId).subscribe({
+                next: (d) => {
+                  this.detailFallbackLat.set(d.latitude);
+                  this.detailFallbackLng.set(d.longitude);
+                  this.cdr.detectChanges();
+                },
+              }),
+            );
+          }
           this.isDetailLoading.set(false);
         },
         error: () => {
@@ -508,6 +526,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       this.selectedActivityDetail.set(null);
       this.isDescriptionExpanded.set(false);
       this.detailsInterests.set([]);
+      this.detailFallbackLat.set(null);
+      this.detailFallbackLng.set(null);
     }, 220);
   }
 
@@ -544,7 +564,6 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.newCategoryName.set('');
     this.extraCategories.set([]);
     this.showAddFilter.set(false);
-    this.newFilterKey.set('');
     this.newFilterLabel.set('');
     this.newFilterType.set('boolean');
     const initialCatId = this.categories()[0]?.id ?? 0;
@@ -610,7 +629,20 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     if (detail.destinationId) {
       this.subscription.add(
         this.activitiesService.getDestination(detail.destinationId).subscribe({
-          next: (d) => this.destinationSearchText.set(d.name),
+          next: (d) => {
+            this.destinationSearchText.set(d.name);
+            if (detail.regionId == null && d.regionId != null) {
+              this.modalRegionId.set(d.regionId);
+              this.loadModalCities(d.regionId);
+            }
+            if (detail.countryId == null && d.countryId != null) {
+              this.selectedCountryId.set(d.countryId);
+            }
+            if (detail.latitude == null && d.latitude != null && d.longitude != null) {
+              this.map?.flyTo({ center: [d.longitude, d.latitude], zoom: 12, duration: 600 });
+            }
+            this.cdr.detectChanges();
+          },
         }),
       );
     } else {
@@ -626,23 +658,18 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       difficultyLevel: detail.difficultyLevel ?? '',
       cityId: detail.cityId ?? undefined,
       destinationId: detail.destinationId ?? undefined,
+      organizerWebsite: detail.organizerWebsite ?? null,
     });
 
     const regionId = detail.regionId ?? null;
     this.modalRegionId.set(regionId ?? 'all');
-    if (regionId != null) {
-      const region = this.regions().find(r => r.id === regionId);
-      this.selectedCountryId.set(region?.countryId ?? null);
-    } else {
-      this.selectedCountryId.set(null);
-    }
+    this.selectedCountryId.set(detail.countryId ?? null);
     this.modalExtraFilters.set({ ...(detail.extraFilters ?? {}) });
     this.modalFilterDefs.set([]);
     this.showAddCategory.set(false);
     this.newCategoryName.set('');
     this.extraCategories.set([]);
     this.showAddFilter.set(false);
-    this.newFilterKey.set('');
     this.newFilterLabel.set('');
     this.newFilterType.set('boolean');
     if (detail.categoryId) this.loadModalFilterDefs(detail.categoryId);
@@ -910,20 +937,18 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected toggleAddFilter(): void {
     this.showAddFilter.update(v => !v);
-    this.newFilterKey.set('');
     this.newFilterLabel.set('');
     this.newFilterType.set('boolean');
   }
 
   protected addNewFilter(): void {
     const catId = this.createForm().categoryId;
-    const key = this.newFilterKey().trim();
     const label = this.newFilterLabel().trim();
     const type = this.newFilterType();
-    if (!catId || !key || !label || this.isAddingFilter()) return;
+    if (!catId || !label || this.isAddingFilter()) return;
     this.isAddingFilter.set(true);
     this.subscription.add(
-      this.activitiesService.createFilterDefinition(catId, key, label, type).subscribe({
+      this.activitiesService.createFilterDefinition(catId, label, type).subscribe({
         next: def => {
           this.modalFilterDefs.update(d => [...d, def]);
           this.isAddingFilter.set(false);
@@ -963,6 +988,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     const dto: CreateActivityDto = {
       ...form,
       slug: this.toSlug(form.name),
+      countryId: this.selectedCountryId() ?? undefined,
       latitude: lat ?? undefined,
       longitude: lng ?? undefined,
       inclusions: inclusions.length ? inclusions : undefined,
@@ -1430,10 +1456,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
           this.difficulties.set([
             { value: 'all', label: 'Sve težine' },
-            ...opts.difficulties.map(d => ({
-              value: d as ActivityDifficulty,
-              label: this.difficultyLabelMap[d] ?? d,
-            })),
+            { value: 'easy', label: 'Easy' },
+            { value: 'medium', label: 'Medium' },
+            { value: 'hard', label: 'Hard' },
           ]);
 
           const mr = opts.managedRegion ?? null;

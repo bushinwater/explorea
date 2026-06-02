@@ -1,4 +1,5 @@
 using Explorea.API.DTOs.Common;
+using Explorea.API.DTOs.Destination;
 
 namespace Explorea.API.DTOs.Place
 {
@@ -15,6 +16,7 @@ namespace Explorea.API.DTOs.Place
         public bool IsOpen { get; set; }
         public string? PriceRange { get; set; }
         public int Popularity { get; set; }
+        public CityRefDto? City { get; set; }
         public CountryRefDto? Country { get; set; }
     }
 }

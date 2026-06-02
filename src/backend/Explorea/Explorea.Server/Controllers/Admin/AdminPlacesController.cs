@@ -451,7 +451,7 @@ namespace Explorea.Server.Controllers.Admin
             {
                 Id = document.Id,
                 DocumentType = document.DocumentType,
-                DocumentUrl = BuildDocumentDeliveryUrl(document.DocumentUrl, document.ContentType, document.FileName),
+                DocumentUrl = BuildDocumentDeliveryUrl(document.DocumentUrl),
                 FileName = document.FileName,
                 ContentType = document.ContentType,
                 CreatedAt = document.CreatedAt
@@ -475,7 +475,7 @@ namespace Explorea.Server.Controllers.Admin
                 {
                     Id = document.Id,
                     DocumentType = document.DocumentType,
-                    DocumentUrl = BuildDocumentDeliveryUrl(document.DocumentUrl, document.ContentType, document.FileName),
+                    DocumentUrl = BuildDocumentDeliveryUrl(document.DocumentUrl),
                     FileName = document.FileName,
                     ContentType = document.ContentType,
                     CreatedAt = document.CreatedAt
@@ -483,18 +483,9 @@ namespace Explorea.Server.Controllers.Admin
                 .ToListAsync();
         }
 
-        private static string BuildDocumentDeliveryUrl(string url, string? contentType, string? fileName)
+        private static string BuildDocumentDeliveryUrl(string url)
         {
-            var isPdf =
-                contentType?.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) == true ||
-                (!string.IsNullOrWhiteSpace(fileName) &&
-                    Path.GetExtension(fileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase)) ||
-                url.Contains(".pdf", StringComparison.OrdinalIgnoreCase);
-
-            if (!isPdf || url.Contains("/fl_attachment/", StringComparison.OrdinalIgnoreCase))
-                return url;
-
-            return url.Replace("/upload/", "/upload/fl_attachment/");
+            return url.Replace("/upload/fl_attachment/", "/upload/");
         }
 
         private Guid GetCurrentUserId()

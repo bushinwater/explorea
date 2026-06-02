@@ -49,6 +49,7 @@ namespace Explorea.API.DTOs.Admin.Activity
         public int Popularity { get; set; }
 
         public string? ExtraData { get; set; }
+        public Dictionary<string, string>? ExtraFilters { get; set; }
 
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }

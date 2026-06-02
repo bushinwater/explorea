@@ -261,11 +261,13 @@ export class Dashboard implements OnInit, OnDestroy {
 
   private loadRecentActivity(role: AdminRole): void {
     this.activitySubscription?.unsubscribe();
+    if (role === 'place_owner') return;
     this.activitySubscription = this.dashService.getRecentActivity(15).subscribe({
       next: (activity) => {
         this.data.update((current) => current ? { ...current, activity } : current);
         this.cdr.markForCheck();
       },
+      error: () => {},
     });
   }
 

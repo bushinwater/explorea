@@ -853,6 +853,10 @@
   to   { transform: rotate(360deg); }
 }
 
+.place-spin {
+  animation: ddpSpin 1s linear infinite;
+}
+
 /* Gallery */
 .ddp-gallery {
   margin-bottom: var(--sp-4);

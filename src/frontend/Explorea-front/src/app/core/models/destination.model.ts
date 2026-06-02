@@ -60,6 +60,7 @@ export interface PlaceCard {
   isOpen: boolean;
   priceRange?: string | null;
   popularity: number;
+  city?: CityRef | null;
   country?: CountryRef | null;
 }
 

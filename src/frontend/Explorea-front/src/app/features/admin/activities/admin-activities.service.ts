@@ -130,9 +130,9 @@ export class AdminActivitiesService {
     return this.http.post<CategoryOption>(`${this.base}/categories`, { name });
   }
 
-  createFilterDefinition(categoryId: number, filterKey: string, filterLabel: string, filterType: string): Observable<FilterDefinition> {
+  createFilterDefinition(categoryId: number, filterLabel: string, filterType: string): Observable<FilterDefinition> {
     return this.http.post<FilterDefinition>('/api/admin/filter-definitions', {
-      entityType: 'activity', typeId: categoryId, filterKey, filterLabel, filterType,
+      entityType: 'activity', typeId: categoryId, filterLabel, filterType,
     });
   }
 

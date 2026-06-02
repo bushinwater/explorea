@@ -83,6 +83,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
   @Input() eventTypeOptions: EventFilterOption<number>[] = [];
   @Input() lockedRegionId: number | null = null;
   @Input() closing = false;
+  @Input() isSuperAdmin = false;
 
   @Output() cancel = new EventEmitter<void>();
   @Output() saved = new EventEmitter<EventRow>();
@@ -140,13 +141,12 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
   protected readonly newTypeName = signal('');
   protected readonly isAddingType = signal(false);
   protected readonly extraTypes = signal<EventFilterOption<number>[]>([]);
-  get allTypeOptions(): EventFilterOption<number>[] {
-    return [...this.eventTypeOptions, ...this.extraTypes()];
-  }
+  protected readonly allTypeOptions = computed(() => [...this.eventTypeOptions, ...this.extraTypes()]);
+
+  protected readonly deletingFilterId = signal<number | null>(null);
 
   // Add new filter definition
   protected readonly showAddFilter = signal(false);
-  protected readonly newFilterKey = signal('');
   protected readonly newFilterLabel = signal('');
   protected readonly newFilterType = signal('boolean');
   protected readonly isAddingFilter = signal(false);
@@ -557,22 +557,46 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
   // Add new filter definition
   protected toggleAddFilter(): void {
     this.showAddFilter.update(v => !v);
-    this.newFilterKey.set('');
     this.newFilterLabel.set('');
     this.newFilterType.set('boolean');
   }
 
+  protected deleteFilterDef(id: number): void {
+    if (this.deletingFilterId() !== null) return;
+    const def = this.filterDefs().find(d => d.id === id);
+    if (!def) return;
+    this.deletingFilterId.set(id);
+    this.sub.add(
+      this.eventsService.deleteFilterDefinition(id).subscribe({
+        next: () => {
+          this.filterDefs.update(d => d.filter(x => x.id !== id));
+          const ef = { ...this.form().extraFilters };
+          delete ef[def.filterKey];
+          this.form.update(f => ({ ...f, extraFilters: ef }));
+          this.deletingFilterId.set(null);
+          this.cdr.detectChanges();
+        },
+        error: () => { this.deletingFilterId.set(null); this.cdr.detectChanges(); },
+      }),
+    );
+  }
+
   protected addNewFilter(): void {
     const typeId = this.form().typeId;
-    const key = this.newFilterKey().trim();
     const label = this.newFilterLabel().trim();
     const type = this.newFilterType();
-    if (!typeId || !key || !label || this.isAddingFilter()) return;
+    if (!typeId || !label || this.isAddingFilter()) return;
     this.isAddingFilter.set(true);
     this.sub.add(
-      this.eventsService.createFilterDefinition(typeId, key, label, type).subscribe({
+      this.eventsService.createFilterDefinition(typeId, label, type).subscribe({
         next: def => {
           this.filterDefs.update(d => [...d, def]);
+          if (def.filterType === 'boolean') {
+            this.form.update(f => ({
+              ...f,
+              extraFilters: { ...f.extraFilters, [def.filterKey]: 'true' },
+            }));
+          }
           this.isAddingFilter.set(false);
           this.showAddFilter.set(false);
           this.cdr.detectChanges();
@@ -600,7 +624,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
     const endDate = f.endDatetime ? new Date(f.endDatetime) : null;
     if (startDate && isNaN(startDate.getTime())) errs.push('Datum početka nije validan.');
     if (endDate && isNaN(endDate.getTime())) errs.push('Datum završetka nije validan.');
-    if (startDate && endDate && endDate <= startDate) errs.push('Datum završetka mora biti posle datuma početka.');
+    if (startDate && endDate && endDate < startDate) errs.push('Datum završetka mora biti posle datuma početka.');
     const price = f.price.trim() ? Number(f.price.trim().replace(',', '.')) : null;
     if (price !== null && (isNaN(price) || price < 0)) errs.push('Cena mora biti pozitivan broj.');
     if (errs.length) { this.errors.set(errs); return; }
@@ -698,7 +722,19 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
   private loadFilterDefs(typeId: number): void {
     this.sub.add(
       this.lookupService.getFilterDefinitions('event', typeId).subscribe({
-        next: defs => { this.filterDefs.set(defs); this.cdr.detectChanges(); },
+        next: defs => {
+          if (defs.some(d => d.filterKey === 'free_entry')) {
+            this.filterDefs.set(defs);
+            this.cdr.detectChanges();
+          } else {
+            this.sub.add(
+              this.eventsService.createFilterDefinition(typeId, 'Besplatan ulaz', 'boolean').subscribe({
+                next: def => { this.filterDefs.set([def, ...defs]); this.cdr.detectChanges(); },
+                error: () => { this.filterDefs.set(defs); this.cdr.detectChanges(); },
+              }),
+            );
+          }
+        },
         error: () => this.filterDefs.set([]),
       }),
     );

@@ -11,6 +11,7 @@
     [lockedRegionId]="lockedRegionId()"
     [closing]="isCreateClosing()"
     [requiresOwnerDocuments]="isPlaceOwner()"
+    [isSuperAdmin]="isSuperAdmin()"
     (cancel)="closeCreateModal()"
     (created)="onEventCreated($event)"
   />
@@ -22,6 +23,7 @@
     [eventTypeOptions]="eventTypeOptions()"
     [lockedRegionId]="lockedRegionId()"
     [closing]="isEditClosing()"
+    [isSuperAdmin]="isSuperAdmin()"
     (cancel)="closeEditModal()"
     (saved)="onEditSaved($event)"
   />
@@ -250,7 +252,7 @@
         @if (canCreateEvent() && filters().tab !== 'deleted') {
           <button class="evts-btn-primary" type="button" (click)="openCreateDialog()">
             <span class="material-icons">add</span>
-            {{ ui.t('events.btn.create') }}
+            {{ isPlaceOwner() ? ui.t('events.modal.btn_create') : ui.t('events.btn.create') }}
           </button>
         }
       </div>

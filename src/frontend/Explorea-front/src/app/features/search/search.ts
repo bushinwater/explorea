@@ -769,9 +769,13 @@ export class Search implements OnInit, OnDestroy {
         else { this.filterDefs = []; this.filterDefsTypeId = null; }
         break;
       }
-      case 'activity':
-        this.draftFilters = { ...this.draftFilters, activityCategoryIds: toggle(this.draftFilters.activityCategoryIds ?? []) };
+      case 'activity': {
+        const newIds = toggle(this.draftFilters.activityCategoryIds ?? []);
+        this.draftFilters = { ...this.draftFilters, activityCategoryIds: newIds, extraFilters: {} };
+        if (newIds.length === 1) this.loadFilterDefs(newIds[0]);
+        else { this.filterDefs = []; this.filterDefsTypeId = null; }
         break;
+      }
       case 'event': {
         const newIds = toggle(this.draftFilters.eventTypeIds ?? []);
         this.draftFilters = { ...this.draftFilters, eventTypeIds: newIds, extraFilters: {} };
@@ -1000,7 +1004,7 @@ export class Search implements OnInit, OnDestroy {
       this.draftEntityTypes = this.filterEntityType ? [this.filterEntityType] : [];
     }
     // Auto-load extra filter defs if exactly one subcat was pre-selected via inline chips
-    if (this.filterEntityType && this.filterEntityType !== 'activity') {
+    if (this.filterEntityType) {
       const selectedIds = this.getSelectedCategoryIds();
       if (selectedIds.length === 1 && this.filterDefsTypeId !== selectedIds[0]) {
         this.loadFilterDefs(selectedIds[0]);

@@ -228,7 +228,7 @@ namespace Explorea.Server.Repositories.Implementations
       return await _db.Destinations
       .AsNoTracking()
       .Include(d => d.City)
-      .Where(d => !d.IsDeleted)
+      .Where(d => !d.IsDeleted && d.Visibility == "published")
       .OrderByDescending(d => d.IsFeatured)
       .ThenByDescending(d => d.AvgRating)
       .ThenBy(d => d.Name)

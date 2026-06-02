@@ -598,6 +598,7 @@
   "common.edit": "Edit",
   "common.delete": "Delete",
   "common.restore": "Restore",
+  "common.restoring": "Restoring...",
   "common.activate": "Activate",
   "common.deactivate": "Deactivate",
   "common.saving": "Saving...",

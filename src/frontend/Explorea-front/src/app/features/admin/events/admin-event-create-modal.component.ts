@@ -82,6 +82,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   @Input() lockedRegionId: number | null = null;
   @Input() closing = false;
   @Input() requiresOwnerDocuments = false;
+  @Input() isSuperAdmin = false;
 
   @Output() cancel = new EventEmitter<void>();
   @Output() created = new EventEmitter<EventRow>();
@@ -135,6 +136,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   protected readonly showPlaceResults = signal(false);
   protected readonly isSearchingPlaces = signal(false);
   protected readonly selectedPlaceName = signal('');
+  protected readonly ownerPlaces = signal<PlaceSearchItem[]>([]);
 
   // Filter definitions
   protected readonly filterDefs = signal<FilterDefinition[]>([]);
@@ -144,13 +146,12 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   protected readonly newTypeName = signal('');
   protected readonly isAddingType = signal(false);
   protected readonly extraTypes = signal<EventFilterOption<number>[]>([]);
-  get allTypeOptions(): EventFilterOption<number>[] {
-    return [...this.eventTypeOptions, ...this.extraTypes()];
-  }
+  protected readonly allTypeOptions = computed(() => [...this.eventTypeOptions, ...this.extraTypes()]);
+
+  protected readonly deletingFilterId = signal<number | null>(null);
 
   // Add new filter definition
   protected readonly showAddFilter = signal(false);
-  protected readonly newFilterKey = signal('');
   protected readonly newFilterLabel = signal('');
   protected readonly newFilterType = signal('boolean');
   protected readonly isAddingFilter = signal(false);
@@ -201,6 +202,15 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
         });
       }),
     );
+
+    if (this.requiresOwnerDocuments) {
+      this.sub.add(
+        this.eventsService.getMyPlaces().subscribe({
+          next: places => { this.ownerPlaces.set(places); this.cdr.detectChanges(); },
+          error: () => {},
+        }),
+      );
+    }
 
     setTimeout(() => this.initMap(), 50);
 
@@ -315,9 +325,31 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   }
 
   // Place typeahead
+  protected onPlaceFocus(): void {
+    if (this.requiresOwnerDocuments) {
+      const q = this.placeQuery().toLowerCase().trim();
+      const results = q
+        ? this.ownerPlaces().filter(p => p.name.toLowerCase().includes(q))
+        : this.ownerPlaces();
+      this.placeResults.set(results);
+      this.showPlaceResults.set(results.length > 0);
+      this.cdr.detectChanges();
+      return;
+    }
+    this.showPlaceResults.set(this.placeResults().length > 0);
+  }
+
   protected onPlaceInput(query: string): void {
     this.placeQuery.set(query);
     if (!query.trim()) { this.clearPlaceOnly(); return; }
+    if (this.requiresOwnerDocuments) {
+      const q = query.toLowerCase();
+      const results = this.ownerPlaces().filter(p => p.name.toLowerCase().includes(q));
+      this.placeResults.set(results);
+      this.showPlaceResults.set(results.length > 0);
+      this.cdr.detectChanges();
+      return;
+    }
     this.placeSearch$.next(query);
   }
 
@@ -438,22 +470,46 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   // Add new filter definition
   protected toggleAddFilter(): void {
     this.showAddFilter.update(v => !v);
-    this.newFilterKey.set('');
     this.newFilterLabel.set('');
     this.newFilterType.set('boolean');
   }
 
+  protected deleteFilterDef(id: number): void {
+    if (this.deletingFilterId() !== null) return;
+    const def = this.filterDefs().find(d => d.id === id);
+    if (!def) return;
+    this.deletingFilterId.set(id);
+    this.sub.add(
+      this.eventsService.deleteFilterDefinition(id).subscribe({
+        next: () => {
+          this.filterDefs.update(d => d.filter(x => x.id !== id));
+          const ef = { ...this.form().extraFilters };
+          delete ef[def.filterKey];
+          this.form.update(f => ({ ...f, extraFilters: ef }));
+          this.deletingFilterId.set(null);
+          this.cdr.detectChanges();
+        },
+        error: () => { this.deletingFilterId.set(null); this.cdr.detectChanges(); },
+      }),
+    );
+  }
+
   protected addNewFilter(): void {
     const typeId = this.form().typeId;
-    const key = this.newFilterKey().trim();
     const label = this.newFilterLabel().trim();
     const type = this.newFilterType();
-    if (!typeId || !key || !label || this.isAddingFilter()) return;
+    if (!typeId || !label || this.isAddingFilter()) return;
     this.isAddingFilter.set(true);
     this.sub.add(
-      this.eventsService.createFilterDefinition(typeId, key, label, type).subscribe({
+      this.eventsService.createFilterDefinition(typeId, label, type).subscribe({
         next: def => {
           this.filterDefs.update(d => [...d, def]);
+          if (def.filterType === 'boolean') {
+            this.form.update(f => ({
+              ...f,
+              extraFilters: { ...f.extraFilters, [def.filterKey]: 'true' },
+            }));
+          }
           this.isAddingFilter.set(false);
           this.showAddFilter.set(false);
           this.cdr.detectChanges();
@@ -481,7 +537,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     const endDate = f.endDatetime ? new Date(f.endDatetime) : null;
     if (startDate && isNaN(startDate.getTime())) errs.push('Datum početka nije validan.');
     if (endDate && isNaN(endDate.getTime())) errs.push('Datum završetka nije validan.');
-    if (startDate && endDate && endDate <= startDate) errs.push('Datum završetka mora biti posle datuma početka.');
+    if (startDate && endDate && endDate < startDate) errs.push('Datum završetka mora biti posle datuma početka.');
     const price = f.price.trim() ? Number(f.price.trim().replace(',', '.')) : null;
     if (price !== null && (isNaN(price) || price < 0)) errs.push('Cena mora biti pozitivan broj.');
     if (this.requiresOwnerDocuments && !f.destinationId && !f.placeId) {
@@ -726,7 +782,19 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   private loadFilterDefs(typeId: number): void {
     this.sub.add(
       this.lookupService.getFilterDefinitions('event', typeId).subscribe({
-        next: defs => { this.filterDefs.set(defs); this.cdr.detectChanges(); },
+        next: defs => {
+          if (defs.some(d => d.filterKey === 'free_entry')) {
+            this.filterDefs.set(defs);
+            this.cdr.detectChanges();
+          } else {
+            this.sub.add(
+              this.eventsService.createFilterDefinition(typeId, 'Besplatan ulaz', 'boolean').subscribe({
+                next: def => { this.filterDefs.set([def, ...defs]); this.cdr.detectChanges(); },
+                error: () => { this.filterDefs.set(defs); this.cdr.detectChanges(); },
+              }),
+            );
+          }
+        },
         error: () => this.filterDefs.set([]),
       }),
     );

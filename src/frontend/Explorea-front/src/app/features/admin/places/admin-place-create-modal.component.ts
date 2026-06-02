@@ -548,7 +548,8 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
           this.form.disable();
           this.uploadPendingAndFinish(detail);
         },
-        error: () => {
+        error: (err: any) => {
+          console.error('[place-create] 400 body:', err?.error);
           this.isSaving.set(false);
           this.error.set('Greška pri kreiranju objekta.');
           this.cdr.detectChanges();

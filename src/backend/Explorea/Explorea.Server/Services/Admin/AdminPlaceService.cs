@@ -185,7 +185,7 @@ namespace Explorea.Server.Services.Admin
             var totalCount = await query.CountAsync();
             var activeCount = await query.CountAsync(p => p.ApprovalStatus == "approved");
             var pendingCount = await query.CountAsync(p => p.ApprovalStatus == "pending");
-            var inactiveCount = await query.CountAsync(p => p.ApprovalStatus == "rejected");
+            var inactiveCount = await query.CountAsync(p => p.ApprovalStatus == "inactive");
             var addedLast30Days = await query.CountAsync(p => p.CreatedAt >= thirtyDaysAgo);
 
             var topPlaces = await query
@@ -295,7 +295,9 @@ namespace Explorea.Server.Services.Admin
                 Email = dto.Email,
                 WebsiteUrl = dto.WebsiteUrl,
                 IsFeatured = dto.IsFeatured,
-                ExtraFilters = dto.ExtraFilters != null ? JsonSerializer.Serialize(dto.ExtraFilters) : null,
+                ExtraFilters = dto.ExtraFilters != null && dto.ExtraFilters.Count > 0
+                    ? JsonSerializer.Serialize(dto.ExtraFilters)
+                    : null,
                 ApprovalStatus = approvalStatus,
                 CreatedAt = now,
                 UpdatedAt = now,
@@ -360,7 +362,6 @@ namespace Explorea.Server.Services.Admin
             }
 
             await _placeRepo.AddAsync(place);
-            await _placeRepo.SaveChangesAsync();
 
             if (user?.Role.Name == RoleNames.PlaceOwner)
             {
@@ -391,9 +392,9 @@ namespace Explorea.Server.Services.Admin
                         place.ExtraFilters
                     })
                 });
-
-                await _queueRepo.SaveChangesAsync();
             }
+
+            await _placeRepo.SaveChangesAsync();
 
             var created = await _placeRepo.GetAdminByIdAsync(place.Id);
             return MapToDetailDto(created!);
@@ -440,11 +441,21 @@ namespace Explorea.Server.Services.Admin
             if (dto.WebsiteUrl != null) { AddChangedField(changedFields, "veb sajt", place.WebsiteUrl, dto.WebsiteUrl); place.WebsiteUrl = dto.WebsiteUrl; }
             if (dto.IsFeatured.HasValue) { AddChangedField(changedFields, "istaknuto", place.IsFeatured, dto.IsFeatured.Value); place.IsFeatured = dto.IsFeatured.Value; }
 
+            if (dto.ExtraFilters != null)
+            {
+                var newJson = dto.ExtraFilters.Count > 0 ? JsonSerializer.Serialize(dto.ExtraFilters) : null;
+                if (place.ExtraFilters != newJson)
+                {
+                    changedFields.Add("filteri");
+                    place.ExtraFilters = newJson;
+                }
+            }
+
             // Only SA and TO can change approval status
             if (dto.ApprovalStatus != null &&
                 user?.Role.Name != RoleNames.PlaceOwner)
             {
-                var validStatuses = new[] { "approved", "pending", "rejected" };
+                var validStatuses = new[] { "approved", "pending", "rejected", "inactive" };
                 if (validStatuses.Contains(dto.ApprovalStatus.ToLowerInvariant()))
                 {
                     var newStatus = dto.ApprovalStatus.ToLowerInvariant();
@@ -548,11 +559,11 @@ namespace Explorea.Server.Services.Admin
             _placeRepo.Update(place);
             await _placeRepo.SaveChangesAsync();
 
-            if (previousApprovalStatus != place.ApprovalStatus &&
-                (place.ApprovalStatus == "approved" || place.ApprovalStatus == "rejected"))
-            {
+            var approvalDecisionSent = previousApprovalStatus != place.ApprovalStatus &&
+                (place.ApprovalStatus == "approved" || place.ApprovalStatus == "rejected");
+
+            if (approvalDecisionSent)
                 changedFields.Remove("status");
-            }
 
             await NotifyOwnerAboutApprovalDecisionAsync(
                 ownerId,
@@ -560,12 +571,15 @@ namespace Explorea.Server.Services.Admin
                 previousApprovalStatus,
                 place.ApprovalStatus);
 
-            await _ownerChangeNotifications.NotifyOwnerAsync(
-                ownerId,
-                "objekat",
-                place.Name,
-                user!,
-                changedFields);
+            if (!approvalDecisionSent)
+            {
+                await _ownerChangeNotifications.NotifyOwnerAsync(
+                    ownerId,
+                    "objekat",
+                    place.Name,
+                    user!,
+                    changedFields);
+            }
 
             var updated = await _placeRepo.GetAdminByIdAsync(id);
             return MapToDetailDto(updated!);
@@ -748,7 +762,9 @@ namespace Explorea.Server.Services.Admin
             Region = p.City?.Region?.Name,
             Destination = p.Destination?.Name,
             Country = p.Country?.Name,
-            ExtraFilters = p.ExtraFilters,
+            ExtraFilters = p.ExtraFilters != null
+                ? JsonSerializer.Deserialize<Dictionary<string, string>>(p.ExtraFilters)
+                : null,
             CreatedBy = p.CreatedBy,
             Images = p.Images
                 .OrderBy(i => i.SortOrder)

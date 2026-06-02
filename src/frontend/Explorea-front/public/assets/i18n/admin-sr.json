@@ -598,6 +598,7 @@
   "common.edit": "Izmeni",
   "common.delete": "Obriši",
   "common.restore": "Vrati",
+  "common.restoring": "Vraćanje...",
   "common.activate": "Aktiviraj",
   "common.deactivate": "Deaktiviraj",
   "common.saving": "Čuvanje...",
@@ -709,6 +710,7 @@
   "events.modal.btn_creating": "Kreiranje...",
   "events.modal.edit_title": "Izmeni događaj",
   "events.modal.create_subtitle": "Događaj će biti odmah dodat kao aktivan.",
+  "events.modal.create_subtitle_owner": "Događaj će biti poslat na pregled.",
 
   "destinations.stats.no_data": "Nema podataka",
   "destinations.stats.total_from_view": "Ukupno iz pregleda",
@@ -729,6 +731,7 @@
   "destinations.modal.btn_create": "Kreiraj destinaciju",
 
   "places.tabs.active": "Aktivni",
+  "places.tabs.pending": "Na čekanju",
   "places.tabs.deleted": "Obrisani",
   "places.details.unknown_location": "Nepoznata lokacija",
   "places.details.type": "Tip",

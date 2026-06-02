@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Explorea.API.DTOs.Admin.Activity;
 using Explorea.Server.Data;
 using Explorea.Server.Helpers;
@@ -109,10 +110,13 @@ namespace Explorea.Server.Services.Admin
         };
       }
 
-      if (!string.IsNullOrWhiteSpace(query.Status))
+      if (string.IsNullOrWhiteSpace(query.Status))
+      {
+        activitiesQuery = activitiesQuery.Where(a => !a.IsDeleted);
+      }
+      else
       {
         var status = query.Status.Trim().ToLowerInvariant();
-
         activitiesQuery = status switch
         {
           "active"   => activitiesQuery.Where(a => !a.IsDeleted),
@@ -349,6 +353,9 @@ namespace Explorea.Server.Services.Admin
         Popularity = activity.Popularity,
 
         ExtraData = activity.ExtraData,
+        ExtraFilters = activity.ExtraData != null
+          ? JsonSerializer.Deserialize<Dictionary<string, string>>(activity.ExtraData)
+          : null,
 
         Latitude  = activity.Latitude,
         Longitude = activity.Longitude,
@@ -406,16 +413,18 @@ namespace Explorea.Server.Services.Admin
         .OrderBy(d => d)
         .ToListAsync();
 
-      var categoryData = await baseQuery
-        .Select(a => new { a.CategoryId, CategoryName = a.Category.Name })
-        .Distinct()
-        .OrderBy(c => c.CategoryName)
+      var categoryData = await _context.ActivityCategories
+        .AsNoTracking()
+        .OrderBy(c => c.Name)
+        .Select(c => new { c.Id, c.Name })
         .ToListAsync();
 
       return new AdminActivityFilterOptionsDto
       {
         Difficulties = difficulties,
-        Categories = categoryData.Select(c => new AdminActivityFilterOptionsDto.CategoryItem(c.CategoryId, c.CategoryName)).ToList(),
+        Categories = categoryData
+          .Select(c => new AdminActivityFilterOptionsDto.CategoryItem(c.Id, c.Name))
+          .ToList(),
         ManagedRegion = managedRegion,
       };
     }
@@ -448,7 +457,9 @@ namespace Explorea.Server.Services.Admin
         DistanceKm      = dto.DistanceKm,
         StartPoint      = dto.StartPoint?.Trim(),
 
-        ExtraData = dto.ExtraData,
+        ExtraData = dto.ExtraFilters != null
+          ? JsonSerializer.Serialize(dto.ExtraFilters)
+          : dto.ExtraData,
 
         Latitude  = dto.Latitude,
         Longitude = dto.Longitude,
@@ -515,7 +526,10 @@ namespace Explorea.Server.Services.Admin
       if (dto.DifficultyLevel != null)  activity.DifficultyLevel = dto.DifficultyLevel.Trim();
       if (dto.DistanceKm.HasValue)      activity.DistanceKm      = dto.DistanceKm.Value;
       if (dto.StartPoint != null)       activity.StartPoint      = dto.StartPoint.Trim();
-      if (dto.ExtraData != null)        activity.ExtraData       = dto.ExtraData;
+      if (dto.ExtraFilters != null)
+        activity.ExtraData = JsonSerializer.Serialize(dto.ExtraFilters);
+      else if (dto.ExtraData != null)
+        activity.ExtraData = dto.ExtraData;
 
       if (dto.Latitude.HasValue || dto.Longitude.HasValue)
       {

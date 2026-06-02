@@ -22,6 +22,7 @@ namespace Explorea.API.DTOs.Admin.Place
 
         public bool? IsFeatured { get; set; }
         public string? ApprovalStatus { get; set; }
+        public Dictionary<string, string>? ExtraFilters { get; set; }
 
         // Ako dođe lista, tretiramo je kao full replace
         public List<AdminCreatePlaceImageDto>? Images { get; set; }

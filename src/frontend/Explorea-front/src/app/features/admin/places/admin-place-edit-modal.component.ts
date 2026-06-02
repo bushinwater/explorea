@@ -143,6 +143,7 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
     { value: 'approved', label: 'Aktivno' },
     { value: 'pending',  label: 'Na čekanju' },
     { value: 'rejected', label: 'Odbijeno' },
+    { value: 'inactive', label: 'Neaktivno' },
   ];
 
   private originalHeroImageId: string | null = null;

@@ -467,7 +467,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     const locationNotAvailable = this.translate.instant('DESTINATION_DETAIL.LOCATION_NOT_AVAILABLE');
 
     if (this.isPlace(item)) {
-      return item.address || item.country?.name || locationNotAvailable;
+      return item.address || item.city?.name || item.country?.name || locationNotAvailable;
     }
 
     if (this.isEvent(item)) {
@@ -477,7 +477,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
       return [address, city, country].filter(Boolean).join(', ') || locationNotAvailable;
     }
 
-    return item.country?.name || locationNotAvailable;
+    return this.destination?.name || item.country?.name || locationNotAvailable;
   }
 
   getItemRating(item: TabItem): number | null {

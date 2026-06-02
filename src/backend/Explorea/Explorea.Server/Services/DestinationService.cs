@@ -66,6 +66,8 @@ namespace Explorea.Server.Services
                 .Include(d => d.Places)
                     .ThenInclude(p => p.Images)
                 .Include(d => d.Places)
+                    .ThenInclude(p => p.City)
+                .Include(d => d.Places)
                     .ThenInclude(p => p.Country)
 
                 .Include(d => d.Events)
@@ -202,6 +204,11 @@ namespace Explorea.Server.Services
                             .OrderBy(i => i.SortOrder)
                             .Select(i => i.ImageUrl)
                             .FirstOrDefault(),
+                        City = p.City == null ? null : new CityRefDto
+                        {
+                            Id = p.City.Id,
+                            Name = p.City.Name
+                        },
                         Country = p.Country == null ? null : new CountryRefDto
                         {
                             Id = p.Country.Id,

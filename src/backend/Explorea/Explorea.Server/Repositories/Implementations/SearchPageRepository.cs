@@ -478,7 +478,7 @@ namespace Explorea.Server.Repositories.Implementations
         .AsNoTracking()
         .Include(d => d.City)
         .Include(d => d.Type)
-        .Where(d => !d.IsDeleted)
+        .Where(d => !d.IsDeleted && d.Visibility == "published")
         .AsQueryable();
 
       if (!string.IsNullOrWhiteSpace(query.Query))

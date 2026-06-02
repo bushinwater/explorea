@@ -5,8 +5,8 @@
     <div class="edit-modal__title-block">
       <span class="material-icons edit-modal__title-icon">event</span>
       <div>
-        <h2 class="edit-modal__title">{{ ui.t('events.btn.create') }}</h2>
-        <p class="edit-modal__subtitle">{{ ui.t('events.modal.create_subtitle') }}</p>
+        <h2 class="edit-modal__title">{{ requiresOwnerDocuments ? ui.t('events.modal.btn_create') : ui.t('events.btn.create') }}</h2>
+        <p class="edit-modal__subtitle">{{ requiresOwnerDocuments ? ui.t('events.modal.create_subtitle_owner') : ui.t('events.modal.create_subtitle') }}</p>
       </div>
     </div>
     <button class="edit-modal__close" type="button" (click)="cancel.emit()">
@@ -63,7 +63,7 @@
                 <option value="" [selected]="form().typeId === null">
                   {{ ui.t('events.modal.select_type') }}
                 </option>
-                @for (t of allTypeOptions; track t.value) {
+                @for (t of allTypeOptions(); track t.value) {
                   <option [value]="t.value" [selected]="form().typeId === t.value">
                     {{ t.label }}
                   </option>
@@ -109,20 +109,38 @@
               <div class="ev-filter-defs">
                 @for (def of filterDefs(); track def.id) {
                   @if (def.filterType === 'boolean') {
-                    <label
-                      class="ev-filter-chip"
-                      [class.ev-filter-chip--active]="form().extraFilters[def.filterKey] === 'true'"
-                    >
-                      <input
-                        type="checkbox"
-                        [checked]="form().extraFilters[def.filterKey] === 'true'"
-                        (change)="updateExtraFilter(def.filterKey, $any($event.target).checked)"
-                      />
-                      {{ def.filterLabel }}
-                    </label>
+                    <div class="ev-filter-def-row">
+                      <label
+                        class="ev-filter-chip"
+                        [class.ev-filter-chip--active]="form().extraFilters[def.filterKey] === 'true'"
+                      >
+                        <input
+                          type="checkbox"
+                          [checked]="form().extraFilters[def.filterKey] === 'true'"
+                          (change)="updateExtraFilter(def.filterKey, $any($event.target).checked)"
+                        />
+                        {{ def.filterLabel }}
+                      </label>
+                      @if (isSuperAdmin) {
+                        <button class="ev-filter-def-del" type="button" title="Obriši filter"
+                          [disabled]="deletingFilterId() !== null"
+                          (click)="deleteFilterDef(def.id)">
+                          <span class="material-icons">{{ deletingFilterId() === def.id ? 'sync' : 'close' }}</span>
+                        </button>
+                      }
+                    </div>
                   } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
                     <div class="ev-filter-select-group">
-                      <span class="ev-filter-select-label">{{ def.filterLabel }}</span>
+                      <div class="ev-filter-select-header">
+                        <span class="ev-filter-select-label">{{ def.filterLabel }}</span>
+                        @if (isSuperAdmin) {
+                          <button class="ev-filter-def-del" type="button" title="Obriši filter"
+                            [disabled]="deletingFilterId() !== null"
+                            (click)="deleteFilterDef(def.id)">
+                            <span class="material-icons">{{ deletingFilterId() === def.id ? 'sync' : 'close' }}</span>
+                          </button>
+                        }
+                      </div>
                       <div class="ev-filter-opts">
                         @for (opt of def.options; track opt.optionValue) {
                           <label
@@ -155,13 +173,6 @@
                   <input
                     class="edit-field__input"
                     type="text"
-                    [placeholder]="ui.t('common.filter_key_ph')"
-                    [value]="newFilterKey()"
-                    (input)="newFilterKey.set($any($event.target).value)"
-                  />
-                  <input
-                    class="edit-field__input"
-                    type="text"
                     [placeholder]="ui.t('common.filter_name_ph')"
                     [value]="newFilterLabel()"
                     (input)="newFilterLabel.set($any($event.target).value)"
@@ -170,9 +181,7 @@
                   <button
                     class="ev-add-inline-form__submit"
                     type="button"
-                    [disabled]="
-                      !newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()
-                    "
+                    [disabled]="!newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()"
                   >
                     @if (isAddingFilter()) {
@@ -198,13 +207,6 @@
                   <input
                     class="edit-field__input"
                     type="text"
-                    [placeholder]="ui.t('common.filter_key_ph')"
-                    [value]="newFilterKey()"
-                    (input)="newFilterKey.set($any($event.target).value)"
-                  />
-                  <input
-                    class="edit-field__input"
-                    type="text"
                     [placeholder]="ui.t('common.filter_name_ph')"
                     [value]="newFilterLabel()"
                     (input)="newFilterLabel.set($any($event.target).value)"
@@ -213,9 +215,7 @@
                   <button
                     class="ev-add-inline-form__submit"
                     type="button"
-                    [disabled]="
-                      !newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()
-                    "
+                    [disabled]="!newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()"
                   >
                     @if (isAddingFilter()) {
@@ -228,15 +228,6 @@
               }
             </div>
           }
-
-          <label class="ev-checkbox ev-field--full">
-            <input
-              type="checkbox"
-              [checked]="form().extraFilters['free_entry'] === 'true'"
-              (change)="updateExtraFilter('free_entry', $any($event.target).checked)"
-            />
-            <span>{{ ui.t('events.modal.free_entry') }}</span>
-          </label>
 
           @if (form().extraFilters['free_entry'] !== 'true') {
             <div class="edit-field">
@@ -485,7 +476,7 @@
               type="text"
               [value]="placeQuery()"
               (input)="onPlaceInput($any($event.target).value)"
-              (focus)="showPlaceResults.set(placeResults().length > 0)"
+              (focus)="onPlaceFocus()"
               (blur)="hidePlaceResults()"
               [placeholder]="ui.t('common.search_place')"
             />
@@ -515,6 +506,8 @@
                 </button>
               }
             </div>
+          } @else if (placeQuery().trim() && !isSearchingPlaces() && !form().placeId) {
+            <p class="ev-filter-empty">Nema rezultata. Proveri da li si dodao/la objekat u sistemu.</p>
           }
         </div>
       </div>

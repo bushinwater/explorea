@@ -31,7 +31,7 @@ namespace Explorea.API.DTOs.Admin.Place
         public string? Region { get; set; }
         public string? Destination { get; set; }
         public string? Country { get; set; }
-        public string? ExtraFilters { get; set; }
+        public Dictionary<string, string>? ExtraFilters { get; set; }
         public Guid? CreatedBy { get; set; }
 
         public List<AdminPlaceImageDto> Images { get; set; } = new();

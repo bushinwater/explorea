@@ -28,7 +28,7 @@ namespace Explorea.Server.Repositories.Implementations
             var query = _db.Destinations
                 .AsNoTracking()
                 .Include(d => d.City)
-                .Where(d => !d.IsDeleted);
+                .Where(d => !d.IsDeleted && d.Visibility == "published");
 
             if (lat.HasValue && lng.HasValue)
             {
@@ -203,7 +203,7 @@ namespace Explorea.Server.Repositories.Implementations
             await _db.Destinations
                 .AsNoTracking()
                 .Include(d => d.City)
-                .Where(d => !d.IsDeleted && d.Slug == slug)
+                .Where(d => !d.IsDeleted && d.Visibility == "published" && d.Slug == slug)
                 .FirstOrDefaultAsync();
 
         public async Task<Place?> GetPlaceBySlugAsync(string slug) =>

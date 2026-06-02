@@ -177,8 +177,11 @@ namespace Explorea.Server.Services.Admin
             if (item.Status != "Pending")
                 throw new Exception("Only pending requests can be deleted.");
 
-            if (!await CanReviewAsAdminAsync(reviewerId, item.DestinationId))
-                throw new UnauthorizedAccessException("Access denied.");
+            if (item.SubmittedByUserId != reviewerId)
+            {
+                if (!await CanReviewAsAdminAsync(reviewerId, item.DestinationId))
+                    throw new UnauthorizedAccessException("Access denied.");
+            }
 
             var eventEntity = await _eventRepo.GetAdminByIdAsync(item.EntityId);
             if (eventEntity != null)
@@ -303,11 +306,11 @@ namespace Explorea.Server.Services.Admin
             if (submitter?.Role.Name != RoleNames.PlaceOwner)
                 return true;
 
+            // Check if user has uploaded required documents for this entity OR any of their entities
             var documentTypes = await _db.OwnerSubmissionDocuments
-                .Where(document =>
-                    document.EntityId == item.EntityId &&
-                    document.EntityType == item.EntityType)
+                .Where(document => document.UserId == item.SubmittedByUserId)
                 .Select(document => document.DocumentType)
+                .Distinct()
                 .ToListAsync();
 
             return documentTypes.Contains("identity") && documentTypes.Contains("authorization");
@@ -443,7 +446,7 @@ namespace Explorea.Server.Services.Admin
                     {
                         Id = document.Id,
                         DocumentType = document.DocumentType,
-                        DocumentUrl = BuildDocumentDeliveryUrl(document.DocumentUrl, document.ContentType, document.FileName),
+                        DocumentUrl = BuildDocumentDeliveryUrl(document.DocumentUrl),
                         FileName = document.FileName,
                         ContentType = document.ContentType,
                         CreatedAt = document.CreatedAt
@@ -462,18 +465,9 @@ namespace Explorea.Server.Services.Admin
             }
         }
 
-        private static string BuildDocumentDeliveryUrl(string url, string? contentType, string? fileName)
+        private static string BuildDocumentDeliveryUrl(string url)
         {
-            var isPdf =
-                contentType?.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) == true ||
-                (!string.IsNullOrWhiteSpace(fileName) &&
-                    Path.GetExtension(fileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase)) ||
-                url.Contains(".pdf", StringComparison.OrdinalIgnoreCase);
-
-            if (!isPdf || url.Contains("/fl_attachment/", StringComparison.OrdinalIgnoreCase))
-                return url;
-
-            return url.Replace("/upload/", "/upload/fl_attachment/");
+            return url.Replace("/upload/fl_attachment/", "/upload/");
         }
     }
 }
