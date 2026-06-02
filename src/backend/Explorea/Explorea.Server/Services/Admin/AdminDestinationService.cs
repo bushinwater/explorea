@@ -412,6 +412,7 @@ namespace Explorea.Server.Services.Admin
                 Longitude   = dto.Longitude,
                 Location    = _geometryFactory.CreatePoint(new Coordinate(dto.Longitude, dto.Latitude)),
                 CityId      = dto.CityId,
+                RegionId    = dto.RegionId,
                 CountryId   = dto.CountryId,
                 HeroImageUrl = dto.HeroImageUrl,
                 Visibility  = dto.Visibility,
@@ -454,6 +455,9 @@ namespace Explorea.Server.Services.Admin
             if (dto.HeroImageUrl!= null) destination.HeroImageUrl= dto.HeroImageUrl;
             if (dto.Visibility  != null) destination.Visibility  = dto.Visibility;
             if (dto.CityId    != null) destination.CityId = dto.CityId;
+
+            if (dto.ClearRegionId)              destination.RegionId  = null;
+            else if (dto.RegionId.HasValue)     destination.RegionId  = dto.RegionId.Value;
 
             if (dto.ClearCountryId)             destination.CountryId = null;
             else if (dto.CountryId.HasValue)    destination.CountryId = dto.CountryId.Value;
@@ -536,8 +540,8 @@ namespace Explorea.Server.Services.Admin
             Name            = d.Name,
             Slug            = d.Slug,
             PreviewImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
-            Region          = d.City?.Region?.Name,
-            RegionId        = d.City?.RegionId,
+            Region          = d.Region?.Name ?? d.City?.Region?.Name,
+            RegionId        = d.RegionId ?? d.City?.RegionId,
             CityId          = d.CityId,
             Views           = viewCounts?.GetValueOrDefault(d.Id) ?? 0,
             Status          = MapStatus(d.Visibility),

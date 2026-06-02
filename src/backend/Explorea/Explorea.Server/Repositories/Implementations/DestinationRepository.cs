@@ -67,6 +67,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .IgnoreQueryFilters() // admin vidi i soft-deleted
                 .Include(d => d.City)
                     .ThenInclude(c => c!.Region)
+                .Include(d => d.Region)
                 .Include(d => d.Country)
                 .Include(d => d.Type)
                 .Where(d => !d.IsDeleted)
@@ -93,7 +94,7 @@ namespace Explorea.Server.Repositories.Implementations
             }
 
             if (regionId.HasValue)
-                query = query.Where(d => d.City != null && d.City.RegionId == regionId.Value);
+                query = query.Where(d => d.RegionId == regionId.Value || (d.City != null && d.City.RegionId == regionId.Value));
 
             if (typeId.HasValue)
                 query = query.Where(d => d.TypeId == typeId.Value);
@@ -147,6 +148,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .IgnoreQueryFilters()
                 .Include(d => d.City)
                     .ThenInclude(c => c!.Region)
+                .Include(d => d.Region)
                 .Include(d => d.Country)
                 .Include(d => d.Images)
                 .Include(d => d.Type)

@@ -207,7 +207,15 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
             extraFilters: Object.keys(freshExtraFilters).length ? freshExtraFilters : f.extraFilters,
             destinationId: freshDestId ?? f.destinationId,
             placeId: freshPlaceId ?? f.placeId,
+            address: detail.address ?? f.address,
+            price: detail.price != null ? String(detail.price) : f.price,
+            ticketUrl: detail.ticketUrl ?? f.ticketUrl,
+            description: detail.description ?? f.description,
           }));
+          if (this.mapLatitude() === null && detail.latitude != null) {
+            this.mapLatitude.set(detail.latitude);
+            this.mapLongitude.set(detail.longitude);
+          }
           if (freshTypeId !== null) this.loadFilterDefs(freshTypeId);
           // If list item didn't have destinationId, populate cascade from detail
           if (freshDestId && !ev.destinationId) {

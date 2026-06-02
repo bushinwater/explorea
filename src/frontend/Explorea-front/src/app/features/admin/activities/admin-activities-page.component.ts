@@ -621,7 +621,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.editHeroImageId.set(detail.images[0]?.id ?? null);
     this.mapLatitude.set(detail.latitude ?? null);
     this.mapLongitude.set(detail.longitude ?? null);
-    this.mapAddress.set('');
+    this.mapAddress.set(detail.startPoint ?? '');
     this.destinationResults.set([]);
     this.destinationDropdownOpen.set(false);
     this.newInclusionText.set('');
@@ -989,6 +989,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       ...form,
       slug: this.toSlug(form.name),
       countryId: this.selectedCountryId() ?? undefined,
+      startPoint: this.mapAddress().trim() || undefined,
       latitude: lat ?? undefined,
       longitude: lng ?? undefined,
       inclusions: inclusions.length ? inclusions : undefined,

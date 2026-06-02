@@ -234,7 +234,7 @@ export class AdminDestinationsService {
       id: item.id,
       slug: item.slug,
       name: item.name,
-      city: item.city ?? item.country ?? 'Nepoznato',
+      city: item.city ?? item.region ?? item.country ?? 'Nepoznato',
       region: item.region ?? 'Bez regije',
       regionId: item.regionId,
       category: this.mapCategory(item.typeName),

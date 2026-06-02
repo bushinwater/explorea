@@ -120,6 +120,7 @@ export interface CreateActivityDto {
   price?: number;
   durationMinutes?: number;
   difficultyLevel?: string;
+  startPoint?: string | null;
   cityId?: number;
   countryId?: number | null;
   destinationId?: string;
@@ -138,6 +139,7 @@ export interface UpdateActivityDto {
   price?: number;
   durationMinutes?: number;
   difficultyLevel?: string;
+  startPoint?: string | null;
   cityId?: number;
   destinationId?: string;
   isActive?: boolean;

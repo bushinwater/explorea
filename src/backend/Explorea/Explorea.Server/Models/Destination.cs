@@ -37,6 +37,7 @@ namespace Explorea.API.Models
         [Column("is_deleted")]  public bool    IsDeleted  { get; set; } = false;
         [Column("deleted_at")]  public DateTimeOffset? DeletedAt { get; set; }
 
+        [Column("region_id")]  public int? RegionId  { get; set; }
         [Column("country_id")] public int? CountryId { get; set; }
         [MaxLength(500), Column("hero_image_url")] 
         public string? HeroImageUrl { get; set; }
@@ -58,6 +59,9 @@ namespace Explorea.API.Models
 
         [ForeignKey("CityId")]
         public City? City { get; set; }
+
+        [ForeignKey("RegionId")]
+        public Region? Region { get; set; }
 
         [ForeignKey("CountryId")]
         public Country? Country { get; set; }
