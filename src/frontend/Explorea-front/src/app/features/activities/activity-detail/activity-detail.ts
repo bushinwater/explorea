@@ -80,6 +80,12 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
   hasReviewed = false;
   currentUserId = '';
 
+  // Gallery lightbox
+  lightboxOpen = false;
+  selectedImageIndex = 0;
+  private lightboxScrollY = 0;
+  private lightboxLockedBody = false;
+
   // Show-all panel (similar activities)
   showAllOpen = false;
   showAllMode: 'similar' | 'reviews' = 'similar';
@@ -159,6 +165,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
     this.marker?.remove();
     this.map?.remove();
     this.themeObserver?.disconnect();
+    this.unlockLightboxScroll();
     document.body.style.position = '';
     document.body.style.top = '';
     document.body.style.width = '';
@@ -493,6 +500,67 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
     return (this.activity?.extraData?.['trailType'] as string) ?? '';
   }
 
+  get galleryImages(): string[] {
+    return (this.activity?.images ?? [])
+      .slice(0, 10)
+      .map(i => i.imageUrl);
+  }
+
+  get currentLightboxImage(): string {
+    return this.galleryImages[this.selectedImageIndex] ?? '';
+  }
+
+  openAllImages(): void {
+    if (this.galleryImages.length > 0) this.openLightbox(0);
+  }
+
+  openLightbox(index: number): void {
+    this.selectedImageIndex = index;
+    this.lightboxOpen = true;
+    this.lockLightboxScroll();
+  }
+
+  closeLightbox(): void {
+    this.lightboxOpen = false;
+    this.unlockLightboxScroll();
+  }
+
+  prevImage(): void {
+    const total = this.galleryImages.length;
+    if (!total) return;
+    this.selectedImageIndex = (this.selectedImageIndex - 1 + total) % total;
+  }
+
+  nextImage(): void {
+    const total = this.galleryImages.length;
+    if (!total) return;
+    this.selectedImageIndex = (this.selectedImageIndex + 1) % total;
+  }
+
+  private lockLightboxScroll(): void {
+    if (document.body.style.position === 'fixed') return;
+    this.lightboxScrollY = window.scrollY;
+    this.lightboxLockedBody = true;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.lightboxScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockLightboxScroll(): void {
+    if (!this.lightboxLockedBody) return;
+    this.lightboxLockedBody = false;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo({ top: this.lightboxScrollY, behavior: 'instant' as ScrollBehavior });
+  }
+
   goBack(): void {
     this.location.back();
   }
@@ -507,6 +575,17 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
+    if (this.lightboxOpen) { this.closeLightbox(); return; }
     if (this.showAllOpen) this.closeShowAll();
+  }
+
+  @HostListener('document:keydown.arrowLeft')
+  onArrowLeft(): void {
+    if (this.lightboxOpen) this.prevImage();
+  }
+
+  @HostListener('document:keydown.arrowRight')
+  onArrowRight(): void {
+    if (this.lightboxOpen) this.nextImage();
   }
 }

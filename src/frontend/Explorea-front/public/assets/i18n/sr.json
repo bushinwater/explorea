@@ -215,6 +215,8 @@
         "STARS_5": "Odlično"
       }
     },
+    "GALLERY": "Galerija fotografija",
+    "VIEW_ALL_IMAGES": "Pogledaj sve ({{count}})",
     "SIMILAR": {
       "TITLE": "Slične aktivnosti",
       "VIEW_ALL": "Pogledaj sve",

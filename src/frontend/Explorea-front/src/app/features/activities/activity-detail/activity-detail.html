@@ -161,6 +161,28 @@
             </button>
           </section>
 
+          <!-- GALLERY -->
+          <section class="detail-section detail-section--gallery" *ngIf="galleryImages.length > 0">
+            <div class="detail-section__head">
+              <h2>{{ 'ACTIVITY_DETAIL.GALLERY' | translate }}</h2>
+              <a class="section-link section-link--subtle" href="javascript:void(0)" (click)="openAllImages()">
+                {{ 'ACTIVITY_DETAIL.VIEW_ALL_IMAGES' | translate:{ count: galleryImages.length } }}
+              </a>
+            </div>
+
+            <div class="activity-gallery desktop-gallery">
+              <img *ngFor="let image of galleryImages; let i = index"
+                [src]="image" [alt]="activity.name + ' ' + (i + 1)"
+                (click)="openLightbox(i)" />
+            </div>
+
+            <div class="activity-gallery mobile-gallery">
+              <img *ngFor="let image of galleryImages; let i = index"
+                [src]="image" [alt]="activity.name + ' ' + (i + 1)"
+                (click)="openLightbox(i)" />
+            </div>
+          </section>
+
           <!-- MAP -->
           <section class="detail-section" *ngIf="activity.location">
             <div class="detail-section__head detail-section__head--map">
@@ -278,6 +300,23 @@
     </ng-container>
 
   </main>
+
+  <!-- LIGHTBOX -->
+  <div class="lightbox" *ngIf="lightboxOpen" (click)="closeLightbox()">
+    <button class="lightbox__close" type="button" (click)="closeLightbox(); $event.stopPropagation()">
+      <span class="material-icons">close</span>
+    </button>
+    <span class="lightbox__counter">{{ selectedImageIndex + 1 }} / {{ galleryImages.length }}</span>
+    <button class="lightbox__nav lightbox__nav--left" type="button" (click)="prevImage(); $event.stopPropagation()">
+      <span class="material-icons">chevron_left</span>
+    </button>
+    <div class="lightbox__content" (click)="$event.stopPropagation()">
+      <img [src]="currentLightboxImage" [alt]="activity?.name" />
+    </div>
+    <button class="lightbox__nav lightbox__nav--right" type="button" (click)="nextImage(); $event.stopPropagation()">
+      <span class="material-icons">chevron_right</span>
+    </button>
+  </div>
 
   <!-- SHOW ALL PANEL (similar activities) -->
   <div class="show-all-overlay" *ngIf="showAllOpen" (click)="closeShowAll()">

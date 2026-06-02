@@ -215,6 +215,8 @@
         "STARS_5": "Excellent"
       }
     },
+    "GALLERY": "Photo gallery",
+    "VIEW_ALL_IMAGES": "View all ({{count}})",
     "SIMILAR": {
       "TITLE": "Similar activities",
       "VIEW_ALL": "View all",

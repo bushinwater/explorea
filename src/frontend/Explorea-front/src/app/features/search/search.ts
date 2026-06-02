@@ -198,7 +198,7 @@ export class Search implements OnInit, OnDestroy {
     const state     = history.state;
     const fromHero  = state?.fromHero === true;
     // URL params take priority when navigating back (they persist across navigation)
-    const hasUrlState = qp.has('q') || qp.has('type');
+    const hasUrlState = qp.has('q') || qp.has('type') || qp.has('nearby') || qp.has('filters') || qp.has('sort');
 
     if (hasUrlState) {
       // Restore from URL query params (back navigation)
@@ -244,8 +244,8 @@ export class Search implements OnInit, OnDestroy {
       }
     }
 
-    this.loadIdleContent();
     this.loadUserLocation();
+    this.loadIdleContent();
     this.loadLookups();
 
     if (this.hasSearched) {
@@ -365,6 +365,10 @@ export class Search implements OnInit, OnDestroy {
           this.userLat           = pos.coords.latitude;
           this.userLng           = pos.coords.longitude;
           this.locationAvailable = true;
+          if (this.nearbyEnabled) {
+            if (this.hasSearched) this.triggerSearch();
+            else                  this.loadIdleContent();
+          }
           this.cdr.detectChanges();
         },
         () => {},
@@ -913,6 +917,7 @@ export class Search implements OnInit, OnDestroy {
         this.hasSearched = false;
         this.loading     = false;
         this.pagination  = { page: 1, totalPages: 1, total: 0 };
+        this.syncToUrl();
         this.cdr.detectChanges();
       }
       return;
@@ -1059,6 +1064,7 @@ export class Search implements OnInit, OnDestroy {
     if (this.showResults) {
       this.triggerSearch();
     } else if (this.activeChip === 'sve') {
+      this.syncToUrl();
       this.loadIdleContent();
     }
     this.cdr.detectChanges();
