@@ -802,6 +802,41 @@ a.nav-card {
 
 .select {
   cursor: pointer;
+  appearance: none;
+  background-color: var(--color-bg);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-text-secondary) 50%),
+    linear-gradient(135deg, var(--color-text-secondary) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  border-color: color-mix(in srgb, var(--color-primary) 70%, var(--color-border));
+  box-shadow: 0 0 0 1px rgba(40, 105, 76, 0.16);
+  color-scheme: dark;
+  padding-right: 42px;
+}
+
+.select:hover,
+.select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(40, 105, 76, 0.18);
+}
+
+.select option {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+.select option:checked,
+.select option:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+:host-context([data-theme="light"]) .select {
+  color-scheme: light;
 }
 
 /* PASSWORD BUTTON SPINNER */
