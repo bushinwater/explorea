@@ -591,6 +591,10 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
       this.error.set('Država je obavezna.');
       return;
     }
+    if (!this.images().length) {
+      this.error.set('Dodaj bar jednu sliku.');
+      return;
+    }
     if (this.isSaving()) return;
     this.isSaving.set(true);
     this.error.set('');
@@ -763,9 +767,45 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
             const shortAddr = [street, city].filter(Boolean).join(', ') || result.display_name;
             this.form.patchValue({ address: shortAddr });
             this.cdr.detectChanges();
+            if (city) {
+              this.sub.add(
+                this.svc.searchDestinations(city).subscribe({
+                  next: results => {
+                    if (!results.length) return;
+                    const dest = results[0];
+                    this.selectedDestinationId.set(dest.id);
+                    this.destinationQuery.set(dest.name);
+                    this.destinationResults.set([]);
+                    this.showDestinationDropdown.set(false);
+                    if (this.lockedRegionId === null) {
+                      if (dest.regionId != null) {
+                        this.form.patchValue({ regionId: String(dest.regionId) });
+                        this.loadCities(dest.regionId, dest.cityId ?? undefined, dest.cityId == null ? (dest.city ?? dest.name) : undefined);
+                      }
+                      if (dest.countryId != null) this.selectedCountryId.set(dest.countryId);
+                    }
+                    this.cdr.detectChanges();
+                  },
+                }),
+              );
+            }
           }
         },
       });
+
+      if (this.lockedRegionId === null) {
+        this.sub.add(
+          this.http.get<{ regionId: number | null; countryId: number | null }>(
+            `/api/region-by-coords?lat=${lat}&lng=${lng}`,
+          ).subscribe({
+            next: res => {
+              if (res.countryId) this.selectedCountryId.set(res.countryId);
+              if (res.regionId) this.form.patchValue({ regionId: String(res.regionId) });
+              this.cdr.detectChanges();
+            },
+          }),
+        );
+      }
     }
   }
 

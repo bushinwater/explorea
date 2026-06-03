@@ -185,7 +185,9 @@ export class AdminPlacesService {
   uploadImage(placeId: string, file: File): Observable<PlaceImage> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<PlaceImage>(`${this.base}/${placeId}/images`, formData);
+    return this.http.post<{ id: string; url: string; sortOrder: number }>(`${this.base}/${placeId}/images`, formData).pipe(
+      map(r => ({ id: r.id, imageUrl: r.url, caption: null, sortOrder: r.sortOrder })),
+    );
   }
 
   uploadDocument(placeId: string, documentType: string, file: File): Observable<OwnerSubmissionDocument> {
