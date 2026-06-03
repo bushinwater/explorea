@@ -115,6 +115,8 @@
   "users.deleted.purge_in": "Briše se za",
   "users.deleted.days": "dana",
   "users.deleted.restore": "Vrati",
+  "users.deleted.appeal": "Apel",
+  "users.deleted.appeal_no_message": "Korisnik nije ostavio poruku.",
   "users.deleted.empty_title": "Nema obrisanih korisnika",
   "users.deleted.empty_description": "Nema korisnika koji su soft-obrisani.",
   "users.restore.title": "Vrati korisnika",

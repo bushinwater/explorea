@@ -115,6 +115,8 @@
   "users.deleted.purge_in": "Purged in",
   "users.deleted.days": "days",
   "users.deleted.restore": "Restore",
+  "users.deleted.appeal": "Appeal",
+  "users.deleted.appeal_no_message": "No message provided.",
   "users.deleted.empty_title": "No deleted users",
   "users.deleted.empty_description": "No soft-deleted users found.",
   "users.restore.title": "Restore user",

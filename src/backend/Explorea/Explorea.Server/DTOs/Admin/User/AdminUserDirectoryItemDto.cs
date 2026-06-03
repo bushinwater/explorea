@@ -17,5 +17,7 @@ namespace Explorea.API.DTOs.Admin.User
         public DateTimeOffset? LastActivityAt { get; set; }
         public string? AvatarUrl { get; set; }
         public DateTimeOffset? DeletedAt { get; set; }
+        public bool HasPendingAppeal { get; set; }
+        public string? AppealMessage { get; set; }
     }
 }

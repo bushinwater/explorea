@@ -507,5 +507,58 @@ namespace Explorea.Server.Services
 
             await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
         }
+
+        public async Task SendAccountDeletedEmailAsync(string toEmail, string firstName, string appealLink)
+        {
+            var safeName = WebUtility.HtmlEncode(firstName);
+            var subject = "Vaš nalog je obrisan";
+            var htmlBody = $@"<!DOCTYPE html>
+<html lang=""sr"">
+<head><meta charset=""UTF-8""><meta name=""viewport"" content=""width=device-width,initial-scale=1""></head>
+<body style=""margin:0;padding:0;background:#0f1117;font-family:'Segoe UI',Arial,sans-serif;"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#0f1117;"">
+    <tr><td align=""center"" style=""padding:32px 16px;"">
+      <table width=""560"" cellpadding=""0"" cellspacing=""0"" style=""max-width:560px;width:100%;"">
+
+        <tr><td style=""background:#1a1d27;border-radius:12px 12px 0 0;padding:28px 32px;border-bottom:1px solid #2a2d3a;"">
+          <span style=""font-size:22px;font-weight:800;color:#6366f1;"">Explorea</span>
+        </td></tr>
+
+        <tr><td style=""background:#1a1d27;padding:28px 32px;"">
+          <p style=""margin:0 0 12px;font-size:16px;font-weight:600;color:#e8e9f0;"">Zdravo, {safeName}!</p>
+          <p style=""margin:0 0 16px;font-size:14px;color:#a8aabc;line-height:1.6;"">
+            Vaš nalog na platformi <strong style=""color:#e8e9f0;"">Explorea</strong> je obrisan od strane administratora.
+          </p>
+          <p style=""margin:0 0 20px;font-size:14px;color:#a8aabc;line-height:1.6;"">
+            Ukoliko smatrate da je ovo bila greška, možete podneti apel u roku od <strong style=""color:#e8e9f0;"">30 dana</strong>.
+            Nakon toga, nalog će biti trajno obrisan i apel više neće biti moguć.
+          </p>
+          <a href=""{appealLink}"" style=""
+            display:inline-block;
+            padding:12px 24px;
+            background:#6366f1;
+            color:#ffffff;
+            text-decoration:none;
+            border-radius:8px;
+            font-size:14px;
+            font-weight:600;
+          "">Podnesi apel</a>
+          <p style=""margin:24px 0 0;font-size:12px;color:#6b6d80;"">
+            Ako dugme ne radi, kopiraj ovaj link u browser:<br/>
+            <span style=""color:#a8aabc;word-break:break-all;"">{WebUtility.HtmlEncode(appealLink)}</span>
+          </p>
+        </td></tr>
+
+        <tr><td style=""background:#12141e;border-radius:0 0 12px 12px;padding:16px 32px;border-top:1px solid #2a2d3a;"">
+          <p style=""margin:0;font-size:12px;color:#6b6d80;"">Explorea · Platforma za turizam</p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>";
+            await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
+        }
     }
 }

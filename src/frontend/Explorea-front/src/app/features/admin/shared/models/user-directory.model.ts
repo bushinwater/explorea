@@ -23,6 +23,8 @@ export interface UserDirectoryUser {
   lastActivityAt: string | null;
   avatarUrl?: string | null;
   deletedAt?: string | null;
+  hasPendingAppeal?: boolean;
+  appealMessage?: string | null;
 }
 
 export interface UserDirectoryStats {

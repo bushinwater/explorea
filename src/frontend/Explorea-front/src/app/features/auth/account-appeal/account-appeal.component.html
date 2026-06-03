@@ -1,0 +1,82 @@
+<div class="appeal-page">
+  <div class="appeal-card">
+    <div class="appeal-card__logo">Explorea</div>
+
+    @switch (state()) {
+      @case ('loading') {
+        <div class="appeal-state">
+          <span class="appeal-spinner"></span>
+        </div>
+      }
+
+      @case ('form') {
+        <div class="appeal-state">
+          <div class="appeal-icon appeal-icon--warn">
+            <span class="material-icons">account_circle</span>
+          </div>
+          <h1 class="appeal-title">Vaš nalog je obrisan</h1>
+          <p class="appeal-desc">
+            Zdravo@if (firstName()) {, <strong>{{ firstName() }}</strong>}!
+            Ukoliko smatrate da je ovo bila greška, možete podneti apel ispod.
+            Administrator će pregledati vaš zahtev.
+          </p>
+
+          <textarea
+            class="appeal-textarea"
+            rows="4"
+            placeholder="Opciono: objasnite zašto smatrate da je brisanje bilo greškom..."
+            [(ngModel)]="message"
+          ></textarea>
+
+          @if (errorMessage()) {
+            <p class="appeal-error">{{ errorMessage() }}</p>
+          }
+
+          <button class="appeal-btn" [disabled]="isSubmitting()" (click)="submit()">
+            {{ isSubmitting() ? 'Slanje...' : 'Podnesi apel' }}
+          </button>
+        </div>
+      }
+
+      @case ('submitted') {
+        <div class="appeal-state">
+          <div class="appeal-icon appeal-icon--success">
+            <span class="material-icons">check_circle</span>
+          </div>
+          <h1 class="appeal-title">Apel je podnet</h1>
+          <p class="appeal-desc">Vaš zahtev je primljen. Administrator će ga pregledati u najskorijem roku.</p>
+        </div>
+      }
+
+      @case ('already') {
+        <div class="appeal-state">
+          <div class="appeal-icon appeal-icon--info">
+            <span class="material-icons">hourglass_top</span>
+          </div>
+          <h1 class="appeal-title">Apel je već podnet</h1>
+          <p class="appeal-desc">Vaš zahtev je već primljem i čeka pregled od strane administratora.</p>
+        </div>
+      }
+
+      @case ('expired') {
+        <div class="appeal-state">
+          <div class="appeal-icon appeal-icon--danger">
+            <span class="material-icons">timer_off</span>
+          </div>
+          <h1 class="appeal-title">Rok za apel je istekao</h1>
+          <p class="appeal-desc">Prošlo je više od 30 dana od brisanja naloga. Apel više nije moguć.</p>
+        </div>
+      }
+
+      @default {
+        <div class="appeal-state">
+          <div class="appeal-icon appeal-icon--danger">
+            <span class="material-icons">error_outline</span>
+          </div>
+          <h1 class="appeal-title">Neispravan link</h1>
+          <p class="appeal-desc">Link nije važeći ili je nalog već vraćen.</p>
+        </div>
+      }
+    }
+  </div>
+</div>

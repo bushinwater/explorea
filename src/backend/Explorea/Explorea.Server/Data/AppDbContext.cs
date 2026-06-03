@@ -75,6 +75,7 @@ namespace Explorea.Server.Data
         public DbSet<SupportTicket> SupportTickets { get; set; }
         public DbSet<SupportMessage> SupportMessages { get; set; }
         public DbSet<ReportTemplate> ReportTemplates { get; set; }
+        public DbSet<AccountAppeal> AccountAppeals { get; set; }
         public DbSet<OwnerSubmissionDocument> OwnerSubmissionDocuments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

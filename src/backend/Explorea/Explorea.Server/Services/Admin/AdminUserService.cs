@@ -3,6 +3,7 @@ using Explorea.API.Models;
 using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Admin.Interfaces;
+using Explorea.Server.Services.Interfaces;
 
 namespace Explorea.Server.Services.Admin
 {
@@ -18,17 +19,23 @@ namespace Explorea.Server.Services.Admin
         private readonly IAuthRepository _authRepository;
         private readonly IOrganizationRegionAssignmentRepository _organizationRegionAssignmentRepository;
         private readonly PasswordHelper _passwordHelper;
+        private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
 
         public AdminUserService(
             IUserRepository userRepository,
             IAuthRepository authRepository,
             IOrganizationRegionAssignmentRepository organizationRegionAssignmentRepository,
-            PasswordHelper passwordHelper)
+            PasswordHelper passwordHelper,
+            IEmailService emailService,
+            IConfiguration configuration)
         {
             _userRepository = userRepository;
             _authRepository = authRepository;
             _organizationRegionAssignmentRepository = organizationRegionAssignmentRepository;
             _passwordHelper = passwordHelper;
+            _emailService = emailService;
+            _configuration = configuration;
         }
 
         public async Task<(List<AdminUserDirectoryItemDto> Items, int Total)> GetDirectoryAsync(
@@ -211,13 +218,18 @@ namespace Explorea.Server.Services.Admin
 
             _userRepository.Update(user);
             await _userRepository.SaveChangesAsync();
+
+            var frontendBase = _configuration["FrontendSettings:BaseUrl"] ?? "";
+            var appealLink = $"{frontendBase}/appeal?userId={user.Id}";
+            try { await _emailService.SendAccountDeletedEmailAsync(user.Email, user.FirstName, appealLink); }
+            catch { /* don't fail the delete if email sending fails */ }
         }
 
         public async Task<(List<AdminUserDirectoryItemDto> Items, int Total)> GetDeletedDirectoryAsync(
             int page, int pageSize, Guid currentUserId)
         {
             var scope = await ResolveScopeAsync(currentUserId);
-            if (scope.Role != RoleNames.SuperAdmin)
+            if (scope.Actor.Role.Name != RoleNames.SuperAdmin)
                 throw new UnauthorizedAccessException("Only super admins can view deleted users.");
 
             return await _userRepository.GetDeletedPagedAsync(page, pageSize);
@@ -226,7 +238,7 @@ namespace Explorea.Server.Services.Admin
         public async Task RestoreAsync(Guid id, Guid currentUserId)
         {
             var scope = await ResolveScopeAsync(currentUserId);
-            if (scope.Role != RoleNames.SuperAdmin)
+            if (scope.Actor.Role.Name != RoleNames.SuperAdmin)
                 throw new UnauthorizedAccessException("Only super admins can restore deleted users.");
 
             var user = await _userRepository.GetByIdAsync(id);

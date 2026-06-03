@@ -29,6 +29,7 @@ import { Login } from './features/auth/login/login';
 import { Register } from './features/auth/register/register';
 import { ResetPassword } from './features/auth/reset-password/reset-password';
 import { VerifyEmail } from './features/auth/verify-email/verify-email';
+import { AccountAppealComponent } from './features/auth/account-appeal/account-appeal.component';
 import { DestinationDetailComponent } from './features/destinations/destination-detail/destination-detail';
 import { EventDetailComponent } from './features/events/event-detail/event-detail';
 import { EventsListPage } from './features/events/events-list/events-list';
@@ -57,6 +58,7 @@ export const routes: Routes = [
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'reset-password', component: ResetPassword },
   { path: 'verify-email', component: VerifyEmail },
+  { path: 'appeal', component: AccountAppealComponent },
   { path: 'complete-profile', component: CompleteProfile },
   { path: 'auth/facebook/callback', component: FacebookCallback },
   {

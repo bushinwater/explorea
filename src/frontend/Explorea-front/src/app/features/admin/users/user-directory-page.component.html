@@ -94,6 +94,12 @@
                     }
                   </td>
                   <td class="user-td user-td--actions">
+                    @if (user.hasPendingAppeal) {
+                      <span class="appeal-badge" [title]="user.appealMessage || ui.t('users.deleted.appeal_no_message')">
+                        <span class="material-icons">mark_email_unread</span>
+                        {{ ui.t('users.deleted.appeal') }}
+                      </span>
+                    }
                     <button class="btn-icon" type="button" (click)="openRestoreDialog(user)" title="{{ ui.t('users.deleted.restore') }}">
                       <span class="material-icons">restore</span>
                     </button>

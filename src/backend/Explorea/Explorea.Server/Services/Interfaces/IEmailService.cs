@@ -35,5 +35,10 @@ namespace Explorea.Server.Services.Interfaces
             string entityName,
             string entityLink,
             string reason);
+
+        Task SendAccountDeletedEmailAsync(
+            string toEmail,
+            string firstName,
+            string appealLink);
     }
 }

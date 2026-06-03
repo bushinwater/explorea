@@ -221,7 +221,7 @@ namespace Explorea.Server.Repositories.Implementations
 
         public async Task<(List<AdminUserDirectoryItemDto> Items, int Total)> GetDeletedPagedAsync(int page, int pageSize)
         {
-            var query = _set
+            var baseQuery = _set
                 .AsNoTracking()
                 .Include(u => u.Role)
                 .Include(u => u.ManagedRegion)
@@ -230,13 +230,30 @@ namespace Explorea.Server.Repositories.Implementations
                 .Where(u => u.DeletedAt != null)
                 .OrderByDescending(u => u.DeletedAt);
 
-            var total = await query.CountAsync();
-            var users = await query
+            var total = await baseQuery.CountAsync();
+            var users = await baseQuery
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            return (users.Select(MapAdminDirectoryItem).ToList(), total);
+            var userIds = users.Select(u => u.Id).ToList();
+            var appeals = await _db.AccountAppeals
+                .Where(a => userIds.Contains(a.UserId) && a.Status == "pending")
+                .ToListAsync();
+            var appealByUser = appeals.ToDictionary(a => a.UserId);
+
+            var items = users.Select(u =>
+            {
+                var dto = MapAdminDirectoryItem(u);
+                if (appealByUser.TryGetValue(u.Id, out var appeal))
+                {
+                    dto.HasPendingAppeal = true;
+                    dto.AppealMessage = appeal.Message;
+                }
+                return dto;
+            }).ToList();
+
+            return (items, total);
         }
 
         public async Task RestoreAsync(Guid userId)
@@ -246,6 +263,15 @@ namespace Explorea.Server.Repositories.Implementations
 
             user.DeletedAt = null;
             user.UpdatedAt = DateTimeOffset.UtcNow;
+
+            var pendingAppeal = await _db.AccountAppeals
+                .FirstOrDefaultAsync(a => a.UserId == userId && a.Status == "pending");
+            if (pendingAppeal != null)
+            {
+                pendingAppeal.Status = "approved";
+                pendingAppeal.ReviewedAt = DateTimeOffset.UtcNow;
+            }
+
             await _db.SaveChangesAsync();
         }
 
