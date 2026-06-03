@@ -271,7 +271,8 @@ namespace Explorea.Server.Services
                             Id = a.Country.Id,
                             Name = a.Country.Name,
                             Code = a.Country.Code
-                        }
+                        },
+                        StartPoint = a.StartPoint
                     })
                     .ToList(),
 

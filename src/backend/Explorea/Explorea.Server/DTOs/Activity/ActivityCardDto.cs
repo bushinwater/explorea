@@ -18,5 +18,6 @@ namespace Explorea.API.DTOs.Activity
         public string? PreviewImageUrl {get; set;}
         public int Popularity {get; set;}
         public CountryRefDto? Country {get; set;}
+        public string? StartPoint { get; set; }
     }
 }

@@ -793,6 +793,7 @@ namespace Explorea.Server.Services.Admin
             Slug           = e.Slug,
             PreviewImageUrl= e.Images.OrderBy(i => i.SortOrder).FirstOrDefault()?.ImageUrl,
             Type           = e.Type?.Name,
+            Address        = e.Address,
             City           = e.City?.Name ?? e.Destination?.City?.Name,
             Destination    = e.Destination?.Name,
             DestinationId  = e.DestinationId,

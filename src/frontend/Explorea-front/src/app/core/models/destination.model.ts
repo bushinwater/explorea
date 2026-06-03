@@ -96,6 +96,7 @@ export interface ActivityCard {
   previewImageUrl?: string | null;
   popularity: number;
   country?: CountryRef | null;
+  startPoint?: string | null;
 }
 
 export interface DestinationDetail extends DestinationCard {

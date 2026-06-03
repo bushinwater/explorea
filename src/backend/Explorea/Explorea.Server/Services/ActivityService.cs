@@ -63,8 +63,8 @@ namespace Explorea.Server.Services
           ExtraData = ParseExtraData(activity.ExtraData),
           Location = activity.Latitude.HasValue && activity.Longitude.HasValue
               ? new LocationDto { Lat = activity.Latitude.Value, Lng = activity.Longitude.Value }
-              : activity.Destination != null
-                  ? new LocationDto { Lat = activity.Destination.Latitude.Value, Lng = activity.Destination.Longitude.Value }
+              : activity.Destination?.Latitude.HasValue == true && activity.Destination.Longitude.HasValue == true
+                  ? new LocationDto { Lat = activity.Destination.Latitude!.Value, Lng = activity.Destination.Longitude!.Value }
                   : null,
           Inclusions = activity.Inclusions
               .Select(i => new InclusionDto

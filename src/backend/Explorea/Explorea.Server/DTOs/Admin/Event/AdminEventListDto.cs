@@ -7,6 +7,7 @@ namespace Explorea.API.DTOs.Admin.Event
         public string          Slug           { get; set; } = null!;
         public string?         PreviewImageUrl{ get; set; }
         public string?         Type           { get; set; }
+        public string?         Address        { get; set; }
         public string?         City           { get; set; }
         public string?         Destination    { get; set; }
         public Guid?           DestinationId  { get; set; }

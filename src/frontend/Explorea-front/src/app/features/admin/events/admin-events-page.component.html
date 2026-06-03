@@ -351,10 +351,10 @@
                             <span class="material-icons">business</span>
                             {{ ev.organizer }}
                           </span>
-                        } @else if (ev.city) {
+                        } @else if (ev.address || ev.city) {
                           <span class="evts-name-info__sub">
                             <span class="material-icons">location_on</span>
-                            {{ ev.city }}
+                            {{ ev.address || ev.city }}
                           </span>
                         }
                       </div>

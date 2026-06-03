@@ -31,7 +31,7 @@ import {
   PlaceTypeOption,
   RegionOption,
 } from './admin-places.models';
-import { FilterDefinition } from '../../../core/services/lookup.service';
+import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 
@@ -131,6 +131,7 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
   protected readonly newFilterLabel  = signal('');
   protected readonly newFilterType   = signal('boolean');
   protected readonly isAddingFilter  = signal(false);
+  protected readonly deletingFilterId = signal<number | null>(null);
 
   // New: interest tags
   protected readonly allInterestTags     = signal<InterestTagOption[]>([]);
@@ -160,6 +161,7 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
     private readonly http: HttpClient,
     protected readonly ui: AdminUiPreferencesService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly lookupService: LookupService,
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -449,6 +451,26 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
           this.cdr.detectChanges();
         },
         error: () => { this.isAddingFilter.set(false); this.cdr.detectChanges(); },
+      }),
+    );
+  }
+
+  protected deleteFilterDef(id: number): void {
+    if (this.deletingFilterId() !== null) return;
+    const def = this.modalFilterDefs().find(d => d.id === id);
+    if (!def) return;
+    this.deletingFilterId.set(id);
+    this.sub.add(
+      this.lookupService.deleteFilterDefinition(id).subscribe({
+        next: () => {
+          this.modalFilterDefs.update(d => d.filter(x => x.id !== id));
+          const ef = { ...this.modalExtraFilters() };
+          delete ef[def.filterKey];
+          this.modalExtraFilters.set(ef);
+          this.deletingFilterId.set(null);
+          this.cdr.detectChanges();
+        },
+        error: () => { this.deletingFilterId.set(null); this.cdr.detectChanges(); },
       }),
     );
   }

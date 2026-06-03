@@ -477,7 +477,11 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
       return [address, city, country].filter(Boolean).join(', ') || locationNotAvailable;
     }
 
-    return this.destination?.name || item.country?.name || locationNotAvailable;
+    if (this.isActivity(item)) {
+      return item.startPoint || this.destination?.name || item.country?.name || locationNotAvailable;
+    }
+
+    return locationNotAvailable;
   }
 
   getItemRating(item: TabItem): number | null {

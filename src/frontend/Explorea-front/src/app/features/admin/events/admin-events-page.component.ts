@@ -594,6 +594,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   }
 
   protected locationLabel(ev: EventRow): string {
+    if (ev.address) return ev.address;
     const parts = [ev.venue, ev.city].filter(Boolean);
     return parts.length ? parts.join(', ') : '—';
   }

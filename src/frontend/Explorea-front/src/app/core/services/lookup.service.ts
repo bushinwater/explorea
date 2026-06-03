@@ -52,4 +52,8 @@ export class LookupService {
       params: { entityType, typeId: String(typeId) },
     });
   }
+
+  deleteFilterDefinition(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/admin/filter-definitions/${id}`);
+  }
 }

@@ -168,6 +168,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly newFilterLabel = signal('');
   protected readonly newFilterType = signal('boolean');
   protected readonly isAddingFilter = signal(false);
+  protected readonly deletingFilterId = signal<number | null>(null);
 
   protected readonly createForm = signal<CreateActivityDto>({
     name: '',
@@ -960,6 +961,26 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           this.isAddingFilter.set(false);
           this.cdr.detectChanges();
         },
+      }),
+    );
+  }
+
+  protected deleteFilterDef(id: number): void {
+    if (this.deletingFilterId() !== null) return;
+    const def = this.modalFilterDefs().find(d => d.id === id);
+    if (!def) return;
+    this.deletingFilterId.set(id);
+    this.subscription.add(
+      this.lookupService.deleteFilterDefinition(id).subscribe({
+        next: () => {
+          this.modalFilterDefs.update(d => d.filter(x => x.id !== id));
+          const ef = { ...this.modalExtraFilters() };
+          delete ef[def.filterKey];
+          this.modalExtraFilters.set(ef);
+          this.deletingFilterId.set(null);
+          this.cdr.detectChanges();
+        },
+        error: () => { this.deletingFilterId.set(null); this.cdr.detectChanges(); },
       }),
     );
   }

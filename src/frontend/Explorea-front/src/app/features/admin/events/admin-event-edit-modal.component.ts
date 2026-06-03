@@ -213,8 +213,12 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
             description: detail.description ?? f.description,
           }));
           if (this.mapLatitude() === null && detail.latitude != null) {
-            this.mapLatitude.set(detail.latitude);
-            this.mapLongitude.set(detail.longitude);
+            if (this.map) {
+              this.setCoords(detail.latitude, detail.longitude!);
+            } else {
+              this.mapLatitude.set(detail.latitude);
+              this.mapLongitude.set(detail.longitude);
+            }
           }
           if (freshTypeId !== null) this.loadFilterDefs(freshTypeId);
           // If list item didn't have destinationId, populate cascade from detail

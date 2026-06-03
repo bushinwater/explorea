@@ -33,6 +33,7 @@ interface ApiEventItem {
   slug: string;
   previewImageUrl: string | null;
   type: string | null;
+  address: string | null;
   city: string | null;
   destination: string | null;
   destinationId: string | null;
@@ -541,7 +542,7 @@ export class AdminEventsService {
       expectedGuests: null,
       description: null,
       price: e.price,
-      address: null,
+      address: e.address ?? null,
       latitude: null,
       longitude: null,
       ticketUrl: null,

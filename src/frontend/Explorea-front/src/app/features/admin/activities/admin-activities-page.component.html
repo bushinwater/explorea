@@ -467,7 +467,11 @@
                 <td class="activity-td">
                   <div class="activity-updated">
                     <span class="material-icons">location_on</span>
-                    {{ activity.region ?? activity.destination ?? '—' }}{{ activity.city ? ' / ' + activity.city : '' }}
+                    @if (activity.startPoint) {
+                      {{ activity.startPoint }}
+                    } @else {
+                      {{ activity.region ?? activity.destination ?? '—' }}{{ activity.city ? ' / ' + activity.city : '' }}
+                    }
                   </div>
                 </td>
 
@@ -624,8 +628,11 @@
               <h2 class="ddp-header__name">{{ activity.name }}</h2>
               <p class="ddp-header__location">
                 <span class="material-icons">location_on</span>
-                {{ activity.region ?? '' }}{{ activity.region && activity.city ? ' / ' : ''
-                }}{{ activity.city ?? '' }}
+                @if (activity.startPoint) {
+                  {{ activity.startPoint }}
+                } @else {
+                  {{ activity.region ?? '' }}{{ activity.region && activity.city ? ' / ' : '' }}{{ activity.city ?? '' }}
+                }
               </p>
             </div>
           </div>
@@ -1046,22 +1053,40 @@
               <div class="ev-filter-defs">
                 @for (def of modalFilterDefs(); track def.id) {
                   @if (def.filterType === 'boolean') {
-                    <label
-                      class="ev-filter-chip"
-                      [class.ev-filter-chip--active]="modalExtraFilters()[def.filterKey] === 'true'"
-                    >
-                      <input
-                        type="checkbox"
-                        [checked]="modalExtraFilters()[def.filterKey] === 'true'"
-                        (change)="
-                          updateModalExtraFilter(def.filterKey, $any($event.target).checked)
-                        "
-                      />
-                      {{ def.filterLabel }}
-                    </label>
+                    <div class="ev-filter-def-row">
+                      <label
+                        class="ev-filter-chip"
+                        [class.ev-filter-chip--active]="modalExtraFilters()[def.filterKey] === 'true'"
+                      >
+                        <input
+                          type="checkbox"
+                          [checked]="modalExtraFilters()[def.filterKey] === 'true'"
+                          (change)="
+                            updateModalExtraFilter(def.filterKey, $any($event.target).checked)
+                          "
+                        />
+                        {{ def.filterLabel }}
+                      </label>
+                      @if (isSuperAdmin()) {
+                        <button class="ev-filter-def-del" type="button" title="Obriši filter"
+                          [disabled]="deletingFilterId() !== null"
+                          (click)="deleteFilterDef(def.id)">
+                          <span class="material-icons">{{ deletingFilterId() === def.id ? 'sync' : 'close' }}</span>
+                        </button>
+                      }
+                    </div>
                   } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
                     <div class="ev-filter-select-group">
-                      <span class="ev-filter-select-label">{{ def.filterLabel }}</span>
+                      <div class="ev-filter-select-header">
+                        <span class="ev-filter-select-label">{{ def.filterLabel }}</span>
+                        @if (isSuperAdmin()) {
+                          <button class="ev-filter-def-del" type="button" title="Obriši filter"
+                            [disabled]="deletingFilterId() !== null"
+                            (click)="deleteFilterDef(def.id)">
+                            <span class="material-icons">{{ deletingFilterId() === def.id ? 'sync' : 'close' }}</span>
+                          </button>
+                        }
+                      </div>
                       <div class="ev-filter-opts">
                         @for (opt of def.options; track opt.optionValue) {
                           <label

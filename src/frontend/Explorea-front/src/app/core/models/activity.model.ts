@@ -10,6 +10,7 @@ export interface ActivityCard {
   previewImageUrl: string | null;
   popularity: number;
   country: { id: number; name: string } | null;
+  startPoint?: string | null;
 }
 
 export interface ActivityDetail extends ActivityCard {
@@ -17,7 +18,6 @@ export interface ActivityDetail extends ActivityCard {
   description: string | null;
   season: { id: number; name: string } | null;
   distanceKm: number | null;
-  startPoint: string | null;
   extraData: Record<string, unknown> | null;
   location: { lat: number; lng: number } | null;
   inclusions: { id: string; item: string }[];
