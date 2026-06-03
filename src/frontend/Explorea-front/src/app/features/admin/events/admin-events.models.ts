@@ -49,7 +49,7 @@ export interface PlaceSearchItem {
 export type EventStatus = 'pending' | 'active' | 'rejected' | 'forwarded' | 'deleted';
 export type EventType = 'concert' | 'tasting' | 'conference' | 'sport' | 'exhibition' | 'other';
 export type EventPriority = 'low' | 'medium' | 'high';
-export type EventsTab = 'pending' | 'active' | 'history' | 'deleted';
+export type EventsTab = 'pending' | 'active' | 'deleted';
 
 export interface EventFilterOption<TValue extends string | number = string | number> {
   value: TValue;

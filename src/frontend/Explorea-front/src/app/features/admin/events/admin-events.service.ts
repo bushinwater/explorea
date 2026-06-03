@@ -419,7 +419,7 @@ export class AdminEventsService {
   private fetchQueueEvents(filters: EventFilters): Observable<EventPagedResponse> {
     const search = filters.search.trim();
 
-    const shouldClientFilterAndPaginate = !!search || filters.tab === 'history';
+    const shouldClientFilterAndPaginate = !!search;
 
     let params = new HttpParams()
       .set('page', shouldClientFilterAndPaginate ? 1 : filters.page)
@@ -433,18 +433,6 @@ export class AdminEventsService {
     return this.http.get<ApiQueueResponse>('/api/admin/queue', { params }).pipe(
       map((res) => {
         const rows = res.items
-          .filter((q) => {
-            if (filters.tab === 'history') {
-              return [
-                'RejectedByTO',
-                'ApprovedByOwner',
-                'RejectedByOwner',
-                'ApprovedByTO',
-              ].includes(q.status);
-            }
-
-            return true;
-          })
           .map((q) => this.mapQueueItem(q));
 
         return {

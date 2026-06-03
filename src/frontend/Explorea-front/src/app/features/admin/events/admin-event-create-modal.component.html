@@ -122,20 +122,12 @@
                         />
                         {{ def.filterLabel }}
                       </label>
-                      <button class="ev-filter-def-del" type="button" title="Ukloni vrednost"
-                        (click)="clearFilterValue(def.filterKey)">
-                        <span class="material-icons">close</span>
-                      </button>
                     </div>
                   } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
                     <div class="ev-filter-select-group">
                       <div class="ev-filter-select-header">
                         <span class="ev-filter-select-label"
                           (contextmenu)="openFilterContextMenu($event, def)">{{ def.filterLabel }}</span>
-                        <button class="ev-filter-def-del" type="button" title="Ukloni vrednost"
-                          (click)="clearFilterValue(def.filterKey)">
-                          <span class="material-icons">close</span>
-                        </button>
                       </div>
                       <div class="ev-filter-opts">
                         @for (opt of def.options; track opt.optionValue) {
@@ -225,7 +217,7 @@
             </div>
           }
 
-          @if (form().extraFilters['free_entry'] !== 'true') {
+          @if (!freeEntryKey() || form().extraFilters[freeEntryKey()!] !== 'true') {
             <div class="edit-field">
               <label class="edit-field__label" for="ev-c-price">{{
                 ui.t('common.price_rsd')
@@ -266,6 +258,7 @@
               class="edit-field__input"
               type="datetime-local"
               [value]="form().startDatetime"
+              [min]="nowDatetimeLocal"
               (input)="updateText('startDatetime', $any($event.target).value)"
             />
           </div>
@@ -287,7 +280,7 @@
           <div class="edit-field ev-field--full">
             <label class="edit-field__label" for="ev-c-desc">{{
               ui.t('common.description_label')
-            }}</label>
+            }} <span class="edit-field__required">*</span></label>
             <textarea
               id="ev-c-desc"
               class="edit-field__textarea"
@@ -333,7 +326,7 @@
 
       <div class="edit-modal__map-col">
         <div class="edit-field">
-          <label class="edit-field__label">{{ ui.t('events.modal.address_section') }}</label>
+          <label class="edit-field__label">{{ ui.t('events.modal.address_section') }} @if (!form().placeId) {<span class="edit-field__required">*</span>}</label>
           <div class="edit-modal__address-row">
             <input
               class="edit-field__input"
@@ -371,7 +364,7 @@
     <div class="ev-location-section">
       <div class="ev-location-grid">
         <div class="edit-field">
-          <label class="edit-field__label" for="ev-c-country">{{ ui.t('common.country') }}</label>
+          <label class="edit-field__label" for="ev-c-country">{{ ui.t('common.country') }} <span class="edit-field__required">*</span></label>
           <select
             id="ev-c-country"
             class="edit-field__select"
@@ -389,7 +382,7 @@
         <div class="edit-field">
           <label class="edit-field__label" for="ev-c-region">{{
             ui.t('events.modal.region_label')
-          }}</label>
+          }} <span class="edit-field__required">*</span></label>
           <select
             id="ev-c-region"
             class="edit-field__select"
@@ -407,9 +400,7 @@
         <div class="edit-field ev-location-full">
           <label class="edit-field__label">
             {{ ui.t('common.destination') }}
-            @if (requiresOwnerDocuments) {
-              <span class="edit-field__required">*</span>
-            }
+            <span class="edit-field__required">*</span>
           </label>
           <div class="ev-search-field">
             <span class="material-icons ev-search-field__icon">place</span>
@@ -512,7 +503,7 @@
     <div class="edit-modal__interests-section">
       <div class="edit-modal__interests-header">
         <span class="edit-field__label">
-          {{ ui.t('common.interests') }}
+          {{ ui.t('common.interests') }} <span class="edit-field__required">*</span>
           <span class="edit-field__counter">{{ selectedInterestIds().length }} / 3</span>
         </span>
       </div>
@@ -539,7 +530,7 @@
     <div class="edit-modal__images-section">
       <div class="edit-modal__images-header">
         <span class="edit-field__label">
-          {{ ui.t('common.images') }}
+          {{ ui.t('common.images') }} <span class="edit-field__required">*</span>
           <span class="edit-field__counter"
             >{{ images().length + pendingImages().length }} / {{ MAX_IMAGES }}</span
           >

@@ -173,7 +173,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       this.route.queryParamMap.subscribe((params) => {
         const openId = params.get('openId');
         const tabParam = params.get('tab') as EventsTab | null;
-        if (tabParam && ['active', 'pending', 'history', 'deleted'].includes(tabParam)) {
+        if (tabParam && ['active', 'pending', 'deleted'].includes(tabParam)) {
           this.patchFilter({ tab: tabParam, page: 1 });
           this.loadEvents();
         }
@@ -392,10 +392,6 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       this.patchFilter({ tab: owner ? 'pending' : 'active', search: '', typeId: null, cityId: null, destinationId: null, extraFilters: {}, page: 1 });
       this.filterDefs.set([]);
       this.currentPage.set(1);
-      if (!owner) {
-        this.selectedEvent.set(row);
-        this.isPanelOpen.set(true);
-      }
       this.loadStats();
       this.loadEvents();
       setTimeout(() => this.successMessage.set(''), 4000);

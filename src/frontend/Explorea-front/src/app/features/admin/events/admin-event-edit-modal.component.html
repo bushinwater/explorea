@@ -220,7 +220,7 @@
             </div>
           }
 
-          @if (form().extraFilters['free_entry'] !== 'true') {
+          @if (!freeEntryKey() || form().extraFilters[freeEntryKey()!] !== 'true') {
             <div class="edit-field">
               <label class="edit-field__label" for="ev-e-price">{{
                 ui.t('common.price_rsd')

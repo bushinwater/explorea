@@ -385,7 +385,7 @@
   "events.title": "Upravljanje Događajima",
   "events.subtitle": "Pregledajte zahteve organizacija, odobrite termine i komunicirajte sa vlasnicima.",
   "events.btn.export": "Izvezi listu",
-  "events.btn.create": "Kreiraj interni događaj",
+  "events.btn.create": "Kreiraj događaj",
 
   "events.stats.activeRequests": "Aktivni događaji",
   "events.stats.pendingApproval": "Potrebno odobrenje",

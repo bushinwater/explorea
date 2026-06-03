@@ -1152,9 +1152,10 @@ export class Search implements OnInit, OnDestroy {
 
   getSubtitle(item: SearchItem): string {
     const e = item.entity;
-    if (e.city?.name) return e.city.name;
-    if (e.address)    return e.address;
-    return '';
+    if (item.entityType === 'destination') {
+      return e.city?.name ?? e.address ?? '';
+    }
+    return e.address || e.city?.name || '';
   }
 
   trackByItem(_: number, item: SearchItem): string {

@@ -146,6 +146,13 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
   protected readonly deletingFilterId = signal<number | null>(null);
   protected readonly filterContextMenu = signal<{ id: number; key: string; x: number; y: number } | null>(null);
 
+  protected readonly freeEntryKey = computed(() =>
+    this.filterDefs().find(d =>
+      d.filterKey === 'free_entry' ||
+      d.filterLabel.toLowerCase().includes('besplat')
+    )?.filterKey ?? null
+  );
+
   // Add new filter definition
   protected readonly showAddFilter = signal(false);
   protected readonly newFilterLabel = signal('');
@@ -332,7 +339,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
       }),
     );
     this.sub.add(
-      this.placeSearch$.pipe(debounceTime(300), distinctUntilChanged()).subscribe(q => {
+      this.placeSearch$.pipe(debounceTime(300)).subscribe(q => {
         if (!q.trim()) { this.placeResults.set([]); this.showPlaceResults.set(false); this.isSearchingPlaces.set(false); this.cdr.detectChanges(); return; }
         this.isSearchingPlaces.set(true);
         this.eventsService.searchPlaces(q, this.form().destinationId ?? undefined).subscribe({
@@ -382,11 +389,13 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
   }
 
   protected updateExtraFilter(key: string, value: string | boolean): void {
+    const fek = this.freeEntryKey();
     this.form.update(f => {
       const ef = { ...f.extraFilters };
       if (value === false || value === '') delete ef[key];
       else ef[key] = String(value);
-      return { ...f, extraFilters: ef };
+      const price = fek && key === fek && ef[fek] === 'true' ? '' : f.price;
+      return { ...f, extraFilters: ef, price };
     });
   }
 
@@ -754,7 +763,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
     this.sub.add(
       this.lookupService.getFilterDefinitions('event', typeId).subscribe({
         next: defs => {
-          if (defs.some(d => d.filterKey === 'free_entry')) {
+          if (defs.some(d => d.filterKey === 'free_entry' || d.filterLabel.toLowerCase().includes('besplat'))) {
             this.filterDefs.set(defs);
             this.cdr.detectChanges();
           } else {
@@ -810,9 +819,35 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
             const shortAddr = [street, city].filter(Boolean).join(', ') || result.display_name;
             this.form.update(f => ({ ...f, address: shortAddr }));
             this.cdr.detectChanges();
+            if (city) {
+              this.clearPlaceOnly();
+              this.eventsService.searchDestinations(city).subscribe({
+                next: results => {
+                  if (!results.length) return;
+                  const dest = results[0];
+                  this.form.update(f => ({ ...f, destinationId: dest.id, placeId: null }));
+                  this.selectedDestName.set(dest.name);
+                  this.destinationQuery.set(dest.name);
+                  if (dest.countryId != null) this.selectedCountryId.set(dest.countryId);
+                  if (dest.regionId != null) this.selectedRegionId.set(dest.regionId);
+                  this.cdr.detectChanges();
+                },
+              });
+            }
           }
         },
       });
+      if (this.lockedRegionId === null) {
+        this.http.get<{ regionId: number | null; countryId: number | null }>(
+          `/api/region-by-coords?lat=${lat}&lng=${lng}`,
+        ).subscribe({
+          next: res => {
+            if (res.countryId) this.selectedCountryId.set(res.countryId);
+            if (res.regionId) this.selectedRegionId.set(res.regionId);
+            this.cdr.detectChanges();
+          },
+        });
+      }
     }
   }
 

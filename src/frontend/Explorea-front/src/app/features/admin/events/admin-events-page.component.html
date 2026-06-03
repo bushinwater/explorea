@@ -286,13 +286,6 @@
         </button>
         <button
           class="evts-tab"
-          [class.evts-tab--active]="filters().tab === 'history'"
-          (click)="setTab('history')"
-        >
-          {{ ui.t('events.tabs.history') }}
-        </button>
-        <button
-          class="evts-tab"
           [class.evts-tab--active]="filters().tab === 'deleted'"
           (click)="setTab('deleted')"
         >

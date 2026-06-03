@@ -157,7 +157,20 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   protected readonly newFilterType = signal('boolean');
   protected readonly isAddingFilter = signal(false);
 
+  protected readonly freeEntryKey = computed(() =>
+    this.filterDefs().find(d =>
+      d.filterKey === 'free_entry' ||
+      d.filterLabel.toLowerCase().includes('besplat')
+    )?.filterKey ?? null
+  );
+
   protected readonly MAX_IMAGES = MAX_IMAGES;
+
+  get nowDatetimeLocal(): string {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
 
   private map: MapLibreMap | null = null;
   private marker: Marker | null = null;
@@ -194,7 +207,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
       }),
     );
     this.sub.add(
-      this.placeSearch$.pipe(debounceTime(300), distinctUntilChanged()).subscribe(q => {
+      this.placeSearch$.pipe(debounceTime(300)).subscribe(q => {
         if (!q.trim()) { this.placeResults.set([]); this.showPlaceResults.set(false); this.isSearchingPlaces.set(false); this.cdr.detectChanges(); return; }
         this.isSearchingPlaces.set(true);
         this.eventsService.searchPlaces(q, this.form().destinationId ?? undefined).subscribe({
@@ -261,11 +274,13 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   }
 
   protected updateExtraFilter(key: string, value: string | boolean): void {
+    const fek = this.freeEntryKey();
     this.form.update(f => {
       const ef = { ...f.extraFilters };
       if (value === false || value === '') delete ef[key];
       else ef[key] = String(value);
-      return { ...f, extraFilters: ef };
+      const price = fek && key === fek && ef[fek] === 'true' ? '' : f.price;
+      return { ...f, extraFilters: ef, price };
     });
   }
 
@@ -557,10 +572,19 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     if (startDate && isNaN(startDate.getTime())) errs.push('Datum početka nije validan.');
     if (endDate && isNaN(endDate.getTime())) errs.push('Datum završetka nije validan.');
     if (startDate && endDate && endDate < startDate) errs.push('Datum završetka mora biti posle datuma početka.');
-    const price = f.price.trim() ? Number(f.price.trim().replace(',', '.')) : null;
+    const fek = this.freeEntryKey();
+    const isFreeEntry = fek !== null && f.extraFilters[fek] === 'true';
+    const price = isFreeEntry ? null : (f.price.trim() ? Number(f.price.trim().replace(',', '.')) : null);
     if (price !== null && (isNaN(price) || price < 0)) errs.push('Cena mora biti pozitivan broj.');
-    if (this.requiresOwnerDocuments && !f.destinationId && !f.placeId) {
-      errs.push('Izaberite destinaciju ili svoj objekat za koji vezujete dogadjaj.');
+    if (!f.description.trim()) errs.push('Opis događaja je obavezan.');
+    if (this.selectedCountryId() === null) errs.push('Država je obavezna.');
+    if (this.selectedRegionId() === null) errs.push('Regija je obavezna.');
+    if (!f.destinationId) errs.push('Destinacija je obavezna.');
+    if (!f.placeId && this.mapLatitude() === null) errs.push('Lokacija je obavezna — klikni na mapu ili pretraži adresu.');
+    if (this.pendingImages().length === 0) errs.push('Dodaj barem 1 sliku pre kreiranja.');
+    if (this.selectedInterestIds().length === 0) errs.push('Izaberi barem 1 interesovanje.');
+    if (this.requiresOwnerDocuments && !f.placeId) {
+      errs.push('Izaberite svoj objekat za koji vezujete dogadjaj.');
     }
     if (this.requiresOwnerDocuments && !this.hasRequiredOwnerDocuments()) {
       errs.push('Dodaj licni dokument i dokaz vlasnistva ili ovlascenja.');
@@ -596,10 +620,11 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
             this.uploadPendingDocuments(
               row.id,
               () => {
-                this.isSaving.set(false);
-                this.createdRow.set(row);
-                this.uploadPendingImages(row.id);
-                this.cdr.detectChanges();
+                this.uploadPendingImages(row.id, () => {
+                  this.isSaving.set(false);
+                  this.created.emit(row);
+                  this.cdr.detectChanges();
+                });
               },
               () => {
                 this.isSaving.set(false);
@@ -708,13 +733,15 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     );
   }
 
-  private uploadPendingImages(eventId: string): void {
+  private uploadPendingImages(eventId: string, onComplete?: () => void): void {
     const pending  = this.pendingImages();
-    if (!pending.length) return;
+    if (!pending.length) { onComplete?.(); return; }
     const heroIdx  = this.pendingHeroIndex();
     this.pendingImages.set([]);
     this.pendingHeroIndex.set(0);
     this.uploadingCount.update(n => n + pending.length);
+    let settled = 0;
+    const checkDone = () => { if (++settled === pending.length) onComplete?.(); };
     pending.forEach(({ file, url }, i) => {
       URL.revokeObjectURL(url);
       this.sub.add(
@@ -724,11 +751,13 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
             this.uploadingCount.update(n => n - 1);
             if (i === heroIdx) this.setHero(img.id);
             else if (this.heroImageId() === null) this.setHero(img.id);
+            checkDone();
             this.cdr.detectChanges();
           },
           error: () => {
             this.uploadingCount.update(n => n - 1);
             this.errors.set(['Greška pri otpremanju slike.']);
+            checkDone();
             this.cdr.detectChanges();
           },
         }),
@@ -802,7 +831,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     this.sub.add(
       this.lookupService.getFilterDefinitions('event', typeId).subscribe({
         next: defs => {
-          if (defs.some(d => d.filterKey === 'free_entry')) {
+          if (defs.some(d => d.filterKey === 'free_entry' || d.filterLabel.toLowerCase().includes('besplat'))) {
             this.filterDefs.set(defs);
             this.cdr.detectChanges();
           } else {
@@ -866,9 +895,34 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
             const shortAddr = [street, city].filter(Boolean).join(', ') || result.display_name;
             this.form.update(f => ({ ...f, address: shortAddr }));
             this.cdr.detectChanges();
+            if (city) {
+              this.eventsService.searchDestinations(city).subscribe({
+                next: results => {
+                  if (!results.length) return;
+                  const dest = results[0];
+                  this.form.update(f => ({ ...f, destinationId: dest.id, placeId: null }));
+                  this.selectedDestName.set(dest.name);
+                  this.destinationQuery.set(dest.name);
+                  if (dest.countryId != null) this.selectedCountryId.set(dest.countryId);
+                  if (dest.regionId != null) this.selectedRegionId.set(dest.regionId);
+                  this.cdr.detectChanges();
+                },
+              });
+            }
           }
         },
       });
+      if (this.lockedRegionId === null) {
+        this.http.get<{ regionId: number | null; countryId: number | null }>(
+          `/api/region-by-coords?lat=${lat}&lng=${lng}`,
+        ).subscribe({
+          next: res => {
+            if (res.countryId) this.selectedCountryId.set(res.countryId);
+            if (res.regionId) this.selectedRegionId.set(res.regionId);
+            this.cdr.detectChanges();
+          },
+        });
+      }
     }
   }
 
