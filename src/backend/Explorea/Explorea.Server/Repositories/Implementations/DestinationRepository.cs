@@ -94,7 +94,9 @@ namespace Explorea.Server.Repositories.Implementations
             }
 
             if (regionId.HasValue)
-                query = query.Where(d => d.RegionId == regionId.Value || (d.City != null && d.City.RegionId == regionId.Value));
+                query = query.Where(d =>
+                    (d.RegionId != null && d.RegionId == regionId.Value)
+                    || (d.RegionId == null && d.City != null && d.City.RegionId == regionId.Value));
 
             if (typeId.HasValue)
                 query = query.Where(d => d.TypeId == typeId.Value);
@@ -112,7 +114,9 @@ namespace Explorea.Server.Repositories.Implementations
                 query = query.Where(d => restrictToIds.Contains(d.Id));
 
             if (restrictToRegionId.HasValue)
-                query = query.Where(d => d.City != null && d.City.RegionId == restrictToRegionId.Value);
+                query = query.Where(d =>
+                    (d.RegionId != null && d.RegionId == restrictToRegionId.Value)
+                    || (d.RegionId == null && d.City != null && d.City.RegionId == restrictToRegionId.Value));
 
             if (extraFilters?.Count > 0)
             {

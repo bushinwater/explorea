@@ -232,10 +232,8 @@ namespace Explorea.Server.Controllers.Admin
                 var created = await _service.CreateAsync(dto, userId);
                 return StatusCode(201, created);
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                return StatusCode(403, new { message = ex.Message });
-            }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
         }
 
         // PUT /api/admin/destinations/{id}
@@ -249,10 +247,8 @@ namespace Explorea.Server.Controllers.Admin
                 if (updated == null) return NotFound();
                 return Ok(updated);
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                return StatusCode(403, new { message = ex.Message });
-            }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
         }
 
         // POST /api/admin/destinations/{id}/restore
@@ -393,7 +389,90 @@ namespace Explorea.Server.Controllers.Admin
 
         private static string RingToGeoJson(LineString ring) =>
             $"[{string.Join(",", ring.Coordinates.Select(c => $"[{c.X.ToString(System.Globalization.CultureInfo.InvariantCulture)},{c.Y.ToString(System.Globalization.CultureInfo.InvariantCulture)}]"))}]";
+
+        // PATCH /api/admin/destinations/regions/{id}/boundary
+        [HttpPatch("regions/{id:int}/boundary")]
+        public async Task<IActionResult> UpdateRegionBoundary(int id, [FromBody] UpdateBoundaryRequest request)
+        {
+            var userId = GetCurrentUserId();
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user?.Role?.Name != RoleNames.SuperAdmin)
+                return StatusCode(403, new { message = "Samo superadmin može da menja granice regiona." });
+
+            var region = await _context.Regions.FirstOrDefaultAsync(r => r.Id == id);
+            if (region == null)
+                return NotFound(new { message = "Region nije pronađen." });
+
+            if (string.IsNullOrWhiteSpace(request.BoundaryGeoJson))
+            {
+                region.Boundary = null;
+            }
+            else
+            {
+                var geom = GeoJsonToGeometry(request.BoundaryGeoJson);
+                if (geom == null)
+                    return BadRequest(new { message = "Nevažeći GeoJSON format. Očekuje se Polygon ili MultiPolygon." });
+                region.Boundary = geom;
+            }
+
+            region.UpdatedAt = DateTimeOffset.UtcNow;
+            region.UpdatedBy = userId;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { id = region.Id, name = region.Name, hasBoundary = region.Boundary != null });
+        }
+
+        private static readonly GeometryFactory _geoFactory = new GeometryFactory(new PrecisionModel(), 4326);
+
+        private static Geometry? GeoJsonToGeometry(string geoJson)
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(geoJson);
+                var root = doc.RootElement;
+                var type = root.GetProperty("type").GetString();
+
+                if (type == "Polygon")
+                {
+                    var coords = root.GetProperty("coordinates");
+                    var rings = ParseRings(coords);
+                    return _geoFactory.CreatePolygon(rings[0], rings.Skip(1).ToArray());
+                }
+
+                if (type == "MultiPolygon")
+                {
+                    var coords = root.GetProperty("coordinates");
+                    var polygons = coords.EnumerateArray().Select(polyCoords =>
+                    {
+                        var rings = ParseRings(polyCoords);
+                        return _geoFactory.CreatePolygon(rings[0], rings.Skip(1).ToArray());
+                    }).ToArray();
+                    return _geoFactory.CreateMultiPolygon(polygons);
+                }
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static LinearRing[] ParseRings(System.Text.Json.JsonElement ringArray)
+        {
+            return ringArray.EnumerateArray().Select(ring =>
+            {
+                var coords = ring.EnumerateArray()
+                    .Select(c => new Coordinate(c[0].GetDouble(), c[1].GetDouble()))
+                    .ToArray();
+                return _geoFactory.CreateLinearRing(coords);
+            }).ToArray();
+        }
     }
 
     public record CreateTypeRequest(string Name);
+    public record UpdateBoundaryRequest(string? BoundaryGeoJson);
 }

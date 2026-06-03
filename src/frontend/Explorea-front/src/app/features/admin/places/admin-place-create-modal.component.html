@@ -502,9 +502,16 @@
             </span>
           }
         </div>
-        <p class="edit-modal__map-hint">
-          {{ ui.t('common.map_hint') }}
-        </p>
+        @if (locationOutsideRegion()) {
+          <p class="edit-modal__boundary-error">
+            <span class="material-icons">warning</span>
+            Lokacija se nalazi van granica tvog regiona. Pomeri pin unutar regiona.
+          </p>
+        } @else {
+          <p class="edit-modal__map-hint">
+            {{ ui.t('common.map_hint') }}
+          </p>
+        }
       </div>
     </div>
 

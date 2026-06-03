@@ -25,6 +25,7 @@ import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
+import { isPointInGeoJsonGeometry, parseRegionBoundary } from '../core/utils/geo-boundary.utils';
 const MAX_IMAGES = 10;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_DESC = 2000;
@@ -103,6 +104,9 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
   protected readonly showNewTypeInput = signal(false);
   protected readonly newTypeName      = signal('');
   protected readonly isCreatingType   = signal(false);
+  protected readonly locationOutsideRegion = signal(false);
+
+  private regionBoundary: any = null;
 
   protected readonly filterDefs     = signal<FilterDefinition[]>([]);
   protected readonly showAddFilter  = signal(false);
@@ -135,6 +139,14 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
   ngOnInit(): void {
     this.localTypes.set([...this.types]);
     this.svc.getRegions().subscribe(r => { this.localRegions.set(r); this.cdr.detectChanges(); });
+    if (this.lockedRegionId !== null) {
+      this.svc.getRegionsGeo().subscribe(data => {
+        const region = data.regions.find(r => r.id === this.lockedRegionId);
+        if (region?.boundaryGeoJson) {
+          this.regionBoundary = parseRegionBoundary(region.boundaryGeoJson);
+        }
+      });
+    }
     this.svc.getCountries().subscribe(c => { this.localCountries.set(c); this.cdr.detectChanges(); });
     this.svc.getDestinationInterests(this.row.id).subscribe(tags => {
       this.allInterestTags.set(tags);
@@ -394,7 +406,7 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
   }
 
   protected save(): void {
-    if (this.form.invalid || this.isSaving()) return;
+    if (this.form.invalid || this.isSaving() || this.locationOutsideRegion()) return;
     this.isSaving.set(true);
     this.error.set('');
 
@@ -557,6 +569,10 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
 
   private setCoords(lat: number, lng: number, reverseGeocode = false): void {
     this.form.patchValue({ latitude: lat, longitude: lng });
+    if (this.regionBoundary) {
+      this.locationOutsideRegion.set(!isPointInGeoJsonGeometry(lat, lng, this.regionBoundary));
+      this.cdr.detectChanges();
+    }
 
     if (!this.map) return;
 
@@ -609,3 +625,5 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
     }
   }
 }
+
+

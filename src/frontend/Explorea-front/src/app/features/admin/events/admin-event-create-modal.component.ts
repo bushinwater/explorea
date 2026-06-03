@@ -33,6 +33,7 @@ import { AdminEventsService } from './admin-events.service';
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
+import { isPointInGeoJsonGeometry, parseRegionBoundary } from '../core/utils/geo-boundary.utils';
 
 const MAX_IMAGES = 10;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -172,6 +173,10 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
+  protected readonly locationOutsideRegion = signal(false);
+  protected readonly lockedCountryId = signal<number | null>(null);
+
+  private regionBoundary: any = null;
   private map: MapLibreMap | null = null;
   private marker: Marker | null = null;
   private lightStyle: any;
@@ -242,6 +247,12 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
       },
       error: () => {},
     }));
+    if (this.lockedRegionId !== null) {
+      this.eventsService.getRegionsGeo().subscribe(data => {
+        const region = data.regions.find(r => r.id === this.lockedRegionId);
+        if (region?.boundaryGeoJson) this.regionBoundary = parseRegionBoundary(region.boundaryGeoJson);
+      });
+    }
   }
 
   private applyRegionLock(): void {
@@ -249,7 +260,10 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     const region = this.allRegions().find(r => r.id === this.lockedRegionId);
     if (region) {
       this.selectedRegionId.set(region.id);
-      if (region.countryId != null) this.selectedCountryId.set(region.countryId);
+      if (region.countryId != null) {
+        this.selectedCountryId.set(region.countryId);
+        this.lockedCountryId.set(region.countryId);
+      }
       this.cdr.detectChanges();
     }
   }
@@ -558,7 +572,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   }
 
   protected submit(): void {
-    if (this.isSaving() || this.isCreated()) return;
+    if (this.isSaving() || this.isCreated() || this.locationOutsideRegion()) return;
 
     const f = this.form();
     const errs: string[] = [];
@@ -870,6 +884,10 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   private setCoords(lat: number, lng: number, reverseGeocode = false): void {
     this.mapLatitude.set(lat);
     this.mapLongitude.set(lng);
+    if (this.regionBoundary) {
+      this.locationOutsideRegion.set(!isPointInGeoJsonGeometry(lat, lng, this.regionBoundary));
+      this.cdr.detectChanges();
+    }
     if (!this.map) return;
     if (this.marker) {
       this.marker.setLngLat([lng, lat]);

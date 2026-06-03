@@ -201,6 +201,12 @@
   cursor: pointer;
 }
 
+.edit-field__select:disabled {
+  cursor: not-allowed;
+  pointer-events: auto;
+  opacity: 0.6;
+}
+
 .edit-field__error {
   font-size: var(--font-size-xs);
   color: var(--color-danger, #ef4444);
@@ -281,6 +287,19 @@
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.edit-modal__boundary-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-danger, #ef4444);
+  font-weight: 500;
+}
+.edit-modal__boundary-error .material-icons {
+  font-size: 16px;
 }
 
 /* Images section */

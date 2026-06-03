@@ -211,6 +211,62 @@
                     }
                   </div>
                 </div>
+
+                <!-- Region boundary management -->
+                <div class="dest-filter-section">
+                  <label class="dest-filter-section__label">Granice regiona</label>
+                  <div class="dest-boundary-list">
+                    @for (r of regions(); track r.id) {
+                      <div class="dest-boundary-row">
+                        <span class="dest-boundary-row__name">{{ r.name }}</span>
+                        <span class="dest-boundary-row__status"
+                          [class.dest-boundary-row__status--set]="regionsWithBoundary().has(r.id)">
+                          <span class="material-icons">{{ regionsWithBoundary().has(r.id) ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                        </span>
+                        <button class="dest-boundary-row__btn" type="button"
+                          (click)="openBoundaryEdit(r.id)"
+                          [title]="'Postavi granicu za ' + r.name">
+                          <span class="material-icons">edit_location_alt</span>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Boundary GeoJSON edit overlay -->
+              @if (boundaryEditRegionId() !== null) {
+                <div class="dest-boundary-overlay">
+                  <div class="dest-boundary-overlay__header">
+                    <span class="material-icons">edit_location_alt</span>
+                    <strong>{{ regions().find(r => r.id === boundaryEditRegionId())?.name }}</strong>
+                    <button class="dest-boundary-overlay__close" type="button" (click)="closeBoundaryEdit()">
+                      <span class="material-icons">close</span>
+                    </button>
+                  </div>
+                  <p class="dest-boundary-overlay__hint">
+                    Nalepi GeoJSON Polygon ili MultiPolygon geometriju (bez Feature wrappera). Ostavi prazno da ukloniš granicu.
+                  </p>
+                  <textarea
+                    class="dest-boundary-overlay__textarea"
+                    rows="6"
+                    placeholder='{"type":"Polygon","coordinates":[[[lng,lat],...]]}'
+                    [value]="boundaryGeoJsonInput()"
+                    (input)="boundaryGeoJsonInput.set($any($event.target).value)"
+                  ></textarea>
+                  <div class="dest-boundary-overlay__actions">
+                    <button class="dest-boundary-overlay__btn dest-boundary-overlay__btn--cancel" type="button"
+                      (click)="closeBoundaryEdit()">Otkaži</button>
+                    <button class="dest-boundary-overlay__btn dest-boundary-overlay__btn--save" type="button"
+                      [disabled]="isSavingBoundary()"
+                      (click)="saveBoundary()">
+                      @if (isSavingBoundary()) {
+                        <span class="material-icons dest-spin">sync</span>
+                      }
+                      Sačuvaj
+                    </button>
+                  </div>
+                </div>
               }
 
               <!-- Dynamic extra filters (loaded when a specific type is selected) -->

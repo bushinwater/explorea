@@ -312,14 +312,15 @@ namespace Explorea.Server.Repositories.Implementations
             if (visibleRegionIds is { Count: > 0 })
             {
                 query = query.Where(u =>
-                    ((u.ManagedRegionId != null
-                      && visibleRegionIds.Contains(u.ManagedRegionId.Value))
-                     || (u.CurrentCity != null
-                         && u.CurrentCity.RegionId != null
-                         && visibleRegionIds.Contains(u.CurrentCity.RegionId.Value)))
+                    (u.ManagedRegionId != null
+                     && visibleRegionIds.Contains(u.ManagedRegionId.Value))
+                    || (u.ManagedRegionId == null
+                        && u.CurrentCity != null
+                        && u.CurrentCity.RegionId != null
+                        && visibleRegionIds.Contains(u.CurrentCity.RegionId.Value))
                     || (includeUsersWithoutLocation
-                        && u.CurrentLatitude == null
-                        && u.CurrentLongitude == null));
+                        && u.ManagedRegionId == null
+                        && u.CurrentCity == null));
             }
 
             return query;

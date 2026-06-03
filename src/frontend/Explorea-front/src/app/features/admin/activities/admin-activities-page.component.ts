@@ -43,6 +43,7 @@ import { FilterDefinition, LookupService } from '../../../core/services/lookup.s
 import { MapPreviewComponent } from '../shared/components/map-preview/map-preview.component';
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
+import { isPointInGeoJsonGeometry, parseRegionBoundary } from '../core/utils/geo-boundary.utils';
 
 const DARK = {
   land: '#1e2e24', water: '#102840', park: '#1e3228',
@@ -234,6 +235,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   ]);
 
   protected readonly managedRegion = signal<{ id: number; name: string } | null>(null);
+  protected readonly locationOutsideRegion = signal(false);
+  private regionBoundary: any = null;
   protected readonly hoverRating = signal<number | null>(null);
   protected readonly allInterestTags = signal<InterestTagOption[]>([]);
   protected readonly selectedInterestIds = signal<number[]>([]);
@@ -1030,6 +1033,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     if (!this.selectedInterestIds().length) { this.errorMessage.set('Potrebno je odabrati bar jedno interesovanje.'); return; }
     if (!this.editExistingImages().length && !this.modalImagePreviews().length) { this.errorMessage.set('Dodajte bar jednu sliku.'); return; }
     if (this.mapLatitude() === null) { this.errorMessage.set('Lokacija je obavezna — kliknite na mapu ili unesite adresu.'); return; }
+    if (this.locationOutsideRegion()) { this.errorMessage.set('Lokacija se nalazi van granica tvog regiona. Pomeri pin unutar regiona.'); return; }
 
     this.isSubmitting.set(true);
 
@@ -1040,6 +1044,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     const dto: CreateActivityDto = {
       ...form,
       slug: this.toSlug(form.name),
+      regionId: this.modalRegionId() !== 'all' ? (this.modalRegionId() as number) : undefined,
       countryId: this.selectedCountryId() ?? undefined,
       startPoint: this.mapAddress().trim() || undefined,
       latitude: lat ?? undefined,
@@ -1519,6 +1524,16 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           if (mr) {
             this.filters.update(f => ({ ...f, regionId: mr.id }));
             this.syncFiltersToQueryParams();
+            this.subscription.add(
+              this.activitiesService.getRegionsGeo().subscribe({
+                next: (geo) => {
+                  const regionData = geo.regions.find(r => r.id === mr.id);
+                  if (regionData?.boundaryGeoJson) {
+                    this.regionBoundary = parseRegionBoundary(regionData.boundaryGeoJson);
+                  }
+                },
+              }),
+            );
           }
         },
       }),
@@ -1616,6 +1631,12 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   private setMapCoords(lat: number, lng: number, reverseGeocode = false): void {
     this.mapLatitude.set(lat);
     this.mapLongitude.set(lng);
+
+    if (this.regionBoundary) {
+      this.locationOutsideRegion.set(!isPointInGeoJsonGeometry(lat, lng, this.regionBoundary));
+    } else {
+      this.locationOutsideRegion.set(false);
+    }
 
     if (!this.map) return;
 

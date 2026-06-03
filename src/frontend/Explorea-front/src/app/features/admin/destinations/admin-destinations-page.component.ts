@@ -133,6 +133,11 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected readonly stars = [1, 2, 3, 4, 5];
   protected readonly hoverRating = signal<number | null>(null);
 
+  protected readonly boundaryEditRegionId = signal<number | null>(null);
+  protected readonly boundaryGeoJsonInput = signal('');
+  protected readonly isSavingBoundary = signal(false);
+  protected readonly regionsWithBoundary = signal<Set<number>>(new Set());
+
   constructor(
     private readonly destinationsService: AdminDestinationsService,
     private readonly lookupService: LookupService,
@@ -691,6 +696,49 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.destinationsService.getRegions().subscribe({
         next: (regions) => this.regions.set(regions),
+      }),
+    );
+    this.subscription.add(
+      this.destinationsService.getRegionsGeo().subscribe({
+        next: (geo) => {
+          this.regionsWithBoundary.set(new Set(geo.regions.map(r => r.id)));
+        },
+      }),
+    );
+  }
+
+  protected openBoundaryEdit(regionId: number): void {
+    this.boundaryEditRegionId.set(regionId);
+    this.boundaryGeoJsonInput.set('');
+  }
+
+  protected closeBoundaryEdit(): void {
+    this.boundaryEditRegionId.set(null);
+    this.boundaryGeoJsonInput.set('');
+  }
+
+  protected saveBoundary(): void {
+    const regionId = this.boundaryEditRegionId();
+    if (!regionId || this.isSavingBoundary()) return;
+    const geoJson = this.boundaryGeoJsonInput().trim() || null;
+    this.isSavingBoundary.set(true);
+    this.subscription.add(
+      this.destinationsService.updateRegionBoundary(regionId, geoJson).subscribe({
+        next: (result) => {
+          this.isSavingBoundary.set(false);
+          this.regionsWithBoundary.update(s => {
+            const next = new Set(s);
+            if (result.hasBoundary) next.add(regionId);
+            else next.delete(regionId);
+            return next;
+          });
+          this.successMessage.set(`Granica regiona "${result.name}" je ${result.hasBoundary ? 'postavljena' : 'uklonjena'}.`);
+          this.closeBoundaryEdit();
+        },
+        error: (err) => {
+          this.isSavingBoundary.set(false);
+          this.errorMessage.set(err?.error?.message ?? 'Greška pri čuvanju granice.');
+        },
       }),
     );
   }

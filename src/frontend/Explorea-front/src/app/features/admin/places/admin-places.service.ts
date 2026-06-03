@@ -89,6 +89,10 @@ export class AdminPlacesService {
     );
   }
 
+  getRegionsGeo(): Observable<{ regions: Array<{ id: number; name: string; boundaryGeoJson: string }>; serbiaOutline: string | null }> {
+    return this.http.get<{ regions: Array<{ id: number; name: string; boundaryGeoJson: string }>; serbiaOutline: string | null }>('/api/admin/destinations/regions-geo');
+  }
+
   getCountries(): Observable<CountryOption[]> {
     return this.http.get<CountryOption[]>('/api/admin/destinations/countries');
   }

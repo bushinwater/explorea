@@ -163,6 +163,10 @@ export class AdminEventsService {
     );
   }
 
+  getRegionsGeo(): Observable<{ regions: Array<{ id: number; name: string; boundaryGeoJson: string }>; serbiaOutline: string | null }> {
+    return this.http.get<{ regions: Array<{ id: number; name: string; boundaryGeoJson: string }>; serbiaOutline: string | null }>('/api/admin/destinations/regions-geo');
+  }
+
   getDestinations(regionId?: number): Observable<EventFilterOption<string>[]> {
     let params = new HttpParams().set('pageSize', '200');
     if (regionId != null) params = params.set('regionId', regionId);

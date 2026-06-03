@@ -37,7 +37,7 @@
         <div class="edit-modal__form-col">
 
           <div class="edit-field">
-            <label class="edit-field__label" for="dest-name">{{ ui.t('common.name_label') }}</label>
+            <label class="edit-field__label" for="dest-name">{{ ui.t('common.name_label') }} <span class="edit-field__required">*</span></label>
             <input
               id="dest-name"
               class="edit-field__input"
@@ -208,7 +208,7 @@
           </div>
 
           <div class="edit-field__coords">
-            <span class="edit-field__coords-label">{{ ui.t('common.coords') }}</span>
+            <span class="edit-field__coords-label">{{ ui.t('common.coords') }} <span class="edit-field__required">*</span></span>
             <span class="edit-field__coords-value">
               @if (form.value.latitude != null) {
                 {{ form.value.latitude | number: '1.5-5' }},
@@ -223,7 +223,7 @@
 
         <!-- Right: map -->
         <div class="edit-modal__map-col">
-          <label class="edit-field__label">{{ ui.t('common.location') }}</label>
+          <label class="edit-field__label">{{ ui.t('common.location') }} <span class="edit-field__required">*</span></label>
 
           <div class="edit-modal__address-row">
             <input
@@ -248,7 +248,14 @@
           </div>
 
           <div #mapEl class="edit-modal__map"></div>
-          <p class="edit-modal__map-hint">{{ ui.t('common.map_hint') }}</p>
+          @if (locationOutsideRegion()) {
+            <p class="edit-modal__boundary-error">
+              <span class="material-icons">warning</span>
+              Lokacija se nalazi van granica tvog regiona. Pomeri pin unutar regiona.
+            </p>
+          } @else {
+            <p class="edit-modal__map-hint">{{ ui.t('common.map_hint') }}</p>
+          }
         </div>
 
       </div>

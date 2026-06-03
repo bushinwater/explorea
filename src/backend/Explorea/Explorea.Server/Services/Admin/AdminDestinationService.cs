@@ -178,7 +178,9 @@ namespace Explorea.Server.Services.Admin
                 query = query.Where(d => d.CityId == cityId.Value);
 
             if (regionId.HasValue)
-                query = query.Where(d => d.City != null && d.City.RegionId == regionId.Value);
+                query = query.Where(d =>
+                    (d.RegionId != null && d.RegionId == regionId.Value)
+                    || (d.RegionId == null && d.City != null && d.City.RegionId == regionId.Value));
 
             if (typeId.HasValue)
                 query = query.Where(d => d.TypeId == typeId.Value);
@@ -187,7 +189,9 @@ namespace Explorea.Server.Services.Admin
                 query = query.Where(d => restrictToIds.Contains(d.Id));
 
             if (restrictToRegionId.HasValue)
-                query = query.Where(d => d.City != null && d.City.RegionId == restrictToRegionId.Value);
+                query = query.Where(d =>
+                    (d.RegionId != null && d.RegionId == restrictToRegionId.Value)
+                    || (d.RegionId == null && d.City != null && d.City.RegionId == restrictToRegionId.Value));
 
             var total = await query.CountAsync();
             var items = await query
@@ -212,7 +216,8 @@ namespace Explorea.Server.Services.Admin
                 if (user.ManagedRegionId.HasValue)
                 {
                     destinationQuery = destinationQuery.Where(d =>
-                        d.City != null && d.City.RegionId == user.ManagedRegionId.Value);
+                        (d.RegionId != null && d.RegionId == user.ManagedRegionId.Value)
+                        || (d.RegionId == null && d.City != null && d.City.RegionId == user.ManagedRegionId.Value));
                 }
                 else
                 {
@@ -400,6 +405,9 @@ namespace Explorea.Server.Services.Admin
             if (user?.Role.Name != RoleNames.SuperAdmin && user?.Role.Name != RoleNames.TouristOrganization)
                 throw new UnauthorizedAccessException("Only SuperAdmin or TouristOrganization can create destinations.");
 
+            if (user.Role.Name == RoleNames.TouristOrganization && user.ManagedRegionId.HasValue)
+                await ValidateLocationWithinRegionAsync(dto.Latitude, dto.Longitude, user.ManagedRegionId.Value);
+
             var now = DateTimeOffset.UtcNow;
 
             var destination = new Destination
@@ -466,6 +474,9 @@ namespace Explorea.Server.Services.Admin
 
             if (dto.Latitude.HasValue && dto.Longitude.HasValue)
             {
+                if (user?.Role.Name == RoleNames.TouristOrganization && user.ManagedRegionId.HasValue)
+                    await ValidateLocationWithinRegionAsync(dto.Latitude.Value, dto.Longitude.Value, user.ManagedRegionId.Value);
+
                 destination.Latitude  = dto.Latitude.Value;
                 destination.Longitude = dto.Longitude.Value;
                 destination.Location  = _geometryFactory.CreatePoint(
@@ -625,8 +636,8 @@ namespace Explorea.Server.Services.Admin
                     .AnyAsync(d =>
                         d.Id == destinationId &&
                         !d.IsDeleted &&
-                        d.City != null &&
-                        d.City.RegionId == user.ManagedRegionId.Value);
+                        ((d.RegionId != null && d.RegionId == user.ManagedRegionId.Value)
+                         || (d.RegionId == null && d.City != null && d.City.RegionId == user.ManagedRegionId.Value)));
             }
 
             return await _assignmentRepo.ExistsAsync(userId, destinationId);
@@ -740,6 +751,19 @@ namespace Explorea.Server.Services.Admin
             await _db.SaveChangesAsync();
 
             return new AdminDestinationLookupDto { Id = type.Id, Name = type.Name };
+        }
+
+        private async Task ValidateLocationWithinRegionAsync(double lat, double lng, int regionId)
+        {
+            var region = await _db.Regions.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == regionId);
+
+            if (region?.Boundary == null) return;
+
+            var point = _geometryFactory.CreatePoint(new Coordinate(lng, lat));
+            if (!region.Boundary.Covers(point))
+                throw new InvalidOperationException(
+                    $"Lokacija se nalazi van granica regiona \"{region.Name}\". Pomeri pin unutar granica regiona.");
         }
 
         private async Task SyncInactiveVisibilityAsync()

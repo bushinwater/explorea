@@ -41,7 +41,9 @@ namespace Explorea.Server.Services.Admin
       if (user?.Role.Name == RoleNames.TouristOrganization && user.ManagedRegionId.HasValue)
       {
         var regionId = user.ManagedRegionId.Value;
-        activitiesQuery = activitiesQuery.Where(a => a.City != null && a.City.RegionId == regionId);
+        activitiesQuery = activitiesQuery.Where(a =>
+          a.RegionId == regionId ||
+          (a.RegionId == null && a.City != null && a.City.RegionId == regionId));
       }
 
       if (query.Ids?.Count > 0)
@@ -58,10 +60,10 @@ namespace Explorea.Server.Services.Admin
 
       if (query.RegionId.HasValue)
       {
+        var rid = query.RegionId.Value;
         activitiesQuery = activitiesQuery.Where(a =>
-          a.City != null &&
-          a.City.RegionId == query.RegionId.Value
-        );
+          a.RegionId == rid ||
+          (a.RegionId == null && a.City != null && a.City.RegionId == rid));
       }
 
       if (query.CityId.HasValue)
@@ -240,7 +242,9 @@ namespace Explorea.Server.Services.Admin
       if (user?.Role.Name == RoleNames.TouristOrganization && user.ManagedRegionId.HasValue)
       {
         var regionId = user.ManagedRegionId.Value;
-        activitiesQuery = activitiesQuery.Where(a => a.City != null && a.City.RegionId == regionId);
+        activitiesQuery = activitiesQuery.Where(a =>
+          a.RegionId == regionId ||
+          (a.RegionId == null && a.City != null && a.City.RegionId == regionId));
       }
 
       if (!string.IsNullOrWhiteSpace(query.Search))
@@ -250,7 +254,12 @@ namespace Explorea.Server.Services.Admin
       }
 
       if (query.RegionId.HasValue)
-        activitiesQuery = activitiesQuery.Where(a => a.City != null && a.City.RegionId == query.RegionId.Value);
+      {
+        var rid = query.RegionId.Value;
+        activitiesQuery = activitiesQuery.Where(a =>
+          a.RegionId == rid ||
+          (a.RegionId == null && a.City != null && a.City.RegionId == rid));
+      }
 
       if (query.CityId.HasValue)
         activitiesQuery = activitiesQuery.Where(a => a.CityId == query.CityId.Value);
@@ -445,6 +454,7 @@ namespace Explorea.Server.Services.Admin
         CategoryId    = dto.CategoryId,
         SeasonId      = dto.SeasonId,
         CountryId     = dto.CountryId,
+        RegionId      = dto.RegionId,
 
         Name        = dto.Name.Trim(),
         Slug        = dto.Slug.Trim(),

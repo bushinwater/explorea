@@ -34,6 +34,7 @@ import { AdminEventsService } from './admin-events.service';
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
+import { isPointInGeoJsonGeometry, parseRegionBoundary } from '../core/utils/geo-boundary.utils';
 
 const MAX_IMAGES = 10;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -161,6 +162,10 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
 
   protected readonly MAX_IMAGES = MAX_IMAGES;
 
+  protected readonly locationOutsideRegion = signal(false);
+  protected readonly lockedCountryId = signal<number | null>(null);
+
+  private regionBoundary: any = null;
   private map: MapLibreMap | null = null;
   private marker: Marker | null = null;
   private lightStyle: any;
@@ -325,6 +330,12 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
       },
       error: () => {},
     }));
+    if (this.lockedRegionId !== null) {
+      this.eventsService.getRegionsGeo().subscribe(data => {
+        const region = data.regions.find(r => r.id === this.lockedRegionId);
+        if (region?.boundaryGeoJson) this.regionBoundary = parseRegionBoundary(region.boundaryGeoJson);
+      });
+    }
   }
 
   ngAfterViewInit(): void {
@@ -367,7 +378,10 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
     const region = this.allRegions().find(r => r.id === this.lockedRegionId);
     if (region) {
       this.selectedRegionId.set(region.id);
-      if (region.countryId != null) this.selectedCountryId.set(region.countryId);
+      if (region.countryId != null) {
+        this.selectedCountryId.set(region.countryId);
+        this.lockedCountryId.set(region.countryId);
+      }
       this.cdr.detectChanges();
     }
   }

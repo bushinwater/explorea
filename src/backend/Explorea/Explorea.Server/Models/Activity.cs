@@ -49,6 +49,7 @@ namespace Explorea.API.Models
         public Point? Location { get; set; }
 
         [Column("country_id")] public int? CountryId { get; set; }
+        [Column("region_id")]  public int? RegionId  { get; set; }
         [Column("popularity")] public int Popularity { get; set; } = 0;
 
         [MaxLength(500), Column("organizer_website")]
@@ -69,6 +70,7 @@ namespace Explorea.API.Models
         [ForeignKey("CategoryId")]    public ActivityCategory  Category    { get; set; } = null!;
         [ForeignKey("SeasonId")]      public Season?           Season      { get; set; }
         [ForeignKey("CountryId")]     public Country?          Country     { get; set; }
+        [ForeignKey("RegionId")]      public Region?           Region      { get; set; }
 
         public ICollection<ActivityInclusion>  Inclusions   { get; set; } = new List<ActivityInclusion>();
         public ICollection<ActivityImage>      Images       { get; set; } = new List<ActivityImage>();

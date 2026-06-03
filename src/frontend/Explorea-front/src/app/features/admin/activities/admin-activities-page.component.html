@@ -1448,7 +1448,14 @@
           </div>
 
           <div #mapEl class="edit-modal__map"></div>
-          <p class="edit-modal__map-hint">{{ ui.t('common.map_hint') }}</p>
+          @if (locationOutsideRegion()) {
+            <p class="edit-modal__boundary-error">
+              <span class="material-icons">warning</span>
+              Lokacija se nalazi van granica tvog regiona. Pomeri pin unutar regiona.
+            </p>
+          } @else {
+            <p class="edit-modal__map-hint">{{ ui.t('common.map_hint') }}</p>
+          }
 
           @if (mapLatitude() !== null) {
             <div class="edit-field__coords">
@@ -1516,17 +1523,17 @@
           @for (preview of modalImagePreviews(); track preview.url; let i = $index) {
             <div
               class="edit-modal__img-card"
-              [class.edit-modal__img-card--hero]="pendingHeroIsNew() && modalHeroIndex() === i"
+              [class.edit-modal__img-card--hero]="(!isEditMode() || pendingHeroIsNew()) && modalHeroIndex() === i"
             >
               <img [src]="preview.url" [alt]="preview.file.name" class="edit-modal__img" />
               <button
                 class="edit-modal__img-hero"
                 type="button"
-                [title]="(pendingHeroIsNew() && modalHeroIndex() === i) ? 'Hero slika' : 'Postavi kao hero'"
+                [title]="((!isEditMode() || pendingHeroIsNew()) && modalHeroIndex() === i) ? 'Hero slika' : 'Postavi kao hero'"
                 (click)="setModalHero(i)"
               >
                 <span class="material-icons">{{
-                  (pendingHeroIsNew() && modalHeroIndex() === i) ? 'star' : 'star_border'
+                  ((!isEditMode() || pendingHeroIsNew()) && modalHeroIndex() === i) ? 'star' : 'star_border'
                 }}</span>
               </button>
               <button

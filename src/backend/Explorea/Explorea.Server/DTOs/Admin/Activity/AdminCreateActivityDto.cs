@@ -9,6 +9,7 @@ namespace Explorea.API.DTOs.Admin.Activity
         public int CategoryId { get; set; }
         public int? SeasonId { get; set; }
         public int? CountryId { get; set; }
+        public int? RegionId { get; set; }
 
         public string Name { get; set; } = null!;
         public string Slug { get; set; } = null!;

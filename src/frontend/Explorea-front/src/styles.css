@@ -617,6 +617,27 @@ button:focus-visible {
   pointer-events: auto;
 }
 
+select:disabled,
+input:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  pointer-events: auto;
+  opacity: 0.6;
+}
+
+.edit-modal__boundary-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-danger, #ef4444);
+  font-weight: 500;
+}
+.edit-modal__boundary-error .material-icons {
+  font-size: 16px;
+}
+
 .btn-secondary {
   background-color: var(--color-surface);
   color: var(--color-text-primary);

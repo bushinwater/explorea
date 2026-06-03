@@ -34,6 +34,7 @@ import {
 import { FilterDefinition } from '../../../core/services/lookup.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
+import { isPointInGeoJsonGeometry, parseRegionBoundary } from '../core/utils/geo-boundary.utils';
 
 const MAX_IMAGES = 10;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -141,6 +142,9 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
 
   protected readonly allTypeOptions = computed(() => [...this.types, ...this.extraTypes()]);
 
+  protected readonly locationOutsideRegion = signal(false);
+
+  private regionBoundary: any = null;
   private searchDebounce: ReturnType<typeof setTimeout> | null = null;
   private createdId: string | null = null;
   private map: MapLibreMap | null = null;
@@ -167,6 +171,12 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
   ngOnInit(): void {
     this.applyRegionLock();
     if (this.lockedRegionId === null) this.loadCities();
+    if (this.lockedRegionId !== null) {
+      this.svc.getRegionsGeo().subscribe(data => {
+        const region = data.regions.find(r => r.id === this.lockedRegionId);
+        if (region?.boundaryGeoJson) this.regionBoundary = parseRegionBoundary(region.boundaryGeoJson);
+      });
+    }
     this.loadInterestTags();
     setTimeout(() => this.initMap(), 50);
 
@@ -500,6 +510,7 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
     this.form.markAllAsTouched();
     this.cdr.detectChanges();
     if (this.form.invalid) return;
+    if (this.locationOutsideRegion()) return;
     if (!this.selectedDestinationId()) {
       this.error.set('Destinacija je obavezna.');
       return;
@@ -720,6 +731,10 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
 
   private setCoords(lat: number, lng: number, reverseGeocode = false): void {
     this.form.patchValue({ latitude: lat, longitude: lng });
+    if (this.regionBoundary) {
+      this.locationOutsideRegion.set(!isPointInGeoJsonGeometry(lat, lng, this.regionBoundary));
+      this.cdr.detectChanges();
+    }
     if (!this.map) return;
     if (this.marker) {
       this.marker.setLngLat([lng, lat]);

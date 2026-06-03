@@ -10,6 +10,9 @@ namespace Explorea.Server.Data
             try { await db.Database.ExecuteSqlRawAsync("CREATE EXTENSION IF NOT EXISTS unaccent;"); }
             catch { /* unaccent may require superuser on some setups */ }
 
+            try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE activities ADD COLUMN IF NOT EXISTS region_id INT REFERENCES regions(id);"); }
+            catch { /* column may already exist */ }
+
             if (await db.InterestTags.AnyAsync()) return;
 
             var now = DateTimeOffset.UtcNow;

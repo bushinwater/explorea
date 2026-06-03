@@ -44,7 +44,9 @@ namespace Explorea.Server.Repositories.Implementations
                 query = query.Where(d => d.TypeId != null && destinationTypeIds.Contains(d.TypeId.Value));
 
             if (regionId.HasValue)
-                query = query.Where(d => d.City != null && d.City.RegionId == regionId.Value);
+                query = query.Where(d =>
+                    (d.RegionId != null && d.RegionId == regionId.Value)
+                    || (d.RegionId == null && d.City != null && d.City.RegionId == regionId.Value));
 
             var extraFiltersDict = ParseExtraFilters(extraFilters);
             foreach (var (key, value) in extraFiltersDict)

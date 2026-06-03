@@ -357,7 +357,14 @@
           }
         </div>
         <div #mapEl class="edit-modal__map"></div>
-        <p class="edit-modal__map-hint">{{ ui.t('common.map_hint') }}</p>
+        @if (locationOutsideRegion()) {
+          <p class="edit-modal__boundary-error">
+            <span class="material-icons">warning</span>
+            Lokacija se nalazi van granica tvog regiona. Pomeri pin unutar regiona.
+          </p>
+        } @else {
+          <p class="edit-modal__map-hint">{{ ui.t('common.map_hint') }}</p>
+        }
       </div>
     </div>
 
@@ -374,7 +381,9 @@
           >
             <option value="">{{ ui.t('common.all_countries') }}</option>
             @for (c of countries(); track c.id) {
-              <option [value]="c.id">{{ c.name }}</option>
+              @if (lockedRegionId === null || c.id === lockedCountryId()) {
+                <option [value]="c.id" [selected]="c.id === selectedCountryId()">{{ c.name }}</option>
+              }
             }
           </select>
         </div>
@@ -392,7 +401,9 @@
           >
             <option value="">{{ ui.t('common.all_regions') }}</option>
             @for (r of filteredRegions(); track r.id) {
-              <option [value]="r.id">{{ r.name }}</option>
+              @if (lockedRegionId === null || r.id === lockedRegionId) {
+                <option [value]="r.id" [selected]="r.id === selectedRegionId()">{{ r.name }}</option>
+              }
             }
           </select>
         </div>

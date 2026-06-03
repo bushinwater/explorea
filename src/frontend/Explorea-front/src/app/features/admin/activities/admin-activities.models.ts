@@ -122,6 +122,7 @@ export interface CreateActivityDto {
   difficultyLevel?: string;
   startPoint?: string | null;
   cityId?: number;
+  regionId?: number;
   countryId?: number | null;
   destinationId?: string;
   latitude?: number;

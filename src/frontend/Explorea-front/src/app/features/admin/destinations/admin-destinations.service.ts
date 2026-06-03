@@ -127,6 +127,17 @@ export class AdminDestinationsService {
     return this.http.get<RegionOption[]>('/api/admin/destinations/regions');
   }
 
+  getRegionsGeo(): Observable<{ regions: Array<{ id: number; name: string; boundaryGeoJson: string }>; serbiaOutline: string | null }> {
+    return this.http.get<{ regions: Array<{ id: number; name: string; boundaryGeoJson: string }>; serbiaOutline: string | null }>('/api/admin/destinations/regions-geo');
+  }
+
+  updateRegionBoundary(regionId: number, boundaryGeoJson: string | null): Observable<{ id: number; name: string; hasBoundary: boolean }> {
+    return this.http.patch<{ id: number; name: string; hasBoundary: boolean }>(
+      `/api/admin/destinations/regions/${regionId}/boundary`,
+      { boundaryGeoJson }
+    );
+  }
+
   getCountries(): Observable<CountryOption[]> {
     return this.http.get<CountryOption[]>('/api/admin/destinations/countries');
   }

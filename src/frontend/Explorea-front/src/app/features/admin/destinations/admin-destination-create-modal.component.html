@@ -269,7 +269,14 @@
           }
 
           <div #mapEl class="edit-modal__map"></div>
-          <p class="edit-modal__map-hint">{{ ui.t('common.map_hint') }}</p>
+          @if (locationOutsideRegion()) {
+            <p class="edit-modal__boundary-error">
+              <span class="material-icons">warning</span>
+              Lokacija se nalazi van granica tvog regiona. Pomeri pin unutar regiona.
+            </p>
+          } @else {
+            <p class="edit-modal__map-hint">{{ ui.t('common.map_hint') }}</p>
+          }
         </div>
 
       </div>
@@ -278,7 +285,7 @@
       <div class="edit-modal__interests-section">
         <div class="edit-modal__interests-header">
           <span class="edit-field__label">
-            {{ ui.t('common.interests') }}
+            {{ ui.t('common.interests') }} <span class="edit-field__required">*</span>
             <span class="edit-field__counter">{{ selectedInterestIds().length }} / 3</span>
           </span>
         </div>
@@ -296,6 +303,9 @@
             </button>
           }
         </div>
+        @if (saveAttempted() && selectedInterestIds().length === 0) {
+          <span class="edit-field__error">Izaberi bar jedno interesovanje.</span>
+        }
       </div>
 
       <!-- Images (local previews before creation) -->
