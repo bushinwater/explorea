@@ -106,9 +106,7 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
 
   protected readonly filterDefs     = signal<FilterDefinition[]>([]);
   protected readonly showAddFilter  = signal(false);
-  protected readonly newFilterKey   = signal('');
   protected readonly newFilterLabel = signal('');
-  protected readonly newFilterType  = signal('boolean');
   protected readonly isAddingFilter = signal(false);
   protected readonly extraFilters   = signal<Record<string, string>>({});
 
@@ -357,20 +355,16 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
 
   protected toggleAddFilter(): void {
     this.showAddFilter.update(v => !v);
-    this.newFilterKey.set('');
     this.newFilterLabel.set('');
-    this.newFilterType.set('boolean');
   }
 
   protected addNewFilter(): void {
     const typeId = this.form.value.typeId ? parseInt(this.form.value.typeId) : null;
-    const key = this.newFilterKey().trim();
     const label = this.newFilterLabel().trim();
-    const type = this.newFilterType();
-    if (!typeId || !key || !label || this.isAddingFilter()) return;
+    if (!typeId || !label || this.isAddingFilter()) return;
     this.isAddingFilter.set(true);
     this.sub.add(
-      this.svc.createFilterDefinition(typeId, key, label, type).subscribe({
+      this.svc.createFilterDefinition(typeId, label, 'boolean').subscribe({
         next: def => {
           this.filterDefs.update(d => [...d, def]);
           this.isAddingFilter.set(false);
@@ -600,6 +594,18 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
             }
           },
         });
+
+      if (!this.form.controls.regionId.disabled) {
+        this.http
+          .get<{ regionId: number | null; countryId: number | null }>(`/api/region-by-coords?lat=${lat}&lng=${lng}`)
+          .subscribe({
+            next: (res) => {
+              if (res.countryId) this.form.patchValue({ countryId: res.countryId.toString() });
+              if (res.regionId) this.form.patchValue({ regionId: res.regionId.toString() });
+              this.cdr.detectChanges();
+            },
+          });
+      }
     }
   }
 }

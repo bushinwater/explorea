@@ -67,10 +67,10 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
     name:        new FormControl('', [Validators.required, Validators.maxLength(200)]),
     description: new FormControl('', [Validators.required, Validators.maxLength(MAX_DESC)]),
     visibility:  new FormControl('published', [Validators.required]),
-    typeId:      new FormControl<string | null>(null),
-    countryId:   new FormControl<string | null>(null),
-    regionId:    new FormControl<string | null>(null),
-    address:     new FormControl(''),
+    typeId:      new FormControl<string | null>(null, [Validators.required]),
+    countryId:   new FormControl<string | null>(null, [Validators.required]),
+    regionId:    new FormControl<string | null>(null, [Validators.required]),
+    address:     new FormControl('', [Validators.required]),
     latitude:    new FormControl<number | null>(null, [Validators.required]),
     longitude:   new FormControl<number | null>(null, [Validators.required]),
   });
@@ -105,9 +105,7 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
 
   protected readonly filterDefs     = signal<FilterDefinition[]>([]);
   protected readonly showAddFilter  = signal(false);
-  protected readonly newFilterKey   = signal('');
   protected readonly newFilterLabel = signal('');
-  protected readonly newFilterType  = signal('boolean');
   protected readonly isAddingFilter = signal(false);
   protected readonly extraFilters   = signal<Record<string, string>>({});
 
@@ -242,7 +240,8 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
   }
 
   protected save(): void {
-    if (this.form.invalid || this.isSaving()) return;
+    this.form.markAllAsTouched();
+    if (this.form.invalid || this.isSaving() || this.pendingImages().length === 0) return;
     this.isSaving.set(true);
     this.error.set('');
 
@@ -326,20 +325,16 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
 
   protected toggleAddFilter(): void {
     this.showAddFilter.update(v => !v);
-    this.newFilterKey.set('');
     this.newFilterLabel.set('');
-    this.newFilterType.set('boolean');
   }
 
   protected addNewFilter(): void {
     const typeId = this.form.value.typeId ? parseInt(this.form.value.typeId) : null;
-    const key = this.newFilterKey().trim();
     const label = this.newFilterLabel().trim();
-    const type = this.newFilterType();
-    if (!typeId || !key || !label || this.isAddingFilter()) return;
+    if (!typeId || !label || this.isAddingFilter()) return;
     this.isAddingFilter.set(true);
     this.sub.add(
-      this.svc.createFilterDefinition(typeId, key, label, type).subscribe({
+      this.svc.createFilterDefinition(typeId, label, 'boolean').subscribe({
         next: def => {
           this.filterDefs.update(d => [...d, def]);
           this.isAddingFilter.set(false);
@@ -457,6 +452,9 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
             this.uploadingCount.update(n => n - 1);
             if (i === heroIdx) this.setHero(img.id);
             else if (this.heroImageId() === null) this.setHero(img.id);
+            if (this.uploadingCount() === 0 && this.canFinish) {
+              this.created.emit(this.createdRow()!);
+            }
             this.cdr.detectChanges();
           },
           error: (err) => {
@@ -569,6 +567,18 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
             }
           },
         });
+
+      if (!this.form.controls.regionId.disabled) {
+        this.http
+          .get<{ regionId: number | null; countryId: number | null }>(`/api/region-by-coords?lat=${lat}&lng=${lng}`)
+          .subscribe({
+            next: (res) => {
+              if (res.countryId) this.form.patchValue({ countryId: res.countryId.toString() });
+              if (res.regionId) this.form.patchValue({ regionId: res.regionId.toString() });
+              this.cdr.detectChanges();
+            },
+          });
+      }
     }
   }
 

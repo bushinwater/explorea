@@ -147,9 +147,9 @@ export class AdminDestinationsService {
     );
   }
 
-  createFilterDefinition(typeId: number, filterKey: string, filterLabel: string, filterType: string): Observable<FilterDefinition> {
+  createFilterDefinition(typeId: number, filterLabel: string, filterType: string): Observable<FilterDefinition> {
     return this.http.post<FilterDefinition>('/api/admin/filter-definitions', {
-      entityType: 'destination', typeId, filterKey, filterLabel, filterType,
+      entityType: 'destination', typeId, filterLabel, filterType,
     });
   }
 

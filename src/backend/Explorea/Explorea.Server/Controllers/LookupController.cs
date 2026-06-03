@@ -79,6 +79,13 @@ namespace Explorea.Server.Controllers
             return Ok(items.Select(t => new { t.Id, t.Name, t.Icon }));
         }
 
+        [HttpGet("region-by-coords")]
+        public async Task<IActionResult> GetRegionByCoords([FromQuery] double lat, [FromQuery] double lng)
+        {
+            var (regionId, countryId) = await _lookup.GetRegionByCoordinatesAsync(lat, lng);
+            return Ok(new { regionId, countryId });
+        }
+
         [HttpGet("filter-definitions")]
         public async Task<IActionResult> GetFilterDefinitions([FromQuery] string entityType, [FromQuery] int typeId)
         {

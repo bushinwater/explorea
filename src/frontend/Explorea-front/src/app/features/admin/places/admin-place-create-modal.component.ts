@@ -124,9 +124,7 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
   protected readonly modalFilterDefs    = signal<FilterDefinition[]>([]);
   protected readonly modalExtraFilters  = signal<Record<string, string>>({});
   protected readonly showAddFilter   = signal(false);
-  protected readonly newFilterKey    = signal('');
   protected readonly newFilterLabel  = signal('');
-  protected readonly newFilterType   = signal('boolean');
   protected readonly isAddingFilter  = signal(false);
 
   // New: interest tags
@@ -377,17 +375,15 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
   protected toggleAddFilter(): void { this.showAddFilter.update(v => !v); }
 
   protected addNewFilter(): void {
-    const key   = this.newFilterKey().trim();
     const label = this.newFilterLabel().trim();
     const typeId = this.form.value.typeId ? +this.form.value.typeId : null;
-    if (!key || !label || !typeId || this.isAddingFilter()) return;
+    if (!label || !typeId || this.isAddingFilter()) return;
     this.isAddingFilter.set(true);
     this.sub.add(
-      this.svc.createFilterDefinition(typeId, key, label, this.newFilterType()).subscribe({
+      this.svc.createFilterDefinition(typeId, label, 'boolean').subscribe({
         next: fd => {
           this.modalFilterDefs.update(defs => [...defs, fd]);
           this.showAddFilter.set(false);
-          this.newFilterKey.set('');
           this.newFilterLabel.set('');
           this.isAddingFilter.set(false);
           this.cdr.detectChanges();

@@ -2,6 +2,7 @@ using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 
 namespace Explorea.Server.Repositories.Implementations
 {
@@ -69,6 +70,19 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(f => f.Options.OrderBy(o => o.SortOrder))
                 .OrderBy(f => f.SortOrder)
                 .ToListAsync();
+        }
+
+        public async Task<(int? RegionId, int? CountryId)> GetRegionByCoordinatesAsync(double lat, double lng)
+        {
+            var region = await _db.Regions
+                .FromSqlRaw(
+                    "SELECT * FROM regions WHERE boundary IS NOT NULL AND ST_Contains(boundary::geometry, ST_SetSRID(ST_MakePoint({1}, {0}), 4326)) LIMIT 1",
+                    lat, lng)
+                .AsNoTracking()
+                .Select(r => new { r.Id, r.CountryId })
+                .FirstOrDefaultAsync();
+
+            return (region?.Id, region?.CountryId);
         }
     }
 }

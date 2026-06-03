@@ -66,13 +66,18 @@
           </div>
 
           <div class="edit-field">
-            <label class="edit-field__label" for="new-dest-type">{{ ui.t('common.category') }}</label>
-            <select id="new-dest-type" class="edit-field__select" formControlName="typeId">
-              <option [ngValue]="null">— Bez kategorije —</option>
+            <label class="edit-field__label" for="new-dest-type">{{ ui.t('common.category') }} <span class="edit-field__required">*</span></label>
+            <select id="new-dest-type" class="edit-field__select"
+              [class.edit-field__input--error]="form.controls.typeId.invalid && form.controls.typeId.touched"
+              formControlName="typeId">
+              <option [ngValue]="null">— Izaberi kategoriju —</option>
               @for (t of localTypes(); track t.id) {
                 <option [ngValue]="t.id.toString()">{{ t.name }}</option>
               }
             </select>
+            @if (form.controls.typeId.invalid && form.controls.typeId.touched) {
+              <span class="edit-field__error">Kategorija je obavezna.</span>
+            }
             @if (!showNewTypeInput()) {
               <button class="edit-field__add-type-btn" type="button" (click)="showNewTypeInput.set(true)">
                 <span class="material-icons">add</span> {{ ui.t('activities.modal.add_category_btn') }}
@@ -142,18 +147,10 @@
               </button>
               @if (showAddFilter()) {
                 <div class="ev-add-inline-form ev-add-inline-form--filter">
-                  <input class="edit-field__input" type="text" [placeholder]="ui.t('common.filter_key_ph')"
-                    [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
                   <input class="edit-field__input" type="text" [placeholder]="ui.t('common.filter_name_ph')"
                     [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
-                  <select class="edit-field__select" [value]="newFilterType()"
-                    (change)="newFilterType.set($any($event.target).value)">
-                    <option value="boolean">{{ ui.t('common.filter_bool') }}</option>
-                    <option value="select">{{ ui.t('common.filter_select') }}</option>
-                    <option value="multi_select">{{ ui.t('common.filter_multiselect') }}</option>
-                  </select>
                   <button class="ev-add-inline-form__submit" type="button"
-                    [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
+                    [disabled]="!newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()">
                     @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
                     @else { {{ ui.t('common.add_filter_btn') }} }
@@ -172,18 +169,10 @@
               </button>
               @if (showAddFilter()) {
                 <div class="ev-add-inline-form ev-add-inline-form--filter">
-                  <input class="edit-field__input" type="text" [placeholder]="ui.t('common.filter_key_ph')"
-                    [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
                   <input class="edit-field__input" type="text" [placeholder]="ui.t('common.filter_name_ph')"
                     [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
-                  <select class="edit-field__select" [value]="newFilterType()"
-                    (change)="newFilterType.set($any($event.target).value)">
-                    <option value="boolean">{{ ui.t('common.filter_bool') }}</option>
-                    <option value="select">{{ ui.t('common.filter_select') }}</option>
-                    <option value="multi_select">{{ ui.t('common.filter_multiselect') }}</option>
-                  </select>
                   <button class="ev-add-inline-form__submit" type="button"
-                    [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
+                    [disabled]="!newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()">
                     @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
                     @else { {{ ui.t('common.add_filter_btn') }} }
@@ -194,23 +183,33 @@
           }
 
           <div class="edit-field">
-            <label class="edit-field__label" for="new-dest-country">{{ ui.t('common.country') }}</label>
-            <select id="new-dest-country" class="edit-field__select" formControlName="countryId">
-              <option [ngValue]="null">— Sve države —</option>
+            <label class="edit-field__label" for="new-dest-country">{{ ui.t('common.country') }} <span class="edit-field__required">*</span></label>
+            <select id="new-dest-country" class="edit-field__select"
+              [class.edit-field__input--error]="form.controls.countryId.invalid && form.controls.countryId.touched"
+              formControlName="countryId">
+              <option [ngValue]="null">— Izaberi državu —</option>
               @for (c of localCountries(); track c.id) {
                 <option [ngValue]="c.id.toString()">{{ c.name }}</option>
               }
             </select>
+            @if (form.controls.countryId.invalid && form.controls.countryId.touched) {
+              <span class="edit-field__error">Država je obavezna.</span>
+            }
           </div>
 
           <div class="edit-field">
-            <label class="edit-field__label" for="new-dest-region">{{ ui.t('common.region') }}</label>
-            <select id="new-dest-region" class="edit-field__select" formControlName="regionId">
-              <option [ngValue]="null">— Bez regije —</option>
+            <label class="edit-field__label" for="new-dest-region">{{ ui.t('common.region') }} <span class="edit-field__required">*</span></label>
+            <select id="new-dest-region" class="edit-field__select"
+              [class.edit-field__input--error]="form.controls.regionId.invalid && form.controls.regionId.touched"
+              formControlName="regionId">
+              <option [ngValue]="null">— Izaberi regiju —</option>
               @for (r of filteredRegions(); track r.id) {
                 <option [ngValue]="r.id.toString()">{{ r.name }}</option>
               }
             </select>
+            @if (form.controls.regionId.invalid && form.controls.regionId.touched) {
+              <span class="edit-field__error">Regija je obavezna.</span>
+            }
           </div>
 
           <div class="edit-field">
@@ -246,6 +245,7 @@
           <div class="edit-modal__address-row">
             <input
               class="edit-field__input edit-field__input--address"
+              [class.edit-field__input--error]="form.controls.address.invalid && form.controls.address.touched"
               formControlName="address"
               [placeholder]="ui.t('common.address_placeholder')"
               (keydown.enter)="$event.preventDefault(); geocode()"
@@ -264,6 +264,9 @@
               }
             </button>
           </div>
+          @if (form.controls.address.invalid && form.controls.address.touched) {
+            <span class="edit-field__error">Lokacija je obavezna — klikni na mapu ili pretraži adresu.</span>
+          }
 
           <div #mapEl class="edit-modal__map"></div>
           <p class="edit-modal__map-hint">{{ ui.t('common.map_hint') }}</p>
@@ -299,7 +302,7 @@
       <div class="edit-modal__images-section">
         <div class="edit-modal__images-header">
           <span class="edit-field__label">
-            {{ ui.t('common.images') }}
+            {{ ui.t('common.images') }} <span class="edit-field__required">*</span>
             <span class="edit-field__counter">{{ pendingImages().length }} / {{ MAX_IMAGES }}</span>
           </span>
           @if (pendingImages().length < MAX_IMAGES) {
@@ -337,6 +340,12 @@
     </form>
 
     <footer class="edit-modal__footer">
+      @if (pendingImages().length === 0) {
+        <span class="edit-modal__finish-hint">
+          <span class="material-icons">info_outline</span>
+          Dodaj bar 1 sliku pre kreiranja
+        </span>
+      }
       <button class="edit-modal__btn edit-modal__btn--cancel" type="button" (click)="cancel.emit()">
         {{ ui.t('confirm.cancel') }}
       </button>
@@ -344,7 +353,7 @@
         class="edit-modal__btn edit-modal__btn--save"
         type="button"
         (click)="save()"
-        [disabled]="form.invalid || isSaving()"
+        [disabled]="form.invalid || isSaving() || pendingImages().length === 0"
       >
         @if (isSaving()) {
           <span class="material-icons edit-modal__spin">sync</span>

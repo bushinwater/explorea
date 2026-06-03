@@ -184,13 +184,6 @@
                   <input
                     class="edit-field__input"
                     type="text"
-                    [placeholder]="ui.t('common.filter_key_ph')"
-                    [value]="newFilterKey()"
-                    (input)="newFilterKey.set($any($event.target).value)"
-                  />
-                  <input
-                    class="edit-field__input"
-                    type="text"
                     [placeholder]="ui.t('common.filter_name_ph')"
                     [value]="newFilterLabel()"
                     (input)="newFilterLabel.set($any($event.target).value)"
@@ -200,9 +193,7 @@
                   <button
                     class="ev-add-inline-form__submit"
                     type="button"
-                    [disabled]="
-                      !newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()
-                    "
+                    [disabled]="!newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()"
                   >
                     @if (isAddingFilter()) {

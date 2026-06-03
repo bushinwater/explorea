@@ -101,11 +101,12 @@ namespace Explorea.Server.Repositories.Implementations
 
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
-        var q = query.Query.Trim().ToLower();
+        var q = NormalizeQuery(query.Query);
         destinationsQuery = destinationsQuery.Where(d =>
-          d.Name.ToLower().Contains(q) ||
-          (d.Description != null && d.Description.ToLower().Contains(q)) ||
-          (d.City != null && d.City.Name.ToLower().Contains(q))
+          EF.Functions.Unaccent(d.Name).ToLower().Contains(q) ||
+          (d.Address != null && EF.Functions.Unaccent(d.Address).ToLower().Contains(q)) ||
+          (d.Description != null && EF.Functions.Unaccent(d.Description).ToLower().Contains(q)) ||
+          (d.City != null && EF.Functions.Unaccent(d.City.Name).ToLower().Contains(q))
         );
       }
 
@@ -137,6 +138,7 @@ namespace Explorea.Server.Repositories.Implementations
             Slug = d.Slug,
             PreviewImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
             AvgRating = d.AvgRating,
+            Address = d.Address,
             City = d.City == null ? null : new CityRefDto
             {
               Id = d.City.Id,
@@ -483,16 +485,18 @@ namespace Explorea.Server.Repositories.Implementations
 
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
-        var q = query.Query.Trim().ToLower();
+        var q = NormalizeQuery(query.Query);
         if (q.Length >= 4)
             destinationsQuery = destinationsQuery.Where(d =>
-                d.Name.ToLower().Contains(q) ||
-                (d.Description != null && d.Description.ToLower().Contains(q)) ||
-                (d.City != null && d.City.Name.ToLower().Contains(q)));
+                EF.Functions.Unaccent(d.Name).ToLower().Contains(q) ||
+                (d.Address != null && EF.Functions.Unaccent(d.Address).ToLower().Contains(q)) ||
+                (d.Description != null && EF.Functions.Unaccent(d.Description).ToLower().Contains(q)) ||
+                (d.City != null && EF.Functions.Unaccent(d.City.Name).ToLower().Contains(q)));
         else
             destinationsQuery = destinationsQuery.Where(d =>
-                d.Name.ToLower().Contains(q) ||
-                (d.City != null && d.City.Name.ToLower().Contains(q)));
+                EF.Functions.Unaccent(d.Name).ToLower().Contains(q) ||
+                (d.Address != null && EF.Functions.Unaccent(d.Address).ToLower().Contains(q)) ||
+                (d.City != null && EF.Functions.Unaccent(d.City.Name).ToLower().Contains(q)));
       }
 
       if (query.RegionsIds?.Count > 0)
@@ -589,6 +593,7 @@ namespace Explorea.Server.Repositories.Implementations
             HeroImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
             AvgRating = d.AvgRating,
             Popularity = d.Popularity,
+            Address = d.Address,
             City = d.City == null ? null : new CityRefDto
             {
                 Id = d.City.Id,
@@ -993,6 +998,19 @@ namespace Explorea.Server.Repositories.Implementations
     private static TimeOnly GetCurrentUtcTimeOnly()
     {
       return TimeOnly.FromDateTime(DateTime.UtcNow);
+    }
+
+    private static string NormalizeQuery(string input)
+    {
+      var normalized = input.Trim().Normalize(System.Text.NormalizationForm.FormD);
+      var sb = new System.Text.StringBuilder();
+      foreach (char c in normalized)
+      {
+        var cat = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+        if (cat != System.Globalization.UnicodeCategory.NonSpacingMark)
+          sb.Append(c);
+      }
+      return sb.ToString().Normalize(System.Text.NormalizationForm.FormC).ToLower();
     }
   }
 }

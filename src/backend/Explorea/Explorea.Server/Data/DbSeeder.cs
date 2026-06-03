@@ -7,6 +7,9 @@ namespace Explorea.Server.Data
     {
         public static async Task SeedAsync(AppDbContext db)
         {
+            try { await db.Database.ExecuteSqlRawAsync("CREATE EXTENSION IF NOT EXISTS unaccent;"); }
+            catch { /* unaccent may require superuser on some setups */ }
+
             if (await db.InterestTags.AnyAsync()) return;
 
             var now = DateTimeOffset.UtcNow;

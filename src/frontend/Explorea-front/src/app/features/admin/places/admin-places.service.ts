@@ -132,9 +132,9 @@ export class AdminPlacesService {
     return this.http.get<FilterDefinition[]>('/api/filter-definitions', { params });
   }
 
-  createFilterDefinition(typeId: number, filterKey: string, filterLabel: string, filterType: string): Observable<FilterDefinition> {
+  createFilterDefinition(typeId: number, filterLabel: string, filterType: string): Observable<FilterDefinition> {
     return this.http.post<FilterDefinition>('/api/admin/filter-definitions', {
-      entityType: 'place', typeId, filterKey, filterLabel, filterType,
+      entityType: 'place', typeId, filterLabel, filterType,
     });
   }
 

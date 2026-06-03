@@ -14,5 +14,6 @@ namespace Explorea.Server.Repositories.Interfaces
         Task<List<Country>> GetCountriesAsync();
         Task<List<DestinationType>> GetDestinationTypesAsync();
         Task<List<FilterDefinition>> GetFilterDefinitionsAsync(string entityType, int typeId);
+        Task<(int? RegionId, int? CountryId)> GetRegionByCoordinatesAsync(double lat, double lng);
     }
 }

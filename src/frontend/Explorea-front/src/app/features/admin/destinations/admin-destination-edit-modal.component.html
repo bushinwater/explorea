@@ -143,18 +143,10 @@
               </button>
               @if (showAddFilter()) {
                 <div class="ev-add-inline-form ev-add-inline-form--filter">
-                  <input class="edit-field__input" type="text" [placeholder]="ui.t('common.filter_key_ph')"
-                    [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
                   <input class="edit-field__input" type="text" [placeholder]="ui.t('common.filter_name_ph')"
                     [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
-                  <select class="edit-field__select" [value]="newFilterType()"
-                    (change)="newFilterType.set($any($event.target).value)">
-                    <option value="boolean">{{ ui.t('common.filter_bool') }}</option>
-                    <option value="select">{{ ui.t('common.filter_select') }}</option>
-                    <option value="multi_select">{{ ui.t('common.filter_multiselect') }}</option>
-                  </select>
                   <button class="ev-add-inline-form__submit" type="button"
-                    [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
+                    [disabled]="!newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()">
                     @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
                     @else { {{ ui.t('common.add_filter_btn') }} }
@@ -173,18 +165,10 @@
               </button>
               @if (showAddFilter()) {
                 <div class="ev-add-inline-form ev-add-inline-form--filter">
-                  <input class="edit-field__input" type="text" [placeholder]="ui.t('common.filter_key_ph')"
-                    [value]="newFilterKey()" (input)="newFilterKey.set($any($event.target).value)" />
                   <input class="edit-field__input" type="text" [placeholder]="ui.t('common.filter_name_ph')"
                     [value]="newFilterLabel()" (input)="newFilterLabel.set($any($event.target).value)" />
-                  <select class="edit-field__select" [value]="newFilterType()"
-                    (change)="newFilterType.set($any($event.target).value)">
-                    <option value="boolean">{{ ui.t('common.filter_bool') }}</option>
-                    <option value="select">{{ ui.t('common.filter_select') }}</option>
-                    <option value="multi_select">{{ ui.t('common.filter_multiselect') }}</option>
-                  </select>
                   <button class="ev-add-inline-form__submit" type="button"
-                    [disabled]="!newFilterKey().trim() || !newFilterLabel().trim() || isAddingFilter()"
+                    [disabled]="!newFilterLabel().trim() || isAddingFilter()"
                     (click)="addNewFilter()">
                     @if (isAddingFilter()) { <span class="material-icons edit-modal__spin">sync</span> }
                     @else { {{ ui.t('common.add_filter_btn') }} }
