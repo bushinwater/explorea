@@ -1,3 +1,4 @@
+using Explorea.API.DTOs.Admin;
 using Explorea.API.DTOs.Admin.Destination;
 
 namespace Explorea.Server.Services.Admin.Interfaces
@@ -43,6 +44,10 @@ namespace Explorea.Server.Services.Admin.Interfaces
         Task<AdminDestinationListDto?> UpdateAsync(Guid id, AdminUpdateDestinationDto dto, Guid updatedBy);
 
         Task<bool> DeleteAsync(Guid id, Guid currentUserId);
+
+        Task<EntityDependenciesDto> GetDependenciesAsync(Guid id, string tab, int page, int pageSize);
+
+        Task<bool> DeleteCascadeAsync(Guid id, Guid currentUserId);
 
         Task<bool> RestoreAsync(Guid id, Guid currentUserId);
 

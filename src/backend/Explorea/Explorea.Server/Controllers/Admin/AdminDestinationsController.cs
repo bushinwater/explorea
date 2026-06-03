@@ -272,6 +272,18 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        // GET /api/admin/destinations/{id}/dependencies
+        [HttpGet("{id}/dependencies")]
+        public async Task<IActionResult> GetDependencies(
+            Guid id,
+            [FromQuery] string tab = "events",
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var result = await _service.GetDependenciesAsync(id, tab, page, pageSize);
+            return Ok(result);
+        }
+
         // DELETE /api/admin/destinations/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
@@ -280,6 +292,23 @@ namespace Explorea.Server.Controllers.Admin
             {
                 var userId = GetCurrentUserId();
                 var deleted = await _service.DeleteAsync(id, userId);
+                if (!deleted) return NotFound();
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
+        // DELETE /api/admin/destinations/{id}/cascade
+        [HttpDelete("{id}/cascade")]
+        public async Task<IActionResult> DeleteCascade(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var deleted = await _service.DeleteCascadeAsync(id, userId);
                 if (!deleted) return NotFound();
                 return NoContent();
             }

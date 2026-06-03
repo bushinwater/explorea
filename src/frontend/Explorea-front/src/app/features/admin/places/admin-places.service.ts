@@ -7,6 +7,7 @@ import {
   CreatePlaceDto,
   DestinationOption,
   InterestTagOption,
+  PlaceDependenciesResponse,
   PlaceDetail,
   PlaceFilters,
   PlaceImage,
@@ -168,6 +169,17 @@ export class AdminPlacesService {
 
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
+  }
+
+  getPlaceDependencies(id: string, page: number, pageSize: number): Observable<PlaceDependenciesResponse> {
+    return this.http.get<PlaceDependenciesResponse>(
+      `${this.base}/${id}/dependencies`,
+      { params: { page, pageSize } }
+    );
+  }
+
+  deleteCascade(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}/cascade`);
   }
 
   restorePlace(id: string): Observable<void> {
