@@ -17,5 +17,6 @@ namespace Explorea.API.DTOs.Destination
         public double? DistanceKm { get; set; }
         public CountryRefDto? Country { get; set; }
         public string? TypeName { get; set; }
+        public string? Address { get; set; }
     }
 }

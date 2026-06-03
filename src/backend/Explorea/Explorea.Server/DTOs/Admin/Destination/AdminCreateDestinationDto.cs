@@ -5,6 +5,7 @@ namespace Explorea.API.DTOs.Admin.Destination
         public string Name { get; set; } = null!;
         public string Slug { get; set; } = null!;
         public string? Description { get; set; }
+        public string? Address { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }
         public int? CityId { get; set; }

@@ -55,6 +55,7 @@ namespace Explorea.Server.Services
       HeroImageUrl = d.PreviewImageUrl ?? d.HeroImageUrl,
       Popularity = d.Popularity,
       IsFeatured = d.IsFeatured,
+      Address = d.Address,
       City = d.City == null ? null : new CityRefDto
       {
         Id = d.City.Id,

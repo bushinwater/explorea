@@ -1530,7 +1530,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       this.http
         .get<{ lat: string; lon: string }[]>(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
-          { headers: { 'Accept-Language': 'sr,en' } },
+          { headers: { 'Accept-Language': 'sr-Latn,en' } },
         )
         .subscribe({
           next: (results) => {
@@ -1581,14 +1581,13 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         .addTo(this.map);
       this.marker.on('dragend', () => {
         const pos = this.marker!.getLngLat();
-        this.mapLatitude.set(pos.lat);
-        this.mapLongitude.set(pos.lng);
+        this.setMapCoords(pos.lat, pos.lng, true);
         this.cdr.detectChanges();
       });
     }
 
     this.map.on('click', (e) => {
-      this.setMapCoords(e.lngLat.lat, e.lngLat.lng);
+      this.setMapCoords(e.lngLat.lat, e.lngLat.lng, true);
       this.cdr.detectChanges();
     });
 
@@ -1602,7 +1601,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  private setMapCoords(lat: number, lng: number): void {
+  private setMapCoords(lat: number, lng: number, reverseGeocode = false): void {
     this.mapLatitude.set(lat);
     this.mapLongitude.set(lng);
 
@@ -1616,13 +1615,30 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         .addTo(this.map);
       this.marker.on('dragend', () => {
         const pos = this.marker!.getLngLat();
-        this.mapLatitude.set(pos.lat);
-        this.mapLongitude.set(pos.lng);
+        this.setMapCoords(pos.lat, pos.lng, true);
         this.cdr.detectChanges();
       });
     }
 
     this.map.flyTo({ center: [lng, lat], zoom: 12, duration: 800 });
+
+    if (reverseGeocode) {
+      this.http.get<any>(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+        { headers: { 'Accept-Language': 'sr-Latn,en' } },
+      ).subscribe({
+        next: result => {
+          if (result?.address) {
+            const a = result.address;
+            const street = [a.road ?? a.pedestrian ?? a.footway, a.house_number].filter(Boolean).join(' ');
+            const city = a.city ?? a.town ?? a.village ?? a.municipality ?? '';
+            const shortAddr = [street, city].filter(Boolean).join(', ') || result.display_name;
+            this.mapAddress.set(shortAddr);
+            this.cdr.detectChanges();
+          }
+        },
+      });
+    }
   }
 
   private destroyMap(): void {

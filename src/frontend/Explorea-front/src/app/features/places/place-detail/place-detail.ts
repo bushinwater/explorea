@@ -8,7 +8,9 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { PlaceDetail } from '../../../core/models/place.model';
+import { EventCard } from '../../../core/models/event.model';
 import { PlaceService } from '../../../core/services/place.service';
+import { EventService } from '../../../core/services/event.service';
 import { PopularityService } from '../../../core/services/popularity.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { SavedService } from '../../../core/services/saved.service';
@@ -61,6 +63,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private location = inject(Location);
   private placeService = inject(PlaceService);
+  private eventService = inject(EventService);
   private popularityService = inject(PopularityService);
   private authService = inject(AuthService);
   private savedService = inject(SavedService);
@@ -71,6 +74,10 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   notFound = false;
   activeTab: 'details' | 'events' | 'reviews' = 'details';
   descriptionExpanded = false;
+
+  nearbyEvents: EventCard[] = [];
+  nearbyEventsLoading = false;
+  nearbyEventsLoaded = false;
 
   isSaved = false;
   isSavedLoading = false;
@@ -120,6 +127,8 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
       this.place = null;
       this.mapInitialized = false;
       this.activeTab = 'details';
+      this.nearbyEvents = [];
+      this.nearbyEventsLoaded = false;
       this.cdr.detectChanges();
 
       this.placeService.getBySlug(slug).subscribe({
@@ -473,7 +482,32 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     return (this.place?.reviews ?? []) as unknown as ReviewDto[];
   }
 
-  setTab(tab: 'details' | 'events' | 'reviews'): void { this.activeTab = tab; }
+  setTab(tab: 'details' | 'events' | 'reviews'): void {
+    this.activeTab = tab;
+    if (tab === 'events' && !this.nearbyEventsLoaded) {
+      this.loadEvents();
+    }
+  }
+
+  private loadEvents(): void {
+    if (!this.place) return;
+    this.nearbyEventsLoading = true;
+    const lat = this.place.location?.lat ?? 0;
+    const lng = this.place.location?.lng ?? 0;
+    this.eventService.getVenueOrNearbyEvents(this.place.id, lat, lng).subscribe({
+      next: (events) => {
+        this.nearbyEvents = events;
+        this.nearbyEventsLoaded = true;
+        this.nearbyEventsLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.nearbyEventsLoaded = true;
+        this.nearbyEventsLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
   toggleDescription(): void { this.descriptionExpanded = !this.descriptionExpanded; }
 
   openLightbox(index: number): void {

@@ -220,7 +220,7 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
     this.http
       .get<any[]>(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
-        { headers: { 'Accept-Language': 'sr,en' } },
+        { headers: { 'Accept-Language': 'sr-Latn,en' } },
       )
       .subscribe({
         next: (results) => {
@@ -252,6 +252,7 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
         name:        v.name!,
         slug:        this.toSlug(v.name!),
         description: v.description!,
+        address:     v.address || null,
         latitude:    v.latitude!,
         longitude:   v.longitude!,
         visibility:  v.visibility!,
@@ -517,7 +518,7 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
     this.map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
 
     this.map.on('click', (e) => {
-      this.setCoords(e.lngLat.lat, e.lngLat.lng);
+      this.setCoords(e.lngLat.lat, e.lngLat.lng, true);
       this.cdr.detectChanges();
     });
 
@@ -530,7 +531,7 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
     });
   }
 
-  private setCoords(lat: number, lng: number): void {
+  private setCoords(lat: number, lng: number, reverseGeocode = false): void {
     this.form.patchValue({ latitude: lat, longitude: lng });
 
     if (!this.map) return;
@@ -543,12 +544,32 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
 
       this.marker.on('dragend', () => {
         const pos = this.marker!.getLngLat();
-        this.form.patchValue({ latitude: pos.lat, longitude: pos.lng });
+        this.setCoords(pos.lat, pos.lng, true);
         this.cdr.detectChanges();
       });
     }
 
     this.map.flyTo({ center: [lng, lat], zoom: 12, duration: 800 });
+
+    if (reverseGeocode) {
+      this.http
+        .get<any>(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+          { headers: { 'Accept-Language': 'sr-Latn,en' } },
+        )
+        .subscribe({
+          next: (result) => {
+            if (result?.address) {
+              const a = result.address;
+              const street = [a.road ?? a.pedestrian ?? a.footway, a.house_number].filter(Boolean).join(' ');
+              const city = a.city ?? a.town ?? a.village ?? a.municipality ?? '';
+              const shortAddr = [street, city].filter(Boolean).join(', ') || result.display_name;
+              this.form.patchValue({ address: shortAddr });
+              this.cdr.detectChanges();
+            }
+          },
+        });
+    }
   }
 
   private toSlug(name: string): string {

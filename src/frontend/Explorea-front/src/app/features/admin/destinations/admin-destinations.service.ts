@@ -38,6 +38,7 @@ interface ApiDestinationItem {
   visibility: string;
   city: string | null;
   country: string | null;
+  address?: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
@@ -136,6 +137,7 @@ export class AdminDestinationsService {
 
   createDestination(dto: {
     name: string; slug: string; description: string;
+    address?: string | null;
     latitude: number; longitude: number; visibility: string;
     typeId?: number | null; regionId?: number | null; countryId?: number | null;
     extraFilters?: Record<string, string>;
@@ -164,6 +166,7 @@ export class AdminDestinationsService {
         name: item.name,
         slug: item.slug,
         description: (item as any).description ?? null,
+        address: (item as any).address ?? null,
         latitude: (item as any).latitude ?? null,
         longitude: (item as any).longitude ?? null,
         visibility: item.visibility,
@@ -187,7 +190,7 @@ export class AdminDestinationsService {
     );
   }
 
-  updateDestination(id: string, dto: Partial<{ name: string; description: string; latitude: number; longitude: number; visibility: string; typeId: number | null; clearTypeId: boolean; regionId: number | null; clearRegionId: boolean; countryId: number | null; clearCountryId: boolean; extraFilters: Record<string, string> }>): Observable<DestinationRow> {
+  updateDestination(id: string, dto: Partial<{ name: string; description: string; address: string | null; latitude: number; longitude: number; visibility: string; typeId: number | null; clearTypeId: boolean; regionId: number | null; clearRegionId: boolean; countryId: number | null; clearCountryId: boolean; extraFilters: Record<string, string> }>): Observable<DestinationRow> {
     return this.http.put<ApiDestinationItem>(`/api/admin/destinations/${id}`, dto).pipe(
       map((item) => this.mapToRow(item)),
     );
@@ -234,6 +237,7 @@ export class AdminDestinationsService {
       id: item.id,
       slug: item.slug,
       name: item.name,
+      address: item.address ?? null,
       city: item.city ?? item.region ?? item.country ?? 'Nepoznato',
       region: item.region ?? 'Bez regije',
       regionId: item.regionId,

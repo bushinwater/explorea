@@ -408,6 +408,7 @@ namespace Explorea.Server.Services.Admin
                 Name        = dto.Name,
                 Slug        = dto.Slug,
                 Description = dto.Description,
+                Address     = dto.Address,
                 Latitude    = dto.Latitude,
                 Longitude   = dto.Longitude,
                 Location    = _geometryFactory.CreatePoint(new Coordinate(dto.Longitude, dto.Latitude)),
@@ -452,6 +453,7 @@ namespace Explorea.Server.Services.Admin
             if (dto.Name        != null) destination.Name        = dto.Name;
             if (dto.Slug        != null) destination.Slug        = dto.Slug;
             if (dto.Description != null) destination.Description = dto.Description;
+            destination.Address = dto.Address;
             if (dto.HeroImageUrl!= null) destination.HeroImageUrl= dto.HeroImageUrl;
             if (dto.Visibility  != null) destination.Visibility  = dto.Visibility;
             if (dto.CityId    != null) destination.CityId = dto.CityId;
@@ -554,6 +556,7 @@ namespace Explorea.Server.Services.Admin
             CountryId       = d.CountryId,
             Country         = d.Country?.Name,
             Description     = d.Description,
+            Address         = d.Address,
             Latitude        = d.Latitude,
             Longitude       = d.Longitude,
             Images          = d.Images

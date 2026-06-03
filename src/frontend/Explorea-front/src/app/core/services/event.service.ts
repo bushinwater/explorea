@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, of, switchMap } from 'rxjs';
+import { map } from 'rxjs/operators';
 import {
   EventCard,
   EventDetail,
@@ -101,14 +102,37 @@ export class EventService {
       return of({ items: filtered, total: filtered.length });
     }
 
-    let httpParams = new HttpParams().set('pageSize', '500');
-    if (params.typeId != null)  httpParams = httpParams.set('typeId', params.typeId);
-    if (params.cityId != null)  httpParams = httpParams.set('cityId', params.cityId);
-    if (params.freeOnly)        httpParams = httpParams.set('freeOnly', 'true');
-    if (params.date)            httpParams = httpParams.set('date', params.date);
-    if (params.weekend)         httpParams = httpParams.set('weekend', 'true');
+    let httpParams = new HttpParams().set('pageSize', params.pageSize ?? 500);
+    if (params.typeId != null)    httpParams = httpParams.set('typeId', params.typeId);
+    if (params.cityId != null)    httpParams = httpParams.set('cityId', params.cityId);
+    if (params.freeOnly)          httpParams = httpParams.set('freeOnly', 'true');
+    if (params.date)              httpParams = httpParams.set('date', params.date);
+    if (params.weekend)           httpParams = httpParams.set('weekend', 'true');
+    if (params.placeId)           httpParams = httpParams.set('placeId', params.placeId);
+    if (params.nearbyLat != null) {
+      httpParams = httpParams
+        .set('nearbyLat', params.nearbyLat)
+        .set('nearbyLng', params.nearbyLng!)
+        .set('nearbyRadiusKm', params.nearbyRadius ?? 50)
+        .set('userLat', params.nearbyLat)
+        .set('userLng', params.nearbyLng!)
+        .set('sortBy', 'nearest');
+    }
 
     return this.http.get<EventListResponse>(this.api, { params: httpParams });
+  }
+
+  getVenueOrNearbyEvents(placeId: string, lat: number, lng: number): Observable<EventCard[]> {
+    if (this.useMock) return of(MOCK_EVENTS.slice(0, 4));
+    return this.getEvents({ placeId, pageSize: 20 }).pipe(
+      switchMap(res =>
+        res.items.length > 0
+          ? of(res.items)
+          : this.getEvents({ nearbyLat: lat, nearbyLng: lng, nearbyRadius: 50, pageSize: 10 }).pipe(
+              map(r => r.items)
+            )
+      )
+    );
   }
 
   getCalendar(year: number, month: number): Observable<CalendarDay[]> {

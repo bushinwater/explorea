@@ -26,6 +26,7 @@ export interface DestinationDetail {
   name: string;
   slug: string;
   description: string | null;
+  address: string | null;
   latitude: number | null;
   longitude: number | null;
   visibility: string;
@@ -49,6 +50,7 @@ export interface DestinationRow {
   id: string;
   slug: string;
   name: string;
+  address?: string | null;
   city: string;
   region: string;
   regionId?: number | null;

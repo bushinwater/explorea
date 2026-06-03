@@ -103,16 +103,21 @@ namespace Explorea.Server.Repositories.Implementations
 
         public async Task<(List<Event> Items, int Total)> GetPagedAsync(
             int? cityId, int? typeId, DateTimeOffset? from,
-            DateTimeOffset? to, bool? free, int page, int pageSize)
+            DateTimeOffset? to, bool? free, int page, int pageSize,
+            Guid? placeId = null)
         {
             var query = _set
                 .Include(e => e.City)
                 .Include(e => e.Destination).ThenInclude(d => d!.City)
+                .Include(e => e.Place)
                 .Include(e => e.Type)
                 .Include(e => e.Country)
                 .Include(e => e.Images)
                 .Where(e => !e.IsDeleted && e.Visibility == "published")
                 .AsQueryable();
+
+            if (placeId.HasValue)
+                query = query.Where(e => e.PlaceId == placeId);
 
             if (cityId.HasValue)
                 query = query.Where(e => e.CityId == cityId);

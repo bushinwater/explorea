@@ -337,7 +337,7 @@
                       <span class="dest-name-info__name">{{ dest.name }}</span>
                       <span class="dest-name-info__location">
                         <span class="material-icons">location_on</span>
-                        {{ dest.city }}
+                        {{ dest.address || dest.city }}
                       </span>
                     </div>
                   </div>
@@ -488,7 +488,7 @@
           <h2 class="ddp-header__name">{{ dest.name }}</h2>
           <p class="ddp-header__location">
             <span class="material-icons">location_on</span>
-            {{ dest.city }}@if (dest.region && dest.region !== dest.city) {, {{ dest.region }}}
+            @if (dest.address) { {{ dest.address }} } @else { {{ dest.city }}@if (dest.region && dest.region !== dest.city) {, {{ dest.region }}} }
           </p>
         </div>
       </div>

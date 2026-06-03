@@ -395,6 +395,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
 
   get locationText(): string {
     if (!this.destination) return '';
+    if (this.destination.address) return this.destination.address;
     const city = this.destination.city?.name;
     const country = this.destination.country?.name;
     return [city, country].filter(Boolean).join(', ');

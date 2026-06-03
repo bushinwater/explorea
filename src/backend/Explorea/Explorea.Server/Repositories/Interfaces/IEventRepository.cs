@@ -11,7 +11,8 @@ namespace Explorea.Server.Repositories.Interfaces
 
         Task<(List<Event> Items, int Total)> GetPagedAsync(
             int? cityId, int? typeId, DateTimeOffset? from,
-            DateTimeOffset? to, bool? free, int page, int pageSize);
+            DateTimeOffset? to, bool? free, int page, int pageSize,
+            Guid? placeId = null);
 
         Task<List<Event>> GetByMonthAsync(int year, int month);
 

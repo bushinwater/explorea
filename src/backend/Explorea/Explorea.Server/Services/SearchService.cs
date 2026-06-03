@@ -511,6 +511,7 @@ namespace Explorea.Server.Services
         Slug = destination.Slug,
         PreviewImageUrl = destination.PreviewImageUrl ?? destination.HeroImageUrl,
         AvgRating = destination.AvgRating,
+        Address = destination.Address,
 
         City = destination.City == null ? null : new CityRefDto
                                                  {

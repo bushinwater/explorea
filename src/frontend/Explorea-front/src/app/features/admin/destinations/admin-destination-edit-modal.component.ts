@@ -176,6 +176,7 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
             typeId:      detail.typeId?.toString()   ?? null,
             countryId:   countryId?.toString()       ?? null,
             regionId:    detail.regionId?.toString() ?? null,
+            address:     detail.address ?? '',
             latitude:    detail.latitude,
             longitude:   detail.longitude,
           });
@@ -233,7 +234,7 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
     this.http
       .get<any[]>(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
-        { headers: { 'Accept-Language': 'sr,en' } },
+        { headers: { 'Accept-Language': 'sr-Latn,en' } },
       )
       .subscribe({
         next: (results) => {
@@ -409,6 +410,7 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
         .updateDestination(this.row.id, {
           name:           v.name ?? undefined,
           description:    v.description ?? undefined,
+          address:        v.address ?? null,
           visibility:     v.visibility ?? undefined,
           latitude:       v.latitude ?? undefined,
           longitude:      v.longitude ?? undefined,
@@ -483,13 +485,13 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
 
       this.marker.on('dragend', () => {
         const pos = this.marker!.getLngLat();
-        this.form.patchValue({ latitude: pos.lat, longitude: pos.lng });
+        this.setCoords(pos.lat, pos.lng, true);
         this.cdr.detectChanges();
       });
     }
 
     this.map.on('click', (e) => {
-      this.setCoords(e.lngLat.lat, e.lngLat.lng);
+      this.setCoords(e.lngLat.lat, e.lngLat.lng, true);
       this.cdr.detectChanges();
     });
 
@@ -559,7 +561,7 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
     return themed;
   }
 
-  private setCoords(lat: number, lng: number): void {
+  private setCoords(lat: number, lng: number, reverseGeocode = false): void {
     this.form.patchValue({ latitude: lat, longitude: lng });
 
     if (!this.map) return;
@@ -573,11 +575,31 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
 
       this.marker.on('dragend', () => {
         const pos = this.marker!.getLngLat();
-        this.form.patchValue({ latitude: pos.lat, longitude: pos.lng });
+        this.setCoords(pos.lat, pos.lng, true);
         this.cdr.detectChanges();
       });
     }
 
     this.map.flyTo({ center: [lng, lat], zoom: 12, duration: 800 });
+
+    if (reverseGeocode) {
+      this.http
+        .get<any>(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+          { headers: { 'Accept-Language': 'sr-Latn,en' } },
+        )
+        .subscribe({
+          next: (result) => {
+            if (result?.address) {
+              const a = result.address;
+              const street = [a.road ?? a.pedestrian ?? a.footway, a.house_number].filter(Boolean).join(' ');
+              const city = a.city ?? a.town ?? a.village ?? a.municipality ?? '';
+              const shortAddr = [street, city].filter(Boolean).join(', ') || result.display_name;
+              this.form.patchValue({ address: shortAddr });
+              this.cdr.detectChanges();
+            }
+          },
+        });
+    }
   }
 }

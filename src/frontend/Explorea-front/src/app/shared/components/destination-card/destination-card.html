@@ -13,7 +13,7 @@
     <h3 class="dest-card__name">{{ destination.name }}</h3>
     <span class="dest-card__city">
       <span class="material-icons">location_on</span>
-      {{ destination.city?.name }}
+      {{ destination.address || destination.city?.name || destination.name }}
     </span>
   </div>
 </a>

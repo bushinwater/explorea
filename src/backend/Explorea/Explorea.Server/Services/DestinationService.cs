@@ -37,6 +37,7 @@ namespace Explorea.Server.Services
                 AvgRating = d.AvgRating,
                 IsFeatured = d.IsFeatured,
                 Popularity = d.Popularity,
+                Address = d.Address,
                 City = d.City == null ? null : new CityRefDto
                 {
                     Id = d.City.Id,
@@ -154,6 +155,7 @@ namespace Explorea.Server.Services
                 Name = destination.Name,
                 Slug = destination.Slug,
                 Description = destination.Description,
+                Address = destination.Address,
                 PreviewImageUrl = destination.PreviewImageUrl ?? destination.HeroImageUrl,
                 HeroImageUrl = destination.PreviewImageUrl ?? destination.HeroImageUrl,
                 AvgRating = destination.AvgRating,
@@ -288,6 +290,7 @@ namespace Explorea.Server.Services
                     AvgRating = d.AvgRating,
                     IsFeatured = d.IsFeatured,
                     Popularity = d.Popularity,
+                    Address = d.Address,
                     City = d.City == null ? null : new CityRefDto
                     {
                         Id = d.City.Id,

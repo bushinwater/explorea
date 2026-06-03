@@ -23,6 +23,9 @@ namespace Explorea.API.Models
         [Column("description")]
         public string? Description { get; set; }
 
+        [MaxLength(500), Column("address")]
+        public string? Address { get; set; }
+
         [Column("latitude")]  public double? Latitude  { get; set; }
         [Column("longitude")] public double? Longitude { get; set; }
 

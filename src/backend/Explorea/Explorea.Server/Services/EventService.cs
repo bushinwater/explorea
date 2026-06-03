@@ -48,15 +48,30 @@ namespace Explorea.Server.Services
                 to   = new DateTimeOffset(saturday.AddDays(2), TimeSpan.Zero); // sub + ned
             }
 
-            var (events, total) = await _eventRepository.GetPagedAsync(
+            var (rawEvents, _) = await _eventRepository.GetPagedAsync(
                 cityId: query.CityId,
                 typeId: query.TypeId,
                 from: from,
                 to: to,
                 free: query.FreeOnly,
                 page: page,
-                pageSize: pageSize
+                pageSize: pageSize,
+                placeId: query.PlaceId
             );
+
+            var events = rawEvents;
+            if (query.NearbyLat.HasValue && query.NearbyLng.HasValue && query.NearbyRadiusKm.HasValue)
+            {
+                events = rawEvents.Where(e =>
+                    GetDistanceInKm(
+                        query.NearbyLat.Value, query.NearbyLng.Value,
+                        e.Latitude ?? e.Place?.Latitude ?? e.Destination?.Latitude,
+                        e.Longitude ?? e.Place?.Longitude ?? e.Destination?.Longitude
+                    ) <= query.NearbyRadiusKm.Value
+                ).ToList();
+            }
+
+            var total = events.Count;
 
             var sortedEvents = SortEvents(events, query.SortBy, query.UserLat, query.UserLng);
 

@@ -20,6 +20,7 @@ export interface DestinationCard {
   avgRating: number;
   city: City | null;
   location: { lat: number; lng: number };
+  address?: string | null;
   isFeatured?: boolean;
 }
 

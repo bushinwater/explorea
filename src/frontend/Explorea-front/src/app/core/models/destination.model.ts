@@ -31,6 +31,7 @@ export interface DestinationCard {
   city?: CityRef | null;
   country?: CountryRef | null;
   location?: LocationModel | null;
+  address?: string | null;
 }
 
 export interface ReviewUser {

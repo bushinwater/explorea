@@ -512,7 +512,7 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
     this.sub.add(
       this.http.get<any[]>(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
-        { headers: { 'Accept-Language': 'sr,en' } },
+        { headers: { 'Accept-Language': 'sr-Latn,en' } },
       ).subscribe({
         next: results => {
           this.isGeocoding.set(false);
@@ -725,12 +725,12 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
         .setLngLat([lng, lat]).addTo(this.map);
       this.marker.on('dragend', () => {
         const pos = this.marker!.getLngLat();
-        this.form.patchValue({ latitude: pos.lat, longitude: pos.lng });
+        this.setCoords(pos.lat, pos.lng, true);
         this.cdr.detectChanges();
       });
     }
 
-    this.map.on('click', e => { this.setCoords(e.lngLat.lat, e.lngLat.lng); this.cdr.detectChanges(); });
+    this.map.on('click', e => { this.setCoords(e.lngLat.lat, e.lngLat.lng, true); this.cdr.detectChanges(); });
 
     this.themeObserver = new MutationObserver(() => {
       const style = this.isDark ? this.darkStyle : this.lightStyle;
@@ -739,7 +739,7 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
     this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   }
 
-  private setCoords(lat: number, lng: number): void {
+  private setCoords(lat: number, lng: number, reverseGeocode = false): void {
     this.form.patchValue({ latitude: lat, longitude: lng });
     if (!this.map) return;
     if (this.marker) {
@@ -749,11 +749,28 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
         .setLngLat([lng, lat]).addTo(this.map);
       this.marker.on('dragend', () => {
         const pos = this.marker!.getLngLat();
-        this.form.patchValue({ latitude: pos.lat, longitude: pos.lng });
+        this.setCoords(pos.lat, pos.lng, true);
         this.cdr.detectChanges();
       });
     }
     this.map.flyTo({ center: [lng, lat], zoom: 13, duration: 800 });
+    if (reverseGeocode) {
+      this.http.get<any>(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+        { headers: { 'Accept-Language': 'sr-Latn,en' } },
+      ).subscribe({
+        next: result => {
+          if (result?.address) {
+            const a = result.address;
+            const street = [a.road ?? a.pedestrian ?? a.footway, a.house_number].filter(Boolean).join(' ');
+            const city = a.city ?? a.town ?? a.village ?? a.municipality ?? '';
+            const shortAddr = [street, city].filter(Boolean).join(', ') || result.display_name;
+            this.form.patchValue({ address: shortAddr });
+            this.cdr.detectChanges();
+          }
+        },
+      });
+    }
   }
 
   private get isDark(): boolean {

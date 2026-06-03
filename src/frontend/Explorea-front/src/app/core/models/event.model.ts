@@ -44,6 +44,11 @@ export interface EventFilterParams {
   freeOnly?: boolean;
   date?: string;    // ISO date string YYYY-MM-DD
   weekend?: boolean;
+  placeId?: string;
+  nearbyLat?: number;
+  nearbyLng?: number;
+  nearbyRadius?: number;
+  pageSize?: number;
 }
 
 export interface EventListResponse {

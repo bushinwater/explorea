@@ -17,6 +17,11 @@ namespace Explorea.API.DTOs.Event
         public double? UserLat { get; set; }
         public double? UserLng { get; set; }
 
+        public Guid? PlaceId { get; set; }
+        public double? NearbyLat { get; set; }
+        public double? NearbyLng { get; set; }
+        public double? NearbyRadiusKm { get; set; }
+
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 200;
     }

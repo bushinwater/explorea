@@ -323,7 +323,47 @@
               <!-- Events tab -->
               @if (activeTab === 'events') {
                 <div class="tab-block">
-                  <p class="empty-text">{{ 'PLACE_DETAIL.NO_EVENTS' | translate }}</p>
+                  @if (nearbyEventsLoading) {
+                    <div class="skel-list">
+                      @for (i of [1,2,3]; track i) {
+                        <div class="skel-event-row">
+                          <div class="skel skel-event-img"></div>
+                          <div class="skel-event-body">
+                            <div class="skel skel-line skel-line--lg"></div>
+                            <div class="skel skel-line skel-line--sm"></div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else if (nearbyEvents.length === 0) {
+                    <p class="empty-text">{{ 'PLACE_DETAIL.NO_EVENTS' | translate }}</p>
+                  } @else {
+                    <div class="stack-list">
+                      @for (ev of nearbyEvents; track ev.id) {
+                        <a class="stack-item" [routerLink]="['/events', ev.slug]">
+                          <div class="stack-item__image"
+                            [style.background-image]="'url(' + (ev.previewImageUrl || '') + ')'">
+                          </div>
+                          <div class="stack-item__content">
+                            <div class="stack-item__top">
+                              <div>
+                                <h3>{{ ev.name }}</h3>
+                                <span class="stack-item__type">{{ ev.type?.name }}</span>
+                              </div>
+                              <span class="stack-item__rating">
+                                <span class="material-icons">event</span>
+                                {{ ev.startDatetime | date:'d MMM' }}
+                              </span>
+                            </div>
+                            <p>
+                              <span class="material-icons">location_on</span>
+                              {{ ev.address || ev.city?.name }}
+                            </p>
+                          </div>
+                        </a>
+                      }
+                    </div>
+                  }
                 </div>
               }
 
