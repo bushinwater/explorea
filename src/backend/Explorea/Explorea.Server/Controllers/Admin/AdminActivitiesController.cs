@@ -219,7 +219,7 @@ namespace Explorea.Server.Controllers.Admin
                 await _context.ActivityImages.AddAsync(image);
                 await _context.SaveChangesAsync();
 
-                return Ok(new { url });
+                return Ok(new { url, id = image.Id });
             }
             catch (Exception ex)
             {

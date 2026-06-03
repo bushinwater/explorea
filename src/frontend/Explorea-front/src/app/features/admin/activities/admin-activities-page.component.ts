@@ -154,6 +154,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly modalCities = signal<CityOption[]>([]);
   protected readonly modalRegionId = signal<number | 'all'>('all');
   protected readonly newInclusionText = signal('');
+  protected readonly pendingHeroIsNew = signal(false);
 
   // Modal: country + extra filters + category add-new
   protected readonly countries = signal<CountryOption[]>([]);
@@ -541,6 +542,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.modalImagePreviews().forEach(p => URL.revokeObjectURL(p.url));
     this.modalImagePreviews.set([]);
     this.modalHeroIndex.set(0);
+    this.pendingHeroIsNew.set(false);
     this.editExistingImages.set([]);
     this.editHeroImageId.set(null);
     this.mapLatitude.set(null);
@@ -619,6 +621,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.modalImagePreviews().forEach(p => URL.revokeObjectURL(p.url));
     this.modalImagePreviews.set([]);
     this.modalHeroIndex.set(0);
+    this.pendingHeroIsNew.set(false);
     this.editExistingImages.set([...detail.images]);
     this.editHeroImageId.set(detail.images[0]?.id ?? null);
     this.mapLatitude.set(detail.latitude ?? null);
@@ -698,6 +701,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       this.modalImagePreviews().forEach(p => URL.revokeObjectURL(p.url));
       this.modalImagePreviews.set([]);
       this.modalHeroIndex.set(0);
+      this.pendingHeroIsNew.set(false);
       this.editExistingImages.set([]);
       this.editHeroImageId.set(null);
       this.mapLatitude.set(null);
@@ -818,6 +822,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected setModalHero(index: number): void {
     this.modalHeroIndex.set(index);
+    if (this.isEditMode()) {
+      this.pendingHeroIsNew.set(true);
+      this.editHeroImageId.set(null);
+    }
   }
 
   protected deleteExistingImage(imageId: string): void {
@@ -1018,6 +1026,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     if (!form.name.trim() || !form.categoryId) return;
     if (!this.managedRegion() && !this.selectedCountryId()) return;
     if (!this.managedRegion() && this.modalRegionId() === 'all') return;
+    if (!form.description?.trim()) { this.errorMessage.set('Opis je obavezno polje.'); return; }
+    if (!this.selectedInterestIds().length) { this.errorMessage.set('Potrebno je odabrati bar jedno interesovanje.'); return; }
+    if (!this.editExistingImages().length && !this.modalImagePreviews().length) { this.errorMessage.set('Dodajte bar jednu sliku.'); return; }
+    if (this.mapLatitude() === null) { this.errorMessage.set('Lokacija je obavezna — kliknite na mapu ili unesite adresu.'); return; }
 
     this.isSubmitting.set(true);
 
@@ -1032,7 +1044,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       startPoint: this.mapAddress().trim() || undefined,
       latitude: lat ?? undefined,
       longitude: lng ?? undefined,
-      inclusions: inclusions.length ? inclusions : undefined,
+      inclusions: this.isEditMode() ? inclusions : (inclusions.length ? inclusions : undefined),
       extraFilters: Object.keys(ef).length ? ef : (this.isEditMode() ? ef : undefined),
     };
 
@@ -1635,7 +1647,30 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
             const shortAddr = [street, city].filter(Boolean).join(', ') || result.display_name;
             this.mapAddress.set(shortAddr);
             this.cdr.detectChanges();
+            if (city) {
+              this.activitiesService.searchDestinations(city).subscribe({
+                next: results => {
+                  if (!results.length) return;
+                  const dest = results[0];
+                  this.createForm.update(f => ({ ...f, destinationId: dest.id }));
+                  this.destinationSearchText.set(dest.name);
+                  this.destinationResults.set([]);
+                  this.destinationDropdownOpen.set(false);
+                  this.cdr.detectChanges();
+                },
+              });
+            }
           }
+        },
+      });
+
+      this.http.get<{ regionId: number | null; countryId: number | null }>(
+        `/api/region-by-coords?lat=${lat}&lng=${lng}`,
+      ).subscribe({
+        next: res => {
+          if (res.countryId) this.selectedCountryId.set(res.countryId);
+          if (res.regionId) this.modalRegionId.set(res.regionId);
+          this.cdr.detectChanges();
         },
       });
     }
@@ -1727,15 +1762,27 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       ...previews.filter((_, i) => i !== heroIdx),
     ].map(p => p.file);
 
+    const uploadedIds: string[] = [];
+    const setHeroAfterUpload = this.pendingHeroIsNew();
+
     const uploadNext = (index: number) => {
       if (index >= ordered.length) {
         previews.forEach(p => URL.revokeObjectURL(p.url));
-        this.finalizeSubmit(activityId, activity);
+        if (setHeroAfterUpload && uploadedIds.length > 0) {
+          this.subscription.add(
+            this.activitiesService.setHeroImage(activityId, uploadedIds[0]).subscribe({
+              next: () => this.finalizeSubmit(activityId, activity),
+              error: () => this.finalizeSubmit(activityId, activity),
+            }),
+          );
+        } else {
+          this.finalizeSubmit(activityId, activity);
+        }
         return;
       }
       this.subscription.add(
         this.activitiesService.uploadImage(activityId, ordered[index]).subscribe({
-          next: () => uploadNext(index + 1),
+          next: (res) => { uploadedIds.push(res.id); uploadNext(index + 1); },
           error: () => uploadNext(index + 1),
         }),
       );

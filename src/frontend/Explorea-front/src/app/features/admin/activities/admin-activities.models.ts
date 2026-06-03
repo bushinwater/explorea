@@ -146,6 +146,9 @@ export interface UpdateActivityDto {
   latitude?: number;
   longitude?: number;
   extraFilters?: Record<string, string>;
+  inclusions?: string[];
+  organizerWebsite?: string | null;
+  countryId?: number | null;
 }
 
 export interface CityOption {

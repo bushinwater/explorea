@@ -154,10 +154,10 @@ export class AdminActivitiesService {
     return this.http.get<CityOption[]>('/api/cities', { params });
   }
 
-  uploadImage(activityId: string, file: File): Observable<{ url: string }> {
+  uploadImage(activityId: string, file: File): Observable<{ url: string; id: string }> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<{ url: string }>(`${this.base}/${activityId}/images`, formData);
+    return this.http.post<{ url: string; id: string }>(`${this.base}/${activityId}/images`, formData);
   }
 
   getById(id: string): Observable<ActivityDetail> {

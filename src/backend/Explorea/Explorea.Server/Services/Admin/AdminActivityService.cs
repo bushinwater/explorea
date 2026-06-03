@@ -555,6 +555,26 @@ namespace Explorea.Server.Services.Admin
       _repository.Update(activity);
       await _repository.SaveChangesAsync();
 
+      if (dto.Inclusions != null)
+      {
+        var existing = await _context.ActivityInclusions
+          .Where(i => i.ActivityId == activity.Id)
+          .ToListAsync();
+        _context.ActivityInclusions.RemoveRange(existing);
+        var newInclusions = dto.Inclusions
+          .Where(s => !string.IsNullOrWhiteSpace(s))
+          .Select(s => new API.Models.ActivityInclusion
+          {
+            Id         = Guid.NewGuid(),
+            ActivityId = activity.Id,
+            Item       = s.Trim(),
+            CreatedAt  = now,
+            CreatedBy  = updatedBy,
+          });
+        await _context.ActivityInclusions.AddRangeAsync(newInclusions);
+        await _context.SaveChangesAsync();
+      }
+
       return await GetByIdAsync(activity.Id, updatedBy);
     }
 

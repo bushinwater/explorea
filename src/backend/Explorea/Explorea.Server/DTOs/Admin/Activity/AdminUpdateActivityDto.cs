@@ -32,5 +32,7 @@ namespace Explorea.API.DTOs.Admin.Activity
         public bool? IsActive { get; set; }
 
         public string? OrganizerWebsite { get; set; }
+
+        public List<string>? Inclusions { get; set; }
     }
 }

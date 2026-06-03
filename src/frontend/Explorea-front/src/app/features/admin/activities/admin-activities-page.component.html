@@ -1170,7 +1170,7 @@
           }
 
           <div class="edit-field">
-            <label class="edit-field__label">{{ ui.t('common.description_label') }}</label>
+            <label class="edit-field__label">{{ ui.t('common.description_label') }} <span class="edit-field__required">*</span></label>
             <textarea
               class="edit-field__textarea"
               rows="4"
@@ -1248,7 +1248,7 @@
             <div class="edit-modal__interests-section">
               <div class="edit-modal__interests-header">
                 <span class="edit-field__label"
-                  >{{ ui.t('common.interests') }}
+                  >{{ ui.t('common.interests') }} <span class="edit-field__required">*</span>
                   <span class="edit-field__counter"
                     >{{ selectedInterestIds().length }} / 3</span
                   ></span
@@ -1420,7 +1420,7 @@
 
           <!-- Map / lokacija -->
           <div class="edit-field">
-            <label class="edit-field__label">{{ ui.t('common.location') }}</label>
+            <label class="edit-field__label">{{ ui.t('common.location') }} <span class="edit-field__required">*</span></label>
           </div>
 
           <div class="edit-modal__address-row">
@@ -1465,7 +1465,7 @@
       <div class="edit-modal__images-section">
         <div class="edit-modal__images-header">
           <span class="edit-field__label">
-            {{ ui.t('common.images') }}
+            {{ ui.t('common.images') }} <span class="edit-field__required">*</span>
             <span class="edit-field__counter">{{
               editExistingImages().length + modalImagePreviews().length
             }}</span>
@@ -1516,23 +1516,19 @@
           @for (preview of modalImagePreviews(); track preview.url; let i = $index) {
             <div
               class="edit-modal__img-card"
-              [class.edit-modal__img-card--hero]="
-                editExistingImages().length === 0 && modalHeroIndex() === i
-              "
+              [class.edit-modal__img-card--hero]="pendingHeroIsNew() && modalHeroIndex() === i"
             >
               <img [src]="preview.url" [alt]="preview.file.name" class="edit-modal__img" />
-              @if (editExistingImages().length === 0) {
-                <button
-                  class="edit-modal__img-hero"
-                  type="button"
-                  [title]="modalHeroIndex() === i ? 'Hero slika' : 'Postavi kao hero'"
-                  (click)="setModalHero(i)"
-                >
-                  <span class="material-icons">{{
-                    modalHeroIndex() === i ? 'star' : 'star_border'
-                  }}</span>
-                </button>
-              }
+              <button
+                class="edit-modal__img-hero"
+                type="button"
+                [title]="(pendingHeroIsNew() && modalHeroIndex() === i) ? 'Hero slika' : 'Postavi kao hero'"
+                (click)="setModalHero(i)"
+              >
+                <span class="material-icons">{{
+                  (pendingHeroIsNew() && modalHeroIndex() === i) ? 'star' : 'star_border'
+                }}</span>
+              </button>
               <button
                 class="edit-modal__img-delete"
                 type="button"
