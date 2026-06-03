@@ -190,7 +190,7 @@
   "users.edit.title": "Izmeni korisnika",
   "users.edit.description": "Ažuriraj podatke korisničkog naloga.",
   "users.delete.title": "Obriši korisnika",
-  "users.delete.description": "Da li si siguran/na da želiš da obrišeš {name}? Ova akcija se ne može poništiti.",
+  "users.delete.description": "Da li si siguran/na da želiš da obrišeš {name}? Nalog će biti premešten u tab Obrisani na 30 dana, tokom kojih korisnik može podneti apel. Nakon toga biće trajno uklonjen.",
   "users.delete.description_prefix": "Da li si siguran/na da želiš da obrišeš",
   "users.delete.confirm": "Obriši",
   "users.delete.cancel": "Otkaži",

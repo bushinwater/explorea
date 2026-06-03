@@ -190,7 +190,7 @@
   "users.edit.title": "Edit user",
   "users.edit.description": "Update the user's account details.",
   "users.delete.title": "Delete user",
-  "users.delete.description": "Are you sure you want to delete {name}? This action cannot be undone.",
+  "users.delete.description": "Are you sure you want to delete {name}? The account will be moved to the Deleted tab for 30 days, during which the user can submit an appeal. After 30 days it will be permanently removed.",
   "users.delete.description_prefix": "Are you sure you want to delete",
   "users.delete.confirm": "Delete",
   "users.delete.cancel": "Cancel",
