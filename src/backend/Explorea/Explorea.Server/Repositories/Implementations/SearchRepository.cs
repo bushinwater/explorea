@@ -159,8 +159,12 @@ namespace Explorea.Server.Repositories.Implementations
 
             if (type == "all" || type == "event")
             {
+                var now = DateTimeOffset.UtcNow;
                 var query = _db.Events.Include(e => e.City).Include(e => e.Type)
-                    .Where(e => !e.IsDeleted && e.Visibility == "published")
+                    .Where(e =>
+                        !e.IsDeleted &&
+                        e.Visibility == "published" &&
+                        e.EndDatetime >= now)
                     .AsQueryable();
                 if (!string.IsNullOrEmpty(q))
                     query = query.Where(e => e.Name.Contains(q));
@@ -205,9 +209,15 @@ namespace Explorea.Server.Repositories.Implementations
 
             if (type == "all" || type == "event")
             {
+                var now = DateTimeOffset.UtcNow;
                 events = await _db.Events
                     .Include(e => e.Type)
-                    .Where(e => !e.IsDeleted && e.Visibility == "published" && e.Latitude != null && e.Longitude != null)
+                    .Where(e =>
+                        !e.IsDeleted &&
+                        e.Visibility == "published" &&
+                        e.EndDatetime >= now &&
+                        e.Latitude != null &&
+                        e.Longitude != null)
                     .ToListAsync();
             }
 
@@ -564,7 +574,11 @@ namespace Explorea.Server.Repositories.Implementations
             .Include(e => e.Place)        
             .Include(e => e.Type)        
             .Include(e => e.Images)
-            .Where(e => ids.Contains(e.Id) && !e.IsDeleted && e.Visibility == "published")
+            .Where(e =>
+                ids.Contains(e.Id) &&
+                !e.IsDeleted &&
+                e.Visibility == "published" &&
+                e.EndDatetime >= now)
             .ToDictionaryAsync(e => e.Id);
 
         return rows

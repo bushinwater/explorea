@@ -178,9 +178,9 @@ namespace Explorea.Server.Repositories.Implementations
                .ThenByDescending(e => e.IsFeatured)
                .ThenByDescending(e => e.Popularity)
                .ThenBy(e => e.StartDatetime)
-        : query.OrderByDescending(e => e.IsFeatured)
-               .ThenByDescending(e => e.Popularity)
-               .ThenBy(e => e.StartDatetime);
+        : query.OrderBy(e => e.StartDatetime)
+               .ThenByDescending(e => e.IsFeatured)
+               .ThenByDescending(e => e.Popularity);
 
     return await query.Take(take).ToListAsync();
   }

@@ -341,6 +341,15 @@
             />
             <span>{{ ui.t('events.modal.featured') }}</span>
           </label>
+
+          <label class="ev-checkbox ev-field--full">
+            <input
+              type="checkbox"
+              [checked]="form().recursAnnually"
+              (change)="updateRecursAnnually($any($event.target).checked)"
+            />
+            <span>Obeležava se svake godine</span>
+          </label>
         </div>
       </div>
 

@@ -165,8 +165,13 @@ namespace Explorea.Server.Controllers
             var userId = await GetCurrentUserId();
             var plan   = await GetOrCreatePlan(userId);
 
+            var now = DateTimeOffset.UtcNow;
             var eventExists = await _context.Events
-                .AnyAsync(e => e.Id == request.EventId && !e.IsDeleted);
+                .AnyAsync(e =>
+                    e.Id == request.EventId &&
+                    !e.IsDeleted &&
+                    e.Visibility == "published" &&
+                    e.EndDatetime >= now);
             if (!eventExists)
                 return NotFound(new { message = "Event not found." });
 

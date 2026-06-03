@@ -21,6 +21,15 @@ namespace Explorea.Server.Services.Admin.Interfaces
             int pageSize,
             Guid currentUserId);
 
+        Task<(List<AdminEventListDto> Items, int Total)> GetExpiredAsync(
+            string? search,
+            Guid? destinationId,
+            int? cityId,
+            int? typeId,
+            int page,
+            int pageSize,
+            Guid currentUserId);
+
         Task<AdminEventStatsDto> GetStatsDtoAsync(Guid currentUserId);
 
         Task<AdminEventDetailDto?> GetByIdAsync(Guid id, Guid currentUserId);
@@ -28,6 +37,8 @@ namespace Explorea.Server.Services.Admin.Interfaces
         Task<AdminEventDetailDto> CreateAsync(AdminCreateEventDto dto, Guid createdBy);
 
         Task<AdminEventDetailDto?> UpdateAsync(Guid id, AdminUpdateEventDto dto, Guid updatedBy);
+
+        Task<AdminEventDetailDto?> RenewAsync(Guid id, AdminRenewEventDto dto, Guid currentUserId);
 
         Task<bool> DeleteAsync(Guid id, Guid currentUserId);
 
