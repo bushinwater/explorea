@@ -478,7 +478,7 @@
               }
 
               <a class="btn btn-primary booking-card__cta"
-                [href]="place.websiteUrl ?? ''"
+                [href]="place.websiteUrl ? (place.websiteUrl.match('^https?://') ? place.websiteUrl : 'https://' + place.websiteUrl) : ''"
                 [class.booking-card__cta--disabled]="!place.websiteUrl"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -510,7 +510,7 @@
             }
           </div>
           <a class="btn btn-primary mobile-bottom-bar__cta"
-            [href]="place.websiteUrl ?? ''"
+            [href]="place.websiteUrl ? (place.websiteUrl.match('^https?://') ? place.websiteUrl : 'https://' + place.websiteUrl) : ''"
             [class.mobile-bottom-bar__cta--disabled]="!place.websiteUrl"
             target="_blank"
             rel="noopener noreferrer">

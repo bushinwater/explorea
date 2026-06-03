@@ -289,7 +289,7 @@
       <!-- ORGANIZER BUTTON (mobile sticky) -->
       <div class="bottom-bar" *ngIf="activity.organizerWebsite">
         <a class="btn btn-primary bottom-bar__cta"
-          [href]="activity.organizerWebsite" target="_blank" rel="noopener noreferrer">
+          [href]="activity.organizerWebsite?.match('^https?://') ? activity.organizerWebsite : 'https://' + activity.organizerWebsite" target="_blank" rel="noopener noreferrer">
           <span class="material-icons">open_in_new</span>
           {{ 'ACTIVITY_DETAIL.ORGANIZER_LINK' | translate }}
         </a>

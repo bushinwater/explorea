@@ -478,7 +478,9 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   buyTickets(): void {
-    if (this.event?.ticketUrl) window.open(this.event.ticketUrl, '_blank');
+    if (!this.event?.ticketUrl) return;
+    const url = this.event.ticketUrl.match(/^https?:\/\//) ? this.event.ticketUrl : 'https://' + this.event.ticketUrl;
+    window.open(url, '_blank');
   }
 
   goBack(): void {
