@@ -6,13 +6,13 @@ namespace Explorea.Server.Repositories.Interfaces
     public interface IExploreRepository
     {
         Task<List<Destination>> GetNearbyDestinationsAsync(double? lat, double? lng, double radiusKm, int limit, decimal? minRating,
-            List<int>? destinationTypeIds = null, List<string>? extraFilters = null, int? regionId = null);
+            List<int>? destinationTypeIds = null, List<string>? extraFilters = null, int? regionId = null, bool includeAll = false);
         Task<List<Place>> GetNearbyPlacesAsync(double? lat, double? lng, double radiusKm, int limit, decimal? minRating, bool? openNow,
-            List<int>? placeTypeIds = null, decimal? minPrice = null, decimal? maxPrice = null, List<string>? extraFilters = null, int? regionId = null);
+            List<int>? placeTypeIds = null, decimal? minPrice = null, decimal? maxPrice = null, List<string>? extraFilters = null, int? regionId = null, bool includeAll = false);
         Task<List<Event>> GetNearbyEventsAsync(double? lat, double? lng, double radiusKm, int limit,
-            decimal? minRating = null, List<int>? eventTypeIds = null, decimal? minPrice = null, decimal? maxPrice = null, int? regionId = null);
+            decimal? minRating = null, List<int>? eventTypeIds = null, decimal? minPrice = null, decimal? maxPrice = null, int? regionId = null, bool includeAll = false);
         Task<List<Activity>> GetNearbyActivitiesAsync(double? lat, double? lng, double radiusKm, int limit, decimal? minRating,
-            List<int>? activityCategoryIds = null, int? regionId = null);
+            List<int>? activityCategoryIds = null, int? regionId = null, bool includeAll = false);
 
         Task<Destination?> GetDestinationBySlugAsync(string slug);
         Task<Place?> GetPlaceBySlugAsync(string slug);

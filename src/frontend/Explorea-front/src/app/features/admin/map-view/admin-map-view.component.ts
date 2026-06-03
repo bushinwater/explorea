@@ -469,7 +469,7 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
     this.loading = true;
     this.cdr.detectChanges();
 
-    const params: any = { radius: 1000, limit: 1000 };
+    const params: any = { radius: 1000, limit: 1000, includeAll: true };
     if (this.minRating !== null) params.minRating = this.minRating;
     if (this.openNowOnly) params.openNow = true;
     if (this.minPrice !== null) params.minPrice = this.minPrice;

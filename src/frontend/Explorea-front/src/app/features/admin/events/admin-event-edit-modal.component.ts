@@ -144,6 +144,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
   protected readonly allTypeOptions = computed(() => [...this.eventTypeOptions, ...this.extraTypes()]);
 
   protected readonly deletingFilterId = signal<number | null>(null);
+  protected readonly filterContextMenu = signal<{ id: number; key: string; x: number; y: number } | null>(null);
 
   // Add new filter definition
   protected readonly showAddFilter = signal(false);
@@ -573,6 +574,24 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
     this.newFilterType.set('boolean');
   }
 
+  protected clearFilterValue(key: string): void {
+    this.form.update(f => {
+      const ef = { ...f.extraFilters };
+      delete ef[key];
+      return { ...f, extraFilters: ef };
+    });
+  }
+
+  protected openFilterContextMenu(event: MouseEvent, def: FilterDefinition): void {
+    event.preventDefault();
+    this.filterContextMenu.set({ id: def.id, key: def.filterKey, x: event.clientX, y: event.clientY });
+    this.cdr.detectChanges();
+  }
+
+  protected closeFilterContextMenu(): void {
+    this.filterContextMenu.set(null);
+  }
+
   protected deleteFilterDef(id: number): void {
     if (this.deletingFilterId() !== null) return;
     const def = this.filterDefs().find(d => d.id === id);
@@ -656,7 +675,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
       placeId: f.placeId,
       ticketUrl: f.ticketUrl.trim() || null,
       isFeatured: f.isFeatured,
-      extraFilters: Object.keys(f.extraFilters).length ? f.extraFilters : undefined,
+      extraFilters: f.extraFilters,
     };
 
     this.isSaving.set(true);

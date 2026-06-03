@@ -52,7 +52,8 @@ namespace Explorea.Server.Controllers
             [FromQuery] decimal? minPrice = null,
             [FromQuery] decimal? maxPrice = null,
             [FromQuery] string[]? extraFilters = null,
-            [FromQuery] int? regionId = null)
+            [FromQuery] int? regionId = null,
+            [FromQuery] bool includeAll = false)
         {
             var validTypes = new[] { "all", "destination", "place", "event", "activity" };
             if (!validTypes.Contains(type))
@@ -65,7 +66,7 @@ namespace Explorea.Server.Controllers
                 lat, lng, radius, type, limit, minRating, openNow,
                 placeTypeIds?.ToList(), activityCategoryIds?.ToList(),
                 eventTypeIds?.ToList(), destinationTypeIds?.ToList(),
-                minPrice, maxPrice, extraFilters?.ToList(), regionId);
+                minPrice, maxPrice, extraFilters?.ToList(), regionId, includeAll);
             return Ok(result);
         }
     }

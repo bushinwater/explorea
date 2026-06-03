@@ -23,12 +23,12 @@ namespace Explorea.Server.Repositories.Implementations
 
         public async Task<List<Destination>> GetNearbyDestinationsAsync(
             double? lat, double? lng, double radiusKm, int limit, decimal? minRating,
-            List<int>? destinationTypeIds = null, List<string>? extraFilters = null, int? regionId = null)
+            List<int>? destinationTypeIds = null, List<string>? extraFilters = null, int? regionId = null, bool includeAll = false)
         {
             var query = _db.Destinations
                 .AsNoTracking()
                 .Include(d => d.City)
-                .Where(d => !d.IsDeleted && d.Visibility == "published");
+                .Where(d => !d.IsDeleted && (includeAll || d.Visibility == "published"));
 
             if (lat.HasValue && lng.HasValue)
             {
@@ -67,13 +67,13 @@ namespace Explorea.Server.Repositories.Implementations
         public async Task<List<Place>> GetNearbyPlacesAsync(
             double? lat, double? lng, double radiusKm, int limit, decimal? minRating, bool? openNow,
             List<int>? placeTypeIds = null, decimal? minPrice = null, decimal? maxPrice = null,
-            List<string>? extraFilters = null, int? regionId = null)
+            List<string>? extraFilters = null, int? regionId = null, bool includeAll = false)
         {
             var query = _db.Places
                 .AsNoTracking()
                 .Include(p => p.Type)
                 .Include(p => p.Images)
-                .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved");
+                .Where(p => !p.IsDeleted && (includeAll || p.ApprovalStatus == "approved"));
 
             if (lat.HasValue && lng.HasValue)
             {
@@ -125,7 +125,7 @@ namespace Explorea.Server.Repositories.Implementations
 
         public async Task<List<Event>> GetNearbyEventsAsync(
             double? lat, double? lng, double radiusKm, int limit,
-            decimal? minRating = null, List<int>? eventTypeIds = null, decimal? minPrice = null, decimal? maxPrice = null, int? regionId = null)
+            decimal? minRating = null, List<int>? eventTypeIds = null, decimal? minPrice = null, decimal? maxPrice = null, int? regionId = null, bool includeAll = false)
         {
             var now = DateTimeOffset.UtcNow;
 
@@ -133,7 +133,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .AsNoTracking()
                 .Include(e => e.Type)
                 .Include(e => e.Images)
-                .Where(e => !e.IsDeleted && e.Visibility == "published" && e.EndDatetime >= now);
+                .Where(e => !e.IsDeleted && (includeAll || (e.Visibility == "published" && e.EndDatetime >= now)));
 
             if (lat.HasValue && lng.HasValue)
             {
@@ -167,7 +167,7 @@ namespace Explorea.Server.Repositories.Implementations
 
         public async Task<List<Activity>> GetNearbyActivitiesAsync(
             double? lat, double? lng, double radiusKm, int limit, decimal? minRating,
-            List<int>? activityCategoryIds = null, int? regionId = null)
+            List<int>? activityCategoryIds = null, int? regionId = null, bool includeAll = false)
         {
             var query = _db.Activities
                 .AsNoTracking()

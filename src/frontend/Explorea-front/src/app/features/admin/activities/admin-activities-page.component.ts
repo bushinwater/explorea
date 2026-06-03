@@ -169,6 +169,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly newFilterType = signal('boolean');
   protected readonly isAddingFilter = signal(false);
   protected readonly deletingFilterId = signal<number | null>(null);
+  protected readonly filterContextMenu = signal<{ id: number; key: string; x: number; y: number } | null>(null);
 
   protected readonly createForm = signal<CreateActivityDto>({
     name: '',
@@ -965,6 +966,24 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected clearFilterValue(key: string): void {
+    this.modalExtraFilters.update(ef => {
+      const copy = { ...ef };
+      delete copy[key];
+      return copy;
+    });
+  }
+
+  protected openFilterContextMenu(event: MouseEvent, def: FilterDefinition): void {
+    event.preventDefault();
+    this.filterContextMenu.set({ id: def.id, key: def.filterKey, x: event.clientX, y: event.clientY });
+    this.cdr.detectChanges();
+  }
+
+  protected closeFilterContextMenu(): void {
+    this.filterContextMenu.set(null);
+  }
+
   protected deleteFilterDef(id: number): void {
     if (this.deletingFilterId() !== null) return;
     const def = this.modalFilterDefs().find(d => d.id === id);
@@ -1014,7 +1033,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       latitude: lat ?? undefined,
       longitude: lng ?? undefined,
       inclusions: inclusions.length ? inclusions : undefined,
-      extraFilters: Object.keys(ef).length ? ef : undefined,
+      extraFilters: Object.keys(ef).length ? ef : (this.isEditMode() ? ef : undefined),
     };
 
     const saveInterestsThenImages = (id: string, activity: ActivityDetail) => {

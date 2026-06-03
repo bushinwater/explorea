@@ -149,6 +149,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   protected readonly allTypeOptions = computed(() => [...this.eventTypeOptions, ...this.extraTypes()]);
 
   protected readonly deletingFilterId = signal<number | null>(null);
+  protected readonly filterContextMenu = signal<{ id: number; key: string; x: number; y: number } | null>(null);
 
   // Add new filter definition
   protected readonly showAddFilter = signal(false);
@@ -472,6 +473,24 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     this.showAddFilter.update(v => !v);
     this.newFilterLabel.set('');
     this.newFilterType.set('boolean');
+  }
+
+  protected clearFilterValue(key: string): void {
+    this.form.update(f => {
+      const ef = { ...f.extraFilters };
+      delete ef[key];
+      return { ...f, extraFilters: ef };
+    });
+  }
+
+  protected openFilterContextMenu(event: MouseEvent, def: FilterDefinition): void {
+    event.preventDefault();
+    this.filterContextMenu.set({ id: def.id, key: def.filterKey, x: event.clientX, y: event.clientY });
+    this.cdr.detectChanges();
+  }
+
+  protected closeFilterContextMenu(): void {
+    this.filterContextMenu.set(null);
   }
 
   protected deleteFilterDef(id: number): void {

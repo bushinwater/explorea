@@ -139,6 +139,7 @@
                           [class.ev-filter-chip--active]="
                             modalExtraFilters()[fd.filterKey] === 'true'
                           "
+                          (contextmenu)="openFilterContextMenu($event, fd)"
                         >
                           <input
                             type="checkbox"
@@ -149,39 +150,20 @@
                           />
                           {{ fd.filterLabel }}
                         </label>
-                        @if (isSuperAdmin) {
-                          <button
-                            class="ev-filter-def-delete"
-                            type="button"
-                            [disabled]="deletingFilterId() === fd.id"
-                            (click)="deleteFilterDef(fd.id)"
-                          >
-                            @if (deletingFilterId() === fd.id) {
-                              <span class="material-icons edit-modal__spin" style="font-size: 14px">sync</span>
-                            } @else {
-                              <span class="material-icons" style="font-size: 14px">close</span>
-                            }
-                          </button>
-                        }
+                        <button class="ev-filter-def-del" type="button" title="Ukloni vrednost"
+                          (click)="clearFilterValue(fd.filterKey)">
+                          <span class="material-icons">close</span>
+                        </button>
                       </div>
                     } @else if (fd.filterType === 'select') {
                       <div class="ev-filter-select-group">
                         <div class="ev-filter-select-header">
-                          <span class="ev-filter-select-label">{{ fd.filterLabel }}</span>
-                          @if (isSuperAdmin) {
-                            <button
-                              class="ev-filter-def-delete"
-                              type="button"
-                              [disabled]="deletingFilterId() === fd.id"
-                              (click)="deleteFilterDef(fd.id)"
-                            >
-                              @if (deletingFilterId() === fd.id) {
-                                <span class="material-icons edit-modal__spin" style="font-size: 14px">sync</span>
-                              } @else {
-                                <span class="material-icons" style="font-size: 14px">close</span>
-                              }
-                            </button>
-                          }
+                          <span class="ev-filter-select-label"
+                            (contextmenu)="openFilterContextMenu($event, fd)">{{ fd.filterLabel }}</span>
+                          <button class="ev-filter-def-del" type="button" title="Ukloni vrednost"
+                            (click)="clearFilterValue(fd.filterKey)">
+                            <span class="material-icons">close</span>
+                          </button>
                         </div>
                         <div class="ev-filter-opts">
                           @for (opt of fd.options; track opt.optionValue) {
@@ -204,21 +186,12 @@
                     } @else if (fd.filterType === 'multi_select') {
                       <div class="ev-filter-select-group">
                         <div class="ev-filter-select-header">
-                          <span class="ev-filter-select-label">{{ fd.filterLabel }}</span>
-                          @if (isSuperAdmin) {
-                            <button
-                              class="ev-filter-def-delete"
-                              type="button"
-                              [disabled]="deletingFilterId() === fd.id"
-                              (click)="deleteFilterDef(fd.id)"
-                            >
-                              @if (deletingFilterId() === fd.id) {
-                                <span class="material-icons edit-modal__spin" style="font-size: 14px">sync</span>
-                              } @else {
-                                <span class="material-icons" style="font-size: 14px">close</span>
-                              }
-                            </button>
-                          }
+                          <span class="ev-filter-select-label"
+                            (contextmenu)="openFilterContextMenu($event, fd)">{{ fd.filterLabel }}</span>
+                          <button class="ev-filter-def-del" type="button" title="Ukloni vrednost"
+                            (click)="clearFilterValue(fd.filterKey)">
+                            <span class="material-icons">close</span>
+                          </button>
                         </div>
                         <div class="ev-filter-opts">
                           @for (opt of fd.options; track opt.optionValue) {
@@ -673,3 +646,23 @@
     </div>
   }
 </div>
+
+@if (filterContextMenu()) {
+  <div class="filter-ctx-backdrop" (click)="closeFilterContextMenu()"></div>
+  <div class="filter-ctx-menu"
+       [style.left.px]="filterContextMenu()!.x"
+       [style.top.px]="filterContextMenu()!.y">
+    @if (isSuperAdmin) {
+      <button class="filter-ctx-menu__item filter-ctx-menu__item--danger" type="button"
+              [disabled]="deletingFilterId() !== null"
+              (click)="deleteFilterDef(filterContextMenu()!.id); closeFilterContextMenu()">
+        @if (deletingFilterId() === filterContextMenu()!.id) {
+          <span class="material-icons edit-modal__spin">sync</span>
+        } @else {
+          <span class="material-icons">delete_forever</span>
+        }
+        Obriši filter iz baze
+      </button>
+    }
+  </div>
+}

@@ -37,6 +37,7 @@ export interface ExploreParams {
   maxPrice?: number;
   extraFilters?: Record<string, string>;
   regionId?: number;
+  includeAll?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -78,6 +79,7 @@ export class ExploreService {
       httpParams = httpParams.append('extraFilters', `${key}:${value}`);
 
     if (params.regionId !== undefined) httpParams = httpParams.set('regionId', params.regionId);
+    if (params.includeAll) httpParams = httpParams.set('includeAll', true);
 
     return this.http.get<ExploreMapResult>(`${this.api}/map`, { params: httpParams });
   }

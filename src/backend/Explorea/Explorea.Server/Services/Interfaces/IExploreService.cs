@@ -10,7 +10,7 @@ namespace Explorea.Server.Services.Interfaces
             List<int>? placeTypeIds = null, List<int>? activityCategoryIds = null,
             List<int>? eventTypeIds = null, List<int>? destinationTypeIds = null,
             decimal? minPrice = null, decimal? maxPrice = null, List<string>? extraFilters = null,
-            int? regionId = null);
+            int? regionId = null, bool includeAll = false);
 
         Task<ExploreMarkerDto?> GetMarkerBySlugAsync(string entityType, string slug);
     }

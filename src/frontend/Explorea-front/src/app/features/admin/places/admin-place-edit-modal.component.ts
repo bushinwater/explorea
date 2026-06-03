@@ -132,6 +132,7 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
   protected readonly newFilterType   = signal('boolean');
   protected readonly isAddingFilter  = signal(false);
   protected readonly deletingFilterId = signal<number | null>(null);
+  protected readonly filterContextMenu = signal<{ id: number; key: string; x: number; y: number } | null>(null);
 
   // New: interest tags
   protected readonly allInterestTags     = signal<InterestTagOption[]>([]);
@@ -455,6 +456,24 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
     );
   }
 
+  protected clearFilterValue(key: string): void {
+    this.modalExtraFilters.update(ef => {
+      const copy = { ...ef };
+      delete copy[key];
+      return copy;
+    });
+  }
+
+  protected openFilterContextMenu(event: MouseEvent, def: FilterDefinition): void {
+    event.preventDefault();
+    this.filterContextMenu.set({ id: def.id, key: def.filterKey, x: event.clientX, y: event.clientY });
+    this.cdr.detectChanges();
+  }
+
+  protected closeFilterContextMenu(): void {
+    this.filterContextMenu.set(null);
+  }
+
   protected deleteFilterDef(id: number): void {
     if (this.deletingFilterId() !== null) return;
     const def = this.modalFilterDefs().find(d => d.id === id);
@@ -599,7 +618,7 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
         isFeatured:     v.isFeatured ?? undefined,
         latitude:       v.latitude ?? undefined,
         longitude:      v.longitude ?? undefined,
-        extraFilters:   Object.keys(ef).length ? ef : undefined,
+        extraFilters:   ef,
       }).subscribe({
         next: updated => {
           const pendingHero = this.heroImageId();
