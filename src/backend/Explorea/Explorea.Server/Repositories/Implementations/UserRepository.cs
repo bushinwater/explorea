@@ -219,6 +219,36 @@ namespace Explorea.Server.Repositories.Implementations
             }
         }
 
+        public async Task<(List<AdminUserDirectoryItemDto> Items, int Total)> GetDeletedPagedAsync(int page, int pageSize)
+        {
+            var query = _set
+                .AsNoTracking()
+                .Include(u => u.Role)
+                .Include(u => u.ManagedRegion)
+                .Include(u => u.CurrentCity)
+                    .ThenInclude(c => c!.Region)
+                .Where(u => u.DeletedAt != null)
+                .OrderByDescending(u => u.DeletedAt);
+
+            var total = await query.CountAsync();
+            var users = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (users.Select(MapAdminDirectoryItem).ToList(), total);
+        }
+
+        public async Task RestoreAsync(Guid userId)
+        {
+            var user = await _set.FindAsync(userId);
+            if (user == null) return;
+
+            user.DeletedAt = null;
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+            await _db.SaveChangesAsync();
+        }
+
         public async Task UpdateLocationAsync(Guid userId, double lat, double lng)
         {
             var user = await _set.FindAsync(userId);
@@ -348,12 +378,14 @@ namespace Explorea.Server.Repositories.Implementations
                 Role = user.Role.Name,
                 RegionId = user.ManagedRegionId ?? user.CurrentCity?.RegionId,
                 RegionName = user.ManagedRegion?.Name ?? user.CurrentCity?.Region?.Name,
+                CountryId = user.CountryId,
                 Status = user.IsActive ? "active" : "revoked",
                 Gender = string.IsNullOrWhiteSpace(user.Gender) ? "unknown" : user.Gender.ToLower(),
                 Age = CalculateAge(user.DateOfBirth),
                 Flagged = false,
                 LastActivityAt = user.LastLoginAt,
-                AvatarUrl = user.ProfileImageUrl
+                AvatarUrl = user.ProfileImageUrl,
+                DeletedAt = user.DeletedAt
             };
         }
 

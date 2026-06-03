@@ -36,15 +36,27 @@
       </select>
     </label>
 
-    <label class="user-form__field">
-      <span>{{ ui.t('users.form.region') }}</span>
-      <select formControlName="region">
-        <option value="">{{ ui.t('users.form.region_none') }}</option>
-        @for (region of regions; track region) {
-          <option [value]="region">{{ region }}</option>
-        }
-      </select>
-    </label>
+    @if (showLocationFields) {
+      <label class="user-form__field">
+        <span>{{ ui.t('users.form.region') }}</span>
+        <select formControlName="region">
+          <option value="">{{ ui.t('users.form.region_none') }}</option>
+          @for (region of regions; track region) {
+            <option [value]="region">{{ region }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="user-form__field">
+        <span>{{ ui.t('users.form.country') }}</span>
+        <select formControlName="countryId">
+          <option [ngValue]="null">{{ ui.t('users.form.country_none') }}</option>
+          @for (country of countries; track country.id) {
+            <option [ngValue]="country.id">{{ country.name }}</option>
+          }
+        </select>
+      </label>
+    }
 
     <label class="user-form__field">
       <span>{{ ui.t('users.form.gender') }}</span>

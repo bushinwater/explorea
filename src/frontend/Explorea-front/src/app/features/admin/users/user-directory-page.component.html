@@ -35,6 +35,101 @@
   <!-- ===== MAIN CARD ===== -->
   <div class="user-card">
 
+    <!-- Tabs -->
+    <div class="user-tabs">
+      <button class="user-tab" [class.user-tab--active]="activeTab() === 'active'" (click)="switchTab('active')">
+        {{ ui.t('users.tab.active') }}
+      </button>
+      @if (authContext.isSuperAdmin()) {
+        <button class="user-tab" [class.user-tab--active]="activeTab() === 'deleted'" (click)="switchTab('deleted')">
+          {{ ui.t('users.tab.deleted') }}
+          @if (totalDeletedUsers() > 0) {
+            <span class="user-tab__badge">{{ totalDeletedUsers() }}</span>
+          }
+        </button>
+      }
+    </div>
+
+    @if (activeTab() === 'deleted') {
+
+      <!-- Deleted users table -->
+      <div class="user-table-wrap">
+        @if (isDeletedLoading()) {
+          <app-table-skeleton [rows]="10" />
+        } @else if (deletedUsers().length) {
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th class="user-th">{{ ui.t('users.table.identity') }}</th>
+                <th class="user-th">{{ ui.t('users.table.role') }}</th>
+                <th class="user-th">{{ ui.t('users.deleted.deleted_at') }}</th>
+                <th class="user-th">{{ ui.t('users.deleted.purge_in') }}</th>
+                <th class="user-th user-th--actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of deletedUsers(); track user.id) {
+                <tr class="user-row">
+                  <td class="user-td">
+                    <div class="user-identity">
+                      <div class="user-avatar user-avatar--deleted">
+                        {{ initials(user) }}
+                      </div>
+                      <div class="user-identity__info">
+                        <span class="user-identity__name">{{ user.firstName }} {{ user.lastName }}</span>
+                        <span class="user-identity__email">{{ user.email }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="user-td">
+                    <span class="role-pill" [class]="roleClass(user.role)">{{ roleLabel(user.role) }}</span>
+                  </td>
+                  <td class="user-td user-td--muted">{{ user.deletedAt | date:'dd.MM.yyyy' }}</td>
+                  <td class="user-td">
+                    @if (user.deletedAt) {
+                      @let days = daysUntilPurge(user.deletedAt);
+                      <span class="purge-badge" [class.purge-badge--warn]="days <= 7">
+                        {{ days }} {{ ui.t('users.deleted.days') }}
+                      </span>
+                    }
+                  </td>
+                  <td class="user-td user-td--actions">
+                    <button class="btn-icon" type="button" (click)="openRestoreDialog(user)" title="{{ ui.t('users.deleted.restore') }}">
+                      <span class="material-icons">restore</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          @if (totalDeletedPages() > 1) {
+            <footer class="user-pagination">
+              <div class="user-pagination__pages">
+                <button class="user-page-btn user-page-btn--nav" [disabled]="deletedPage() === 1" (click)="goToDeletedPage(deletedPage() - 1)">
+                  <span class="material-icons">chevron_left</span>
+                </button>
+                @for (p of [].constructor(totalDeletedPages()); track $index) {
+                  <button class="user-page-btn" [class.user-page-btn--active]="deletedPage() === $index + 1" (click)="goToDeletedPage($index + 1)">
+                    {{ $index + 1 }}
+                  </button>
+                }
+                <button class="user-page-btn user-page-btn--nav" [disabled]="deletedPage() === totalDeletedPages()" (click)="goToDeletedPage(deletedPage() + 1)">
+                  <span class="material-icons">chevron_right</span>
+                </button>
+              </div>
+            </footer>
+          }
+        } @else {
+          <app-empty-state
+            [title]="ui.t('users.deleted.empty_title')"
+            [description]="ui.t('users.deleted.empty_description')"
+          />
+        }
+      </div>
+
+    } @else {
+
     <!-- Card header -->
     <div class="user-card__header">
       <div class="user-card__title-group">
@@ -260,6 +355,8 @@
       </footer>
     }
 
+    }<!-- /active tab -->
+
   </div><!-- /user-card -->
 
 </div><!-- /user-page -->
@@ -268,6 +365,7 @@
 @if (isCreateModalOpen()) {
   <app-user-create-modal
     [regions]="regions()"
+    [countries]="countries()"
     [lockedRegion]="lockedRegionForCreate()"
     [isSaving]="isCreating()"
     [errorMessage]="createErrorMessage()"
@@ -281,6 +379,7 @@
   <app-user-edit-modal
     [user]="user"
     [regions]="regions()"
+    [countries]="countries()"
     [lockedRegion]="lockedRegionForCreate()"
     [isSaving]="isUpdating()"
     [errorMessage]="editErrorMessage()"
@@ -300,5 +399,18 @@
     [isLoading]="isDeleting()"
     (cancel)="closeDeleteDialog()"
     (confirm)="deleteUser()"
+  />
+}
+
+@if (isRestoreDialogOpen() && restoreTarget(); as user) {
+  <app-confirm-dialog
+    [title]="ui.t('users.restore.title')"
+    [description]="ui.t('users.restore.description', { name: user.firstName + ' ' + user.lastName })"
+    [confirmLabel]="ui.t('users.restore.confirm')"
+    [cancelLabel]="ui.t('users.restore.cancel')"
+    [loadingLabel]="ui.t('users.restore.loading')"
+    [isLoading]="isRestoring()"
+    (cancel)="closeRestoreDialog()"
+    (confirm)="restoreUser()"
   />
 }

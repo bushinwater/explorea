@@ -37,6 +37,70 @@
   }
 }
 
+/* ===== TABS ===== */
+.user-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 var(--sp-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.user-tab {
+  position: relative;
+  padding: var(--sp-3) var(--sp-4);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s;
+}
+
+.user-tab:hover { color: var(--color-text-primary); }
+
+.user-tab--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.user-tab__badge {
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  line-height: 16px;
+}
+
+/* ===== PURGE BADGE ===== */
+.purge-badge {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.purge-badge--warn {
+  color: #e8975d;
+  border-color: rgba(232, 151, 93, 0.35);
+  background: rgba(232, 151, 93, 0.08);
+}
+
+.user-avatar--deleted {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
 /* ===== MAIN CARD ===== */
 .user-card {
   background: var(--color-surface);

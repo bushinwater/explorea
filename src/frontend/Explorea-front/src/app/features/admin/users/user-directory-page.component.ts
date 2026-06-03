@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { DatePipe } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import {
   AdminUserGender,
@@ -31,6 +32,7 @@ import { TableSkeletonComponent } from '@shared/components/table-skeleton/table-
   selector: 'app-user-directory-page',
   standalone: true,
   imports: [
+    DatePipe,
     StatCardComponent,
     EmptyStateComponent,
     StatusBadgeComponent,
@@ -71,10 +73,19 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
   protected readonly createErrorMessage = signal('');
   protected readonly editErrorMessage = signal('');
   protected readonly successMessage = signal('');
+  protected readonly activeTab = signal<'active' | 'deleted'>('active');
   protected readonly regions = signal<string[]>([]);
+  protected readonly countries = signal<{ id: number; name: string }[]>([]);
   protected readonly users = signal<UserDirectoryUser[]>([]);
   protected readonly totalUsers = signal(0);
   protected readonly selectedUser = signal<UserDirectoryUser | null>(null);
+  protected readonly deletedUsers = signal<UserDirectoryUser[]>([]);
+  protected readonly totalDeletedUsers = signal(0);
+  protected readonly deletedPage = signal(1);
+  protected readonly isDeletedLoading = signal(false);
+  protected readonly isRestoring = signal(false);
+  protected readonly restoreTarget = signal<UserDirectoryUser | null>(null);
+  protected readonly isRestoreDialogOpen = signal(false);
 
   protected readonly stats = signal<UserDirectoryStats>({
     totalUsers: 0,
@@ -87,6 +98,10 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
 
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.totalUsers() / this.filters().pageSize)),
+  );
+
+  protected readonly totalDeletedPages = computed(() =>
+    Math.max(1, Math.ceil(this.totalDeletedUsers() / 20)),
   );
 
   protected readonly pagedUsers = computed(() => this.users());
@@ -156,6 +171,7 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
     );
 
     this.loadRegions();
+    this.loadCountries();
     this.loadStats();
     this.loadUsers();
   }
@@ -434,6 +450,82 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.adminUserDirectoryService.getRegions().subscribe({
         next: (regions: string[]) => this.regions.set(regions),
+      }),
+    );
+  }
+
+  private loadCountries(): void {
+    this.subscription.add(
+      this.adminUserDirectoryService.getCountries().subscribe({
+        next: (countries) => this.countries.set(countries),
+      }),
+    );
+  }
+
+  protected switchTab(tab: 'active' | 'deleted'): void {
+    this.activeTab.set(tab);
+    if (tab === 'deleted' && !this.deletedUsers().length) {
+      this.loadDeletedUsers();
+    }
+  }
+
+  protected goToDeletedPage(page: number): void {
+    const next = Math.min(Math.max(page, 1), this.totalDeletedPages());
+    this.deletedPage.set(next);
+    this.loadDeletedUsers();
+  }
+
+  protected openRestoreDialog(user: UserDirectoryUser): void {
+    this.restoreTarget.set(user);
+    this.isRestoreDialogOpen.set(true);
+  }
+
+  protected closeRestoreDialog(): void {
+    this.restoreTarget.set(null);
+    this.isRestoring.set(false);
+    this.isRestoreDialogOpen.set(false);
+  }
+
+  protected restoreUser(): void {
+    const user = this.restoreTarget();
+    if (!user) return;
+
+    this.isRestoring.set(true);
+    this.subscription.add(
+      this.adminUserDirectoryService.restoreUser(user.id).subscribe({
+        next: () => {
+          this.closeRestoreDialog();
+          this.successMessage.set(this.ui.t('users.restored'));
+          this.loadDeletedUsers();
+          this.loadStats();
+        },
+        error: () => {
+          this.isRestoring.set(false);
+          this.errorMessage.set(this.ui.t('users.error.restore'));
+        },
+      }),
+    );
+  }
+
+  protected daysUntilPurge(deletedAt: string): number {
+    const deleted = new Date(deletedAt).getTime();
+    const purgeAt = deleted + 30 * 24 * 60 * 60 * 1000;
+    return Math.max(0, Math.ceil((purgeAt - Date.now()) / (24 * 60 * 60 * 1000)));
+  }
+
+  private loadDeletedUsers(): void {
+    this.isDeletedLoading.set(true);
+    this.subscription.add(
+      this.adminUserDirectoryService.getDeletedUsers(this.deletedPage(), 20).subscribe({
+        next: (res) => {
+          this.deletedUsers.set(res.items);
+          this.totalDeletedUsers.set(res.total);
+          this.isDeletedLoading.set(false);
+        },
+        error: () => {
+          this.deletedUsers.set([]);
+          this.isDeletedLoading.set(false);
+        },
       }),
     );
   }

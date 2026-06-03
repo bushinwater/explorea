@@ -7,6 +7,7 @@ namespace Explorea.API.DTOs.Admin.User
         public string Email { get; set; } = null!;
         public string Role { get; set; } = null!;
         public string? Region { get; set; }
+        public int? CountryId { get; set; }
         public string? Gender { get; set; }
         public int? Age { get; set; }
         public string Status { get; set; } = "active";

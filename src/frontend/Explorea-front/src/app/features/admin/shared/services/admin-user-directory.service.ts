@@ -68,6 +68,10 @@ export class AdminUserDirectoryService {
     );
   }
 
+  getCountries(): Observable<{ id: number; name: string }[]> {
+    return this.http.get<{ id: number; name: string }[]>('/api/admin/destinations/countries');
+  }
+
   createUser(dto: UpsertAdminUserDto): Observable<UserDirectoryUser> {
     return this.http.post<UserDirectoryUser>(this.api, dto);
   }
@@ -75,6 +79,21 @@ export class AdminUserDirectoryService {
   updateUser(dto: UpdateAdminUserDto): Observable<UserDirectoryUser> {
     const { id, ...payload } = dto;
     return this.http.put<UserDirectoryUser>(`${this.api}/${id}`, payload);
+  }
+
+  getDeletedUsers(page: number, pageSize: number): Observable<PagedResponse<UserDirectoryUser>> {
+    const params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    return this.http.get<PagedResponse<UserDirectoryUser>>(`${this.api}/deleted`, { params });
+  }
+
+  restoreUser(id: string): Observable<void> {
+    return this.http.post<void>(`${this.api}/${id}/restore`, {});
+  }
+
+  uploadAvatar(userId: string, file: File): Observable<{ avatarUrl: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ avatarUrl: string }>(`${this.api}/${userId}/avatar`, formData);
   }
 
   deleteUser(id: string): Observable<void> {

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminUserGender, AdminUserRole, AdminUserStatus, UpsertAdminUserDto } from '@shared/models';
 import { FeedbackBannerComponent } from '@shared/components/feedback-banner/feedback-banner.component';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
@@ -15,6 +15,7 @@ import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences
 export class UserCreateModalComponent {
   @Input({ required: true }) regions!: string[];
   @Input({ required: true }) ui!: AdminUiPreferencesService;
+  @Input() countries: { id: number; name: string }[] = [];
   @Input() lockedRegion: string | null = null;
   @Input() isSaving = false;
   @Input() errorMessage = '';
@@ -41,6 +42,7 @@ export class UserCreateModalComponent {
       email: ['', [Validators.required, Validators.email]],
       role: ['tourist_organization' as Exclude<AdminUserRole, 'traveler'>, [Validators.required]],
       region: [''],
+      countryId: new FormControl<number | null>(null),
       gender: ['male' as Exclude<AdminUserGender, 'unknown'>],
       age: [null as number | null],
       status: ['pending' as AdminUserStatus, [Validators.required]],
@@ -58,6 +60,11 @@ export class UserCreateModalComponent {
     }
 
     regionControl.enable({ emitEvent: false });
+  }
+
+  protected get showLocationFields(): boolean {
+    const role = this.form.controls.role.value;
+    return role === 'super_admin' || role === 'tourist_organization';
   }
 
   protected requestClose(): void {
@@ -89,6 +96,7 @@ export class UserCreateModalComponent {
       email: rawValue.email,
       role: rawValue.role,
       region: rawValue.region || null,
+      countryId: this.showLocationFields ? rawValue.countryId : null,
       gender: rawValue.gender || null,
       age: rawValue.age,
       status: rawValue.status,

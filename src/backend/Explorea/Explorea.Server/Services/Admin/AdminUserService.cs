@@ -103,6 +103,7 @@ namespace Explorea.Server.Services.Admin
                 DateOfBirth = CalculateDateOfBirth(dto.Age),
                 ManagedRegionId = managedRegion?.Id,
                 ManagedRegion = managedRegion,
+                CountryId = IsAdminRole(targetRoleName) ? dto.CountryId : null,
                 CreatedAt = now,
                 UpdatedAt = now,
                 CreatedBy = currentUserId,
@@ -180,6 +181,7 @@ namespace Explorea.Server.Services.Admin
             user.DateOfBirth = CalculateDateOfBirth(dto.Age);
             user.ManagedRegionId = managedRegion?.Id;
             user.ManagedRegion = managedRegion;
+            user.CountryId = IsAdminRole(targetRoleName) ? dto.CountryId : null;
             user.UpdatedAt = now;
             user.UpdatedBy = currentUserId;
 
@@ -209,6 +211,29 @@ namespace Explorea.Server.Services.Admin
 
             _userRepository.Update(user);
             await _userRepository.SaveChangesAsync();
+        }
+
+        public async Task<(List<AdminUserDirectoryItemDto> Items, int Total)> GetDeletedDirectoryAsync(
+            int page, int pageSize, Guid currentUserId)
+        {
+            var scope = await ResolveScopeAsync(currentUserId);
+            if (scope.Role != RoleNames.SuperAdmin)
+                throw new UnauthorizedAccessException("Only super admins can view deleted users.");
+
+            return await _userRepository.GetDeletedPagedAsync(page, pageSize);
+        }
+
+        public async Task RestoreAsync(Guid id, Guid currentUserId)
+        {
+            var scope = await ResolveScopeAsync(currentUserId);
+            if (scope.Role != RoleNames.SuperAdmin)
+                throw new UnauthorizedAccessException("Only super admins can restore deleted users.");
+
+            var user = await _userRepository.GetByIdAsync(id);
+            if (user == null || user.DeletedAt == null)
+                throw new KeyNotFoundException("Deleted user was not found.");
+
+            await _userRepository.RestoreAsync(id);
         }
 
         public async Task<AdminUserDirectoryItemDto> SetStatusAsync(Guid id, AdminSetUserStatusDto dto, Guid currentUserId)
@@ -400,6 +425,7 @@ namespace Explorea.Server.Services.Admin
                 Role = user.Role.Name,
                 RegionId = user.ManagedRegionId ?? user.CurrentCity?.RegionId,
                 RegionName = user.ManagedRegion?.Name ?? user.CurrentCity?.Region?.Name,
+                CountryId = user.CountryId,
                 Status = user.IsActive ? "active" : "revoked",
                 Gender = string.IsNullOrWhiteSpace(user.Gender) ? "unknown" : user.Gender.ToLower(),
                 Age = CalculateAge(user.DateOfBirth),
@@ -436,6 +462,9 @@ namespace Explorea.Server.Services.Admin
 
             return age;
         }
+
+        private static bool IsAdminRole(string roleName)
+            => roleName == RoleNames.SuperAdmin || roleName == RoleNames.TouristOrganization;
 
         private static string GenerateTemporaryPassword()
             => $"{Guid.NewGuid():N}Aa1!";

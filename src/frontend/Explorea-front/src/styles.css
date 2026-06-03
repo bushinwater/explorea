@@ -610,6 +610,13 @@ button:focus-visible {
   background-color: #34855f;
 }
 
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+
 .btn-secondary {
   background-color: var(--color-surface);
   color: var(--color-text-primary);

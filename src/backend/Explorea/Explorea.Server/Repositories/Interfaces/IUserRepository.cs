@@ -29,5 +29,7 @@ namespace Explorea.Server.Repositories.Interfaces
             IReadOnlyCollection<string>? excludedRoles = null);
         Task SetActiveAsync(Guid userId, bool isActive);
         Task UpdateLocationAsync(Guid userId, double lat, double lng);
+        Task<(List<AdminUserDirectoryItemDto> Items, int Total)> GetDeletedPagedAsync(int page, int pageSize);
+        Task RestoreAsync(Guid userId);
     }
 }

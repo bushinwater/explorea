@@ -11,6 +11,32 @@
     />
   }
 
+  <div class="avatar-section">
+    <div class="avatar-section__preview">
+      @if (avatarPreview() || user.avatarUrl) {
+        <img [src]="avatarPreview() || user.avatarUrl" alt="Avatar" class="avatar-section__img" />
+      } @else {
+        <div class="avatar-section__placeholder">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.582-7 8-7s8 3 8 7"/></svg>
+        </div>
+      }
+      @if (isSavingWithAvatar()) {
+        <div class="avatar-section__overlay">
+          <span class="avatar-section__spinner"></span>
+        </div>
+      }
+    </div>
+    <div class="avatar-section__info">
+      <label class="btn btn-secondary avatar-section__btn" [class.disabled]="isSavingWithAvatar() || isSaving">
+        {{ ui.t('users.form.change_avatar') }}
+        <input type="file" accept="image/*" hidden (change)="onAvatarFileChange($event)" [disabled]="isSavingWithAvatar() || isSaving" />
+      </label>
+      @if (avatarError()) {
+        <span class="avatar-section__error">{{ avatarError() }}</span>
+      }
+    </div>
+  </div>
+
   <form class="user-form" [formGroup]="form" (ngSubmit)="save()">
     <label class="user-form__field">
       <span>{{ ui.t('users.form.first_name') }}</span>
@@ -36,15 +62,27 @@
       </select>
     </label>
 
-    <label class="user-form__field">
-      <span>{{ ui.t('users.form.region') }}</span>
-      <select formControlName="region">
-        <option value="">{{ ui.t('users.form.region_none') }}</option>
-        @for (region of regions; track region) {
-          <option [value]="region">{{ region }}</option>
-        }
-      </select>
-    </label>
+    @if (showLocationFields) {
+      <label class="user-form__field">
+        <span>{{ ui.t('users.form.region') }}</span>
+        <select formControlName="region">
+          <option value="">{{ ui.t('users.form.region_none') }}</option>
+          @for (region of regions; track region) {
+            <option [value]="region">{{ region }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="user-form__field">
+        <span>{{ ui.t('users.form.country') }}</span>
+        <select formControlName="countryId">
+          <option [ngValue]="null">{{ ui.t('users.form.country_none') }}</option>
+          @for (country of countries; track country.id) {
+            <option [ngValue]="country.id">{{ country.name }}</option>
+          }
+        </select>
+      </label>
+    }
 
     <label class="user-form__field">
       <span>{{ ui.t('users.form.gender') }}</span>
@@ -71,7 +109,7 @@
 
     <div class="user-form__actions">
       <button class="btn btn-secondary" type="button" (click)="requestClose()">{{ ui.t('users.form.cancel') }}</button>
-      <button class="btn btn-primary" type="submit" [disabled]="isSaving">
+      <button class="btn btn-primary" type="submit" [disabled]="isSaving || isSavingWithAvatar()">
         {{ isSaving ? ui.t('users.form.saving') : ui.t('users.form.save_changes') }}
       </button>
     </div>

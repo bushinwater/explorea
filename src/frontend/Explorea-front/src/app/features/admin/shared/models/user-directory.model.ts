@@ -15,12 +15,14 @@ export interface UserDirectoryUser {
   email: string;
   role: AdminUserRole;
   regionName: string | null;
+  countryId: number | null;
   status: AdminUserStatus;
   gender: AdminUserGender;
   age: number | null;
   flagged: boolean;
   lastActivityAt: string | null;
   avatarUrl?: string | null;
+  deletedAt?: string | null;
 }
 
 export interface UserDirectoryStats {
@@ -51,6 +53,7 @@ export interface UpsertAdminUserDto {
   email: string;
   role: AdminUserRole;
   region: string | null;
+  countryId: number | null;
   gender: Exclude<AdminUserGender, 'unknown'> | null;
   age: number | null;
   status: AdminUserStatus;

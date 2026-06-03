@@ -18,6 +18,10 @@ namespace Explorea.Server.Services.Admin.Interfaces
 
         Task DeleteAsync(Guid id, Guid currentUserId);
 
+        Task<(List<AdminUserDirectoryItemDto> Items, int Total)> GetDeletedDirectoryAsync(int page, int pageSize, Guid currentUserId);
+
+        Task RestoreAsync(Guid id, Guid currentUserId);
+
         Task<AdminUserDirectoryItemDto> SetStatusAsync(Guid id, AdminSetUserStatusDto dto, Guid currentUserId);
     }
 }
