@@ -319,6 +319,8 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
     this.loadUsers();
   }
 
+  protected readonly brokenAvatarIds = new Set<string>();
+
   protected initials(user: UserDirectoryUser): string {
     return `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase();
   }
