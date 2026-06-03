@@ -546,7 +546,13 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
 
   incrementGuests(): void { this.guests++; }
   decrementGuests(): void { if (this.guests > 1) this.guests--; }
-  goBack(): void { this.location.back(); }
+  goBack(): void {
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      this.router.navigate(['/']);
+    }
+  }
 
   openPlannerModal(): void {
     if (!this.authService.isLoggedIn()) {

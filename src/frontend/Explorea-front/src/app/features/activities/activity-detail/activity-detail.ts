@@ -562,7 +562,11 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   goBack(): void {
-    this.location.back();
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      this.router.navigate(['/']);
+    }
   }
 
   openPlannerModal(): void {
