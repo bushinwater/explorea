@@ -274,6 +274,12 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
 
   toggleSatellite(): void {
     this.isSatellite = !this.isSatellite;
+    this.map.once('style.load', () => {
+      if (!this.isSatellite) this.add3DBuildings();
+      this.addMarkers();
+      if (this.showRegions && this.regionData) this.applyRegionLayers();
+      this.cdr.detectChanges();
+    });
     if (this.isSatellite) {
       this.map.setStyle({
         version: 8,
@@ -290,11 +296,6 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
     } else {
       this.map.setStyle(this.isDark ? this.darkStyle : this.lightStyle);
     }
-    this.map.once('style.load', () => {
-      if (!this.isSatellite) this.add3DBuildings();
-      this.addMarkers();
-      if (this.showRegions && this.regionData) this.applyRegionLayers();
-    });
     this.cdr.detectChanges();
   }
 
@@ -678,39 +679,35 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
       const fillId = `region-fill-${region.id}`;
       const lineId = `region-line-${region.id}`;
 
-      if (!this.map.getSource(srcId)) {
-        this.map.addSource(srcId, {
-          type: 'geojson',
-          data: { type: 'Feature', geometry: JSON.parse(region.boundaryGeoJson), properties: {} } as any,
-        });
-      }
-      if (!this.map.getLayer(fillId)) {
-        this.map.addLayer(
-          { id: fillId, type: 'fill', source: srcId, paint: { 'fill-color': color, 'fill-opacity': isSingle ? 0.35 : 0.1 } } as any,
-        );
-      }
-      if (!this.map.getLayer(lineId)) {
-        this.map.addLayer(
-          { id: lineId, type: 'line', source: srcId, paint: { 'line-color': color, 'line-width': isSingle ? 3 : 1.5, 'line-opacity': 1 } } as any,
-        );
-      }
+      if (this.map.getLayer(fillId)) this.map.removeLayer(fillId);
+      if (this.map.getLayer(lineId)) this.map.removeLayer(lineId);
+      if (this.map.getSource(srcId)) this.map.removeSource(srcId);
+
+      this.map.addSource(srcId, {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: JSON.parse(region.boundaryGeoJson), properties: {} } as any,
+      });
+      this.map.addLayer(
+        { id: fillId, type: 'fill', source: srcId, paint: { 'fill-color': color, 'fill-opacity': isSingle ? 0.35 : 0.1 } } as any,
+      );
+      this.map.addLayer(
+        { id: lineId, type: 'line', source: srcId, paint: { 'line-color': color, 'line-width': isSingle ? 3 : 1.5, 'line-opacity': 1 } } as any,
+      );
     });
 
     if (this.regionData.serbiaOutline) {
       const srcId  = 'serbia-outline-source';
       const lineId = 'serbia-outline-line';
-      if (!this.map.getSource(srcId)) {
-        this.map.addSource(srcId, {
-          type: 'geojson',
-          data: { type: 'Feature', geometry: JSON.parse(this.regionData.serbiaOutline), properties: {} } as any,
-        });
-      }
-      if (!this.map.getLayer(lineId)) {
-        this.map.addLayer(
-          { id: lineId, type: 'line', source: srcId, paint: { 'line-color': '#ffffff', 'line-width': 2.5, 'line-opacity': 0.55, 'line-dasharray': [4, 2] } } as any,
-          beforeId,
-        );
-      }
+      if (this.map.getLayer(lineId)) this.map.removeLayer(lineId);
+      if (this.map.getSource(srcId)) this.map.removeSource(srcId);
+      this.map.addSource(srcId, {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: JSON.parse(this.regionData.serbiaOutline), properties: {} } as any,
+      });
+      this.map.addLayer(
+        { id: lineId, type: 'line', source: srcId, paint: { 'line-color': '#ffffff', 'line-width': 2.5, 'line-opacity': 0.55, 'line-dasharray': [4, 2] } } as any,
+        beforeId,
+      );
     }
   }
 
