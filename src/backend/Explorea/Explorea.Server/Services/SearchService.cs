@@ -80,7 +80,10 @@ namespace Explorea.Server.Services
           Entity = destination,
           StrictScore = strictScore,
           NameSimilarity = destinationHit.NameSimilarity,
-          MaxWordSimilarity = CalcMaxWordSimilarity(destination.Name, query),
+          MaxWordSimilarity = Math.Max(
+            CalcMaxWordSimilarity(destination.Name, query),
+            CalcMaxWordSimilarity(destination.City?.Name, query)),
+          RelatedSimilarity = destinationHit.CitySimilarity ?? 0,
           Score = strictScore + hybridScore,
           IsFeatured = destination.IsFeatured,
           AvgRating = destination.AvgRating,
@@ -101,7 +104,15 @@ namespace Explorea.Server.Services
           Entity = place,
           StrictScore = strictScore,
           NameSimilarity = placeHit.NameSimilarity,
-          MaxWordSimilarity = CalcMaxWordSimilarity(place.Name, query),
+          MaxWordSimilarity = new[] {
+            CalcMaxWordSimilarity(place.Name, query),
+            CalcMaxWordSimilarity(place.City?.Name, query),
+            CalcMaxWordSimilarity(place.Destination?.Name, query)
+          }.Max(),
+          RelatedSimilarity = new[] {
+            placeHit.CitySimilarity ?? 0,
+            placeHit.DestinationSimilarity ?? 0
+          }.Max(),
           Score = strictScore + hybridScore,
           IsFeatured = place.IsFeatured,
           AvgRating = place.AvgRating,
@@ -122,7 +133,15 @@ namespace Explorea.Server.Services
           Entity = ev,
           StrictScore = strictScore,
           NameSimilarity = evHit.NameSimilarity,
-          MaxWordSimilarity = CalcMaxWordSimilarity(ev.Name, query),
+          MaxWordSimilarity = new[] {
+            CalcMaxWordSimilarity(ev.Name, query),
+            CalcMaxWordSimilarity(ev.City?.Name, query),
+            CalcMaxWordSimilarity(ev.Destination?.Name, query)
+          }.Max(),
+          RelatedSimilarity = new[] {
+            evHit.CitySimilarity ?? 0,
+            evHit.DestinationSimilarity ?? 0
+          }.Max(),
           Score = strictScore + hybridScore,
           IsFeatured = ev.IsFeatured,
           AvgRating = null,
@@ -143,7 +162,15 @@ namespace Explorea.Server.Services
           Entity = activity,
           StrictScore = strictScore,
           NameSimilarity = activityHit.NameSimilarity,
-          MaxWordSimilarity = CalcMaxWordSimilarity(activity.Name, query),
+          MaxWordSimilarity = new[] {
+            CalcMaxWordSimilarity(activity.Name, query),
+            CalcMaxWordSimilarity(activity.City?.Name, query),
+            CalcMaxWordSimilarity(activity.Destination?.Name, query)
+          }.Max(),
+          RelatedSimilarity = new[] {
+            activityHit.CitySimilarity ?? 0,
+            activityHit.DestinationSimilarity ?? 0
+          }.Max(),
           Score = strictScore + hybridScore,
           IsFeatured = activity.IsFeatured,
           AvgRating = activity.AvgRating,
@@ -185,7 +212,8 @@ namespace Explorea.Server.Services
       var fuzzyCandidates = candidates
           .Where(c =>
               (c.NameSimilarity.HasValue && c.NameSimilarity.Value >= 0.45) ||
-               c.MaxWordSimilarity >= 0.72)
+               c.MaxWordSimilarity >= 0.72 ||
+               c.RelatedSimilarity >= 0.45)
           .OrderByDescending(c => c.MaxWordSimilarity)
           .ThenByDescending(c => c.NameSimilarity ?? 0)
           .ThenByDescending(c => c.Score)
@@ -513,10 +541,13 @@ namespace Explorea.Server.Services
         AvgRating = destination.AvgRating,
         Address = destination.Address,
 
+        TypeId = destination.TypeId,
+
         City = destination.City == null ? null : new CityRefDto
                                                  {
                                                    Id = destination.City.Id,
-                                                   Name = destination.City.Name
+                                                   Name = destination.City.Name,
+                                                   RegionId = destination.City.RegionId
                                                  },
 
         Location = new LocationDto
@@ -549,6 +580,13 @@ namespace Explorea.Server.Services
                                                Id = place.Type.Id,
                                                Name = place.Type.Name
                                              },
+
+          City = place.City == null ? null : new CityRefDto
+          {
+              Id = place.City.Id,
+              Name = place.City.Name,
+              RegionId = place.City.RegionId
+          },
 
           AvgRating = place.AvgRating,
           Address = place.Address,
@@ -585,7 +623,8 @@ namespace Explorea.Server.Services
                 City = ev.City == null ? null : new CityRefDto
                 {
                     Id = ev.City.Id,
-                    Name = ev.City.Name
+                    Name = ev.City.Name,
+                    RegionId = ev.City.RegionId
                 },
 
                 StartDatetime = ev.StartDatetime,
@@ -717,6 +756,7 @@ namespace Explorea.Server.Services
         public int StrictScore { get; set; }
         public double? NameSimilarity { get; set; }
         public double MaxWordSimilarity { get; set; }
+        public double RelatedSimilarity { get; set; }
         public bool IsFeatured { get; set; }
         public decimal? AvgRating { get; set; }
         public DateTimeOffset? EventStartDatetime { get; set; }

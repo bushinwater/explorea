@@ -253,6 +253,7 @@ namespace Explorea.Server.Repositories.Implementations
     {
       return await _db.Places
         .AsNoTracking()
+        .Include(p => p.City)
         .Include(p => p.Type)
         .Include(p => p.Images)
         .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved")
@@ -329,7 +330,8 @@ namespace Explorea.Server.Repositories.Implementations
         WHERE d.is_deleted = FALSE
           AND (
                 d.search_vector @@ websearch_to_tsquery('simple', @q)
-             OR d.name ILIKE @contains
+             OR unaccent(d.name) ILIKE @containsUnaccent
+             OR unaccent(COALESCE(d.address, '')) ILIKE @containsUnaccent
              OR COALESCE(d.description, '') ILIKE @contains
              OR (
                     @enableFuzzy = TRUE
@@ -924,23 +926,38 @@ namespace Explorea.Server.Repositories.Implementations
       string query,
       int take
     )
-    { 
+    {
        var trimmedQuery = query.Trim();
        var enableFuzzy = trimmedQuery.Length >= 2;
        var contains = $"%{trimmedQuery}%";
+       var containsUnaccent = $"%{NormalizeQuery(trimmedQuery)}%";
 
        var (nameThreshold, relatedThreshold) = GetSimilarityThreshold(trimmedQuery);
-      
+
        var cmd = new NpgsqlCommand(sql, conn);
-       
-       cmd.Parameters.AddWithValue("@q", query);     
-       cmd.Parameters.AddWithValue("@contains", contains);     
-       cmd.Parameters.AddWithValue("@enableFuzzy", enableFuzzy);     
-       cmd.Parameters.AddWithValue("@nameThreshold", nameThreshold);     
-       cmd.Parameters.AddWithValue("@relatedThreshold", relatedThreshold);     
+
+       cmd.Parameters.AddWithValue("@q", query);
+       cmd.Parameters.AddWithValue("@contains", contains);
+       cmd.Parameters.AddWithValue("@containsUnaccent", containsUnaccent);
+       cmd.Parameters.AddWithValue("@enableFuzzy", enableFuzzy);
+       cmd.Parameters.AddWithValue("@nameThreshold", nameThreshold);
+       cmd.Parameters.AddWithValue("@relatedThreshold", relatedThreshold);
        cmd.Parameters.AddWithValue("@take", take);
-       
-       return cmd;     
+
+       return cmd;
+    }
+
+    private static string NormalizeQuery(string input)
+    {
+        var normalized = input.Trim().Normalize(System.Text.NormalizationForm.FormD);
+        var sb = new System.Text.StringBuilder();
+        foreach (char c in normalized)
+        {
+            var cat = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+            if (cat != System.Globalization.UnicodeCategory.NonSpacingMark)
+                sb.Append(c);
+        }
+        return sb.ToString().Normalize(System.Text.NormalizationForm.FormC).ToLower();
     }
 
     private static double? GetNullableDouble(NpgsqlDataReader reader, string columnName)

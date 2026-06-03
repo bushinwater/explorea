@@ -483,58 +483,36 @@ export class Search implements OnInit, OnDestroy {
    */
   private executeSearch(page: number, append: boolean): void {
     if (page === 1 && !append) this.syncToUrl();
-    if (this.activeTab === 'sve') {
 
-      // Multi-entity with no query: parallel list calls per selected type
-      if (this.activeEntityTypes.length > 1 && !this.query.trim()) {
-        const useLocation = this.nearbyEnabled && this.locationAvailable;
-        const calls = this.activeEntityTypes
-          .filter(t => TAB_TO_BACKEND[t])
-          .map(t => this.searchPageService.getList({
-            tab:      TAB_TO_BACKEND[t],
-            page:     1,
-            pageSize: 12,
-            sortBy:   'popularity_desc',
-            userLat:  useLocation ? (this.userLat  ?? undefined) : undefined,
-            userLng:  useLocation ? (this.userLng  ?? undefined) : undefined,
-            ...this.filters,
-          }));
-        forkJoin(calls).subscribe({
-          next: responses => {
-            this.allResults  = responses.flatMap(r => r.items);
-            this.hasSearched = true;
-            this.loading     = false;
-            this.loadingMore = false;
-            this.pagination  = { page: 1, totalPages: 1, total: this.allResults.length };
-            this.cdr.detectChanges();
-          },
-          error: () => {
-            this.allResults  = [];
-            this.loading     = false;
-            this.loadingMore = false;
-            this.cdr.detectChanges();
-          },
-        });
-        return;
-      }
-
-      const useLocSve = this.nearbyEnabled && this.locationAvailable;
+    // ── Text query → fuzzy search (handles typos + diacritics) ───────────────
+    if (this.query.trim()) {
+      const useLocSearch = this.nearbyEnabled && this.locationAvailable;
       this.searchService.search(
         this.query.trim(),
         40,
-        useLocSve ? (this.userLat ?? undefined) : undefined,
-        useLocSve ? (this.userLng ?? undefined) : undefined,
-        useLocSve ? (this.filters.radiusKm ?? 50) : undefined,
+        useLocSearch ? (this.userLat  ?? undefined) : undefined,
+        useLocSearch ? (this.userLng  ?? undefined) : undefined,
+        useLocSearch ? (this.filters.radiusKm ?? 50) : undefined,
       ).subscribe({
         next: res => {
-          this.allResults  = res.results;
+          let results = res.results;
+          // Keep only the types the user is viewing
+          if (this.activeTab !== 'sve') {
+            results = results.filter(r => r.entityType === this.activeTab);
+          } else if (this.activeEntityTypes.length > 1) {
+            results = results.filter(r => this.activeEntityTypes.includes(r.entityType));
+          }
+          // Apply filter panel selections client-side
+          results = this.applyClientFilters(results);
+          this.allResults  = results;
           this.hasSearched = true;
           this.loading     = false;
           this.loadingMore = false;
-          this.pagination  = { page: 1, totalPages: 1, total: res.total };
+          this.pagination  = { page: 1, totalPages: 1, total: results.length };
           this.cdr.detectChanges();
         },
         error: () => {
+          this.allResults  = [];
           this.loading     = false;
           this.loadingMore = false;
           this.cdr.detectChanges();
@@ -543,7 +521,43 @@ export class Search implements OnInit, OnDestroy {
       return;
     }
 
-    // Specific tab — use search-page/list with server-side sort/filter/pagination
+    // ── No query → browse with full server-side filters + pagination ──────────
+    if (this.activeTab === 'sve') {
+      const useLocation  = this.nearbyEnabled && this.locationAvailable;
+      const typesToQuery = this.activeEntityTypes.length > 1
+        ? this.activeEntityTypes.filter(t => TAB_TO_BACKEND[t])
+        : (Object.keys(TAB_TO_BACKEND) as string[]);
+
+      const calls = typesToQuery.map(t => this.searchPageService.getList({
+        tab:      TAB_TO_BACKEND[t],
+        page:     1,
+        pageSize: 12,
+        sortBy:   'popularity_desc',
+        userLat:  useLocation ? (this.userLat  ?? undefined) : undefined,
+        userLng:  useLocation ? (this.userLng  ?? undefined) : undefined,
+        ...this.filters,
+      }));
+
+      forkJoin(calls).subscribe({
+        next: responses => {
+          this.allResults  = responses.flatMap(r => r.items);
+          this.hasSearched = true;
+          this.loading     = false;
+          this.loadingMore = false;
+          this.pagination  = { page: 1, totalPages: 1, total: this.allResults.length };
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.allResults  = [];
+          this.loading     = false;
+          this.loadingMore = false;
+          this.cdr.detectChanges();
+        },
+      });
+      return;
+    }
+
+    // Specific tab, no query — full server-side filters + pagination
     const backendSortBy = this.sortBy
       ? `${SORT_BASE[this.sortBy]}_${this.sortDir}`
       : undefined;
@@ -964,6 +978,30 @@ export class Search implements OnInit, OnDestroy {
     // Re-sort in memory — no new HTTP call needed (same as events-list)
     this.allResults = this.clientSort(this.allResults);
     this.cdr.detectChanges();
+  }
+
+  private applyClientFilters(results: SearchItem[]): SearchItem[] {
+    const f = this.filters;
+    return results.filter(r => {
+      const e = r.entity as any;
+      if (f.minRating != null && (e.avgRating ?? 0) < f.minRating) return false;
+      if (f.minPrice  != null && e.price != null && e.price < f.minPrice) return false;
+      if (f.maxPrice  != null && e.price != null && e.price > f.maxPrice) return false;
+      if ((f.regionsIds ?? []).length > 0 && !f.regionsIds!.includes(e.city?.regionId)) return false;
+      if (r.entityType === 'destination' && (f.destinationTypeIds ?? []).length > 0) {
+        if (!f.destinationTypeIds!.includes(e.typeId)) return false;
+      }
+      if (r.entityType === 'place' && (f.placeTypeIds ?? []).length > 0) {
+        if (!f.placeTypeIds!.includes(e.type?.id)) return false;
+      }
+      if (r.entityType === 'activity' && (f.activityCategoryIds ?? []).length > 0) {
+        if (!f.activityCategoryIds!.includes(e.category?.id)) return false;
+      }
+      if (r.entityType === 'event' && (f.eventTypeIds ?? []).length > 0) {
+        if (!f.eventTypeIds!.includes(e.type?.id)) return false;
+      }
+      return true;
+    });
   }
 
   private clientSort(items: SearchItem[]): SearchItem[] {

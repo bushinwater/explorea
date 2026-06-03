@@ -5,7 +5,8 @@ export interface SearchItemEntity {
   previewImageUrl?: string;
   avgRating?: number;
   address?: string;
-  city?: { id: number; name: string };
+  city?: { id: number; name: string; regionId?: number };
+  typeId?: number;
   type?: { id: number; name: string };
   category?: { id: number; name: string };
   startDatetime?: string;
