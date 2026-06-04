@@ -197,10 +197,10 @@ namespace Explorea.Server.Services.Admin
                 Id = $"submission-{q.Id}",
                 Type = q.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase)
                     ? "submission_created"
-                    : "submission_reviewed",
+                    : (q.Status.Contains("Rejected") ? "submission_rejected" : "submission_approved"),
                 Description = q.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase)
                     ? $"{EntityTypeLabel(q.EntityType)} ceka odobrenje za destinaciju {q.Destination.Name}"
-                    : $"{EntityTypeLabel(q.EntityType)} je promenio status na {q.Status}",
+                    : $"{EntityTypeLabel(q.EntityType)} je promenio status na {StatusLabel(q.Status)}",
                 CreatedAt = q.ReviewedByTOAt ?? q.ReviewedByOwnerAt ?? q.SubmittedAt,
                 ActorId = q.ReviewedByTOUserId ?? q.ReviewedByOwnerId ?? q.SubmittedByUserId
             }).ToList();
@@ -297,6 +297,16 @@ namespace Explorea.Server.Services.Admin
             "event" => "Dogadjaj",
             "activity" => "Aktivnost",
             _ => "Entitet"
+        };
+
+        private static string StatusLabel(string status) => status switch
+        {
+            "Pending"         => "Na čekanju",
+            "ApprovedByTO"    => "Odobrio turistički radnik",
+            "RejectedByTO"    => "Odbio turistički radnik",
+            "ApprovedByOwner" => "Odobrio vlasnik",
+            "RejectedByOwner" => "Odbio vlasnik",
+            _                 => status
         };
     }
 }

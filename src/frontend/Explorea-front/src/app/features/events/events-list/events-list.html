@@ -232,7 +232,7 @@
               </div>
               <div class="planner-entries" *ngIf="!plannerEntriesLoading">
                 <div *ngIf="plannerEntries.length === 0" class="planner-empty">
-                  Nema događaja za ovaj dan.
+                  {{ 'EVENTS.NO_EVENTS_DAY' | translate }}
                 </div>
                 <div class="planner-entry" *ngFor="let entry of plannerEntries">
                   <div class="planner-entry__thumb">
@@ -460,7 +460,7 @@
                 </div>
                 <div class="planner-entries" *ngIf="!plannerEntriesLoading">
                   <div *ngIf="plannerEntries.length === 0" class="planner-empty">
-                    Nema događaja za ovaj dan.
+                    {{ 'EVENTS.NO_EVENTS_DAY' | translate }}
                   </div>
                   <div class="planner-entry" *ngFor="let entry of plannerEntries">
                     <div class="planner-entry__thumb">

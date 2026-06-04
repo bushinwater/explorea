@@ -460,8 +460,10 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
     return comment.length > maxLen ? comment.slice(0, maxLen) + '…' : comment;
   }
 
+  private get dateLocale(): string { return this.ui.language() === 'en' ? 'en-GB' : 'sr-Latn-RS'; }
+
   protected formatDate(isoDate: string): string {
-    return new Date(isoDate).toLocaleDateString('sr-Latn', {
+    return new Date(isoDate).toLocaleDateString(this.dateLocale, {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -475,7 +477,7 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
     const size = this.filters().pageSize;
     const from = (page - 1) * size + 1;
     const to = Math.min(page * size, total);
-    return `Prikazano ${from}–${to} od ${total}`;
+    return this.ui.t('common.pagination', { from, to, total });
   }
 
   protected pageNumbers(): number[] {

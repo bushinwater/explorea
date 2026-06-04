@@ -364,16 +364,16 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
           new()
           {
               Icon = "verified_user",
-              Label = "Admini trenutno na mrezi",
+              Label = "settings.admin.stat.active_admins.label",
               Value = onlineAdminsCount.ToString(),
-              Description = "Admin nalozi sa aktivnom sesijom u admin panelu."
+              Description = "settings.admin.stat.active_admins.desc"
           },
           new()
           {
               Icon = "pending_actions",
-              Label = "Zahtevi na cekanju",
+              Label = "settings.admin.stat.pending.label",
               Value = pendingUserRequestsCount.ToString(),
-              Description = "Objekti i dogadjaji koje su korisnici poslali i cekaju odobravanje."
+              Description = "settings.admin.stat.pending.desc"
           }
         },
         Settings = new List<AdminAdministrationSettingDto>
@@ -381,16 +381,16 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
           new()
           {
               Icon = "manage_accounts",
-              Title = "Upravljanje admin ulogama",
-              Description = "Superadmin može da kontroliše dozvole, regione i pristup drugim adminima.",
-              ActionLabel = "Otvori korisnike"
+              Title = "settings.admin.control.roles.title",
+              Description = "settings.admin.control.roles.desc",
+              ActionLabel = "settings.admin.control.roles.action"
           },
           new()
           {
               Icon = "rule",
-              Title = "Pravila moderacije",
-              Description = "Pregled pravila za odobravanje destinacija, mesta, događaja i aktivnosti.",
-              ActionLabel = "Pregledaj pravila"
+              Title = "settings.admin.control.rules.title",
+              Description = "settings.admin.control.rules.desc",
+              ActionLabel = "settings.admin.control.rules.action"
           }
         },
         SystemToggles = new List<AdminSystemToggleDto>
@@ -398,8 +398,8 @@ public async Task<IActionResult> UploadProfilePhoto([FromForm] AdminProfilePhoto
           new()
           {
               Icon = "history",
-              Title = "Detaljan audit log",
-              Description = "Pamti detaljne administrativne akcije radi bezbednosti i kasnije provere.",
+              Title = "settings.admin.toggle.audit.title",
+              Description = "settings.admin.toggle.audit.desc",
               Enabled = true
           }
         }

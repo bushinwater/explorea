@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, View
 import { FormsModule } from '@angular/forms';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, interval } from 'rxjs';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
+import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { AdminSupportService } from './admin-support.service';
 import {
   AiSupportMessage,
@@ -73,6 +74,7 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
   constructor(
     private readonly supportService: AdminSupportService,
     protected readonly auth: DashboardAuthService,
+    protected readonly ui: AdminUiPreferencesService,
   ) {}
 
   ngOnInit(): void {
@@ -143,24 +145,15 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
   }
 
   protected statusLabel(status: SupportTicketStatus): string {
-    const labels: Record<SupportTicketStatus, string> = {
-      open: 'Otvoren',
-      in_progress: 'U toku',
-      resolved: 'Rešen',
-      closed: 'Zatvoren',
-    };
-
-    return labels[status] ?? status;
+    const key = 'support.status.' + status;
+    const translated = this.ui.t(key);
+    return translated !== key ? translated : status;
   }
 
   protected priorityLabel(priority: SupportTicketPriority): string {
-    const labels: Record<SupportTicketPriority, string> = {
-      low: 'Nizak',
-      medium: 'Srednji',
-      high: 'Visok',
-    };
-
-    return labels[priority] ?? priority;
+    const key = 'support.priority.' + priority;
+    const translated = this.ui.t(key);
+    return translated !== key ? translated : priority;
   }
 
   protected contextTypeLabel(type: SupportContextType): string {
@@ -195,8 +188,10 @@ export class AdminSupportPageComponent implements OnInit, OnDestroy {
     return `${Math.floor(hours / 24)} d`;
   }
 
+  private get dateLocale(): string { return this.ui.language() === 'en' ? 'en-GB' : 'sr-Latn-RS'; }
+
   protected messageTime(isoDate: string): string {
-    return new Intl.DateTimeFormat('sr-Latn-RS', {
+    return new Intl.DateTimeFormat(this.dateLocale, {
       hour: '2-digit',
       minute: '2-digit',
     }).format(new Date(isoDate));

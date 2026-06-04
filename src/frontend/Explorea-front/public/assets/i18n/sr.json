@@ -29,7 +29,30 @@
     "LOGOUT": "Odjavi se",
     "LIGHT_MODE": "Light mode",
     "DARK_MODE": "Dark mode",
-    "LANGUAGE": "Srpski"
+    "LANGUAGE": "Srpski",
+    "LANG_SR": "Srpski",
+    "LANG_EN": "English"
+  },
+  "BUG_REPORT": {
+    "TITLE": "Prijavi grešku",
+    "SUBTITLE": "Pošalji nam izveštaj o problemu",
+    "SUCCESS_TITLE": "Prijava poslata!",
+    "SUCCESS_MSG": "Hvala ti na povratnoj informaciji. Pregledaćemo prijavu što pre.",
+    "CLOSE": "Zatvori",
+    "SUBJECT_LABEL": "Naslov",
+    "SUBJECT_PLACEHOLDER": "Kratko opišite problem...",
+    "EMAIL_LABEL": "Email (opcionalno)",
+    "EMAIL_PLACEHOLDER": "vasa@email.com",
+    "DESC_LABEL": "Opis",
+    "DESC_PLACEHOLDER": "Detaljno opišite problem i korake za reprodukciju...",
+    "CANCEL": "Otkaži",
+    "SUBMIT": "Pošalji prijavu",
+    "ERROR_SUBJECT_REQUIRED": "Naslov je obavezan.",
+    "ERROR_SUBJECT_MAX": "Naslov ne sme biti duži od 200 znakova.",
+    "ERROR_DESC_REQUIRED": "Opis je obavezan.",
+    "ERROR_DESC_MAX": "Opis ne sme biti duži od 2000 znakova.",
+    "ERROR_EMAIL_INVALID": "Unesite ispravnu email adresu.",
+    "ERROR_SUBMIT": "Greška pri slanju. Pokušajte ponovo."
   },
   "SETTINGS_PAGE": {
     "TITLE": "Profil & Podešavanja",
@@ -108,6 +131,10 @@
       "THEME_DARK": "Tamna tema je aktivna.",
       "THEME_LIGHT": "Svetla tema je aktivna."
     },
+    "ADMIN_CARD": {
+      "LABEL": "Admin panel",
+      "DESC": "Upravljanje platformom"
+    },
     "ACTIONS": {
       "SAVE": "Sačuvaj sve izmene",
       "CANCEL": "Otkaži",
@@ -159,7 +186,8 @@
       "SUBTITLE": "Šta kažu naši putnici o doživljajima širom Srbije"
     },
     "FOOTER": {
-      "COPY": "© 2025 Explorea · Turistički vodič Srbije"
+      "COPY": "© 2025 Explorea · Turistički vodič Srbije",
+      "ABOUT_TEAM": "O timu"
     }
   },
   "ACTIVITY_DETAIL": {
@@ -630,6 +658,7 @@
     "ALREADY_REVIEWED": "Već ste poslali recenziju za ovu destinaciju."
   },
   "EVENTS": {
+    "NO_EVENTS_DAY": "Nema događaja za ovaj dan.",
     "TITLE": "Dogadjaji",
     "DESKTOP_TITLE": "Dogadjaji & Manifestacije",
     "DESKTOP_SUBTITLE": "Otkrij najbolje dogadjaje u tvojoj blizini.",
@@ -664,6 +693,17 @@
     "LOCATION_MODAL_WAITING": "Čekam dozvolu...",
     "LOCATION_BLOCKED_TITLE": "Lokacija blokirana",
     "LOCATION_BLOCKED_TEXT": "Lokacija je blokirana u podešavanjima browsera. Klikni na ikonu katanca pored adrese sajta, dozvoli lokaciju, pa pokušaj ponovo."
+  },
+  "CHAT": {
+    "HEADER_SUB": "Pitajte me za destinacije, mesta i događaje",
+    "ARIA_LABEL": "AI asistent",
+    "WELCOME_LOGGED_IN": "Mogu da vam pomognem da pronađete destinacije, aktivnosti, događaje i mesta u Srbiji.",
+    "WELCOME_GUEST": "Mogu da vam pomognem da pronađete destinacije, aktivnosti, događaje i mesta u Srbiji.",
+    "SUGGEST_DESTINATIONS": "Popularne destinacije",
+    "SUGGEST_EVENTS": "Nadolazeći događaji",
+    "SUGGEST_ACTIVITIES": "Aktivnosti",
+    "INPUT_PLACEHOLDER": "Postavite pitanje...",
+    "SEND_ARIA": "Pošalji"
   },
   "SAVED_ITEMS": {
     "TITLE": "Sačuvano",
@@ -742,6 +782,19 @@
     "LOCATION_MODAL_WAITING": "Čekam dozvolu...",
     "LOCATION_BLOCKED_TITLE": "Lokacija blokirana",
     "LOCATION_BLOCKED_TEXT": "Lokacija je blokirana u podešavanjima browsera. Klikni na ikonu katanca pored adrese sajta, dozvoli lokaciju, pa pokušaj ponovo.",
-    "SUBCATS_MORE": "+{{count}} više"
+    "SUBCATS_MORE": "+{{count}} više",
+    "SECTION_POPULAR_DESTINATIONS": "Popularne destinacije",
+    "SECTION_TOP_RATED_PLACES": "Najbolje ocenjeni objekti",
+    "SECTION_NEARBY_EVENTS": "Događaji",
+    "SECTION_POPULAR_ACTIVITIES": "Popularne aktivnosti"
+  },
+  "ABOUT_MODAL": {
+    "TITLE": "O timu",
+    "DESC_1": "Explorea je turistička platforma za otkrivanje najlepših destinacija, aktivnosti, mesta i događaja u Srbiji. Razvila ju je studentska ekipa",
+    "DESC_2": "u okviru predmeta Softversko inženjerstvo na Prirodno-matematičkom fakultetu u Kragujevcu."
+  },
+  "EVENT_CARD": {
+    "FREE": "Besplatno",
+    "FROM": "od"
   }
 }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
@@ -112,33 +112,33 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   readonly isNewsletterExporting = signal(false);
 
   readonly toast = signal<SettingsToastState | null>(null);
-  readonly tabs: SettingsTabItem[] = [
+  readonly tabs = computed<SettingsTabItem[]>(() => [
     {
       id: 'profile',
-      label: 'Profil',
-      description: 'Lični podaci i status admin naloga.',
+      label: this.ui.t('settings.tab.profile'),
+      description: this.ui.t('settings.tab.profile_desc'),
       icon: 'person',
     },
     {
       id: 'preferences',
-      label: 'Podešavanja aplikacije',
-      description: 'Izgled i ponašanje aplikacije.',
+      label: this.ui.t('settings.tab.prefs'),
+      description: this.ui.t('settings.tab.prefs_desc'),
       icon: 'tune',
     },
     {
       id: 'notifications',
-      label: 'Obaveštenja',
-      description: 'Podešavanja obaveštenja.',
+      label: this.ui.t('settings.tab.notif'),
+      description: this.ui.t('settings.tab.notif_desc'),
       icon: 'notifications',
     },
     {
       id: 'administration',
-      label: 'Administracija',
-      description: 'Sistemska podešavanja.',
+      label: this.ui.t('settings.tab.admin'),
+      description: this.ui.t('settings.tab.admin_desc'),
       icon: 'admin_panel_settings',
       superAdminOnly: true,
     },
-  ];
+  ]);
 
   readonly adminProfile = signal<AdminProfileDto>({
     id: '',
@@ -156,107 +156,69 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     bio: null,
   });
 
-  readonly notificationChannels = [
+  readonly notificationChannels = computed(() => [
     {
       key: 'notificationsEnabled' as NotificationChannelKey,
       icon: 'notifications_active',
-      title: 'Push obaveštenja',
-      description: 'Primaj obaveštenja o važnim promenama direktno u browseru.',
+      title: this.ui.t('settings.notif.channel.push'),
+      description: this.ui.t('settings.notif.channel.push_desc'),
     },
     {
       key: 'emailNotificationsEnabled' as NotificationChannelKey,
       icon: 'mail',
-      title: 'Email obaveštenja',
-      description: 'Dobijaj sažetke, potvrde i sistemske poruke putem emaila.',
+      title: this.ui.t('settings.notif.channel.email'),
+      description: this.ui.t('settings.notif.channel.email_desc'),
     },
     {
       key: 'marketingEmailsEnabled' as NotificationChannelKey,
       icon: 'campaign',
-      title: 'Marketing emailovi',
-      description: 'Specijalne ponude, preporuke i novosti vezane za Explorea platformu.',
+      title: this.ui.t('settings.notif.channel.marketing'),
+      description: this.ui.t('settings.notif.channel.marketing_desc'),
     },
-  ];
+  ]);
 
-  readonly notificationTypes = [
+  readonly notificationTypes = computed(() => [
     {
       value: 'reviews',
       icon: 'rate_review',
-      title: 'Recenzije i moderacija',
-      description: 'Nove recenzije, prijave korisnika i sadržaj koji čeka proveru.',
+      title: this.ui.t('settings.notif.type.reviews'),
+      description: this.ui.t('settings.notif.type.reviews_desc'),
     },
     {
       value: 'events',
       icon: 'event_available',
-      title: 'Događaji i aktivnosti',
-      description: 'Promene statusa događaja, aktivnosti i novih zahteva organizatora.',
+      title: this.ui.t('settings.notif.type.events'),
+      description: this.ui.t('settings.notif.type.events_desc'),
     },
     {
       value: 'system',
       icon: 'admin_panel_settings',
-      title: 'Sistemska upozorenja',
-      description: 'Bezbednosna upozorenja, promene privilegija i administrativne akcije.',
+      title: this.ui.t('settings.notif.type.system'),
+      description: this.ui.t('settings.notif.type.system_desc'),
     },
     {
       value: 'weekly_summary',
       icon: 'analytics',
-      title: 'Nedeljni izveštaji',
-      description: 'Kratak pregled performansi, aktivnosti korisnika i popularnog sadržaja.',
+      title: this.ui.t('settings.notif.type.weekly_summary'),
+      description: this.ui.t('settings.notif.type.weekly_summary_desc'),
     },
-  ];
+  ]);
 
-  readonly notificationFrequencyOptions = [
-    { value: 1, label: 'Dnevno' },
-    { value: 7, label: 'Nedeljno' },
-    { value: 14, label: 'Na 14 dana' },
-    { value: 30, label: 'Mesecno' },
-  ];
+  readonly notificationFrequencyOptions = computed(() => [
+    { value: 1, label: this.ui.t('settings.notif.freq.daily') },
+    { value: 7, label: this.ui.t('settings.notif.freq.weekly') },
+    { value: 14, label: this.ui.t('settings.notif.freq.biweekly') },
+    { value: 30, label: this.ui.t('settings.notif.freq.monthly') },
+  ]);
 
   readonly notificationHourOptions = Array.from({ length: 24 }, (_, hour) => ({
     value: hour,
     label: `${hour.toString().padStart(2, '0')}:00`,
   }));
 
-  readonly administrationStats = signal<AdminAdministrationStatDto[]>([
-    {
-      icon: 'verified_user',
-      label: 'Admini trenutno na mrezi',
-      value: '0',
-      description: 'Admin nalozi sa aktivnom sesijom u admin panelu.',
-    },
-    {
-      icon: 'pending_actions',
-      label: 'Zahtevi na cekanju',
-      value: '0',
-      description: 'Objekti iz places tabele koji cekaju odobravanje.',
-    },
-  ]);
-
-  readonly administrationSettings = signal<AdminAdministrationSettingDto[]>([
-    {
-      icon: 'manage_accounts',
-      title: 'Upravljanje admin ulogama',
-      description: 'Superadmin može da kontroliše dozvole, regione i pristup drugim adminima.',
-      actionLabel: 'Otvori korisnike',
-      route: '/admin/users',
-    },
-    {
-      icon: 'rule',
-      title: 'Pravila moderacije',
-      description:
-        'Podesi osnovna pravila za odobravanje destinacija, mesta, događaja i aktivnosti.',
-      actionLabel: 'Pogledaj pravila',
-      popup: 'moderation-rules',
-    },
-  ]);
-
-  readonly systemToggles = signal<AdminSystemToggleDto[]>([
-    {
-      icon: 'history',
-      title: 'Detaljan audit log',
-      description: 'Pamti detaljne administrativne akcije radi bezbednosti i kasnije provere.',
-      enabled: true,
-    },
-  ]);
+  readonly administrationStats = signal<AdminAdministrationStatDto[]>([]);
+  readonly administrationSettings = signal<AdminAdministrationSettingDto[]>([]);
+  readonly systemToggles = signal<AdminSystemToggleDto[]>([]);
 
   readonly profileForm = signal<AdminProfileFormState>({
     firstName: '',
@@ -287,10 +249,49 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   constructor(
     public auth: DashboardAuthService,
     private readonly adminSettingsService: AdminSettingsService,
-    private readonly ui: AdminUiPreferencesService,
+    protected readonly ui: AdminUiPreferencesService,
     private readonly adminProfileService: AdminProfileService,
     protected readonly router: Router,
-  ) {}
+  ) {
+    this.administrationStats.set([
+      {
+        icon: 'verified_user',
+        label: this.ui.t('settings.admin.stat.active_admins.label'),
+        value: '0',
+        description: this.ui.t('settings.admin.stat.active_admins.desc'),
+      },
+      {
+        icon: 'pending_actions',
+        label: this.ui.t('settings.admin.stat.pending.label'),
+        value: '0',
+        description: this.ui.t('settings.admin.stat.pending.desc'),
+      },
+    ]);
+    this.administrationSettings.set([
+      {
+        icon: 'manage_accounts',
+        title: this.ui.t('settings.admin.control.roles.title'),
+        description: this.ui.t('settings.admin.control.roles.desc'),
+        actionLabel: this.ui.t('settings.admin.control.roles.action'),
+        route: '/admin/users',
+      },
+      {
+        icon: 'rule',
+        title: this.ui.t('settings.admin.control.rules.title'),
+        description: this.ui.t('settings.admin.control.rules.desc'),
+        actionLabel: this.ui.t('settings.admin.control.rules.action'),
+        popup: 'moderation-rules',
+      },
+    ]);
+    this.systemToggles.set([
+      {
+        icon: 'history',
+        title: this.ui.t('settings.admin.toggle.audit.title'),
+        description: this.ui.t('settings.admin.toggle.audit.desc'),
+        enabled: true,
+      },
+    ]);
+  }
 
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
@@ -322,7 +323,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           this.isPreferencesLoading.set(false);
         },
         error: () => {
-          this.showToast('error', 'Nije moguće učitati podešavanja aplikacije.');
+          this.showToast('error', this.ui.t('settings.toast.prefs_load_error'));
           this.isPreferencesLoading.set(false);
         },
       }),
@@ -377,11 +378,11 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
             this.ui.setTheme(preferences.theme as AdminTheme);
             this.ui.setLanguage(preferences.language as AdminLanguage);
 
-            this.showToast('success', 'Podešavanja aplikacije su uspešno sačuvana.');
+            this.showToast('success', this.ui.t('settings.toast.prefs_saved'));
             this.isPreferencesSaving.set(false);
           },
           error: () => {
-            this.showToast('error', 'Nije moguće sačuvati podešavanja aplikacije.');
+            this.showToast('error', this.ui.t('settings.toast.prefs_error'));
             this.isPreferencesSaving.set(false);
           },
         }),
@@ -410,7 +411,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           this.isNotificationsLoading.set(false);
         },
         error: () => {
-          this.showToast('error', 'Nije moguće učitati podešavanja obaveštenja.');
+          this.showToast('error', this.ui.t('settings.toast.notif_load_error'));
           this.isNotificationsLoading.set(false);
         },
       }),
@@ -533,13 +534,13 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           this.testReportResult.set({
             ok: true,
             message: result.sentCount > 0
-              ? `Izveštaj je poslat — proveri inbox (može biti u spam-u).`
-              : 'Nema podataka za izveštaj, ali nije došlo do greške.',
+              ? this.ui.t('settings.toast.report_sent')
+              : this.ui.t('settings.toast.report_empty'),
           });
         },
         error: () => {
           this.isTestReportSending.set(false);
-          this.testReportResult.set({ ok: false, message: 'Greška pri slanju — proveri SMTP konfiguraciju.' });
+          this.testReportResult.set({ ok: false, message: this.ui.t('settings.toast.report_error') });
         },
       }),
     );
@@ -580,11 +581,11 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
               deliveryHour: this.normalizeDeliveryHour(notifications.deliveryHour),
             });
             this.rememberAllNotificationsReportTopics(this.notificationsForm().reportTopics);
-            this.showToast('success', 'Podešavanja obaveštenja su uspešno sačuvana.');
+            this.showToast('success', this.ui.t('settings.toast.notif_saved'));
             this.isNotificationsSaving.set(false);
           },
           error: () => {
-            this.notificationsErrorMessage.set('Nije moguće sačuvati podešavanja obaveštenja.');
+            this.notificationsErrorMessage.set(this.ui.t('settings.toast.notif_error'));
             this.isNotificationsSaving.set(false);
           },
         }),
@@ -593,25 +594,18 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
   protected themeLabel(value: string): string {
     switch (value) {
-      case 'dark':
-        return 'Tamna tema';
-      case 'light':
-        return 'Svetla tema';
-      case 'system':
-        return 'Sistemska tema';
-      default:
-        return value;
+      case 'dark': return this.ui.t('settings.prefs.theme_dark');
+      case 'light': return this.ui.t('settings.prefs.theme_light');
+      case 'system': return this.ui.t('settings.prefs.theme_system');
+      default: return value;
     }
   }
 
   protected languageLabel(value: string): string {
     switch (value) {
-      case 'sr':
-        return 'Srpski (SR)';
-      case 'en':
-        return 'English (EN)';
-      default:
-        return value;
+      case 'sr': return this.ui.t('settings.prefs.language_sr');
+      case 'en': return this.ui.t('settings.prefs.language_en');
+      default: return value;
     }
   }
 
@@ -620,7 +614,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
   }
 
   protected landingPageLabel(value: string): string {
-    return normalizeAdminLandingPage(value, this.auth.role()).label;
+    return this.ui.t(normalizeAdminLandingPage(value, this.auth.role()).labelKey);
   }
 
   private normalizeReportTopics(topics: string[]): string[] {
@@ -666,8 +660,8 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           this.isAdministrationLoading.set(false);
         },
         error: () => {
-          this.showToast('error', 'Nije moguće učitati sistemska podešavanja.');
-          this.administrationErrorMessage.set('Nije moguće učitati sistemska podešavanja.');
+          this.showToast('error', this.ui.t('settings.toast.admin_load_error'));
+          this.administrationErrorMessage.set(this.ui.t('settings.toast.admin_load_error'));
           this.isAdministrationLoading.set(false);
         },
       }),
@@ -688,14 +682,14 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
         this.isNewsletterExporting.set(false);
       },
       error: () => {
-        this.showToast('error', 'Izvoz emailova nije uspeo.');
+        this.showToast('error', this.ui.t('settings.toast.newsletter_error'));
         this.isNewsletterExporting.set(false);
       },
     });
   }
 
   visibleTabs(): SettingsTabItem[] {
-    return this.tabs.filter((tab) => !tab.superAdminOnly || this.auth.role() === 'super_admin');
+    return this.tabs().filter((tab) => !tab.superAdminOnly || this.auth.role() === 'super_admin');
   }
 
   setActiveTab(tab: SettingsTab): void {
@@ -717,7 +711,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           this.isProfileLoading.set(false);
         },
         error: () => {
-          this.showToast('error', 'Nije moguće učitati podatke admin profila.');
+          this.showToast('error', this.ui.t('settings.toast.profile_load_error'));
           this.isProfileLoading.set(false);
         },
       }),
@@ -744,7 +738,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     const form = this.profileForm();
 
     if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
-      this.showToast('error', 'Ime, prezime i email su obavezni.');
+      this.showToast('error', this.ui.t('settings.toast.profile_required'));
       return;
     }
 
@@ -770,11 +764,11 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
               lastName: profile.lastName,
               profileImageUrl: profile.profileImageUrl,
             });
-            this.showToast('success', 'Profil je uspešno sačuvan.');
+            this.showToast('success', this.ui.t('settings.toast.profile_saved'));
             this.isProfileSaving.set(false);
           },
           error: () => {
-            this.showToast('error', 'Nije moguće sačuvati izmene profila.');
+            this.showToast('error', this.ui.t('settings.toast.profile_error'));
             this.isProfileSaving.set(false);
           },
         }),
@@ -800,7 +794,8 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
 
     if (Number.isNaN(date.getTime()) || date.getFullYear() <= 1) return 'N/A';
 
-    return new Intl.DateTimeFormat('sr-Latn-RS', {
+    const locale = this.ui.language() === 'en' ? 'en-GB' : 'sr-Latn-RS';
+    return new Intl.DateTimeFormat(locale, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -814,7 +809,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      this.showToast('error', 'Možeš okačiti samo sliku.');
+      this.showToast('error', this.ui.t('settings.toast.image_type_error'));
       input.value = '';
       return;
     }
@@ -822,7 +817,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     const maxFileSize = 5 * 1024 * 1024;
 
     if (file.size > maxFileSize) {
-      this.showToast('error', 'Slika mora biti manje od 5MB.');
+      this.showToast('error', this.ui.t('settings.toast.image_size_error'));
       input.value = '';
       return;
     }
@@ -847,7 +842,7 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     const crop = this.lastProfilePhotoCrop;
 
     if (!crop) {
-      this.showToast('error', 'Sacekaj da se slika pripremi za cuvanje.');
+      this.showToast('error', this.ui.t('settings.toast.photo_wait'));
       return;
     }
 
@@ -888,12 +883,12 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           this.resetProfileForm(profile);
           this.adminProfileService.patch({ profileImageUrl: profile.profileImageUrl });
           this.adminProfileService.isPhotoUploading.set(false);
-          this.showToast('success', 'Profilna slika je uspešno sačuvana.');
+          this.showToast('success', this.ui.t('settings.toast.photo_saved'));
           this.isProfilePhotoUploading.set(false);
         },
         error: () => {
           this.adminProfileService.isPhotoUploading.set(false);
-          this.showToast('error', 'Nije moguće okačiti profilnu sliku.');
+          this.showToast('error', this.ui.t('settings.toast.photo_error'));
           this.isProfilePhotoUploading.set(false);
         },
       }),
@@ -915,11 +910,11 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
           this.adminProfile.set(profile);
           this.resetProfileForm(profile);
           this.adminProfileService.patch({ profileImageUrl: profile.profileImageUrl });
-          this.showToast('success', 'Profilna slika je obrisana.');
+          this.showToast('success', this.ui.t('settings.toast.photo_deleted'));
           this.isProfilePhotoDeleting.set(false);
         },
         error: () => {
-          this.showToast('error', 'Nije moguće obrisati profilnu sliku.');
+          this.showToast('error', this.ui.t('settings.toast.photo_delete_error'));
           this.isProfilePhotoDeleting.set(false);
         },
       }),

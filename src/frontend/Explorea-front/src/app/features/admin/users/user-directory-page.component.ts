@@ -114,7 +114,7 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
   protected readonly avgAgeValue = computed(() => {
     const age = this.stats().averageAge;
     if (age == null) return '—';
-    return `${age} god`;
+    return `${age} ${this.ui.t('common.years_abbr')}`;
   });
 
   protected readonly growthValue = computed(() => {

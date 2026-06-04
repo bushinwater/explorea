@@ -122,13 +122,15 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     ].filter(Boolean).length;
   });
 
-  protected readonly statuses: Array<{ value: DestinationStatus | 'all'; label: string }> = [
-    { value: 'all', label: 'Svi statusi' },
-    { value: 'active', label: 'Aktivno' },
-    { value: 'pending', label: 'Na čekanju' },
-    { value: 'inactive', label: 'Neaktivno' },
-    { value: 'rejected', label: 'Odbijeno' },
-  ];
+  protected get statuses(): Array<{ value: DestinationStatus | 'all'; label: string }> {
+    return [
+      { value: 'all',      label: this.ui.t('common.status.all') },
+      { value: 'active',   label: this.ui.t('common.status.active') },
+      { value: 'pending',  label: this.ui.t('common.status.pending') },
+      { value: 'inactive', label: this.ui.t('common.status.inactive') },
+      { value: 'rejected', label: this.ui.t('common.status.rejected') },
+    ];
+  }
 
   protected readonly stars = [1, 2, 3, 4, 5];
   protected readonly hoverRating = signal<number | null>(null);
@@ -326,7 +328,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected onEditSaved(updated: DestinationRow): void {
-    this.successMessage.set(`„${updated.name}" je uspešno ažurirana.`);
+    this.successMessage.set(this.ui.t('destinations.success.updated', { name: updated.name }));
     this.closeEditModal();
     this.silentRefresh();
   }
@@ -342,7 +344,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected onDestinationCreated(row: DestinationRow): void {
-    this.successMessage.set(`„${row.name}" je uspešno kreirana.`);
+    this.successMessage.set(this.ui.t('destinations.success.created', { name: row.name }));
     this.closeCreateModal();
     this.loadDestinations();
     this.loadStats();
@@ -361,13 +363,13 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       this.destinationsService.restoreDestination(dest.id).subscribe({
         next: () => {
           this.isRestoring.set(false);
-          this.successMessage.set(`„${dest.name}" je uspešno vraćena.`);
+          this.successMessage.set(this.ui.t('destinations.success.restored', { name: dest.name }));
           this.closeDetailsPanel();
           this.loadDestinations();
         },
         error: () => {
           this.isRestoring.set(false);
-          this.errorMessage.set('Greška pri vraćanju destinacije.');
+          this.errorMessage.set(this.ui.t('destinations.error.restore'));
         },
       }),
     );
@@ -443,30 +445,32 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
           this.isDeleting.set(false);
           this.isDeleteDialogOpen.set(false);
           this.selectedDestination.set(null);
-          this.successMessage.set(`„${dest.name}" je uspešno uklonjena.`);
+          this.successMessage.set(this.ui.t('destinations.success.deleted', { name: dest.name }));
           this.loadDestinations();
         },
         error: () => {
           this.isDeleting.set(false);
-          this.errorMessage.set('Greška pri brisanju destinacije.');
+          this.errorMessage.set(this.ui.t('destinations.error.delete'));
         },
       }),
     );
   }
 
+  private get dateLocale(): string { return this.ui.language() === 'en' ? 'en-GB' : 'sr-Latn-RS'; }
+
   protected formatDate(isoDate: string | null): string {
     if (!isoDate) return '';
-    return new Date(isoDate).toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return new Date(isoDate).toLocaleDateString(this.dateLocale, { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   protected timeAgo(isoDate: string): string {
     const diffMs = Date.now() - new Date(isoDate).getTime();
     const minutes = Math.max(1, Math.floor(diffMs / 60000));
-    if (minutes < 60) return `pre ${minutes} min`;
+    if (minutes < 60) return this.ui.t('common.time_ago.min', { n: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `pre ${hours} h`;
+    if (hours < 24) return this.ui.t('common.time_ago.hours', { n: hours });
     const days = Math.floor(hours / 24);
-    return `pre ${days} dana`;
+    return this.ui.t('common.time_ago.days', { n: days });
   }
 
   protected formatBigNumber(n: number): string {
@@ -515,13 +519,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected statusLabel(status: DestinationStatus): string {
-    const map: Record<DestinationStatus, string> = {
-      active: 'Aktivno',
-      pending: 'Na čekanju',
-      inactive: 'Neaktivno',
-      rejected: 'Odbijeno',
-    };
-    return map[status];
+    return this.ui.t('common.status.' + status);
   }
 
   protected isDeleted(dest: DestinationRow): boolean {
@@ -547,7 +545,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     const size = this.filters().pageSize;
     const from = (page - 1) * size + 1;
     const to = Math.min(page * size, total);
-    return `Prikazano ${from}–${to} od ${total}`;
+    return this.ui.t('common.pagination', { from, to, total });
   }
 
   protected pageNumbers(): number[] {
@@ -602,7 +600,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         error: () => {
           this.destinations.set([]);
           this.total.set(0);
-          this.errorMessage.set('Greška pri učitavanju destinacija.');
+          this.errorMessage.set(this.ui.t('destinations.error.load'));
           this.isLoading.set(false);
         },
       }),
@@ -632,7 +630,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         error: () => {
           this.destinations.set([]);
           this.total.set(0);
-          this.errorMessage.set('Greška pri učitavanju destinacija.');
+          this.errorMessage.set(this.ui.t('destinations.error.load'));
           this.isLoading.set(false);
         },
       }),

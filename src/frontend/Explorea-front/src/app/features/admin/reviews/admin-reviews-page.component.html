@@ -403,7 +403,7 @@
                           @if (isPlaceOwner()) {
                             <button class="rv-menu-item" (click)="openReplyDialog(review)">
                               <span class="material-icons">reply</span>
-                              {{ review.ownerReply ? 'Izmeni odgovor' : 'Odgovori' }}
+                              {{ review.ownerReply ? ui.t('reviews.reply.btn_edit') : ui.t('reviews.reply.btn_reply') }}
                             </button>
                           }
                           @if (isSuperAdmin()) {
@@ -469,7 +469,7 @@
     <div class="rv-delete-modal" (click)="$event.stopPropagation()">
       <div class="rv-delete-modal__header">
         <span class="material-icons rv-delete-modal__icon">reply</span>
-        <h3 class="rv-delete-modal__title">{{ selectedReview()?.ownerReply ? 'Izmeni odgovor' : 'Odgovori na recenziju' }}</h3>
+        <h3 class="rv-delete-modal__title">{{ selectedReview()?.ownerReply ? ui.t('reviews.reply.title_edit') : ui.t('reviews.reply.title_new') }}</h3>
       </div>
       @if (selectedReview()?.entityName) {
         <p class="rv-delete-modal__entity">
@@ -478,25 +478,25 @@
         </p>
       }
       <div class="rv-delete-modal__reason">
-        <label class="rv-delete-modal__reason-label">Vaš odgovor</label>
+        <label class="rv-delete-modal__reason-label">{{ ui.t('reviews.reply.label') }}</label>
         <textarea
           class="rv-delete-modal__reason-input"
           rows="4"
-          placeholder="Unesite odgovor..."
+          [placeholder]="ui.t('reviews.reply.placeholder')"
           [value]="replyText()"
           (input)="replyText.set($any($event.target).value)"
         ></textarea>
       </div>
       <div class="rv-delete-modal__actions">
         <button class="rv-delete-modal__cancel" (click)="closeReplyDialog()" [disabled]="isReplying()">
-          Otkaži
+          {{ ui.t('reviews.reply.cancel') }}
         </button>
         <button class="rv-delete-modal__confirm" (click)="confirmReply()" [disabled]="isReplying() || !replyText().trim()">
           @if (isReplying()) {
             <span class="material-icons spin">sync</span>
-            Čuvanje...
+            {{ ui.t('reviews.reply.saving') }}
           } @else {
-            Sačuvaj odgovor
+            {{ ui.t('reviews.reply.save') }}
           }
         </button>
       </div>

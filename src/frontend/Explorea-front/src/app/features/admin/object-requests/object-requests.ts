@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
 import { Observable, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { ObjectRequest, RequestDocument, RequestStatus } from './object-requests.models';
+import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 
 interface ApiQueueResponse {
   items: ApiQueueItem[];
@@ -51,9 +52,14 @@ export class ObjectRequestsService {
   private _loading = signal(false);
   readonly loading = this._loading.asReadonly();
 
-  constructor(http: HttpClient) {
+  private readonly ui: AdminUiPreferencesService;
+
+  constructor(http: HttpClient, ui: AdminUiPreferencesService) {
     this.http = http;
+    this.ui = ui;
   }
+
+  private get dateLocale(): string { return this.ui.language() === 'en' ? 'en-GB' : 'sr-Latn-RS'; }
 
   loadRequestById(id: string): void {
     this._loading.set(true);
@@ -126,7 +132,7 @@ export class ObjectRequestsService {
       city: place.city ?? queueItem.destinationName,
       address: place.address ?? place.destination ?? queueItem.destinationName,
       region: place.region ?? '',
-      submittedAt: new Date(queueItem.submittedAt).toLocaleString('sr-Latn-RS'),
+      submittedAt: new Date(queueItem.submittedAt).toLocaleString(this.dateLocale),
       heroImageUrl: place.images?.[0]?.imageUrl ?? '',
       priority: 'medium',
       contactPhone: place.phone ?? undefined,
@@ -145,7 +151,7 @@ export class ObjectRequestsService {
         {
           label: 'Podnet zahtev',
           actor: queueItem.submittedByName,
-          date: new Date(queueItem.submittedAt).toLocaleString('sr-Latn-RS'),
+          date: new Date(queueItem.submittedAt).toLocaleString(this.dateLocale),
           comment: 'Vlasnik je podneo zahtev za novi objekat.',
           state: 'done',
         },

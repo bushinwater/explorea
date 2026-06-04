@@ -46,7 +46,7 @@
               type="text"
               [value]="form().name"
               (input)="updateText('name', $any($event.target).value)"
-              placeholder="npr. Letnji koncert 2026"
+              [placeholder]="ui.t('events.modal.name_ph')"
             />
           </div>
 

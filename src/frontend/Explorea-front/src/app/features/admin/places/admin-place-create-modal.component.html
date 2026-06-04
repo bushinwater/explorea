@@ -230,13 +230,13 @@
             class="edit-field__textarea"
             rows="3"
             [formControl]="form.controls.description"
-            placeholder="Kratak opis objekta..."
+            [placeholder]="ui.t('places.modal.desc_ph')"
           ></textarea>
           @if (
             (form.controls.description.touched || saveAttempted()) &&
             form.controls.description.errors?.['required']
           ) {
-            <span class="edit-field__error">Opis je obavezan.</span>
+            <span class="edit-field__error">{{ ui.t('places.modal.desc_error') }}</span>
           }
         </div>
 
@@ -371,7 +371,7 @@
               class="edit-field__input"
               type="text"
               [formControl]="form.controls.priceRange"
-              placeholder="Npr. 500–1200 RSD"
+              [placeholder]="ui.t('places.modal.price_range_ph')"
             />
           </div>
           <div class="edit-field">
@@ -382,7 +382,7 @@
               class="edit-field__input"
               type="text"
               [formControl]="form.controls.phone"
-              placeholder="+381 11 000 0000"
+              [placeholder]="ui.t('places.modal.phone_ph')"
             />
             @if (
               (form.controls.phone.touched || saveAttempted()) &&
@@ -414,13 +414,13 @@
               (form.controls.email.touched || saveAttempted()) &&
               form.controls.email.errors?.['required']
             ) {
-              <span class="edit-field__error">Email je obavezan.</span>
+              <span class="edit-field__error">{{ ui.t('places.modal.email_required') }}</span>
             }
             @if (
               (form.controls.email.touched || saveAttempted()) &&
               form.controls.email.errors?.['email']
             ) {
-              <span class="edit-field__error">Unesite ispravnu email adresu.</span>
+              <span class="edit-field__error">{{ ui.t('places.modal.email_error') }}</span>
             }
           </div>
           <div class="edit-field">
@@ -429,7 +429,7 @@
               class="edit-field__input"
               type="url"
               [formControl]="form.controls.websiteUrl"
-              placeholder="https://..."
+              [placeholder]="ui.t('places.modal.website_ph')"
             />
           </div>
         </div>
@@ -478,7 +478,7 @@
               class="edit-field__input edit-field__input--address"
               type="text"
               [formControl]="form.controls.address"
-              placeholder="Upiši adresu pa klikni loupe"
+              [placeholder]="ui.t('places.modal.address_ph')"
             />
             <button
               class="edit-modal__geo-btn"
@@ -507,7 +507,7 @@
             </span>
           } @else {
             <span class="edit-field__coords-value edit-field__coords-value--missing">
-              Klikni na mapu da postavi koordinate
+              {{ ui.t('places.modal.coords_hint') }}
             </span>
           }
         </div>

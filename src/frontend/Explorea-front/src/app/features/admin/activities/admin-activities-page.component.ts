@@ -219,11 +219,13 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     Object.entries(this.filters().extraFilters).map(([key, value]) => ({ key, value }))
   );
 
-  protected readonly statuses: Array<{ value: ActivityStatus | 'all'; label: string }> = [
-    { value: 'all', label: 'Svi statusi' },
-    { value: 'active', label: 'Aktivno' },
-    { value: 'inactive', label: 'Neaktivno' },
-  ];
+  protected get statuses(): Array<{ value: ActivityStatus | 'all'; label: string }> {
+    return [
+      { value: 'all',      label: this.ui.t('common.status.all') },
+      { value: 'active',   label: this.ui.t('common.status.active') },
+      { value: 'inactive', label: this.ui.t('common.status.inactive') },
+    ];
+  }
 
   protected readonly difficulties = signal<Array<{ value: ActivityDifficulty | 'all'; label: string }>>([
     { value: 'all', label: 'Sve težine' },
@@ -436,7 +438,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           this.isDeleting.set(false);
           this.isDeleteDialogOpen.set(false);
           this.activityToDelete.set(null);
-          this.successMessage.set(`„${activity.name}" je uspešno uklonjena.`);
+          this.successMessage.set(this.ui.t('activities.success.deleted', { name: activity.name }));
           if (this.selectedActivity()?.id === activity.id) {
             this.closeDetailsPanel();
           }
@@ -444,7 +446,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.isDeleting.set(false);
-          this.errorMessage.set('Greška pri brisanju aktivnosti.');
+          this.errorMessage.set(this.ui.t('activities.error.delete'));
         },
       }),
     );
@@ -456,13 +458,13 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       this.activitiesService.restoreActivity(activity.id).subscribe({
         next: () => {
           this.isRestoring.set(false);
-          this.successMessage.set(`„${activity.name}" je uspešno vraćena.`);
+          this.successMessage.set(this.ui.t('activities.success.restored', { name: activity.name }));
           this.closeDetailsPanel();
           this.loadActivities();
         },
         error: () => {
           this.isRestoring.set(false);
-          this.errorMessage.set('Greška pri vraćanju aktivnosti.');
+          this.errorMessage.set(this.ui.t('activities.error.restore'));
         },
       }),
     );
@@ -487,7 +489,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.isDetailLoading.set(false);
-          this.errorMessage.set('Greška pri učitavanju detalja aktivnosti.');
+          this.errorMessage.set(this.ui.t('activities.error.details'));
         },
       }),
     );
@@ -582,7 +584,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           this.openEditModal();
         },
         error: () => {
-          this.errorMessage.set('Greška pri učitavanju detalja aktivnosti.');
+          this.errorMessage.set(this.ui.t('activities.error.details'));
         },
       }),
     );
@@ -772,7 +774,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     const rawFiles = Array.from(input.files ?? []);
     input.value = '';
     const files = rawFiles.filter(f => f.size <= 5 * 1024 * 1024);
-    if (files.length < rawFiles.length) { this.errorMessage.set('Slike moraju biti manje od 5 MB.'); this.cdr.detectChanges(); }
+    if (files.length < rawFiles.length) { this.errorMessage.set(this.ui.t('activities.error.image_size')); this.cdr.detectChanges(); }
     if (!files.length) return;
     const previews = files.map(file => ({ file, url: URL.createObjectURL(file) }));
     this.modalImagePreviews.update(existing => [...existing, ...previews]);
@@ -803,7 +805,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           }
         },
         error: () => {
-          this.errorMessage.set('Greška pri brisanju slike.');
+          this.errorMessage.set(this.ui.t('common.error.image_delete'));
         },
       }),
     );
@@ -823,7 +825,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           });
         },
         error: () => {
-          this.errorMessage.set('Greška pri postavljanju hero slike.');
+          this.errorMessage.set(this.ui.t('common.error.image_upload'));
         },
       }),
     );
@@ -900,7 +902,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         },
         error: () => {
-          this.errorMessage.set('Kreiranje kategorije nije uspelo.');
+          this.errorMessage.set(this.ui.t('common.error.category_create'));
           this.isAddingCategory.set(false);
           this.cdr.detectChanges();
         },
@@ -931,7 +933,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         },
         error: () => {
-          this.errorMessage.set('Kreiranje filtera nije uspelo.');
+          this.errorMessage.set(this.ui.t('common.error.filter_create'));
           this.isAddingFilter.set(false);
           this.cdr.detectChanges();
         },
@@ -985,7 +987,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           next: (updated) => saveInterestsThenImages(id, updated),
           error: () => {
             this.isSubmitting.set(false);
-            this.errorMessage.set('Greška pri izmeni aktivnosti.');
+            this.errorMessage.set(this.ui.t('activities.error.update'));
           },
         }),
       );
@@ -995,7 +997,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           next: (created) => saveInterestsThenImages(created.id, created),
           error: () => {
             this.isSubmitting.set(false);
-            this.errorMessage.set('Greška pri dodavanju aktivnosti.');
+            this.errorMessage.set(this.ui.t('activities.error.create'));
           },
         }),
       );
@@ -1013,10 +1015,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           this.activities.update((items) =>
             items.map((item) => (item.id === updated.id ? updated : item)),
           );
-          this.successMessage.set(`„${updated.name}" je deaktivirana.`);
+          this.successMessage.set(this.ui.t('activities.success.deactivated', { name: updated.name }));
         },
         error: () => {
-          this.errorMessage.set('Greška pri promeni statusa aktivnosti.');
+          this.errorMessage.set(this.ui.t('activities.error.status'));
         },
       }),
     );
@@ -1033,10 +1035,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           this.activities.update((items) =>
             items.map((item) => (item.id === updated.id ? updated : item)),
           );
-          this.successMessage.set(`„${updated.name}" je aktivirana.`);
+          this.successMessage.set(this.ui.t('activities.success.activated', { name: updated.name }));
         },
         error: () => {
-          this.errorMessage.set('Greška pri promeni statusa aktivnosti.');
+          this.errorMessage.set(this.ui.t('activities.error.status'));
         },
       }),
     );
@@ -1045,11 +1047,11 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected timeAgo(isoDate: string): string {
     const diffMs = Date.now() - new Date(isoDate).getTime();
     const minutes = Math.max(1, Math.floor(diffMs / 60000));
-    if (minutes < 60) return `pre ${minutes} min`;
+    if (minutes < 60) return this.ui.t('common.time_ago.min', { n: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `pre ${hours} h`;
+    if (hours < 24) return this.ui.t('common.time_ago.hours', { n: hours });
     const days = Math.floor(hours / 24);
-    return `pre ${days} dana`;
+    return this.ui.t('common.time_ago.days', { n: days });
   }
 
   protected formatDate(isoDate: string): string {
@@ -1081,7 +1083,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   protected statusLabel(isActive: boolean): string {
-    return isActive ? 'Aktivno' : 'Neaktivno';
+    return isActive ? this.ui.t('common.status.active') : this.ui.t('common.status.inactive');
   }
 
   protected statusKey(isActive: boolean): string {
@@ -1351,7 +1353,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         error: () => {
           this.activities.set([]);
           this.total.set(0);
-          this.errorMessage.set('Greška pri učitavanju aktivnosti.');
+          this.errorMessage.set(this.ui.t('activities.error.load'));
           this.isLoading.set(false);
         },
       }),
@@ -1398,7 +1400,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         error: () => {
           this.activities.set([]);
           this.total.set(0);
-          this.errorMessage.set('Greška pri učitavanju aktivnosti.');
+          this.errorMessage.set(this.ui.t('activities.error.load'));
           this.isLoading.set(false);
         },
       }),
@@ -1470,7 +1472,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           next: (results) => {
             this.isGeocoding.set(false);
             if (!results.length) {
-              this.errorMessage.set('Adresa nije pronađena.');
+              this.errorMessage.set(this.ui.t('common.error.address_not_found'));
               this.cdr.detectChanges();
               return;
             }
@@ -1481,7 +1483,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           },
           error: () => {
             this.isGeocoding.set(false);
-            this.errorMessage.set('Greška pri pretrazi adrese.');
+            this.errorMessage.set(this.ui.t('common.error.address_search'));
             this.cdr.detectChanges();
           },
         }),
@@ -1667,7 +1669,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.closeCreateModal();
 
     if (isEdit) {
-      this.successMessage.set(`„${activity.name}" je uspešno izmenjena.`);
+      this.successMessage.set(this.ui.t('activities.success.updated', { name: activity.name }));
       if (this.isDetailsPanelOpen()) {
         this.subscription.add(
           this.activitiesService.getById(activityId).subscribe({
@@ -1676,7 +1678,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         );
       }
     } else {
-      this.successMessage.set(`„${activity.name}" je uspešno dodata.`);
+      this.successMessage.set(this.ui.t('activities.success.created', { name: activity.name }));
     }
 
     this.loadActivities();

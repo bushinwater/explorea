@@ -124,7 +124,7 @@
         <ng-container *ngIf="!allLoading && allData">
           <ng-container *ngFor="let section of allData.sections">
             <div class="idle-section" *ngIf="section.items.length > 0 || nearbyEnabled">
-              <h2 class="idle-section__title">{{ section.title }}</h2>
+              <h2 class="idle-section__title">{{ 'SEARCH.SECTION_' + section.key.toUpperCase() | translate }}</h2>
               <div class="idle-nearby-empty" *ngIf="section.items.length === 0 && nearbyEnabled">
                 <span class="material-icons">location_off</span>
                 <p>{{ getSectionEmptyKey(section.entityType) | translate }}</p>

@@ -67,8 +67,8 @@
             <span class="material-icons">admin_panel_settings</span>
           </div>
           <div class="accordion-info">
-            <strong>Admin panel</strong>
-            <span>Upravljanje platformom</span>
+            <strong>{{ 'SETTINGS_PAGE.ADMIN_CARD.LABEL' | translate }}</strong>
+            <span>{{ 'SETTINGS_PAGE.ADMIN_CARD.DESC' | translate }}</span>
           </div>
           <span class="material-icons nav-arrow">chevron_right</span>
         </a>
@@ -375,10 +375,10 @@
             <div class="field">
               <div class="field-icon"><span class="material-icons">bug_report</span></div>
               <div class="field-info">
-                <strong>Prijavi grešku</strong>
-                <span>Pošalji nam izveštaj o problemu</span>
+                <strong>{{ 'BUG_REPORT.TITLE' | translate }}</strong>
+                <span>{{ 'BUG_REPORT.SUBTITLE' | translate }}</span>
               </div>
-              <button class="btn btn-secondary" (click)="bugReportOpen = true" type="button">Prijavi</button>
+              <button class="btn btn-secondary" (click)="bugReportOpen = true" type="button">{{ 'BUG_REPORT.TITLE' | translate }}</button>
             </div>
           </div>
         </div>

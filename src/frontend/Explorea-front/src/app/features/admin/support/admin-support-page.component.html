@@ -6,13 +6,13 @@
     <div class="support-list">
       <div class="support-list__header">
         <div>
-          <h2 class="support-list__title">Support</h2>
-          <p class="support-list__subtitle">Razgovori korisnicke podrske</p>
+          <h2 class="support-list__title">{{ ui.t('support.title') }}</h2>
+          <p class="support-list__subtitle">{{ ui.t('support.subtitle') }}</p>
         </div>
         @if (auth.role() === 'place_owner' || auth.role() === 'tourist_organization') {
           <button class="btn btn-primary btn-sm" type="button" (click)="openNewTicket()">
             <span class="material-icons">add</span>
-            Novi tiket
+            {{ ui.t('support.new_ticket') }}
           </button>
         }
       </div>
@@ -22,7 +22,7 @@
         <input
           class="support-search__input"
           type="search"
-          placeholder="Pretrazi ime ili temu"
+          [placeholder]="ui.t('support.search_placeholder')"
           [value]="searchTerm()"
           (input)="updateSearch($any($event.target).value)"
         />
@@ -36,8 +36,8 @@
       >
         <span class="support-ai-entry__icon material-icons">smart_toy</span>
         <span class="support-ai-entry__body">
-          <span class="support-ai-entry__title">AI Asistent</span>
-          <span class="support-ai-entry__subtitle">Direktan razgovor sa AI podrskom</span>
+          <span class="support-ai-entry__title">{{ ui.t('support.ai_title') }}</span>
+          <span class="support-ai-entry__subtitle">{{ ui.t('support.ai_subtitle') }}</span>
         </span>
         <span class="support-ai-entry__pin material-icons">push_pin</span>
       </button>
@@ -56,7 +56,7 @@
         } @else if (!conversations().length) {
           <div class="support-list__empty">
             <span class="material-icons">forum</span>
-            <p>Nema razgovora za prikaz.</p>
+            <p>{{ ui.t('support.empty') }}</p>
           </div>
         } @else {
           @for (conversation of conversations(); track conversation.id) {
@@ -73,7 +73,7 @@
                   <span class="support-conversation__name">{{ conversation.userName }}</span>
                   <span class="support-conversation__time-wrap">
                     @if (conversation.unreadCount > 0) {
-                      <span class="support-conversation__dot" aria-label="Neprocitano"></span>
+                      <span class="support-conversation__dot" [attr.aria-label]="ui.t('support.unread')"></span>
                     }
                     <span class="support-conversation__time">{{ relativeTime(conversation.lastMessageAt) }}</span>
                   </span>
@@ -104,12 +104,12 @@
       <div class="support-mobile-bar">
         <button class="support-mobile-action" type="button" (click)="backToMobileList()">
           <span class="material-icons">arrow_back</span>
-          Razgovori
+          {{ ui.t('support.back_to_list') }}
         </button>
 
         @if (selectedTicket()) {
           <button class="support-mobile-action support-mobile-action--secondary" type="button" (click)="openMobileDetails()">
-            Detalji
+            {{ ui.t('support.details') }}
             <span class="material-icons">chevron_right</span>
           </button>
         }
@@ -120,8 +120,8 @@
           <div class="support-chat__identity">
             <span class="support-chat__avatar support-chat__avatar--ai material-icons">smart_toy</span>
             <div class="support-chat__title-group">
-              <h2 class="support-chat__title">AI Asistent</h2>
-              <p class="support-chat__subtitle">Direktan razgovor sa AI podrskom</p>
+              <h2 class="support-chat__title">{{ ui.t('support.ai_title') }}</h2>
+              <p class="support-chat__subtitle">{{ ui.t('support.ai_subtitle') }}</p>
             </div>
           </div>
         </header>
@@ -130,14 +130,14 @@
           @if (!aiMessages().length) {
             <div class="support-ai-welcome">
               <span class="material-icons">auto_awesome</span>
-              <p>Postavi pitanje AI asistentu za destinacije, mesta, dogadjaje ili interni support.</p>
+              <p>{{ ui.t('support.ai_welcome') }}</p>
             </div>
           } @else {
             @for (message of aiMessages(); track message.id) {
               <article class="support-message" [ngClass]="aiMessageClass(message)">
                 <div class="support-message__bubble">
                   <div class="support-message__meta">
-                    <span>{{ message.role === 'assistant' ? 'AI Asistent' : 'Vi' }}</span>
+                    <span>{{ message.role === 'assistant' ? ui.t('support.ai_role') : ui.t('support.you') }}</span>
                     <span>{{ messageTime(message.createdAt) }}</span>
                   </div>
                   <p class="support-message__content">{{ message.content }}</p>
@@ -165,7 +165,7 @@
           <textarea
             class="support-reply__input"
             rows="3"
-            placeholder="Pitaj AI asistenta..."
+            [placeholder]="ui.t('support.ai_placeholder')"
             [value]="aiInputText()"
             [disabled]="isAiSending()"
             (input)="updateAiInputText($any($event.target).value)"
@@ -180,7 +180,7 @@
               (click)="sendAiMessage()"
             >
               <span class="material-icons">send</span>
-              {{ isAiSending() ? 'Slanje...' : 'Posalji AI-ju' }}
+              {{ isAiSending() ? ui.t('support.sending') : ui.t('support.ai_send') }}
             </button>
           </div>
         </div>
@@ -205,7 +205,7 @@
                 (click)="resolveTicket()"
               >
                 <span class="material-icons">check_circle</span>
-                {{ isResolvingTicket() ? 'Rešavanje...' : 'Reši tiket' }}
+                {{ isResolvingTicket() ? ui.t('support.resolving') : ui.t('support.resolve') }}
               </button>
             }
             @if (auth.role() === 'tourist_organization' && !conversation.isEscalated && conversation.isAssignedToMe) {
@@ -214,15 +214,15 @@
                 type="button"
                 [disabled]="isEscalatingTicket()"
                 (click)="escalateTicket()"
-                title="Prosledi superadminu"
+                [title]="ui.t('support.escalate_hint')"
               >
                 <span class="material-icons">escalator_warning</span>
-                {{ isEscalatingTicket() ? 'Eskalacija...' : 'Eskaliraj' }}
+                {{ isEscalatingTicket() ? ui.t('support.escalating') : ui.t('support.escalate') }}
               </button>
             }
             @if (conversation.isEscalated) {
               <span class="support-escalated-badge">
-                <span class="material-icons">warning</span> Eskalirano
+                <span class="material-icons">warning</span> {{ ui.t('support.escalated') }}
               </span>
             }
           </div>
@@ -244,7 +244,7 @@
                   </div>
                   <p class="support-message__content">{{ message.content }}</p>
                   @if (message.isInternal) {
-                    <span class="support-message__internal-label">Interna napomena</span>
+                    <span class="support-message__internal-label">{{ ui.t('support.internal_note') }}</span>
                   }
                 </div>
               </article>
@@ -252,7 +252,7 @@
           } @else {
             <div class="support-chat-empty">
               <span class="material-icons">chat_bubble_outline</span>
-              <p>Nije moguce ucitati poruke za ovaj tiket.</p>
+              <p>{{ ui.t('support.load_error') }}</p>
             </div>
           }
         </div>
@@ -262,7 +262,7 @@
             <textarea
               class="support-reply__input"
               rows="3"
-              placeholder="Unesi odgovor..."
+              [placeholder]="ui.t('support.reply_placeholder')"
               [value]="replyText()"
               [disabled]="ticket.status === 'resolved' || isSendingReply()"
               (input)="updateReplyText($any($event.target).value)"
@@ -278,7 +278,7 @@
                     [disabled]="ticket.status === 'resolved' || isSendingReply()"
                     (change)="toggleInternalNote($any($event.target).checked)"
                   />
-                  <span>Interna napomena</span>
+                  <span>{{ ui.t('support.internal_note') }}</span>
                 </label>
               }
 
@@ -289,7 +289,7 @@
                 (click)="sendReply()"
               >
                 <span class="material-icons">send</span>
-                {{ isSendingReply() ? 'Slanje...' : 'Posalji' }}
+                {{ isSendingReply() ? ui.t('support.sending') : ui.t('support.send') }}
               </button>
             </div>
           </div>
@@ -297,7 +297,7 @@
       } @else {
         <div class="support-page__placeholder">
           <span class="material-icons support-page__placeholder-icon">support_agent</span>
-          <p class="support-page__placeholder-title">Izaberi razgovor</p>
+          <p class="support-page__placeholder-title">{{ ui.t('support.select_placeholder') }}</p>
         </div>
       }
     </section>
@@ -310,7 +310,7 @@
     <div class="support-mobile-bar support-mobile-bar--details">
       <button class="support-mobile-action" type="button" (click)="backToMobileChat()">
         <span class="material-icons">arrow_back</span>
-        Chat
+        {{ ui.t('support.back_to_chat') }}
       </button>
     </div>
 
@@ -334,14 +334,14 @@
         <header class="support-details__header">
           <span class="material-icons support-details__icon">confirmation_number</span>
           <div>
-            <p class="support-details__eyebrow">Tiket</p>
+            <p class="support-details__eyebrow">{{ ui.t('support.ticket_eyebrow') }}</p>
             <h2 class="support-details__title">{{ ticket.ticketNumber }}</h2>
           </div>
         </header>
 
         <dl class="support-details__list">
           <div class="support-details__row">
-            <dt>Status</dt>
+            <dt>{{ ui.t('users.table.status') }}</dt>
             <dd>
               <span class="support-status support-status--{{ ticket.status }}">
                 {{ statusLabel(ticket.status) }}
@@ -350,7 +350,7 @@
           </div>
 
           <div class="support-details__row">
-            <dt>Prioritet</dt>
+            <dt>{{ ui.t('support.detail.priority') }}</dt>
             <dd>
               <span class="support-priority support-priority--{{ ticket.priority }}">
                 {{ priorityLabel(ticket.priority) }}
@@ -359,33 +359,33 @@
           </div>
 
           <div class="support-details__row">
-            <dt>Korisnik</dt>
+            <dt>{{ ui.t('support.detail.user') }}</dt>
             <dd>{{ ticket.userName }}</dd>
           </div>
 
           @if (ticket.senderRole) {
             <div class="support-details__row">
-              <dt>Rola</dt>
+              <dt>{{ ui.t('support.detail.role') }}</dt>
               <dd>{{ senderRoleLabel(ticket.senderRole) }}</dd>
             </div>
           }
 
           @if (ticket.senderRole === 'tourist_organization' && ticket.region) {
             <div class="support-details__row">
-              <dt>Region</dt>
+              <dt>{{ ui.t('common.region') }}</dt>
               <dd>{{ ticket.region }}</dd>
             </div>
           }
 
           <div class="support-details__row">
-            <dt>Tema</dt>
+            <dt>{{ ui.t('support.detail.subject') }}</dt>
             <dd>{{ ticket.subject }}</dd>
           </div>
         </dl>
 
         @if (ticket.context) {
           <section class="support-context">
-            <p class="support-details__eyebrow">Povezani kontekst</p>
+            <p class="support-details__eyebrow">{{ ui.t('support.detail.context_eyebrow') }}</p>
             <a class="support-context__card" [href]="ticket.context.route">
               <span class="support-context__thumb">
                 @if (ticket.context.thumbnailUrl) {
@@ -405,7 +405,7 @@
 
         @if (auth.role() !== 'place_owner' && ticket.isAssignedToMe) {
           <section class="support-internal-notes">
-            <p class="support-details__eyebrow">Interne napomene</p>
+            <p class="support-details__eyebrow">{{ ui.t('support.detail.notes_eyebrow') }}</p>
             @if (internalMessages().length) {
               <div class="support-internal-notes__list">
                 @for (note of internalMessages(); track note.id) {
@@ -419,7 +419,7 @@
                 }
               </div>
             } @else {
-              <p class="support-internal-notes__empty">Nema internih napomena.</p>
+              <p class="support-internal-notes__empty">{{ ui.t('support.detail.notes_empty') }}</p>
             }
           </section>
         }
@@ -430,7 +430,7 @@
           {{ isAiAssistantActive() ? 'smart_toy' : 'confirmation_number' }}
         </span>
         <p class="support-page__placeholder-title">
-          {{ isAiAssistantActive() ? 'AI razgovor nema tiket detalje' : 'Izaberi tiket za detalje' }}
+          {{ isAiAssistantActive() ? ui.t('support.ai_no_details') : ui.t('support.select_ticket') }}
         </p>
       </div>
     }
@@ -442,7 +442,7 @@
     <div class="nt-dialog" (click)="$event.stopPropagation()">
 
       <div class="nt-dialog__header">
-        <h3 class="nt-dialog__title">Novi tiket</h3>
+        <h3 class="nt-dialog__title">{{ ui.t('support.new_ticket') }}</h3>
         <button class="nt-dialog__close" type="button" (click)="closeNewTicket()">
           <span class="material-icons">close</span>
         </button>
@@ -451,10 +451,10 @@
       <!-- Korak 1: selekcija objekta (samo za place_owner) -->
       @if (newTicketStep() === 'place-select') {
         <div class="nt-dialog__body">
-          <p class="nt-step-label">Za koji objekat je tiket?</p>
+          <p class="nt-step-label">{{ ui.t('support.step_place') }}</p>
           @if (isLoadingPlaces()) {
             <div class="nt-loading">
-              <span class="material-icons nt-spin">refresh</span> Učitavanje...
+              <span class="material-icons nt-spin">refresh</span> {{ ui.t('common.loading') }}
             </div>
           } @else {
             <div class="nt-places">
@@ -475,7 +475,7 @@
               }
               <button class="nt-place-item nt-place-item--none" type="button" (click)="selectPlaceForTicket(null)">
                 <span class="nt-place-item__thumb nt-place-item__thumb--empty material-icons">block</span>
-                <span class="nt-place-item__name">Nije vezano za objekat</span>
+                <span class="nt-place-item__name">{{ ui.t('support.no_place') }}</span>
               </button>
             </div>
           }
@@ -485,17 +485,17 @@
       <!-- Korak 2: AI ili čovek -->
       @if (newTicketStep() === 'contact-type') {
         <div class="nt-dialog__body">
-          <p class="nt-step-label">Kako želiš da dobiješ pomoć?</p>
+          <p class="nt-step-label">{{ ui.t('support.step_contact') }}</p>
           <div class="nt-contact-options">
             <button class="nt-contact-option" type="button" (click)="chooseAi()">
               <span class="material-icons nt-contact-option__icon">smart_toy</span>
-              <span class="nt-contact-option__title">AI asistent</span>
-              <span class="nt-contact-option__desc">Trenutni odgovor od AI podrške</span>
+              <span class="nt-contact-option__title">{{ ui.t('support.ai_option_title') }}</span>
+              <span class="nt-contact-option__desc">{{ ui.t('support.ai_option_desc') }}</span>
             </button>
             <button class="nt-contact-option" type="button" (click)="chooseHuman()">
               <span class="material-icons nt-contact-option__icon">support_agent</span>
-              <span class="nt-contact-option__title">Čovek</span>
-              <span class="nt-contact-option__desc">Poveži se sa agentom podrške</span>
+              <span class="nt-contact-option__title">{{ ui.t('support.human_option_title') }}</span>
+              <span class="nt-contact-option__desc">{{ ui.t('support.human_option_desc') }}</span>
             </button>
           </div>
         </div>
@@ -505,21 +505,21 @@
       @if (newTicketStep() === 'form') {
         <div class="nt-dialog__body">
           <label class="nt-field">
-            <span class="nt-field__label">Naslov</span>
+            <span class="nt-field__label">{{ ui.t('support.form_title') }}</span>
             <input
               class="nt-field__input"
               type="text"
-              placeholder="Kratko opiši problem"
+              [placeholder]="ui.t('support.form_title_ph')"
               [value]="newTicketTitle()"
               (input)="newTicketTitle.set($any($event.target).value)"
               maxlength="200"
             />
           </label>
           <label class="nt-field">
-            <span class="nt-field__label">Poruka</span>
+            <span class="nt-field__label">{{ ui.t('support.form_message') }}</span>
             <textarea
               class="nt-field__input nt-field__textarea"
-              placeholder="Detaljno opiši problem..."
+              [placeholder]="ui.t('support.form_message_ph')"
               [value]="newTicketMessage()"
               (input)="newTicketMessage.set($any($event.target).value)"
               rows="4"
@@ -527,14 +527,14 @@
           </label>
         </div>
         <div class="nt-dialog__footer">
-          <button class="btn btn-secondary btn-sm" type="button" (click)="closeNewTicket()">Otkaži</button>
+          <button class="btn btn-secondary btn-sm" type="button" (click)="closeNewTicket()">{{ ui.t('users.form.cancel') }}</button>
           <button
             class="btn btn-primary btn-sm"
             type="button"
             [disabled]="!newTicketTitle().trim() || !newTicketMessage().trim() || isCreatingTicket()"
             (click)="submitNewTicket()"
           >
-            {{ isCreatingTicket() ? 'Slanje...' : 'Pošalji tiket' }}
+            {{ isCreatingTicket() ? ui.t('support.sending') : ui.t('support.submit_ticket') }}
           </button>
         </div>
       }

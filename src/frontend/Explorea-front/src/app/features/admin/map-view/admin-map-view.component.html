@@ -153,7 +153,7 @@
           (click)="toggleEntityType(et.type)"
         >
           <span class="material-icons" [style.color]="et.color">{{ et.icon }}</span>
-          <span>{{ et.label }}</span>
+          <span>{{ ui.t('map.type.' + et.type) }}</span>
         </button>
       }
     </div>

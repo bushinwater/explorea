@@ -195,8 +195,10 @@ export class DashboardService {
     );
   }
 
+  private get dateLocale(): string { return this.ui.language() === 'en' ? 'en-GB' : 'sr-Latn-RS'; }
+
   private formatNumber(value: number): string {
-    return value.toLocaleString('sr-RS');
+    return value.toLocaleString(this.dateLocale);
   }
 
   private entityTypeLabel(entityType: string): string {
@@ -212,7 +214,7 @@ export class DashboardService {
   private formatTrafficDate(date: string): string {
     const parsed = new Date(`${date}T00:00:00`);
     if (Number.isNaN(parsed.getTime())) return date;
-    return parsed.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit' });
+    return parsed.toLocaleDateString(this.dateLocale, { day: '2-digit', month: '2-digit' });
   }
 
   formatTimeAgoPublic(value: string): string {
@@ -231,7 +233,8 @@ export class DashboardService {
   }
 
   private activityStatus(type: string): ActivityStatus {
-    if (type.includes('reviewed')) return 'approved';
+    if (type === 'submission_approved' || type.includes('reviewed')) return 'approved';
+    if (type === 'submission_rejected') return 'rejected';
     if (type.includes('created') || type.includes('registered')) return 'info';
     if (type.includes('submission')) return 'pending';
     return 'info';
@@ -239,11 +242,13 @@ export class DashboardService {
 
   private activityInitials(type: string): string {
     const initials: Record<string, string> = {
-      destination_created: 'DE',
-      user_registered: 'KO',
-      submission_created: 'ZA',
-      submission_reviewed: 'OD',
-      review_created: 'RE',
+      destination_created:         'DE',
+      user_registered:             'KO',
+      submission_created:          'ZA',
+      submission_reviewed:         'OD',
+      submission_approved:         'OD',
+      submission_rejected:         'OD',
+      review_created:              'RE',
       notification_broadcast_sent: 'OB',
     };
     return initials[type] ?? 'AK';

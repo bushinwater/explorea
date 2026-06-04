@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -22,7 +23,7 @@ import { ChatBubbleService } from '../../../core/services/chat-bubble.service';
 @Component({
   selector: 'app-chat-bubble',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './chat-bubble.html',
   styleUrl: './chat-bubble.css',
   changeDetection: ChangeDetectionStrategy.Default,
@@ -47,6 +48,12 @@ export class ChatBubble implements OnInit, OnDestroy {
   private sanitizer = inject(DomSanitizer);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
+  private translate = inject(TranslateService);
+
+  sendSuggestion(key: string): void {
+    this.input = this.translate.instant(key);
+    this.send();
+  }
 
   private sub = new Subscription();
   private wasLoggedIn = false;
