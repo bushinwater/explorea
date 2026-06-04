@@ -695,6 +695,7 @@
     "LOCATION_BLOCKED_TEXT": "Location is blocked in your browser settings. Click the lock icon next to the site address, allow location, then try again."
   },
   "CHAT": {
+    "HELLO": "Hello",
     "HEADER_SUB": "Ask me about destinations, places and events",
     "ARIA_LABEL": "AI assistant",
     "WELCOME_LOGGED_IN": "I can help you find destinations, activities, events and places in Serbia.",

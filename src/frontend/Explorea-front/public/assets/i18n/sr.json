@@ -695,6 +695,7 @@
     "LOCATION_BLOCKED_TEXT": "Lokacija je blokirana u podešavanjima browsera. Klikni na ikonu katanca pored adrese sajta, dozvoli lokaciju, pa pokušaj ponovo."
   },
   "CHAT": {
+    "HELLO": "Zdravo",
     "HEADER_SUB": "Pitajte me za destinacije, mesta i događaje",
     "ARIA_LABEL": "AI asistent",
     "WELCOME_LOGGED_IN": "Mogu da vam pomognem da pronađete destinacije, aktivnosti, događaje i mesta u Srbiji.",

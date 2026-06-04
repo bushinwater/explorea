@@ -1146,7 +1146,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     const size = this.filters().pageSize;
     const from = (page - 1) * size + 1;
     const to = Math.min(page * size, total);
-    return `Prikazano ${from}–${to} od ${total}`;
+    return this.ui.t('common.pagination', { from, to, total });
   }
 
   protected pageNumbers(): number[] {

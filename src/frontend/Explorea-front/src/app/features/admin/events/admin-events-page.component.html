@@ -359,7 +359,7 @@
           [class.evts-tab--active]="filters().tab === 'expired'"
           (click)="setTab('expired')"
         >
-          Istekli
+          {{ ui.t('events.tabs.expired') }}
           @if (stats()?.tabExpiredCount) {
             <span class="evts-tab__badge">{{ stats()!.tabExpiredCount }}</span>
           }
@@ -504,7 +504,7 @@
                             <span class="material-icons">event_repeat</span>
                           </button>
                         } @else {
-                          <span class="evts-status evts-status--expired">Isteklo</span>
+                          <span class="evts-status evts-status--expired">{{ ui.t('events.status.expired') }}</span>
                         }
                       } @else {
                         @if (ev.slug) {
@@ -889,7 +889,7 @@
             [disabled]="isRenewing()"
           >
             <span class="material-icons">event_repeat</span>
-            Obnovi
+            {{ ui.t('events.renew') }}
           </button>
         } @else {
           <span class="evts-status evts-status--expired">Isteklo</span>

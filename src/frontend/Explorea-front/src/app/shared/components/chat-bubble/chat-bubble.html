@@ -18,7 +18,7 @@
     <div class="chat-messages" (click)="navigateLink($event)">
       <div class="chat-welcome" *ngIf="messages.length === 0">
         <span class="material-icons chat-welcome-icon">explore</span>
-        <p *ngIf="isLoggedIn">Zdravo, <strong>{{ firstName }}</strong>! {{ 'CHAT.WELCOME_LOGGED_IN' | translate }}</p>
+        <p *ngIf="isLoggedIn">{{ 'CHAT.HELLO' | translate }}, <strong>{{ firstName }}</strong>! {{ 'CHAT.WELCOME_LOGGED_IN' | translate }}</p>
         <p *ngIf="!isLoggedIn">{{ 'CHAT.WELCOME_GUEST' | translate }}</p>
         <div class="chat-suggestions">
           <button class="suggestion-chip" (click)="sendSuggestion('CHAT.SUGGEST_DESTINATIONS')">{{ 'CHAT.SUGGEST_DESTINATIONS' | translate }}</button>
