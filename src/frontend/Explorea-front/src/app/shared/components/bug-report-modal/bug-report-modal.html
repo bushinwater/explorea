@@ -4,7 +4,7 @@
     <div class="brm-header">
       <div class="brm-title-wrap">
         <span class="material-icons brm-icon">bug_report</span>
-        <h2>Prijavi grešku</h2>
+        <h2>{{ 'BUG_REPORT.TITLE' | translate }}</h2>
       </div>
       <button class="brm-close" (click)="close()" type="button">
         <span class="material-icons">close</span>
@@ -14,22 +14,22 @@
     <!-- Success -->
     <div class="brm-success" *ngIf="submitted">
       <span class="material-icons brm-success__icon">check_circle</span>
-      <h3>Prijava poslata!</h3>
-      <p>Hvala ti na povratnoj informaciji. Pregledaćemo prijavu što pre.</p>
-      <button class="brm-btn brm-btn--primary" (click)="close()" type="button">Zatvori</button>
+      <h3>{{ 'BUG_REPORT.SUCCESS_TITLE' | translate }}</h3>
+      <p>{{ 'BUG_REPORT.SUCCESS_MSG' | translate }}</p>
+      <button class="brm-btn brm-btn--primary" (click)="close()" type="button">{{ 'BUG_REPORT.CLOSE' | translate }}</button>
     </div>
 
     <!-- Form -->
     <div class="brm-body" *ngIf="!submitted">
 
       <div class="brm-field">
-        <label class="brm-label">Naslov *</label>
+        <label class="brm-label">{{ 'BUG_REPORT.SUBJECT_LABEL' | translate }} *</label>
         <input
           class="brm-input"
           [class.brm-input--error]="subjectError"
           type="text"
           [(ngModel)]="subject"
-          placeholder="Kratko opišite problem..."
+          [placeholder]="'BUG_REPORT.SUBJECT_PLACEHOLDER' | translate"
           maxlength="200"
           (ngModelChange)="subjectError = ''"
         />
@@ -37,25 +37,25 @@
       </div>
 
       <div class="brm-field" *ngIf="!isLoggedIn">
-        <label class="brm-label">Email (opcionalno)</label>
+        <label class="brm-label">{{ 'BUG_REPORT.EMAIL_LABEL' | translate }}</label>
         <input
           class="brm-input"
           [class.brm-input--error]="emailError"
           type="email"
           [(ngModel)]="email"
-          placeholder="vasa@email.com"
+          [placeholder]="'BUG_REPORT.EMAIL_PLACEHOLDER' | translate"
           (ngModelChange)="emailError = ''"
         />
         <p class="brm-error" *ngIf="emailError">{{ emailError }}</p>
       </div>
 
       <div class="brm-field">
-        <label class="brm-label">Opis *</label>
+        <label class="brm-label">{{ 'BUG_REPORT.DESC_LABEL' | translate }} *</label>
         <textarea
           class="brm-textarea"
           [class.brm-textarea--error]="descriptionError"
           [(ngModel)]="description"
-          placeholder="Detaljno opišite problem i korake za reprodukciju..."
+          [placeholder]="'BUG_REPORT.DESC_PLACEHOLDER' | translate"
           rows="5"
           maxlength="2000"
           (ngModelChange)="descriptionError = ''"
@@ -66,10 +66,10 @@
       <p class="brm-submit-error" *ngIf="submitError">{{ submitError }}</p>
 
       <div class="brm-actions">
-        <button class="brm-btn brm-btn--ghost" (click)="close()" type="button">Otkaži</button>
+        <button class="brm-btn brm-btn--ghost" (click)="close()" type="button">{{ 'BUG_REPORT.CANCEL' | translate }}</button>
         <button class="brm-btn brm-btn--primary" (click)="submit()" [disabled]="submitting" type="button">
           <span class="material-icons spin" *ngIf="submitting" style="font-size:16px">sync</span>
-          <span *ngIf="!submitting">Pošalji prijavu</span>
+          <span *ngIf="!submitting">{{ 'BUG_REPORT.SUBMIT' | translate }}</span>
         </button>
       </div>
     </div>

@@ -641,8 +641,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
   protected priorityLabel(p: EventPriority | null): string {
     if (!p) return '—';
-    const map: Record<EventPriority, string> = { low: 'Low', medium: 'Medium', high: 'High' };
-    return map[p];
+    return this.ui.t('events.priority.' + p);
   }
 
   protected typeLabel(typeId: number | null, t: EventType | null, typeName?: string | null): string {
@@ -683,12 +682,9 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   }
 
   protected statusLabel(s: string): string {
-    const map: Record<string, string> = {
-      pending: 'Čeka', active: 'Odobreno', rejected: 'Odbijeno', forwarded: 'Prosleđeno',
-    };
-    map['deleted'] = 'Obrisano';
-    map['expired'] = 'Isteklo';
-    return map[s] ?? s;
+    const key = 'events.status.' + s;
+    const translated = this.ui.t(key);
+    return translated !== key ? translated : s;
   }
 
   protected locationLabel(ev: EventRow): string {
@@ -697,24 +693,26 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     return parts.length ? parts.join(', ') : '—';
   }
 
+  private get dateLocale(): string { return this.ui.language() === 'en' ? 'en-GB' : 'sr-Latn-RS'; }
+
   protected formatDate(isoDate: string | null): string {
     if (!isoDate) return '—';
-    return new Date(isoDate).toLocaleDateString('sr-RS', {
+    return new Date(isoDate).toLocaleDateString(this.dateLocale, {
       day: '2-digit', month: 'short', year: 'numeric',
     });
   }
 
   protected formatDateRange(start: string | null, end: string | null): string {
     if (!start) return '—';
-    const s = new Date(start).toLocaleDateString('sr-RS', { day: '2-digit', month: 'short' });
+    const s = new Date(start).toLocaleDateString(this.dateLocale, { day: '2-digit', month: 'short' });
     if (!end) return s;
-    const e = new Date(end).toLocaleDateString('sr-RS', { day: '2-digit', month: 'short', year: 'numeric' });
+    const e = new Date(end).toLocaleDateString(this.dateLocale, { day: '2-digit', month: 'short', year: 'numeric' });
     return `${s} – ${e}`;
   }
 
   protected formatNumber(n: number | null): string {
     if (n === null) return '—';
-    return n.toLocaleString('sr-RS');
+    return n.toLocaleString(this.dateLocale);
   }
 
   protected formatRating(r: number): string {
@@ -726,8 +724,8 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   }
 
   protected formatPrice(n: number | null): string {
-    if (n === null || n === 0) return 'Besplatno';
-    return `${n.toLocaleString('sr-RS')} RSD`;
+    if (n === null || n === 0) return this.ui.t('common.free');
+    return `${n.toLocaleString(this.dateLocale)} RSD`;
   }
 
   protected visibleRangeText(): string {
@@ -737,7 +735,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     const size = this.filters().pageSize;
     const from = (page - 1) * size + 1;
     const to = Math.min(page * size, total);
-    return `Prikazano ${from}–${to} od ${total}`;
+    return this.ui.t('common.pagination', { from, to, total });
   }
 
   protected pageNumbers(): number[] {

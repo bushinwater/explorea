@@ -2,12 +2,13 @@ import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChangeDetectorRef } from '@angular/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { BugReportService } from '../../../core/services/bug-report.service';
 
 @Component({
   selector: 'app-bug-report-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './bug-report-modal.html',
   styleUrl: './bug-report-modal.css',
 })
@@ -29,6 +30,7 @@ export class BugReportModal implements OnInit, OnDestroy {
 
   private bugReportService = inject(BugReportService);
   private cdr = inject(ChangeDetectorRef);
+  private translate = inject(TranslateService);
   private lockedScrollY = 0;
 
   private static readonly EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -61,23 +63,23 @@ export class BugReportModal implements OnInit, OnDestroy {
     let valid = true;
 
     if (!this.subject.trim()) {
-      this.subjectError = 'Naslov je obavezan.';
+      this.subjectError = this.translate.instant('BUG_REPORT.ERROR_SUBJECT_REQUIRED');
       valid = false;
     } else if (this.subject.trim().length > 200) {
-      this.subjectError = 'Naslov ne sme biti duži od 200 znakova.';
+      this.subjectError = this.translate.instant('BUG_REPORT.ERROR_SUBJECT_MAX');
       valid = false;
     }
 
     if (!this.description.trim()) {
-      this.descriptionError = 'Opis je obavezan.';
+      this.descriptionError = this.translate.instant('BUG_REPORT.ERROR_DESC_REQUIRED');
       valid = false;
     } else if (this.description.trim().length > 2000) {
-      this.descriptionError = 'Opis ne sme biti duži od 2000 znakova.';
+      this.descriptionError = this.translate.instant('BUG_REPORT.ERROR_DESC_MAX');
       valid = false;
     }
 
     if (!this.isLoggedIn && this.email.trim() && !BugReportModal.EMAIL_REGEX.test(this.email.trim())) {
-      this.emailError = 'Unesite ispravnu email adresu.';
+      this.emailError = this.translate.instant('BUG_REPORT.ERROR_EMAIL_INVALID');
       valid = false;
     }
 
@@ -105,7 +107,7 @@ export class BugReportModal implements OnInit, OnDestroy {
       },
       error: () => {
         this.submitting = false;
-        this.submitError = 'Greška pri slanju. Pokušajte ponovo.';
+        this.submitError = this.translate.instant('BUG_REPORT.ERROR_SUBMIT');
         this.cdr.detectChanges();
       },
     });

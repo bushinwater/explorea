@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
@@ -31,28 +31,28 @@ export class AdminBroadcastNotificationPageComponent {
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
 
-  protected readonly recipients: RecipientOption[] = [
+  protected readonly recipients = computed<RecipientOption[]>(() => [
     {
       value: 'all_users',
-      label: 'Svi korisnici',
-      description: 'Poruka ide svim aktivnim korisnicima platforme.',
+      label: this.ui.t('broadcast.recipient.all_users'),
+      description: this.ui.t('broadcast.recipient.all_users_desc'),
     },
     {
       value: 'super_admins',
-      label: 'Svi super admini',
-      description: 'Poruka ide samo nalogima sa super admin rolom.',
+      label: this.ui.t('broadcast.recipient.super_admins'),
+      description: this.ui.t('broadcast.recipient.super_admins_desc'),
     },
     {
       value: 'tourist_organizations',
-      label: 'Svi Tourist Organization korisnici',
-      description: 'Poruka ide turistickim organizacijama.',
+      label: this.ui.t('broadcast.recipient.tourist_orgs'),
+      description: this.ui.t('broadcast.recipient.tourist_orgs_desc'),
     },
     {
       value: 'place_owners',
-      label: 'Svi vlasnici objekata',
-      description: 'Poruka ide vlasnicima objekata.',
+      label: this.ui.t('broadcast.recipient.place_owners'),
+      description: this.ui.t('broadcast.recipient.place_owners_desc'),
     },
-  ];
+  ]);
 
   constructor(
     private readonly broadcastService: AdminBroadcastNotificationService,
@@ -80,12 +80,12 @@ export class AdminBroadcastNotificationPageComponent {
     }).subscribe({
       next: (response) => {
         this.isSending.set(false);
-        this.successMessage.set(`Obavestenje je poslato korisnicima (${response.sentCount}).`);
+        this.successMessage.set(this.ui.t('broadcast.success', { count: response.sentCount }));
         this.resetForm();
       },
       error: () => {
         this.isSending.set(false);
-        this.errorMessage.set('Slanje obavestenja trenutno nije uspelo.');
+        this.errorMessage.set(this.ui.t('broadcast.error'));
       },
     });
   }

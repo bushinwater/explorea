@@ -1,14 +1,14 @@
 <div class="broadcast-page">
   <div class="broadcast-page__header">
     <div>
-      <p class="broadcast-page__eyebrow">Notifications</p>
-      <h1 class="broadcast-page__title">Broadcast obavestenje</h1>
-      <p class="broadcast-page__subtitle">Posalji in-app obavestenje odabranoj grupi korisnika.</p>
+      <p class="broadcast-page__eyebrow">{{ ui.t('broadcast.eyebrow') }}</p>
+      <h1 class="broadcast-page__title">{{ ui.t('broadcast.title') }}</h1>
+      <p class="broadcast-page__subtitle">{{ ui.t('broadcast.subtitle') }}</p>
     </div>
 
     <a class="btn btn-ghost btn-sm" routerLink="/admin/dashboard">
       <span class="material-icons">arrow_back</span>
-      Dashboard
+      {{ ui.t('sidebar.dashboard') }}
     </a>
   </div>
 
@@ -28,49 +28,49 @@
 
   <form class="broadcast-form" (ngSubmit)="send()">
     <section class="broadcast-section">
-      <h2 class="broadcast-section__title">Sadrzaj obavestenja</h2>
+      <h2 class="broadcast-section__title">{{ ui.t('broadcast.content_section') }}</h2>
 
       <label class="broadcast-field">
-        <span class="broadcast-field__label">Naslov</span>
+        <span class="broadcast-field__label">{{ ui.t('broadcast.title_label') }}</span>
         <input
           class="broadcast-input"
           name="title"
           type="text"
           maxlength="140"
           [(ngModel)]="title"
-          placeholder="Unesi naslov obavestenja"
+          [placeholder]="ui.t('broadcast.title_placeholder')"
         />
       </label>
 
       <label class="broadcast-field">
-        <span class="broadcast-field__label">Poruka</span>
+        <span class="broadcast-field__label">{{ ui.t('broadcast.message_label') }}</span>
         <textarea
           class="broadcast-textarea"
           name="message"
           rows="7"
           maxlength="1000"
           [(ngModel)]="message"
-          placeholder="Unesi poruku za korisnike"
+          [placeholder]="ui.t('broadcast.message_placeholder')"
         ></textarea>
       </label>
 
       <label class="broadcast-field">
-        <span class="broadcast-field__label">Link</span>
+        <span class="broadcast-field__label">{{ ui.t('broadcast.link_label') }}</span>
         <input
           class="broadcast-input"
           name="linkUrl"
           type="url"
           [(ngModel)]="linkUrl"
-          placeholder="/admin/destinations ili https://..."
+          [placeholder]="ui.t('broadcast.link_placeholder')"
         />
       </label>
     </section>
 
     <section class="broadcast-section">
-      <h2 class="broadcast-section__title">Primaoci</h2>
+      <h2 class="broadcast-section__title">{{ ui.t('broadcast.recipients_section') }}</h2>
 
       <div class="recipient-list">
-        @for (option of recipients; track option.value) {
+        @for (option of recipients(); track option.value) {
           <label class="recipient-option" [class.recipient-option--selected]="recipient === option.value">
             <input
               class="recipient-option__input"
@@ -92,7 +92,7 @@
     <div class="broadcast-actions">
       <button class="btn btn-primary" type="submit" [disabled]="!canSend">
         <span class="material-icons">{{ isSending() ? 'hourglass_top' : 'send' }}</span>
-        {{ isSending() ? 'Slanje...' : 'Posalji' }}
+        {{ isSending() ? ui.t('broadcast.sending') : ui.t('broadcast.send') }}
       </button>
     </div>
   </form>

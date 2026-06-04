@@ -56,7 +56,7 @@
               class="edit-field__textarea"
               [class.edit-field__input--error]="form.controls.description.invalid && form.controls.description.touched"
               formControlName="description"
-              placeholder="Opis destinacije..."
+              [placeholder]="ui.t('destinations.modal.desc_ph')"
               [maxlength]="MAX_DESC"
               rows="6"
             ></textarea>
@@ -86,7 +86,7 @@
               <div class="edit-field__new-type-row">
                 <input
                   class="edit-field__input edit-field__input--new-type"
-                  placeholder="Naziv kategorije..."
+                  [placeholder]="ui.t('destinations.modal.category_ph')"
                   [value]="newTypeName()"
                   (input)="newTypeName.set($any($event.target).value)"
                   (keydown.enter)="$event.preventDefault(); confirmNewType()"
@@ -231,7 +231,7 @@
                 {{ form.value.latitude | number: '1.5-5' }},
                 {{ form.value.longitude | number: '1.5-5' }}
               } @else {
-                Nije postavljeno — klikni na mapu
+                {{ ui.t('destinations.modal.coords_missing') }}
               }
             </span>
           </div>

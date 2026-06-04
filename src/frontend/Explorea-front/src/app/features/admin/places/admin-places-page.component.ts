@@ -144,13 +144,13 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     ].filter(Boolean).length;
   });
 
-  protected readonly statuses: Array<{ value: PlaceStatus | 'all'; label: string }> = [
-    { value: 'all',      label: 'Svi statusi' },
-    { value: 'approved', label: 'Aktivno' },
-    { value: 'pending',  label: 'Na čekanju' },
-    { value: 'rejected', label: 'Odbijeno' },
-    { value: 'inactive', label: 'Neaktivno' },
-  ];
+  protected get statuses(): Array<{ value: PlaceStatus | 'all'; label: string }> { return [
+    { value: 'all',      label: this.ui.t('common.status.all') },
+    { value: 'approved', label: this.ui.t('common.status.approved') },
+    { value: 'pending',  label: this.ui.t('common.status.pending') },
+    { value: 'rejected', label: this.ui.t('common.status.rejected') },
+    { value: 'inactive', label: this.ui.t('common.status.inactive') },
+  ]; }
 
   protected readonly stars = [1, 2, 3, 4, 5];
 
@@ -320,7 +320,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   }
 
   protected onPlaceCreated(detail: PlaceDetail): void {
-    this.successMessage.set(`„${detail.name}" je uspešno kreiran.`);
+    this.successMessage.set(this.ui.t('places.success.created', { name: detail.name }));
     this.closeCreateModal();
     this.loadPlaces();
     this.loadStats();
@@ -343,7 +343,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   }
 
   protected onEditSaved(detail: PlaceDetail): void {
-    this.successMessage.set(`„${detail.name}" je uspešno ažuriran.`);
+    this.successMessage.set(this.ui.t('places.success.updated', { name: detail.name }));
     this.closeEditModal();
     if (this.isDetailsPanelOpen() && this.detailsPanelRow()?.id === detail.id) {
       this.subscription.add(
@@ -362,13 +362,13 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
       this.placesService.restorePlace(place.id).subscribe({
         next: () => {
           this.isRestoring.set(false);
-          this.successMessage.set(`„${place.name}" je uspešno vraćen.`);
+          this.successMessage.set(this.ui.t('places.success.restored', { name: place.name }));
           this.closeDetailsPanel();
           this.loadPlaces();
         },
         error: () => {
           this.isRestoring.set(false);
-          this.errorMessage.set('Greška pri vraćanju mesta.');
+          this.errorMessage.set(this.ui.t('places.error.restore'));
         },
       }),
     );
@@ -382,7 +382,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
       this.placesService.approvePlace(place.id).subscribe({
         next: () => {
           this.reviewingPlaceId.set(null);
-          this.successMessage.set(`"${place.name}" je uspesno odobren.`);
+          this.successMessage.set(this.ui.t('places.success.approved', { name: place.name }));
           this.closeDetailsPanel();
           this.loadPlaces();
           this.loadStats();
@@ -390,7 +390,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.reviewingPlaceId.set(null);
-          this.errorMessage.set(err?.error?.message ?? 'Odobravanje objekta nije uspelo.');
+          this.errorMessage.set(err?.error?.message ?? this.ui.t('places.error.approve'));
           setTimeout(() => this.errorMessage.set(''), 5000);
         },
       }),
@@ -414,7 +414,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
           this.reviewingPlaceId.set(null);
           this.isRejectDialogOpen.set(false);
           this.selectedPlace.set(null);
-          this.successMessage.set(`Zahtev za "${place.name}" je odbijen.`);
+          this.successMessage.set(this.ui.t('places.success.rejected', { name: place.name }));
           this.closeDetailsPanel();
           this.loadPlaces();
           this.loadStats();
@@ -422,7 +422,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.reviewingPlaceId.set(null);
-          this.errorMessage.set('Odbijanje objekta nije uspelo.');
+          this.errorMessage.set(this.ui.t('places.error.reject'));
           setTimeout(() => this.errorMessage.set(''), 5000);
         },
       }),
@@ -541,13 +541,13 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
           this.isDeleting.set(false);
           this.isDeleteDialogOpen.set(false);
           this.selectedPlace.set(null);
-          this.successMessage.set(`„${place.name}" je uspešno uklonjen.`);
+          this.successMessage.set(this.ui.t('places.success.deleted', { name: place.name }));
           this.loadPlaces();
           this.loadStats();
         },
         error: () => {
           this.isDeleting.set(false);
-          this.errorMessage.set('Greška pri brisanju objekta.');
+          this.errorMessage.set(this.ui.t('places.error.delete'));
         },
       }),
     );
@@ -556,15 +556,17 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   protected timeAgo(isoDate: string): string {
     const diffMs = Date.now() - new Date(isoDate).getTime();
     const minutes = Math.max(1, Math.floor(diffMs / 60000));
-    if (minutes < 60) return `pre ${minutes} min`;
+    if (minutes < 60) return this.ui.t('common.time_ago.min', { n: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `pre ${hours} h`;
+    if (hours < 24) return this.ui.t('common.time_ago.hours', { n: hours });
     const days = Math.floor(hours / 24);
-    return `pre ${days} dana`;
+    return this.ui.t('common.time_ago.days', { n: days });
   }
 
+  private get dateLocale(): string { return this.ui.language() === 'en' ? 'en-GB' : 'sr-Latn-RS'; }
+
   protected formatDate(isoDate: string): string {
-    return new Date(isoDate).toLocaleDateString('sr-Latn-RS', {
+    return new Date(isoDate).toLocaleDateString(this.dateLocale, {
       day: '2-digit', month: '2-digit', year: 'numeric',
     });
   }
@@ -574,13 +576,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   }
 
   protected statusLabel(status: PlaceStatus): string {
-    const map: Record<PlaceStatus, string> = {
-      approved: 'Aktivno',
-      pending:  'Na čekanju',
-      inactive: 'Neaktivno',
-      rejected: 'Odbijeno',
-    };
-    return map[status] ?? status;
+    return this.ui.t('common.status.' + status);
   }
 
   protected ownerDocumentLabel(type: string): string {
@@ -630,7 +626,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     const size = this.filters().pageSize;
     const from = (page - 1) * size + 1;
     const to = Math.min(page * size, total);
-    return `Prikazano ${from}–${to} od ${total}`;
+    return this.ui.t('common.pagination', { from, to, total });
   }
 
   protected pageNumbers(): number[] {
@@ -680,7 +676,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
         error: () => {
           this.places.set([]);
           this.total.set(0);
-          this.errorMessage.set('Greška pri učitavanju objekata.');
+          this.errorMessage.set(this.ui.t('places.error.load'));
           this.isLoading.set(false);
         },
       }),
@@ -711,7 +707,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
         error: () => {
           this.places.set([]);
           this.total.set(0);
-          this.errorMessage.set('Greška pri učitavanju objekata.');
+          this.errorMessage.set(this.ui.t('places.error.load'));
           this.isLoading.set(false);
         },
       }),

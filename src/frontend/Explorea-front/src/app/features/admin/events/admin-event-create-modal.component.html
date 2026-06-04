@@ -46,7 +46,7 @@
               type="text"
               [value]="form().name"
               (input)="updateText('name', $any($event.target).value)"
-              placeholder="npr. Letnji koncert 2026"
+              [placeholder]="ui.t('events.modal.name_ph')"
             />
           </div>
 
@@ -328,7 +328,7 @@
               [checked]="form().recursAnnually"
               (change)="updateRecursAnnually($any($event.target).checked)"
             />
-            <span>Obeležava se svake godine</span>
+            <span>{{ ui.t('events.recurs_annually') }}</span>
           </label>
         </div>
       </div>

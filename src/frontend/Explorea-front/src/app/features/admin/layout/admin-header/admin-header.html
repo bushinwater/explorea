@@ -69,21 +69,21 @@
       <section class="header__notifications-dropdown">
         <header class="header__notifications-header">
           <div>
-            <strong>Obavestenja</strong>
-            <span>{{ unreadCount() }} neprocitanih</span>
+            <strong>{{ ui.t('shell.notifications') }}</strong>
+            <span>{{ ui.t('shell.unread_count', { count: unreadCount() }) }}</span>
           </div>
 
           <button type="button" [disabled]="unreadCount() === 0" (click)="markAllNotificationsAsRead()">
-            Oznaci sve
+            {{ ui.t('shell.mark_all_read') }}
           </button>
         </header>
 
         @if (isNotificationsLoading()) {
-          <p class="header__notifications-state">Ucitavanje...</p>
+          <p class="header__notifications-state">{{ ui.t('common.loading') }}</p>
         } @else if (notificationsError()) {
           <p class="header__notifications-state header__notifications-state--error">{{ notificationsError() }}</p>
         } @else if (notifications().length === 0) {
-          <p class="header__notifications-state">Nema obavestenja.</p>
+          <p class="header__notifications-state">{{ ui.t('shell.no_notifications') }}</p>
         } @else {
           <div class="header__notifications-list">
             @for (notification of notifications(); track notification.id) {

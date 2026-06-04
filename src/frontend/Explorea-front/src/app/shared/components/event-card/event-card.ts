@@ -1,13 +1,14 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { EventCard as EventCardModel } from '../../../core/models/home.model';
 import { PlannerEventRef } from '../../../core/models/planner.model';
 
 @Component({
   selector: 'app-event-card',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TranslateModule],
   templateUrl: './event-card.html',
   styleUrl: './event-card.css',
 })

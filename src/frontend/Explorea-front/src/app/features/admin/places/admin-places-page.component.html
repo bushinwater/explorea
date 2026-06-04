@@ -92,7 +92,7 @@
           class="btn btn-ghost btn-sm"
           [class.place-filter-btn--active]="filters().sortBy !== 'none'"
           (click)="toggleSort()"
-          title="Sortiraj po datumu izmene"
+          [title]="ui.t('common.sort_title')"
         >
           <span class="material-icons" style="font-size: 18px">
             {{
@@ -105,10 +105,10 @@
           </span>
           {{
             filters().sortBy === 'updatedAt_asc'
-              ? 'Izmenjeno ↑'
+              ? ui.t('common.sort_asc')
               : filters().sortBy === 'updatedAt_desc'
-                ? 'Izmenjeno ↓'
-                : 'Sortiraj'
+                ? ui.t('common.sort_desc')
+                : ui.t('common.sort')
           }}
         </button>
 

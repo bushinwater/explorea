@@ -100,17 +100,15 @@ export class AdminBugReportsPageComponent implements OnInit {
   }
 
   statusLabel(status: string): string {
-    const map: Record<string, string> = {
-      open: 'Otvoreno',
-      in_progress: 'U radu',
-      resolved: 'Rešeno',
-      closed: 'Zatvoreno',
-    };
-    return map[status] ?? status;
+    const key = 'bug_reports.status.' + status;
+    const translated = this.ui.t(key);
+    return translated !== key ? translated : status;
   }
 
+  private get dateLocale(): string { return this.ui.language() === 'en' ? 'en-GB' : 'sr-Latn-RS'; }
+
   formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString('sr-Latn-RS', {
+    return new Date(iso).toLocaleDateString(this.dateLocale, {
       day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
   }

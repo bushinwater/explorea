@@ -1,16 +1,16 @@
 <div class="chat-bubble-wrapper">
 
   <!-- Panel -->
-  <div class="chat-panel" [class.chat-panel--open]="open" role="dialog" aria-label="AI asistent">
+  <div class="chat-panel" [class.chat-panel--open]="open" role="dialog" [attr.aria-label]="'CHAT.ARIA_LABEL' | translate">
     <div class="chat-header">
       <div class="chat-header-info">
         <span class="material-icons chat-header-icon">smart_toy</span>
         <div>
           <div class="chat-header-title">Explorea AI</div>
-          <div class="chat-header-sub">Pitajte me za destinacije, mesta i događaje</div>
+          <div class="chat-header-sub">{{ 'CHAT.HEADER_SUB' | translate }}</div>
         </div>
       </div>
-      <button class="chat-close-btn" (click)="toggle()" aria-label="Zatvori">
+      <button class="chat-close-btn" (click)="toggle()" [attr.aria-label]="'COMMON.GO_BACK' | translate">
         <span class="material-icons">close</span>
       </button>
     </div>
@@ -18,12 +18,12 @@
     <div class="chat-messages" (click)="navigateLink($event)">
       <div class="chat-welcome" *ngIf="messages.length === 0">
         <span class="material-icons chat-welcome-icon">explore</span>
-        <p *ngIf="isLoggedIn">Zdravo, <strong>{{ firstName }}</strong>! Mogu da vam pomognem da pronađete destinacije, aktivnosti, događaje i mesta u Srbiji.</p>
-        <p *ngIf="!isLoggedIn">Mogu da vam pomognem da pronađete destinacije, aktivnosti, događaje i mesta u Srbiji.</p>
+        <p *ngIf="isLoggedIn">{{ 'CHAT.HELLO' | translate }}, <strong>{{ firstName }}</strong>! {{ 'CHAT.WELCOME_LOGGED_IN' | translate }}</p>
+        <p *ngIf="!isLoggedIn">{{ 'CHAT.WELCOME_GUEST' | translate }}</p>
         <div class="chat-suggestions">
-          <button class="suggestion-chip" (click)="input = 'Koje destinacije su popularne?'; send()">Popularne destinacije</button>
-          <button class="suggestion-chip" (click)="input = 'Koji su nadolazeci dogadjaji?'; send()">Nadolazeći događaji</button>
-          <button class="suggestion-chip" (click)="input = 'Preporuci mi aktivnosti'; send()">Aktivnosti</button>
+          <button class="suggestion-chip" (click)="sendSuggestion('CHAT.SUGGEST_DESTINATIONS')">{{ 'CHAT.SUGGEST_DESTINATIONS' | translate }}</button>
+          <button class="suggestion-chip" (click)="sendSuggestion('CHAT.SUGGEST_EVENTS')">{{ 'CHAT.SUGGEST_EVENTS' | translate }}</button>
+          <button class="suggestion-chip" (click)="sendSuggestion('CHAT.SUGGEST_ACTIVITIES')">{{ 'CHAT.SUGGEST_ACTIVITIES' | translate }}</button>
         </div>
       </div>
 
@@ -56,18 +56,18 @@
         [(ngModel)]="input"
         (ngModelChange)="sendError = ''"
         (keydown)="onKeydown($event)"
-        placeholder="Postavite pitanje..."
+        [placeholder]="'CHAT.INPUT_PLACEHOLDER' | translate"
         rows="1"
         [disabled]="loading"
       ></textarea>
-      <button class="chat-send-btn" (click)="send()" [disabled]="!input.trim() || loading" aria-label="Pošalji">
+      <button class="chat-send-btn" (click)="send()" [disabled]="!input.trim() || loading" [attr.aria-label]="'CHAT.SEND_ARIA' | translate">
         <span class="material-icons">send</span>
       </button>
     </div>
   </div>
 
   <!-- Trigger button -->
-  <button class="chat-fab" (click)="toggle()" [class.chat-fab--open]="open" aria-label="AI asistent">
+  <button class="chat-fab" (click)="toggle()" [class.chat-fab--open]="open" [attr.aria-label]="'CHAT.ARIA_LABEL' | translate">
     <span class="material-icons">smart_toy</span>
   </button>
 

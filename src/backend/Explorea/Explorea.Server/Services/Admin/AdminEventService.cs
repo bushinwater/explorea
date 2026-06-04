@@ -99,13 +99,13 @@ namespace Explorea.Server.Services.Admin
                 ActiveRequestsTrend = string.Empty,
 
                 PendingApproval = pendingCount,
-                PendingApprovalHint = "Zahtevi na čekanju",
+                PendingApprovalHint = "events.stats.hint.pending",
 
                 ApprovedThisMonth = approvedThisMonth,
-                ApprovedThisMonthTrend = "Odobreno ovog meseca",
+                ApprovedThisMonthTrend = "events.stats.hint.approved",
 
                 Rejected = rejectedCount,
-                RejectedNote = "Odbijeni zahtevi",
+                RejectedNote = "events.stats.hint.rejected",
 
                 TabPendingCount = pendingCount,
                 TabActiveCount = activeCount,
@@ -873,11 +873,11 @@ namespace Explorea.Server.Services.Admin
                 ActiveRequests = activeCount,
                 ActiveRequestsTrend = string.Empty,
                 PendingApproval = pendingCount,
-                PendingApprovalHint = "Zahtevi na cekanju",
+                PendingApprovalHint = "events.stats.hint.pending",
                 ApprovedThisMonth = approvedThisMonth,
-                ApprovedThisMonthTrend = "Odobreno ovog meseca",
+                ApprovedThisMonthTrend = "events.stats.hint.approved",
                 Rejected = rejectedCount,
-                RejectedNote = "Odbijeni zahtevi",
+                RejectedNote = "events.stats.hint.rejected",
                 TabPendingCount = pendingCount,
                 TabActiveCount = activeCount,
                 TabExpiredCount = expiredCount

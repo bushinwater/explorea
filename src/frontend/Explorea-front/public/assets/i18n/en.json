@@ -29,7 +29,30 @@
     "LOGOUT": "Log out",
     "LIGHT_MODE": "Light mode",
     "DARK_MODE": "Dark mode",
-    "LANGUAGE": "English"
+    "LANGUAGE": "English",
+    "LANG_SR": "Srpski",
+    "LANG_EN": "English"
+  },
+  "BUG_REPORT": {
+    "TITLE": "Report a bug",
+    "SUBTITLE": "Send us a problem report",
+    "SUCCESS_TITLE": "Report submitted!",
+    "SUCCESS_MSG": "Thank you for your feedback. We'll review the report as soon as possible.",
+    "CLOSE": "Close",
+    "SUBJECT_LABEL": "Title",
+    "SUBJECT_PLACEHOLDER": "Briefly describe the issue...",
+    "EMAIL_LABEL": "Email (optional)",
+    "EMAIL_PLACEHOLDER": "your@email.com",
+    "DESC_LABEL": "Description",
+    "DESC_PLACEHOLDER": "Describe the issue and steps to reproduce in detail...",
+    "CANCEL": "Cancel",
+    "SUBMIT": "Submit report",
+    "ERROR_SUBJECT_REQUIRED": "Title is required.",
+    "ERROR_SUBJECT_MAX": "Title must not exceed 200 characters.",
+    "ERROR_DESC_REQUIRED": "Description is required.",
+    "ERROR_DESC_MAX": "Description must not exceed 2000 characters.",
+    "ERROR_EMAIL_INVALID": "Please enter a valid email address.",
+    "ERROR_SUBMIT": "Error submitting. Please try again."
   },
   "SETTINGS_PAGE": {
     "TITLE": "Profile & Settings",
@@ -108,6 +131,10 @@
       "THEME_DARK": "Dark theme is active.",
       "THEME_LIGHT": "Light theme is active."
     },
+    "ADMIN_CARD": {
+      "LABEL": "Admin panel",
+      "DESC": "Platform management"
+    },
     "ACTIONS": {
       "SAVE": "Save all changes",
       "CANCEL": "Cancel",
@@ -159,7 +186,8 @@
       "SUBTITLE": "What our travelers say about their adventures across Serbia"
     },
     "FOOTER": {
-      "COPY": "© 2025 Explorea · Tourism guide of Serbia"
+      "COPY": "© 2025 Explorea · Tourism guide of Serbia",
+      "ABOUT_TEAM": "About the team"
     }
   },
   "ACTIVITY_DETAIL": {
@@ -633,6 +661,7 @@
     "ALREADY_REVIEWED": "You have already submitted a review for this destination."
   },
   "EVENTS": {
+    "NO_EVENTS_DAY": "No events for this day.",
     "TITLE": "Events",
     "DESKTOP_TITLE": "Events & Festivals",
     "DESKTOP_SUBTITLE": "Discover the best events happening near you.",
@@ -667,6 +696,18 @@
     "LOCATION_MODAL_WAITING": "Waiting for permission...",
     "LOCATION_BLOCKED_TITLE": "Location blocked",
     "LOCATION_BLOCKED_TEXT": "Location is blocked in your browser settings. Click the lock icon next to the site address, allow location, then try again."
+  },
+  "CHAT": {
+    "HELLO": "Hello",
+    "HEADER_SUB": "Ask me about destinations, places and events",
+    "ARIA_LABEL": "AI assistant",
+    "WELCOME_LOGGED_IN": "I can help you find destinations, activities, events and places in Serbia.",
+    "WELCOME_GUEST": "I can help you find destinations, activities, events and places in Serbia.",
+    "SUGGEST_DESTINATIONS": "Popular destinations",
+    "SUGGEST_EVENTS": "Upcoming events",
+    "SUGGEST_ACTIVITIES": "Activities",
+    "INPUT_PLACEHOLDER": "Ask a question...",
+    "SEND_ARIA": "Send"
   },
   "SAVED_ITEMS": {
     "TITLE": "Saved",
@@ -745,6 +786,19 @@
     "LOCATION_MODAL_WAITING": "Waiting for permission...",
     "LOCATION_BLOCKED_TITLE": "Location blocked",
     "LOCATION_BLOCKED_TEXT": "Location is blocked in your browser settings. Click the lock icon next to the site address, allow location, then try again.",
-    "SUBCATS_MORE": "+{{count}} more"
+    "SUBCATS_MORE": "+{{count}} more",
+    "SECTION_POPULAR_DESTINATIONS": "Popular destinations",
+    "SECTION_TOP_RATED_PLACES": "Best rated places",
+    "SECTION_NEARBY_EVENTS": "Events",
+    "SECTION_POPULAR_ACTIVITIES": "Popular activities"
+  },
+  "ABOUT_MODAL": {
+    "TITLE": "About the team",
+    "DESC_1": "Explorea is a travel platform for discovering the best destinations, activities, places and events in Serbia. It was developed by the student team",
+    "DESC_2": "as part of the Software Engineering course at the Faculty of Natural Sciences and Mathematics in Kragujevac."
+  },
+  "EVENT_CARD": {
+    "FREE": "Free",
+    "FROM": "from"
   }
 }

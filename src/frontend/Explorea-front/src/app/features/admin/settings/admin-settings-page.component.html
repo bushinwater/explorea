@@ -1,9 +1,9 @@
 <section class="admin-settings-page">
   <header class="admin-settings-page__header">
     <div>
-      <p class="admin-settings-page__eyebrow">Admin nalog</p>
-      <h1>Profil i podešavanja</h1>
-      <p>Upravljaj profilom, preferencijama, obaveštenjima i sistemskim opcijama.</p>
+      <p class="admin-settings-page__eyebrow">{{ ui.t('settings.eyebrow') }}</p>
+      <h1>{{ ui.t('settings.title') }}</h1>
+      <p>{{ ui.t('settings.description') }}</p>
     </div>
   </header>
 
@@ -57,17 +57,17 @@
 
         <dl class="profile-card__meta">
           <div>
-            <dt>Status</dt>
+            <dt>{{ ui.t('settings.profile.status') }}</dt>
             <dd>{{ adminProfile().status }}</dd>
           </div>
 
           <div>
-            <dt>Region</dt>
+            <dt>{{ ui.t('common.region') }}</dt>
             <dd>{{ adminProfile().region }}</dd>
           </div>
 
           <div>
-            <dt>Član od</dt>
+            <dt>{{ ui.t('settings.profile.member_since') }}</dt>
             <dd>{{ formattedMemberSince() }}</dd>
           </div>
         </dl>
@@ -78,14 +78,14 @@
           <button class="btn btn-secondary" type="button"
             [disabled]="isProfilePhotoUploading() || isProfilePhotoDeleting()" (click)="profilePhotoInput.click()">
             <span class="material-icons">photo_camera</span>
-            {{ isProfilePhotoUploading() ? 'Otpremanje...' : 'Otpremi novu sliku' }}
+            {{ isProfilePhotoUploading() ? ui.t('settings.profile.uploading') : ui.t('settings.profile.upload_photo') }}
           </button>
 
           <button class="profile-card__delete" type="button"
             [disabled]="!adminProfile().profileImageUrl || isProfilePhotoUploading() || isProfilePhotoDeleting()"
             (click)="deleteProfilePhoto()">
             <span class="material-icons">delete</span>
-            {{ isProfilePhotoDeleting() ? 'Brisanje...' : 'Obriši sliku' }}
+            {{ isProfilePhotoDeleting() ? ui.t('settings.profile.deleting_photo') : ui.t('settings.profile.delete_photo') }}
           </button>
         </div>
       </aside>
@@ -93,42 +93,42 @@
       <section class="profile-form">
         <header class="profile-form__header">
           @if (isProfileLoading()) {
-          <p class="settings-inline-message">Učitavanje profila...</p>
+          <p class="settings-inline-message">{{ ui.t('settings.profile.loading') }}</p>
           }
 
           <div>
-            <p class="profile-form__eyebrow">Profil</p>
-            <h2>Informacije o profilu</h2>
-            <p>Ažuriraj lične podatke ulogovanog admina.</p>
+            <p class="profile-form__eyebrow">{{ ui.t('settings.profile.eyebrow') }}</p>
+            <h2>{{ ui.t('settings.profile.info_title') }}</h2>
+            <p>{{ ui.t('settings.profile.info_desc') }}</p>
           </div>
         </header>
 
         <div class="profile-form__grid">
           <label class="profile-field">
-            <span>Ime</span>
+            <span>{{ ui.t('users.form.first_name') }}</span>
             <input #firstNameInput type="text" [value]="profileForm().firstName" [disabled]="isProfileSaving()"
               (input)="updateProfileField('firstName', firstNameInput.value)" />
           </label>
 
           <label class="profile-field">
-            <span>Prezime</span>
+            <span>{{ ui.t('users.form.last_name') }}</span>
             <input #lastNameInput type="text" [value]="profileForm().lastName" [disabled]="isProfileSaving()"
               (input)="updateProfileField('lastName', lastNameInput.value)" />
           </label>
 
           <label class="profile-field">
-            <span>Email</span>
+            <span>{{ ui.t('users.form.email') }}</span>
             <input #emailInput type="email" [value]="profileForm().email" [disabled]="isProfileSaving()"
               (input)="updateProfileField('email', emailInput.value)" />
           </label>
 
           <label class="profile-field">
-            <span>Region</span>
+            <span>{{ ui.t('common.region') }}</span>
             <input type="text" [value]="adminProfile().region" readonly />
           </label>
 
           <label class="profile-field profile-field--full">
-            <span>Kratka bio / opis uloge</span>
+            <span>{{ ui.t('settings.profile.bio') }}</span>
             <textarea #bioInput rows="5" [value]="profileForm().bio ?? ''" [disabled]="isProfileSaving()"
               (input)="updateProfileField('bio', bioInput.value)"></textarea>
           </label>
@@ -137,12 +137,12 @@
         <footer class="profile-form__actions">
           <button class="btn btn-secondary" type="button" [disabled]="isProfileSaving()"
             (click)="resetProfileChanges()">
-            Poništi izmene
+            {{ ui.t('settings.discard_changes') }}
           </button>
 
           <button class="btn btn-primary" type="button" [disabled]="isProfileSaving()" (click)="saveProfile()">
             <span class="material-icons">save</span>
-            {{ isProfileSaving() ? 'Čuvanje...' : 'Sačuvaj profil' }}
+            {{ isProfileSaving() ? ui.t('common.saving') : ui.t('settings.profile.save') }}
           </button>
         </footer>
       </section>
@@ -153,12 +153,12 @@
     <div class="preferences-tab">
       <section class="preferences-hero">
         <div>
-          <p class="section-eyebrow">Podešavanja aplikacije</p>
-          <h2>Izgled i ponašanje aplikacije</h2>
-          <p>Podesi kako admin panel izgleda i kako se ponaša tokom svakodnevnog rada.</p>
+          <p class="section-eyebrow">{{ ui.t('settings.prefs.eyebrow') }}</p>
+          <h2>{{ ui.t('settings.prefs.title') }}</h2>
+          <p>{{ ui.t('settings.prefs.description') }}</p>
 
           @if (isPreferencesLoading()) {
-          <p class="settings-inline-message">Učitavanje podešavanja...</p>
+          <p class="settings-inline-message">{{ ui.t('settings.prefs.loading') }}</p>
           }
 
           @if (preferencesErrorMessage()) {
@@ -178,16 +178,16 @@
           </div>
 
           <div class="preference-card__content">
-            <span>Tema interfejsa</span>
+            <span>{{ ui.t('settings.prefs.theme') }}</span>
             <strong>{{ themeLabel(preferencesForm().theme) }}</strong>
-            <p>Admin panel trenutno prati tamni Explorea izgled sa zelenim akcentima.</p>
+            <p>{{ ui.t('settings.prefs.theme_current') }}</p>
           </div>
 
           <select #themeSelect class="preference-select" [value]="preferencesForm().theme"
             [disabled]="isPreferencesSaving()" (change)="updatePreferencesField('theme', themeSelect.value)">
-            <option value="dark">Tamna tema</option>
-            <option value="light">Svetla tema</option>
-            <option value="system">Sistemska tema</option>
+            <option value="dark">{{ ui.t('settings.prefs.theme_dark') }}</option>
+            <option value="light">{{ ui.t('settings.prefs.theme_light') }}</option>
+            <option value="system">{{ ui.t('settings.prefs.theme_system') }}</option>
           </select>
         </article>
 
@@ -197,15 +197,15 @@
           </div>
 
           <div class="preference-card__content">
-            <span>Jezik aplikacije</span>
+            <span>{{ ui.t('settings.prefs.language') }}</span>
             <strong>{{ languageLabel(preferencesForm().language) }}</strong>
-            <p>Primarni jezik za admin interfejs i sistemske poruke.</p>
+            <p>{{ ui.t('settings.prefs.language_current') }}</p>
           </div>
 
           <select #languageSelect class="preference-select" [value]="preferencesForm().language"
             [disabled]="isPreferencesSaving()" (change)="updatePreferencesField('language', languageSelect.value)">
-            <option value="sr">Srpski (SR)</option>
-            <option value="en">English (EN)</option>
+            <option value="sr">{{ ui.t('settings.prefs.language_sr') }}</option>
+            <option value="en">{{ ui.t('settings.prefs.language_en') }}</option>
           </select>
         </article>
 
@@ -215,15 +215,15 @@
           </div>
 
           <div class="preference-card__content">
-            <span>Početna admin stranica</span>
+            <span>{{ ui.t('settings.prefs.landing') }}</span>
             <strong>{{ landingPageLabel(preferencesForm().defaultAdminPage) }}</strong>
-            <p>Stranica koja se otvara nakon ulaska u admin panel.</p>
+            <p>{{ ui.t('settings.prefs.landing_current') }}</p>
           </div>
 
           <select #landingPageSelect class="preference-select"
             [disabled]="isPreferencesSaving()" (change)="updatePreferencesField('defaultAdminPage', landingPageSelect.value)">
             @for (option of landingPageOptions(); track option.value) {
-            <option [value]="option.value" [selected]="option.value === preferencesForm().defaultAdminPage">{{ option.label }}</option>
+            <option [value]="option.value" [selected]="option.value === preferencesForm().defaultAdminPage">{{ ui.t(option.labelKey) }}</option>
             }
           </select>
         </article>
@@ -234,12 +234,12 @@
       <footer class="preferences-actions">
         <button class="btn btn-secondary" type="button" [disabled]="isPreferencesSaving()"
           (click)="resetPreferencesChanges()">
-          Poništi izmene
+          {{ ui.t('settings.discard_changes') }}
         </button>
 
         <button class="btn btn-primary" type="button" [disabled]="isPreferencesSaving()" (click)="savePreferences()">
           <span class="material-icons">save</span>
-          {{ isPreferencesSaving() ? 'Saving...' : 'Save Preferences' }}
+          {{ isPreferencesSaving() ? ui.t('common.saving') : ui.t('settings.prefs.save') }}
         </button>
       </footer>
     </div>
@@ -249,12 +249,12 @@
     <div class="notifications-tab">
       <section class="notifications-hero">
         <div>
-          <p class="section-eyebrow">Obaveštenja</p>
-          <h2>Podešavanja obaveštenja</h2>
-          <p>Izaberi kako i kada admin prima obaveštenja o važnim promenama na platformi.</p>
+          <p class="section-eyebrow">{{ ui.t('settings.notif.eyebrow') }}</p>
+          <h2>{{ ui.t('settings.notif.title') }}</h2>
+          <p>{{ ui.t('settings.notif.description') }}</p>
 
           @if (isNotificationsLoading()) {
-          <p class="settings-inline-message">Učitavanje obaveštenja...</p>
+          <p class="settings-inline-message">{{ ui.t('settings.notif.loading') }}</p>
           }
 
           @if (notificationsErrorMessage()) {
@@ -268,7 +268,7 @@
       </section>
 
       <section class="notification-channel-grid">
-        @for (channel of notificationChannels; track channel.title) {
+        @for (channel of notificationChannels(); track channel.title) {
         <article class="notification-channel-card">
           <div class="notification-channel-card__icon">
             <span class="material-icons">{{ channel.icon }}</span>
@@ -293,14 +293,14 @@
       <section class="notification-panel">
         <header class="notification-panel__header">
           <div>
-            <p class="section-eyebrow">Vrste obaveštenja</p>
-            <h3>Šta admin želi da prima?</h3>
-            <p>Uključi ili isključi različite kategorije obaveštenja za ovaj nalog.</p>
+            <p class="section-eyebrow">{{ ui.t('settings.notif.types_eyebrow') }}</p>
+            <h3>{{ ui.t('settings.notif.types_title') }}</h3>
+            <p>{{ ui.t('settings.notif.types_desc') }}</p>
           </div>
         </header>
 
         <div class="notification-type-list">
-          @for (notification of notificationTypes; track notification.title) {
+          @for (notification of notificationTypes(); track notification.title) {
           <article class="notification-type-item">
             <div class="notification-type-item__icon">
               <span class="material-icons">{{ notification.icon }}</span>
@@ -325,26 +325,26 @@
       <section class="delivery-panel">
         <header class="delivery-panel__header">
           <div>
-            <p class="section-eyebrow">Raspored slanja</p>
-            <h3>Učestalost i prioritet</h3>
-            <p>Podesi koliko često se šalju obaveštenja i u koliko sati stižu izveštaji.</p>
+            <p class="section-eyebrow">{{ ui.t('settings.notif.delivery_eyebrow') }}</p>
+            <h3>{{ ui.t('settings.notif.delivery_title') }}</h3>
+            <p>{{ ui.t('settings.notif.delivery_desc') }}</p>
           </div>
         </header>
 
         <div class="delivery-grid">
           <label class="delivery-field">
-            <span>Učestalost izveštaja</span>
+            <span>{{ ui.t('settings.notif.frequency') }}</span>
             <select [value]="notificationsForm().deliveryFrequencyDays"
               [disabled]="isNotificationsSaving()"
               (change)="updateDeliveryFrequency($any($event.target).value)">
-              @for (option of notificationFrequencyOptions; track option.value) {
+              @for (option of notificationFrequencyOptions(); track option.value) {
               <option [value]="option.value">{{ option.label }}</option>
               }
             </select>
           </label>
 
           <label class="delivery-field">
-            <span>Sat dostave <span class="delivery-field__tz">po Beogradu</span></span>
+            <span>{{ ui.t('settings.notif.hour') }} <span class="delivery-field__tz">{{ ui.t('settings.notif.hour_tz') }}</span></span>
             <select [value]="notificationsForm().deliveryHour"
               [disabled]="isNotificationsSaving()"
               (change)="updateDeliveryHour($any($event.target).value)">
@@ -355,12 +355,12 @@
           </label>
 
           <label class="delivery-field">
-            <span>Prioritet obaveštenja</span>
+            <span>{{ ui.t('settings.notif.priority') }}</span>
             <select [value]="notificationsForm().priority"
               [disabled]="isNotificationsSaving()"
               (change)="updateNotificationPriority($any($event.target).value)">
-              <option value="important">Samo važno</option>
-              <option value="all">Sva obaveštenja</option>
+              <option value="important">{{ ui.t('settings.notif.priority_important') }}</option>
+              <option value="all">{{ ui.t('settings.notif.priority_all') }}</option>
             </select>
           </label>
         </div>
@@ -379,10 +379,10 @@
             (click)="sendTestReport()">
             @if (isTestReportSending()) {
               <span class="material-icons test-report-btn__spin">refresh</span>
-              Šaljem...
+              {{ ui.t('settings.notif.sending') }}
             } @else {
               <span class="material-icons">send</span>
-              Pošalji izveštaj odmah
+              {{ ui.t('settings.notif.send_now') }}
             }
           </button>
         </div>
@@ -391,13 +391,13 @@
       <footer class="notifications-actions">
         <button class="btn btn-secondary" type="button" [disabled]="isNotificationsSaving()"
           (click)="resetNotificationChanges()">
-          Poništi izmene
+          {{ ui.t('settings.discard_changes') }}
         </button>
 
         <button class="btn btn-primary" type="button" [disabled]="isNotificationsSaving()"
           (click)="saveNotifications()">
           <span class="material-icons">save</span>
-          {{ isNotificationsSaving() ? 'Čuvanje...' : 'Sačuvaj obaveštenja' }}
+          {{ isNotificationsSaving() ? ui.t('common.saving') : ui.t('settings.notif.save') }}
         </button>
       </footer>
     </div>
@@ -408,12 +408,12 @@
     <div class="administration-tab">
       <section class="administration-hero">
         <div>
-          <p class="section-eyebrow">Administracija</p>
-          <h2>Sistemska podešavanja</h2>
-          <p>Centralno mesto za superadmin kontrole, bezbednosne opcije i sistemske parametre.</p>
+          <p class="section-eyebrow">{{ ui.t('settings.admin.eyebrow') }}</p>
+          <h2>{{ ui.t('settings.admin.title') }}</h2>
+          <p>{{ ui.t('settings.admin.description') }}</p>
 
           @if (isAdministrationLoading()) {
-          <p class="settings-inline-message">Učitavanje sistemskog pregleda...</p>
+          <p class="settings-inline-message">{{ ui.t('settings.admin.loading') }}</p>
           }
 
           @if (administrationErrorMessage()) {
@@ -430,9 +430,9 @@
           </div>
 
           <div>
-            <span>{{ stat.label }}</span>
+            <span>{{ ui.t(stat.label) }}</span>
             <strong>{{ stat.value }}</strong>
-            <p>{{ stat.description }}</p>
+            <p>{{ ui.t(stat.description) }}</p>
           </div>
         </article>
         }
@@ -441,9 +441,9 @@
       <section class="administration-panel">
         <header class="administration-panel__header">
           <div>
-            <p class="section-eyebrow">Newsletter</p>
-            <h3>Pretplatnici na newsletter</h3>
-            <p>Preuzmi listu email adresa svih pretplatnika na Explorea newsletter u CSV formatu.</p>
+            <p class="section-eyebrow">{{ ui.t('settings.admin.newsletter_eyebrow') }}</p>
+            <h3>{{ ui.t('settings.admin.newsletter_title') }}</h3>
+            <p>{{ ui.t('settings.admin.newsletter_desc') }}</p>
           </div>
         </header>
         <div class="administration-control-grid">
@@ -452,18 +452,18 @@
               <span class="material-icons">mail_outline</span>
             </div>
             <div class="administration-control-card__content">
-              <h4>Izvezi listu pretplatnika</h4>
-              <p>Preuzmi CSV fajl sa svim email adresama registrovanim za Explorea newsletter.</p>
+              <h4>{{ ui.t('settings.admin.export_title') }}</h4>
+              <p>{{ ui.t('settings.admin.export_desc') }}</p>
             </div>
             <button class="btn btn-secondary" type="button"
               [disabled]="isNewsletterExporting()"
               (click)="exportNewsletterEmails()">
               @if (isNewsletterExporting()) {
                 <span class="material-icons">sync</span>
-                Izvozim...
+                {{ ui.t('settings.admin.exporting') }}
               } @else {
                 <span class="material-icons">download</span>
-                Izvezi CSV
+                {{ ui.t('settings.admin.export_btn') }}
               }
             </button>
           </article>
@@ -473,9 +473,9 @@
       <section class="administration-panel">
         <header class="administration-panel__header">
           <div>
-            <p class="section-eyebrow">Sistemske kontrole</p>
-            <h3>Administrativne oblasti</h3>
-            <p>Brzi pregled najvažnijih oblasti koje superadmin može da kontroliše.</p>
+            <p class="section-eyebrow">{{ ui.t('settings.admin.controls_eyebrow') }}</p>
+            <h3>{{ ui.t('settings.admin.controls_title') }}</h3>
+            <p>{{ ui.t('settings.admin.controls_desc') }}</p>
           </div>
         </header>
 
@@ -487,14 +487,14 @@
             </div>
 
             <div class="administration-control-card__content">
-              <h4>{{ setting.title }}</h4>
-              <p>{{ setting.description }}</p>
+              <h4>{{ ui.t(setting.title) }}</h4>
+              <p>{{ ui.t(setting.description) }}</p>
             </div>
 
             <button class="btn btn-secondary" type="button"
               [disabled]="!setting.route && !setting.popup"
               (click)="onSettingAction(setting)">
-              {{ setting.actionLabel }}
+              {{ ui.t(setting.actionLabel) }}
             </button>
           </article>
           }
@@ -504,9 +504,9 @@
       <section class="system-toggle-panel">
         <header class="system-toggle-panel__header">
           <div>
-            <p class="section-eyebrow">Globalna pravila</p>
-            <h3>Ponašanje sistema</h3>
-            <p>Opcije koje utiču na administrativni tok rada cele Explorea platforme.</p>
+            <p class="section-eyebrow">{{ ui.t('settings.admin.toggles_eyebrow') }}</p>
+            <h3>{{ ui.t('settings.admin.toggles_title') }}</h3>
+            <p>{{ ui.t('settings.admin.toggles_desc') }}</p>
           </div>
         </header>
 
@@ -518,8 +518,8 @@
             </div>
 
             <div class="system-toggle-item__content">
-              <h4>{{ setting.title }}</h4>
-              <p>{{ setting.description }}</p>
+              <h4>{{ ui.t(setting.title) }}</h4>
+              <p>{{ ui.t(setting.description) }}</p>
             </div>
 
             <button class="toggle" type="button" [class.toggle--active]="setting.enabled"
@@ -533,20 +533,20 @@
 
       <footer class="administration-actions">
         <button class="btn btn-secondary" type="button">
-          Poništi izmene
+          {{ ui.t('settings.discard_changes') }}
         </button>
 
         <button class="btn btn-primary" type="button">
           <span class="material-icons">save</span>
-          Sačuvaj administraciju
+          {{ ui.t('settings.admin.save') }}
         </button>
       </footer>
     </div>
     } @else {
     <div class="settings-placeholder">
       <span class="material-icons">lock</span>
-      <h2>Administracija nije dostupna</h2>
-      <p>Ova podešavanja su vidljiva samo superadmin korisnicima.</p>
+      <h2>{{ ui.t('settings.admin.locked_title') }}</h2>
+      <p>{{ ui.t('settings.admin.locked_desc') }}</p>
     </div>
     }
     }
@@ -558,11 +558,11 @@
     <section class="profile-photo-cropper" role="dialog" aria-modal="true" aria-labelledby="profile-photo-cropper-title">
       <header class="profile-photo-cropper__header">
         <div>
-          <p class="section-eyebrow">Profilna slika</p>
-          <h2 id="profile-photo-cropper-title">Podesi izgled slike</h2>
+          <p class="section-eyebrow">{{ ui.t('settings.profile.photo_eyebrow') }}</p>
+          <h2 id="profile-photo-cropper-title">{{ ui.t('settings.profile.photo_title') }}</h2>
         </div>
 
-        <button class="profile-photo-cropper__close" type="button" (click)="cancelProfilePhotoCrop()" aria-label="Zatvori cropper">
+        <button class="profile-photo-cropper__close" type="button" (click)="cancelProfilePhotoCrop()" [attr.aria-label]="ui.t('modal.close')">
           <span class="material-icons">close</span>
         </button>
       </header>
@@ -580,12 +580,12 @@
 
       <footer class="profile-photo-cropper__actions">
         <button class="btn btn-secondary" type="button" (click)="cancelProfilePhotoCrop()">
-          Otkaži
+          {{ ui.t('users.form.cancel') }}
         </button>
 
         <button class="btn btn-primary" type="button" [disabled]="isProfilePhotoUploading()" (click)="confirmProfilePhotoCrop()">
           <span class="material-icons">check</span>
-          {{ isProfilePhotoUploading() ? 'Otpremanje...' : 'Primeni' }}
+          {{ isProfilePhotoUploading() ? ui.t('settings.profile.uploading') : ui.t('settings.profile.apply') }}
         </button>
       </footer>
     </section>
@@ -597,66 +597,66 @@
     <section class="moderation-rules-modal" role="dialog" aria-modal="true" aria-labelledby="moderation-rules-title" (click)="$event.stopPropagation()">
       <header class="moderation-rules-modal__header">
         <div>
-          <p class="section-eyebrow">Administracija</p>
-          <h2 id="moderation-rules-title">Pravila moderacije</h2>
+          <p class="section-eyebrow">{{ ui.t('settings.admin.eyebrow') }}</p>
+          <h2 id="moderation-rules-title">{{ ui.t('settings.admin.rules_title') }}</h2>
         </div>
-        <button class="profile-photo-cropper__close" type="button" (click)="closeModerationRulesModal()" aria-label="Zatvori">
+        <button class="profile-photo-cropper__close" type="button" (click)="closeModerationRulesModal()" [attr.aria-label]="ui.t('modal.close')">
           <span class="material-icons">close</span>
         </button>
       </header>
 
       <div class="moderation-rules-modal__body">
         <article class="moderation-rule-section">
-          <h3><span class="material-icons">place</span> Mesta i objekti</h3>
+          <h3><span class="material-icons">place</span> {{ ui.t('settings.admin.rules.places_title') }}</h3>
           <ul>
-            <li>Svaki objekat mora imati jasnu adresu, kontakt i bar jednu fotografiju pre odobravanja.</li>
-            <li>Naziv mora biti jedinstven u okviru istog grada — duplikati se odbijaju automatski.</li>
-            <li>Objekti bez aktivnosti duže od 6 meseci prelaze u status <em>neaktivan</em> i podležu ponovnoj proveri.</li>
-            <li>Place Owner može imati najviše 10 aktivnih objekata bez posebnog odobrenja superadmina.</li>
+            <li>{{ ui.t('settings.admin.rules.places_1') }}</li>
+            <li>{{ ui.t('settings.admin.rules.places_2') }}</li>
+            <li>{{ ui.t('settings.admin.rules.places_3') }}</li>
+            <li>{{ ui.t('settings.admin.rules.places_4') }}</li>
           </ul>
         </article>
 
         <article class="moderation-rule-section">
-          <h3><span class="material-icons">star</span> Recenzije</h3>
+          <h3><span class="material-icons">star</span> {{ ui.t('settings.admin.rules.reviews_title') }}</h3>
           <ul>
-            <li>Recenzija koja sadrži uvredljiv jezik, lične napade ili nepristojne slike mora biti uklonjena u roku od 24h od prijave.</li>
-            <li>Recenzija ispod ocene 2 automatski dobija oznaku za pregled — moderator je dužan da je proveri.</li>
-            <li>Vlasnik objekta ne sme da piše recenzije za sopstveni objekat ni putem drugog naloga.</li>
-            <li>Skrivanje recenzije bez opravdanog razloga podleže reviziji superadmina.</li>
+            <li>{{ ui.t('settings.admin.rules.reviews_1') }}</li>
+            <li>{{ ui.t('settings.admin.rules.reviews_2') }}</li>
+            <li>{{ ui.t('settings.admin.rules.reviews_3') }}</li>
+            <li>{{ ui.t('settings.admin.rules.reviews_4') }}</li>
           </ul>
         </article>
 
         <article class="moderation-rule-section">
-          <h3><span class="material-icons">event</span> Dogadjaji i aktivnosti</h3>
+          <h3><span class="material-icons">event</span> {{ ui.t('settings.admin.rules.events_title') }}</h3>
           <ul>
-            <li>Dogadjaj mora imati tačan datum, lokaciju i opis pre nego što bude prikazan putnicima.</li>
-            <li>Prošli dogadjaji se arhiviraju automatski 48h nakon završetka.</li>
-            <li>Aktivnosti sa cenom moraju imati navedenu valutu i uslove otkazivanja.</li>
+            <li>{{ ui.t('settings.admin.rules.events_1') }}</li>
+            <li>{{ ui.t('settings.admin.rules.events_2') }}</li>
+            <li>{{ ui.t('settings.admin.rules.events_3') }}</li>
           </ul>
         </article>
 
         <article class="moderation-rule-section">
-          <h3><span class="material-icons">group</span> Korisnici i nalozi</h3>
+          <h3><span class="material-icons">group</span> {{ ui.t('settings.admin.rules.users_title') }}</h3>
           <ul>
-            <li>Turisticka organizacija upravlja samo korisnicima i sadržajem u svom regionu.</li>
-            <li>Nalog suspendovan više od 3 puta zbog kršenja pravila može biti trajno onemogućen.</li>
-            <li>Promena uloge (role) korisnika moguća je isključivo putem superadmina.</li>
-            <li>Lični podaci korisnika smeju da budu korišćeni samo u svrhe rada platforme, u skladu sa GDPR-om.</li>
+            <li>{{ ui.t('settings.admin.rules.users_1') }}</li>
+            <li>{{ ui.t('settings.admin.rules.users_2') }}</li>
+            <li>{{ ui.t('settings.admin.rules.users_3') }}</li>
+            <li>{{ ui.t('settings.admin.rules.users_4') }}</li>
           </ul>
         </article>
 
         <article class="moderation-rule-section">
-          <h3><span class="material-icons">support_agent</span> Podrška</h3>
+          <h3><span class="material-icons">support_agent</span> {{ ui.t('settings.admin.rules.support_title') }}</h3>
           <ul>
-            <li>Svaki tiket mora dobiti odgovor u roku od 48h od prijema.</li>
-            <li>Eskalirani tiketi imaju prioritet i rešavaju se u roku od 24h.</li>
-            <li>Tiketi koji sadrže pritužbe na admina automatski se prosledjuju superadminu.</li>
+            <li>{{ ui.t('settings.admin.rules.support_1') }}</li>
+            <li>{{ ui.t('settings.admin.rules.support_2') }}</li>
+            <li>{{ ui.t('settings.admin.rules.support_3') }}</li>
           </ul>
         </article>
       </div>
 
       <footer class="moderation-rules-modal__footer">
-        <button class="btn btn-primary" type="button" (click)="closeModerationRulesModal()">Zatvori</button>
+        <button class="btn btn-primary" type="button" (click)="closeModerationRulesModal()">{{ ui.t('modal.close') }}</button>
       </footer>
     </section>
   </div>

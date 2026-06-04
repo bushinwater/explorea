@@ -105,7 +105,7 @@
     <app-stat-card
       [label]="ui.t('events.stats.pendingApproval')"
       [value]="stats()?.pendingApproval ?? 0"
-      [hint]="stats()?.pendingApprovalHint ?? ''"
+      [hint]="stats()?.pendingApprovalHint ? ui.t(stats()!.pendingApprovalHint) : ''"
       tone="danger"
     />
     <app-stat-card
@@ -116,7 +116,7 @@
     <app-stat-card
       [label]="ui.t('events.stats.rejected')"
       [value]="stats()?.rejected ?? 0"
-      [hint]="stats()?.rejectedNote ?? ''"
+      [hint]="stats()?.rejectedNote ? ui.t(stats()!.rejectedNote) : ''"
       tone="danger"
     />
   </div>
@@ -150,7 +150,7 @@
           class="btn btn-ghost btn-sm"
           [class.evts-filter-btn--active]="filters().sortBy !== 'none'"
           (click)="toggleSort()"
-          title="Sortiraj po datumu izmene"
+          [title]="ui.t('common.sort_title')"
         >
           <span class="material-icons" style="font-size: 18px">
             {{
@@ -163,10 +163,10 @@
           </span>
           {{
             filters().sortBy === 'updatedAt_asc'
-              ? 'Izmenjeno ↑'
+              ? ui.t('common.sort_asc')
               : filters().sortBy === 'updatedAt_desc'
-                ? 'Izmenjeno ↓'
-                : 'Sortiraj'
+                ? ui.t('common.sort_desc')
+                : ui.t('common.sort')
           }}
         </button>
 
@@ -364,7 +364,7 @@
           [class.evts-tab--active]="filters().tab === 'expired'"
           (click)="setTab('expired')"
         >
-          Istekli
+          {{ ui.t('events.tabs.expired') }}
           @if (stats()?.tabExpiredCount) {
             <span class="evts-tab__badge">{{ stats()!.tabExpiredCount }}</span>
           }
@@ -384,18 +384,18 @@
           <app-table-skeleton [rows]="6" />
         } @else if (!events().length) {
           <app-empty-state
-            title="Nema događaja"
-            description="Nema događaja koji odgovaraju trenutnim filterima."
+            [title]="ui.t('events.empty.title')"
+            [description]="ui.t('events.empty.description')"
           />
         } @else {
           <table class="evts-table">
             <thead>
               <tr>
-                <th class="evts-th">Događaj</th>
-                <th class="evts-th evts-th--hide-sm">Tip</th>
-                <th class="evts-th evts-th--hide-md">Aktivnost</th>
-                <th class="evts-th evts-th--hide-sm">Datum</th>
-                <th class="evts-th evts-th--hide-md evts-th--center">Ocena</th>
+                <th class="evts-th">{{ ui.t('events.table.event') }}</th>
+                <th class="evts-th evts-th--hide-sm">{{ ui.t('events.table.type') }}</th>
+                <th class="evts-th evts-th--hide-md">{{ ui.t('events.table.activity') }}</th>
+                <th class="evts-th evts-th--hide-sm">{{ ui.t('events.table.date') }}</th>
+                <th class="evts-th evts-th--hide-md evts-th--center">{{ ui.t('events.table.rating') }}</th>
                 @if (filters().tab !== 'active') {
                   <th class="evts-th">{{ ui.t('events.table.status') }}</th>
                 }
@@ -448,7 +448,7 @@
                   </td>
                   <td class="evts-td evts-td--hide-md">
                     <span class="evts-act-status evts-act-status--{{ evtActivityStatus(ev) }}">
-                      {{ evtActivityStatus(ev) === 'active' ? 'Aktivno' : 'Neaktivno' }}
+                      {{ ui.t(evtActivityStatus(ev) === 'active' ? 'common.status.active' : 'common.status.inactive') }}
                     </span>
                   </td>
                   <td class="evts-td evts-td--hide-sm">
@@ -507,7 +507,7 @@
                             <span class="material-icons">event_repeat</span>
                           </button>
                         } @else {
-                          <span class="evts-status evts-status--expired">Isteklo</span>
+                          <span class="evts-status evts-status--expired">{{ ui.t('events.status.expired') }}</span>
                         }
                       } @else {
                         @if (ev.slug && ev.status !== 'pending' && ev.status !== 'forwarded' && ev.status !== 'rejected') {
@@ -904,7 +904,7 @@
             [disabled]="isRenewing()"
           >
             <span class="material-icons">event_repeat</span>
-            Obnovi
+            {{ ui.t('events.renew') }}
           </button>
         } @else {
           <span class="evts-status evts-status--expired">Isteklo</span>

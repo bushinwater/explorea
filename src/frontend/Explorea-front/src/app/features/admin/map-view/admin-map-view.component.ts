@@ -178,7 +178,7 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
 
   get regionLabel(): string {
     const role = this.auth.role();
-    if (role === 'super_admin') return 'Srbija: Sve regije';
+    if (role === 'super_admin') return this.ui.t('map.region.all');
     return `Regija: ${this.auth.userRegion}`;
   }
 
@@ -375,13 +375,17 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
   }
 
   getPinTypeLabel(type: string): string {
-    return ENTITY_TYPES.find(et => et.type === type)?.label ?? type;
+    const key = 'dashboard.entity.' + type;
+    const translated = this.ui.t(key);
+    return translated !== key ? translated : (ENTITY_TYPES.find(et => et.type === type)?.label ?? type);
   }
+
+  private get dateLocale(): string { return this.ui.language() === 'en' ? 'en-GB' : 'sr-Latn-RS'; }
 
   getPinSubtitle(pin: ExploreMarker): string {
     if (pin.subtitle) return pin.subtitle;
-    if (pin.startDatetime) return new Date(pin.startDatetime).toLocaleDateString('sr-RS');
-    if (pin.price !== null) return `${pin.price.toLocaleString('sr-RS')} RSD`;
+    if (pin.startDatetime) return new Date(pin.startDatetime).toLocaleDateString(this.dateLocale);
+    if (pin.price !== null) return `${pin.price.toLocaleString(this.dateLocale)} RSD`;
     return this.getPinTypeLabel(pin.entityType);
   }
 

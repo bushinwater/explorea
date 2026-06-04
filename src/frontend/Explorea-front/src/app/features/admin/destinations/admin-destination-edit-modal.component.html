@@ -214,7 +214,7 @@
                 {{ form.value.latitude | number: '1.5-5' }},
                 {{ form.value.longitude | number: '1.5-5' }}
               } @else {
-                Nije postavljeno — klikni na mapu
+                {{ ui.t('destinations.modal.coords_missing') }}
               }
             </span>
           </div>

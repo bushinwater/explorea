@@ -41,10 +41,10 @@
 
     <div class="lang-popup" *ngIf="langPopupOpen" [style.top.px]="langPopupTop" [style.left.px]="langPopupLeft">
       <button class="lang-option" [class.selected]="languageService.current === 'sr'" (click)="setLang('sr')">
-        Srpski
+        {{ 'SIDEBAR.LANG_SR' | translate }}
       </button>
       <button class="lang-option" [class.selected]="languageService.current === 'en'" (click)="setLang('en')">
-        English
+        {{ 'SIDEBAR.LANG_EN' | translate }}
       </button>
     </div>
 

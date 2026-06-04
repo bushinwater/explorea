@@ -677,10 +677,10 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
     const f = this.form();
     const errs: string[] = [];
     const name = f.name.trim();
-    if (!name) errs.push('Naziv događaja je obavezan.');
-    if (f.typeId === null) errs.push('Tip događaja je obavezan.');
-    if (!f.startDatetime) errs.push('Datum i vreme početka su obavezni.');
-    if (!f.endDatetime) errs.push('Datum i vreme završetka su obavezni.');
+    if (!name) errs.push(this.ui.t('events.modal.validation.name'));
+    if (f.typeId === null) errs.push(this.ui.t('events.modal.validation.type'));
+    if (!f.startDatetime) errs.push(this.ui.t('events.modal.validation.start'));
+    if (!f.endDatetime) errs.push(this.ui.t('events.modal.validation.end'));
     const startDate = f.startDatetime ? new Date(f.startDatetime) : null;
     const endDate = f.endDatetime ? new Date(f.endDatetime) : null;
     if (startDate && isNaN(startDate.getTime())) errs.push('Datum početka nije validan.');

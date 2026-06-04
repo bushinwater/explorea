@@ -108,11 +108,11 @@
         <!-- Sort button -->
         <button class="btn btn-ghost btn-sm"
           [class.dest-filter-btn--active]="filters().sortBy !== 'none'"
-          (click)="toggleSort()" title="Sortiraj po datumu izmene">
+          (click)="toggleSort()" [title]="ui.t('common.sort_title')">
           <span class="material-icons" style="font-size:18px">
             {{ filters().sortBy === 'updatedAt_asc' ? 'arrow_upward' : filters().sortBy === 'updatedAt_desc' ? 'arrow_downward' : 'swap_vert' }}
           </span>
-          {{ filters().sortBy === 'updatedAt_asc' ? 'Izmenjeno ↑' : filters().sortBy === 'updatedAt_desc' ? 'Izmenjeno ↓' : 'Sortiraj' }}
+          {{ filters().sortBy === 'updatedAt_asc' ? ui.t('common.sort_asc') : filters().sortBy === 'updatedAt_desc' ? ui.t('common.sort_desc') : ui.t('common.sort') }}
         </button>
 
         <!-- Filter button -->

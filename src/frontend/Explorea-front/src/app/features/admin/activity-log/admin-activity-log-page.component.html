@@ -5,9 +5,9 @@
       <span class="material-icons">arrow_back</span>
     </button>
     <div>
-      <h1 class="al-title">Sve aktivnosti</h1>
+      <h1 class="al-title">{{ ui.t('activity_log.title') }}</h1>
       @if (!isLoading()) {
-        <p class="al-sub">{{ totalCount() }} ukupno, sortirano od najnovijih</p>
+        <p class="al-sub">{{ ui.t('activity_log.subtitle', { count: totalCount() }) }}</p>
       }
     </div>
   </div>
@@ -15,7 +15,7 @@
   @if (isLoading()) {
     <div class="al-state">
       <span class="material-icons al-spin">sync</span>
-      <span>Učitavanje...</span>
+      <span>{{ ui.t('common.loading') }}</span>
     </div>
   } @else if (error()) {
     <div class="al-state al-state--error">
@@ -41,7 +41,7 @@
       } @empty {
         <div class="al-state">
           <span class="material-icons">inbox</span>
-          <span>Nema aktivnosti.</span>
+          <span>{{ ui.t('activity_log.empty') }}</span>
         </div>
       }
     </div>

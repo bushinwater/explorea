@@ -23,6 +23,7 @@ import {
   VIZ_LABELS, VizType,
 } from './admin-reports.models';
 import { AdminReportsService } from './admin-reports.service';
+import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 
 Chart.register(...registerables);
 
@@ -142,60 +143,14 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     const e = ENTITY_CONFIGS.find(ec => ec.id === this.entity())!;
     const d = DIMENSION_CONFIGS[this.dimension()];
     const m = METRIC_CONFIGS[this.metric()];
-    return `${m.label} — ${e.label} / ${d.label}`;
+    const eLabel = this.ui.t('reports.entity.' + e.id)  || e.label;
+    const dLabel = this.ui.t('reports.dim.'    + d.id)  || d.label;
+    const mLabel = this.ui.t('reports.metric.' + m.id)  || m.label;
+    return `${mLabel} — ${eLabel} / ${dLabel}`;
   });
   readonly chartHint = computed((): string | null => {
-    const hints: Record<string, string> = {
-      'destinations:region:count':        'Koliko destinacija postoji u svakom regionu',
-      'destinations:region:traffic':      'Ukupan broj poseta destinacija grupisanih po regionu',
-      'destinations:region:avgRating':    'Prosecna ocena korisnika za destinacije u svakom regionu',
-      'destinations:time:count':          'Koliko novih destinacija je dodato svaki mesec',
-      'destinations:time:traffic':        'Koliko puta su destinacije pregledane svaki mesec',
-      'destinations:time:avgRating':      'Prosecna ocena recenzija destinacija po mesecu',
-      'activities:category:count':        'Koliko aktivnosti postoji u svakoj kategoriji',
-      'activities:category:traffic':      'Ukupan broj poseta aktivnosti po kategoriji',
-      'activities:category:avgRating':    'Prosecna ocena korisnika za aktivnosti po kategoriji',
-      'activities:destination:count':     'Koliko aktivnosti postoji u svakoj destinaciji',
-      'activities:destination:traffic':   'Ukupan broj poseta aktivnosti po destinaciji',
-      'activities:destination:avgRating': 'Prosecna ocena korisnika za aktivnosti po destinaciji',
-      'activities:region:count':          'Koliko aktivnosti postoji u svakom regionu',
-      'activities:region:traffic':        'Ukupan broj poseta aktivnosti po regionu',
-      'activities:region:avgRating':      'Prosecna ocena korisnika za aktivnosti po regionu',
-      'activities:time:count':            'Koliko novih aktivnosti je dodato svaki mesec',
-      'activities:time:traffic':          'Koliko puta su aktivnosti pregledane svaki mesec',
-      'activities:time:avgRating':        'Prosecna ocena recenzija aktivnosti po mesecu',
-      'events:type:count':                'Koliko dogadjaja postoji po tipu',
-      'events:type:traffic':              'Ukupan broj poseta dogadjaja po tipu',
-      'events:type:avgRating':            'Prosecna ocena korisnika za dogadjaje po tipu',
-      'events:destination:count':         'Koliko dogadjaja postoji po destinaciji',
-      'events:destination:traffic':       'Ukupan broj poseta dogadjaja po destinaciji',
-      'events:destination:avgRating':     'Prosecna ocena korisnika za dogadjaje po destinaciji',
-      'events:region:count':              'Koliko dogadjaja postoji u svakom regionu',
-      'events:region:traffic':            'Ukupan broj poseta dogadjaja po regionu',
-      'events:region:avgRating':          'Prosecna ocena korisnika za dogadjaje po regionu',
-      'events:time:count':                'Koliko novih dogadjaja je dodato svaki mesec',
-      'events:time:traffic':              'Koliko puta su dogadjaji pregledani svaki mesec',
-      'events:time:avgRating':            'Prosecna ocena recenzija dogadjaja po mesecu',
-      'places:type:count':                'Koliko objekata postoji po tipu',
-      'places:type:traffic':              'Ukupan broj poseta objekata po tipu',
-      'places:type:avgRating':            'Prosecna ocena korisnika za objekte po tipu',
-      'places:destination:count':         'Koliko objekata postoji po destinaciji',
-      'places:destination:traffic':       'Ukupan broj poseta objekata po destinaciji',
-      'places:destination:avgRating':     'Prosecna ocena korisnika za objekte po destinaciji',
-      'places:region:count':              'Koliko objekata postoji u svakom regionu',
-      'places:region:traffic':            'Ukupan broj poseta objekata po regionu',
-      'places:region:avgRating':          'Prosecna ocena korisnika za objekte po regionu',
-      'places:time:count':                'Koliko novih objekata je dodato svaki mesec',
-      'places:time:traffic':              'Koliko puta su objekti pregledani svaki mesec',
-      'places:time:avgRating':            'Prosecna ocena recenzija objekata po mesecu',
-      'reviews:rating:count':             'Raspodela recenzija po oceni — koliko recenzija ima svaku ocenu',
-      'reviews:entityType:count':         'Koliko recenzija je ostavljeno po vrsti entiteta',
-      'reviews:time:count':               'Koliko novih recenzija je ostavljeno svaki mesec',
-      'users:time:count':                 'Koliko novih korisnika se registrovalo svaki mesec',
-      'users:gender:count':               'Raspodela korisnika po polu',
-      'users:ageGroup:count':             'Raspodela korisnika po starosnoj grupi',
-    };
-    return hints[`${this.entity()}:${this.dimension()}:${this.metric()}`] ?? null;
+    const key = `reports.hint.${this.entity()}.${this.dimension()}.${this.metric()}`;
+    return this.ui.t(key) || null;
   });
   readonly profileChips = computed(() => {
     const p = this.entityProfile();
@@ -224,24 +179,24 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     const ins = this.insights();
     return [
       {
-        label: 'Najprometniji region',
+        label: this.ui.t('reports.insights.card.top_region.label'),
         value: ins?.topRegion ?? '—',
         trend: '',
-        hint:  'Region sa najvise poseta destinacija',
+        hint:  this.ui.t('reports.insights.card.top_region.hint'),
         tone:  'neutral' as const,
       },
       {
-        label: 'Novi korisnici (30 dana)',
+        label: this.ui.t('reports.insights.card.new_users.label'),
         value: ins ? String(ins.newUsersThisMonth) : '—',
         trend: '',
-        hint:  'Korisnici registrovani u poslednjih 30 dana',
+        hint:  this.ui.t('reports.insights.card.new_users.hint'),
         tone:  'neutral' as const,
       },
       {
-        label: 'Najpopularniji entitet',
+        label: this.ui.t('reports.insights.card.top_entity.label'),
         value: ins?.topEntityType ?? '—',
         trend: '',
-        hint:  'Vrsta entiteta sa najvise poseta',
+        hint:  this.ui.t('reports.insights.card.top_entity.hint'),
         tone:  'neutral' as const,
       },
     ];
@@ -287,6 +242,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   constructor(
     private readonly svc: AdminReportsService,
     private readonly cdr: ChangeDetectorRef,
+    public readonly ui: AdminUiPreferencesService,
   ) {
     this.svc.getInsights().subscribe({
       next: d => {
@@ -866,7 +822,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
       const pageH    = pdf.internal.pageSize.getHeight();
       const margin   = 14;
       const contentW = pageW - 2 * margin;
-      const dateStr  = new Date().toLocaleDateString('sr-RS', {
+      const dateStr  = new Date().toLocaleDateString(this.ui.language() === 'en' ? 'en-GB' : 'sr-Latn-RS', {
         day: '2-digit', month: '2-digit', year: 'numeric',
       });
 

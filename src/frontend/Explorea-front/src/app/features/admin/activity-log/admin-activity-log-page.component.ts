@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { ActivityStatus } from '../core/models/admin.models';
+import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 
 interface RawActivity {
   id: string;
@@ -49,6 +50,7 @@ export class AdminActivityLogPageComponent implements OnInit {
     private http: HttpClient,
     private router: Router,
     private cdr: ChangeDetectorRef,
+    protected readonly ui: AdminUiPreferencesService,
   ) {}
 
   ngOnInit(): void {
@@ -81,7 +83,7 @@ export class AdminActivityLogPageComponent implements OnInit {
         this.cdr.markForCheck();
       },
       error: () => {
-        this.error.set('Greška pri učitavanju aktivnosti.');
+        this.error.set(this.ui.t('activity_log.error'));
         this.isLoading.set(false);
         this.cdr.markForCheck();
       },
@@ -104,14 +106,15 @@ export class AdminActivityLogPageComponent implements OnInit {
   }
 
   statusLabel(status: ActivityStatus): string {
-    const map: Record<string, string> = {
-      pending: 'Na čekanju',
-      approved: 'Odobreno',
-      rejected: 'Odbijeno',
-      info: 'Info',
-      warning: 'Upozorenje',
+    const keyMap: Record<string, string> = {
+      pending: 'dashboard.feed.status.pending',
+      approved: 'dashboard.feed.status.approved',
+      rejected: 'dashboard.feed.status.rejected',
+      info: 'dashboard.feed.status.info',
+      warning: 'dashboard.feed.status.warning',
     };
-    return map[status] ?? status;
+    const key = keyMap[status];
+    return key ? this.ui.t(key) : status;
   }
 
   private mapItem(item: RawActivity): FeedItem {
@@ -129,10 +132,10 @@ export class AdminActivityLogPageComponent implements OnInit {
     const timestamp = new Date(value).getTime();
     if (Number.isNaN(timestamp)) return '';
     const minutes = Math.max(1, Math.floor((Date.now() - timestamp) / 60000));
-    if (minutes < 60) return `pre ${minutes} min`;
+    if (minutes < 60) return this.ui.t('dashboard.time.minutes_ago', { value: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `pre ${hours} h`;
-    return `pre ${Math.floor(hours / 24)} dana`;
+    if (hours < 24) return this.ui.t('dashboard.time.hours_ago', { value: hours });
+    return this.ui.t('dashboard.time.days_ago', { value: Math.floor(hours / 24) });
   }
 
   private initials(type: string): string {

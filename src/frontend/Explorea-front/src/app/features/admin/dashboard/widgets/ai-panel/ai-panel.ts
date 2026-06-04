@@ -68,7 +68,7 @@ export class AiPanel implements OnDestroy {
         this.scrollMessagesToBottom();
       },
       error: () => {
-        this.errorMessage.set('AI asistent trenutno nije dostupan.');
+        this.errorMessage.set(this.ui.t('dashboard.ai.unavailable'));
         this.isTyping.set(false);
         this.scrollMessagesToBottom();
       },

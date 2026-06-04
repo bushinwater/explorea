@@ -2,7 +2,7 @@ import { AdminRole } from './models/admin.models';
 
 export interface AdminLandingPageOption {
   value: string;
-  label: string;
+  labelKey: string;
   route: string;
   roles: AdminRole[];
 }
@@ -10,79 +10,79 @@ export interface AdminLandingPageOption {
 export const ADMIN_LANDING_PAGE_OPTIONS: AdminLandingPageOption[] = [
   {
     value: 'dashboard',
-    label: 'Dashboard',
+    labelKey: 'sidebar.dashboard',
     route: '/admin/dashboard',
     roles: ['super_admin', 'tourist_organization', 'place_owner'],
   },
   {
     value: 'map-view',
-    label: 'Mapa',
+    labelKey: 'sidebar.map',
     route: '/admin/map-view',
     roles: ['super_admin', 'tourist_organization'],
   },
   {
     value: 'destinations',
-    label: 'Destinacije',
+    labelKey: 'sidebar.destinations',
     route: '/admin/destinations',
     roles: ['super_admin', 'tourist_organization'],
   },
   {
     value: 'events',
-    label: 'Dogadjaji',
+    labelKey: 'sidebar.events',
     route: '/admin/events',
     roles: ['super_admin', 'tourist_organization', 'place_owner'],
   },
   {
     value: 'activities',
-    label: 'Aktivnosti',
+    labelKey: 'sidebar.activities',
     route: '/admin/activities',
     roles: ['super_admin', 'tourist_organization'],
   },
   {
     value: 'places',
-    label: 'Objekti',
+    labelKey: 'sidebar.places',
     route: '/admin/places',
     roles: ['super_admin', 'tourist_organization', 'place_owner'],
   },
   {
     value: 'activity-log',
-    label: 'Audit log',
+    labelKey: 'activity_log.title',
     route: '/admin/activity-log',
     roles: ['super_admin'],
   },
   {
     value: 'notifications-broadcast',
-    label: 'Broadcast obavestenje',
+    labelKey: 'broadcast.title',
     route: '/admin/notifications/broadcast',
     roles: ['super_admin', 'tourist_organization'],
   },
   {
     value: 'reviews',
-    label: 'Recenzije',
+    labelKey: 'sidebar.reviews',
     route: '/admin/reviews',
     roles: ['super_admin', 'tourist_organization', 'place_owner'],
   },
   {
     value: 'users',
-    label: 'Korisnici',
+    labelKey: 'sidebar.users',
     route: '/admin/users',
     roles: ['super_admin'],
   },
   {
     value: 'reports',
-    label: 'Izvestaji',
+    labelKey: 'sidebar.reports',
     route: '/admin/reports',
     roles: ['super_admin', 'tourist_organization'],
   },
   {
     value: 'support',
-    label: 'Podrska',
+    labelKey: 'sidebar.support',
     route: '/admin/support',
     roles: ['super_admin', 'tourist_organization', 'place_owner'],
   },
   {
     value: 'settings',
-    label: 'Podesavanja',
+    labelKey: 'sidebar.settings',
     route: '/admin/settings',
     roles: ['super_admin', 'tourist_organization', 'place_owner'],
   },
