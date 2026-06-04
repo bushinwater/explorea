@@ -109,11 +109,21 @@ namespace Explorea.Server.Services.Admin
 
             // Does the linked place actually have a PlaceOwner-role owner? If created by TO/SuperAdmin,
             // there is nobody to forward to and TO can approve directly.
-            var placeHasOwner = item.LinkedPlaceId.HasValue &&
-                await _db.Places
+            var placeHasOwner = false;
+            if (item.LinkedPlaceId.HasValue)
+            {
+                var placeCreatorId = await _db.Places
                     .IgnoreQueryFilters()
-                    .AnyAsync(p => p.Id == item.LinkedPlaceId.Value &&
-                                   _db.Users.Any(u => u.Id == p.CreatedBy && u.Role.Name == RoleNames.PlaceOwner));
+                    .Where(p => p.Id == item.LinkedPlaceId.Value)
+                    .Select(p => p.CreatedBy)
+                    .FirstOrDefaultAsync();
+
+                if (placeCreatorId.HasValue)
+                {
+                    placeHasOwner = await _db.Users
+                        .AnyAsync(u => u.Id == placeCreatorId.Value && u.Role.Name == RoleNames.PlaceOwner);
+                }
+            }
 
             // If event targets a private place owned by another PlaceOwner, TO must forward to owner first.
             if (item.LinkedPlaceId.HasValue && !isOwnerSubmittingForOwnPlace && placeHasOwner)
@@ -542,15 +552,21 @@ namespace Explorea.Server.Services.Admin
             var placeCreators = await _db.Places
                 .IgnoreQueryFilters()
                 .Where(p => placeIds.Contains(p.Id))
-                .Select(p => new
-                {
-                    PlaceId = p.Id,
-                    p.CreatedBy,
-                    CreatorRole = p.CreatedBy.HasValue
-                        ? _db.Users.Where(u => u.Id == p.CreatedBy).Select(u => u.Role.Name).FirstOrDefault()
-                        : null
-                })
+                .Select(p => new { PlaceId = p.Id, p.CreatedBy })
                 .ToListAsync();
+
+            var creatorIds = placeCreators
+                .Where(c => c.CreatedBy.HasValue)
+                .Select(c => c.CreatedBy!.Value)
+                .Distinct()
+                .ToList();
+
+            var placeOwnerIds = creatorIds.Count == 0
+                ? new HashSet<Guid>()
+                : (await _db.Users
+                    .Where(u => creatorIds.Contains(u.Id) && u.Role.Name == RoleNames.PlaceOwner)
+                    .Select(u => u.Id)
+                    .ToListAsync()).ToHashSet();
 
             foreach (var item in withPlace)
             {
@@ -558,7 +574,7 @@ namespace Explorea.Server.Services.Admin
                 if (creator == null) continue;
 
                 item.SubmitterOwnsLinkedPlace = creator.CreatedBy == item.SubmittedByUserId;
-                item.LinkedPlaceHasOwner      = creator.CreatorRole == RoleNames.PlaceOwner;
+                item.LinkedPlaceHasOwner      = creator.CreatedBy.HasValue && placeOwnerIds.Contains(creator.CreatedBy.Value);
             }
         }
 

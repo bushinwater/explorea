@@ -393,6 +393,20 @@
 /* section-head-row, section-head-actions, section-link, already-reviewed-badge,
    ghost-btn, ghost-btn--sm, review-scroll-row, empty-text — defined in global styles.css */
 
+.detail-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  height: 60vh;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.detail-not-found .material-icons { font-size: 56px; opacity: 0.4; }
+.detail-not-found h2 { margin: 0; font-size: var(--font-size-h2); font-weight: var(--font-weight-regular); }
+
 /* ── Full-width sections (gallery + similar) ── */
 .full-width-sections {
   padding: 0 16px 40px;

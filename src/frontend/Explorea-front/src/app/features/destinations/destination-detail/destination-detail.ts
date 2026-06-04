@@ -86,6 +86,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   destination: DestinationDetail | null = null;
   isLoading = true;
   error: string | null = null;
+  notFound = false;
   selectedTab: DetailTab = 'places';
   descriptionExpanded = false;
 
@@ -165,6 +166,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
 
     this.isLoading = true;
     this.error = null;
+    this.notFound = false;
     this.destination = null;
     this.selectedTab = 'places';
     this.lightboxOpen = false;
@@ -205,8 +207,11 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
           });
         }
       },
-      error: () => {
-        this.error = this.translate.instant('DESTINATION_DETAIL.ERRORS.LOAD_FAILED');
+      error: (err) => {
+        this.notFound = err?.status === 404;
+        if (!this.notFound) {
+          this.error = this.translate.instant('DESTINATION_DETAIL.ERRORS.LOAD_FAILED');
+        }
         this.isLoading = false;
         this.cdr.detectChanges();
       }

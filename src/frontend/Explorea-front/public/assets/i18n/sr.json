@@ -264,7 +264,8 @@
       "TOTAL": "Ukupno",
       "CTA": "Rezerviši odmah",
       "DISCLAIMER": "Klikom na dugme potvrđujete da se slažete sa našim uslovima korišćenja i politikom otkazivanja."
-    }
+    },
+    "NOT_FOUND": "Aktivnost nije pronađena."
   },
   "BOTTOM_NAV": {
     "HOME": "Početna",
@@ -614,7 +615,8 @@
     "ERRORS": {
       "MISSING_SLUG": "Slug destinacije nije prosleđen.",
       "LOAD_FAILED": "Greška pri učitavanju detalja destinacije."
-    }
+    },
+    "NOT_FOUND": "Destinacija nije pronađena."
   },
   "EVENT_DETAIL": {
     "BREADCRUMB": {
@@ -646,7 +648,8 @@
       "WRITE": "Napiši recenziju",
       "ALREADY_REVIEWED": "Već ste recenzirali ovaj događaj",
       "EMPTY": "Još nema recenzija. Budite prvi koji će podeliti iskustvo!"
-    }
+    },
+    "NOT_FOUND": "Događaj nije pronađen."
   },
   "REVIEW_FORM": {
     "TITLE": "Napiši recenziju",

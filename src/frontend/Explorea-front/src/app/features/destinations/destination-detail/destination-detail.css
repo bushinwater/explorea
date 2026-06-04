@@ -1267,6 +1267,20 @@
   color: var(--color-danger);
 }
 
+.detail-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  height: 60vh;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.detail-not-found .material-icons { font-size: 56px; opacity: 0.4; }
+.detail-not-found h2 { margin: 0; font-size: var(--font-size-h2); font-weight: var(--font-weight-regular); }
+
 .mobile-only {
   display: none;
 }

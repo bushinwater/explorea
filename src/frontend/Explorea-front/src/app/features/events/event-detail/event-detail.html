@@ -25,6 +25,15 @@
   {{ event.name }}
 </div>
 
+<div class="detail-not-found" *ngIf="!loading && notFound">
+  <span class="material-icons">explore_off</span>
+  <h2>{{ 'EVENT_DETAIL.NOT_FOUND' | translate }}</h2>
+  <button class="ghost-btn" type="button" (click)="goBack()">
+    <span class="material-icons">arrow_back</span>
+    {{ 'COMMON.GO_BACK' | translate }}
+  </button>
+</div>
+
 <div class="event-page" *ngIf="!loading && event">
 
   <!-- Hero -->

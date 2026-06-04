@@ -98,7 +98,16 @@
       </div>
     </ng-container>
 
-    <div class="state-block error" *ngIf="!isLoading && error">
+    <div class="detail-not-found" *ngIf="!isLoading && notFound">
+      <span class="material-icons">explore_off</span>
+      <h2>{{ 'DESTINATION_DETAIL.NOT_FOUND' | translate }}</h2>
+      <button class="ghost-btn" type="button" (click)="goBack()">
+        <span class="material-icons">arrow_back</span>
+        {{ 'COMMON.GO_BACK' | translate }}
+      </button>
+    </div>
+
+    <div class="state-block error" *ngIf="!isLoading && !notFound && error">
       {{ error }}
     </div>
 

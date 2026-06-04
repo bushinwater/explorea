@@ -264,7 +264,8 @@
       "TOTAL": "Total",
       "CTA": "Book now",
       "DISCLAIMER": "By clicking the button you agree to our terms of use and cancellation policy."
-    }
+    },
+    "NOT_FOUND": "Activity not found."
   },
   "BOTTOM_NAV": {
     "HOME": "Home",
@@ -614,7 +615,8 @@
     "ERRORS": {
       "MISSING_SLUG": "Destination slug was not provided.",
       "LOAD_FAILED": "Error loading destination details."
-    }
+    },
+    "NOT_FOUND": "Destination not found."
   },
   "EVENT_DETAIL": {
     "BREADCRUMB": {
@@ -646,7 +648,8 @@
       "WRITE": "Write a review",
       "ALREADY_REVIEWED": "You have already reviewed this event",
       "EMPTY": "No reviews yet. Be the first to share your experience!"
-    }
+    },
+    "NOT_FOUND": "Event not found."
   },
   "REVIEW_FORM": {
     "TITLE": "Write a review",

@@ -1188,11 +1188,21 @@ namespace Explorea.Server.Services.Admin
 
         private async Task<AdminEventDetailDto> MapToDetailDtoAsync(Event e)
         {
-            var placeHasOwner = e.PlaceId.HasValue &&
-                await _db.Places
+            var placeHasOwner = false;
+            if (e.PlaceId.HasValue)
+            {
+                var placeCreatorId = await _db.Places
                     .IgnoreQueryFilters()
-                    .AnyAsync(p => p.Id == e.PlaceId.Value &&
-                                   _db.Users.Any(u => u.Id == p.CreatedBy && u.Role.Name == RoleNames.PlaceOwner));
+                    .Where(p => p.Id == e.PlaceId.Value)
+                    .Select(p => p.CreatedBy)
+                    .FirstOrDefaultAsync();
+
+                if (placeCreatorId.HasValue)
+                {
+                    placeHasOwner = await _db.Users
+                        .AnyAsync(u => u.Id == placeCreatorId.Value && u.Role.Name == RoleNames.PlaceOwner);
+                }
+            }
 
             return new AdminEventDetailDto
             {

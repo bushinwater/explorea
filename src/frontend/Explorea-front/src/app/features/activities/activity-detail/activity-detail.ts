@@ -71,6 +71,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
 
   activity: ActivityDetail | null = null;
   loading = true;
+  notFound = false;
   descriptionExpanded = false;
 
   isSaved = false;
@@ -116,6 +117,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
     this.routeSub = this.route.paramMap.subscribe(params => {
       this.slug = params.get('slug') ?? '';
       this.loading = true;
+      this.notFound = false;
       this.activity = null;
       this.descriptionExpanded = false;
       this.titleCaptured = false;
@@ -150,7 +152,8 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
           }
           setTimeout(() => this.initMap(), 100);
         },
-        error: () => {
+        error: (err) => {
+          this.notFound = err?.status === 404;
           this.loading = false;
           this.cdr.detectChanges();
         },
