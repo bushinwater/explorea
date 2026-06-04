@@ -67,10 +67,16 @@ namespace Explorea.Server.Services.Admin
             var user = await _userRepository.GetByIdWithRoleAsync(currentUserId)
                 ?? throw new UnauthorizedAccessException("Current user was not found.");
 
+            var take = Math.Clamp(limit, 1, 50);
+
+            if (user.Role.Name == RoleNames.PlaceOwner)
+            {
+                return await GetOwnerRecentActivityAsync(currentUserId, take);
+            }
+
             if (user.Role.Name != RoleNames.SuperAdmin && user.Role.Name != RoleNames.TouristOrganization)
                 throw new UnauthorizedAccessException("Access denied.");
 
-            var take = Math.Clamp(limit, 1, 50);
             var destinationQuery = await BuildDestinationScopeAsync(user, currentUserId);
             var destinationIds = await destinationQuery.Select(d => d.Id).ToListAsync();
 
@@ -80,6 +86,72 @@ namespace Explorea.Server.Services.Admin
             events.AddRange(await GetRecentUserEventsAsync(user, take));
             events.AddRange(await GetRecentSubmissionEventsAsync(destinationIds, take));
             events.AddRange(await GetRecentReviewEventsAsync(destinationIds, take));
+
+            return events
+                .OrderByDescending(e => e.CreatedAt)
+                .Take(take)
+                .ToList();
+        }
+
+        private async Task<List<AdminRecentActivityDto>> GetOwnerRecentActivityAsync(Guid ownerId, int take)
+        {
+            var ownerPlaceIds = await _db.Places
+                .IgnoreQueryFilters()
+                .Where(p => p.CreatedBy == ownerId)
+                .Select(p => p.Id)
+                .ToListAsync();
+
+            var events = new List<AdminRecentActivityDto>();
+
+            // Places the owner created
+            events.AddRange(await _db.Places
+                .IgnoreQueryFilters()
+                .Where(p => p.CreatedBy == ownerId)
+                .OrderByDescending(p => p.CreatedAt)
+                .Take(take)
+                .Select(p => new AdminRecentActivityDto
+                {
+                    Id = $"place-created-{p.Id}",
+                    Type = "place_created",
+                    Description = $"Objekat kreiran: {p.Name}",
+                    CreatedAt = p.CreatedAt,
+                    ActorId = p.CreatedBy
+                })
+                .ToListAsync());
+
+            // Events the owner submitted
+            events.AddRange(await _db.Events
+                .IgnoreQueryFilters()
+                .Where(e => e.CreatedBy == ownerId)
+                .OrderByDescending(e => e.CreatedAt)
+                .Take(take)
+                .Select(e => new AdminRecentActivityDto
+                {
+                    Id = $"event-created-{e.Id}",
+                    Type = "event_created",
+                    Description = $"Dogadjaj podnet: {e.Name}",
+                    CreatedAt = e.CreatedAt,
+                    ActorId = e.CreatedBy
+                })
+                .ToListAsync());
+
+            // Reviews on the owner's places
+            if (ownerPlaceIds.Count > 0)
+            {
+                events.AddRange(await _db.Reviews
+                    .Where(r => !r.IsDeleted && r.EntityType == "place" && ownerPlaceIds.Contains(r.EntityId))
+                    .OrderByDescending(r => r.CreatedAt)
+                    .Take(take)
+                    .Select(r => new AdminRecentActivityDto
+                    {
+                        Id = $"review-{r.Id}",
+                        Type = "review_created",
+                        Description = $"Nova recenzija ({r.Rating}/5) na vasem objektu",
+                        CreatedAt = r.CreatedAt,
+                        ActorId = r.UserId
+                    })
+                    .ToListAsync());
+            }
 
             return events
                 .OrderByDescending(e => e.CreatedAt)

@@ -261,13 +261,15 @@ export class Dashboard implements OnInit, OnDestroy {
 
   private loadRecentActivity(role: AdminRole): void {
     this.activitySubscription?.unsubscribe();
-    if (role === 'place_owner') return;
     this.activitySubscription = this.dashService.getRecentActivity(15).subscribe({
       next: (activity) => {
         this.data.update((current) => current ? { ...current, activity } : current);
         this.cdr.markForCheck();
       },
-      error: () => {},
+      error: () => {
+        this.data.update((current) => current ? { ...current, activity: [] } : current);
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -295,8 +297,17 @@ export class Dashboard implements OnInit, OnDestroy {
 
   // ===== Customizer =====
 
-  openCustomize(): void { this.buildArrays(); this.layout.openCustomize(); }
-  closeCustomize(): void { this.layout.closeCustomize(); }
+  openCustomize(): void {
+    this.buildArrays();
+    this.layout.openCustomize();
+    document.body.classList.add('customizer-open');
+  }
+  closeCustomize(): void {
+    this.syncFromRows();
+    this.widgetConfig.save(this.auth.role(), this.widgets());
+    this.layout.closeCustomize();
+    document.body.classList.remove('customizer-open');
+  }
 
   resetLayout(): void {
     const reset = this.widgetConfig.reset(this.auth.role());

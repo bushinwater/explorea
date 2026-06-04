@@ -507,7 +507,7 @@
   z-index: 300;
   backdrop-filter: blur(2px);
   animation: fadeIn 0.2s ease;
-  pointer-events: none;
+  cursor: pointer;
 }
 @keyframes fadeIn {
   from {

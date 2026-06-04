@@ -780,3 +780,7 @@ body:has(.ddp-panel) .chat-bubble-wrapper {
 body:has(.edit-modal__panel) .chat-bubble-wrapper {
   right: calc(min(880px, 100vw) + 24px);
 }
+
+body.customizer-open .chat-bubble-wrapper {
+  right: calc(min(360px, 100vw) + 24px);
+}

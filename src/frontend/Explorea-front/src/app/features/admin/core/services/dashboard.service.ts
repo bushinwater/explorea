@@ -65,7 +65,7 @@ const QUICK_ACTION_KEYS: Record<AdminRole, (Omit<QuickAction, 'label'> & { label
   ],
   tourist_organization: [
     { id: 'add-event', icon: 'event_available', labelKey: 'dashboard.quickaction.add_event', route: '/admin/events?create=true', colorClass: 'primary' },
-    { id: 'region',    icon: 'tune',            labelKey: 'dashboard.quickaction.region',    route: '/admin/settings',          colorClass: 'muted'   },
+    { id: 'profile',   icon: 'manage_accounts',  labelKey: 'dashboard.quickaction.profile_settings', route: '/admin/settings',          colorClass: 'muted'   },
     { id: 'reviews',   icon: 'rate_review',     labelKey: 'dashboard.quickaction.reviews',   route: '/admin/reviews',           colorClass: 'warning' },
     { id: 'report',    icon: 'assessment',      labelKey: 'dashboard.quickaction.report',    route: '/admin/reports',           colorClass: 'info'    },
   ],

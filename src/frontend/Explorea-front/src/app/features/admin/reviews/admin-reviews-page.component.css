@@ -270,7 +270,12 @@
 
 /* ===== TABLE ===== */
 .rv-table-wrap {
-  overflow-x: auto;
+  overflow: visible;
+}
+@media (max-width: 900px) {
+  .rv-table-wrap {
+    overflow-x: auto;
+  }
 }
 
 .rv-table {
