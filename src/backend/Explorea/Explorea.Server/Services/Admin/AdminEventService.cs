@@ -58,6 +58,10 @@ namespace Explorea.Server.Services.Admin
                 restrictToDestinationIds,
                 restrictToCityIds
             );
+            var expiredCount = await _eventRepo.CountExpiredAsync(
+                restrictToDestinationIds,
+                restrictToCityIds
+            );
 
             var pendingCount = await _queueRepo.CountAsync(
                 entityType: "event",
@@ -104,7 +108,8 @@ namespace Explorea.Server.Services.Admin
                 RejectedNote = "events.stats.hint.rejected",
 
                 TabPendingCount = pendingCount,
-                TabActiveCount = activeCount
+                TabActiveCount = activeCount,
+                TabExpiredCount = expiredCount
             };
         }
 
@@ -250,6 +255,57 @@ namespace Explorea.Server.Services.Admin
             return (items.Select(MapToListDto).ToList(), total);
         }
 
+        public async Task<(List<AdminEventListDto> Items, int Total)> GetExpiredAsync(
+            string? search,
+            Guid? destinationId,
+            int? cityId,
+            int? typeId,
+            int page,
+            int pageSize,
+            Guid currentUserId)
+        {
+            var currentUser = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            if (currentUser?.Role.Name == RoleNames.PlaceOwner)
+            {
+                return await GetOwnerExpiredEventsAsync(
+                    search,
+                    destinationId,
+                    cityId,
+                    typeId,
+                    page,
+                    pageSize,
+                    currentUserId);
+            }
+
+            var (restrictToDestinationIds, restrictToCityIds) =
+                await GetAccessRestrictionsAsync(currentUserId);
+
+            var query = IncludeEventRelations(_db.Events
+                .IgnoreQueryFilters()
+                .Where(e =>
+                    !e.IsDeleted &&
+                    e.Visibility == "published" &&
+                    e.EndDatetime < DateTimeOffset.UtcNow));
+
+            query = ApplyOwnerEventFilters(query, search, destinationId, cityId, typeId, null, null);
+
+            if (restrictToDestinationIds != null || restrictToCityIds != null)
+            {
+                query = query.Where(e =>
+                    (restrictToDestinationIds != null && e.DestinationId.HasValue && restrictToDestinationIds.Contains(e.DestinationId.Value)) ||
+                    (restrictToCityIds != null && e.CityId.HasValue && restrictToCityIds.Contains(e.CityId.Value)));
+            }
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(e => e.EndDatetime)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items.Select(MapToListDto).ToList(), total);
+        }
+
         public async Task<AdminEventDetailDto?> GetByIdAsync(Guid id, Guid currentUserId)
         {
             var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
@@ -347,6 +403,7 @@ namespace Explorea.Server.Services.Admin
                 DestinationId = resolvedDestinationId,
                 PlaceId       = dto.PlaceId,
                 IsFeatured    = dto.IsFeatured,
+                RecursAnnually = dto.RecursAnnually,
                 ExtraFilters  = dto.ExtraFilters != null ? JsonSerializer.Serialize(dto.ExtraFilters) : null,
                 Visibility     = visibility,
                 CreatedAt     = now,
@@ -383,6 +440,7 @@ namespace Explorea.Server.Services.Admin
                         ev.CountryId,
                         ev.DestinationId,
                         ev.PlaceId,
+                        ev.RecursAnnually,
                         ev.ExtraFilters
                     })
                 };
@@ -448,6 +506,7 @@ namespace Explorea.Server.Services.Admin
             }
             if (dto.PlaceId       != null) { AddChangedField(changedFields, "objekat", target.PlaceId, dto.PlaceId); target.PlaceId = dto.PlaceId; }
             if (dto.IsFeatured    != null) { AddChangedField(changedFields, "istaknuto", target.IsFeatured, dto.IsFeatured.Value); target.IsFeatured = dto.IsFeatured.Value; }
+            if (dto.RecursAnnually != null) { AddChangedField(changedFields, "ponavlja se svake godine", target.RecursAnnually, dto.RecursAnnually.Value); target.RecursAnnually = dto.RecursAnnually.Value; }
             if (dto.ExtraFilters  != null) target.ExtraFilters = JsonSerializer.Serialize(dto.ExtraFilters);
 
             target.UpdatedAt = DateTimeOffset.UtcNow;
@@ -510,12 +569,73 @@ namespace Explorea.Server.Services.Admin
             return true;
         }
 
+        public async Task<AdminEventDetailDto?> RenewAsync(Guid id, AdminRenewEventDto dto, Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+
+            if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                var accessEvent = await _eventRepo.GetAdminByIdAsync(id);
+                if (accessEvent == null) return null;
+
+                if (!await HasTOAccessToEvent(currentUserId, accessEvent))
+                    throw new UnauthorizedAccessException("You do not have access to this event.");
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Only SuperAdmin or TouristOrganization can renew events.");
+            }
+
+            var ev = await _eventRepo.GetAdminByIdAsync(id);
+            if (ev == null || ev.IsDeleted) return null;
+
+            var now = DateTimeOffset.UtcNow;
+            if (ev.EndDatetime >= now)
+                throw new InvalidOperationException("Event has not expired.");
+
+            var duration = ev.EndDatetime - ev.StartDatetime;
+            DateTimeOffset newStart;
+
+            if (dto.StartDatetime.HasValue)
+            {
+                newStart = dto.StartDatetime.Value;
+                if (newStart <= now)
+                    throw new ArgumentException("New event date must be in the future.");
+            }
+            else
+            {
+                newStart = ev.StartDatetime.AddYears(1);
+                while (newStart + duration <= now)
+                    newStart = newStart.AddYears(1);
+            }
+
+            ev.StartDatetime = newStart;
+            ev.EndDatetime = newStart + duration;
+            ev.UpdatedAt = now;
+            ev.UpdatedBy = currentUserId;
+
+            _eventRepo.Update(ev);
+            await _eventRepo.SaveChangesAsync();
+
+            var updated = await _eventRepo.GetAdminByIdAsync(id);
+            return MapToDetailDto(updated!);
+        }
+
         // ---- Helpers ----
 
         private async Task<AdminEventStatsDto> GetOwnerStatsDtoAsync(Guid ownerId)
         {
             var activeCount = await BuildOwnerEventScope(ownerId)
-                .Where(e => !e.IsDeleted && e.Visibility == "published")
+                .Where(e =>
+                    !e.IsDeleted &&
+                    e.Visibility == "published" &&
+                    e.EndDatetime >= DateTimeOffset.UtcNow)
+                .CountAsync();
+            var expiredCount = await BuildOwnerEventScope(ownerId)
+                .Where(e =>
+                    !e.IsDeleted &&
+                    e.Visibility == "published" &&
+                    e.EndDatetime < DateTimeOffset.UtcNow)
                 .CountAsync();
 
             var pendingCount = await _db.SubmissionQueue.CountAsync(q =>
@@ -548,7 +668,8 @@ namespace Explorea.Server.Services.Admin
                 Rejected = rejectedCount,
                 RejectedNote = "events.stats.hint.rejected",
                 TabPendingCount = pendingCount,
-                TabActiveCount = activeCount
+                TabActiveCount = activeCount,
+                TabExpiredCount = expiredCount
             };
         }
 
@@ -566,7 +687,10 @@ namespace Explorea.Server.Services.Admin
             string? sortBy)
         {
             var query = BuildOwnerEventScope(ownerId)
-                .Where(e => !e.IsDeleted && e.Visibility == "published");
+                .Where(e =>
+                    !e.IsDeleted &&
+                    e.Visibility == "published" &&
+                    e.EndDatetime >= DateTimeOffset.UtcNow);
 
             query = ApplyOwnerEventFilters(query, search, destinationId, cityId, typeId, startFrom, startTo);
             query = IncludeEventRelations(query);
@@ -612,6 +736,34 @@ namespace Explorea.Server.Services.Admin
             var total = await query.CountAsync();
             var items = await query
                 .OrderByDescending(e => e.DeletedAt ?? e.UpdatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items.Select(MapToListDto).ToList(), total);
+        }
+
+        private async Task<(List<AdminEventListDto> Items, int Total)> GetOwnerExpiredEventsAsync(
+            string? search,
+            Guid? destinationId,
+            int? cityId,
+            int? typeId,
+            int page,
+            int pageSize,
+            Guid ownerId)
+        {
+            var query = BuildOwnerEventScope(ownerId)
+                .Where(e =>
+                    !e.IsDeleted &&
+                    e.Visibility == "published" &&
+                    e.EndDatetime < DateTimeOffset.UtcNow);
+
+            query = ApplyOwnerEventFilters(query, search, destinationId, cityId, typeId, null, null);
+            query = IncludeEventRelations(query);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(e => e.EndDatetime)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -804,6 +956,7 @@ namespace Explorea.Server.Services.Admin
             Price          = e.Price,
             AvgRating      = e.AvgRating,
             IsFeatured     = e.IsFeatured,
+            RecursAnnually = e.RecursAnnually,
             CreatedAt      = e.CreatedAt,
             UpdatedAt      = e.UpdatedAt,
             DeletedAt      = e.DeletedAt
@@ -835,6 +988,7 @@ namespace Explorea.Server.Services.Admin
             AvgRating      = e.AvgRating,
             Popularity     = e.Popularity,
             IsFeatured     = e.IsFeatured,
+            RecursAnnually = e.RecursAnnually,
             Images         = e.Images.OrderBy(i => i.SortOrder)
                                 .Select(i => new AdminEventImageDto { Id = i.Id, ImageUrl = i.ImageUrl, SortOrder = i.SortOrder })
                                 .ToList(),

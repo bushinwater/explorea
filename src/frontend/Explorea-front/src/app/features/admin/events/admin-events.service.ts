@@ -19,6 +19,7 @@ import {
   PlaceSearchItem,
   ReviewItem,
   OwnerSubmissionDocument,
+  RenewEventPayload,
 } from './admin-events.models';
 import { FilterDefinition } from '../../../core/services/lookup.service';
 
@@ -42,6 +43,7 @@ interface ApiEventItem {
   price: number | null;
   avgRating: number;
   isFeatured: boolean;
+  recursAnnually: boolean;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
@@ -113,6 +115,7 @@ interface ApiEventDetailItem {
   avgRating: number;
   popularity: number;
   isFeatured: boolean;
+  recursAnnually: boolean;
   images: { id: string; imageUrl: string; sortOrder: number }[];
   createdAt: string;
   updatedAt: string;
@@ -263,6 +266,10 @@ export class AdminEventsService {
       return this.fetchDeletedEvents(filters);
     }
 
+    if (filters.tab === 'expired') {
+      return this.fetchExpiredEvents(filters);
+    }
+
     if (filters.tab === 'active') {
       return this.fetchActiveEvents(filters);
     }
@@ -299,6 +306,12 @@ export class AdminEventsService {
   updateEvent(id: string, payload: UpdateEventPayload): Observable<EventRow> {
     return this.http
       .put<ApiEventDetailItem>(`/api/admin/events/${id}`, payload)
+      .pipe(map((event) => this.mapEventDetail(event)));
+  }
+
+  renewEvent(id: string, payload: RenewEventPayload = {}): Observable<EventRow> {
+    return this.http
+      .post<ApiEventDetailItem>(`/api/admin/events/${id}/renew`, payload)
       .pipe(map((event) => this.mapEventDetail(event)));
   }
 
@@ -393,6 +406,25 @@ export class AdminEventsService {
       map((res) => ({
         total: res.total,
         items: res.items.map((e) => this.mapEventItem(e, 'deleted')),
+      })),
+    );
+  }
+
+  private fetchExpiredEvents(filters: EventFilters): Observable<EventPagedResponse> {
+    let params = new HttpParams().set('page', filters.page).set('pageSize', filters.pageSize);
+
+    if (filters.search.trim()) params = params.set('search', filters.search.trim());
+
+    if (filters.typeId !== null) params = params.set('typeId', filters.typeId);
+
+    if (filters.cityId !== null) params = params.set('cityId', filters.cityId);
+
+    if (filters.destinationId !== null) params = params.set('destinationId', filters.destinationId);
+
+    return this.http.get<ApiEventsResponse>('/api/admin/events/expired', { params }).pipe(
+      map((res) => ({
+        total: res.total,
+        items: res.items.map((e) => this.mapEventItem(e, 'expired')),
       })),
     );
   }
@@ -528,6 +560,7 @@ export class AdminEventsService {
       longitude: null,
       ticketUrl: null,
       isFeatured: e.isFeatured,
+      recursAnnually: e.recursAnnually ?? false,
       avgRating: e.avgRating ?? 0,
       documents: [],
       ownerName: null,
@@ -568,6 +601,7 @@ export class AdminEventsService {
       longitude: null,
       ticketUrl: null,
       isFeatured: false,
+      recursAnnually: false,
       avgRating: 0,
       documents: (q.documents ?? []).map((doc: ApiOwnerSubmissionDocument) => ({
         id: doc.id,
@@ -614,6 +648,7 @@ export class AdminEventsService {
       longitude: e.longitude ?? null,
       ticketUrl: e.ticketUrl ?? null,
       isFeatured: e.isFeatured ?? false,
+      recursAnnually: e.recursAnnually ?? false,
       avgRating: e.avgRating ?? 0,
       documents: base?.documents ?? [],
       ownerName: base?.ownerName ?? (e.placeId ? 'Vlasnik objekta' : null),

@@ -1,5 +1,25 @@
 export type DestinationStatus = 'active' | 'pending' | 'inactive' | 'rejected';
 
+export interface DependencyItem {
+  id: string;
+  name: string;
+  previewImageUrl: string | null;
+  typeLabel: string | null;
+  city: string | null;
+  avgRating: number;
+  entityType: string;
+  startDate: string | null;
+  viaPlaceName: string | null;
+}
+
+export interface DestinationDependenciesResponse {
+  eventCount: number;
+  placeCount: number;
+  activityCount: number;
+  items: DependencyItem[];
+  total: number;
+}
+
 export interface ReviewItem {
   authorName: string;
   authorAvatarUrl: string | null;

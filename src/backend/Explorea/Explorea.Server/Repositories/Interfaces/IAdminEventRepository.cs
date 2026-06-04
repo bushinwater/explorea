@@ -18,6 +18,11 @@ namespace Explorea.Server.Repositories.Interfaces
             List<int>? restrictToCityIds
         );
 
+        Task<int> CountExpiredAsync(
+            List<Guid>? restrictToDestinationsIds,
+            List<int>? restrictToCityIds
+        );
+
         Task<int> CountApprovedThisMonthAsync(
             List<Guid>? restrictToDestinationIds,
             List<int>? restrictToCityIds

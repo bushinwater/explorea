@@ -67,6 +67,7 @@ interface EditForm {
   placeId: string | null;
   ticketUrl: string;
   isFeatured: boolean;
+  recursAnnually: boolean;
   extraFilters: Record<string, string>;
 }
 
@@ -91,7 +92,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
 
   protected readonly form = signal<EditForm>({
     name: '', description: '', typeId: null, startDatetime: '', endDatetime: '',
-    price: '', address: '', destinationId: null, placeId: null, ticketUrl: '', isFeatured: false, extraFilters: {},
+    price: '', address: '', destinationId: null, placeId: null, ticketUrl: '', isFeatured: false, recursAnnually: false, extraFilters: {},
   });
   protected readonly errors = signal<string[]>([]);
   protected readonly isSaving = signal(false);
@@ -184,6 +185,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
       placeId: ev.placeId ?? null,
       ticketUrl: ev.ticketUrl ?? '',
       isFeatured: ev.isFeatured,
+      recursAnnually: ev.recursAnnually,
       extraFilters: ev.extraFilters ?? {},
     });
     this.mapLatitude.set(ev.latitude ?? null);
@@ -207,6 +209,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
             extraFilters: Object.keys(freshExtraFilters).length ? freshExtraFilters : f.extraFilters,
             destinationId: freshDestId ?? f.destinationId,
             placeId: freshPlaceId ?? f.placeId,
+            recursAnnually: detail.recursAnnually,
           }));
           if (freshTypeId !== null) this.loadFilterDefs(freshTypeId);
           // If list item didn't have destinationId, populate cascade from detail
@@ -379,6 +382,10 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
 
   protected updateFeatured(checked: boolean): void {
     this.form.update(f => ({ ...f, isFeatured: checked }));
+  }
+
+  protected updateRecursAnnually(checked: boolean): void {
+    this.form.update(f => ({ ...f, recursAnnually: checked }));
   }
 
   // Country → Region cascade
@@ -620,6 +627,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
       placeId: f.placeId,
       ticketUrl: f.ticketUrl.trim() || null,
       isFeatured: f.isFeatured,
+      recursAnnually: f.recursAnnually,
       extraFilters: Object.keys(f.extraFilters).length ? f.extraFilters : undefined,
     };
 

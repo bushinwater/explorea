@@ -198,7 +198,7 @@ namespace Explorea.Server.Services
               .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.InterestTagId).ToList());
 
           var events = await _db.Events
-              .Where(e => eventIds.Contains(e.Id))
+              .Where(e => eventIds.Contains(e.Id) && e.EndDatetime >= DateTimeOffset.UtcNow)
               .Include(e => e.Images).Include(e => e.Type)
               .Include(e => e.City).Include(e => e.Country)
               .Include(e => e.InterestTags)
@@ -249,6 +249,7 @@ namespace Explorea.Server.Services
           .Take(30).ToListAsync();
 
       var topEvents = await _db.Events
+          .Where(e => e.EndDatetime >= DateTimeOffset.UtcNow)
           .Include(e => e.Images).Include(e => e.Type).Include(e => e.City).Include(e => e.Country)
           .Take(30).ToListAsync();
 
