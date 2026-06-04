@@ -286,6 +286,16 @@
         </button>
         <button
           class="evts-tab"
+          [class.evts-tab--active]="filters().tab === 'rejected'"
+          (click)="setTab('rejected')"
+        >
+          {{ ui.t('events.tabs.rejected') }}
+          @if (stats()?.rejected) {
+            <span class="evts-tab__badge evts-tab__badge--red">{{ stats()!.rejected }}</span>
+          }
+        </button>
+        <button
+          class="evts-tab"
           [class.evts-tab--active]="filters().tab === 'deleted'"
           (click)="setTab('deleted')"
         >
@@ -398,18 +408,16 @@
                   <td class="evts-td evts-td--actions" (click)="$event.stopPropagation()">
                     <div class="row-actions">
                       @if (filters().tab === 'deleted') {
-                        @if (isSuperAdmin()) {
-                          <button
-                            class="btn-icon btn-icon--restore"
-                            [title]="ui.t('common.restore')"
-                            (click)="restoreEvent(ev)"
-                            [disabled]="isRestoring()"
-                          >
-                            <span class="material-icons">restore</span>
-                          </button>
-                        }
+                        <button
+                          class="btn-icon btn-icon--restore"
+                          [title]="ui.t('common.restore')"
+                          (click)="restoreEvent(ev)"
+                          [disabled]="isRestoring()"
+                        >
+                          <span class="material-icons">restore</span>
+                        </button>
                       } @else {
-                        @if (ev.slug) {
+                        @if (ev.slug && ev.status !== 'pending' && ev.status !== 'forwarded' && ev.status !== 'rejected') {
                           <a
                             class="btn-icon"
                             [title]="ui.t('common.open_in_app')"
@@ -420,14 +428,24 @@
                             <span class="material-icons">open_in_new</span>
                           </a>
                         }
-                        @if (isSuperAdmin() && ev.status === 'pending') {
-                          <button
-                            class="btn-icon"
-                            [title]="ui.t('events.panel.approve')"
-                            (click)="selectedEvent.set(ev); initiateAction('approve')"
-                          >
-                            <span class="material-icons">check_circle</span>
-                          </button>
+                        @if (!isPlaceOwner() && ev.status === 'pending') {
+                          @if (ev.ownerName && !isSuperAdmin()) {
+                            <button
+                              class="btn-icon"
+                              title="Prosleđuj vlasniku"
+                              (click)="selectedEvent.set(ev); initiateAction('forward')"
+                            >
+                              <span class="material-icons">send</span>
+                            </button>
+                          } @else {
+                            <button
+                              class="btn-icon"
+                              [title]="ui.t('events.panel.approve')"
+                              (click)="selectedEvent.set(ev); initiateAction('approve')"
+                            >
+                              <span class="material-icons">check_circle</span>
+                            </button>
+                          }
                           <button
                             class="btn-icon"
                             [title]="ui.t('events.panel.reject')"
@@ -436,7 +454,7 @@
                             <span class="material-icons">cancel</span>
                           </button>
                         }
-                        @if (isSuperAdmin() && ev.status === 'active') {
+                        @if (ev.status === 'active') {
                           <button
                             class="btn-icon"
                             [title]="ui.t('common.edit')"
@@ -445,15 +463,13 @@
                             <span class="material-icons">edit</span>
                           </button>
                         }
-                        @if (isSuperAdmin()) {
-                          <button
-                            class="btn-icon btn-icon--danger"
-                            [title]="ui.t('common.delete')"
-                            (click)="openDeleteFromRow(ev)"
-                          >
-                            <span class="material-icons">delete</span>
-                          </button>
-                        }
+                        <button
+                          class="btn-icon btn-icon--danger"
+                          [title]="ui.t('common.delete')"
+                          (click)="openDeleteFromRow(ev)"
+                        >
+                          <span class="material-icons">delete</span>
+                        </button>
                       }
                     </div>
                   </td>
@@ -501,7 +517,13 @@
       <app-confirm-dialog
         [title]="confirmTitle()"
         [description]="confirmDesc()"
+        [confirmLabel]="confirmButtonLabel()"
+        [loadingLabel]="confirmLoadingLabel()"
         [isLoading]="isActioning()"
+        [showReasonInput]="confirmAction() === 'reject' || confirmAction() === 'owner-reject'"
+        [reasonPlaceholder]="'Unesite razlog odbijanja...'"
+        [reason]="rejectReason()"
+        (reasonChange)="rejectReason.set($event)"
         (confirm)="confirmActionSubmit()"
         (cancel)="cancelAction()"
       />
@@ -746,7 +768,7 @@
       </div>
 
       <!-- Coordination for pending events with private venue -->
-      @if (ev.ownerName && ev.status === 'pending') {
+      @if (ev.ownerName && ev.status === 'pending' && !isPlaceOwner()) {
         <div class="ddp-coordination">
           <h4 class="ddp-section-title">
             <span class="material-icons">send</span>
@@ -766,18 +788,16 @@
 
     <footer class="ddp-footer">
       @if (filters().tab === 'deleted') {
-        @if (isSuperAdmin()) {
-          <button
-            class="btn btn-ghost btn-sm ddp-footer__restore"
-            (click)="restoreEvent(ev)"
-            [disabled]="isRestoring()"
-          >
-            <span class="material-icons">restore</span>
-            {{ ui.t('common.restore') }}
-          </button>
-        }
+        <button
+          class="btn btn-ghost btn-sm ddp-footer__restore"
+          (click)="restoreEvent(ev)"
+          [disabled]="isRestoring()"
+        >
+          <span class="material-icons">restore</span>
+          {{ ui.t('common.restore') }}
+        </button>
       } @else {
-        @if (ev.slug) {
+        @if (ev.slug && ev.status !== 'pending' && ev.status !== 'forwarded' && ev.status !== 'rejected') {
           <a
             class="btn btn-ghost btn-sm"
             [href]="'/events/' + ev.slug"
@@ -788,28 +808,52 @@
             {{ ui.t('common.open') }}
           </a>
         }
-        @if (isSuperAdmin() && ev.status === 'active') {
+        @if (ev.status === 'active') {
           <button class="btn btn-ghost btn-sm" (click)="openEdit()">
             <span class="material-icons">edit</span>
             {{ ui.t('common.edit') }}
           </button>
-          <button
-            class="btn btn-ghost btn-sm ddp-footer__danger"
-            (click)="initiateAction('delete')"
-          >
-            <span class="material-icons">delete</span>
-            {{ ui.t('common.delete') }}
-          </button>
         }
-        @if (ev.status === 'pending') {
-          <button class="ddp-approve-btn" (click)="initiateAction('approve')">
-            <span class="material-icons">check_circle</span>
-            {{ ui.t('events.panel.approve') }}
-          </button>
+        <button
+          class="btn btn-ghost btn-sm ddp-footer__danger"
+          (click)="initiateAction('delete')"
+        >
+          <span class="material-icons">delete</span>
+          {{ ui.t('common.delete') }}
+        </button>
+        @if (ev.status === 'pending' && !isPlaceOwner()) {
+          @if (!ev.ownerName || isSuperAdmin()) {
+            <button class="ddp-approve-btn" (click)="initiateAction('approve')">
+              <span class="material-icons">check_circle</span>
+              {{ ui.t('events.panel.approve') }}
+            </button>
+          }
           <button class="ddp-reject-btn" (click)="initiateAction('reject')">
             <span class="material-icons">cancel</span>
             {{ ui.t('events.panel.reject') }}
           </button>
+        }
+        @if (ev.status === 'forwarded' && isPlaceOwner()) {
+          <button class="ddp-approve-btn" (click)="initiateAction('owner-approve')">
+            <span class="material-icons">check_circle</span>
+            Odobravam
+          </button>
+          <button class="ddp-reject-btn" (click)="initiateAction('owner-reject')">
+            <span class="material-icons">cancel</span>
+            Odbijam
+          </button>
+        }
+        @if (ev.status === 'rejected' && !isPlaceOwner()) {
+          <button class="ddp-approve-btn" (click)="initiateAction('reactivate')">
+            <span class="material-icons">check_circle</span>
+            Odobri
+          </button>
+          @if (ev.placeId) {
+            <button class="btn btn-ghost btn-sm" (click)="initiateAction('reforward')">
+              <span class="material-icons">send</span>
+              Prosleđuj vlasniku
+            </button>
+          }
         }
       }
     </footer>

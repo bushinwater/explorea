@@ -241,7 +241,7 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
             this.cdr.detectChanges();
             return;
           }
-          this.setCoords(parseFloat(results[0].lat), parseFloat(results[0].lon));
+          this.setCoords(parseFloat(results[0].lat), parseFloat(results[0].lon), true);
           this.cdr.detectChanges();
         },
         error: () => {

@@ -30,7 +30,7 @@
           <div class="profile-card__avatar-wrap">
             <div class="profile-card__avatar" [class.profile-card__avatar--image]="adminProfile().profileImageUrl">
               @if (adminProfile().profileImageUrl){
-              <img [src]="adminProfile().profileImageUrl" [alt]="adminProfile().fullName" />
+              <img [src]="adminProfile().profileImageUrl" [alt]="adminProfile().fullName" referrerpolicy="no-referrer" />
               } @else {
               {{ adminProfile().initials }}
               }

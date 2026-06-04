@@ -284,13 +284,20 @@
       >
         {{ ui.t('places.tabs.active') }}
       </button>
+      <button
+        class="place-chip"
+        [class.place-chip--active]="listMode() === 'pending'"
+        (click)="setListMode('pending')"
+      >
+        {{ ui.t('places.tabs.pending') }}
+      </button>
       @if (canReviewOwnerSubmissions()) {
         <button
           class="place-chip"
-          [class.place-chip--active]="listMode() === 'pending'"
-          (click)="setListMode('pending')"
+          [class.place-chip--active]="listMode() === 'rejected'"
+          (click)="setListMode('rejected')"
         >
-          {{ ui.t('places.tabs.pending') }}
+          {{ ui.t('places.tabs.rejected') }}
         </button>
       }
       <button
@@ -451,15 +458,17 @@
                         <span class="material-icons">restore</span>
                       </button>
                     } @else {
-                      <a
-                        class="btn-icon"
-                        [title]="ui.t('places.actions.open_in_app')"
-                        [href]="'/places/' + place.slug"
-                        target="_blank"
-                        rel="noopener"
-                      >
-                        <span class="material-icons">open_in_new</span>
-                      </a>
+                      @if (place.status !== 'pending') {
+                        <a
+                          class="btn-icon"
+                          [title]="ui.t('places.actions.open_in_app')"
+                          [href]="'/places/' + place.slug"
+                          target="_blank"
+                          rel="noopener"
+                        >
+                          <span class="material-icons">open_in_new</span>
+                        </a>
+                      }
                       <button
                         class="btn-icon"
                         [title]="ui.t('common.edit')"
@@ -469,10 +478,10 @@
                       </button>
                       @if (canReviewOwnerSubmissions() && place.status === 'pending') {
                         <button class="btn-icon btn-icon--restore" title="Odobri" [disabled]="isReviewing()" (click)="approvePlace(place)">
-                          <span class="material-icons" [class.place-spin]="isReviewing()">{{ isReviewing() ? 'sync' : 'check_circle' }}</span>
+                          <span class="material-icons" [class.place-spin]="reviewingPlaceId() === place.id">{{ reviewingPlaceId() === place.id ? 'sync' : 'check_circle' }}</span>
                         </button>
                         <button class="btn-icon btn-icon--danger" title="Odbij" [disabled]="isReviewing()" (click)="rejectPlace(place)">
-                          <span class="material-icons">{{ isReviewing() ? 'hourglass_empty' : 'cancel' }}</span>
+                          <span class="material-icons">{{ reviewingPlaceId() === place.id ? 'hourglass_empty' : 'cancel' }}</span>
                         </button>
                       }
                       <button
@@ -811,26 +820,28 @@
           {{ ui.t('common.restore') }}
         </button>
       } @else {
-        <a
-          class="btn btn-ghost btn-sm"
-          [href]="'/places/' + place.slug"
-          target="_blank"
-          rel="noopener"
-        >
-          <span class="material-icons">open_in_new</span>
-          {{ ui.t('common.open') }}
-        </a>
+        @if (place.status !== 'pending') {
+          <a
+            class="btn btn-ghost btn-sm"
+            [href]="'/places/' + place.slug"
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="material-icons">open_in_new</span>
+            {{ ui.t('common.open') }}
+          </a>
+        }
         <button class="btn btn-ghost btn-sm" (click)="openEditFromPanel()">
           <span class="material-icons">edit</span>
           {{ ui.t('common.edit') }}
         </button>
         @if (canReviewOwnerSubmissions() && place.status === 'pending') {
           <button class="btn btn-ghost btn-sm ddp-footer__restore" [disabled]="isReviewing()" (click)="approvePlace(place)">
-            <span class="material-icons" [class.place-spin]="isReviewing()">{{ isReviewing() ? 'sync' : 'check_circle' }}</span>
+            <span class="material-icons" [class.place-spin]="reviewingPlaceId() === place.id">{{ reviewingPlaceId() === place.id ? 'sync' : 'check_circle' }}</span>
             Odobri
           </button>
           <button class="btn btn-ghost btn-sm ddp-footer__danger" [disabled]="isReviewing()" (click)="rejectPlace(place)">
-            <span class="material-icons">{{ isReviewing() ? 'hourglass_empty' : 'cancel' }}</span>
+            <span class="material-icons">{{ reviewingPlaceId() === place.id ? 'hourglass_empty' : 'cancel' }}</span>
             Odbij
           </button>
         }
@@ -854,5 +865,22 @@
     [isLoading]="isDeleting()"
     (cancel)="closeDeleteDialog()"
     (confirm)="confirmDelete()"
+  ></app-confirm-dialog>
+}
+
+<!-- ===== REJECT CONFIRM DIALOG ===== -->
+@if (isRejectDialogOpen()) {
+  <app-confirm-dialog
+    title="Odbiti zahtev za objekat?"
+    [description]="'Unesite razlog odbijanja za &quot;' + (selectedPlace()?.name ?? '') + '&quot;. Vlasnik će biti obavešten mejlom.'"
+    confirmLabel="Odbij"
+    cancelLabel="Otkaži"
+    [isLoading]="isReviewing()"
+    [showReasonInput]="true"
+    reasonPlaceholder="Unesite razlog odbijanja..."
+    [reason]="rejectReason()"
+    (reasonChange)="rejectReason.set($event)"
+    (cancel)="cancelReject()"
+    (confirm)="confirmReject()"
   ></app-confirm-dialog>
 }

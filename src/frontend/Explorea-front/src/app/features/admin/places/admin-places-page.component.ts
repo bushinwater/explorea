@@ -70,7 +70,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly places    = signal<PlaceRow[]>([]);
-  protected readonly listMode  = signal<'active' | 'pending' | 'deleted'>('active');
+  protected readonly listMode  = signal<'active' | 'pending' | 'deleted' | 'rejected'>('active');
   protected readonly stats     = signal<PlaceStats | null>(null);
   protected readonly types     = signal<PlaceTypeOption[]>([]);
   protected readonly regions   = signal<RegionOption[]>([]);
@@ -83,9 +83,12 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   protected readonly isStatsLoading = signal(false);
   protected readonly isFilterOpen   = signal(false);
   protected readonly isDeleteDialogOpen = signal(false);
+  protected readonly isRejectDialogOpen = signal(false);
+  protected readonly rejectReason       = signal('');
   protected readonly isDeleting     = signal(false);
   protected readonly isRestoring    = signal(false);
-  protected readonly isReviewing    = signal(false);
+  protected readonly reviewingPlaceId = signal<string | null>(null);
+  protected readonly isReviewing = computed(() => this.reviewingPlaceId() !== null);
   protected readonly isEditModalOpen   = signal(false);
   protected readonly isCreateModalOpen = signal(false);
   protected readonly selectedPlace  = signal<PlaceRow | null>(null);
@@ -288,7 +291,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.loadPlaces();
   }
 
-  protected setListMode(mode: 'active' | 'pending' | 'deleted'): void {
+  protected setListMode(mode: 'active' | 'pending' | 'deleted' | 'rejected'): void {
     if (this.listMode() === mode) return;
     this.listMode.set(mode);
     this.closeDetailsPanel();
@@ -305,7 +308,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   }
 
   protected openCreateModal(): void {
-    if (this.listMode() === 'deleted' || this.listMode() === 'pending') return;
+    if (this.listMode() === 'deleted' || this.listMode() === 'pending' || this.listMode() === 'rejected') return;
     this.isCreateModalOpen.set(true);
   }
 
@@ -371,11 +374,11 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   protected approvePlace(place: PlaceRow): void {
     if (!this.canReviewOwnerSubmissions() || place.status !== 'pending' || this.isReviewing()) return;
 
-    this.isReviewing.set(true);
+    this.reviewingPlaceId.set(place.id);
     this.subscription.add(
       this.placesService.approvePlace(place.id).subscribe({
         next: () => {
-          this.isReviewing.set(false);
+          this.reviewingPlaceId.set(null);
           this.successMessage.set(`"${place.name}" je uspesno odobren.`);
           this.closeDetailsPanel();
           this.loadPlaces();
@@ -383,7 +386,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
           setTimeout(() => this.successMessage.set(''), 4000);
         },
         error: (err) => {
-          this.isReviewing.set(false);
+          this.reviewingPlaceId.set(null);
           this.errorMessage.set(err?.error?.message ?? 'Odobravanje objekta nije uspelo.');
           setTimeout(() => this.errorMessage.set(''), 5000);
         },
@@ -393,12 +396,21 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
 
   protected rejectPlace(place: PlaceRow): void {
     if (!this.canReviewOwnerSubmissions() || place.status !== 'pending' || this.isReviewing()) return;
+    this.selectedPlace.set(place);
+    this.rejectReason.set('');
+    this.isRejectDialogOpen.set(true);
+  }
 
-    this.isReviewing.set(true);
+  protected confirmReject(): void {
+    const place = this.selectedPlace();
+    if (!place) return;
+    this.reviewingPlaceId.set(place.id);
     this.subscription.add(
-      this.placesService.rejectPlace(place.id).subscribe({
+      this.placesService.rejectPlace(place.id, this.rejectReason().trim() || 'Zahtev za objekat je odbijen.').subscribe({
         next: () => {
-          this.isReviewing.set(false);
+          this.reviewingPlaceId.set(null);
+          this.isRejectDialogOpen.set(false);
+          this.selectedPlace.set(null);
           this.successMessage.set(`Zahtev za "${place.name}" je odbijen.`);
           this.closeDetailsPanel();
           this.loadPlaces();
@@ -406,12 +418,18 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
           setTimeout(() => this.successMessage.set(''), 4000);
         },
         error: () => {
-          this.isReviewing.set(false);
+          this.reviewingPlaceId.set(null);
           this.errorMessage.set('Odbijanje objekta nije uspelo.');
           setTimeout(() => this.errorMessage.set(''), 5000);
         },
       }),
     );
+  }
+
+  protected cancelReject(): void {
+    this.isRejectDialogOpen.set(false);
+    this.rejectReason.set('');
+    if (!this.isReviewing()) this.selectedPlace.set(null);
   }
 
   protected openDetailsPanel(place: PlaceRow): void {
@@ -617,7 +635,9 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
       ? this.placesService.getDeletedPlaces(this.filters())
       : mode === 'pending'
         ? this.placesService.getPlaces({ ...this.filters(), status: 'pending' })
-        : this.placesService.getPlaces(this.filters());
+        : mode === 'rejected'
+          ? this.placesService.getPlaces({ ...this.filters(), status: 'rejected' })
+          : this.placesService.getPlaces(this.filters());
 
     this.subscription.add(
       request.subscribe({

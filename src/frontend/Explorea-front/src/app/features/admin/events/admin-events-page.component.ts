@@ -92,7 +92,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly isEditOpen = signal(false);
   protected readonly isEditClosing = signal(false);
 
-  protected readonly confirmAction = signal<'approve' | 'reject' | 'forward' | 'delete' | null>(null);
+  protected readonly confirmAction = signal<'approve' | 'reject' | 'forward' | 'delete' | 'owner-approve' | 'owner-reject' | 'reactivate' | 'reforward' | null>(null);
   protected readonly isConfirmOpen = signal(false);
   protected readonly isActioning = signal(false);
   protected readonly isRestoring = signal(false);
@@ -140,6 +140,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     if (a === 'approve') return 'Odobriti zahtev za događaj?';
     if (a === 'reject') return 'Odbiti zahtev?';
     if (a === 'delete') return 'Obrisati događaj?';
+    if (a === 'owner-approve') return 'Odobriti događaj na vašem objektu?';
+    if (a === 'owner-reject') return 'Odbiti događaj na vašem objektu?';
+    if (a === 'reactivate') return 'Odobriti odbijeni događaj?';
+    if (a === 'reforward') return 'Prosleđuj odbijeni događaj vlasniku?';
     return 'Prosleđuj vlasniku?';
   });
   protected readonly confirmDesc = computed(() => {
@@ -147,7 +151,27 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     if (a === 'approve') return 'Organizator će biti obavešten da je njihov događaj odobren.';
     if (a === 'reject') return 'Ova akcija se ne može poništiti. Organizator će biti obavešten o odbijanju.';
     if (a === 'delete') return `Da li sigurno želiš da ukloniš događaj "${this.selectedEvent()?.name ?? ''}"? Događaj će biti premešten u sekciju "Obrisano" gde ostaje 30 dana pre trajnog brisanja.`;
+    if (a === 'owner-approve') return 'Potvrđujete da dozvoljavate organizaciju ovog događaja na vašem objektu. Događaj će biti objavljen.';
+    if (a === 'owner-reject') return 'Organizator će biti obavešten da ste odbili organizaciju događaja na vašem objektu.';
+    if (a === 'reactivate') return 'Događaj će biti objavljen i vidljiv korisnicima. Organizator će biti obavešten.';
+    if (a === 'reforward') return 'Vlasnik objekta će dobiti zahtev za odobrenje.';
     return 'Vlasnik objekta će dobiti zahtev za odobrenje.';
+  });
+  protected readonly confirmButtonLabel = computed(() => {
+    const a = this.confirmAction();
+    if (a === 'approve' || a === 'owner-approve' || a === 'reactivate') return 'Odobri';
+    if (a === 'reject' || a === 'owner-reject') return 'Odbij';
+    if (a === 'delete') return 'Obriši';
+    if (a === 'forward' || a === 'reforward') return 'Prosleđuj';
+    return 'Potvrdi';
+  });
+  protected readonly confirmLoadingLabel = computed(() => {
+    const a = this.confirmAction();
+    if (a === 'approve' || a === 'owner-approve' || a === 'reactivate') return 'Odobravanje...';
+    if (a === 'reject' || a === 'owner-reject') return 'Odbijanje...';
+    if (a === 'delete') return 'Brisanje...';
+    if (a === 'forward' || a === 'reforward') return 'Slanje...';
+    return 'Obrada...';
   });
 
   constructor(
@@ -173,7 +197,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       this.route.queryParamMap.subscribe((params) => {
         const openId = params.get('openId');
         const tabParam = params.get('tab') as EventsTab | null;
-        if (tabParam && ['active', 'pending', 'deleted'].includes(tabParam)) {
+        if (tabParam && ['active', 'pending', 'deleted', 'rejected'].includes(tabParam)) {
           this.patchFilter({ tab: tabParam, page: 1 });
           this.loadEvents();
         }
@@ -453,7 +477,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     }, 220);
   }
 
-  protected initiateAction(action: 'approve' | 'reject' | 'forward' | 'delete'): void {
+  protected initiateAction(action: 'approve' | 'reject' | 'forward' | 'delete' | 'owner-approve' | 'owner-reject' | 'reactivate' | 'reforward'): void {
     this.confirmAction.set(action);
     this.rejectReason.set('');
     this.isConfirmOpen.set(true);
@@ -498,12 +522,21 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
     this.isActioning.set(true);
     const targetId = ev.queueId ?? ev.id;
+    const reason = this.rejectReason().trim();
     const obs =
       action === 'approve'
         ? this.eventsService.approveEvent(targetId)
         : action === 'reject'
-          ? this.eventsService.rejectEvent(targetId, this.rejectReason().trim() || 'Zahtev je odbijen od strane administratora.')
-          : this.eventsService.forwardToOwner(targetId);
+          ? this.eventsService.rejectEvent(targetId, reason || 'Zahtev je odbijen od strane administratora.')
+          : action === 'owner-approve'
+            ? this.eventsService.ownerApproveEvent(targetId)
+            : action === 'owner-reject'
+              ? this.eventsService.ownerRejectEvent(targetId, reason || 'Vlasnik objekta je odbio organizaciju.')
+              : action === 'reactivate'
+                ? this.eventsService.reactivateEvent(ev.id)
+                : action === 'reforward'
+                  ? this.eventsService.reforwardEvent(ev.id)
+                  : this.eventsService.forwardToOwner(targetId);
 
     this.subscription.add(
       obs.pipe(finalize(() => this.isActioning.set(false))).subscribe({
@@ -514,6 +547,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
           this.isPanelOpen.set(false);
           const msg = action === 'approve' ? 'Događaj je uspešno odobren.'
             : action === 'reject' ? 'Zahtev za događaj je odbijen.'
+            : action === 'owner-approve' ? 'Prihvatili ste organizaciju događaja na vašem objektu.'
+            : action === 'owner-reject' ? 'Odbili ste organizaciju događaja na vašem objektu.'
+            : action === 'reactivate' ? 'Odbijeni događaj je uspešno odobren.'
+            : action === 'reforward' ? 'Zahtev je prosleđen vlasniku objekta.'
             : 'Zahtev je prosleđen vlasniku.';
           this.successMessage.set(msg);
           this.loadStats();

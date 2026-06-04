@@ -50,7 +50,9 @@ namespace Explorea.Server.Services.Admin
                 var filteredOwnerItems = ownerItems
                     .Where(item =>
                         (!destinationId.HasValue || item.DestinationId == destinationId.Value) &&
-                        (string.IsNullOrWhiteSpace(status) || item.Status == status) &&
+                        (string.IsNullOrWhiteSpace(status) ||
+                            item.Status == status ||
+                            (status == "Pending" && item.Status == "ApprovedByTO")) &&
                         (string.IsNullOrWhiteSpace(entityType) || item.EntityType.Equals(entityType, StringComparison.OrdinalIgnoreCase)))
                     .ToList();
 
@@ -98,7 +100,23 @@ namespace Explorea.Server.Services.Admin
             if (!await CanReviewAsAdminAsync(reviewerId, item.DestinationId))
                 throw new Exception("Access denied.");
 
-            if (!await HasRequiredOwnerDocumentsAsync(item))
+            var isOwnerSubmittingForOwnPlace = item.LinkedPlaceId.HasValue &&
+                await _db.Places
+                    .IgnoreQueryFilters()
+                    .AnyAsync(p => p.Id == item.LinkedPlaceId.Value && p.CreatedBy == item.SubmittedByUserId);
+
+            // If event targets a private place that is NOT owned by the submitter, TO must forward to owner first
+            if (item.LinkedPlaceId.HasValue && !isOwnerSubmittingForOwnPlace)
+            {
+                var reviewerRole = await _db.Users
+                    .Where(u => u.Id == reviewerId)
+                    .Select(u => u.Role.Name)
+                    .FirstOrDefaultAsync();
+                if (reviewerRole == RoleNames.TouristOrganization)
+                    throw new Exception("Dogadjaj je na tudjem objektu — morate ga proslediti vlasniku, ne mozete direktno odobriti.");
+            }
+
+            if (!isOwnerSubmittingForOwnPlace && !await HasRequiredOwnerDocumentsAsync(item))
                 throw new Exception("Owner submission requires identity and authorization documents before approval.");
 
             item.Status             = "ApprovedByTO";
@@ -127,6 +145,57 @@ namespace Explorea.Server.Services.Admin
 
             await _queueRepo.SaveChangesAsync();
             await NotifySubmitterAsync(item, approved: true, reason: null);
+        }
+
+        public async Task ForwardToOwnerAsync(Guid queueItemId, Guid reviewerId)
+        {
+            var item = await _queueRepo.GetByIdAsync(queueItemId)
+                ?? throw new Exception("Queue item not found.");
+
+            if (item.Status != "Pending")
+                throw new Exception("Only pending items can be forwarded to owner.");
+
+            if (!await CanReviewAsAdminAsync(reviewerId, item.DestinationId))
+                throw new Exception("Access denied.");
+
+            if (!item.LinkedPlaceId.HasValue)
+                throw new Exception("Ovaj dogadjaj nije vezan za konkretan objekat. Koristite Odobri za direktno objavljivanje.");
+
+            item.Status             = "ApprovedByTO";
+            item.ReviewedByTOUserId = reviewerId;
+            item.ReviewedByTOAt     = DateTimeOffset.UtcNow;
+
+            await _queueRepo.SaveChangesAsync();
+
+            // Notify the place owner (not the submitter)
+            var placeOwner = await _db.Users
+                .Include(u => u.Role)
+                .Where(u => _db.Places
+                    .IgnoreQueryFilters()
+                    .Any(p => p.Id == item.LinkedPlaceId.Value && p.CreatedBy == u.Id))
+                .Select(u => new { u.Email, u.FirstName })
+                .FirstOrDefaultAsync();
+
+            if (placeOwner?.Email != null)
+            {
+                var entityName = await ResolveEntityNameAsync(item) ?? "Zahtev za dogadjaj";
+                var submittedByName = item.SubmittedByUser != null
+                    ? $"{item.SubmittedByUser.FirstName} {item.SubmittedByUser.LastName}".Trim()
+                    : "Nepoznat korisnik";
+                try
+                {
+                    await _emailService.SendOwnerReviewRequestEmailAsync(
+                        placeOwner.Email,
+                        placeOwner.FirstName ?? "Vlasnik",
+                        ResolveEntityTypeLabel(item.EntityType),
+                        entityName,
+                        submittedByName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to send owner review request email for queue item {QueueItemId}.", item.Id);
+                }
+            }
         }
 
         public async Task RejectByTOAsync(Guid queueItemId, Guid reviewerId, string reason)
@@ -222,6 +291,14 @@ namespace Explorea.Server.Services.Admin
             item.Status              = "ApprovedByOwner";
             item.ReviewedByOwnerId   = ownerId;
             item.ReviewedByOwnerAt   = DateTimeOffset.UtcNow;
+
+            var eventEntity = await _eventRepo.GetAdminByIdAsync(item.EntityId);
+            if (eventEntity != null)
+            {
+                eventEntity.Visibility = "published";
+                eventEntity.UpdatedAt  = DateTimeOffset.UtcNow;
+                eventEntity.UpdatedBy  = ownerId;
+            }
 
             await _queueRepo.SaveChangesAsync();
             await NotifySubmitterAsync(item, approved: true, reason: null);

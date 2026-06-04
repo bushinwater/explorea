@@ -523,7 +523,7 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
         next: results => {
           this.isGeocoding.set(false);
           if (!results.length) { this.error.set('Adresa nije pronađena. Pokušaj preciznije.'); this.cdr.detectChanges(); return; }
-          this.setCoords(parseFloat(results[0].lat), parseFloat(results[0].lon));
+          this.setCoords(parseFloat(results[0].lat), parseFloat(results[0].lon), true);
           this.cdr.detectChanges();
         },
         error: () => { this.isGeocoding.set(false); this.error.set('Greška pri pretrazi adrese.'); this.cdr.detectChanges(); },

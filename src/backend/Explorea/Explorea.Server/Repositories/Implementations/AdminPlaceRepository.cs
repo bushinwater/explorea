@@ -61,6 +61,12 @@ namespace Explorea.Server.Repositories.Implementations
                     _ => query
                 };
             }
+            else
+            {
+                // Default: exclude pending and rejected (they have dedicated tabs)
+                query = query.Where(p =>
+                    p.ApprovalStatus != "pending" && p.ApprovalStatus != "rejected");
+            }
 
             if (filterRegionId.HasValue)
                 query = query.Where(p => p.City != null && p.City.RegionId == filterRegionId.Value);
@@ -110,6 +116,7 @@ namespace Explorea.Server.Repositories.Implementations
         {
             return await _db.Places
                 .Include(p => p.Images)
+                .Include(p => p.Destination)
                 .Where(p => p.CreatedBy == ownerId)
                 .OrderByDescending(p => p.UpdatedAt)
                 .ToListAsync();

@@ -119,14 +119,14 @@ namespace Explorea.Server.Controllers.Admin
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(Guid id)
+        public async Task<IActionResult> GetById(Guid id, [FromQuery] bool venueLookup = false)
         {
             try
             {
                 var userId = GetCurrentUserId();
-                var result = await _placeService.GetByIdAsync(id, userId);
+                var result = await _placeService.GetByIdAsync(id, userId, venueLookup);
                 if (result == null) return NotFound();
-                result.Documents = await GetOwnerDocumentsAsync("place", id);
+                if (!venueLookup) result.Documents = await GetOwnerDocumentsAsync("place", id);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException ex)

@@ -49,7 +49,13 @@ namespace Explorea.Server.Repositories.Implementations
                 query = query.Where(q => q.DestinationId == destinationId.Value);
 
             if (!string.IsNullOrWhiteSpace(status))
-                query = query.Where(q => q.Status == status);
+            {
+                // "Pending" includes ApprovedByTO (forwarded to place owner, still awaiting)
+                if (status == "Pending")
+                    query = query.Where(q => q.Status == "Pending" || q.Status == "ApprovedByTO");
+                else
+                    query = query.Where(q => q.Status == status);
+            }
 
             if (!string.IsNullOrWhiteSpace(entityType))
             {

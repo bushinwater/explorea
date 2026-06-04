@@ -560,5 +560,48 @@ namespace Explorea.Server.Services
 </html>";
             await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
         }
+
+        public async Task SendOwnerReviewRequestEmailAsync(
+            string toEmail,
+            string firstName,
+            string entityType,
+            string entityName,
+            string submittedByName)
+        {
+            var safeName = System.Net.WebUtility.HtmlEncode(firstName);
+            var safeEntityType = System.Net.WebUtility.HtmlEncode(entityType);
+            var safeEntityName = System.Net.WebUtility.HtmlEncode(entityName);
+            var safeSubmittedBy = System.Net.WebUtility.HtmlEncode(submittedByName);
+            var subject = $"Zahtev za {safeEntityType} na vašem objektu čeka vaše odobrenje";
+
+            var htmlBody = $@"<!DOCTYPE html>
+<html><body style=""margin:0;padding:0;background:#0d0f19;font-family:sans-serif;"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"">
+    <tr><td align=""center"" style=""padding:32px 16px;"">
+      <table width=""520"" cellpadding=""0"" cellspacing=""0"" style=""background:#181b27;border-radius:12px;overflow:hidden;"">
+        <tr><td style=""background:#1e2130;padding:24px 32px;border-bottom:1px solid #2a2d3a;"">
+          <span style=""font-size:22px;font-weight:700;color:#e2e8f0;"">Explorea</span>
+        </td></tr>
+        <tr><td style=""padding:32px;"">
+          <p style=""margin:0 0 16px;font-size:15px;color:#cbd5e1;"">Zdravo, <strong>{safeName}</strong>.</p>
+          <p style=""margin:0 0 20px;font-size:14px;color:#94a3b8;line-height:1.6;"">
+            Korisnik <strong>{safeSubmittedBy}</strong> je podneo zahtev za organizaciju {safeEntityType}a
+            <strong>&bdquo;{safeEntityName}&ldquo;</strong> na vašem objektu.
+          </p>
+          <p style=""margin:0 0 20px;font-size:14px;color:#94a3b8;line-height:1.6;"">
+            Turistička organizacija je pregledala zahtev i prosleđuje vam ga na finalnu potvrdu.
+            Prijavite se na Explorea admin panel da biste pregledali detalje i doneli odluku.
+          </p>
+        </td></tr>
+        <tr><td style=""background:#12141e;border-radius:0 0 12px 12px;padding:16px 32px;border-top:1px solid #2a2d3a;"">
+          <p style=""margin:0;font-size:12px;color:#6b6d80;"">Explorea · Platforma za turizam</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>";
+
+            await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
+        }
     }
 }

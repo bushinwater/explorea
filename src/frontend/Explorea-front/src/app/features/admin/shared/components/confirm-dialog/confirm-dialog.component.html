@@ -1,4 +1,13 @@
 <app-modal-shell [title]="title" [description]="description" (close)="requestCancel()">
+  @if (showReasonInput) {
+    <textarea
+      class="confirm-dialog__reason"
+      [placeholder]="reasonPlaceholder"
+      [value]="reason"
+      (input)="reasonChange.emit($any($event.target).value)"
+      rows="3"
+    ></textarea>
+  }
   <div class="confirm-dialog__actions">
     <button class="btn btn-secondary" type="button" (click)="requestCancel()">
       {{ cancelLabel || ui.t('confirm.cancel') }}

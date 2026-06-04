@@ -975,8 +975,9 @@ export class Search implements OnInit, OnDestroy {
       this.sortBy  = key;
       this.sortDir = 'asc';
     }
-    // Re-sort in memory — no new HTTP call needed (same as events-list)
+    // Trigger server-side re-fetch with new sort, then also re-sort what we have
     this.allResults = this.clientSort(this.allResults);
+    if (this.showResults) this.triggerSearch();
     this.cdr.detectChanges();
   }
 
@@ -1011,7 +1012,7 @@ export class Search implements OnInit, OnDestroy {
     return [...items].sort((a, b) => {
       const ae = a.entity, be = b.entity;
       if (key === 'popularity') {
-        return dir * ((be.popularity ?? 0) - (ae.popularity ?? 0));
+        return dir * ((ae.popularity ?? 0) - (be.popularity ?? 0));
       }
       if (key === 'date') {
         const da = ae.startDatetime ? new Date(ae.startDatetime).getTime() : Infinity;

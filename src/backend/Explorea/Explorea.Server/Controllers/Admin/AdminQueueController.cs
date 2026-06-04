@@ -46,21 +46,45 @@ namespace Explorea.Server.Controllers.Admin
         [HttpPost("{id}/approve")]
         public async Task<IActionResult> ApproveByTO(Guid id)
         {
-            var userId = GetCurrentUserId();
-            await _service.ApproveByTOAsync(id, userId);
-            return Ok();
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _service.ApproveByTOAsync(id, userId);
+                return Ok();
+            }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+        }
+
+        // POST /api/admin/queue/{id}/forward
+        [HttpPost("{id}/forward")]
+        public async Task<IActionResult> ForwardToOwner(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _service.ForwardToOwnerAsync(id, userId);
+                return Ok();
+            }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
         // POST /api/admin/queue/{id}/reject
         [HttpPost("{id}/reject")]
         public async Task<IActionResult> RejectByTO(Guid id, [FromBody] QueueReviewDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Reason))
-                return BadRequest("Reason is required when rejecting.");
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dto.Reason))
+                    return BadRequest(new { message = "Razlog odbijanja je obavezan." });
 
-            var userId = GetCurrentUserId();
-            await _service.RejectByTOAsync(id, userId, dto.Reason);
-            return Ok();
+                var userId = GetCurrentUserId();
+                await _service.RejectByTOAsync(id, userId, dto.Reason);
+                return Ok();
+            }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
         // DELETE /api/admin/queue/{id}
@@ -76,21 +100,31 @@ namespace Explorea.Server.Controllers.Admin
         [HttpPost("{id}/owner-approve")]
         public async Task<IActionResult> ApproveByOwner(Guid id)
         {
-            var userId = GetCurrentUserId();
-            await _service.ApproveByOwnerAsync(id, userId);
-            return Ok();
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _service.ApproveByOwnerAsync(id, userId);
+                return Ok();
+            }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
         // POST /api/admin/queue/{id}/owner-reject
         [HttpPost("{id}/owner-reject")]
         public async Task<IActionResult> RejectByOwner(Guid id, [FromBody] QueueReviewDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Reason))
-                return BadRequest("Reason is required when rejecting.");
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dto.Reason))
+                    return BadRequest(new { message = "Razlog odbijanja je obavezan." });
 
-            var userId = GetCurrentUserId();
-            await _service.RejectByOwnerAsync(id, userId, dto.Reason);
-            return Ok();
+                var userId = GetCurrentUserId();
+                await _service.RejectByOwnerAsync(id, userId, dto.Reason);
+                return Ok();
+            }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
         private Guid GetCurrentUserId()

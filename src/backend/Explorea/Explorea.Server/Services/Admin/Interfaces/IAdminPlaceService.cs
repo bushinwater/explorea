@@ -9,7 +9,7 @@ namespace Explorea.Server.Services.Admin.Interfaces
         Task<(List<AdminPlaceListDto> Items, int Total)> GetDeletedAsync(
             AdminPlaceListQueryDto query, Guid currentUserId);
         Task<AdminPlaceStatsDto> GetStatsAsync(Guid currentUserId);
-        Task<AdminPlaceDetailDto?> GetByIdAsync(Guid id, Guid currentUserId);
+        Task<AdminPlaceDetailDto?> GetByIdAsync(Guid id, Guid currentUserId, bool venueLookup = false);
         Task<AdminPlaceDetailDto> CreateAsync(AdminCreatePlaceDto dto, Guid createdBy);
         Task<AdminPlaceDetailDto?> UpdateAsync(Guid id, AdminUpdatePlaceDto dto, Guid updatedBy);
         Task<bool> DeleteAsync(Guid id, Guid currentUserId);

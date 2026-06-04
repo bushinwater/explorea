@@ -117,7 +117,7 @@
         [attr.aria-label]="ui.t('sidebar.settings')"
         (click)="openSettings()">
         @if (auth.profileImageUrl) {
-          <img [src]="auth.profileImageUrl" [alt]="auth.userName" class="header__avatar-img" />
+          <img [src]="auth.profileImageUrl" [alt]="auth.userName" class="header__avatar-img" referrerpolicy="no-referrer" />
         } @else {
           {{ auth.userInitials }}
         }

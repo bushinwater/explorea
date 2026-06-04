@@ -7,5 +7,6 @@ namespace Explorea.API.DTOs.Admin.Place
         public string? PreviewImageUrl { get; set; }
         public decimal AvgRating { get; set; }
         public string Status { get; set; } = null!;
+        public Guid? DestinationId { get; set; }
     }
 }

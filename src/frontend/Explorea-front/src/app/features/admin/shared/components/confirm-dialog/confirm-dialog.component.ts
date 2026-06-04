@@ -16,6 +16,10 @@ export class ConfirmDialogComponent {
   @Input() cancelLabel = '';
   @Input() loadingLabel = '';
   @Input() isLoading = false;
+  @Input() showReasonInput = false;
+  @Input() reasonPlaceholder = 'Unesite razlog...';
+  @Input() reason = '';
+  @Output() readonly reasonChange = new EventEmitter<string>();
 
   @Output() readonly cancel = new EventEmitter<void>();
   @Output() readonly confirm = new EventEmitter<void>();

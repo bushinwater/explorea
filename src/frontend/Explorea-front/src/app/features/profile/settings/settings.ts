@@ -285,6 +285,10 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
     this.fileInput.nativeElement.click();
   }
 
+  onAvatarLoadError(): void {
+    this.avatarUrl = null;
+  }
+
   onFileSelected(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;

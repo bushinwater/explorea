@@ -354,13 +354,20 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     setTimeout(() => { this.showDestResults.set(false); this.cdr.detectChanges(); }, 150);
   }
 
+  private filterOwnerPlaces(nameQuery: string): PlaceSearchItem[] {
+    const destId = this.form().destinationId ?? null;
+    return this.ownerPlaces().filter(p => {
+      if (destId && p.destinationId && p.destinationId !== destId) return false;
+      if (nameQuery && !p.name.toLowerCase().includes(nameQuery.toLowerCase().trim())) return false;
+      return true;
+    });
+  }
+
   // Place typeahead
   protected onPlaceFocus(): void {
-    if (this.requiresOwnerDocuments) {
-      const q = this.placeQuery().toLowerCase().trim();
-      const results = q
-        ? this.ownerPlaces().filter(p => p.name.toLowerCase().includes(q))
-        : this.ownerPlaces();
+    if (this.requiresOwnerDocuments && !this.placeQuery().trim()) {
+      // Show own places as quick suggestions when field is empty
+      const results = this.filterOwnerPlaces('');
       this.placeResults.set(results);
       this.showPlaceResults.set(results.length > 0);
       this.cdr.detectChanges();
@@ -372,14 +379,6 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   protected onPlaceInput(query: string): void {
     this.placeQuery.set(query);
     if (!query.trim()) { this.clearPlaceOnly(); return; }
-    if (this.requiresOwnerDocuments) {
-      const q = query.toLowerCase();
-      const results = this.ownerPlaces().filter(p => p.name.toLowerCase().includes(q));
-      this.placeResults.set(results);
-      this.showPlaceResults.set(results.length > 0);
-      this.cdr.detectChanges();
-      return;
-    }
     this.placeSearch$.next(query);
   }
 
@@ -462,7 +461,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
       { headers: { 'Accept-Language': 'sr-Latn,en' } },
     ).subscribe({
-      next: r => { this.isGeocoding.set(false); if (r.length) this.setCoords(parseFloat(r[0].lat), parseFloat(r[0].lon)); this.cdr.detectChanges(); },
+      next: r => { this.isGeocoding.set(false); if (r.length) this.setCoords(parseFloat(r[0].lat), parseFloat(r[0].lon), true); this.cdr.detectChanges(); },
       error: () => { this.isGeocoding.set(false); this.cdr.detectChanges(); },
     });
   }

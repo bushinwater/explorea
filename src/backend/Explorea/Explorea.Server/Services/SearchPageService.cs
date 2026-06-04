@@ -236,7 +236,11 @@ namespace Explorea.Server.Services
         return GetDefaultSort(normalizedTab);
       }
 
-      if (!availableSorts.Contains(normalizedSort))
+      // Accept both base names ("popularity") and directional variants ("popularity_asc")
+      var baseSort = normalizedSort.EndsWith("_asc") || normalizedSort.EndsWith("_desc")
+          ? normalizedSort[..normalizedSort.LastIndexOf('_')]
+          : normalizedSort;
+      if (!availableSorts.Contains(normalizedSort) && !availableSorts.Contains(baseSort))
       {
         return GetDefaultSort(normalizedTab);
       }

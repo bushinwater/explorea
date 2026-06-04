@@ -86,6 +86,61 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        // GET /api/admin/events/rejected
+        [HttpGet("rejected")]
+        public async Task<IActionResult> GetRejected(
+            [FromQuery] string? search,
+            [FromQuery] Guid? destinationId,
+            [FromQuery] int? cityId,
+            [FromQuery] int? typeId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var (items, total) = await _service.GetRejectedAsync(
+                    search, destinationId, cityId, typeId, page, pageSize, userId);
+                return Ok(new { total, items });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // PUT /api/admin/events/{id}/reactivate
+        [HttpPut("{id:guid}/reactivate")]
+        public async Task<IActionResult> Reactivate(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _service.ReactivateAsync(id, userId);
+                return Ok();
+            }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+        }
+
+        // PUT /api/admin/events/{id}/reforward
+        [HttpPut("{id:guid}/reforward")]
+        public async Task<IActionResult> Reforward(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _service.ReforwardAsync(id, userId);
+                return Ok();
+            }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+        }
+
         // POST /api/admin/events
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] AdminCreateEventDto dto)
@@ -381,6 +436,10 @@ namespace Explorea.Server.Controllers.Admin
 
             if (file.Length > 10 * 1024 * 1024)
                 throw new ArgumentException("Dokument mora biti manji od 10 MB.");
+
+            var allowedTypes = new[] { "application/pdf", "image/jpeg", "image/jpg", "image/png", "image/webp" };
+            if (!allowedTypes.Contains(file.ContentType.ToLowerInvariant()))
+                throw new ArgumentException("Dozvoljeni formati su: PDF, JPG, PNG, WebP.");
 
             var normalizedType = NormalizeDocumentType(documentType);
             var url = await _cloudinary.UploadRawAsync(file, $"explorea/owner-documents/{entityType}");

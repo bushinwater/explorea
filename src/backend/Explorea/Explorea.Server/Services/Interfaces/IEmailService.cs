@@ -40,5 +40,12 @@ namespace Explorea.Server.Services.Interfaces
             string toEmail,
             string firstName,
             string appealLink);
+
+        Task SendOwnerReviewRequestEmailAsync(
+            string toEmail,
+            string firstName,
+            string entityType,
+            string entityName,
+            string submittedByName);
     }
 }

@@ -21,6 +21,15 @@ namespace Explorea.Server.Services.Admin.Interfaces
             int pageSize,
             Guid currentUserId);
 
+        Task<(List<AdminEventListDto> Items, int Total)> GetRejectedAsync(
+            string? search,
+            Guid? destinationId,
+            int? cityId,
+            int? typeId,
+            int page,
+            int pageSize,
+            Guid currentUserId);
+
         Task<AdminEventStatsDto> GetStatsDtoAsync(Guid currentUserId);
 
         Task<AdminEventDetailDto?> GetByIdAsync(Guid id, Guid currentUserId);
@@ -32,5 +41,9 @@ namespace Explorea.Server.Services.Admin.Interfaces
         Task<bool> DeleteAsync(Guid id, Guid currentUserId);
 
         Task<bool> RestoreAsync(Guid id, Guid currentUserId);
+
+        Task ReactivateAsync(Guid id, Guid currentUserId);
+
+        Task ReforwardAsync(Guid id, Guid currentUserId);
     }
 }

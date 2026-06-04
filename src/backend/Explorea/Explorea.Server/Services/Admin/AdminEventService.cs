@@ -61,7 +61,7 @@ namespace Explorea.Server.Services.Admin
 
             var pendingCount = await _queueRepo.CountAsync(
                 entityType: "event",
-                statuses: new[] { "Pending" },
+                statuses: new[] { "Pending", "ApprovedByTO" },
                 restrictToDestinationIds: restrictToDestinationIds
             );
 
@@ -250,6 +250,82 @@ namespace Explorea.Server.Services.Admin
             return (items.Select(MapToListDto).ToList(), total);
         }
 
+        public async Task<(List<AdminEventListDto> Items, int Total)> GetRejectedAsync(
+            string? search,
+            Guid? destinationId,
+            int? cityId,
+            int? typeId,
+            int page,
+            int pageSize,
+            Guid currentUserId)
+        {
+            var currentUser = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            if (currentUser?.Role.Name == RoleNames.PlaceOwner)
+            {
+                var query = BuildOwnerEventScope(currentUserId)
+                    .Where(e => !e.IsDeleted && e.Visibility == "rejected");
+
+                query = ApplyOwnerEventFilters(query, search, destinationId, cityId, typeId, null, null);
+                query = IncludeEventRelations(query);
+
+                var ownerTotal = await query.CountAsync();
+                var ownerItems = await query
+                    .OrderByDescending(e => e.UpdatedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                return (ownerItems.Select(MapToListDto).ToList(), ownerTotal);
+            }
+
+            var (restrictToDestinationIds, restrictToCityIds) =
+                await GetAccessRestrictionsAsync(currentUserId);
+
+            var evQuery = _db.Events
+                .IgnoreQueryFilters()
+                .Include(e => e.City)
+                .Include(e => e.Type)
+                .Include(e => e.Destination).ThenInclude(d => d!.City)
+                .Include(e => e.Images)
+                .Where(e => !e.IsDeleted && e.Visibility == "rejected")
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                evQuery = evQuery.Where(e =>
+                    e.Name.ToLower().Contains(term) ||
+                    (e.Description != null && e.Description.ToLower().Contains(term)) ||
+                    (e.City != null && e.City.Name.ToLower().Contains(term)) ||
+                    (e.Destination != null && e.Destination.Name.ToLower().Contains(term)));
+            }
+
+            if (destinationId.HasValue)
+                evQuery = evQuery.Where(e => e.DestinationId == destinationId.Value);
+
+            if (cityId.HasValue)
+                evQuery = evQuery.Where(e => e.CityId == cityId.Value);
+
+            if (typeId.HasValue)
+                evQuery = evQuery.Where(e => e.TypeId == typeId.Value);
+
+            if (restrictToDestinationIds != null || restrictToCityIds != null)
+            {
+                evQuery = evQuery.Where(e =>
+                    (restrictToDestinationIds != null && e.DestinationId.HasValue && restrictToDestinationIds.Contains(e.DestinationId.Value)) ||
+                    (restrictToCityIds != null && e.CityId.HasValue && restrictToCityIds.Contains(e.CityId.Value)));
+            }
+
+            var total = await evQuery.CountAsync();
+            var items = await evQuery
+                .OrderByDescending(e => e.UpdatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items.Select(MapToListDto).ToList(), total);
+        }
+
         public async Task<AdminEventDetailDto?> GetByIdAsync(Guid id, Guid currentUserId)
         {
             var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
@@ -259,7 +335,7 @@ namespace Explorea.Server.Services.Admin
                 var ev = await _eventRepo.GetAdminByIdAsync(id);
                 if (ev == null) return null;
 
-                if (!await HasTOAccessToEvent(currentUserId, ev))
+                if (!await HasTOAccessToEvent(currentUserId, user.ManagedRegionId, ev))
                     return null;
 
                 return MapToDetailDto(ev);
@@ -305,14 +381,6 @@ namespace Explorea.Server.Services.Admin
 
             if (user.Role.Name == RoleNames.PlaceOwner)
             {
-                if (dto.PlaceId.HasValue)
-                {
-                    var ownsPlace = linkedPlace?.CreatedBy == createdBy;
-
-                    if (!ownsPlace)
-                        throw new UnauthorizedAccessException("Place owners can attach events only to their own places.");
-                }
-
                 if (!resolvedDestinationId.HasValue)
                     throw new UnauthorizedAccessException("Destination is required for owner event submissions.");
             }
@@ -402,8 +470,20 @@ namespace Explorea.Server.Services.Admin
                 var ev = await _eventRepo.GetAdminByIdAsync(id);
                 if (ev == null) return null;
 
-                if (!await HasTOAccessToEvent(updatedBy, ev))
+                if (!await HasTOAccessToEvent(updatedBy, user.ManagedRegionId, ev))
                     throw new UnauthorizedAccessException("You do not have access to this event.");
+            }
+            else if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                var ev = await _eventRepo.GetAdminByIdAsync(id);
+                if (ev == null) return null;
+
+                var ownsEvent = ev.CreatedBy == updatedBy ||
+                    (ev.PlaceId.HasValue && await _db.Places
+                        .IgnoreQueryFilters()
+                        .AnyAsync(p => p.Id == ev.PlaceId.Value && p.CreatedBy == updatedBy));
+                if (!ownsEvent)
+                    throw new UnauthorizedAccessException("Možete menjati samo sopstvene događaje.");
             }
             else if (user?.Role.Name != RoleNames.SuperAdmin)
             {
@@ -467,10 +547,29 @@ namespace Explorea.Server.Services.Admin
         public async Task<bool> DeleteAsync(Guid id, Guid currentUserId)
         {
             var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
-            if (user?.Role.Name != RoleNames.SuperAdmin)
-                throw new UnauthorizedAccessException("Only SuperAdmin can delete events.");
 
             var ev = await _eventRepo.GetAdminByIdAsync(id);
+
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                if (ev == null) return false;
+                var ownsEvent = ev.CreatedBy == currentUserId ||
+                    (ev.PlaceId.HasValue && await _db.Places
+                        .IgnoreQueryFilters()
+                        .AnyAsync(p => p.Id == ev.PlaceId.Value && p.CreatedBy == currentUserId));
+                if (!ownsEvent)
+                    throw new UnauthorizedAccessException("Možete obrisati samo sopstvene događaje.");
+            }
+            else if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (ev == null) return false;
+                if (!await HasTOAccessToEvent(currentUserId, user.ManagedRegionId, ev))
+                    throw new UnauthorizedAccessException("Nemate pristup ovom događaju.");
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Nemate dozvolu za brisanje događaja.");
+            }
             if (ev == null) return false;
 
             ev.IsDeleted = true;
@@ -491,11 +590,27 @@ namespace Explorea.Server.Services.Admin
         public async Task<bool> RestoreAsync(Guid id, Guid currentUserId)
         {
             var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
-            if (user?.Role.Name != RoleNames.SuperAdmin)
-                throw new UnauthorizedAccessException("Only SuperAdmin can restore events.");
-
             var ev = await _eventRepo.GetAdminByIdAsync(id);
             if (ev == null || !ev.IsDeleted) return false;
+
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                var ownsEvent = ev.CreatedBy == currentUserId ||
+                    (ev.PlaceId.HasValue && await _db.Places
+                        .IgnoreQueryFilters()
+                        .AnyAsync(p => p.Id == ev.PlaceId.Value && p.CreatedBy == currentUserId));
+                if (!ownsEvent)
+                    throw new UnauthorizedAccessException("Možete vratiti samo sopstvene događaje.");
+            }
+            else if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (!await HasTOAccessToEvent(currentUserId, user.ManagedRegionId, ev))
+                    throw new UnauthorizedAccessException("Nemate pristup ovom događaju.");
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Nemate dozvolu za vraćanje obrisanih događaja.");
+            }
 
             ev.IsDeleted = false;
             ev.DeletedAt = null;
@@ -503,9 +618,101 @@ namespace Explorea.Server.Services.Admin
             ev.UpdatedBy = currentUserId;
 
             _eventRepo.Update(ev);
+
+            // If event was pending and queue item was deleted with it, recreate it
+            if ((ev.Visibility == "pending" || ev.Visibility == "rejected") && ev.DestinationId.HasValue)
+            {
+                var existingQueue = await _db.SubmissionQueue
+                    .FirstOrDefaultAsync(q => q.EntityId == ev.Id && q.EntityType == "event");
+
+                if (existingQueue == null)
+                {
+                    await _db.SubmissionQueue.AddAsync(new Explorea.API.Models.SubmissionQueue
+                    {
+                        Id               = Guid.NewGuid(),
+                        EntityType       = "event",
+                        EntityId         = ev.Id,
+                        DestinationId    = ev.DestinationId!.Value,
+                        LinkedPlaceId    = ev.PlaceId,
+                        Status           = ev.Visibility == "pending" ? "Pending" : "RejectedByTO",
+                        SubmittedByUserId = ev.CreatedBy ?? currentUserId,
+                        SubmittedAt      = DateTimeOffset.UtcNow,
+                        RequestPayload   = "{}"
+                    });
+                }
+            }
+
             await _eventRepo.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task ReactivateAsync(Guid id, Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            var ev = await _eventRepo.GetAdminByIdAsync(id)
+                ?? throw new Exception("Događaj nije pronađen.");
+
+            if (ev.Visibility != "rejected")
+                throw new Exception("Samo odbijeni događaji mogu biti reaktivirani.");
+
+            if (user?.Role.Name == RoleNames.TouristOrganization &&
+                !await HasTOAccessToEvent(currentUserId, user.ManagedRegionId, ev))
+                throw new UnauthorizedAccessException("Nemate pristup ovom događaju.");
+
+            ev.Visibility = "published";
+            ev.UpdatedAt  = DateTimeOffset.UtcNow;
+            ev.UpdatedBy  = currentUserId;
+
+            var queueItem = await _db.SubmissionQueue
+                .Include(q => q.SubmittedByUser)
+                .Include(q => q.Destination)
+                .FirstOrDefaultAsync(q => q.EntityId == id && q.EntityType == "event");
+
+            if (queueItem != null)
+            {
+                queueItem.Status             = "ApprovedByTO";
+                queueItem.ReviewedByTOUserId = currentUserId;
+                queueItem.ReviewedByTOAt     = DateTimeOffset.UtcNow;
+                queueItem.RejectionReason    = null;
+            }
+
+            await _eventRepo.SaveChangesAsync();
+        }
+
+        public async Task ReforwardAsync(Guid id, Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            var ev = await _eventRepo.GetAdminByIdAsync(id)
+                ?? throw new Exception("Događaj nije pronađen.");
+
+            if (ev.Visibility != "rejected")
+                throw new Exception("Samo odbijeni događaji mogu biti prosleđeni.");
+
+            if (!ev.PlaceId.HasValue)
+                throw new Exception("Ovaj događaj nije vezan za konkretan objekat.");
+
+            if (user?.Role.Name == RoleNames.TouristOrganization &&
+                !await HasTOAccessToEvent(currentUserId, user.ManagedRegionId, ev))
+                throw new UnauthorizedAccessException("Nemate pristup ovom događaju.");
+
+            ev.Visibility = "pending";
+            ev.UpdatedAt  = DateTimeOffset.UtcNow;
+            ev.UpdatedBy  = currentUserId;
+
+            var queueItem = await _db.SubmissionQueue
+                .FirstOrDefaultAsync(q => q.EntityId == id && q.EntityType == "event");
+
+            if (queueItem != null)
+            {
+                queueItem.Status             = "ApprovedByTO";
+                queueItem.ReviewedByTOUserId = currentUserId;
+                queueItem.ReviewedByTOAt     = DateTimeOffset.UtcNow;
+                queueItem.RejectionReason    = null;
+                queueItem.LinkedPlaceId      = ev.PlaceId;
+            }
+
+            await _eventRepo.SaveChangesAsync();
         }
 
         // ---- Helpers ----
@@ -516,10 +723,16 @@ namespace Explorea.Server.Services.Admin
                 .Where(e => !e.IsDeleted && e.Visibility == "published")
                 .CountAsync();
 
+            var ownedPlaceIds = await _db.Places
+                .IgnoreQueryFilters()
+                .Where(p => p.CreatedBy == ownerId)
+                .Select(p => p.Id)
+                .ToListAsync();
+
             var pendingCount = await _db.SubmissionQueue.CountAsync(q =>
                 q.EntityType == "event" &&
-                q.SubmittedByUserId == ownerId &&
-                q.Status == "Pending");
+                (q.SubmittedByUserId == ownerId && q.Status == "Pending") ||
+                (q.Status == "ApprovedByTO" && q.LinkedPlaceId != null && ownedPlaceIds.Contains(q.LinkedPlaceId!.Value)));
 
             var rejectedCount = await _db.SubmissionQueue.CountAsync(q =>
                 q.EntityType == "event" &&
@@ -619,16 +832,10 @@ namespace Explorea.Server.Services.Admin
 
         private IQueryable<Event> BuildOwnerEventScope(Guid ownerId)
         {
-            var ownerPlaceIds = _db.Places
-                .IgnoreQueryFilters()
-                .Where(place => !place.IsDeleted && place.CreatedBy == ownerId)
-                .Select(place => place.Id);
-
+            // Owner only sees events they personally submitted, not all events on their venues
             return _db.Events
                 .IgnoreQueryFilters()
-                .Where(e =>
-                    e.CreatedBy == ownerId ||
-                    (e.PlaceId.HasValue && ownerPlaceIds.Contains(e.PlaceId.Value)));
+                .Where(e => e.CreatedBy == ownerId);
         }
 
         private static IQueryable<Event> ApplyOwnerEventFilters(
@@ -728,7 +935,7 @@ namespace Explorea.Server.Services.Admin
             return dict;
         }
 
-        private async Task<bool> HasTOAccessToEvent(Guid userId, Event ev)
+        private async Task<bool> HasTOAccessToEvent(Guid userId, int? managedRegionId, Event ev)
         {
             if (ev.DestinationId.HasValue)
             {
@@ -742,6 +949,24 @@ namespace Explorea.Server.Services.Admin
                 var destinationIds = assignments.Select(a => a.DestinationId).ToList();
                 var cityIds = await _destinationRepo.GetCityIdsByDestinationsAsync(destinationIds);
                 if (cityIds.Contains(ev.CityId.Value)) return true;
+            }
+
+            if (managedRegionId.HasValue)
+            {
+                if (ev.DestinationId.HasValue)
+                {
+                    var inRegion = await _db.Destinations
+                        .IgnoreQueryFilters()
+                        .AnyAsync(d => d.Id == ev.DestinationId.Value && !d.IsDeleted
+                            && d.City != null && d.City.RegionId == managedRegionId.Value);
+                    if (inRegion) return true;
+                }
+                if (ev.CityId.HasValue)
+                {
+                    var inRegion = await _db.Cities
+                        .AnyAsync(c => c.Id == ev.CityId.Value && c.RegionId == managedRegionId.Value);
+                    if (inRegion) return true;
+                }
             }
 
             return false;

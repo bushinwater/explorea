@@ -12,5 +12,6 @@ namespace Explorea.API.DTOs.Admin.Place
         public string? SortBy { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 20;
+        public bool VenueSearch { get; set; } = false;
     }
 }

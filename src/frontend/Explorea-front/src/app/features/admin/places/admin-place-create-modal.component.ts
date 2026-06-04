@@ -426,7 +426,7 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
         next: results => {
           this.isGeocoding.set(false);
           if (!results.length) { this.error.set('Adresa nije pronađena.'); this.cdr.detectChanges(); return; }
-          this.setCoords(parseFloat(results[0].lat), parseFloat(results[0].lon));
+          this.setCoords(parseFloat(results[0].lat), parseFloat(results[0].lon), true);
           this.cdr.detectChanges();
         },
         error: () => {

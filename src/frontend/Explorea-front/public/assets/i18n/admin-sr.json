@@ -699,6 +699,7 @@
 
   "events.tabs.active_events": "Aktivni događaji",
   "events.tabs.deleted": "Obrisani",
+  "events.tabs.rejected": "Odbijeni",
   "events.filter.city": "Grad",
   "events.filter.all_cities": "Svi gradovi",
   "events.filter.destination": "Destinacija",
@@ -754,6 +755,7 @@
 
   "places.tabs.active": "Aktivni",
   "places.tabs.pending": "Na čekanju",
+  "places.tabs.rejected": "Odbijeni",
   "places.tabs.deleted": "Obrisani",
   "places.details.unknown_location": "Nepoznata lokacija",
   "places.details.type": "Tip",

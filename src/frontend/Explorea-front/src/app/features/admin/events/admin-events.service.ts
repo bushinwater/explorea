@@ -221,17 +221,17 @@ export class AdminEventsService {
       map(items => items.map((item: any): PlaceSearchItem => ({
         id: item.id,
         name: item.name,
-        destinationId: null,
-        destinationName: null,
-        regionId: null,
-        countryId: null,
+        destinationId: item.destinationId ?? null,
+        destinationName: item.destinationName ?? item.destination ?? null,
+        regionId: item.regionId ?? null,
+        countryId: item.countryId ?? null,
       }))),
       catchError(() => of([])),
     );
   }
 
   searchPlaces(query: string, destinationId?: string): Observable<PlaceSearchItem[]> {
-    let params = new HttpParams().set('search', query).set('pageSize', '15');
+    let params = new HttpParams().set('search', query).set('pageSize', '15').set('venueSearch', 'true');
     if (destinationId != null) params = params.set('destinationId', destinationId);
     return this.http.get<any>('/api/admin/places', { params }).pipe(
       map((res: any) => {
@@ -250,7 +250,7 @@ export class AdminEventsService {
   }
 
   getPlaceById(id: string): Observable<PlaceSearchItem | null> {
-    return this.http.get<any>(`/api/admin/places/${id}`).pipe(
+    return this.http.get<any>(`/api/admin/places/${id}?venueLookup=true`).pipe(
       map((item: any): PlaceSearchItem => ({
         id: item.id,
         name: item.name,
@@ -286,6 +286,10 @@ export class AdminEventsService {
       return this.fetchDeletedEvents(filters);
     }
 
+    if (filters.tab === 'rejected') {
+      return this.fetchRejectedEvents(filters);
+    }
+
     if (filters.tab === 'active') {
       return this.fetchActiveEvents(filters);
     }
@@ -310,7 +314,23 @@ export class AdminEventsService {
   }
 
   forwardToOwner(queueId: string): Observable<void> {
-    return this.http.post<void>(`/api/admin/queue/${queueId}/approve`, {});
+    return this.http.post<void>(`/api/admin/queue/${queueId}/forward`, {});
+  }
+
+  ownerApproveEvent(queueId: string): Observable<void> {
+    return this.http.post<void>(`/api/admin/queue/${queueId}/owner-approve`, {});
+  }
+
+  ownerRejectEvent(queueId: string, reason: string): Observable<void> {
+    return this.http.post<void>(`/api/admin/queue/${queueId}/owner-reject`, { reason });
+  }
+
+  reactivateEvent(eventId: string): Observable<void> {
+    return this.http.put<void>(`/api/admin/events/${eventId}/reactivate`, {});
+  }
+
+  reforwardEvent(eventId: string): Observable<void> {
+    return this.http.put<void>(`/api/admin/events/${eventId}/reforward`, {});
   }
 
   createEvent(payload: CreateEventPayload): Observable<EventRow> {
@@ -416,6 +436,25 @@ export class AdminEventsService {
       map((res) => ({
         total: res.total,
         items: res.items.map((e) => this.mapEventItem(e, 'deleted')),
+      })),
+    );
+  }
+
+  private fetchRejectedEvents(filters: EventFilters): Observable<EventPagedResponse> {
+    let params = new HttpParams().set('page', filters.page).set('pageSize', filters.pageSize);
+
+    if (filters.search.trim()) params = params.set('search', filters.search.trim());
+
+    if (filters.typeId !== null) params = params.set('typeId', filters.typeId);
+
+    if (filters.cityId !== null) params = params.set('cityId', filters.cityId);
+
+    if (filters.destinationId !== null) params = params.set('destinationId', filters.destinationId);
+
+    return this.http.get<ApiEventsResponse>('/api/admin/events/rejected', { params }).pipe(
+      map((res) => ({
+        total: res.total,
+        items: res.items.map((e) => this.mapEventItem(e, 'rejected')),
       })),
     );
   }
@@ -661,7 +700,7 @@ export class AdminEventsService {
   private mapQueueStatus(status: string): EventStatus {
     const map: Record<string, EventStatus> = {
       Pending: 'pending',
-      ApprovedByTO: 'active',
+      ApprovedByTO: 'forwarded',
       ApprovedByOwner: 'active',
       RejectedByTO: 'rejected',
       RejectedByOwner: 'rejected',

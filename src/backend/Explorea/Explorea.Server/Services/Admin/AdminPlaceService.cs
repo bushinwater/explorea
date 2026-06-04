@@ -55,7 +55,9 @@ namespace Explorea.Server.Services.Admin
 
             if (user?.Role.Name == RoleNames.PlaceOwner)
             {
-                restrictToOwner = currentUserId;
+                // For venue search (creating event), allow searching all approved places
+                if (!query.VenueSearch)
+                    restrictToOwner = currentUserId;
             }
             else if (user?.Role.Name == RoleNames.TouristOrganization)
             {
@@ -220,12 +222,24 @@ namespace Explorea.Server.Services.Admin
             };
         }
 
-        public async Task<AdminPlaceDetailDto?> GetByIdAsync(Guid id, Guid currentUserId)
+        public async Task<AdminPlaceDetailDto?> GetByIdAsync(Guid id, Guid currentUserId, bool venueLookup = false)
         {
             var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
             var place = await _placeRepo.GetAdminByIdAsync(id);
 
             if (place == null) return null;
+
+            // venueLookup mode: any authenticated admin/owner/TO can view limited place data for event venue selection
+            if (venueLookup)
+            {
+                if (user?.Role.Name != RoleNames.PlaceOwner &&
+                    user?.Role.Name != RoleNames.TouristOrganization &&
+                    user?.Role.Name != RoleNames.SuperAdmin)
+                    throw new UnauthorizedAccessException("Access denied.");
+                if (place.ApprovalStatus != "approved")
+                    return null;
+                return MapToDetailDto(place);
+            }
 
             if (user?.Role.Name == RoleNames.PlaceOwner)
             {
@@ -667,7 +681,8 @@ namespace Explorea.Server.Services.Admin
                 Name = p.Name,
                 PreviewImageUrl = p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
                 AvgRating = p.AvgRating,
-                Status = p.ApprovalStatus
+                Status = p.ApprovalStatus,
+                DestinationId = p.DestinationId
             }).ToList();
         }
 

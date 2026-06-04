@@ -502,6 +502,7 @@
                 type="text"
                 [formControl]="form.controls.address"
                 placeholder="Upiši adresu pa klikni loupe"
+                (keydown.enter)="geocode()"
               />
               <button
                 class="edit-modal__geo-btn"

@@ -1569,7 +1569,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
             }
             const lat = parseFloat(results[0].lat);
             const lng = parseFloat(results[0].lon);
-            this.setMapCoords(lat, lng);
+            this.setMapCoords(lat, lng, true);
             this.cdr.detectChanges();
           },
           error: () => {

@@ -555,7 +555,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
       { headers: { 'Accept-Language': 'sr-Latn,en' } },
     ).subscribe({
-      next: r => { this.isGeocoding.set(false); if (r.length) this.setCoords(parseFloat(r[0].lat), parseFloat(r[0].lon)); this.cdr.detectChanges(); },
+      next: r => { this.isGeocoding.set(false); if (r.length) this.setCoords(parseFloat(r[0].lat), parseFloat(r[0].lon), true); this.cdr.detectChanges(); },
       error: () => { this.isGeocoding.set(false); this.cdr.detectChanges(); },
     });
   }

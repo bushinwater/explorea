@@ -699,6 +699,7 @@
 
   "events.tabs.active_events": "Active events",
   "events.tabs.deleted": "Deleted",
+  "events.tabs.rejected": "Rejected",
   "events.filter.city": "City",
   "events.filter.all_cities": "All cities",
   "events.filter.destination": "Destination",
@@ -752,6 +753,8 @@
   "destinations.modal.btn_create": "Create destination",
 
   "places.tabs.active": "Active",
+  "places.tabs.pending": "Pending",
+  "places.tabs.rejected": "Rejected",
   "places.tabs.deleted": "Deleted",
   "places.details.unknown_location": "Unknown location",
   "places.details.type": "Type",
