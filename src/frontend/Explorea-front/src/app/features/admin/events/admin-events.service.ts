@@ -60,6 +60,7 @@ interface ApiQueueItem {
   destinationId: string;
   destinationName: string;
   linkedPlaceId: string | null;
+  submitterOwnsLinkedPlace?: boolean;
   status: string;
   submittedByUserId: string;
   submittedByName: string;
@@ -626,7 +627,7 @@ export class AdminEventsService {
         type: doc.documentType,
         uploadedAt: doc.createdAt,
       })),
-      ownerName: q.linkedPlaceId ? 'Vlasnik objekta' : null,
+      ownerName: q.linkedPlaceId && !q.submitterOwnsLinkedPlace ? 'Vlasnik objekta' : null,
       region: null,
       rejectionReason: q.rejectionReason,
       deletedAt: null,
@@ -666,7 +667,7 @@ export class AdminEventsService {
       isFeatured: e.isFeatured ?? false,
       avgRating: e.avgRating ?? 0,
       documents: base?.documents ?? [],
-      ownerName: base?.ownerName ?? (e.placeId ? 'Vlasnik objekta' : null),
+      ownerName: base ? base.ownerName : (e.placeId ? 'Vlasnik objekta' : null),
       region: e.city,
       rejectionReason: base?.rejectionReason ?? null,
       extraFilters: (e as any).extraFilters ?? undefined,

@@ -78,6 +78,7 @@ namespace Explorea.Server.Services.Admin
                 restrictToDestinationIds);
             var dtos = items.Select(MapToDto).ToList();
             await FillDocumentsAsync(dtos);
+            await FillSubmitterOwnsPlaceAsync(dtos);
             return (dtos, total);
         }
 
@@ -86,6 +87,7 @@ namespace Explorea.Server.Services.Admin
             var items = await _queueRepo.GetPendingOwnerReviewAsync(currentUserId);
             var dtos = items.Select(MapToDto).ToList();
             await FillDocumentsAsync(dtos);
+            await FillSubmitterOwnsPlaceAsync(dtos);
             return dtos;
         }
 
@@ -119,9 +121,18 @@ namespace Explorea.Server.Services.Admin
             if (!isOwnerSubmittingForOwnPlace && !await HasRequiredOwnerDocumentsAsync(item))
                 throw new Exception("Owner submission requires identity and authorization documents before approval.");
 
-            item.Status             = "ApprovedByTO";
+            // If submitter is the place owner OR there's no linked place (no owner step needed),
+            // jump directly to ApprovedByOwner so the queue item is fully resolved
+            item.Status = (isOwnerSubmittingForOwnPlace || !item.LinkedPlaceId.HasValue)
+                ? "ApprovedByOwner"
+                : "ApprovedByTO";
             item.ReviewedByTOUserId = reviewerId;
             item.ReviewedByTOAt     = DateTimeOffset.UtcNow;
+            if (item.Status == "ApprovedByOwner")
+            {
+                item.ReviewedByOwnerId = reviewerId;
+                item.ReviewedByOwnerAt = DateTimeOffset.UtcNow;
+            }
 
             var eventEntity = await _eventRepo.GetAdminByIdAsync(item.EntityId);
 
@@ -320,6 +331,14 @@ namespace Explorea.Server.Services.Admin
             item.ReviewedByOwnerAt = DateTimeOffset.UtcNow;
             item.RejectionReason   = reason;
 
+            var eventEntity = await _eventRepo.GetAdminByIdAsync(item.EntityId);
+            if (eventEntity != null)
+            {
+                eventEntity.Visibility = "rejected";
+                eventEntity.UpdatedAt  = DateTimeOffset.UtcNow;
+                eventEntity.UpdatedBy  = ownerId;
+            }
+
             await _queueRepo.SaveChangesAsync();
             await NotifySubmitterAsync(item, approved: false, reason);
         }
@@ -505,6 +524,25 @@ namespace Explorea.Server.Services.Admin
             ReviewedByTOAt    = q.ReviewedByTOAt,
             ReviewedByOwnerAt = q.ReviewedByOwnerAt
         };
+
+        private async Task FillSubmitterOwnsPlaceAsync(List<QueueItemDto> items)
+        {
+            var withPlace = items.Where(i => i.LinkedPlaceId.HasValue).ToList();
+            if (withPlace.Count == 0) return;
+
+            var pairs = withPlace.Select(i => new { i.LinkedPlaceId, i.SubmittedByUserId }).ToList();
+            var ownedPairs = await _db.Places
+                .IgnoreQueryFilters()
+                .Where(p => withPlace.Select(i => i.LinkedPlaceId!.Value).Contains(p.Id))
+                .Select(p => new { PlaceId = p.Id, p.CreatedBy })
+                .ToListAsync();
+
+            foreach (var item in withPlace)
+            {
+                item.SubmitterOwnsLinkedPlace = ownedPairs.Any(p =>
+                    p.PlaceId == item.LinkedPlaceId!.Value && p.CreatedBy == item.SubmittedByUserId);
+            }
+        }
 
         private async Task FillDocumentsAsync(List<QueueItemDto> items)
         {

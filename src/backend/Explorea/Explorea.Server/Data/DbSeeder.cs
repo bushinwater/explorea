@@ -36,6 +36,22 @@ namespace Explorea.Server.Data
 
             try
             {
+                // Sync event visibility with queue status (RejectedByOwner/RejectedByTO must set visibility = rejected)
+                await db.Database.ExecuteSqlRawAsync(@"
+                    UPDATE events e
+                    SET visibility = 'rejected', updated_at = NOW()
+                    FROM submission_queue sq
+                    WHERE sq.entity_type = 'event'
+                      AND sq.entity_id = e.id
+                      AND sq.status IN ('RejectedByTO', 'RejectedByOwner')
+                      AND e.visibility != 'rejected'
+                      AND e.is_deleted = FALSE;
+                ");
+            }
+            catch { /* non-fatal */ }
+
+            try
+            {
                 // Recreate missing queue items for pending events that were restored without one
                 await db.Database.ExecuteSqlRawAsync(@"
                     INSERT INTO submission_queue (id, entity_type, entity_id, destination_id, linked_place_id, status, submitted_by_user_id, submitted_at, request_payload)
