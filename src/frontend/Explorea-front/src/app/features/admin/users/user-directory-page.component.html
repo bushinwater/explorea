@@ -73,7 +73,13 @@
                   <td class="user-td">
                     <div class="user-identity">
                       <div class="user-avatar user-avatar--deleted">
-                        {{ initials(user) }}
+                        @if (user.avatarUrl && !brokenAvatarIds.has(user.id)) {
+                          <img [src]="user.avatarUrl" [alt]="initials(user)" class="user-avatar__img"
+                               referrerpolicy="no-referrer"
+                               (error)="brokenAvatarIds.add(user.id)" />
+                        } @else {
+                          {{ initials(user) }}
+                        }
                       </div>
                       <div class="user-identity__info">
                         <span class="user-identity__name">{{ user.firstName }} {{ user.lastName }}</span>
@@ -276,6 +282,7 @@
                     <div class="user-avatar">
                       @if (user.avatarUrl && !brokenAvatarIds.has(user.id)) {
                         <img [src]="user.avatarUrl" [alt]="initials(user)" class="user-avatar__img"
+                             referrerpolicy="no-referrer"
                              (error)="brokenAvatarIds.add(user.id)" />
                       } @else {
                         {{ initials(user) }}

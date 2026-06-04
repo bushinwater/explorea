@@ -130,7 +130,10 @@ export class Login implements OnInit {
       error: (err) => {
         console.error('[Social login error]', err?.error?.message ?? err);
         this.socialLoading = null;
-        this.error = 'LOGIN.ERROR';
+        const msg: string = err?.error?.message ?? '';
+        this.error = msg.toLowerCase().includes('deleted')
+          ? 'LOGIN.ERROR_ACCOUNT_DELETED'
+          : 'LOGIN.ERROR';
         this.cdr.detectChanges();
       },
     });
@@ -167,6 +170,8 @@ export class Login implements OnInit {
         const msg: string = err?.error?.message ?? '';
         if (msg === 'EMAIL_NOT_VERIFIED') {
           this.emailNotVerified = true;
+        } else if (msg.toLowerCase().includes('deleted')) {
+          this.error = 'LOGIN.ERROR_ACCOUNT_DELETED';
         } else {
           this.error = 'LOGIN.ERROR';
         }

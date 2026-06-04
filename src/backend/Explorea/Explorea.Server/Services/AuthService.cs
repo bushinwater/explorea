@@ -436,6 +436,9 @@ namespace Explorea.Server.Services
 
             var user = authAccount!.User;
 
+            if (user.DeletedAt != null)
+                throw new Exception("Account has been deleted. You can submit an appeal within 30 days of deletion.");
+
             if (!user.IsActive)
                 throw new Exception("User account is inactive.");
 

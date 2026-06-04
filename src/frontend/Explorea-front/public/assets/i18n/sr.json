@@ -263,6 +263,7 @@
     "ERROR_EMAIL_EMPTY": "Email adresa je obavezna.",
     "ERROR_EMAIL_INVALID": "Unesite ispravnu email adresu.",
     "ERROR_NOT_VERIFIED": "Molimo vas da verifikujete email pre prijave.",
+    "ERROR_ACCOUNT_DELETED": "Vaš nalog je obrisan. Možete poslati žalbu u roku od 30 dana na explorea2026@gmail.com.",
     "RESEND": "Ponovo pošalji email",
     "RESEND_SENT": "Email je poslat!"
   },

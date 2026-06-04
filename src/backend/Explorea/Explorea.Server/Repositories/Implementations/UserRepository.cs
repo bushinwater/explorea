@@ -118,7 +118,7 @@ namespace Explorea.Server.Repositories.Implementations
                 includeUsersWithoutLocation,
                 excludedRoles);
 
-            baseQuery = ApplyAdminDirectoryFilters(baseQuery, query);
+            baseQuery = ApplyAdminDirectoryFilters(_db, baseQuery, query);
 
             var total = await baseQuery.CountAsync();
 
@@ -327,6 +327,7 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         private static IQueryable<User> ApplyAdminDirectoryFilters(
+            AppDbContext db,
             IQueryable<User> query,
             AdminUserDirectoryQueryDto filters)
         {
@@ -345,9 +346,15 @@ namespace Explorea.Server.Repositories.Implementations
             }
 
             if (filters.RegionId.HasValue)
+            {
+                var rid = filters.RegionId.Value;
                 query = query.Where(u =>
-                    u.ManagedRegionId == filters.RegionId.Value
-                    || (u.CurrentCity != null && u.CurrentCity.RegionId == filters.RegionId.Value));
+                    u.ManagedRegionId == rid
+                    || (u.CurrentCity != null && u.CurrentCity.RegionId == rid)
+                    || db.Places.IgnoreQueryFilters().Any(p =>
+                        p.CreatedBy == u.Id && !p.IsDeleted &&
+                        p.City != null && p.City.RegionId == rid));
+            }
 
             if (!string.IsNullOrWhiteSpace(filters.Status))
             {

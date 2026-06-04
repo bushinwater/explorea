@@ -263,6 +263,7 @@
     "ERROR_EMAIL_EMPTY": "Email address is required.",
     "ERROR_EMAIL_INVALID": "Please enter a valid email address.",
     "ERROR_NOT_VERIFIED": "Please verify your email before logging in.",
+    "ERROR_ACCOUNT_DELETED": "Your account has been deleted. You can submit an appeal within 30 days to explorea2026@gmail.com.",
     "RESEND": "Resend email",
     "RESEND_SENT": "Email sent!"
   },
