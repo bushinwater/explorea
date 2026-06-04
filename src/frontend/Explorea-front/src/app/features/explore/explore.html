@@ -452,7 +452,12 @@
           {{ selectedPin.price }} RSD
         </p>
         <div class="pin-popup__actions">
-          <a [routerLink]="getPinRoute(selectedPin)" class="ghost-btn ghost-btn--sm">{{ 'EXPLORE.PIN.DETAILS' | translate }}</a>
+          <a
+            [routerLink]="getPinRoute(selectedPin)"
+            class="ghost-btn ghost-btn--sm"
+            (click)="saveExploreState()">
+            {{ 'EXPLORE.PIN.DETAILS' | translate }}
+          </a>
           <button class="primary-btn primary-btn--sm" (click)="openRoute(selectedPin!)">
             <span class="material-icons">directions</span>
             {{ 'EXPLORE.PIN.ROUTE' | translate }}

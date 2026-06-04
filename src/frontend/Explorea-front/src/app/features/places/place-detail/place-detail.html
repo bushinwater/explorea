@@ -544,7 +544,12 @@
       @if (lightboxOpen) {
         <div class="lightbox" (click)="closeLightbox()">
           <div class="lightbox__content" (click)="$event.stopPropagation()">
-            <img [src]="currentLightboxImage" [alt]="place.name" />
+            <img
+              [src]="currentLightboxImage"
+              [alt]="place.name"
+              draggable="false"
+              (touchstart)="onLightboxTouchStart($event)"
+              (touchend)="onLightboxTouchEnd($event)" />
           </div>
           <button class="lightbox__close" type="button" (click)="closeLightbox()">
             <span class="material-icons">close</span>

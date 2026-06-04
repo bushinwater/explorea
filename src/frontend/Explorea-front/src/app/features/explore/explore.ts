@@ -23,6 +23,8 @@ import { SearchItem } from '../../core/models/search.model';
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../core/utils/map-style.utils';
 
+const EXPLORE_STATE_STORAGE_KEY = 'explorea_explore_state';
+
 const DARK = {
   land:             '#1e2e24',
   water:            '#102840',
@@ -77,6 +79,36 @@ const ENTITY_TYPES = [
   { key: 'aktivnosti',  labelKey: 'EXPLORE.ENTITY_TYPES.ACTIVITIES',   icon: 'directions_run' },
   { key: 'dogadjaji',   labelKey: 'EXPLORE.ENTITY_TYPES.EVENTS',       icon: 'event' },
 ];
+
+interface ExplorePersistedState {
+  selectedPinKey: string | null;
+  map: {
+    center: [number, number];
+    zoom: number;
+    bearing: number;
+    pitch: number;
+  } | null;
+  filters: {
+    nearbyOnly: boolean;
+    radiusKm: number;
+    selectedEntityTypes: string[];
+    openNowOnly: boolean;
+    minRating: number | null;
+    selectedSubcatIds: number[];
+    minPrice: number | null;
+    maxPrice: number | null;
+    extraFilters: Record<string, string>;
+    userLat: number | null;
+    userLng: number | null;
+  };
+  ui: {
+    drawerExpanded: boolean;
+    drawerTranslateY: number;
+    filterPanelVisible: boolean;
+    searchQuery: string;
+  };
+  pins: ExploreMarker[];
+}
 
 @Component({
   selector: 'app-explore',
@@ -184,6 +216,7 @@ export class Explore implements AfterViewInit, OnDestroy {
   // Route navigation
   showLocationModal = false;
   private pendingRoutePin: ExploreMarker | null = null;
+  private restoredMapState: ExplorePersistedState['map'] = null;
 
   // Search
   searchQuery = '';
@@ -192,6 +225,7 @@ export class Explore implements AfterViewInit, OnDestroy {
   searchLoading = false;
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
+  private searchRestoreState: ExplorePersistedState | null = null;
 
   get sliderStyle(): { [key: string]: string } {
     const pct = ((this.radiusKm - 5) / 195) * 100;
@@ -269,17 +303,22 @@ export class Explore implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
+    const restoredState = this.restoreExploreState();
     document.documentElement.classList.add('no-scroll');
     document.body.classList.add('no-scroll');
-    this.drawerTranslateY = this.collapsedTranslate;
+    if (!restoredState) {
+      this.drawerTranslateY = this.collapsedTranslate;
+    }
     this.cdr.detectChanges();
     setTimeout(() => { this.sheetReady = true; this.cdr.detectChanges(); }, 50);
     this.initMap();
     this.watchTheme();
     this.attachContentTouchListeners();
-    this.loadMarkers();
     this.initSearch();
     this.loadLookups();
+    if (!restoredState) {
+      this.loadMarkers();
+    }
   }
 
   private initSearch() {
@@ -288,6 +327,9 @@ export class Explore implements AfterViewInit, OnDestroy {
       distinctUntilChanged(),
       tap(q => {
         if (q.length < 2) {
+          if (q.length === 0) {
+            this.restoreSearchState();
+          }
           this.searchResults = [];
           this.showSearchDropdown = false;
           this.searchLoading = false;
@@ -326,6 +368,10 @@ export class Explore implements AfterViewInit, OnDestroy {
         this.activityCategories = res.activityCategories;
         this.eventTypes         = res.eventTypes;
         this.destinationTypes   = res.destinationTypes;
+        if (this.showExtraFilters && this.selectedSubcatIds.length === 1) {
+          const entityType = ENTITY_TYPE_BACKEND_MAP[this.subcatEntityType!];
+          this.loadFilterDefs(this.selectedSubcatIds[0], entityType);
+        }
         this.cdr.detectChanges();
       },
       error: () => {},
@@ -437,6 +483,7 @@ export class Explore implements AfterViewInit, OnDestroy {
 
   onSelectSearchResult(item: SearchItem) {
     this.showSearchDropdown = false;
+    this.searchRestoreState ??= this.createExploreState();
     this.searchQuery = item.entity.name;
     this.cdr.detectChanges();
 
@@ -465,6 +512,119 @@ export class Explore implements AfterViewInit, OnDestroy {
 
   private pinKey(pin: ExploreMarker): string {
     return `${pin.entityType}:${pin.slug}`;
+  }
+
+  saveExploreState(): void {
+    sessionStorage.setItem(EXPLORE_STATE_STORAGE_KEY, JSON.stringify(this.createExploreState()));
+  }
+
+  private createExploreState(): ExplorePersistedState {
+    const mapState = this.map
+      ? {
+          center: this.map.getCenter().toArray() as [number, number],
+          zoom: this.map.getZoom(),
+          bearing: this.map.getBearing(),
+          pitch: this.map.getPitch(),
+        }
+      : null;
+
+    return {
+      selectedPinKey: this.selectedPin ? this.pinKey(this.selectedPin) : null,
+      map: mapState,
+      filters: {
+        nearbyOnly: this.nearbyOnly,
+        radiusKm: this.radiusKm,
+        selectedEntityTypes: [...this.selectedEntityTypes],
+        openNowOnly: this.openNowOnly,
+        minRating: this.minRating,
+        selectedSubcatIds: [...this.selectedSubcatIds],
+        minPrice: this.minPrice,
+        maxPrice: this.maxPrice,
+        extraFilters: { ...this.extraFilters },
+        userLat: this.userLat,
+        userLng: this.userLng,
+      },
+      ui: {
+        drawerExpanded: this.drawerExpanded,
+        drawerTranslateY: this.drawerTranslateY,
+        filterPanelVisible: this.filterPanelVisible,
+        searchQuery: this.searchQuery,
+      },
+      pins: this.pins,
+    };
+  }
+
+  private restoreSearchState(): void {
+    if (!this.searchRestoreState) return;
+
+    this.applyExploreState(this.searchRestoreState);
+    this.searchRestoreState = null;
+    this.searchQuery = '';
+
+    if (this.map && this.restoredMapState) {
+      this.map.jumpTo({
+        center: this.restoredMapState.center,
+        zoom: this.restoredMapState.zoom,
+        bearing: this.restoredMapState.bearing,
+        pitch: this.restoredMapState.pitch,
+      });
+    }
+
+    if (this.map) {
+      this.addMarkers();
+    }
+    this.cdr.detectChanges();
+  }
+
+  private applyExploreState(state: ExplorePersistedState): void {
+    this.nearbyOnly = state.filters.nearbyOnly;
+    this.radiusKm = state.filters.radiusKm;
+    this.selectedEntityTypes = [...state.filters.selectedEntityTypes];
+    this.openNowOnly = state.filters.openNowOnly;
+    this.minRating = state.filters.minRating;
+    this.selectedSubcatIds = [...state.filters.selectedSubcatIds];
+    this.minPrice = state.filters.minPrice;
+    this.maxPrice = state.filters.maxPrice;
+    this.extraFilters = { ...state.filters.extraFilters };
+    this.userLat = state.filters.userLat;
+    this.userLng = state.filters.userLng;
+
+    this.drawerExpanded = state.ui.drawerExpanded;
+    this.drawerTranslateY = state.ui.drawerTranslateY;
+    this.filterPanelVisible = state.ui.filterPanelVisible;
+    this.searchQuery = state.ui.searchQuery;
+
+    this.pins = state.pins ?? [];
+    this.currentZoom = state.map?.zoom ?? this.currentZoom;
+    this.restoredMapState = state.map;
+
+    this.selectedPin = state.selectedPinKey
+      ? this.pins.find(pin => this.pinKey(pin) === state.selectedPinKey) ?? null
+      : null;
+
+    this.visiblePins = this.filteredPins;
+    this.visiblePinsCount = this.filteredPins.length;
+  }
+
+  private restoreExploreState(): boolean {
+    if (this.route.snapshot.queryParamMap.has('lat') || this.route.snapshot.queryParamMap.has('lng')) {
+      sessionStorage.removeItem(EXPLORE_STATE_STORAGE_KEY);
+      return false;
+    }
+
+    const raw = sessionStorage.getItem(EXPLORE_STATE_STORAGE_KEY);
+    if (!raw) return false;
+
+    try {
+      const state = JSON.parse(raw) as ExplorePersistedState;
+      sessionStorage.removeItem(EXPLORE_STATE_STORAGE_KEY);
+
+      this.applyExploreState(state);
+      return true;
+    } catch {
+      sessionStorage.removeItem(EXPLORE_STATE_STORAGE_KEY);
+      return false;
+    }
   }
 
   private clearSelectedPin() {
@@ -708,8 +868,10 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.map = new maplibregl.Map({
       container: this.mapContainer.nativeElement,
       style: this.isDark ? this.darkStyle : this.lightStyle,
-      center: [20.45, 44.0],
-      zoom: 7,
+      center: this.restoredMapState?.center ?? [20.45, 44.0],
+      zoom: this.restoredMapState?.zoom ?? 7,
+      bearing: this.restoredMapState?.bearing ?? 0,
+      pitch: this.restoredMapState?.pitch ?? 0,
       attributionControl: false,
     });
 

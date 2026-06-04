@@ -91,6 +91,9 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   lightboxIndex = 0;
   private lightboxScrollY = 0;
   private lightboxLockedBody = false;
+  private touchStartX = 0;
+  private touchStartY = 0;
+  private touchSwipeDone = false;
 
   scrollProgress = 0;
   titleCaptured = false;
@@ -517,6 +520,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   }
 
   closeLightbox(): void {
+    if (this.touchSwipeDone) return;
     this.lightboxOpen = false;
     this.unlockLightboxScroll();
   }
@@ -531,6 +535,23 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     const total = this.galleryImages.length;
     if (!total) return;
     this.lightboxIndex = (this.lightboxIndex - 1 + total) % total;
+  }
+
+  onLightboxTouchStart(event: TouchEvent): void {
+    this.touchStartX = event.touches[0].clientX;
+    this.touchStartY = event.touches[0].clientY;
+  }
+
+  onLightboxTouchEnd(event: TouchEvent): void {
+    const dx = event.changedTouches[0].clientX - this.touchStartX;
+    const dy = event.changedTouches[0].clientY - this.touchStartY;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+
+    if (dx < 0) this.lightboxNext();
+    else this.lightboxPrev();
+
+    this.touchSwipeDone = true;
+    setTimeout(() => { this.touchSwipeDone = false; }, 500);
   }
 
   private lockLightboxScroll(): void {
