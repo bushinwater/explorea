@@ -70,7 +70,7 @@
             <select id="new-dest-type" class="edit-field__select"
               [class.edit-field__input--error]="form.controls.typeId.invalid && form.controls.typeId.touched"
               formControlName="typeId">
-              <option [ngValue]="null">— Izaberi kategoriju —</option>
+              <option [ngValue]="null">— {{ ui.t('common.select_category') }} —</option>
               @for (t of localTypes(); track t.id) {
                 <option [ngValue]="t.id.toString()">{{ t.name }}</option>
               }
@@ -187,7 +187,7 @@
             <select id="new-dest-country" class="edit-field__select"
               [class.edit-field__input--error]="form.controls.countryId.invalid && form.controls.countryId.touched"
               formControlName="countryId">
-              <option [ngValue]="null">— Izaberi državu —</option>
+              <option [ngValue]="null">— {{ ui.t('common.select_country') }} —</option>
               @for (c of localCountries(); track c.id) {
                 <option [ngValue]="c.id.toString()">{{ c.name }}</option>
               }
@@ -202,7 +202,7 @@
             <select id="new-dest-region" class="edit-field__select"
               [class.edit-field__input--error]="form.controls.regionId.invalid && form.controls.regionId.touched"
               formControlName="regionId">
-              <option [ngValue]="null">— Izaberi regiju —</option>
+              <option [ngValue]="null">— {{ ui.t('common.select_region') }} —</option>
               @for (r of filteredRegions(); track r.id) {
                 <option [ngValue]="r.id.toString()">{{ r.name }}</option>
               }

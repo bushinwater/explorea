@@ -603,5 +603,59 @@ namespace Explorea.Server.Services
 
             await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
         }
+
+        public async Task SendCascadeDeletionEmailAsync(
+            string toEmail,
+            string firstName,
+            string parentEntityType,
+            string parentEntityName,
+            IEnumerable<(string EntityType, string EntityName)> deletedItems)
+        {
+            var safeName = System.Net.WebUtility.HtmlEncode(firstName);
+            var safeParentType = System.Net.WebUtility.HtmlEncode(parentEntityType);
+            var safeParentName = System.Net.WebUtility.HtmlEncode(parentEntityName);
+            var items = deletedItems.ToList();
+            if (items.Count == 0) return;
+
+            var subject = $"Obriseni su vasi unosi vezani za {parentEntityName}";
+            var itemsHtml = string.Join("", items.Select(i =>
+                $"<li style=\"margin:6px 0;color:#cbd5e1;\"><strong>{System.Net.WebUtility.HtmlEncode(i.EntityType)}:</strong> {System.Net.WebUtility.HtmlEncode(i.EntityName)}</li>"));
+
+            var htmlBody = $@"<!DOCTYPE html>
+<html><body style=""margin:0;padding:0;background:#0d0f19;font-family:sans-serif;"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"">
+    <tr><td align=""center"" style=""padding:32px 16px;"">
+      <table width=""560"" cellpadding=""0"" cellspacing=""0"" style=""background:#181b27;border-radius:12px;overflow:hidden;"">
+        <tr><td style=""background:#1e2130;padding:24px 32px;border-bottom:1px solid #2a2d3a;"">
+          <span style=""font-size:22px;font-weight:700;color:#e2e8f0;"">Explorea</span>
+        </td></tr>
+        <tr><td style=""padding:32px;"">
+          <p style=""margin:0 0 16px;font-size:15px;color:#cbd5e1;"">Zdravo, <strong>{safeName}</strong>.</p>
+          <p style=""margin:0 0 16px;font-size:14px;color:#94a3b8;line-height:1.6;"">
+            Obavestavamo vas da je {safeParentType} <strong>&bdquo;{safeParentName}&ldquo;</strong>
+            obrisana, pa su zajedno sa njom obrisani i sledeci vasi unosi koji su bili vezani za nju:
+          </p>
+          <ul style=""margin:0 0 20px 20px;padding:0;font-size:14px;line-height:1.6;"">
+            {itemsHtml}
+          </ul>
+          <p style=""margin:0 0 8px;font-size:13px;color:#94a3b8;line-height:1.6;"">
+            Obrisani unosi mogu biti vraceni u roku od 30 dana iz sekcije &bdquo;Obrisani&ldquo;
+            u admin panelu. Posle 30 dana brisu se trajno.
+          </p>
+          <p style=""margin:16px 0 0;font-size:13px;color:#94a3b8;line-height:1.6;"">
+            Ako mislite da je ovo greska, kontaktirajte podrsku na
+            <a href=""mailto:explorea2026@gmail.com"" style=""color:#6366f1;text-decoration:none;"">explorea2026@gmail.com</a>.
+          </p>
+        </td></tr>
+        <tr><td style=""background:#12141e;border-radius:0 0 12px 12px;padding:16px 32px;border-top:1px solid #2a2d3a;"">
+          <p style=""margin:0;font-size:12px;color:#6b6d80;"">Explorea · Platforma za turizam</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>";
+
+            await SendNewsletterEmailAsync(new[] { toEmail }, subject, htmlBody);
+        }
     }
 }

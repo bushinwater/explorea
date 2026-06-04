@@ -15,6 +15,7 @@ import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { effect, untracked } from '@angular/core';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
+import { ModalShellComponent } from '../shared/components/modal-shell/modal-shell.component';
 import { EmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
 import { FeedbackBannerComponent } from '../shared/components/feedback-banner/feedback-banner.component';
 import { TableSkeletonComponent } from '../shared/components/table-skeleton/table-skeleton.component';
@@ -44,6 +45,7 @@ import { AuthService } from '../../../core/services/auth.service';
     StatCardComponent,
     FeedbackBannerComponent,
     ConfirmDialogComponent,
+    ModalShellComponent,
     EmptyStateComponent,
     TableSkeletonComponent,
     EventCreateModalComponent,

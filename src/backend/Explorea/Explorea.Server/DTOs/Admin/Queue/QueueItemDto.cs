@@ -11,6 +11,7 @@ namespace Explorea.API.DTOs.Admin.Queue
         public string DestinationName { get; set; } = null!;
         public Guid? LinkedPlaceId { get; set; }
         public bool SubmitterOwnsLinkedPlace { get; set; }
+        public bool LinkedPlaceHasOwner { get; set; }
         public string Status { get; set; } = null!;
         public Guid SubmittedByUserId { get; set; }
         public string SubmittedByName { get; set; } = null!;

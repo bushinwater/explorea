@@ -394,7 +394,7 @@ namespace Explorea.Server.Services.Admin
                 if (!await HasTOAccessToEvent(currentUserId, user.ManagedRegionId, ev))
                     return null;
 
-                return MapToDetailDto(ev);
+                return await MapToDetailDtoAsync(ev);
             }
             else if (user?.Role.Name == RoleNames.PlaceOwner)
             {
@@ -402,7 +402,7 @@ namespace Explorea.Server.Services.Admin
                 if (ev == null) return null;
 
                 return await EventBelongsToOwnerAsync(currentUserId, ev)
-                    ? MapToDetailDto(ev)
+                    ? await MapToDetailDtoAsync(ev)
                     : null;
             }
             else if (user?.Role.Name != RoleNames.SuperAdmin)
@@ -411,7 +411,7 @@ namespace Explorea.Server.Services.Admin
             }
 
             var found = await _eventRepo.GetAdminByIdAsync(id);
-            return found == null ? null : MapToDetailDto(found);
+            return found == null ? null : await MapToDetailDtoAsync(found);
         }
 
         public async Task<AdminEventDetailDto> CreateAsync(AdminCreateEventDto dto, Guid createdBy)
@@ -516,7 +516,7 @@ namespace Explorea.Server.Services.Admin
             await _eventRepo.SaveChangesAsync();
 
             var created = await _eventRepo.GetAdminByIdAsync(ev.Id);
-            return MapToDetailDto(created!);
+            return await MapToDetailDtoAsync(created!);
         }
 
         public async Task<AdminEventDetailDto?> UpdateAsync(Guid id, AdminUpdateEventDto dto, Guid updatedBy)
@@ -600,7 +600,7 @@ namespace Explorea.Server.Services.Admin
                 changedFields);
 
             var updated = await _eventRepo.GetAdminByIdAsync(id);
-            return MapToDetailDto(updated!);
+            return await MapToDetailDtoAsync(updated!);
         }
 
         public async Task<bool> DeleteAsync(Guid id, Guid currentUserId)
@@ -823,7 +823,7 @@ namespace Explorea.Server.Services.Admin
             await _eventRepo.SaveChangesAsync();
 
             var updated = await _eventRepo.GetAdminByIdAsync(id);
-            return MapToDetailDto(updated!);
+            return await MapToDetailDtoAsync(updated!);
         }
 
         // ---- Helpers ----
@@ -1186,42 +1186,52 @@ namespace Explorea.Server.Services.Admin
             DeletedAt      = e.DeletedAt
         };
 
-        private static AdminEventDetailDto MapToDetailDto(Event e) => new()
+        private async Task<AdminEventDetailDto> MapToDetailDtoAsync(Event e)
         {
-            Id             = e.Id,
-            Name           = e.Name,
-            Slug           = e.Slug,
-            Description    = e.Description,
-            TypeId         = e.TypeId,
-            Type           = e.Type?.Name,
-            CityId         = e.CityId,
-            City           = e.City?.Name,
-            CountryId      = e.CountryId,
-            Country        = e.Country?.Name,
-            DestinationId  = e.DestinationId,
-            Destination    = e.Destination?.Name,
-            PlaceId        = e.PlaceId,
-            Place          = e.Place?.Name,
-            StartDatetime  = e.StartDatetime,
-            EndDatetime    = e.EndDatetime,
-            Price          = e.Price,
-            Address        = e.Address,
-            Latitude       = e.Latitude,
-            Longitude      = e.Longitude,
-            TicketUrl      = e.TicketUrl,
-            AvgRating      = e.AvgRating,
-            Popularity     = e.Popularity,
-            IsFeatured     = e.IsFeatured,
-            RecursAnnually = e.RecursAnnually,
-            Images         = e.Images.OrderBy(i => i.SortOrder)
-                                .Select(i => new AdminEventImageDto { Id = i.Id, ImageUrl = i.ImageUrl, SortOrder = i.SortOrder })
-                                .ToList(),
-            CreatedAt      = e.CreatedAt,
-            UpdatedAt      = e.UpdatedAt,
-            ExtraFilters   = string.IsNullOrEmpty(e.ExtraFilters)
-                               ? null
-                               : JsonSerializer.Deserialize<Dictionary<string, string>>(e.ExtraFilters)
-        };
+            var placeHasOwner = e.PlaceId.HasValue &&
+                await _db.Places
+                    .IgnoreQueryFilters()
+                    .AnyAsync(p => p.Id == e.PlaceId.Value &&
+                                   _db.Users.Any(u => u.Id == p.CreatedBy && u.Role.Name == RoleNames.PlaceOwner));
+
+            return new AdminEventDetailDto
+            {
+                Id             = e.Id,
+                Name           = e.Name,
+                Slug           = e.Slug,
+                Description    = e.Description,
+                TypeId         = e.TypeId,
+                Type           = e.Type?.Name,
+                CityId         = e.CityId,
+                City           = e.City?.Name,
+                CountryId      = e.CountryId,
+                Country        = e.Country?.Name,
+                DestinationId  = e.DestinationId,
+                Destination    = e.Destination?.Name,
+                PlaceId        = e.PlaceId,
+                Place          = e.Place?.Name,
+                PlaceHasOwner  = placeHasOwner,
+                StartDatetime  = e.StartDatetime,
+                EndDatetime    = e.EndDatetime,
+                Price          = e.Price,
+                Address        = e.Address,
+                Latitude       = e.Latitude,
+                Longitude      = e.Longitude,
+                TicketUrl      = e.TicketUrl,
+                AvgRating      = e.AvgRating,
+                Popularity     = e.Popularity,
+                IsFeatured     = e.IsFeatured,
+                RecursAnnually = e.RecursAnnually,
+                Images         = e.Images.OrderBy(i => i.SortOrder)
+                                    .Select(i => new AdminEventImageDto { Id = i.Id, ImageUrl = i.ImageUrl, SortOrder = i.SortOrder })
+                                    .ToList(),
+                CreatedAt      = e.CreatedAt,
+                UpdatedAt      = e.UpdatedAt,
+                ExtraFilters   = string.IsNullOrEmpty(e.ExtraFilters)
+                                   ? null
+                                   : JsonSerializer.Deserialize<Dictionary<string, string>>(e.ExtraFilters)
+            };
+        }
 
   }
 }

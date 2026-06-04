@@ -326,7 +326,7 @@
                         <button
                           class="rv-entity-link rv-entity-link--admin"
                           (click)="navigateToAdminEntity(review)"
-                          title="Otvori u admin panelu"
+                          [title]="ui.t('reviews.actions.open_in_admin')"
                         >
                           <span class="material-icons">admin_panel_settings</span>
                         </button>
@@ -335,7 +335,7 @@
                         <button
                           class="rv-entity-link rv-entity-link--tourist"
                           (click)="openTouristPage(review)"
-                          title="Otvori na turističkoj aplikaciji"
+                          [title]="ui.t('reviews.actions.open_in_app')"
                         >
                           <span class="material-icons">open_in_new</span>
                         </button>

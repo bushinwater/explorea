@@ -107,8 +107,16 @@ namespace Explorea.Server.Services.Admin
                     .IgnoreQueryFilters()
                     .AnyAsync(p => p.Id == item.LinkedPlaceId.Value && p.CreatedBy == item.SubmittedByUserId);
 
-            // If event targets a private place that is NOT owned by the submitter, TO must forward to owner first
-            if (item.LinkedPlaceId.HasValue && !isOwnerSubmittingForOwnPlace)
+            // Does the linked place actually have a PlaceOwner-role owner? If created by TO/SuperAdmin,
+            // there is nobody to forward to and TO can approve directly.
+            var placeHasOwner = item.LinkedPlaceId.HasValue &&
+                await _db.Places
+                    .IgnoreQueryFilters()
+                    .AnyAsync(p => p.Id == item.LinkedPlaceId.Value &&
+                                   _db.Users.Any(u => u.Id == p.CreatedBy && u.Role.Name == RoleNames.PlaceOwner));
+
+            // If event targets a private place owned by another PlaceOwner, TO must forward to owner first.
+            if (item.LinkedPlaceId.HasValue && !isOwnerSubmittingForOwnPlace && placeHasOwner)
             {
                 var reviewerRole = await _db.Users
                     .Where(u => u.Id == reviewerId)
@@ -118,12 +126,12 @@ namespace Explorea.Server.Services.Admin
                     throw new Exception("Dogadjaj je na tudjem objektu — morate ga proslediti vlasniku, ne mozete direktno odobriti.");
             }
 
-            if (!isOwnerSubmittingForOwnPlace && !await HasRequiredOwnerDocumentsAsync(item))
+            if (!isOwnerSubmittingForOwnPlace && placeHasOwner && !await HasRequiredOwnerDocumentsAsync(item))
                 throw new Exception("Owner submission requires identity and authorization documents before approval.");
 
-            // If submitter is the place owner OR there's no linked place (no owner step needed),
+            // If submitter is the place owner, there is no linked place, or the place has no real owner,
             // jump directly to ApprovedByOwner so the queue item is fully resolved
-            item.Status = (isOwnerSubmittingForOwnPlace || !item.LinkedPlaceId.HasValue)
+            item.Status = (isOwnerSubmittingForOwnPlace || !item.LinkedPlaceId.HasValue || !placeHasOwner)
                 ? "ApprovedByOwner"
                 : "ApprovedByTO";
             item.ReviewedByTOUserId = reviewerId;
@@ -530,17 +538,27 @@ namespace Explorea.Server.Services.Admin
             var withPlace = items.Where(i => i.LinkedPlaceId.HasValue).ToList();
             if (withPlace.Count == 0) return;
 
-            var pairs = withPlace.Select(i => new { i.LinkedPlaceId, i.SubmittedByUserId }).ToList();
-            var ownedPairs = await _db.Places
+            var placeIds = withPlace.Select(i => i.LinkedPlaceId!.Value).Distinct().ToList();
+            var placeCreators = await _db.Places
                 .IgnoreQueryFilters()
-                .Where(p => withPlace.Select(i => i.LinkedPlaceId!.Value).Contains(p.Id))
-                .Select(p => new { PlaceId = p.Id, p.CreatedBy })
+                .Where(p => placeIds.Contains(p.Id))
+                .Select(p => new
+                {
+                    PlaceId = p.Id,
+                    p.CreatedBy,
+                    CreatorRole = p.CreatedBy.HasValue
+                        ? _db.Users.Where(u => u.Id == p.CreatedBy).Select(u => u.Role.Name).FirstOrDefault()
+                        : null
+                })
                 .ToListAsync();
 
             foreach (var item in withPlace)
             {
-                item.SubmitterOwnsLinkedPlace = ownedPairs.Any(p =>
-                    p.PlaceId == item.LinkedPlaceId!.Value && p.CreatedBy == item.SubmittedByUserId);
+                var creator = placeCreators.FirstOrDefault(p => p.PlaceId == item.LinkedPlaceId!.Value);
+                if (creator == null) continue;
+
+                item.SubmitterOwnsLinkedPlace = creator.CreatedBy == item.SubmittedByUserId;
+                item.LinkedPlaceHasOwner      = creator.CreatorRole == RoleNames.PlaceOwner;
             }
         }
 

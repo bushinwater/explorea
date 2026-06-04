@@ -509,6 +509,10 @@
   animation: fadeIn 0.2s ease;
   cursor: pointer;
 }
+/* Let drag events pass through to dashboard rows while a widget is being dragged */
+.customizer-backdrop--dragging {
+  pointer-events: none;
+}
 @keyframes fadeIn {
   from {
     opacity: 0;

@@ -30,19 +30,12 @@
 }
 
 @if (isRenewOpen() && selectedEvent(); as renewEvent) {
-  <div class="evts-renew-backdrop" (click)="closeRenewModal()"></div>
-  <div class="evts-renew-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-    <header class="evts-renew-modal__header">
-      <div>
-        <h2>Obnovi događaj</h2>
-        <p>{{ renewEvent.name }}</p>
-      </div>
-      <button class="btn-icon" type="button" (click)="closeRenewModal()" [disabled]="isRenewing()">
-        <span class="material-icons">close</span>
-      </button>
-    </header>
-
-    <div class="evts-renew-modal__body">
+  <app-modal-shell
+    [title]="'Obnovi događaj'"
+    [description]="renewEvent.name"
+    (close)="closeRenewModal()"
+  >
+    <div class="evts-renew-body">
       <label class="evts-renew-option">
         <input
           type="radio"
@@ -82,16 +75,16 @@
       }
     </div>
 
-    <footer class="evts-renew-modal__footer">
-      <button class="btn btn-ghost btn-sm" type="button" (click)="closeRenewModal()" [disabled]="isRenewing()">
+    <div class="evts-renew-actions">
+      <button class="btn btn-secondary" type="button" (click)="closeRenewModal()" [disabled]="isRenewing()">
         Otkaži
       </button>
-      <button class="btn btn-primary btn-sm" type="button" (click)="submitRenew()" [disabled]="isRenewing()">
+      <button class="btn btn-primary" type="button" (click)="submitRenew()" [disabled]="isRenewing()">
         <span class="material-icons">event_repeat</span>
         {{ isRenewing() ? 'Obnavljanje...' : 'Obnovi' }}
       </button>
-    </footer>
-  </div>
+    </div>
+  </app-modal-shell>
 }
 
 <div class="evts-page">
@@ -866,7 +859,7 @@
         }
       </div>
 
-      <!-- Coordination for pending events with private venue -->
+      <!-- Coordination hint for pending events with private venue (button is in footer) -->
       @if (ev.ownerName && ev.status === 'pending' && !isPlaceOwner()) {
         <div class="ddp-coordination">
           <h4 class="ddp-section-title">
@@ -874,13 +867,9 @@
             {{ ui.t('events.panel.coordination') }}
           </h4>
           <p class="ddp-coordination__hint">
-            Ovaj lokalitet je u privatnom vlasništvu. Pre odobrenja, prosledite zahtev vlasniku na
-            uvid.
+            Ovaj lokalitet je u privatnom vlasništvu. Pre odobrenja, prosledite zahtev vlasniku
+            <strong>{{ ev.ownerName }}</strong> na uvid.
           </p>
-          <button class="ddp-forward-btn" (click)="initiateAction('forward')">
-            <span class="material-icons">send</span>
-            Prosleđuj vlasniku ({{ ev.ownerName }})
-          </button>
         </div>
       }
     </div>
@@ -939,6 +928,11 @@
             <button class="ddp-approve-btn" (click)="initiateAction('approve')">
               <span class="material-icons">check_circle</span>
               {{ ui.t('events.panel.approve') }}
+            </button>
+          } @else {
+            <button class="ddp-approve-btn ddp-footer__forward" (click)="initiateAction('forward')">
+              <span class="material-icons">send</span>
+              Prosleđuj vlasniku
             </button>
           }
           <button class="ddp-reject-btn" (click)="initiateAction('reject')">

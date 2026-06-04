@@ -47,5 +47,12 @@ namespace Explorea.Server.Services.Interfaces
             string entityType,
             string entityName,
             string submittedByName);
+
+        Task SendCascadeDeletionEmailAsync(
+            string toEmail,
+            string firstName,
+            string parentEntityType,
+            string parentEntityName,
+            IEnumerable<(string EntityType, string EntityName)> deletedItems);
     }
 }

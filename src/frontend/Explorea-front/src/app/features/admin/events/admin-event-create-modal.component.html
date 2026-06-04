@@ -258,7 +258,7 @@
               class="edit-field__input"
               type="datetime-local"
               [value]="form().startDatetime"
-              [min]="nowDatetimeLocal"
+              [min]="form().recursAnnually ? null : nowDatetimeLocal"
               (input)="updateText('startDatetime', $any($event.target).value)"
             />
           </div>

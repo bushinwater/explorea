@@ -150,12 +150,27 @@ export class DashboardService {
         id: item.id,
         initials: this.activityInitials(item.type),
         avatarColor: this.activityColor(item.type),
-        text: item.description,
+        text: this.translateActivityText(item.type, item.description),
         timestamp: this.formatTimeAgo(item.createdAt),
         actionLabel: this.ui.t('dashboard.activity.details'),
         status: this.activityStatus(item.type),
       }))),
     );
+  }
+
+  private translateActivityText(type: string, description: string): string {
+    // Backend sends Serbian descriptions like "Objekat kreiran: NAME" or
+    // "Nova recenzija (5/5) na vasem objektu". Use translation key based on
+    // type and extract the entity name when present.
+    const key = `dashboard.feed.types.${type}`;
+    const translated = this.ui.t(key);
+    if (translated === key) return description; // no translation defined → fall back
+    const colonIdx = description.lastIndexOf(': ');
+    if (colonIdx >= 0) {
+      const name = description.slice(colonIdx + 2);
+      return `${translated}: ${name}`;
+    }
+    return translated;
   }
 
   getSystemStatus(): Observable<SystemStatusItem[]> {

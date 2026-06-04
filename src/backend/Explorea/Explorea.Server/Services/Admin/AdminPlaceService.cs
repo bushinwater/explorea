@@ -716,6 +716,31 @@ namespace Explorea.Server.Services.Admin
                 await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync("event", ev.Id, ev.Name);
             await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync("place", place.Id, place.Name);
 
+            var ownerGroups = events
+                .Where(e => e.CreatedBy.HasValue && e.CreatedBy.Value != currentUserId)
+                .GroupBy(e => e.CreatedBy!.Value);
+
+            foreach (var group in ownerGroups)
+            {
+                var owner = await _userRepo.GetByIdWithRoleAsync(group.Key);
+                if (owner == null || string.IsNullOrWhiteSpace(owner.Email)) continue;
+
+                var items = group.Select(e => ("Dogadjaj", e.Name)).ToList();
+                try
+                {
+                    await _emailService.SendCascadeDeletionEmailAsync(
+                        owner.Email,
+                        string.IsNullOrWhiteSpace(owner.FirstName) ? owner.Email : owner.FirstName,
+                        "objekta",
+                        place.Name,
+                        items);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Cascade-delete email failed for owner {OwnerId}", owner.Id);
+                }
+            }
+
             return true;
         }
 

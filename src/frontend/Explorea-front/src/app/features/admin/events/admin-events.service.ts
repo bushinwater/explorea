@@ -63,6 +63,7 @@ interface ApiQueueItem {
   destinationName: string;
   linkedPlaceId: string | null;
   submitterOwnsLinkedPlace?: boolean;
+  linkedPlaceHasOwner?: boolean;
   status: string;
   submittedByUserId: string;
   submittedByName: string;
@@ -107,6 +108,7 @@ interface ApiEventDetailItem {
   destination: string | null;
   placeId: string | null;
   place: string | null;
+  placeHasOwner?: boolean;
   startDatetime: string;
   endDatetime: string;
   price: number | null;
@@ -661,7 +663,7 @@ export class AdminEventsService {
         type: doc.documentType,
         uploadedAt: doc.createdAt,
       })),
-      ownerName: q.linkedPlaceId && !q.submitterOwnsLinkedPlace ? 'Vlasnik objekta' : null,
+      ownerName: q.linkedPlaceId && !q.submitterOwnsLinkedPlace && q.linkedPlaceHasOwner ? 'Vlasnik objekta' : null,
       region: null,
       rejectionReason: q.rejectionReason,
       deletedAt: null,
@@ -702,7 +704,7 @@ export class AdminEventsService {
       recursAnnually: e.recursAnnually ?? false,
       avgRating: e.avgRating ?? 0,
       documents: base?.documents ?? [],
-      ownerName: base ? base.ownerName : (e.placeId ? 'Vlasnik objekta' : null),
+      ownerName: base ? base.ownerName : (e.placeId && e.placeHasOwner ? 'Vlasnik objekta' : null),
       region: e.city,
       rejectionReason: base?.rejectionReason ?? null,
       extraFilters: (e as any).extraFilters ?? undefined,

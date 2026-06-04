@@ -1240,58 +1240,11 @@
 .ddp-approve-btn .material-icons,
 .ddp-reject-btn .material-icons { font-size: 16px; }
 
-/* Renew modal */
-.evts-renew-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  background: rgba(15, 23, 42, 0.42);
-  backdrop-filter: blur(3px);
-}
-
-.evts-renew-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  z-index: 1201;
-  width: min(440px, calc(100vw - 32px));
-  transform: translate(-50%, -50%);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.24);
-}
-
-.evts-renew-modal__header,
-.evts-renew-modal__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  padding: var(--sp-4);
-}
-
-.evts-renew-modal__header {
-  border-bottom: 1px solid var(--color-border);
-}
-
-.evts-renew-modal__header h2 {
-  margin: 0;
-  font-size: 1rem;
-  color: var(--color-text-primary);
-}
-
-.evts-renew-modal__header p {
-  margin: 4px 0 0;
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
-}
-
-.evts-renew-modal__body {
+/* Renew modal (uses app-modal-shell) */
+.evts-renew-body {
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
-  padding: var(--sp-4);
 }
 
 .evts-renew-option {
@@ -1313,12 +1266,12 @@
 }
 
 .evts-renew-option strong {
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   color: var(--color-text-primary);
 }
 
 .evts-renew-option small {
-  font-size: 0.76rem;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
   line-height: 1.4;
 }
@@ -1330,43 +1283,36 @@
 }
 
 .evts-renew-date span {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-text-secondary);
 }
 
 .evts-renew-date input {
-  height: 38px;
-  padding: 0 10px;
+  height: 40px;
+  padding: 0 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface-raised);
   color: var(--color-text-primary);
 }
 
-.evts-renew-modal__footer {
+.evts-renew-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
   border-top: 1px solid var(--color-border);
 }
 
-.evts-renew-modal__footer .btn {
+.evts-renew-actions .btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 34px;
-  padding: 0 12px;
-  border-radius: var(--radius-md);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
 }
 
-.evts-renew-modal__footer .btn-primary {
-  border: none;
-  background: #0f766e;
-  color: #fff;
-}
-
-.evts-renew-modal__footer .btn:disabled {
+.evts-renew-actions .btn:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }

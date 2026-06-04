@@ -151,7 +151,7 @@
 
 <!-- ===== CUSTOMIZER DRAWER ===== -->
 @if (layout.customizeOpen()) {
-  <div class="customizer-backdrop" (click)="closeCustomize()"></div>
+  <div class="customizer-backdrop" [class.customizer-backdrop--dragging]="dragging()" (click)="closeCustomize()"></div>
 
   <div class="customizer">
     <div class="customizer__header">

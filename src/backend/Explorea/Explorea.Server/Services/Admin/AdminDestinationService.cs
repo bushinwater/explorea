@@ -21,6 +21,7 @@ namespace Explorea.Server.Services.Admin
         private readonly ICloudinaryService _cloudinary;
         private readonly AppDbContext _db;
         private readonly ISavedItemCleanupService _savedItemCleanup;
+        private readonly IEmailService _emailService;
 
         private static readonly GeometryFactory _geometryFactory =
             new GeometryFactory(new PrecisionModel(), 4326);
@@ -32,7 +33,8 @@ namespace Explorea.Server.Services.Admin
             ISearchRepository searchRepo,
             ICloudinaryService cloudinary,
             AppDbContext db,
-            ISavedItemCleanupService savedItemCleanup)
+            ISavedItemCleanupService savedItemCleanup,
+            IEmailService emailService)
         {
             _destinationRepo = destinationRepo;
             _assignmentRepo  = assignmentRepo;
@@ -41,6 +43,7 @@ namespace Explorea.Server.Services.Admin
             _cloudinary      = cloudinary;
             _db              = db;
             _savedItemCleanup = savedItemCleanup;
+            _emailService    = emailService;
         }
 
         public async Task<(List<AdminDestinationListDto> Items, int Total)> GetAllAsync(
@@ -722,7 +725,46 @@ namespace Explorea.Server.Services.Admin
                 await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync("activity", act.Id, act.Name);
             await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync("destination", destination.Id, destination.Name);
 
+            await SendCascadeDeletionEmailsAsync(
+                "destinacije",
+                destination.Name,
+                events.Concat(eventsViaPlaces).Select(e => (e.CreatedBy, "Dogadjaj", e.Name)),
+                places.Select(p => (p.CreatedBy, "Objekat", p.Name)),
+                activities.Select(a => (a.CreatedBy, "Aktivnost", a.Name)),
+                currentUserId);
+
             return true;
+        }
+
+        private async Task SendCascadeDeletionEmailsAsync(
+            string parentEntityType,
+            string parentEntityName,
+            IEnumerable<(Guid? CreatedBy, string EntityType, string EntityName)> events,
+            IEnumerable<(Guid? CreatedBy, string EntityType, string EntityName)> places,
+            IEnumerable<(Guid? CreatedBy, string EntityType, string EntityName)> activities,
+            Guid currentUserId)
+        {
+            var allItems = events.Concat(places).Concat(activities)
+                .Where(x => x.CreatedBy.HasValue && x.CreatedBy.Value != currentUserId)
+                .GroupBy(x => x.CreatedBy!.Value);
+
+            foreach (var group in allItems)
+            {
+                var owner = await _userRepo.GetByIdWithRoleAsync(group.Key);
+                if (owner == null || string.IsNullOrWhiteSpace(owner.Email)) continue;
+
+                var items = group.Select(g => (g.EntityType, g.EntityName)).ToList();
+                try
+                {
+                    await _emailService.SendCascadeDeletionEmailAsync(
+                        owner.Email,
+                        string.IsNullOrWhiteSpace(owner.FirstName) ? owner.Email : owner.FirstName,
+                        parentEntityType,
+                        parentEntityName,
+                        items);
+                }
+                catch { }
+            }
         }
 
         public async Task<bool> RestoreAsync(Guid id, Guid currentUserId)

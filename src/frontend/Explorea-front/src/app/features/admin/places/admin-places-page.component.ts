@@ -320,10 +320,23 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   }
 
   protected onPlaceCreated(detail: PlaceDetail): void {
-    this.successMessage.set(this.ui.t('places.success.created', { name: detail.name }));
+    const isOwner = this.isPlaceOwner();
+    this.successMessage.set(
+      isOwner
+        ? this.ui.t('places.success.submitted', { name: detail.name })
+        : this.ui.t('places.success.created', { name: detail.name }),
+    );
     this.closeCreateModal();
+    // PlaceOwner submissions go to pending review — switch to the Pending tab
+    // so they can immediately see their newly submitted request.
+    if (isOwner && this.listMode() !== 'pending') {
+      this.listMode.set('pending');
+      this.patchFilter({ page: 1 });
+      this.currentPage.set(1);
+    }
     this.loadPlaces();
     this.loadStats();
+    setTimeout(() => this.successMessage.set(''), 5000);
   }
 
   protected openEdit(row: PlaceRow): void {
