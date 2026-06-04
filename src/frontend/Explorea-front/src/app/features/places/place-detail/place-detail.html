@@ -5,7 +5,7 @@
 
     <!-- STICKY BAR -->
     <div class="sticky-bar" [class.sticky-bar--visible]="stickyBarVisible">
-      <button class="sticky-back-btn" type="button" (click)="goBack()" aria-label="Nazad">
+      <button class="sticky-back-btn" type="button" (click)="goBack()" [attr.aria-label]="'COMMON.GO_BACK' | translate">
         <span class="material-icons">arrow_back</span>
       </button>
       <app-share-button [small]="true" />
@@ -463,7 +463,7 @@
                 } @else if (place.priceRange) {
                   <span class="booking-card__price">{{ place.priceRange }}</span>
                 } @else {
-                  <span class="booking-card__price booking-card__price--na">Cena na upit</span>
+                  <span class="booking-card__price booking-card__price--na">{{ 'PLACE_DETAIL.BOOK.PRICE_ON_REQUEST' | translate }}</span>
                 }
               </div>
 
@@ -488,7 +488,7 @@
 
               <div class="booking-card__external-note">
                 <span class="material-icons">open_in_new</span>
-                Bićete preusmereni na spoljni sajt za rezervacije (Booking, Airbnb i sl.)
+                {{ 'PLACE_DETAIL.BOOK.EXTERNAL_NOTE' | translate }}
               </div>
 
             </div>
@@ -504,7 +504,7 @@
           <div class="mobile-bottom-bar__price">
             @if (place.pricePerNight) {
               <span class="mobile-bottom-bar__amount">{{ place.pricePerNight }}€</span>
-              <span class="mobile-bottom-bar__per">/ noć</span>
+              <span class="mobile-bottom-bar__per">{{ 'PLACE_CARD.PER_NIGHT' | translate }}</span>
             } @else if (place.priceRange) {
               <span class="mobile-bottom-bar__amount">{{ place.priceRange }}</span>
             }

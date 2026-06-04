@@ -491,7 +491,9 @@
       "SAFE_NO_FEES": "Bez skrivenih troškova i dodatnih taksi.",
       "SAFE_SSL": "Vaši podaci su zaštićeni SSL enkripcijom.",
       "VIEWS_PREFIX": "Ovaj objekat je pregledan",
-      "VIEWS_SUFFIX": "puta u poslednjih 24 sata"
+      "VIEWS_SUFFIX": "puta u poslednjih 24 sata",
+      "PRICE_ON_REQUEST": "Cena na upit",
+      "EXTERNAL_NOTE": "Bićete preusmereni na spoljni sajt za rezervacije (Booking, Airbnb i sl.)"
     },
     "FOOTER": {
       "RIGHTS": "Sva prava zadržana.",
