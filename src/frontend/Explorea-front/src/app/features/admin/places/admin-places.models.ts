@@ -1,5 +1,25 @@
 export type PlaceStatus = 'approved' | 'pending' | 'inactive' | 'rejected';
 
+export interface PlaceDependencyItem {
+  id: string;
+  name: string;
+  previewImageUrl: string | null;
+  typeLabel: string | null;
+  city: string | null;
+  avgRating: number;
+  entityType: string;
+  startDate: string | null;
+  viaPlaceName: string | null;
+}
+
+export interface PlaceDependenciesResponse {
+  eventCount: number;
+  placeCount: number;
+  activityCount: number;
+  items: PlaceDependencyItem[];
+  total: number;
+}
+
 export interface InterestTagOption {
   id: number;
   name: string;

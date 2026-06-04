@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Explorea.API.DTOs.Admin;
 using Explorea.API.DTOs.Admin.Place;
 using Explorea.API.Models;
 using Explorea.Server.Data;
@@ -633,6 +634,87 @@ namespace Explorea.Server.Services.Admin
                 "place",
                 place.Id,
                 place.Name);
+
+            return true;
+        }
+
+        public async Task<EntityDependenciesDto> GetDependenciesAsync(Guid id, int page, int pageSize)
+        {
+            var eventCount = await _context.Events.IgnoreQueryFilters()
+                .CountAsync(e => e.PlaceId == id && !e.IsDeleted);
+
+            var skip = (page - 1) * pageSize;
+            var items = await _context.Events.IgnoreQueryFilters()
+                .Include(e => e.Type)
+                .Include(e => e.City)
+                .Where(e => e.PlaceId == id && !e.IsDeleted)
+                .OrderBy(e => e.StartDatetime)
+                .Skip(skip).Take(pageSize)
+                .Select(e => new DependencyItemDto
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    PreviewImageUrl = e.PreviewImageUrl,
+                    TypeLabel = e.Type != null ? e.Type.Name : null,
+                    City = e.City != null ? e.City.Name : null,
+                    AvgRating = e.AvgRating,
+                    EntityType = "event",
+                    StartDate = e.StartDatetime.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                }).ToListAsync();
+
+            return new EntityDependenciesDto
+            {
+                EventCount = eventCount,
+                Items = items,
+                Total = eventCount
+            };
+        }
+
+        public async Task<bool> DeleteCascadeAsync(Guid id, Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            var place = await _placeRepo.GetAdminByIdAsync(id);
+
+            if (place == null) return false;
+
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+            {
+                if (place.CreatedBy != currentUserId)
+                    throw new UnauthorizedAccessException("Access denied.");
+            }
+            else if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (!user.ManagedRegionId.HasValue ||
+                    place.City?.RegionId != user.ManagedRegionId.Value)
+                    throw new UnauthorizedAccessException("Access denied.");
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            var now = DateTimeOffset.UtcNow;
+
+            var events = await _context.Events.IgnoreQueryFilters()
+                .Where(e => e.PlaceId == id && !e.IsDeleted).ToListAsync();
+            foreach (var ev in events)
+            {
+                ev.IsDeleted = true;
+                ev.DeletedAt = now;
+                ev.UpdatedAt = now;
+                ev.UpdatedBy = currentUserId;
+            }
+
+            place.IsDeleted = true;
+            place.DeletedAt = now;
+            place.UpdatedAt = now;
+            place.UpdatedBy = currentUserId;
+
+            await _context.SaveChangesAsync();
+
+            foreach (var ev in events)
+                await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync("event", ev.Id, ev.Name);
+            await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync("place", place.Id, place.Name);
 
             return true;
         }

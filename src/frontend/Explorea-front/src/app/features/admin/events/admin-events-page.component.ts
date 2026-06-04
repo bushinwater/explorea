@@ -96,6 +96,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly isConfirmOpen = signal(false);
   protected readonly isActioning = signal(false);
   protected readonly isRestoring = signal(false);
+  protected readonly isRenewOpen = signal(false);
+  protected readonly isRenewing = signal(false);
+  protected readonly renewMode = signal<'nextYear' | 'custom'>('nextYear');
+  protected readonly renewDateInput = signal('');
   protected readonly rejectReason = signal('');
 
   protected readonly successMessage = signal('');
@@ -114,6 +118,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly canCreateEvent = computed(() => {
     const role = this.auth.getRole();
     return role === 'super_admin' || role === 'tourist_organization' || role === 'place_owner';
+  });
+  protected readonly canRenewExpiredEvent = computed(() => {
+    const role = this.auth.getRole();
+    return role === 'super_admin' || role === 'tourist_organization';
   });
 
   protected readonly lockedRegionId = computed(() =>
@@ -197,7 +205,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       this.route.queryParamMap.subscribe((params) => {
         const openId = params.get('openId');
         const tabParam = params.get('tab') as EventsTab | null;
-        if (tabParam && ['active', 'pending', 'deleted', 'rejected'].includes(tabParam)) {
+        if (tabParam && ['active', 'pending', 'deleted', 'rejected', 'history', 'expired'].includes(tabParam)) {
           this.patchFilter({ tab: tabParam, page: 1 });
           this.loadEvents();
         }
@@ -462,6 +470,62 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected openRenewModal(ev: EventRow): void {
+    this.selectedEvent.set(ev);
+    this.renewMode.set('nextYear');
+    this.renewDateInput.set('');
+    this.isRenewOpen.set(true);
+  }
+
+  protected closeRenewModal(): void {
+    if (this.isRenewing()) return;
+    this.isRenewOpen.set(false);
+  }
+
+  protected submitRenew(): void {
+    const ev = this.selectedEvent();
+    if (!ev || this.isRenewing()) return;
+
+    const payload: { startDatetime?: string | null } = {};
+    if (this.renewMode() === 'custom') {
+      const input = this.renewDateInput();
+      const selectedDate = input ? new Date(input) : null;
+      if (!selectedDate || Number.isNaN(selectedDate.getTime()) || selectedDate <= new Date()) {
+        this.errorMessage.set('Unesi budući datum za obnovu događaja.');
+        setTimeout(() => this.errorMessage.set(''), 4000);
+        return;
+      }
+      payload.startDatetime = selectedDate.toISOString();
+    }
+
+    this.isRenewing.set(true);
+    this.subscription.add(
+      this.eventsService.renewEvent(ev.id, payload)
+        .pipe(finalize(() => this.isRenewing.set(false)))
+        .subscribe({
+          next: () => {
+            this.isRenewOpen.set(false);
+            this.selectedEvent.set(null);
+            this.isPanelOpen.set(false);
+            this.successMessage.set('Događaj je obnovljen.');
+            this.loadStats();
+            this.loadEvents();
+            setTimeout(() => this.successMessage.set(''), 4000);
+          },
+          error: (err) => {
+            this.errorMessage.set(err?.error?.message ?? 'Obnova događaja nije uspela.');
+            setTimeout(() => this.errorMessage.set(''), 4000);
+          },
+        }),
+    );
+  }
+
+  protected minRenewDateTimeLocal(): string {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset() + 1);
+    return now.toISOString().slice(0, 16);
+  }
+
   protected onEditSaved(row: EventRow): void {
     this.isEditClosing.set(true);
     setTimeout(() => {
@@ -623,6 +687,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       pending: 'Čeka', active: 'Odobreno', rejected: 'Odbijeno', forwarded: 'Prosleđeno',
     };
     map['deleted'] = 'Obrisano';
+    map['expired'] = 'Isteklo';
     return map[s] ?? s;
   }
 

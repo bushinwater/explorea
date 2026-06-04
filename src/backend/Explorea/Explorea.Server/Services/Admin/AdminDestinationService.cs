@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Explorea.API.DTOs.Admin;
 using Explorea.API.DTOs.Admin.Destination;
 using Explorea.API.Models;
 using Explorea.Server.Data;
@@ -502,11 +503,19 @@ namespace Explorea.Server.Services.Admin
         public async Task<bool> DeleteAsync(Guid id, Guid currentUserId)
         {
             var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
-            if (user?.Role.Name != RoleNames.SuperAdmin)
-                throw new UnauthorizedAccessException("Only SuperAdmin can delete destinations.");
-
             var destination = await _destinationRepo.GetAdminByIdAsync(id);
             if (destination == null) return false;
+
+            if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (!user.ManagedRegionId.HasValue ||
+                    destination.City?.RegionId != user.ManagedRegionId.Value)
+                    throw new UnauthorizedAccessException("Pristup odbijen.");
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Pristup odbijen.");
+            }
 
             destination.IsDeleted = true;
             destination.DeletedAt = DateTimeOffset.UtcNow;
@@ -519,6 +528,199 @@ namespace Explorea.Server.Services.Admin
                 "destination",
                 destination.Id,
                 destination.Name);
+
+            return true;
+        }
+
+        public async Task<EntityDependenciesDto> GetDependenciesAsync(Guid id, string tab, int page, int pageSize)
+        {
+            // Uzimamo objekte ove destinacije da bismo mogli da nadjemo dogadjaje vezane kroz objekat
+            var placeLookup = await _db.Places.IgnoreQueryFilters()
+                .Where(p => p.DestinationId == id && !p.IsDeleted)
+                .Select(p => new { p.Id, p.Name })
+                .ToListAsync();
+            var placeIdDict = placeLookup.ToDictionary(p => p.Id, p => p.Name);
+            var placeIdList = placeIdDict.Keys.ToList();
+
+            var placeCount = placeLookup.Count;
+            var activityCount = await _db.Activities.IgnoreQueryFilters()
+                .CountAsync(a => a.DestinationId == id && !a.IsDeleted);
+
+            // Dogadjaji: direktno vezani za destinaciju + vezani kroz objekat (bez duplikata)
+            IQueryable<Explorea.API.Models.Event> eventsQuery;
+            if (placeIdList.Count > 0)
+            {
+                eventsQuery = _db.Events.IgnoreQueryFilters()
+                    .Include(e => e.Type).Include(e => e.City)
+                    .Where(e => !e.IsDeleted && (
+                        e.DestinationId == id ||
+                        (e.PlaceId != null && placeIdList.Contains(e.PlaceId.Value) &&
+                         (e.DestinationId == null || e.DestinationId != id))));
+            }
+            else
+            {
+                eventsQuery = _db.Events.IgnoreQueryFilters()
+                    .Include(e => e.Type).Include(e => e.City)
+                    .Where(e => !e.IsDeleted && e.DestinationId == id);
+            }
+
+            var eventCount = await eventsQuery.CountAsync();
+            var skip = (page - 1) * pageSize;
+            var items = new List<DependencyItemDto>();
+            int total = 0;
+
+            if (tab == "places")
+            {
+                total = placeCount;
+                items = await _db.Places.IgnoreQueryFilters()
+                    .Where(p => p.DestinationId == id && !p.IsDeleted)
+                    .OrderBy(p => p.Name)
+                    .Skip(skip).Take(pageSize)
+                    .Select(p => new DependencyItemDto
+                    {
+                        Id = p.Id,
+                        Name = p.Name,
+                        PreviewImageUrl = p.PreviewImageUrl,
+                        TypeLabel = p.Type != null ? p.Type.Name : null,
+                        City = p.City != null ? p.City.Name : null,
+                        AvgRating = p.AvgRating,
+                        EntityType = "place"
+                    }).ToListAsync();
+            }
+            else if (tab == "activities")
+            {
+                total = activityCount;
+                items = await _db.Activities.IgnoreQueryFilters()
+                    .Include(a => a.Category)
+                    .Include(a => a.City)
+                    .Where(a => a.DestinationId == id && !a.IsDeleted)
+                    .OrderBy(a => a.Name)
+                    .Skip(skip).Take(pageSize)
+                    .Select(a => new DependencyItemDto
+                    {
+                        Id = a.Id,
+                        Name = a.Name,
+                        PreviewImageUrl = a.PreviewImageUrl,
+                        TypeLabel = a.Category != null ? a.Category.Name : null,
+                        City = a.City != null ? a.City.Name : null,
+                        AvgRating = a.AvgRating,
+                        EntityType = "activity"
+                    }).ToListAsync();
+            }
+            else // events (default)
+            {
+                total = eventCount;
+                var eventEntities = await eventsQuery
+                    .OrderBy(e => e.StartDatetime)
+                    .Skip(skip).Take(pageSize)
+                    .ToListAsync();
+
+                items = eventEntities.Select(e => new DependencyItemDto
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    PreviewImageUrl = e.PreviewImageUrl,
+                    TypeLabel = e.Type?.Name,
+                    City = e.City?.Name,
+                    AvgRating = e.AvgRating,
+                    EntityType = "event",
+                    StartDate = e.StartDatetime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                    ViaPlaceName = e.PlaceId.HasValue
+                        && placeIdDict.ContainsKey(e.PlaceId.Value)
+                        && (e.DestinationId == null || e.DestinationId != id)
+                            ? placeIdDict[e.PlaceId.Value]
+                            : null
+                }).ToList();
+            }
+
+            return new EntityDependenciesDto
+            {
+                EventCount = eventCount,
+                PlaceCount = placeCount,
+                ActivityCount = activityCount,
+                Items = items,
+                Total = total
+            };
+        }
+
+        public async Task<bool> DeleteCascadeAsync(Guid id, Guid currentUserId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(currentUserId);
+            var destination = await _destinationRepo.GetAdminByIdAsync(id);
+            if (destination == null) return false;
+
+            if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (!user.ManagedRegionId.HasValue ||
+                    destination.City?.RegionId != user.ManagedRegionId.Value)
+                    throw new UnauthorizedAccessException("Pristup odbijen.");
+            }
+            else if (user?.Role.Name != RoleNames.SuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Pristup odbijen.");
+            }
+
+            var now = DateTimeOffset.UtcNow;
+
+            // Direktno vezani dogadjaji za destinaciju
+            var events = await _db.Events.IgnoreQueryFilters()
+                .Where(e => e.DestinationId == id && !e.IsDeleted).ToListAsync();
+
+            // Objekti ove destinacije
+            var places = await _db.Places.IgnoreQueryFilters()
+                .Where(p => p.DestinationId == id && !p.IsDeleted).ToListAsync();
+
+            // Dogadjaji vezani kroz objekte (koji nisu vec pokriveni direktnom vezom)
+            var placeIds = places.Select(p => p.Id).ToList();
+            var directEventIds = events.Select(e => e.Id).ToHashSet();
+            var eventsViaPlaces = placeIds.Count > 0
+                ? await _db.Events.IgnoreQueryFilters()
+                    .Where(e => e.PlaceId != null && placeIds.Contains(e.PlaceId.Value)
+                                && !e.IsDeleted && !directEventIds.Contains(e.Id))
+                    .ToListAsync()
+                : new List<Explorea.API.Models.Event>();
+
+            var activities = await _db.Activities.IgnoreQueryFilters()
+                .Where(a => a.DestinationId == id && !a.IsDeleted).ToListAsync();
+
+            foreach (var ev in events.Concat(eventsViaPlaces))
+            {
+                ev.IsDeleted = true;
+                ev.DeletedAt = now;
+                ev.UpdatedAt = now;
+                ev.UpdatedBy = currentUserId;
+            }
+
+            foreach (var pl in places)
+            {
+                pl.IsDeleted = true;
+                pl.DeletedAt = now;
+                pl.UpdatedAt = now;
+                pl.UpdatedBy = currentUserId;
+            }
+
+            foreach (var act in activities)
+            {
+                act.IsDeleted = true;
+                act.DeletedAt = now;
+                act.UpdatedAt = now;
+                act.UpdatedBy = currentUserId;
+            }
+
+            destination.IsDeleted = true;
+            destination.DeletedAt = now;
+            destination.UpdatedAt = now;
+            destination.UpdatedBy = currentUserId;
+
+            await _db.SaveChangesAsync();
+
+            foreach (var ev in events.Concat(eventsViaPlaces))
+                await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync("event", ev.Id, ev.Name);
+            foreach (var pl in places)
+                await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync("place", pl.Id, pl.Name);
+            foreach (var act in activities)
+                await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync("activity", act.Id, act.Name);
+            await _savedItemCleanup.RemoveDeletedEntityFromSavedItemsAsync("destination", destination.Id, destination.Name);
 
             return true;
         }

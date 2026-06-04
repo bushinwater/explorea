@@ -46,10 +46,10 @@ export interface PlaceSearchItem {
   longitude?: number | null;
 }
 
-export type EventStatus = 'pending' | 'active' | 'rejected' | 'forwarded' | 'deleted';
+export type EventStatus = 'pending' | 'active' | 'rejected' | 'forwarded' | 'deleted' | 'expired';
 export type EventType = 'concert' | 'tasting' | 'conference' | 'sport' | 'exhibition' | 'other';
 export type EventPriority = 'low' | 'medium' | 'high';
-export type EventsTab = 'pending' | 'active' | 'deleted' | 'rejected';
+export type EventsTab = 'pending' | 'active' | 'deleted' | 'rejected' | 'history' | 'expired';
 
 export interface EventFilterOption<TValue extends string | number = string | number> {
   value: TValue;
@@ -99,6 +99,7 @@ export interface EventRow {
   longitude: number | null;
   ticketUrl: string | null;
   isFeatured: boolean;
+  recursAnnually: boolean;
   avgRating: number;
   documents: EventDocument[];
   ownerName: string | null;
@@ -119,6 +120,7 @@ export interface EventStats {
   rejectedNote: string;
   tabPendingCount: number;
   tabActiveCount: number;
+  tabExpiredCount: number;
 }
 
 export interface EventFilters {
@@ -155,6 +157,7 @@ export interface CreateEventPayload {
   longitude: number | null;
   ticketUrl: string | null;
   isFeatured: boolean;
+  recursAnnually: boolean;
   extraFilters?: Record<string, string>;
 }
 
@@ -183,5 +186,10 @@ export interface UpdateEventPayload {
   placeId?: string | null;
   ticketUrl?: string | null;
   isFeatured?: boolean;
+  recursAnnually?: boolean;
   extraFilters?: Record<string, string>;
+}
+
+export interface RenewEventPayload {
+  startDatetime?: string | null;
 }

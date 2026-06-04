@@ -221,6 +221,7 @@ namespace Explorea.Server.Services
                     .ToList(),
 
                 Events = destination.Events
+                    .Where(e => e.EndDatetime >= DateTimeOffset.UtcNow)
                     .OrderByDescending(e => e.Popularity)
                     .Select(e => new EventCardDto
                     {

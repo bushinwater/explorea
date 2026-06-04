@@ -189,6 +189,16 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpGet("{id}/dependencies")]
+        public async Task<IActionResult> GetDependencies(
+            Guid id,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var result = await _placeService.GetDependenciesAsync(id, page, pageSize);
+            return Ok(result);
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -196,6 +206,22 @@ namespace Explorea.Server.Controllers.Admin
             {
                 var userId = GetCurrentUserId();
                 var deleted = await _placeService.DeleteAsync(id, userId);
+                if (!deleted) return NotFound();
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id}/cascade")]
+        public async Task<IActionResult> DeleteCascade(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var deleted = await _placeService.DeleteCascadeAsync(id, userId);
                 if (!deleted) return NotFound();
                 return NoContent();
             }

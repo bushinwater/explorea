@@ -18,6 +18,7 @@ namespace Explorea.API.DTOs.Admin.Event
         public Guid?           DestinationId { get; set; }
         public Guid?           PlaceId       { get; set; }
         public bool?           IsFeatured    { get; set; }
+        public bool?           RecursAnnually { get; set; }
         public Dictionary<string, string>? ExtraFilters { get; set; }
     }
 }

@@ -17,6 +17,7 @@ namespace Explorea.API.DTOs.Admin.Event
         public decimal?        Price          { get; set; }
         public decimal         AvgRating      { get; set; }
         public bool            IsFeatured     { get; set; }
+        public bool            RecursAnnually { get; set; }
         public DateTimeOffset  CreatedAt      { get; set; }
         public DateTimeOffset  UpdatedAt      { get; set; }
         public DateTimeOffset? DeletedAt      { get; set; }

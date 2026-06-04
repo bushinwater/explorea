@@ -884,3 +884,14 @@
     (confirm)="confirmReject()"
   ></app-confirm-dialog>
 }
+
+<!-- ===== DEPENDENCY DELETE DIALOG ===== -->
+@if (isDependencyDialogOpen() && selectedPlace()) {
+  <app-dependency-delete-dialog
+    [entityId]="selectedPlace()!.id"
+    [entityName]="selectedPlace()!.name"
+    entityType="place"
+    (closed)="closeDependencyDialog()"
+    (deleted)="onDependencyDeleted()"
+  />
+}

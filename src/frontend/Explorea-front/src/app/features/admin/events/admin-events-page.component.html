@@ -29,6 +29,71 @@
   />
 }
 
+@if (isRenewOpen() && selectedEvent(); as renewEvent) {
+  <div class="evts-renew-backdrop" (click)="closeRenewModal()"></div>
+  <div class="evts-renew-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <header class="evts-renew-modal__header">
+      <div>
+        <h2>Obnovi događaj</h2>
+        <p>{{ renewEvent.name }}</p>
+      </div>
+      <button class="btn-icon" type="button" (click)="closeRenewModal()" [disabled]="isRenewing()">
+        <span class="material-icons">close</span>
+      </button>
+    </header>
+
+    <div class="evts-renew-modal__body">
+      <label class="evts-renew-option">
+        <input
+          type="radio"
+          name="renewMode"
+          [checked]="renewMode() === 'nextYear'"
+          (change)="renewMode.set('nextYear')"
+        />
+        <span>
+          <strong>Isti datum sledeće godine</strong>
+          <small>Datum se pomera automatski, trajanje ostaje isto.</small>
+        </span>
+      </label>
+
+      <label class="evts-renew-option">
+        <input
+          type="radio"
+          name="renewMode"
+          [checked]="renewMode() === 'custom'"
+          (change)="renewMode.set('custom')"
+        />
+        <span>
+          <strong>Novi datum</strong>
+          <small>Unesi novi početak događaja u budućnosti.</small>
+        </span>
+      </label>
+
+      @if (renewMode() === 'custom') {
+        <label class="evts-renew-date">
+          <span>Datum i vreme</span>
+          <input
+            type="datetime-local"
+            [min]="minRenewDateTimeLocal()"
+            [value]="renewDateInput()"
+            (input)="renewDateInput.set($any($event.target).value)"
+          />
+        </label>
+      }
+    </div>
+
+    <footer class="evts-renew-modal__footer">
+      <button class="btn btn-ghost btn-sm" type="button" (click)="closeRenewModal()" [disabled]="isRenewing()">
+        Otkaži
+      </button>
+      <button class="btn btn-primary btn-sm" type="button" (click)="submitRenew()" [disabled]="isRenewing()">
+        <span class="material-icons">event_repeat</span>
+        {{ isRenewing() ? 'Obnavljanje...' : 'Obnovi' }}
+      </button>
+    </footer>
+  </div>
+}
+
 <div class="evts-page">
   <!-- ===== STATS ROW ===== -->
   <div class="evts-stats">
@@ -249,7 +314,7 @@
           }
         </div>
 
-        @if (canCreateEvent() && filters().tab !== 'deleted') {
+        @if (canCreateEvent() && filters().tab !== 'deleted' && filters().tab !== 'expired') {
           <button class="evts-btn-primary" type="button" (click)="openCreateDialog()">
             <span class="material-icons">add</span>
             {{ isPlaceOwner() ? ui.t('events.modal.btn_create') : ui.t('events.btn.create') }}
@@ -292,6 +357,16 @@
           {{ ui.t('events.tabs.rejected') }}
           @if (stats()?.rejected) {
             <span class="evts-tab__badge evts-tab__badge--red">{{ stats()!.rejected }}</span>
+          }
+        </button>
+        <button
+          class="evts-tab"
+          [class.evts-tab--active]="filters().tab === 'expired'"
+          (click)="setTab('expired')"
+        >
+          Istekli
+          @if (stats()?.tabExpiredCount) {
+            <span class="evts-tab__badge">{{ stats()!.tabExpiredCount }}</span>
           }
         </button>
         <button
@@ -386,6 +461,11 @@
                             : ev.startDate
                         )
                       }}
+                      @if (ev.recursAnnually) {
+                        <span class="evts-date__annual" title="Obeležava se svake godine">
+                          <span class="material-icons">event_repeat</span>
+                        </span>
+                      }
                     </span>
                   </td>
                   <td class="evts-td evts-td--hide-md evts-td--center">
@@ -416,6 +496,19 @@
                         >
                           <span class="material-icons">restore</span>
                         </button>
+                      } @else if (filters().tab === 'expired') {
+                        @if (canRenewExpiredEvent()) {
+                          <button
+                            class="btn-icon btn-icon--renew"
+                            title="Obnovi događaj"
+                            (click)="openRenewModal(ev)"
+                            [disabled]="isRenewing()"
+                          >
+                            <span class="material-icons">event_repeat</span>
+                          </button>
+                        } @else {
+                          <span class="evts-status evts-status--expired">Isteklo</span>
+                        }
                       } @else {
                         @if (ev.slug && ev.status !== 'pending' && ev.status !== 'forwarded' && ev.status !== 'rejected') {
                           <a
@@ -611,6 +704,12 @@
             {{ ui.t('common.featured') }}
           </span>
         }
+        @if (ev.recursAnnually) {
+          <span class="ddp-badge-annual">
+            <span class="material-icons">event_repeat</span>
+            Svake godine
+          </span>
+        }
       </div>
 
       <!-- Organizer -->
@@ -796,6 +895,20 @@
           <span class="material-icons">restore</span>
           {{ ui.t('common.restore') }}
         </button>
+      } @else if (filters().tab === 'expired') {
+        @if (canRenewExpiredEvent()) {
+          <button
+            class="btn btn-ghost btn-sm ddp-footer__renew"
+            type="button"
+            (click)="openRenewModal(ev)"
+            [disabled]="isRenewing()"
+          >
+            <span class="material-icons">event_repeat</span>
+            Obnovi
+          </button>
+        } @else {
+          <span class="evts-status evts-status--expired">Isteklo</span>
+        }
       } @else {
         @if (ev.slug && ev.status !== 'pending' && ev.status !== 'forwarded' && ev.status !== 'rejected') {
           <a

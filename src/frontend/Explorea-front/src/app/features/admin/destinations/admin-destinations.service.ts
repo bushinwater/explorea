@@ -4,7 +4,9 @@ import { Observable, map } from 'rxjs';
 import { FilterDefinition } from '../../../core/services/lookup.service';
 import {
   CountryOption,
+  DependencyItem,
   DestinationCategory,
+  DestinationDependenciesResponse,
   DestinationDetail,
   DestinationFilters,
   DestinationImage,
@@ -217,6 +219,17 @@ export class AdminDestinationsService {
 
   deleteImage(destinationId: string, imageId: string): Observable<void> {
     return this.http.delete<void>(`/api/admin/destinations/${destinationId}/images/${imageId}`);
+  }
+
+  getDependencies(id: string, tab: string, page: number, pageSize: number): Observable<DestinationDependenciesResponse> {
+    return this.http.get<DestinationDependenciesResponse>(
+      `/api/admin/destinations/${id}/dependencies`,
+      { params: { tab, page, pageSize } }
+    );
+  }
+
+  deleteCascade(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/admin/destinations/${id}/cascade`);
   }
 
   deleteDestination(id: string): Observable<void> {

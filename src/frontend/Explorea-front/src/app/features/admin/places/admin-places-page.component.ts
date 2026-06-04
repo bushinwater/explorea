@@ -14,6 +14,7 @@ import { AdminAuthContextService } from '../core/services/admin-auth-context.ser
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
+import { DependencyDeleteDialogComponent } from '../shared/components/dependency-delete-dialog/dependency-delete-dialog.component';
 import { EmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
 import { FeedbackBannerComponent } from '../shared/components/feedback-banner/feedback-banner.component';
 import { TableSkeletonComponent } from '../shared/components/table-skeleton/table-skeleton.component';
@@ -44,6 +45,7 @@ import { AuthService } from '../../../core/services/auth.service';
     StatCardComponent,
     FeedbackBannerComponent,
     ConfirmDialogComponent,
+    DependencyDeleteDialogComponent,
     EmptyStateComponent,
     MapPreviewComponent,
     TableSkeletonComponent,
@@ -85,6 +87,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   protected readonly isDeleteDialogOpen = signal(false);
   protected readonly isRejectDialogOpen = signal(false);
   protected readonly rejectReason       = signal('');
+  protected readonly isDependencyDialogOpen = signal(false);
   protected readonly isDeleting     = signal(false);
   protected readonly isRestoring    = signal(false);
   protected readonly reviewingPlaceId = signal<string | null>(null);
@@ -483,7 +486,20 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
 
   protected openDeleteDialog(place: PlaceRow): void {
     this.selectedPlace.set(place);
-    this.isDeleteDialogOpen.set(true);
+    this.subscription.add(
+      this.placesService.getPlaceDependencies(place.id, 1, 1).subscribe({
+        next: (res) => {
+          if (res.eventCount > 0) {
+            this.isDependencyDialogOpen.set(true);
+          } else {
+            this.isDeleteDialogOpen.set(true);
+          }
+        },
+        error: () => {
+          this.isDeleteDialogOpen.set(true);
+        },
+      })
+    );
   }
 
   protected openDeleteFromPanel(): void {
@@ -491,6 +507,20 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     if (!row) return;
     this.closeDetailsPanel();
     this.openDeleteDialog(row);
+  }
+
+  protected closeDependencyDialog(): void {
+    this.isDependencyDialogOpen.set(false);
+    this.selectedPlace.set(null);
+  }
+
+  protected onDependencyDeleted(): void {
+    const place = this.selectedPlace();
+    this.isDependencyDialogOpen.set(false);
+    this.selectedPlace.set(null);
+    if (place) this.successMessage.set(`„${place.name}" i svi vezani dogadjaji su uspešno obrisani.`);
+    this.loadPlaces();
+    this.loadStats();
   }
 
   protected closeDeleteDialog(): void {
