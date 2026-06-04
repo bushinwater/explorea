@@ -815,10 +815,9 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
         colValue: METRIC_CONFIGS[this.metric()].label,
       };
     } else {
-      // chart — capture canvas
-      const canvas = this.canvasRef?.nativeElement;
-      if (!canvas) return;
-      const imageUrl = canvas.toDataURL('image/png');
+      // chart — capture at high resolution via offscreen chart instance
+      const imageUrl = this.captureChartHighRes();
+      if (!imageUrl) return;
       item = { id: Date.now().toString(), title, qtype: 'chart', imageUrl };
     }
 
@@ -964,7 +963,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
           pdf.setDrawColor(198, 222, 210);
           pdf.setLineWidth(0.35);
           pdf.roundedRect(margin, startY, contentW, imgH + 8, 3, 3, 'FD');
-          pdf.addImage(item.imageUrl, 'PNG', margin + 4, startY + 4, contentW - 8, imgH);
+          pdf.addImage(item.imageUrl, 'JPEG', margin + 4, startY + 4, contentW - 8, imgH, undefined, 'FAST');
 
         } else if (item.qtype === 'table' && item.data) {
           this.drawPdfTable(pdf, pageW, pageH, margin, startY,
@@ -1057,6 +1056,136 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     if (this.viewReady) this.buildChart();
   }
 
+  /**
+   * Capture chart to a high-resolution PNG for crisp PDF export.
+   * Creates a temporary 2400x1400 offscreen canvas with DPR=2 → ~4800x2800 buffer.
+   */
+  private captureChartHighRes(): string | null {
+    const data = this.chartData();
+    if (!data?.length) return null;
+    const viz = this.vizType();
+    if (viz === 'table') return null;
+
+    const TARGET_W = 2400;
+    const TARGET_H = 1400;
+
+    const off = document.createElement('canvas');
+    off.width  = TARGET_W;
+    off.height = TARGET_H;
+    off.style.width  = `${TARGET_W}px`;
+    off.style.height = `${TARGET_H}px`;
+    const ctx = off.getContext('2d');
+    if (!ctx) return null;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, TARGET_W, TARGET_H);
+
+    const labels = data.map(p => p.label);
+    const values = data.map(p => p.value);
+    const color  = METRIC_COLORS[this.metric()];
+
+    let tempChart: Chart | null = null;
+    try {
+      if (viz === 'pie') {
+        const total = values.reduce((s, v) => s + v, 0);
+        tempChart = new Chart(ctx, {
+          type:    'pie',
+          plugins: [ChartDataLabels],
+          data: {
+            labels,
+            datasets: [{
+              data:            values,
+              backgroundColor: PIE_COLORS.map(c => c + 'cc'),
+              borderColor:     PIE_COLORS,
+              borderWidth:     4,
+            }],
+          },
+          options: {
+            responsive:          false,
+            maintainAspectRatio: false,
+            animation:           false,
+            devicePixelRatio:    2,
+            layout: { padding: { top: 80, bottom: 100, left: 64, right: 64 } },
+            plugins: {
+              legend: {
+                display:  true,
+                position: 'bottom',
+                labels:   { color: '#1e293b', font: { family: 'Inter', size: 22 }, boxWidth: 20, padding: 20 },
+              },
+              tooltip: { enabled: false },
+              datalabels: {
+                anchor:    'end',
+                align:     'end',
+                offset:    10,
+                clamp:     true,
+                color:     '#334155',
+                font:      { size: 20, weight: 'bold', family: 'Inter' },
+                formatter: (value: number) => {
+                  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+                  return `${value.toFixed(1)}\n(${pct}%)`;
+                },
+              },
+            },
+          } as any,
+        });
+      } else {
+        const grad = ctx.createLinearGradient(0, 0, 0, TARGET_H);
+        grad.addColorStop(0, color + 'cc');
+        grad.addColorStop(1, color + '11');
+        tempChart = new Chart(ctx, {
+          type: viz as 'bar' | 'line',
+          data: {
+            labels,
+            datasets: [{
+              label:                METRIC_CONFIGS[this.metric()].label,
+              data:                 values,
+              borderColor:          color,
+              backgroundColor:      viz === 'line' ? grad : color + '99',
+              borderWidth:          viz === 'line' ? 4 : 2,
+              pointRadius:          viz === 'line' ? 7 : 0,
+              pointBackgroundColor: color,
+              pointBorderColor:     '#ffffff',
+              pointBorderWidth:     3,
+              tension:              viz === 'line' ? 0.4 : 0,
+              fill:                 viz === 'line',
+            }],
+          },
+          options: {
+            responsive:          false,
+            maintainAspectRatio: false,
+            animation:           false,
+            devicePixelRatio:    2,
+            plugins: {
+              legend:  { display: false },
+              tooltip: { enabled: false },
+            },
+            scales: {
+              x: {
+                grid:   { color: 'rgba(100,116,139,0.2)' } as any,
+                ticks:  { color: '#475569', font: { family: 'Inter', size: 22 } },
+              },
+              y: {
+                grid:   { color: 'rgba(100,116,139,0.2)' } as any,
+                ticks:  { color: '#475569', font: { family: 'Inter', size: 22 } },
+              },
+            },
+          } as any,
+        });
+      }
+      tempChart.draw();
+      // JPEG doesn't support transparency — paint white BEHIND the chart so transparent
+      // areas become white instead of the default black JPEG fill.
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, TARGET_W, TARGET_H);
+      ctx.globalCompositeOperation = 'source-over';
+      const dataUrl = off.toDataURL('image/jpeg', 0.92);
+      return dataUrl;
+    } finally {
+      try { tempChart?.destroy(); } catch { /* ignore */ }
+    }
+  }
+
   private buildChart(): void {
     const canvas = this.canvasRef?.nativeElement;
     if (!canvas) return;
@@ -1088,6 +1217,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
         options: {
           responsive:          true,
           maintainAspectRatio: false,
+          devicePixelRatio:    Math.max(3, window.devicePixelRatio || 1),
           layout: { padding: 32 },
           plugins: {
             legend: {
@@ -1142,6 +1272,7 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
       options: {
         responsive:          true,
         maintainAspectRatio: false,
+        devicePixelRatio:    Math.max(3, window.devicePixelRatio || 1),
         interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { display: false },
