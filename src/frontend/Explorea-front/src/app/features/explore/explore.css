@@ -1000,6 +1000,11 @@
   color: var(--color-primary);
 }
 
+/* Lift the maplibre marker container that holds a selected pin above all others */
+:host ::ng-deep .maplibregl-marker:has(.map-pin-btn--selected) {
+  z-index: 1000 !important;
+}
+
 /* =====================
    MOBILE
    ===================== */

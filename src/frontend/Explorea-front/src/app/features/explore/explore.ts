@@ -235,8 +235,8 @@ export class Explore implements AfterViewInit, OnDestroy {
   }
 
   private get zoomVisibleTypes(): string[] {
-    if (this.currentZoom < 8)  return ['destination'];
-    if (this.currentZoom < 11) return ['destination', 'event', 'activity'];
+    if (this.currentZoom < 11) return ['destination'];
+    if (this.currentZoom < 13) return ['destination', 'event', 'activity'];
     return ['destination', 'event', 'activity', 'place'];
   }
 
@@ -644,7 +644,22 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.drawerTranslateY = this.collapsedTranslate;
     const isMobile = window.innerWidth <= 768;
     const offset: [number, number] = isMobile ? [0, -(window.innerHeight * 0.1)] : [0, 0];
-    this.map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(this.map.getZoom(), 12), duration: 900, offset });
+    // Destinations zoom to 12 (tier 1) so events/activities become visible alongside.
+    // Other entity types zoom to 14 (tier 2) so places appear too.
+    const minZoom = pin.entityType === 'destination' ? 12 : 14;
+    const targetZoom = Math.max(this.map.getZoom(), minZoom);
+    this.map.flyTo({ center: [pin.lng, pin.lat], zoom: targetZoom, duration: 900, offset });
+    // After the flyTo finishes the zoom tier may have changed and markers were
+    // rebuilt — make sure the selected pin element is recreated and tagged.
+    this.map.once('moveend', () => {
+      if (this.selectedPin && this.pinKey(this.selectedPin) === this.pinKey(pin)) {
+        if (!this.pinElements.has(this.pinKey(pin))) {
+          this.addMarkers();
+        }
+        this.pinElements.get(this.pinKey(pin))?.classList.add('map-pin-btn--selected');
+        this.cdr.detectChanges();
+      }
+    });
     this.cdr.detectChanges();
   }
 
@@ -889,14 +904,14 @@ export class Explore implements AfterViewInit, OnDestroy {
 
     this.map.on('zoomend', () => {
       const newZoom = this.map.getZoom();
-      // Only re-render if crossing a threshold (avoids pointless marker rebuilds)
-      const tier = (z: number) => z < 8 ? 0 : z < 11 ? 1 : 2;
-      if (tier(newZoom) !== tier(this.currentZoom)) {
-        this.currentZoom = newZoom;
+      const tier = (z: number) => z < 11 ? 0 : z < 13 ? 1 : 2;
+      const oldTier = tier(this.currentZoom);
+      const newTier = tier(newZoom);
+      this.currentZoom = newZoom;
+      if (oldTier !== newTier) {
+        // Rebuild markers so visible types match the new zoom tier
         this.addMarkers();
         this.cdr.detectChanges();
-      } else {
-        this.currentZoom = newZoom;
       }
     });
 
@@ -980,7 +995,41 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.markers = [];
     this.pinElements.clear();
 
-    this.filteredPins.forEach(pin => {
+    const pins = this.filteredPins;
+
+    // Group pins that share the same location (e.g., entities that
+    // inherited their destination's coordinates) so we can offset
+    // them in a small circle around the shared point.
+    const groups = new Map<string, ExploreMarker[]>();
+    for (const pin of pins) {
+      const key = `${pin.lng.toFixed(4)},${pin.lat.toFixed(4)}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(pin);
+    }
+
+    // Order priority within a group: destination → event → activity → place
+    const typeOrder: Record<string, number> = { destination: 0, event: 1, activity: 2, place: 3 };
+    const SPREAD_RADIUS_DEG = 0.0008; // ~80m on equator — visible only when zoomed in
+
+    pins.forEach(pin => {
+      const groupKey = `${pin.lng.toFixed(4)},${pin.lat.toFixed(4)}`;
+      const group = groups.get(groupKey)!;
+      let lng = pin.lng;
+      let lat = pin.lat;
+      if (group.length > 1) {
+        const sorted = [...group].sort((a, b) =>
+          (typeOrder[a.entityType] ?? 9) - (typeOrder[b.entityType] ?? 9),
+        );
+        const idx = sorted.findIndex(p => p.entityType === pin.entityType && p.slug === pin.slug);
+        // Keep first (highest-priority, usually destination) at the origin,
+        // arrange the rest evenly around it.
+        if (idx > 0) {
+          const angle = ((idx - 1) / Math.max(1, group.length - 1)) * Math.PI * 2;
+          lng += Math.cos(angle) * SPREAD_RADIUS_DEG;
+          lat += Math.sin(angle) * SPREAD_RADIUS_DEG;
+        }
+      }
+
       const el = document.createElement('div');
       el.className = 'map-pin-btn';
       const key = this.pinKey(pin);
@@ -1003,7 +1052,7 @@ export class Explore implements AfterViewInit, OnDestroy {
       });
 
       const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-        .setLngLat([pin.lng, pin.lat])
+        .setLngLat([lng, lat])
         .addTo(this.map);
 
       this.markers.push(marker);

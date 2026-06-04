@@ -96,7 +96,13 @@ namespace Explorea.Server.Repositories.Implementations
             var extraFiltersDict = ParseExtraFilters(extraFilters);
             foreach (var (key, value) in extraFiltersDict)
             {
-                var snippet = $"{{\"{key}\": {value.ToLower()}}}";
+                var lowered = value.ToLowerInvariant();
+                // Admin stores Dictionary<string,string>, so values are JSON strings.
+                // For booleans ("true"/"false") allow raw match too (legacy).
+                var jsonValue = lowered is "true" or "false"
+                    ? lowered
+                    : System.Text.Json.JsonSerializer.Serialize(value);
+                var snippet = $"{{\"{key}\": {jsonValue}}}";
                 var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
                 var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
                     "SELECT id FROM places WHERE extra_filters @> @snippet", param).ToListAsync();
