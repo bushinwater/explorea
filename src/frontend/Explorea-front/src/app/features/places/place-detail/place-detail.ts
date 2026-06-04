@@ -602,7 +602,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   incrementGuests(): void { this.guests++; }
   decrementGuests(): void { if (this.guests > 1) this.guests--; }
   goBack(): void {
-    if (window.history.length > 1) {
+    if (window.history.length > 2) {
       this.location.back();
     } else {
       this.router.navigate(['/']);

@@ -491,7 +491,9 @@
       "SAFE_NO_FEES": "No hidden costs or additional charges.",
       "SAFE_SSL": "Your data is protected with SSL encryption.",
       "VIEWS_PREFIX": "This place was viewed",
-      "VIEWS_SUFFIX": "times in the last 24 hours"
+      "VIEWS_SUFFIX": "times in the last 24 hours",
+      "PRICE_ON_REQUEST": "Price on request",
+      "EXTERNAL_NOTE": "You will be redirected to an external booking site (Booking, Airbnb, etc.)"
     },
     "FOOTER": {
       "RIGHTS": "All rights reserved.",
