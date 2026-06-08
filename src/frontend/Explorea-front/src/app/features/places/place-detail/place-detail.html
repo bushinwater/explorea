@@ -394,7 +394,8 @@
                           [review]="review"
                           [currentUserId]="currentUserId"
                           (deleted)="onReviewDeleted($event)"
-                          (updated)="onReviewUpdated($event)" />
+                          (updated)="onReviewUpdated($event)"
+                          (imageClicked)="openReviewsLightbox($event)" />
                       }
                     </div>
                     <app-rating-stats [avgRating]="place.avgRating" [reviews]="placeReviews" />
@@ -529,7 +530,8 @@
         [currentUserId]="currentUserId"
         (closed)="reviewsPanelOpen = false"
         (deleted)="onReviewDeleted($event)"
-        (updated)="onReviewUpdated($event)" />
+        (updated)="onReviewUpdated($event)"
+        (imageClicked)="openReviewsLightbox($event)" />
 
       <!-- Review modal -->
       <app-review-modal
@@ -539,6 +541,14 @@
         [entityName]="place.name"
         (closed)="reviewFormOpen = false"
         (reviewSubmitted)="onReviewSubmitted($event)" />
+
+      <!-- Reviews images lightbox -->
+      <app-reviews-lightbox
+        [isOpen]="reviewsLightboxOpen"
+        [reviews]="placeReviews"
+        [startReviewId]="lightboxStartReviewId"
+        [startImageIndex]="lightboxStartImageIndex"
+        (closed)="reviewsLightboxOpen = false" />
 
       <!-- Lightbox -->
       @if (lightboxOpen) {

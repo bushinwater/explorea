@@ -18,6 +18,7 @@ export interface ReviewRow {
   createdAt: string;
   ownerReply: string | null;
   ownerReplyAt: string | null;
+  imageUrls: string[];
 }
 
 export interface ReviewStats {

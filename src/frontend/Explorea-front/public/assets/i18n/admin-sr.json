@@ -404,6 +404,15 @@
   "reviews.error.load": "Greška pri učitavanju recenzija.",
   "reviews.error.action": "Akcija nije uspela. Pokušaj ponovo.",
 
+  "reviews.preview.title": "Detalji recenzije",
+  "reviews.preview.user": "Korisnik",
+  "reviews.preview.years": "g.",
+  "reviews.preview.entity": "Entitet",
+  "reviews.preview.rating": "Ocena",
+  "reviews.preview.comment": "Komentar",
+  "reviews.preview.images": "Slike",
+  "reviews.preview.owner_reply": "Odgovor vlasnika",
+
   "sidebar.events": "Događaji",
 
   "events.title": "Upravljanje Događajima",

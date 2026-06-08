@@ -172,6 +172,12 @@ export class AdminDestinationsService {
     );
   }
 
+  getDestinationRowById(id: string): Observable<DestinationRow> {
+    return this.http.get<ApiDestinationItem>(`/api/admin/destinations/${id}`).pipe(
+      map((item) => this.mapToRow(item)),
+    );
+  }
+
   getDestinationById(id: string): Observable<DestinationDetail> {
     return this.http.get<ApiDestinationItem>(`/api/admin/destinations/${id}`).pipe(
       map((item) => ({

@@ -461,7 +461,11 @@
 }
 
 .evts-row--selected .evts-td {
-  background: rgba(var(--color-primary-rgb, 66, 133, 244), 0.06);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent) !important;
+}
+
+.evts-row--selected .evts-td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
 /* Name cell — matches dest-name-cell */

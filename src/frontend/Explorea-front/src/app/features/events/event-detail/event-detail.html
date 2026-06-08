@@ -170,7 +170,8 @@
               [review]="r"
               [currentUserId]="currentUserId"
               (deleted)="onReviewDeleted($event)"
-              (updated)="onReviewUpdated($event)" />
+              (updated)="onReviewUpdated($event)"
+              (imageClicked)="openReviewsLightbox($event)" />
           </div>
           <app-rating-stats [avgRating]="avgRating" [reviews]="event.reviews" />
         </ng-container>
@@ -389,7 +390,15 @@
   [currentUserId]="currentUserId"
   (closed)="closeReviewsPanel()"
   (deleted)="onReviewDeleted($event)"
-  (updated)="onReviewUpdated($event)" />
+  (updated)="onReviewUpdated($event)"
+  (imageClicked)="openReviewsLightbox($event)" />
+
+<app-reviews-lightbox
+  [isOpen]="reviewsLightboxOpen"
+  [reviews]="reviewsAsDto"
+  [startReviewId]="lightboxStartReviewId"
+  [startImageIndex]="lightboxStartImageIndex"
+  (closed)="reviewsLightboxOpen = false" />
 
 <app-bottom-nav />
 

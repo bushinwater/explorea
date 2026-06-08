@@ -17,7 +17,16 @@
     "STARS_2": "Fair",
     "STARS_3": "Good",
     "STARS_4": "Very good",
-    "STARS_5": "Excellent"
+    "STARS_5": "Excellent",
+    "IMAGES_LABEL": "Photos (optional)",
+    "ADD_PHOTO": "Add photo",
+    "IMAGES_RULES": "Up to 5 images, max 5MB each. Image formats only.",
+    "IMAGES_MAX_REACHED": "You can add up to {{max}} images.",
+    "IMAGE_INVALID_TYPE": "File \"{{name}}\" is not an image.",
+    "IMAGE_TOO_LARGE": "Image \"{{name}}\" exceeds 5MB.",
+    "IMAGE_UPLOAD_FAILED": "Image upload failed.",
+    "IMAGE_REMOVE": "Remove photo",
+    "UPLOADING": "Uploading..."
   },
   "SIDEBAR": {
     "HOME": "Home",

@@ -8,6 +8,13 @@ export interface CreateReviewRequest {
   entityId: string;
   rating: number;
   comment?: string;
+  imageUrls?: string[];
+}
+
+export interface UpdateReviewRequest {
+  rating: number;
+  comment?: string;
+  imageUrls?: string[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -26,11 +33,17 @@ export class ReviewService {
     return this.http.post<ReviewDto>(this.api, dto);
   }
 
-  update(id: string, dto: { rating: number; comment?: string }): Observable<ReviewDto> {
+  update(id: string, dto: UpdateReviewRequest): Observable<ReviewDto> {
     return this.http.put<ReviewDto>(`${this.api}/${id}`, dto);
   }
 
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/${id}`);
+  }
+
+  uploadImages(files: File[]): Observable<{ urls: string[] }> {
+    const form = new FormData();
+    for (const f of files) form.append('files', f, f.name);
+    return this.http.post<{ urls: string[] }>(`${this.api}/images`, form);
   }
 }

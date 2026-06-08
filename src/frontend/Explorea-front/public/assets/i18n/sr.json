@@ -17,7 +17,16 @@
     "STARS_2": "Solidno",
     "STARS_3": "Dobro",
     "STARS_4": "Vrlo dobro",
-    "STARS_5": "Odlično"
+    "STARS_5": "Odlično",
+    "IMAGES_LABEL": "Fotografije (opcionalno)",
+    "ADD_PHOTO": "Dodaj sliku",
+    "IMAGES_RULES": "Do 5 slika, do 5MB po slici. Dozvoljeni su samo formati slika.",
+    "IMAGES_MAX_REACHED": "Možete dodati najviše {{max}} slika.",
+    "IMAGE_INVALID_TYPE": "Fajl \"{{name}}\" nije slika.",
+    "IMAGE_TOO_LARGE": "Slika \"{{name}}\" je veća od 5MB.",
+    "IMAGE_UPLOAD_FAILED": "Otpremanje slike nije uspelo.",
+    "IMAGE_REMOVE": "Ukloni sliku",
+    "UPLOADING": "Otpremanje..."
   },
   "SIDEBAR": {
     "HOME": "Početna",

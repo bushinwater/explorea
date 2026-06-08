@@ -214,6 +214,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
         if (openId) {
           const openName = params.get('openName') ?? '';
+          this.pendingScrollRowId = openId;
           this.openDetailsPanel({ id: openId, name: openName } as unknown as EventRow);
           void this.router.navigate([], {
             relativeTo: this.route,
@@ -262,6 +263,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       this.loadFilterOptions();
     }
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
+    if (openEditId) this.pendingScrollRowId = openEditId;
     this.loadEvents(openEditId ? (items) => {
       const ev = items.find(e => e.id === openEditId);
       if (ev) this.openEditFromRow(ev);
@@ -351,6 +353,11 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected openDetailsPanel(event: EventRow): void {
     this.activeMenuId.set(null);
     this.descriptionExpanded.set(false);
+
+    // Enrich stub row from loaded rows when opened via openId.
+    const loaded = this.events().find(r => r.id === event.id);
+    if (loaded) event = { ...loaded, ...event, name: event.name || loaded.name };
+
     this.selectedEvent.set(event);
     this.isPanelOpen.set(true);
     this.detailsInterests.set([]);
@@ -636,9 +643,9 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   }
 
   protected isSelected(ev: EventRow): boolean {
-    if (!this.isPanelOpen()) return false;
+    if (!this.isPanelOpen() && !this.isEditOpen()) return false;
     const selected = this.selectedEvent();
-    return selected?.id === ev.id && selected?.queueId === ev.queueId;
+    return selected?.id === ev.id;
   }
 
   protected priorityLabel(p: EventPriority | null): string {
@@ -786,6 +793,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
             this.events.set(response.items);
             this.total.set(response.total);
             afterLoad?.(response.items);
+            this.scrollToPendingRow();
           },
           error: () => {
             this.events.set([]);
@@ -794,6 +802,18 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
           },
         }),
     );
+  }
+
+  private pendingScrollRowId: string | null = null;
+
+  private scrollToPendingRow(): void {
+    if (!this.pendingScrollRowId) return;
+    const id = this.pendingScrollRowId;
+    this.pendingScrollRowId = null;
+    setTimeout(() => {
+      const el = document.querySelector(`[data-admin-row-id="${id}"]`) as HTMLElement | null;
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
   }
 
   private loadEventsFuzzy(query: string): void {

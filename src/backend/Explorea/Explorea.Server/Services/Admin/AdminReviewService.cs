@@ -341,7 +341,8 @@ namespace Explorea.Server.Services.Admin
                 IsHidden            = r.IsHidden,
                 CreatedAt           = r.CreatedAt,
                 OwnerReply          = r.OwnerReply,
-                OwnerReplyAt        = r.OwnerReplyAt
+                OwnerReplyAt        = r.OwnerReplyAt,
+                ImageUrls           = r.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList()
             };
         }
     }

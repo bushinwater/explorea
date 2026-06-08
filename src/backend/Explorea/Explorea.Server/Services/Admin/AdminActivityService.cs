@@ -316,16 +316,19 @@ namespace Explorea.Server.Services.Admin
       var reviews = await _context.Reviews
         .AsNoTracking()
         .Include(r => r.User)
+        .Include(r => r.Images)
         .Where(r => r.EntityType == "activity" && r.EntityId == id && !r.IsDeleted && !r.IsHidden)
         .OrderByDescending(r => r.CreatedAt)
         .Take(10)
         .Select(r => new ActivityReviewDto
         {
+          Id              = r.Id,
           AuthorName      = r.User.FirstName + " " + r.User.LastName,
           AuthorAvatarUrl = r.User.ProfileImageUrl,
           Rating          = r.Rating,
           Comment         = r.Comment,
           CreatedAt       = r.CreatedAt,
+          ImageUrls       = r.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList(),
         })
         .ToListAsync();
 

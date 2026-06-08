@@ -304,14 +304,28 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.loadRegions();
     this.loadCountries();
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
+    if (openEditId) this.pendingScrollRowId = openEditId;
     this.loadActivities(openEditId ? (items) => {
       const activity = items.find(a => a.id === openEditId);
       if (activity) this.openEditFromRow(activity);
     } : undefined);
 
     if (openId) {
+      this.pendingScrollRowId = openId;
       this.openDetailsPanel({ id: openId, name: openName } as unknown as ActivityRow);
     }
+  }
+
+  private pendingScrollRowId: string | null = null;
+
+  private scrollToPendingRow(): void {
+    if (!this.pendingScrollRowId) return;
+    const id = this.pendingScrollRowId;
+    this.pendingScrollRowId = null;
+    setTimeout(() => {
+      const el = document.querySelector(`[data-admin-row-id="${id}"]`) as HTMLElement | null;
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
   }
 
   ngOnDestroy(): void {
@@ -483,6 +497,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected openDetailsPanel(activity: ActivityRow): void {
 
+    // Enrich stub row from loaded rows when opened via openId.
+    const loaded = this.activities().find(r => r.id === activity.id);
+    if (loaded) activity = { ...loaded, ...activity, name: activity.name || loaded.name };
+
     this.activeMenuId.set(null);
     this.selectedActivity.set(activity);
     this.selectedActivityDetail.set(null);
@@ -496,6 +514,12 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       this.activitiesService.getById(activity.id).subscribe({
         next: (detail) => {
           this.selectedActivityDetail.set(detail);
+          // ActivityDetail extends ActivityRow — backfill row header from detail.
+          this.selectedActivity.set({
+            ...activity,
+            ...detail,
+            name: detail.name || activity.name,
+          });
           this.detailFallbackLat.set(null);
           this.detailFallbackLng.set(null);
           if (detail.latitude == null && detail.destinationId) {
@@ -1480,6 +1504,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           this.total.set(response.total);
           this.isLoading.set(false);
           afterLoad?.(response.items);
+          this.scrollToPendingRow();
         },
         error: () => {
           this.activities.set([]);

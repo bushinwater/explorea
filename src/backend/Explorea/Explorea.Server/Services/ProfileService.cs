@@ -98,6 +98,7 @@ namespace Explorea.Server.Services
         public async Task<List<ProfileReviewDto>> GetMyReviewsAsync(Guid userId)
         {
             var reviews = await _db.Reviews
+                .Include(r => r.Images)
                 .Where(r => r.UserId == userId)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToListAsync();
@@ -108,7 +109,13 @@ namespace Explorea.Server.Services
             {
                 var mapped = await MapReviewAsync(review);
                 if (mapped != null)
+                {
+                    mapped.Images = review.Images
+                        .OrderBy(i => i.SortOrder)
+                        .Select(i => new ReviewImageDto { Id = i.Id, ImageUrl = i.ImageUrl, SortOrder = i.SortOrder })
+                        .ToList();
                     result.Add(mapped);
+                }
             }
 
             return result;

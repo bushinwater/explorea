@@ -378,7 +378,7 @@
           </thead>
           <tbody>
             @for (dest of destinations(); track dest.id) {
-              <tr class="dest-row" [class.dest-row--selected]="detailsPanelRow()?.id === dest.id" (click)="openDetailsPanel(dest)">
+              <tr class="dest-row" [attr.data-admin-row-id]="dest.id" [class.dest-row--selected]="detailsPanelRow()?.id === dest.id || (isEditModalOpen() && selectedDestination()?.id === dest.id)" (click)="openDetailsPanel(dest)">
                 <!-- Destination name + thumb -->
                 <td class="dest-td">
                   <div class="dest-name-cell">
@@ -685,6 +685,13 @@
                       <span class="ddp-review-card__author">{{ review.authorName }}</span>
                       <span class="ddp-review-card__date">{{ formatDate(review.createdAt) }}</span>
                     </div>
+                    @if (review.id) {
+                      <button type="button" class="ddp-review-card__open"
+                              (click)="openReviewInAdmin(review.id!)"
+                              [title]="ui.t('reviews.actions.open_in_admin')">
+                        <span class="material-icons">arrow_outward</span>
+                      </button>
+                    }
                   </div>
                   <div class="ddp-review-card__stars">
                     @for (star of starArray(); track star) {
@@ -694,6 +701,21 @@
                   </div>
                   @if (review.comment) {
                     <p class="ddp-review-card__comment">{{ review.comment }}</p>
+                  }
+                  @if (review.imageUrls && review.imageUrls.length > 0) {
+                    <div class="ddp-review-card__images">
+                      @for (url of review.imageUrls.slice(0, 3); track url; let i = $index) {
+                        <span class="ddp-review-card__thumb"
+                              [class.ddp-review-card__thumb--more]="i === 2 && review.imageUrls!.length > 3">
+                          <img [src]="url" alt="" loading="lazy" />
+                          @if (i === 2 && review.imageUrls!.length > 3) {
+                            <span class="ddp-review-card__thumb-more">
+                              <span class="material-icons">add</span>{{ review.imageUrls!.length - 3 }}
+                            </span>
+                          }
+                        </span>
+                      }
+                    </div>
                   }
                 </div>
               }

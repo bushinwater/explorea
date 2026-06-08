@@ -53,6 +53,12 @@ export interface ActivityCard {
   previewImageUrl: string;
 }
 
+export interface ReviewImageDto {
+  id: string;
+  imageUrl: string;
+  sortOrder: number;
+}
+
 export interface ReviewDto {
   id: string;
   rating: number;
@@ -63,6 +69,7 @@ export interface ReviewDto {
   entitySlug?: string;
   ownerReply?: string | null;
   ownerReplyAt?: string | null;
+  images?: ReviewImageDto[];
   user: {
     id: string;
     firstName: string;

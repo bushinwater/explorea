@@ -296,7 +296,11 @@
           </thead>
           <tbody>
             @for (review of reviews(); track review.id) {
-              <tr class="rv-row" [class.rv-row--hidden]="review.isHidden">
+              <tr class="rv-row rv-row--clickable"
+                  [attr.data-admin-row-id]="review.id"
+                  [class.rv-row--hidden]="review.isHidden"
+                  [class.rv-row--selected]="previewReview()?.id === review.id"
+                  (click)="openPreviewPanel(review, $event)">
                 <!-- User -->
                 <td class="rv-td">
                   <div class="rv-user-cell">
@@ -357,6 +361,20 @@
                 <td class="rv-td rv-td--comment">
                   <div class="rv-comment-cell">
                     <span>{{ truncateComment(review.comment) }}</span>
+                    @if (review.imageUrls.length > 0) {
+                      <div class="rv-row-images">
+                        @for (url of review.imageUrls.slice(0, 3); track url; let i = $index) {
+                          <span class="rv-row-image" [class.rv-row-image--more]="i === 2 && review.imageUrls.length > 3">
+                            <img [src]="url" alt="" loading="lazy" />
+                            @if (i === 2 && review.imageUrls.length > 3) {
+                              <span class="rv-row-image__more">
+                                <span class="material-icons">add</span>{{ review.imageUrls.length - 3 }}
+                              </span>
+                            }
+                          </span>
+                        }
+                      </div>
+                    }
                     @if (review.ownerReply) {
                       <div class="rv-owner-reply">
                         <span class="material-icons">reply</span>
@@ -546,4 +564,118 @@
       </div>
     </div>
   </div>
+}
+
+@if (previewReview(); as r) {
+  <div class="rv-preview-backdrop" [class.rv-preview-backdrop--closing]="isPreviewClosing()" (click)="closePreviewPanel()"></div>
+  <aside class="rv-preview-panel" [class.rv-preview-panel--closing]="isPreviewClosing()" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <header class="rv-preview-panel__header">
+      <h2 class="rv-preview-panel__title">{{ ui.t('reviews.preview.title') }}</h2>
+      <button type="button" class="rv-preview-panel__close" (click)="closePreviewPanel()">
+        <span class="material-icons">close</span>
+      </button>
+    </header>
+
+    <div class="rv-preview-panel__body">
+      <section class="rv-preview-section">
+        <h3 class="rv-preview-section__title">{{ ui.t('reviews.preview.user') }}</h3>
+        <div class="rv-preview-user">
+          <div class="rv-preview-user__avatar">
+            @if (r.userProfileImageUrl) {
+              <img [src]="r.userProfileImageUrl" [alt]="r.userFullName" />
+            } @else {
+              {{ r.userFullName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() }}
+            }
+          </div>
+          <div>
+            <div class="rv-preview-user__name">{{ r.userFullName }}</div>
+            <div class="rv-preview-user__meta">
+              @if (r.userGender) { <span>{{ r.userGender }}</span> }
+              @if (r.userAge !== null) { <span>{{ r.userAge }} {{ ui.t('reviews.preview.years') }}</span> }
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="rv-preview-section">
+        <h3 class="rv-preview-section__title">{{ ui.t('reviews.preview.entity') }}</h3>
+        <div class="rv-preview-entity">
+          <span class="rv-preview-entity__name">{{ r.entityName ?? '—' }}</span>
+          <span class="rv-preview-entity__type">{{ entityTypeLabel(r.entityType) }}</span>
+          <div class="rv-preview-entity__actions">
+            <button
+              type="button"
+              class="rv-preview-entity__link rv-preview-entity__link--admin"
+              (click)="openInAdminEntity(r)"
+            >
+              <span class="material-icons">admin_panel_settings</span>
+              {{ ui.t('reviews.actions.open_in_admin') }}
+            </button>
+            @if (previewEntityRoute(r); as route) {
+              <a class="rv-preview-entity__link" [href]="route" target="_blank" rel="noopener">
+                <span class="material-icons">open_in_new</span>
+                {{ ui.t('reviews.actions.open_in_app') }}
+              </a>
+            }
+          </div>
+        </div>
+      </section>
+
+      <section class="rv-preview-section">
+        <h3 class="rv-preview-section__title">{{ ui.t('reviews.preview.rating') }}</h3>
+        <div class="rv-preview-rating">
+          <span class="rv-stars {{ ratingClass(r.rating) }}">
+            @for (filled of starsArray(r.rating); track $index) {
+              <span class="material-icons rv-star">{{ filled ? 'star' : 'star_border' }}</span>
+            }
+          </span>
+          <span>{{ r.rating }}/5</span>
+          <span class="rv-preview-rating__date">{{ formatDate(r.createdAt) }}</span>
+        </div>
+      </section>
+
+      @if (r.comment) {
+        <section class="rv-preview-section">
+          <h3 class="rv-preview-section__title">{{ ui.t('reviews.preview.comment') }}</h3>
+          <p class="rv-preview-comment">{{ r.comment }}</p>
+        </section>
+      }
+
+      @if (r.imageUrls.length > 0) {
+        <section class="rv-preview-section">
+          <h3 class="rv-preview-section__title">{{ ui.t('reviews.preview.images') }} ({{ r.imageUrls.length }})</h3>
+          <div class="rv-preview-images">
+            @for (url of r.imageUrls; track url; let i = $index) {
+              <button type="button" class="rv-preview-image" (click)="openPreviewImage(i)">
+                <img [src]="url" [alt]="'Slika ' + (i + 1)" loading="lazy" />
+              </button>
+            }
+          </div>
+        </section>
+      }
+
+      @if (r.ownerReply) {
+        <section class="rv-preview-section">
+          <h3 class="rv-preview-section__title">{{ ui.t('reviews.preview.owner_reply') }}</h3>
+          <p class="rv-preview-comment">{{ r.ownerReply }}</p>
+        </section>
+      }
+    </div>
+  </aside>
+
+  @if (previewLightboxIndex() !== null) {
+    <div class="rv-preview-lightbox" (click)="closePreviewLightbox()">
+      <button class="rv-preview-lightbox__close" type="button" (click)="closePreviewLightbox(); $event.stopPropagation()">
+        <span class="material-icons">close</span>
+      </button>
+      <button class="rv-preview-lightbox__nav rv-preview-lightbox__nav--prev" type="button" (click)="previewLightboxPrev(); $event.stopPropagation()">
+        <span class="material-icons">chevron_left</span>
+      </button>
+      <img [src]="r.imageUrls[previewLightboxIndex()!]" alt="" (click)="$event.stopPropagation()" />
+      <button class="rv-preview-lightbox__nav rv-preview-lightbox__nav--next" type="button" (click)="previewLightboxNext(); $event.stopPropagation()">
+        <span class="material-icons">chevron_right</span>
+      </button>
+      <span class="rv-preview-lightbox__counter">{{ previewLightboxIndex()! + 1 }} / {{ r.imageUrls.length }}</span>
+    </div>
+  }
 }

@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
@@ -82,6 +82,9 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
   protected readonly replyText = signal('');
   protected readonly isActionLoading = signal(false);
   protected readonly selectedReview = signal<ReviewRow | null>(null);
+  protected readonly previewReview = signal<ReviewRow | null>(null);
+  protected readonly isPreviewClosing = signal(false);
+  protected readonly previewLightboxIndex = signal<number | null>(null);
   protected readonly deleteReason = signal('');
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
@@ -170,6 +173,7 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
     protected readonly ui: AdminUiPreferencesService,
     private readonly http: HttpClient,
     private readonly router: Router,
+    private readonly route: ActivatedRoute,
     private readonly dashboardAuth: DashboardAuthService,
     protected readonly profileService: AdminProfileService,
   ) {}
@@ -312,6 +316,66 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  protected openPreviewPanel(review: ReviewRow, event?: Event): void {
+    if (event) {
+      const target = event.target as HTMLElement;
+      if (target.closest('button, a, .rv-menu-wrap, .rv-entity-links')) return;
+    }
+    this.previewReview.set(review);
+  }
+
+  protected closePreviewPanel(): void {
+    if (this.isPreviewClosing()) return;
+    this.previewLightboxIndex.set(null);
+    this.isPreviewClosing.set(true);
+    setTimeout(() => {
+      this.previewReview.set(null);
+      this.isPreviewClosing.set(false);
+    }, 200);
+  }
+
+  protected previewEntityRoute(review: ReviewRow): string | null {
+    if (!review.entitySlug) return null;
+    const map: Record<EntityType, string> = {
+      destination: '/destinations',
+      place: '/places',
+      activity: '/activities',
+      event: '/events',
+    };
+    return `${map[review.entityType]}/${review.entitySlug}`;
+  }
+
+  protected openInAdminEntity(review: ReviewRow): void {
+    this.closePreviewPanel();
+    this.navigateToAdminEntity(review);
+  }
+
+  protected openPreviewImage(index: number): void {
+    this.previewLightboxIndex.set(index);
+  }
+
+  protected closePreviewLightbox(): void {
+    this.previewLightboxIndex.set(null);
+  }
+
+  protected previewLightboxNext(): void {
+    const r = this.previewReview();
+    const idx = this.previewLightboxIndex();
+    if (!r || idx === null) return;
+    const total = r.imageUrls.length;
+    if (total === 0) return;
+    this.previewLightboxIndex.set((idx + 1) % total);
+  }
+
+  protected previewLightboxPrev(): void {
+    const r = this.previewReview();
+    const idx = this.previewLightboxIndex();
+    if (!r || idx === null) return;
+    const total = r.imageUrls.length;
+    if (total === 0) return;
+    this.previewLightboxIndex.set((idx - 1 + total) % total);
   }
 
   protected openDeleteDialog(review: ReviewRow): void {
@@ -504,6 +568,7 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
           this.reviews.set(response.items);
           this.total.set(response.total);
           this.isLoading.set(false);
+          this.consumeOpenReviewIdQueryParam();
         },
         error: () => {
           this.reviews.set([]);
@@ -513,6 +578,25 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  private consumeOpenReviewIdQueryParam(): void {
+    const openReviewId = this.route.snapshot.queryParamMap.get('openReviewId');
+    if (!openReviewId) return;
+    const row = this.reviews().find(r => r.id === openReviewId);
+    if (row) {
+      this.previewReview.set(row);
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { openReviewId: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+      setTimeout(() => {
+        const el = document.querySelector(`[data-admin-row-id="${openReviewId}"]`) as HTMLElement | null;
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 80);
+    }
   }
 
   private loadStats(): void {

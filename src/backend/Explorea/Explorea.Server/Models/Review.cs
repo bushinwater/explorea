@@ -42,5 +42,7 @@ namespace Explorea.API.Models
 
         [ForeignKey("UserId")]
         public User User { get; set; } = null!;
+
+        public ICollection<ReviewImage> Images { get; set; } = new List<ReviewImage>();
     }
 }

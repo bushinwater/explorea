@@ -404,6 +404,15 @@
   "reviews.error.load": "Failed to load reviews.",
   "reviews.error.action": "Action failed. Please try again.",
 
+  "reviews.preview.title": "Review details",
+  "reviews.preview.user": "User",
+  "reviews.preview.years": "y.o.",
+  "reviews.preview.entity": "Entity",
+  "reviews.preview.rating": "Rating",
+  "reviews.preview.comment": "Comment",
+  "reviews.preview.images": "Photos",
+  "reviews.preview.owner_reply": "Owner reply",
+
   "sidebar.events": "Events",
 
   "events.title": "Event Management",

@@ -19,6 +19,7 @@ import { UserService } from '../../../core/services/user.service';
 import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 import { ReviewCard } from '../../../shared/components/review-card/review-card';
+import { ReviewsLightbox } from '../../../shared/components/reviews-lightbox/reviews-lightbox';
 import { BugReportModal } from '../../../shared/components/bug-report-modal/bug-report-modal';
 
 const SCROLL_KEY = 'profile_scroll_y';
@@ -27,7 +28,7 @@ const SECTION_KEY = 'profile_open_section';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, Sidebar, BottomNav, TranslateModule, ImageCropperComponent, ReviewCard, BugReportModal],
+  imports: [CommonModule, FormsModule, RouterModule, Sidebar, BottomNav, TranslateModule, ImageCropperComponent, ReviewCard, ReviewsLightbox, BugReportModal],
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })
@@ -70,6 +71,16 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
   partnerUpgradeLoading = false;
   partnerUpgradeError = '';
   reviewDtos: ReviewDto[] = [];
+  reviewsLightboxOpen = false;
+  lightboxStartReviewId = '';
+  lightboxStartImageIndex = 0;
+
+  openReviewsLightbox(payload: { reviewId: string; imageIndex: number }): void {
+    this.lightboxStartReviewId = payload.reviewId;
+    this.lightboxStartImageIndex = payload.imageIndex;
+    this.reviewsLightboxOpen = true;
+    this.cdr.detectChanges();
+  }
   reviewsLoaded = false;
   reviewsLoading = false;
   currentUserId = '';
@@ -246,6 +257,7 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
       entityType: r.entityType,
       entityName: r.entityName,
       entitySlug: r.entitySlug,
+      images: r.images ?? [],
       user: {
         id: this.user!.id,
         firstName: this.user!.firstName,
@@ -268,7 +280,13 @@ export class Settings implements OnInit, AfterViewInit, OnDestroy {
   onReviewUpdated(review: ReviewDto): void {
     const idx = this.reviewDtos.findIndex(r => r.id === review.id);
     if (idx !== -1) {
-      this.reviewDtos[idx] = { ...this.reviewDtos[idx], rating: review.rating, comment: review.comment ?? '' };
+      this.reviewDtos = [...this.reviewDtos];
+      this.reviewDtos[idx] = {
+        ...this.reviewDtos[idx],
+        rating: review.rating,
+        comment: review.comment ?? '',
+        images: review.images ?? [],
+      };
       this.cdr.detectChanges();
     }
   }

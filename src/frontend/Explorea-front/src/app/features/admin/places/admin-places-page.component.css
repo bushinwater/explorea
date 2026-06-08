@@ -420,7 +420,11 @@
 }
 
 .place-row--selected .place-td {
-  background: var(--color-primary-muted) !important;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent) !important;
+}
+
+.place-row--selected .place-td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
 /* Name cell */

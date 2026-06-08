@@ -443,7 +443,11 @@
 }
 
 .activity-row--selected .activity-td {
-  background: var(--color-primary-muted) !important;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent) !important;
+}
+
+.activity-row--selected .activity-td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
 .activity-name-cell {

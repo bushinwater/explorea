@@ -21,11 +21,13 @@ export interface DestinationDependenciesResponse {
 }
 
 export interface ReviewItem {
+  id?: string;
   authorName: string;
   authorAvatarUrl: string | null;
   rating: number;
   comment: string | null;
   createdAt: string;
+  imageUrls?: string[];
 }
 
 export interface DestinationImage {

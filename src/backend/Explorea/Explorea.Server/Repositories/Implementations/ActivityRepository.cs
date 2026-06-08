@@ -29,10 +29,11 @@ namespace Explorea.Server.Repositories.Implementations
         return await _db.Reviews
             .AsNoTracking()
             .Include(r => r.User)
+            .Include(r => r.Images)
             .Where(r => r.EntityType == "activity" && r.EntityId == activityId)
             .OrderByDescending(r => r.CreatedAt)
             .Take(take)
-            .ToListAsync();    
+            .ToListAsync();
     }
 
     public async Task<Activity?> GetBySlugAsync(string slug)

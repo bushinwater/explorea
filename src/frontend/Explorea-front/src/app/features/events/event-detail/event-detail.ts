@@ -17,6 +17,7 @@ import { EventCard } from '../../../shared/components/event-card/event-card';
 import { ImageGallery } from '../../../shared/components/image-gallery/image-gallery';
 import { ReviewCard } from '../../../shared/components/review-card/review-card';
 import { ReviewModal } from '../../../shared/components/review-modal/review-modal';
+import { ReviewsLightbox } from '../../../shared/components/reviews-lightbox/reviews-lightbox';
 import { RatingStats } from '../../../shared/components/rating-stats/rating-stats';
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { PopularityService } from '../../../core/services/popularity.service';
@@ -46,7 +47,7 @@ const LIGHT = {
 @Component({
   selector: 'app-event-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, EventCard, ImageGallery, DetailFooter, ReviewCard, ReviewModal, RatingStats, ReviewsPanel, ShareButton, AddToPlannerModal],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, EventCard, ImageGallery, DetailFooter, ReviewCard, ReviewModal, ReviewsLightbox, RatingStats, ReviewsPanel, ShareButton, AddToPlannerModal],
   templateUrl: './event-detail.html',
   styleUrl: './event-detail.css',
 })
@@ -67,6 +68,16 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   hasReviewed = false;
   reviewFormOpen = false;
   reviewsPanelOpen = false;
+  reviewsLightboxOpen = false;
+  lightboxStartReviewId = '';
+  lightboxStartImageIndex = 0;
+
+  openReviewsLightbox(payload: { reviewId: string; imageIndex: number }): void {
+    this.lightboxStartReviewId = payload.reviewId;
+    this.lightboxStartImageIndex = payload.imageIndex;
+    this.reviewsLightboxOpen = true;
+    this.cdr.detectChanges();
+  }
   currentUserId = '';
   private savedScrollY = 0;
 

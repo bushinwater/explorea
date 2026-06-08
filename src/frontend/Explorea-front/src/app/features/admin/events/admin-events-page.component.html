@@ -399,6 +399,7 @@
               @for (ev of events(); track rowKey(ev)) {
                 <tr
                   class="evts-row"
+                  [attr.data-admin-row-id]="ev.id"
                   [class.evts-row--selected]="isSelected(ev)"
                   (click)="openDetailsPanel(ev)"
                 >

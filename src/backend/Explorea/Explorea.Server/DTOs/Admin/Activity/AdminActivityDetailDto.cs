@@ -9,11 +9,13 @@ namespace Explorea.API.DTOs.Admin.Activity
 
     public class ActivityReviewDto
     {
+        public Guid Id { get; set; }
         public string AuthorName { get; set; } = null!;
         public string? AuthorAvatarUrl { get; set; }
         public short Rating { get; set; }
         public string? Comment { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
+        public List<string> ImageUrls { get; set; } = new();
     }
 
     public class AdminActivityDetailsDto

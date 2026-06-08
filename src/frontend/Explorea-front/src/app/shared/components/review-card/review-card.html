@@ -43,6 +43,22 @@
   <!-- Read mode -->
   <p *ngIf="!editMode" class="review-card__comment">{{ review.comment }}</p>
 
+  <div *ngIf="!editMode && reviewImages.length > 0" class="review-card__images">
+    <button
+      *ngFor="let img of visibleThumbs; let i = index"
+      type="button"
+      class="review-card__image"
+      [class.review-card__image--more]="i === thumbLimit - 1 && extraImagesCount > 0"
+      (click)="onImageClick(i)"
+    >
+      <img [src]="img.imageUrl" [alt]="'Slika ' + (i + 1)" loading="lazy" />
+      <span class="review-card__image-more" *ngIf="i === thumbLimit - 1 && extraImagesCount > 0">
+        <span class="material-icons">add</span>
+        {{ extraImagesCount }}
+      </span>
+    </button>
+  </div>
+
   <!-- Owner reply -->
   <div *ngIf="!editMode && review.ownerReply" class="review-card__owner-reply">
     <div class="review-card__owner-reply-header">
@@ -76,12 +92,46 @@
       rows="3"
       maxlength="1000">
     </textarea>
+
+    <div class="review-card__edit-images">
+      <div class="review-card__edit-image" *ngFor="let img of editImages; let i = index">
+        <img [src]="img.previewUrl" alt="" />
+        <div class="review-card__edit-image-overlay" *ngIf="img.uploading">
+          <span class="material-icons spin">sync</span>
+        </div>
+        <div class="review-card__edit-image-overlay review-card__edit-image-overlay--error" *ngIf="img.error">
+          <span class="material-icons">error_outline</span>
+        </div>
+        <button type="button" class="review-card__edit-image-remove" (click)="removeEditImage(i)">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <button
+        *ngIf="editImages.length < maxImages"
+        type="button"
+        class="review-card__edit-add"
+        (click)="triggerEditFilePicker()"
+      >
+        <span class="material-icons">add_a_photo</span>
+      </button>
+    </div>
+    <input
+      #editFileInput
+      type="file"
+      class="review-card__edit-file"
+      accept="image/*"
+      capture="environment"
+      multiple
+      (change)="onEditFilesSelected($event)"
+    />
+
     <p *ngIf="editError" class="review-card__edit-error">{{ editError }}</p>
     <div class="review-card__edit-actions">
       <button class="review-card__edit-cancel" (click)="cancelEdit()" type="button">Otkaži</button>
-      <button class="review-card__edit-save" (click)="saveEdit()" [disabled]="editRating === 0 || saving" type="button">
-        <span class="material-icons spin" *ngIf="saving" style="font-size:16px">sync</span>
-        <span *ngIf="!saving">Sačuvaj</span>
+      <button class="review-card__edit-save" (click)="saveEdit()" [disabled]="!canSaveEdit" type="button">
+        <span class="material-icons spin" *ngIf="saving || editHasUploads" style="font-size:16px">sync</span>
+        <span *ngIf="!saving && !editHasUploads">Sačuvaj</span>
+        <span *ngIf="editHasUploads && !saving">{{ 'REVIEW_MODAL.UPLOADING' | translate }}</span>
       </button>
     </div>
   </ng-container>

@@ -339,7 +339,8 @@
             @for (place of places(); track place.id) {
               <tr
                 class="place-row"
-                [class.place-row--selected]="detailsPanelRow()?.id === place.id"
+                [attr.data-admin-row-id]="place.id"
+                [class.place-row--selected]="detailsPanelRow()?.id === place.id || (isEditModalOpen() && selectedPlace()?.id === place.id)"
                 (click)="openDetailsPanel(place)"
               >
                 <!-- Name + address + thumb -->

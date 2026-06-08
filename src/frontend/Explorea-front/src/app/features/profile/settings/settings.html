@@ -139,8 +139,15 @@
                 [review]="r"
                 [currentUserId]="currentUserId"
                 (deleted)="onReviewDeleted($event)"
-                (updated)="onReviewUpdated($event)" />
+                (updated)="onReviewUpdated($event)"
+                (imageClicked)="openReviewsLightbox($event)" />
             </div>
+            <app-reviews-lightbox
+              [isOpen]="reviewsLightboxOpen"
+              [reviews]="reviewDtos"
+              [startReviewId]="lightboxStartReviewId"
+              [startImageIndex]="lightboxStartImageIndex"
+              (closed)="reviewsLightboxOpen = false" />
             <div class="reviews-empty" *ngIf="reviewDtos.length === 0">
               <span class="material-icons">rate_review</span>
               <p>{{ 'MY_REVIEWS.EMPTY' | translate }}</p>

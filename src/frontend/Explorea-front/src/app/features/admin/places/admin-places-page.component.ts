@@ -105,6 +105,18 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   protected readonly detailsPanelDetail  = signal<PlaceDetail | null>(null);
   protected readonly detailsPanelInterests = signal<InterestTagOption[]>([]);
   protected readonly detailsPanelReviews   = signal<PlaceReview[]>([]);
+
+  private pendingScrollRowId: string | null = null;
+
+  private scrollToPendingRow(): void {
+    if (!this.pendingScrollRowId) return;
+    const id = this.pendingScrollRowId;
+    this.pendingScrollRowId = null;
+    setTimeout(() => {
+      const el = document.querySelector(`[data-admin-row-id="${id}"]`) as HTMLElement | null;
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  }
   protected readonly descriptionExpanded = signal(false);
 
   protected readonly totalPages = computed(() =>
@@ -182,6 +194,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
 
         if (openId) {
           const openName = params.get('openName') ?? '';
+          this.pendingScrollRowId = openId;
           this.openDetailsPanel({ id: openId, name: openName } as unknown as PlaceRow);
           void this.router.navigate([], {
             relativeTo: this.route,
@@ -225,6 +238,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
       }),
     );
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
+    if (openEditId) this.pendingScrollRowId = openEditId;
     this.loadPlaces(openEditId ? (items) => {
       const place = items.find(p => p.id === openEditId);
       if (place) this.openEdit(place);
@@ -450,6 +464,10 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
 
   protected openDetailsPanel(place: PlaceRow): void {
 
+    // Enrich stub row from loaded rows when opened via openId.
+    const loaded = this.places().find(r => r.id === place.id);
+    if (loaded) place = { ...loaded, ...place, name: loaded.name };
+
     this.detailsPanelRow.set(place);
     this.detailsPanelDetail.set(null);
     this.detailsPanelInterests.set([]);
@@ -462,6 +480,25 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
         next: (detail) => {
           this.detailsPanelDetail.set(detail);
           this.isDetailLoading.set(false);
+          const currentRow = this.detailsPanelRow();
+          if (currentRow) {
+            const firstImage = detail.images?.[0]?.imageUrl ?? null;
+            this.detailsPanelRow.set({
+              ...currentRow,
+              name:            detail.name || currentRow.name,
+              slug:            detail.slug || currentRow.slug,
+              previewImageUrl: firstImage ?? currentRow.previewImageUrl,
+              typeId:          detail.typeId ?? currentRow.typeId,
+              type:            detail.type ?? currentRow.type,
+              city:            detail.city ?? currentRow.city,
+              region:          detail.region ?? currentRow.region,
+              destination:     detail.destination ?? currentRow.destination,
+              address:         detail.address ?? currentRow.address,
+              avgRating:       detail.avgRating ?? currentRow.avgRating,
+              isFeatured:      detail.isFeatured ?? currentRow.isFeatured,
+              status:          detail.status ?? currentRow.status,
+            });
+          }
         },
         error: () => {
           this.isDetailLoading.set(false);
@@ -685,6 +722,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
           this.total.set(response.total);
           this.isLoading.set(false);
           afterLoad?.(response.items);
+          this.scrollToPendingRow();
         },
         error: () => {
           this.places.set([]);

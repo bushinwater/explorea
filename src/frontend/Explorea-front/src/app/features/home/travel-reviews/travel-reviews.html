@@ -7,6 +7,16 @@
   </div>
 
   <div class="scroll-row">
-    <app-review-card *ngFor="let review of reviews" [review]="review" />
+    <app-review-card
+      *ngFor="let review of reviews"
+      [review]="review"
+      (imageClicked)="openLightbox($event)" />
   </div>
+
+  <app-reviews-lightbox
+    [isOpen]="lightboxOpen"
+    [reviews]="reviews"
+    [startReviewId]="startReviewId"
+    [startImageIndex]="startImageIndex"
+    (closed)="lightboxOpen = false" />
 </section>

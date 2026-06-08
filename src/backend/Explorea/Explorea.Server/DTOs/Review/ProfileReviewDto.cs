@@ -12,5 +12,6 @@ namespace Explorea.API.DTOs.Review
         public string? Comment { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
+        public List<ReviewImageDto> Images { get; set; } = new();
     }
 }

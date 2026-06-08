@@ -38,11 +38,13 @@ export interface ActivityRow {
 }
 
 export interface ActivityReview {
+  id?: string;
   authorName: string;
   authorAvatarUrl: string | null;
   rating: number;
   comment: string | null;
   createdAt: string;
+  imageUrls?: string[];
 }
 
 export interface ActivityImageItem {

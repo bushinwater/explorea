@@ -44,11 +44,13 @@ export interface DestinationOption {
 }
 
 export interface PlaceReview {
+  id?: string;
   authorName: string;
   authorAvatarUrl: string | null;
   rating: number;
   comment: string | null;
   createdAt: string;
+  imageUrls?: string[];
 }
 
 export interface PlaceImage {

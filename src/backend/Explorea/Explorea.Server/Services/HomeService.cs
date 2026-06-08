@@ -92,7 +92,11 @@ namespace Explorea.Server.Services
         LastName = d.Review.User.LastName,
         TravelerRank = d.Review.User.TravelerRank,
         ProfileImageUrl = d.Review.User.ProfileImageUrl
-      }
+      },
+      Images = d.Review.Images
+          .OrderBy(i => i.SortOrder)
+          .Select(i => new ReviewImageDto { Id = i.Id, ImageUrl = i.ImageUrl, SortOrder = i.SortOrder })
+          .ToList()
     };
 
     private static ActivityCardDto MapActivityCard(Activity a) => new()

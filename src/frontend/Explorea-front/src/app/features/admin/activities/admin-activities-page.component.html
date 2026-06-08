@@ -424,7 +424,8 @@
             @for (activity of activities(); track activity.id) {
               <tr
                 class="activity-row"
-                [class.activity-row--selected]="selectedActivity()?.id === activity.id"
+                [attr.data-admin-row-id]="activity.id"
+                [class.activity-row--selected]="selectedActivity()?.id === activity.id || editingActivityId() === activity.id"
                 (click)="openDetailsPanel(activity)"
               >
                 <td class="activity-td">

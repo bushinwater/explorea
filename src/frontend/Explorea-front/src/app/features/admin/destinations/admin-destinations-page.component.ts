@@ -153,6 +153,8 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     protected readonly dashAuth: DashboardAuthService,
   ) {}
 
+  private pendingScrollRowId: string | null = null;
+
   ngOnInit(): void {
     this.subscription.add(
       this.route.queryParamMap.subscribe((params) => {
@@ -162,6 +164,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         const openId = params.get('openId');
         if (openId) {
           const openName = params.get('openName') ?? '';
+          this.pendingScrollRowId = openId;
           this.openDetailsPanel({ id: openId, name: openName } as unknown as DestinationRow);
           void this.router.navigate([], {
             relativeTo: this.route,
@@ -189,6 +192,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.loadRegions();
     this.loadTypes();
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
+    if (openEditId) this.pendingScrollRowId = openEditId;
     this.loadDestinations(openEditId ? (items) => {
       const dest = items.find(d => d.id === openEditId);
       if (dest) this.openEdit(dest);
@@ -385,12 +389,23 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
 
   protected openDetailsPanel(dest: DestinationRow): void {
 
+    // If we were opened via openId we only have { id, name }. Try to enrich from loaded rows,
+    // and always re-fetch the row from API so views / rating / category / region are accurate.
+    const loaded = this.destinations().find(r => r.id === dest.id);
+    if (loaded) dest = { ...loaded, ...dest, name: dest.name || loaded.name };
+
     this.detailsPanelRow.set(dest);
     this.detailsPanelDetail.set(null);
     this.detailsPanelInterests.set([]);
     this.isDetailsPanelOpen.set(true);
     this.isDetailLoading.set(true);
     this.descriptionExpanded.set(false);
+
+    this.subscription.add(
+      this.destinationsService.getDestinationRowById(dest.id).subscribe({
+        next: (fullRow) => this.detailsPanelRow.set(fullRow),
+      }),
+    );
 
     this.subscription.add(
       this.destinationsService.getDestinationById(dest.id).subscribe({
@@ -416,6 +431,13 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         error: () => this.detailsPanelReviews.set([]),
       }),
     );
+  }
+
+  protected openReviewInAdmin(reviewId: string): void {
+    this.closeDetailsPanel();
+    void this.router.navigate(['/admin/reviews'], {
+      queryParams: { openReviewId: reviewId },
+    });
   }
 
   protected closeDetailsPanel(): void {
@@ -632,6 +654,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
           this.total.set(response.total);
           this.isLoading.set(false);
           afterLoad?.(response.items);
+          this.scrollToPendingRow();
         },
         error: () => {
           this.destinations.set([]);
@@ -641,6 +664,16 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  private scrollToPendingRow(): void {
+    if (!this.pendingScrollRowId) return;
+    const id = this.pendingScrollRowId;
+    this.pendingScrollRowId = null;
+    setTimeout(() => {
+      const el = document.querySelector(`[data-admin-row-id="${id}"]`) as HTMLElement | null;
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
   }
 
   private loadDestinationsFuzzy(query: string): void {
