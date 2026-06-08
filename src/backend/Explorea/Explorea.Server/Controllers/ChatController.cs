@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Explorea.Server.Controllers
 {
@@ -31,14 +32,14 @@ namespace Explorea.Server.Controllers
 
             var history = request.History ?? new List<ChatMessage>();
 
+            string reply;
             if (IsWeekendEventRecommendationRequest(request.Message))
-            {
-                var recommendationReply = await BuildWeekendEventRecommendationAsync(request.Context);
-                return Ok(new { reply = recommendationReply });
-            }
+                reply = await BuildWeekendEventRecommendationAsync(request.Context);
+            else
+                reply = await _chatService.ChatAsync(history, request.Message, request.Context);
 
-            var reply = await _chatService.ChatAsync(history, request.Message, request.Context);
-            return Ok(new { reply });
+            var references = await ExtractReferencesAsync(reply);
+            return Ok(new { reply, references });
         }
 
         [HttpGet("history")]
@@ -104,6 +105,116 @@ namespace Explorea.Server.Controllers
             if (string.IsNullOrWhiteSpace(email)) return null;
             var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
             return user?.Id;
+        }
+
+        private static readonly Regex EntityLinkRegex = new(
+            @"\[([^\]]+)\]\(/(destinations|places|activities|events)/([a-z0-9\-]+)\)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        private async Task<List<ChatReferenceDto>> ExtractReferencesAsync(string reply)
+        {
+            if (string.IsNullOrWhiteSpace(reply)) return new List<ChatReferenceDto>();
+
+            var matches = EntityLinkRegex.Matches(reply);
+            if (matches.Count == 0) return new List<ChatReferenceDto>();
+
+            var refs = matches
+                .Select(m => (Type: m.Groups[2].Value.ToLowerInvariant(), Slug: m.Groups[3].Value.ToLowerInvariant()))
+                .Distinct()
+                .ToList();
+
+            var destinationSlugs = refs.Where(r => r.Type == "destinations").Select(r => r.Slug).ToList();
+            var placeSlugs       = refs.Where(r => r.Type == "places").Select(r => r.Slug).ToList();
+            var activitySlugs    = refs.Where(r => r.Type == "activities").Select(r => r.Slug).ToList();
+            var eventSlugs       = refs.Where(r => r.Type == "events").Select(r => r.Slug).ToList();
+
+            var results = new Dictionary<string, ChatReferenceDto>();
+
+            if (destinationSlugs.Count > 0)
+            {
+                var destinations = await _db.Destinations
+                    .Where(d => !d.IsDeleted && destinationSlugs.Contains(d.Slug))
+                    .Select(d => new
+                    {
+                        d.Slug,
+                        d.Name,
+                        d.Description,
+                        ImageUrl = d.PreviewImageUrl
+                            ?? d.HeroImageUrl
+                            ?? d.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault()
+                    })
+                    .ToListAsync();
+                foreach (var d in destinations)
+                    results[$"destinations/{d.Slug}"] = new ChatReferenceDto("destination", d.Slug, d.Name, Trim(d.Description), d.ImageUrl);
+            }
+
+            if (placeSlugs.Count > 0)
+            {
+                var places = await _db.Places
+                    .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved" && placeSlugs.Contains(p.Slug))
+                    .Select(p => new
+                    {
+                        p.Slug,
+                        p.Name,
+                        p.Description,
+                        ImageUrl = p.PreviewImageUrl
+                            ?? p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault()
+                    })
+                    .ToListAsync();
+                foreach (var p in places)
+                    results[$"places/{p.Slug}"] = new ChatReferenceDto("place", p.Slug, p.Name, Trim(p.Description), p.ImageUrl);
+            }
+
+            if (activitySlugs.Count > 0)
+            {
+                var activities = await _db.Activities
+                    .Where(a => !a.IsDeleted && activitySlugs.Contains(a.Slug))
+                    .Select(a => new
+                    {
+                        a.Slug,
+                        a.Name,
+                        a.Description,
+                        ImageUrl = a.PreviewImageUrl
+                            ?? a.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault()
+                    })
+                    .ToListAsync();
+                foreach (var a in activities)
+                    results[$"activities/{a.Slug}"] = new ChatReferenceDto("activity", a.Slug, a.Name, Trim(a.Description), a.ImageUrl);
+            }
+
+            if (eventSlugs.Count > 0)
+            {
+                var events = await _db.Events
+                    .Where(e => !e.IsDeleted && e.Visibility == "published" && eventSlugs.Contains(e.Slug))
+                    .Select(e => new
+                    {
+                        e.Slug,
+                        e.Name,
+                        e.Description,
+                        ImageUrl = e.PreviewImageUrl
+                            ?? e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault()
+                    })
+                    .ToListAsync();
+                foreach (var e in events)
+                    results[$"events/{e.Slug}"] = new ChatReferenceDto("event", e.Slug, e.Name, Trim(e.Description), e.ImageUrl);
+            }
+
+            return refs
+                .Select(r => results.TryGetValue($"{r.Type}/{r.Slug}", out var dto) ? dto : null)
+                .Where(dto => dto != null)
+                .Select(dto => dto!)
+                .ToList();
+        }
+
+        private static string? Trim(string? description, int maxChars = 160)
+        {
+            if (string.IsNullOrWhiteSpace(description)) return null;
+            description = description.Trim();
+            if (description.Length <= maxChars) return description;
+            var cut = description.Substring(0, maxChars);
+            var lastSpace = cut.LastIndexOf(' ');
+            if (lastSpace > maxChars / 2) cut = cut.Substring(0, lastSpace);
+            return cut.TrimEnd('.', ',', ' ') + "…";
         }
 
         private async Task<string> BuildWeekendEventRecommendationAsync(ChatContext? context)
@@ -268,4 +379,5 @@ namespace Explorea.Server.Controllers
     public record ChatContext(double? Lat, double? Lng, string? FirstName);
     public record ChatRequest(List<ChatMessage>? History, string Message, ChatContext? Context);
     public record SaveHistoryRequest(List<ChatMessage> Messages);
+    public record ChatReferenceDto(string Type, string Slug, string Name, string? Description, string? ImageUrl);
 }

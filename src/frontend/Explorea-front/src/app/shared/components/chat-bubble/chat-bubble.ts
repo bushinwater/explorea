@@ -15,7 +15,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { ChatService, ChatMessage, ChatContext } from '../../../core/services/chat.service';
+import { ChatService, ChatMessage, ChatContext, ChatReference } from '../../../core/services/chat.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LocationService } from '../../../core/services/location.service';
 import { ChatBubbleService } from '../../../core/services/chat-bubble.service';
@@ -129,6 +129,39 @@ export class ChatBubble implements OnInit, OnDestroy {
     this.open = false;
   }
 
+  openReference(ref: ChatReference): void {
+    const pathByType: Record<ChatReference['type'], string> = {
+      destination: 'destinations',
+      place:       'places',
+      activity:    'activities',
+      event:       'events',
+    };
+    const segment = pathByType[ref.type];
+    if (!segment) return;
+    this.router.navigateByUrl(`/${segment}/${ref.slug}`);
+    this.open = false;
+  }
+
+  referenceTypeLabel(type: ChatReference['type']): string {
+    const map: Record<ChatReference['type'], string> = {
+      destination: 'CHAT.REF_TYPE.DESTINATION',
+      place:       'CHAT.REF_TYPE.PLACE',
+      activity:    'CHAT.REF_TYPE.ACTIVITY',
+      event:       'CHAT.REF_TYPE.EVENT',
+    };
+    return this.translate.instant(map[type]);
+  }
+
+  referenceFallbackIcon(type: ChatReference['type']): string {
+    const map: Record<ChatReference['type'], string> = {
+      destination: 'landscape',
+      place:       'store',
+      activity:    'directions_walk',
+      event:       'event',
+    };
+    return map[type];
+  }
+
   send(): void {
     const text = this.input.trim();
     if (!text || this.loading) return;
@@ -188,7 +221,11 @@ export class ChatBubble implements OnInit, OnDestroy {
 
     this.chatService.send(history, text, context).subscribe({
       next: (res) => {
-        this.messages.push({ role: 'assistant', content: res.reply });
+        this.messages.push({
+          role: 'assistant',
+          content: res.reply,
+          references: res.references ?? [],
+        });
         this.persistHistory();
         this.loading = false;
         this.cdr.detectChanges();

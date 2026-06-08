@@ -713,7 +713,13 @@
     "SUGGEST_EVENTS": "Upcoming events",
     "SUGGEST_ACTIVITIES": "Activities",
     "INPUT_PLACEHOLDER": "Ask a question...",
-    "SEND_ARIA": "Send"
+    "SEND_ARIA": "Send",
+    "REF_TYPE": {
+      "DESTINATION": "Destination",
+      "PLACE": "Place",
+      "ACTIVITY": "Activity",
+      "EVENT": "Event"
+    }
   },
   "SAVED_ITEMS": {
     "TITLE": "Saved",

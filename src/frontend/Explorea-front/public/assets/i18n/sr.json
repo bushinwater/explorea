@@ -713,7 +713,13 @@
     "SUGGEST_EVENTS": "Nadolazeći događaji",
     "SUGGEST_ACTIVITIES": "Aktivnosti",
     "INPUT_PLACEHOLDER": "Postavite pitanje...",
-    "SEND_ARIA": "Pošalji"
+    "SEND_ARIA": "Pošalji",
+    "REF_TYPE": {
+      "DESTINATION": "Destinacija",
+      "PLACE": "Mesto",
+      "ACTIVITY": "Aktivnost",
+      "EVENT": "Događaj"
+    }
   },
   "SAVED_ITEMS": {
     "TITLE": "Sačuvano",
