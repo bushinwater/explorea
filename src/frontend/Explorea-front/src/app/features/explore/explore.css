@@ -445,6 +445,24 @@
   border-color: var(--color-primary);
 }
 
+.filter-input--invalid,
+.filter-input--invalid:focus {
+  border-color: var(--color-danger, #ef4444);
+}
+
+.filter-price-error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0 0;
+  font-size: 0.74rem;
+  color: var(--color-danger, #ef4444);
+}
+
+.filter-price-error .material-icons {
+  font-size: 14px;
+}
+
 /* Extra filter attributes */
 .filter-extra-list {
   display: flex;

@@ -12,9 +12,7 @@
         <h2>{{ 'EXPLORE.FILTERS.TITLE' | translate }}</h2>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span class="filter-badge" *ngIf="activeFilterCount > 0">
-          {{ 'EXPLORE.FILTERS.BADGE' | translate:{ count: activeFilterCount } }}
-        </span>
+        <span class="filter-badge" *ngIf="activeFilterCount > 0">{{ activeFilterCount }}</span>
         <button class="circle-btn circle-btn--sm" (click)="toggleFilterPanel()" title="Zatvori">
           <span class="material-icons">close</span>
         </button>
@@ -41,7 +39,7 @@
           <span class="filter-group__value">{{ radiusKm }} km</span>
         </div>
         <input type="range" class="radius-slider" min="5" max="200" step="5"
-          [(ngModel)]="radiusKm" [style]="sliderStyle" />
+          [(ngModel)]="radiusKm" (change)="onRadiusChange()" [style]="sliderStyle" />
         <div class="radius-ticks"><span>5 km</span><span>200 km</span></div>
       </ng-container>
     </div>
@@ -78,7 +76,7 @@
     <!-- Radno vreme -->
     <div class="filter-group">
       <span class="filter-group__label">{{ 'EXPLORE.FILTERS.HOURS_RATINGS' | translate }}</span>
-      <label class="toggle-row" (click)="openNowOnly = !openNowOnly">
+      <label class="toggle-row" (click)="toggleOpenNow()">
         <span class="material-icons toggle-icon">schedule</span>
         <span class="toggle-label">{{ 'EXPLORE.FILTERS.OPEN_NOW' | translate }}</span>
         <div class="toggle-switch" [class.on]="openNowOnly">
@@ -145,19 +143,23 @@
       <div class="filter-price-row">
         <div class="filter-price-input">
           <label class="filter-price-label">{{ 'EXPLORE.FILTERS.PRICE_MIN' | translate }}</label>
-          <input type="number" class="filter-input" placeholder="0" [(ngModel)]="minPrice" min="0" />
+          <input type="number" class="filter-input" [class.filter-input--invalid]="priceRangeInvalid" placeholder="0" [(ngModel)]="minPrice" min="0" />
         </div>
         <span class="filter-price-sep">—</span>
         <div class="filter-price-input">
           <label class="filter-price-label">{{ 'EXPLORE.FILTERS.PRICE_MAX' | translate }}</label>
-          <input type="number" class="filter-input" [placeholder]="'EXPLORE.FILTERS.PRICE_MAX_HINT' | translate" [(ngModel)]="maxPrice" min="0" />
+          <input type="number" class="filter-input" [class.filter-input--invalid]="priceRangeInvalid" [placeholder]="'EXPLORE.FILTERS.PRICE_MAX_HINT' | translate" [(ngModel)]="maxPrice" min="0" />
         </div>
       </div>
+      <p class="filter-price-error" *ngIf="priceRangeInvalid">
+        <span class="material-icons">error_outline</span>
+        {{ 'EXPLORE.FILTERS.PRICE_INVALID' | translate }}
+      </p>
     </div>
 
-    <div class="filter-actions" *ngIf="activeFilterCount > 0">
-      <button class="ghost-btn ghost-btn--sm" (click)="resetFilters()">{{ 'EXPLORE.FILTERS.RESET' | translate }}</button>
-      <button class="primary-btn" (click)="applyFilters()">{{ 'EXPLORE.FILTERS.APPLY' | translate }}</button>
+    <div class="filter-actions" *ngIf="activeFilterCount > 0 || hasPendingPriceChange">
+      <button class="ghost-btn ghost-btn--sm" *ngIf="activeFilterCount > 0" (click)="resetFilters()">{{ 'EXPLORE.FILTERS.RESET' | translate }}</button>
+      <button class="primary-btn" *ngIf="hasPendingPriceChange" [disabled]="priceRangeInvalid" (click)="applyFilters()">{{ 'EXPLORE.FILTERS.APPLY' | translate }}</button>
     </div>
   </aside>
 
@@ -228,7 +230,7 @@
       <!-- Radno vreme -->
       <div class="filter-group">
         <span class="filter-group__label">{{ 'EXPLORE.FILTERS.HOURS_RATINGS' | translate }}</span>
-        <label class="toggle-row" (click)="openNowOnly = !openNowOnly">
+        <label class="toggle-row" (click)="toggleOpenNow()">
           <span class="material-icons toggle-icon">schedule</span>
           <span class="toggle-label">{{ 'EXPLORE.FILTERS.OPEN_NOW' | translate }}</span>
           <div class="toggle-switch" [class.on]="openNowOnly"><div class="toggle-thumb"></div></div>
@@ -293,22 +295,27 @@
         <div class="filter-price-row">
           <div class="filter-price-input">
             <label class="filter-price-label">{{ 'EXPLORE.FILTERS.PRICE_MIN' | translate }}</label>
-            <input type="number" class="filter-input" placeholder="0" [(ngModel)]="minPrice" min="0" />
+            <input type="number" class="filter-input" [class.filter-input--invalid]="priceRangeInvalid" placeholder="0" [(ngModel)]="minPrice" min="0" />
           </div>
           <span class="filter-price-sep">—</span>
           <div class="filter-price-input">
             <label class="filter-price-label">{{ 'EXPLORE.FILTERS.PRICE_MAX' | translate }}</label>
-            <input type="number" class="filter-input" [placeholder]="'EXPLORE.FILTERS.PRICE_MAX_HINT' | translate" [(ngModel)]="maxPrice" min="0" />
+            <input type="number" class="filter-input" [class.filter-input--invalid]="priceRangeInvalid" [placeholder]="'EXPLORE.FILTERS.PRICE_MAX_HINT' | translate" [(ngModel)]="maxPrice" min="0" />
           </div>
         </div>
+        <p class="filter-price-error" *ngIf="priceRangeInvalid">
+          <span class="material-icons">error_outline</span>
+          {{ 'EXPLORE.FILTERS.PRICE_INVALID' | translate }}
+        </p>
       </div>
 
     </div>
-    <div class="mobile-filter-modal__footer" *ngIf="activeFilterCount > 0">
-      <button class="ghost-btn ghost-btn--sm" (click)="resetFilters()">{{ 'EXPLORE.FILTERS.RESET' | translate }}</button>
-      <button class="primary-btn" (click)="applyFilters(); toggleFilterPanel()">{{ 'EXPLORE.FILTERS.APPLY' | translate }}</button>
+    <div class="mobile-filter-modal__footer" *ngIf="activeFilterCount > 0 || hasPendingPriceChange">
+      <button class="ghost-btn ghost-btn--sm" *ngIf="activeFilterCount > 0" (click)="resetFilters()">{{ 'EXPLORE.FILTERS.RESET' | translate }}</button>
+      <button class="primary-btn" *ngIf="hasPendingPriceChange" [disabled]="priceRangeInvalid" (click)="applyFilters(); toggleFilterPanel()">{{ 'EXPLORE.FILTERS.APPLY' | translate }}</button>
+      <button class="primary-btn mobile-filter-modal__close-btn" *ngIf="!hasPendingPriceChange" (click)="toggleFilterPanel()">{{ 'EXPLORE.FILTERS.CLOSE' | translate }}</button>
     </div>
-    <div class="mobile-filter-modal__footer" *ngIf="activeFilterCount === 0">
+    <div class="mobile-filter-modal__footer" *ngIf="activeFilterCount === 0 && !hasPendingPriceChange">
       <button class="primary-btn mobile-filter-modal__close-btn" (click)="toggleFilterPanel()">{{ 'EXPLORE.FILTERS.CLOSE' | translate }}</button>
     </div>
   </div>

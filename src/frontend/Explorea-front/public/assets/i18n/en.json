@@ -532,6 +532,7 @@
       "PRICE_MIN": "Min (RSD)",
       "PRICE_MAX": "Max (RSD)",
       "PRICE_MAX_HINT": "No limit",
+      "PRICE_INVALID": "Max price must be greater than min.",
       "RESET": "Reset filters",
       "APPLY": "Apply filters",
       "CLOSE": "Close"

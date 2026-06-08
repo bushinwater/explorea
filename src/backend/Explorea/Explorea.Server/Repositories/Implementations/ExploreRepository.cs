@@ -51,10 +51,7 @@ namespace Explorea.Server.Repositories.Implementations
             var extraFiltersDict = ParseExtraFilters(extraFilters);
             foreach (var (key, value) in extraFiltersDict)
             {
-                var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-                var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
-                var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
-                    "SELECT id FROM destinations WHERE extra_filters @> @snippet", param).ToListAsync();
+                var matchingIds = await MatchJsonbContainsIdsAsync("destinations", key, value);
                 query = query.Where(d => matchingIds.Contains(d.Id));
             }
 
@@ -96,16 +93,7 @@ namespace Explorea.Server.Repositories.Implementations
             var extraFiltersDict = ParseExtraFilters(extraFilters);
             foreach (var (key, value) in extraFiltersDict)
             {
-                var lowered = value.ToLowerInvariant();
-                // Admin stores Dictionary<string,string>, so values are JSON strings.
-                // For booleans ("true"/"false") allow raw match too (legacy).
-                var jsonValue = lowered is "true" or "false"
-                    ? lowered
-                    : System.Text.Json.JsonSerializer.Serialize(value);
-                var snippet = $"{{\"{key}\": {jsonValue}}}";
-                var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
-                var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
-                    "SELECT id FROM places WHERE extra_filters @> @snippet", param).ToListAsync();
+                var matchingIds = await MatchJsonbContainsIdsAsync("places", key, value);
                 query = query.Where(p => matchingIds.Contains(p.Id));
             }
 
@@ -240,6 +228,29 @@ namespace Explorea.Server.Repositories.Implementations
                 .Include(a => a.Images)
                 .Where(a => !a.IsDeleted && a.Slug == slug)
                 .FirstOrDefaultAsync();
+
+        // Admin stores Dictionary<string,string>, so JSONB values are always JSON strings (e.g. "true").
+        // Older rows may have raw JSON values (true / 1 / etc.), so we match either representation.
+        private async Task<List<Guid>> MatchJsonbContainsIdsAsync(string table, string key, string value)
+        {
+            var asJsonString = $"{{\"{key}\": {System.Text.Json.JsonSerializer.Serialize(value)}}}";
+            var lowered = value.ToLowerInvariant();
+            var asRaw = lowered is "true" or "false"
+                ? $"{{\"{key}\": {lowered}}}"
+                : null;
+
+            if (asRaw == null)
+            {
+                var p = new NpgsqlParameter { ParameterName = "snippet", Value = asJsonString, NpgsqlDbType = NpgsqlDbType.Jsonb };
+                return await _db.Database.SqlQueryRaw<Guid>(
+                    $"SELECT id FROM {table} WHERE extra_filters @> @snippet", p).ToListAsync();
+            }
+
+            var p1 = new NpgsqlParameter { ParameterName = "snippetStr", Value = asJsonString, NpgsqlDbType = NpgsqlDbType.Jsonb };
+            var p2 = new NpgsqlParameter { ParameterName = "snippetRaw", Value = asRaw, NpgsqlDbType = NpgsqlDbType.Jsonb };
+            return await _db.Database.SqlQueryRaw<Guid>(
+                $"SELECT id FROM {table} WHERE extra_filters @> @snippetStr OR extra_filters @> @snippetRaw", p1, p2).ToListAsync();
+        }
 
         private static Dictionary<string, string> ParseExtraFilters(List<string>? raw)
         {

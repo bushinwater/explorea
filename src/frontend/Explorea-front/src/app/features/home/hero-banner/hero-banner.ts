@@ -76,6 +76,7 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   filterDefs:         FilterDefinition[] = [];
   filterDefsLoading  = false;
   private filterDefsTypeId: number | null = null;
+  private filterDefsSpinnerTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly filterEntityTypes = [
     { key: 'destination' as const, icon: 'landscape',      labelKey: 'SEARCH.TAB_DESTINATIONS' },
@@ -252,7 +253,7 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
     this.draftFilters       = { ...this.filters };
     this.draftNearbyEnabled = this.nearbyEnabled;
     this.draftEntityTypes   = this.filterEntityType ? [this.filterEntityType] : [];
-    if (this.filterEntityType && this.filterEntityType !== 'activity') {
+    if (this.filterEntityType) {
       const ids = this.getSelectedCategoryIds();
       if (ids.length === 1 && this.filterDefsTypeId !== ids[0]) this.loadFilterDefs(ids[0]);
     }
@@ -387,9 +388,13 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
         else { this.filterDefs = []; this.filterDefsTypeId = null; }
         break;
       }
-      case 'activity':
-        this.draftFilters = { ...this.draftFilters, activityCategoryIds: toggle(this.draftFilters.activityCategoryIds ?? []) };
+      case 'activity': {
+        const newIds = toggle(this.draftFilters.activityCategoryIds ?? []);
+        this.draftFilters = { ...this.draftFilters, activityCategoryIds: newIds, extraFilters: {} };
+        if (newIds.length === 1) this.loadFilterDefs(newIds[0]);
+        else { this.filterDefs = []; this.filterDefsTypeId = null; }
         break;
+      }
       case 'event': {
         const newIds = toggle(this.draftFilters.eventTypeIds ?? []);
         this.draftFilters = { ...this.draftFilters, eventTypeIds: newIds, extraFilters: {} };
@@ -413,16 +418,31 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
 
   loadFilterDefs(typeId: number): void {
     if (!this.filterEntityType || this.filterDefsTypeId === typeId) return;
-    this.filterDefsLoading = true;
     this.filterDefsTypeId  = typeId;
-    this.cdr.markForCheck();
+
+    // Defer showing the spinner so fast responses (incl. empty results) don't flash a loading panel.
+    if (this.filterDefsSpinnerTimer) clearTimeout(this.filterDefsSpinnerTimer);
+    this.filterDefsSpinnerTimer = setTimeout(() => {
+      this.filterDefsLoading = true;
+      this.filterDefsSpinnerTimer = null;
+      this.cdr.markForCheck();
+    }, 200);
+
     this.lookupService.getFilterDefinitions(this.filterEntityType, typeId).subscribe({
       next: defs => {
+        if (this.filterDefsSpinnerTimer) {
+          clearTimeout(this.filterDefsSpinnerTimer);
+          this.filterDefsSpinnerTimer = null;
+        }
         this.filterDefs        = defs;
         this.filterDefsLoading = false;
         this.cdr.markForCheck();
       },
       error: () => {
+        if (this.filterDefsSpinnerTimer) {
+          clearTimeout(this.filterDefsSpinnerTimer);
+          this.filterDefsSpinnerTimer = null;
+        }
         this.filterDefs        = [];
         this.filterDefsLoading = false;
         this.cdr.markForCheck();

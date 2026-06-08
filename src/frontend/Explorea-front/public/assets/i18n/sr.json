@@ -532,6 +532,7 @@
       "PRICE_MIN": "Min (RSD)",
       "PRICE_MAX": "Maks (RSD)",
       "PRICE_MAX_HINT": "Bez ograničenja",
+      "PRICE_INVALID": "Maksimalna cena mora biti veća od minimalne.",
       "RESET": "Poništi filtere",
       "APPLY": "Primeni filtere",
       "CLOSE": "Zatvori"

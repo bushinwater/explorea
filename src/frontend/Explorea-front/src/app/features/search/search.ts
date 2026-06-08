@@ -138,6 +138,7 @@ export class Search implements OnInit, OnDestroy {
   filterDefsLoading = false;
   /** typeId for which filterDefs are currently loaded */
   private filterDefsTypeId: number | null = null;
+  private filterDefsSpinnerTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ─── Static data ───────────────────────────────────────────────
   readonly entityTabs    = ENTITY_TABS;
@@ -331,16 +332,31 @@ export class Search implements OnInit, OnDestroy {
 
   loadFilterDefs(typeId: number): void {
     if (!this.filterEntityType || this.filterDefsTypeId === typeId) return;
-    this.filterDefsLoading = true;
     this.filterDefsTypeId  = typeId;
-    this.cdr.detectChanges();
+
+    // Defer showing the spinner so fast responses (incl. empty results) don't flash a loading panel.
+    if (this.filterDefsSpinnerTimer) clearTimeout(this.filterDefsSpinnerTimer);
+    this.filterDefsSpinnerTimer = setTimeout(() => {
+      this.filterDefsLoading = true;
+      this.filterDefsSpinnerTimer = null;
+      this.cdr.detectChanges();
+    }, 200);
+
     this.lookupService.getFilterDefinitions(this.filterEntityType, typeId).subscribe({
       next: defs => {
+        if (this.filterDefsSpinnerTimer) {
+          clearTimeout(this.filterDefsSpinnerTimer);
+          this.filterDefsSpinnerTimer = null;
+        }
         this.filterDefs        = defs;
         this.filterDefsLoading = false;
         this.cdr.detectChanges();
       },
       error: () => {
+        if (this.filterDefsSpinnerTimer) {
+          clearTimeout(this.filterDefsSpinnerTimer);
+          this.filterDefsSpinnerTimer = null;
+        }
         this.filterDefs        = [];
         this.filterDefsLoading = false;
         this.cdr.detectChanges();

@@ -197,11 +197,14 @@ export class Explore implements AfterViewInit, OnDestroy {
   // Price range filter
   minPrice: number | null = null;
   maxPrice: number | null = null;
+  private appliedMinPrice: number | null = null;
+  private appliedMaxPrice: number | null = null;
 
   // Dynamic extra attribute filters (loaded when single place type selected)
   filterDefs: FilterDefinition[] = [];
   filterDefsLoading = false;
   private filterDefsTypeId: number | null = null;
+  private filterDefsSpinnerTimer: ReturnType<typeof setTimeout> | null = null;
   extraFilters: Record<string, string> = {};
 
   // User location (fetched when nearbyOnly = true)
@@ -283,7 +286,7 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.extraFilters = {};
     this.filterDefs = [];
     this.filterDefsTypeId = null;
-    this.addMarkers();
+    this.fetchMarkers();
   }
 
   toggleFilterPanel() {
@@ -380,16 +383,30 @@ export class Explore implements AfterViewInit, OnDestroy {
 
   loadFilterDefs(typeId: number, entityType: string = 'place'): void {
     if (this.filterDefsTypeId === typeId) return;
-    this.filterDefsLoading = true;
     this.filterDefsTypeId  = typeId;
-    this.cdr.detectChanges();
+
+    if (this.filterDefsSpinnerTimer) clearTimeout(this.filterDefsSpinnerTimer);
+    this.filterDefsSpinnerTimer = setTimeout(() => {
+      this.filterDefsLoading = true;
+      this.filterDefsSpinnerTimer = null;
+      this.cdr.detectChanges();
+    }, 200);
+
     this.lookupService.getFilterDefinitions(entityType, typeId).subscribe({
       next: defs => {
+        if (this.filterDefsSpinnerTimer) {
+          clearTimeout(this.filterDefsSpinnerTimer);
+          this.filterDefsSpinnerTimer = null;
+        }
         this.filterDefs        = defs;
         this.filterDefsLoading = false;
         this.cdr.detectChanges();
       },
       error: () => {
+        if (this.filterDefsSpinnerTimer) {
+          clearTimeout(this.filterDefsSpinnerTimer);
+          this.filterDefsSpinnerTimer = null;
+        }
         this.filterDefs        = [];
         this.filterDefsLoading = false;
         this.cdr.detectChanges();
@@ -409,6 +426,7 @@ export class Explore implements AfterViewInit, OnDestroy {
       current[key] = value;
     }
     this.extraFilters = current;
+    this.fetchMarkers();
   }
 
   /**
@@ -585,6 +603,8 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.selectedSubcatIds = [...state.filters.selectedSubcatIds];
     this.minPrice = state.filters.minPrice;
     this.maxPrice = state.filters.maxPrice;
+    this.appliedMinPrice = state.filters.minPrice;
+    this.appliedMaxPrice = state.filters.maxPrice;
     this.extraFilters = { ...state.filters.extraFilters };
     this.userLat = state.filters.userLat;
     this.userLng = state.filters.userLng;
@@ -991,6 +1011,8 @@ export class Explore implements AfterViewInit, OnDestroy {
   }
 
   private addMarkers() {
+    if (!this.map) return;
+
     this.markers.forEach(m => m.remove());
     this.markers = [];
     this.pinElements.clear();
@@ -1093,7 +1115,18 @@ export class Explore implements AfterViewInit, OnDestroy {
   }
 
   applyFilters() {
+    if (this.priceRangeInvalid) return;
+    this.appliedMinPrice = this.minPrice;
+    this.appliedMaxPrice = this.maxPrice;
     this.fetchMarkers();
+  }
+
+  get hasPendingPriceChange(): boolean {
+    return this.minPrice !== this.appliedMinPrice || this.maxPrice !== this.appliedMaxPrice;
+  }
+
+  get priceRangeInvalid(): boolean {
+    return this.minPrice !== null && this.maxPrice !== null && this.maxPrice < this.minPrice;
   }
 
   resetFilters() {
@@ -1105,6 +1138,8 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.selectedSubcatIds = [];
     this.minPrice = null;
     this.maxPrice = null;
+    this.appliedMinPrice = null;
+    this.appliedMaxPrice = null;
     this.extraFilters = {};
     this.filterDefs = [];
     this.filterDefsTypeId = null;
@@ -1113,6 +1148,16 @@ export class Explore implements AfterViewInit, OnDestroy {
 
   setMinRating(val: number | null) {
     this.minRating = this.minRating === val ? null : val;
+    this.fetchMarkers();
+  }
+
+  toggleOpenNow(): void {
+    this.openNowOnly = !this.openNowOnly;
+    this.fetchMarkers();
+  }
+
+  onRadiusChange(): void {
+    if (this.nearbyOnly) this.fetchMarkers();
   }
 
   toggleDrawer() {
