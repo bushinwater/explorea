@@ -1,4 +1,4 @@
-<div class="review-card" [class.review-card--editing]="editMode">
+<div class="review-card" [class.review-card--editing]="editMode" [class.review-card--compact]="compact">
   <div class="review-card__header">
     <div class="review-card__avatar">
       <img *ngIf="showImage" [src]="review.user.profileImageUrl" [alt]="review.user.firstName" class="review-card__avatar-img" referrerpolicy="no-referrer" (error)="onImgError()" />
@@ -15,19 +15,19 @@
       <app-star-rating [rating]="review.rating" [showValue]="false" class="review-card__stars" />
       <div class="review-card__actions" *ngIf="isOwner">
         <ng-container *ngIf="!confirmingDelete">
-          <button class="review-card__action-btn" (click)="startEdit()" type="button" title="Izmeni">
+          <button class="review-card__action-btn" (click)="startEdit()" type="button" [title]="'COMMON.EDIT' | translate">
             <span class="material-icons">edit</span>
           </button>
-          <button class="review-card__action-btn review-card__action-btn--delete" (click)="onDelete()" [disabled]="deleting" type="button" title="Obriši">
+          <button class="review-card__action-btn review-card__action-btn--delete" (click)="onDelete()" [disabled]="deleting" type="button" [title]="'COMMON.DELETE' | translate">
             <span class="material-icons" [class.spin]="deleting">{{ deleting ? 'sync' : 'delete_outline' }}</span>
           </button>
         </ng-container>
         <ng-container *ngIf="confirmingDelete">
-          <span class="review-card__confirm-text">Obrisati?</span>
-          <button class="review-card__action-btn review-card__action-btn--delete" (click)="onDelete()" type="button" title="Potvrdi brisanje">
+          <span class="review-card__confirm-text">{{ 'COMMON.CONFIRM_DELETE' | translate }}</span>
+          <button class="review-card__action-btn review-card__action-btn--delete" (click)="onDelete()" type="button" [title]="'COMMON.DELETE' | translate">
             <span class="material-icons">check</span>
           </button>
-          <button class="review-card__action-btn" (click)="cancelDelete()" type="button" title="Otkaži">
+          <button class="review-card__action-btn" (click)="cancelDelete()" type="button" [title]="'COMMON.CANCEL' | translate">
             <span class="material-icons">close</span>
           </button>
         </ng-container>
@@ -48,22 +48,28 @@
       *ngFor="let img of visibleThumbs; let i = index"
       type="button"
       class="review-card__image"
-      [class.review-card__image--more]="i === thumbLimit - 1 && extraImagesCount > 0"
+      [class.review-card__image--more]="i === thumbCap - 1 && extraImagesCount > 0"
       (click)="onImageClick(i)"
     >
       <img [src]="img.imageUrl" [alt]="'Slika ' + (i + 1)" loading="lazy" />
-      <span class="review-card__image-more" *ngIf="i === thumbLimit - 1 && extraImagesCount > 0">
+      <span class="review-card__image-more" *ngIf="i === thumbCap - 1 && extraImagesCount > 0">
         <span class="material-icons">add</span>
         {{ extraImagesCount }}
       </span>
     </button>
   </div>
 
-  <!-- Owner reply -->
-  <div *ngIf="!editMode && review.ownerReply" class="review-card__owner-reply">
+  <!-- Compact mode: show only a small indicator that owner replied. -->
+  <div *ngIf="!editMode && compact && review.ownerReply" class="review-card__reply-indicator" [title]="'COMMON.OWNER_REPLY' | translate">
+    <span class="material-icons">reply</span>
+    <span>{{ 'COMMON.OWNER_REPLY' | translate }}</span>
+  </div>
+
+  <!-- Owner reply (hidden in compact mode) -->
+  <div *ngIf="!editMode && !compact && review.ownerReply" class="review-card__owner-reply">
     <div class="review-card__owner-reply-header">
       <span class="material-icons">storefront</span>
-      <span class="review-card__owner-reply-label">Odgovor vlasnika</span>
+      <span class="review-card__owner-reply-label">{{ 'COMMON.OWNER_REPLY' | translate }}</span>
       <span *ngIf="review.ownerReplyAt" class="review-card__owner-reply-date">
         {{ formatDate(review.ownerReplyAt) }}
       </span>
@@ -88,7 +94,7 @@
     <textarea
       class="review-card__edit-textarea"
       [(ngModel)]="editComment"
-      placeholder="Napiši komentar..."
+      [placeholder]="'REVIEW_MODAL.COMMENT_PLACEHOLDER' | translate"
       rows="3"
       maxlength="1000">
     </textarea>
@@ -127,10 +133,10 @@
 
     <p *ngIf="editError" class="review-card__edit-error">{{ editError }}</p>
     <div class="review-card__edit-actions">
-      <button class="review-card__edit-cancel" (click)="cancelEdit()" type="button">Otkaži</button>
+      <button class="review-card__edit-cancel" (click)="cancelEdit()" type="button">{{ 'COMMON.CANCEL' | translate }}</button>
       <button class="review-card__edit-save" (click)="saveEdit()" [disabled]="!canSaveEdit" type="button">
         <span class="material-icons spin" *ngIf="saving || editHasUploads" style="font-size:16px">sync</span>
-        <span *ngIf="!saving && !editHasUploads">Sačuvaj</span>
+        <span *ngIf="!saving && !editHasUploads">{{ 'COMMON.SAVE' | translate }}</span>
         <span *ngIf="editHasUploads && !saving">{{ 'REVIEW_MODAL.UPLOADING' | translate }}</span>
       </button>
     </div>

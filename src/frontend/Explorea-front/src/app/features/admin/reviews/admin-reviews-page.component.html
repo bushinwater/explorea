@@ -376,10 +376,10 @@
                       </div>
                     }
                     @if (review.ownerReply) {
-                      <div class="rv-owner-reply">
+                      <span class="rv-reply-indicator" [title]="ui.t('reviews.preview.owner_reply')">
                         <span class="material-icons">reply</span>
-                        <span>{{ truncateComment(review.ownerReply, 120) }}</span>
-                      </div>
+                        {{ ui.t('reviews.preview.owner_reply') }}
+                      </span>
                     }
                   </div>
                 </td>

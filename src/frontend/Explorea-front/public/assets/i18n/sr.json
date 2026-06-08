@@ -3,7 +3,14 @@
     "ERROR_GENERIC": "Nešto nije u redu. Molimo pokušajte ponovo.",
     "READ_MORE": "Pročitaj više",
     "READ_LESS": "Prikaži manje",
-    "GO_BACK": "Nazad"
+    "GO_BACK": "Nazad",
+    "SAVE": "Sačuvaj",
+    "CANCEL": "Otkaži",
+    "DELETE": "Obriši",
+    "EDIT": "Izmeni",
+    "SAVE_ERROR": "Greška pri čuvanju. Pokušaj ponovo.",
+    "CONFIRM_DELETE": "Obrisati?",
+    "OWNER_REPLY": "Odgovor vlasnika"
   },
   "REVIEW_MODAL": {
     "TITLE": "Napiši recenziju",

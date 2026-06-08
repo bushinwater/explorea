@@ -31,6 +31,7 @@ const THUMB_LIMIT = 3;
 export class ReviewCard {
   @Input() review!: ReviewDto;
   @Input() currentUserId = '';
+  @Input() compact = false;
 
   @Output() deleted = new EventEmitter<string>();
   @Output() updated = new EventEmitter<ReviewDto>();
@@ -65,12 +66,16 @@ export class ReviewCard {
     return this.review.images ?? [];
   }
 
+  get thumbCap(): number {
+    return this.compact ? 2 : THUMB_LIMIT;
+  }
+
   get visibleThumbs(): ReviewImageDto[] {
-    return this.reviewImages.slice(0, THUMB_LIMIT);
+    return this.reviewImages.slice(0, this.thumbCap);
   }
 
   get extraImagesCount(): number {
-    return Math.max(0, this.reviewImages.length - THUMB_LIMIT);
+    return Math.max(0, this.reviewImages.length - this.thumbCap);
   }
 
   get isOwner(): boolean {
@@ -246,7 +251,7 @@ export class ReviewCard {
       },
       error: () => {
         this.saving = false;
-        this.editError = 'Greška pri čuvanju. Pokušaj ponovo.';
+        this.editError = this.translate.instant('COMMON.SAVE_ERROR');
         this.cdr.detectChanges();
       },
     });

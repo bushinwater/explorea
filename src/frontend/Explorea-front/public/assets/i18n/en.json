@@ -3,7 +3,14 @@
     "ERROR_GENERIC": "Something went wrong. Please try again.",
     "READ_MORE": "Read more",
     "READ_LESS": "Show less",
-    "GO_BACK": "Go back"
+    "GO_BACK": "Go back",
+    "SAVE": "Save",
+    "CANCEL": "Cancel",
+    "DELETE": "Delete",
+    "EDIT": "Edit",
+    "SAVE_ERROR": "Failed to save. Please try again.",
+    "CONFIRM_DELETE": "Delete?",
+    "OWNER_REPLY": "Owner reply"
   },
   "REVIEW_MODAL": {
     "TITLE": "Write a review",

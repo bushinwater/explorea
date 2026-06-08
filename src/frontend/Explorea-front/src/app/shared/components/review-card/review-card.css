@@ -411,3 +411,64 @@
 
 .review-card__edit-add .material-icons { font-size: 20px; }
 .review-card__edit-file { display: none; }
+
+/* ===== Compact variant (home / scroll rows) ===== */
+.review-card--compact {
+  width: 300px;
+  height: 240px;
+  padding: var(--spacing-md);
+  gap: var(--spacing-sm);
+}
+
+.review-card--compact .review-card__header {
+  flex-shrink: 0;
+}
+
+.review-card--compact .review-card__entity {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.review-card--compact .review-card__comment {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.review-card--compact .review-card__images {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+.review-card--compact .review-card__image {
+  width: 44px;
+  height: 44px;
+}
+
+.review-card__reply-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-radius: 999px;
+}
+
+.review-card__reply-indicator .material-icons {
+  font-size: 14px;
+}
+
+.review-card--compact .review-card__images + .review-card__reply-indicator,
+.review-card--compact .review-card__reply-indicator + .review-card__images {
+  margin-top: 0;
+}

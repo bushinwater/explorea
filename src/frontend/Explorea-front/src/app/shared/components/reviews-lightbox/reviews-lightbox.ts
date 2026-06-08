@@ -114,9 +114,12 @@ export class ReviewsLightbox implements OnChanges {
   }
 
   onBackdropClick(event: MouseEvent): void {
-    if ((event.target as HTMLElement).classList.contains('rev-lightbox__backdrop')) {
-      this.close();
+    const target = event.target as HTMLElement;
+    // Close on click anywhere except interactive elements (image, nav, close, footer text).
+    if (target.closest('.rev-lightbox__image, .rev-lightbox__nav, .rev-lightbox__close, .rev-lightbox__counter, .rev-lightbox__footer')) {
+      return;
     }
+    this.close();
   }
 
   onTouchStart(event: TouchEvent): void {
