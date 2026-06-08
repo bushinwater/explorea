@@ -1,9 +1,11 @@
 using Explorea.API.DTOs.Admin.User;
 using Explorea.API.Models;
+using Explorea.Server.Data;
 using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Admin.Interfaces;
 using Explorea.Server.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Explorea.Server.Services.Admin
 {
@@ -21,6 +23,7 @@ namespace Explorea.Server.Services.Admin
         private readonly PasswordHelper _passwordHelper;
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly AppDbContext _db;
 
         public AdminUserService(
             IUserRepository userRepository,
@@ -28,7 +31,8 @@ namespace Explorea.Server.Services.Admin
             IOrganizationRegionAssignmentRepository organizationRegionAssignmentRepository,
             PasswordHelper passwordHelper,
             IEmailService emailService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            AppDbContext db)
         {
             _userRepository = userRepository;
             _authRepository = authRepository;
@@ -36,6 +40,7 @@ namespace Explorea.Server.Services.Admin
             _passwordHelper = passwordHelper;
             _emailService = emailService;
             _configuration = configuration;
+            _db = db;
         }
 
         public async Task<(List<AdminUserDirectoryItemDto> Items, int Total)> GetDirectoryAsync(
@@ -486,5 +491,438 @@ namespace Explorea.Server.Services.Admin
             IReadOnlyCollection<int>? VisibleRegionIds,
             bool IncludeUsersWithoutLocation,
             IReadOnlyCollection<string> ExcludedRoles);
+
+        public async Task<AdminUserDetailsDto?> GetUserDetailsAsync(Guid id, Guid currentUserId)
+        {
+            await ResolveScopeAsync(currentUserId);
+
+            var user = await _db.Users
+                .Include(u => u.Role)
+                .Include(u => u.CurrentCity).ThenInclude(c => c!.Region)
+                .Include(u => u.Country)
+                .Include(u => u.ManagedRegion)
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (user == null) return null;
+
+            int? age = null;
+            if (user.DateOfBirth.HasValue)
+            {
+                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                age = today.Year - user.DateOfBirth.Value.Year;
+                if (user.DateOfBirth.Value > today.AddYears(-age.Value)) age--;
+            }
+
+            var status = !user.IsActive ? "inactive" : (user.EmailVerifiedAt.HasValue ? "active" : "pending");
+
+            // Selected interests
+            var selectedInterests = await _db.UserInterestTags
+                .Where(t => t.UserId == id)
+                .Select(t => new AdminUserInterestDto
+                {
+                    Id   = t.InterestTag.Id,
+                    Name = t.InterestTag.Name,
+                    Icon = t.InterestTag.Icon,
+                })
+                .ToListAsync();
+
+            // Top scored interests (computed from clicks)
+            var topInterests = await _db.UserInterestScores
+                .Where(s => s.UserId == id && s.Score > 0)
+                .OrderByDescending(s => s.Score)
+                .Take(5)
+                .Select(s => new AdminUserInterestDto
+                {
+                    Id    = s.InterestTag.Id,
+                    Name  = s.InterestTag.Name,
+                    Icon  = s.InterestTag.Icon,
+                    Score = s.Score,
+                })
+                .ToListAsync();
+
+            // Recent clicks (last 5)
+            var recentLogs = await _db.PopularityLogs
+                .Where(l => l.UserId == id && l.Source == "click")
+                .OrderByDescending(l => l.CreatedAt)
+                .Take(5)
+                .ToListAsync();
+
+            var recentClicks = new List<AdminUserActivityDto>();
+            foreach (var log in recentLogs)
+            {
+                var (name, slug) = await ResolveEntityNameSlugAsync(log.EntityType, log.EntityId);
+                recentClicks.Add(new AdminUserActivityDto
+                {
+                    EntityType = log.EntityType,
+                    EntityId   = log.EntityId,
+                    EntityName = name,
+                    EntitySlug = slug,
+                    At         = log.CreatedAt,
+                });
+            }
+
+            // Saved items
+            var savedTotal = await _db.SavedItems.CountAsync(s => s.UserId == id);
+            var recentSaves = await _db.SavedItems
+                .Where(s => s.UserId == id)
+                .OrderByDescending(s => s.SavedAt)
+                .Take(6)
+                .ToListAsync();
+
+            var savedItems = new List<AdminUserSavedItemDto>();
+            foreach (var sv in recentSaves)
+            {
+                var (name, slug) = await ResolveEntityNameSlugAsync(sv.EntityType, sv.EntityId);
+                var preview = await ResolvePreviewImageAsync(sv.EntityType, sv.EntityId);
+                savedItems.Add(new AdminUserSavedItemDto
+                {
+                    EntityType      = sv.EntityType,
+                    EntityId        = sv.EntityId,
+                    EntityName      = name,
+                    EntitySlug      = slug,
+                    PreviewImageUrl = preview,
+                    SavedAt         = sv.SavedAt,
+                });
+            }
+
+            // Reviews
+            var reviewsTotal = await _db.Reviews.CountAsync(r => r.UserId == id && !r.IsDeleted);
+            var recentReviews = await _db.Reviews
+                .Where(r => r.UserId == id && !r.IsDeleted)
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(10)
+                .ToListAsync();
+
+            var reviews = new List<AdminUserReviewDto>();
+            foreach (var r in recentReviews)
+            {
+                var (name, slug) = await ResolveEntityNameSlugAsync(r.EntityType, r.EntityId);
+                reviews.Add(new AdminUserReviewDto
+                {
+                    Id         = r.Id,
+                    EntityType = r.EntityType,
+                    EntityId   = r.EntityId,
+                    EntityName = name,
+                    EntitySlug = slug,
+                    Rating     = r.Rating,
+                    Comment    = r.Comment,
+                    CreatedAt  = r.CreatedAt,
+                });
+            }
+
+            AdminUserLocationDto? location = null;
+            if (user.CurrentLatitude.HasValue || user.CurrentCity != null || user.Country != null)
+            {
+                location = new AdminUserLocationDto
+                {
+                    CityName    = user.CurrentCity?.Name,
+                    RegionName  = user.CurrentCity?.Region?.Name,
+                    CountryName = user.Country?.Name,
+                    Latitude    = user.CurrentLatitude,
+                    Longitude   = user.CurrentLongitude,
+                };
+            }
+
+            // Total items added across all trip plans of this user.
+            var plannerItemsTotal = await _db.TripPlanItems
+                .CountAsync(item => item.TripPlan.UserId == id);
+
+            // === Role-specific: TO / SuperAdmin recent actions ===
+            var recentAdminActions = new List<AdminUserAdminActionDto>();
+            if (user.Role.Name == RoleNames.TouristOrganization || user.Role.Name == RoleNames.SuperAdmin)
+            {
+                // Aggregate actions from multiple sources (where this user is the actor).
+                var actions = new List<AdminUserAdminActionDto>();
+
+                // Destinations created
+                actions.AddRange(await _db.Destinations.IgnoreQueryFilters()
+                    .Where(d => d.CreatedBy == id)
+                    .OrderByDescending(d => d.CreatedAt)
+                    .Take(5)
+                    .Select(d => new AdminUserAdminActionDto
+                    {
+                        Type        = "destination_created",
+                        Description = $"Kreirao destinaciju \"{d.Name}\"",
+                        At          = d.CreatedAt,
+                    }).ToListAsync());
+
+                // Destinations updated (excluding self-create within same second)
+                actions.AddRange(await _db.Destinations.IgnoreQueryFilters()
+                    .Where(d => d.UpdatedBy == id && (d.CreatedBy != id || d.UpdatedAt > d.CreatedAt.AddSeconds(2)))
+                    .OrderByDescending(d => d.UpdatedAt)
+                    .Take(5)
+                    .Select(d => new AdminUserAdminActionDto
+                    {
+                        Type        = "destination_updated",
+                        Description = $"Izmenio destinaciju \"{d.Name}\"",
+                        At          = d.UpdatedAt,
+                    }).ToListAsync());
+
+                // Destinations deleted
+                actions.AddRange(await _db.Destinations.IgnoreQueryFilters()
+                    .Where(d => d.IsDeleted && d.UpdatedBy == id && d.DeletedAt != null)
+                    .OrderByDescending(d => d.DeletedAt)
+                    .Take(5)
+                    .Select(d => new AdminUserAdminActionDto
+                    {
+                        Type        = "destination_deleted",
+                        Description = $"Obrisao destinaciju \"{d.Name}\"",
+                        At          = d.DeletedAt!.Value,
+                    }).ToListAsync());
+
+                // Places updated/created by this user
+                actions.AddRange(await _db.Places.IgnoreQueryFilters()
+                    .Where(p => p.CreatedBy == id)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Take(5)
+                    .Select(p => new AdminUserAdminActionDto
+                    {
+                        Type        = "place_created",
+                        Description = $"Kreirao objekat \"{p.Name}\"",
+                        At          = p.CreatedAt,
+                    }).ToListAsync());
+
+                actions.AddRange(await _db.Places.IgnoreQueryFilters()
+                    .Where(p => p.IsDeleted && p.UpdatedBy == id && p.DeletedAt != null)
+                    .OrderByDescending(p => p.DeletedAt)
+                    .Take(5)
+                    .Select(p => new AdminUserAdminActionDto
+                    {
+                        Type        = "place_deleted",
+                        Description = $"Obrisao objekat \"{p.Name}\"",
+                        At          = p.DeletedAt!.Value,
+                    }).ToListAsync());
+
+                // Events created by this user
+                actions.AddRange(await _db.Events.IgnoreQueryFilters()
+                    .Where(e => e.CreatedBy == id)
+                    .OrderByDescending(e => e.CreatedAt)
+                    .Take(5)
+                    .Select(e => new AdminUserAdminActionDto
+                    {
+                        Type        = "event_created",
+                        Description = $"Kreirao događaj \"{e.Name}\"",
+                        At          = e.CreatedAt,
+                    }).ToListAsync());
+
+                actions.AddRange(await _db.Events.IgnoreQueryFilters()
+                    .Where(e => e.IsDeleted && e.UpdatedBy == id && e.DeletedAt != null)
+                    .OrderByDescending(e => e.DeletedAt)
+                    .Take(5)
+                    .Select(e => new AdminUserAdminActionDto
+                    {
+                        Type        = "event_deleted",
+                        Description = $"Obrisao događaj \"{e.Name}\"",
+                        At          = e.DeletedAt!.Value,
+                    }).ToListAsync());
+
+                // Activities created by this user
+                actions.AddRange(await _db.Activities.IgnoreQueryFilters()
+                    .Where(a => a.CreatedBy == id)
+                    .OrderByDescending(a => a.CreatedAt)
+                    .Take(5)
+                    .Select(a => new AdminUserAdminActionDto
+                    {
+                        Type        = "activity_created",
+                        Description = $"Kreirao aktivnost \"{a.Name}\"",
+                        At          = a.CreatedAt,
+                    }).ToListAsync());
+
+                // Submission queue items reviewed by this TO (approved/rejected/forwarded)
+                actions.AddRange(await _db.SubmissionQueue
+                    .Where(q => q.ReviewedByTOUserId == id && q.ReviewedByTOAt != null)
+                    .OrderByDescending(q => q.ReviewedByTOAt)
+                    .Take(10)
+                    .Select(q => new AdminUserAdminActionDto
+                    {
+                        Type        = "submission_" + q.Status.ToLower(),
+                        Description = q.Status == "ApprovedByOwner" || q.Status == "ApprovedByTO"
+                            ? $"Odobrio zahtev za {q.EntityType} ({q.EntityId.ToString().Substring(0, 8)})"
+                            : q.Status == "RejectedByTO"
+                                ? $"Odbio zahtev za {q.EntityType} ({q.EntityId.ToString().Substring(0, 8)})"
+                                : $"Obradio zahtev za {q.EntityType} ({q.EntityId.ToString().Substring(0, 8)})",
+                        At          = q.ReviewedByTOAt!.Value,
+                    }).ToListAsync());
+
+                recentAdminActions = actions
+                    .OrderByDescending(a => a.At)
+                    .Take(5)
+                    .ToList();
+            }
+
+            // === Role-specific: place owner entities ===
+            var ownedPlaces = new List<AdminUserOwnedEntityDto>();
+            var ownedEvents = new List<AdminUserOwnedEntityDto>();
+            int ownedPlacesTotal = 0;
+            int ownedEventsTotal = 0;
+            if (user.Role.Name == RoleNames.PlaceOwner)
+            {
+                ownedPlacesTotal = await _db.Places.IgnoreQueryFilters()
+                    .CountAsync(p => p.CreatedBy == id && !p.IsDeleted);
+
+                ownedPlaces = await _db.Places.IgnoreQueryFilters()
+                    .Where(p => p.CreatedBy == id && !p.IsDeleted)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Take(5)
+                    .Select(p => new AdminUserOwnedEntityDto
+                    {
+                        Id              = p.Id,
+                        EntityType      = "place",
+                        Name            = p.Name,
+                        Slug            = p.Slug,
+                        PreviewImageUrl = p.PreviewImageUrl
+                            ?? p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
+                        Status          = p.ApprovalStatus,
+                        CreatedAt       = p.CreatedAt,
+                    })
+                    .ToListAsync();
+
+                ownedEventsTotal = await _db.Events.IgnoreQueryFilters()
+                    .CountAsync(e => e.CreatedBy == id && !e.IsDeleted);
+
+                ownedEvents = await _db.Events.IgnoreQueryFilters()
+                    .Where(e => e.CreatedBy == id && !e.IsDeleted)
+                    .OrderByDescending(e => e.CreatedAt)
+                    .Take(5)
+                    .Select(e => new AdminUserOwnedEntityDto
+                    {
+                        Id              = e.Id,
+                        EntityType      = "event",
+                        Name            = e.Name,
+                        Slug            = e.Slug,
+                        PreviewImageUrl = e.PreviewImageUrl
+                            ?? e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
+                        Status          = e.Visibility,
+                        CreatedAt       = e.CreatedAt,
+                    })
+                    .ToListAsync();
+            }
+
+            return new AdminUserDetailsDto
+            {
+                Id            = user.Id,
+                FirstName     = user.FirstName,
+                LastName      = user.LastName,
+                Email         = user.Email,
+                Role          = user.Role.Name,
+                Status        = status,
+                TravelerRank  = user.TravelerRank,
+                AvatarUrl     = user.ProfileImageUrl,
+                Bio           = user.Bio,
+                Gender        = user.Gender,
+                DateOfBirth   = user.DateOfBirth?.ToDateTime(TimeOnly.MinValue),
+                Age           = age,
+                MemberSince   = user.MemberSince,
+                LastLoginAt   = user.LastLoginAt,
+                EmailVerifiedAt = user.EmailVerifiedAt,
+                PlannerItemsTotal = plannerItemsTotal,
+                Location      = location,
+                ManagedRegion = user.ManagedRegion?.Name,
+                SelectedInterests = selectedInterests,
+                TopInterests  = topInterests,
+                RecentClicks  = recentClicks,
+                SavedItems    = savedItems,
+                SavedItemsTotal = savedTotal,
+                Reviews       = reviews,
+                ReviewsTotal  = reviewsTotal,
+                RecentAdminActions = recentAdminActions,
+                OwnedPlaces   = ownedPlaces,
+                OwnedPlacesTotal = ownedPlacesTotal,
+                OwnedEvents   = ownedEvents,
+                OwnedEventsTotal = ownedEventsTotal,
+            };
+        }
+
+        public async Task<List<AdminUserOwnedEntityDto>> GetUserOwnedEntitiesAsync(Guid userId, string entityType, Guid currentUserId)
+        {
+            await ResolveScopeAsync(currentUserId);
+
+            return entityType.ToLowerInvariant() switch
+            {
+                "place" => await _db.Places.IgnoreQueryFilters()
+                    .Where(p => p.CreatedBy == userId && !p.IsDeleted)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Select(p => new AdminUserOwnedEntityDto
+                    {
+                        Id              = p.Id,
+                        EntityType      = "place",
+                        Name            = p.Name,
+                        Slug            = p.Slug,
+                        PreviewImageUrl = p.PreviewImageUrl
+                            ?? p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
+                        Status          = p.ApprovalStatus,
+                        CreatedAt       = p.CreatedAt,
+                    })
+                    .ToListAsync(),
+                "event" => await _db.Events.IgnoreQueryFilters()
+                    .Where(e => e.CreatedBy == userId && !e.IsDeleted)
+                    .OrderByDescending(e => e.CreatedAt)
+                    .Select(e => new AdminUserOwnedEntityDto
+                    {
+                        Id              = e.Id,
+                        EntityType      = "event",
+                        Name            = e.Name,
+                        Slug            = e.Slug,
+                        PreviewImageUrl = e.PreviewImageUrl
+                            ?? e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
+                        Status          = e.Visibility,
+                        CreatedAt       = e.CreatedAt,
+                    })
+                    .ToListAsync(),
+                _ => new List<AdminUserOwnedEntityDto>(),
+            };
+        }
+
+        private async Task<(string? name, string? slug)> ResolveEntityNameSlugAsync(string entityType, Guid entityId)
+        {
+            return entityType.ToLowerInvariant() switch
+            {
+                "destination" => await _db.Destinations
+                    .Where(d => d.Id == entityId)
+                    .Select(d => new ValueTuple<string?, string?>(d.Name, d.Slug))
+                    .FirstOrDefaultAsync(),
+                "place" => await _db.Places
+                    .Where(p => p.Id == entityId)
+                    .Select(p => new ValueTuple<string?, string?>(p.Name, p.Slug))
+                    .FirstOrDefaultAsync(),
+                "activity" => await _db.Activities
+                    .Where(a => a.Id == entityId)
+                    .Select(a => new ValueTuple<string?, string?>(a.Name, a.Slug))
+                    .FirstOrDefaultAsync(),
+                "event" => await _db.Events
+                    .Where(e => e.Id == entityId)
+                    .Select(e => new ValueTuple<string?, string?>(e.Name, e.Slug))
+                    .FirstOrDefaultAsync(),
+                _ => (null, null),
+            };
+        }
+
+        private async Task<string?> ResolvePreviewImageAsync(string entityType, Guid entityId)
+        {
+            return entityType.ToLowerInvariant() switch
+            {
+                "destination" => await _db.Destinations
+                    .Where(d => d.Id == entityId)
+                    .Select(d => d.PreviewImageUrl ?? d.HeroImageUrl
+                        ?? d.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault())
+                    .FirstOrDefaultAsync(),
+                "place" => await _db.Places
+                    .Where(p => p.Id == entityId)
+                    .Select(p => p.PreviewImageUrl
+                        ?? p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault())
+                    .FirstOrDefaultAsync(),
+                "activity" => await _db.Activities
+                    .Where(a => a.Id == entityId)
+                    .Select(a => a.PreviewImageUrl
+                        ?? a.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault())
+                    .FirstOrDefaultAsync(),
+                "event" => await _db.Events
+                    .Where(e => e.Id == entityId)
+                    .Select(e => e.PreviewImageUrl
+                        ?? e.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault())
+                    .FirstOrDefaultAsync(),
+                _ => null,
+            };
+        }
     }
 }

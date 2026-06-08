@@ -40,6 +40,37 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+        [HttpGet("{id:guid}/details")]
+        public async Task<IActionResult> GetDetails(Guid id)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                var details = await _service.GetUserDetailsAsync(id, currentUserId);
+                if (details == null) return NotFound();
+                return Ok(details);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{id:guid}/owned-entities")]
+        public async Task<IActionResult> GetOwnedEntities(Guid id, [FromQuery] string type)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                var items = await _service.GetUserOwnedEntitiesAsync(id, type ?? "", currentUserId);
+                return Ok(items);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
         [HttpGet("stats")]
         public async Task<IActionResult> GetStats()
         {
