@@ -220,21 +220,6 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
   }
 
-  get reviewsAsDto(): ReviewDto[] {
-    return this.event?.reviews.map(r => ({
-      id: r.id,
-      rating: r.rating,
-      comment: r.comment ?? '',
-      createdAt: r.createdAt,
-      user: {
-        id: r.user.id,
-        firstName: r.user.firstName,
-        lastName: r.user.lastName,
-        travelerRank: r.user.travelerRank,
-        profileImageUrl: r.user.profileImageUrl,
-      },
-    })) ?? [];
-  }
 
   openReviewForm(): void {
     if (!this.authService.isLoggedIn()) {

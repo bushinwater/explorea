@@ -166,8 +166,8 @@
         <ng-container *ngIf="event.reviews.length > 0; else noReviews">
           <div class="review-scroll-row">
             <app-review-card
-              *ngFor="let r of reviewsAsDto.slice(0, 5)"
-              [review]="r"
+              *ngFor="let r of event.reviews.slice(0, 5)"
+              [review]="$any(r)"
               [currentUserId]="currentUserId"
               (deleted)="onReviewDeleted($event)"
               (updated)="onReviewUpdated($event)"
@@ -386,7 +386,7 @@
   [title]="'EVENT_DETAIL.REVIEWS.TITLE' | translate"
   [subtitle]="event?.name ?? ''"
   [avgRating]="avgRating"
-  [reviews]="reviewsAsDto"
+  [reviews]="$any(event?.reviews ?? [])"
   [currentUserId]="currentUserId"
   (closed)="closeReviewsPanel()"
   (deleted)="onReviewDeleted($event)"
@@ -395,7 +395,7 @@
 
 <app-reviews-lightbox
   [isOpen]="reviewsLightboxOpen"
-  [reviews]="reviewsAsDto"
+  [reviews]="$any(event?.reviews ?? [])"
   [startReviewId]="lightboxStartReviewId"
   [startImageIndex]="lightboxStartImageIndex"
   (closed)="reviewsLightboxOpen = false" />
