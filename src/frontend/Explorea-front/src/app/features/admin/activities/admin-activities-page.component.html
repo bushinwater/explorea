@@ -870,9 +870,31 @@
                           >
                         }
                       </div>
+                      @if (review.id) {
+                        <button type="button" class="activity-review__open"
+                                (click)="openReviewInAdmin(review.id!)"
+                                [title]="ui.t('reviews.actions.open_in_admin')">
+                          <span class="material-icons">arrow_outward</span>
+                        </button>
+                      }
                     </div>
                     @if (review.comment) {
                       <p class="activity-review__comment">{{ review.comment }}</p>
+                    }
+                    @if (review.imageUrls && review.imageUrls.length > 0) {
+                      <div class="activity-review__images">
+                        @for (url of review.imageUrls.slice(0, 3); track url; let i = $index) {
+                          <span class="activity-review__thumb"
+                                [class.activity-review__thumb--more]="i === 2 && review.imageUrls!.length > 3">
+                            <img [src]="url" alt="" loading="lazy" />
+                            @if (i === 2 && review.imageUrls!.length > 3) {
+                              <span class="activity-review__thumb-more">
+                                <span class="material-icons">add</span>{{ review.imageUrls!.length - 3 }}
+                              </span>
+                            }
+                          </span>
+                        }
+                      </div>
                     }
                   </div>
                 }

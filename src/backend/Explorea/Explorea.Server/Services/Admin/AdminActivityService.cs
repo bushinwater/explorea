@@ -365,9 +365,7 @@ namespace Explorea.Server.Services.Admin
         Popularity = activity.Popularity,
 
         ExtraData = activity.ExtraData,
-        ExtraFilters = activity.ExtraData != null
-          ? JsonSerializer.Deserialize<Dictionary<string, string>>(activity.ExtraData)
-          : null,
+        ExtraFilters = JsonbDictionaryHelper.ParseStringDictionary(activity.ExtraData),
 
         Latitude  = activity.Latitude,
         Longitude = activity.Longitude,

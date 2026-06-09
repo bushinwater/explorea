@@ -33,6 +33,9 @@ export interface EventDetail extends EventCard {
       travelerRank: string;
       profileImageUrl: string | null;
     };
+    images?: { id: string; imageUrl: string; sortOrder: number }[];
+    ownerReply?: string | null;
+    ownerReplyAt?: string | null;
   }[];
   similarEvents: EventCard[];
   venueItems: EventVenueItem[];

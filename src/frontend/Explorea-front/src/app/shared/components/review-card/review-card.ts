@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, Output, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -28,7 +28,16 @@ const THUMB_LIMIT = 3;
   templateUrl: './review-card.html',
   styleUrl: './review-card.css',
 })
-export class ReviewCard {
+export class ReviewCard implements OnDestroy {
+  ngOnDestroy(): void {
+    this.unlockBodyScroll();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.fullViewOpen) this.closeFullView();
+  }
+
   @Input() review!: ReviewDto;
   @Input() currentUserId = '';
   @Input() compact = false;
@@ -51,6 +60,59 @@ export class ReviewCard {
 
   readonly maxImages = MAX_IMAGES;
   readonly thumbLimit = THUMB_LIMIT;
+
+  private readonly LONG_COMMENT_THRESHOLD = 220;
+  private readonly LONG_COMMENT_THRESHOLD_COMPACT = 80;
+  fullViewOpen = false;
+  private fullViewSavedScrollY = 0;
+  private fullViewBodyLocked = false;
+
+  get isLongComment(): boolean {
+    if (!this.review.comment) return false;
+    const threshold = this.compact ? this.LONG_COMMENT_THRESHOLD_COMPACT : this.LONG_COMMENT_THRESHOLD;
+    return this.review.comment.length > threshold;
+  }
+
+  openFullView(): void {
+    this.fullViewOpen = true;
+    this.lockBodyScroll();
+    this.cdr.detectChanges();
+  }
+
+  closeFullView(): void {
+    this.fullViewOpen = false;
+    this.unlockBodyScroll();
+    this.cdr.detectChanges();
+  }
+
+  private lockBodyScroll(): void {
+    if (this.fullViewBodyLocked) return;
+    this.fullViewBodyLocked = true;
+    this.fullViewSavedScrollY = window.scrollY;
+    // Compensate for the disappearing scrollbar so absolutely-positioned
+    // siblings (hero titles, fixed bars) don't shift horizontally.
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const html = document.documentElement;
+    if (scrollbarWidth > 0) {
+      html.style.paddingRight = `${scrollbarWidth}px`;
+    }
+    html.style.overflow = 'hidden';
+    // iOS Safari ignores html overflow; also fix touchmove on the body.
+    document.body.style.touchAction = 'none';
+  }
+
+  private unlockBodyScroll(): void {
+    if (!this.fullViewBodyLocked) return;
+    this.fullViewBodyLocked = false;
+    const html = document.documentElement;
+    html.style.overflow = '';
+    html.style.paddingRight = '';
+    document.body.style.touchAction = '';
+  }
+
+  formatRatingDate(iso: string | null | undefined): string {
+    return this.formatDate(iso);
+  }
 
   private reviewService = inject(ReviewService);
   private cdr = inject(ChangeDetectorRef);

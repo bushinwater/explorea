@@ -42,12 +42,21 @@ export interface ReviewUser {
   profileImageUrl?: string | null;
 }
 
+export interface ReviewImage {
+  id: string;
+  imageUrl: string;
+  sortOrder: number;
+}
+
 export interface Review {
   id: string;
   rating: number;
   comment?: string | null;
   createdAt: string;
   user: ReviewUser;
+  images?: ReviewImage[];
+  ownerReply?: string | null;
+  ownerReplyAt?: string | null;
 }
 
 export interface PlaceCard {

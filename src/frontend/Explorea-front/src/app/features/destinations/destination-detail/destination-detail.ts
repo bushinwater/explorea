@@ -319,7 +319,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
 
   onReviewSubmitted(review: ReviewDto): void {
     if (!this.destination) return;
-    const newReviews = [{ id: review.id, rating: review.rating, comment: review.comment ?? '', createdAt: review.createdAt, user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.destination.reviews];
+    const newReviews = [{ id: review.id, rating: review.rating, comment: review.comment ?? '', createdAt: review.createdAt, images: review.images ?? [], user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.destination.reviews];
     this.destination.reviews = newReviews;
     this.destination.avgRating = this.calcAvg(newReviews);
     this.hasReviewed = true;
@@ -339,7 +339,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     const idx = this.destination.reviews.findIndex((r: any) => r.id === review.id);
     if (idx !== -1) {
       const updated = [...this.destination.reviews];
-      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment };
+      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment, images: review.images ?? [] };
       this.destination.reviews = updated;
       this.destination.avgRating = this.calcAvg(updated);
       this.cdr.detectChanges();

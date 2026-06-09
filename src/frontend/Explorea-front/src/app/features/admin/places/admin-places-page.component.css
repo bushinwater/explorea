@@ -1249,3 +1249,64 @@
 }
 .evts-btn-primary:hover { opacity: 0.88; }
 .evts-btn-primary .material-icons { font-size: 16px; }
+
+.place-review__open {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.place-review__open:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.place-review__open .material-icons { font-size: 14px; }
+
+.place-review__images {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.place-review__thumb {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.place-review__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.place-review__thumb--more img { filter: brightness(0.45); }
+
+.place-review__thumb-more {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.place-review__thumb-more .material-icons { font-size: 12px; }

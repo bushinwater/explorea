@@ -41,7 +41,11 @@
   </a>
 
   <!-- Read mode -->
-  <p *ngIf="!editMode" class="review-card__comment">{{ review.comment }}</p>
+  <p *ngIf="!editMode" class="review-card__comment" [class.review-card__comment--clamped]="!compact && isLongComment">{{ review.comment }}</p>
+  <button *ngIf="!editMode && isLongComment" type="button" class="review-card__read-more" (click)="openFullView()">
+    {{ 'COMMON.READ_MORE' | translate }}
+    <span class="material-icons">chevron_right</span>
+  </button>
 
   <div *ngIf="!editMode && reviewImages.length > 0" class="review-card__images">
     <button
@@ -141,4 +145,47 @@
       </button>
     </div>
   </ng-container>
+</div>
+
+<div *ngIf="fullViewOpen" class="review-fullview" (click)="closeFullView()">
+  <div class="review-fullview__panel" (click)="$event.stopPropagation()">
+    <button type="button" class="review-fullview__close" (click)="closeFullView()" [attr.aria-label]="'COMMON.GO_BACK' | translate">
+      <span class="material-icons">close</span>
+    </button>
+
+    <div class="review-fullview__header">
+      <div class="review-fullview__avatar">
+        <img *ngIf="showImage" [src]="review.user.profileImageUrl" [alt]="review.user.firstName" referrerpolicy="no-referrer" (error)="onImgError()" />
+        <span *ngIf="!showImage">{{ initials }}</span>
+      </div>
+      <div class="review-fullview__user">
+        <span class="review-fullview__name">{{ review.user.firstName }} {{ review.user.lastName }}</span>
+        <span class="review-fullview__rank">
+          <span class="material-icons">{{ rankIcon }}</span>
+          {{ review.user.travelerRank }}
+        </span>
+      </div>
+      <app-star-rating [rating]="review.rating" [showValue]="false" />
+    </div>
+
+    <div class="review-fullview__body">
+      <span class="review-fullview__date">{{ formatDate(review.createdAt) }}</span>
+      <p class="review-fullview__comment">{{ review.comment }}</p>
+
+      <div *ngIf="reviewImages.length > 0" class="review-fullview__images">
+        <button *ngFor="let img of reviewImages; let i = index" type="button" class="review-fullview__image" (click)="onImageClick(i); closeFullView()">
+          <img [src]="img.imageUrl" [alt]="'Slika ' + (i + 1)" loading="lazy" />
+        </button>
+      </div>
+
+      <div *ngIf="review.ownerReply" class="review-fullview__owner-reply">
+        <div class="review-fullview__owner-reply-header">
+          <span class="material-icons">storefront</span>
+          <span class="review-fullview__owner-reply-label">{{ 'COMMON.OWNER_REPLY' | translate }}</span>
+          <span *ngIf="review.ownerReplyAt" class="review-fullview__owner-reply-date">{{ formatDate(review.ownerReplyAt) }}</span>
+        </div>
+        <p class="review-fullview__owner-reply-text">{{ review.ownerReply }}</p>
+      </div>
+    </div>
+  </div>
 </div>

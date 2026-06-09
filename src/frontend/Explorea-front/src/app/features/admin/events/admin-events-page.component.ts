@@ -350,6 +350,13 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.loadEvents();
   }
 
+  protected openReviewInAdmin(reviewId: string): void {
+    this.closeDetailsPanel();
+    void this.router.navigate(['/admin/reviews'], {
+      queryParams: { openReviewId: reviewId },
+    });
+  }
+
   protected openDetailsPanel(event: EventRow): void {
     this.activeMenuId.set(null);
     this.descriptionExpanded.set(false);

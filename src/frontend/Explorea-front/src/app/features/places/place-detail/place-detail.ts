@@ -397,7 +397,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     const idx = this.place.reviews.findIndex((r: any) => r.id === review.id);
     if (idx !== -1) {
       const updated = [...this.place.reviews];
-      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment };
+      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment, images: review.images ?? [] };
       this.place = { ...this.place, reviews: updated, avgRating: this.calcAvg(updated) };
       this.cdr.detectChanges();
     }

@@ -521,6 +521,13 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected openReviewInAdmin(reviewId: string): void {
+    this.closeDetailsPanel();
+    void this.router.navigate(['/admin/reviews'], {
+      queryParams: { openReviewId: reviewId },
+    });
+  }
+
   protected closeDetailsPanel(): void {
     if (this.isPanelClosing()) return;
     this.isPanelClosing.set(true);

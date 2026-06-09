@@ -825,9 +825,7 @@ namespace Explorea.Server.Services.Admin
                                 .ToList(),
             CreatedAt       = d.CreatedAt,
             UpdatedAt       = d.UpdatedAt,
-            ExtraFilters    = string.IsNullOrEmpty(d.ExtraFilters)
-                                ? null
-                                : JsonSerializer.Deserialize<Dictionary<string, string>>(d.ExtraFilters),
+            ExtraFilters    = JsonbDictionaryHelper.ParseStringDictionary(d.ExtraFilters),
             DeletedAt       = d.DeletedAt
         };
 

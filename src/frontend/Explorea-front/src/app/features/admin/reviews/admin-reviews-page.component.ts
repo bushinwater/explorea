@@ -583,20 +583,30 @@ export class AdminReviewsPageComponent implements OnInit, OnDestroy {
   private consumeOpenReviewIdQueryParam(): void {
     const openReviewId = this.route.snapshot.queryParamMap.get('openReviewId');
     if (!openReviewId) return;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { openReviewId: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+
     const row = this.reviews().find(r => r.id === openReviewId);
     if (row) {
       this.previewReview.set(row);
-      void this.router.navigate([], {
-        relativeTo: this.route,
-        queryParams: { openReviewId: null },
-        queryParamsHandling: 'merge',
-        replaceUrl: true,
-      });
       setTimeout(() => {
         const el = document.querySelector(`[data-admin-row-id="${openReviewId}"]`) as HTMLElement | null;
         el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 80);
+      return;
     }
+
+    // Review is not on the current page (different filter / pagination) —
+    // fetch it directly so the preview still opens.
+    this.subscription.add(
+      this.reviewsService.getById(openReviewId).subscribe({
+        next: (fetched) => this.previewReview.set(fetched),
+      }),
+    );
   }
 
   private loadStats(): void {

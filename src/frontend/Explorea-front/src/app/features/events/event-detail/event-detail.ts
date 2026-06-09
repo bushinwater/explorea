@@ -248,7 +248,7 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.event) return;
     this.event = {
       ...this.event,
-      reviews: [{ id: review.id, rating: review.rating, comment: review.comment ?? null, createdAt: review.createdAt, user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.event.reviews],
+      reviews: [{ id: review.id, rating: review.rating, comment: review.comment ?? null, createdAt: review.createdAt, images: review.images ?? [], user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.event.reviews],
     };
     this.hasReviewed = true;
     this.cdr.detectChanges();
@@ -266,7 +266,7 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     const idx = this.event.reviews.findIndex(r => r.id === review.id);
     if (idx !== -1) {
       const updated = [...this.event.reviews];
-      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment ?? null };
+      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment ?? null, images: review.images ?? [] };
       this.event = { ...this.event, reviews: updated };
       this.cdr.detectChanges();
     }

@@ -884,9 +884,7 @@ namespace Explorea.Server.Services.Admin
             Region = p.City?.Region?.Name,
             Destination = p.Destination?.Name,
             Country = p.Country?.Name,
-            ExtraFilters = p.ExtraFilters != null
-                ? JsonSerializer.Deserialize<Dictionary<string, string>>(p.ExtraFilters)
-                : null,
+            ExtraFilters = JsonbDictionaryHelper.ParseStringDictionary(p.ExtraFilters),
             CreatedBy = p.CreatedBy,
             Images = p.Images
                 .OrderBy(i => i.SortOrder)

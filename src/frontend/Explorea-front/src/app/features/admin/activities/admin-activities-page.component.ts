@@ -495,6 +495,13 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected openReviewInAdmin(reviewId: string): void {
+    this.closeDetailsPanel();
+    void this.router.navigate(['/admin/reviews'], {
+      queryParams: { openReviewId: reviewId },
+    });
+  }
+
   protected openDetailsPanel(activity: ActivityRow): void {
 
     // Enrich stub row from loaded rows when opened via openId.

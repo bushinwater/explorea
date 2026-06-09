@@ -447,7 +447,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
 
   onReviewSubmitted(review: ReviewDto): void {
     if (!this.activity) return;
-    const newReviews = [{ id: review.id, rating: review.rating, comment: review.comment, createdAt: review.createdAt, user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.activity.reviews];
+    const newReviews = [{ id: review.id, rating: review.rating, comment: review.comment, createdAt: review.createdAt, images: review.images ?? [], user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.activity.reviews];
     this.activity.reviews = newReviews;
     this.activity.avgRating = this.calcAvg(newReviews);
     this.hasReviewed = true;
@@ -467,7 +467,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
     const idx = this.activity.reviews.findIndex(r => r.id === review.id);
     if (idx !== -1) {
       const updated = [...this.activity.reviews];
-      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment };
+      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment, images: review.images ?? [] };
       this.activity.reviews = updated;
       this.activity.avgRating = this.calcAvg(updated);
       this.cdr.detectChanges();
