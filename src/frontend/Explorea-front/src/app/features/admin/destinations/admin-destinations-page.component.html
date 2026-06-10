@@ -345,12 +345,18 @@
       </div>
     </div>
 
-    <div class="dest-filter-chips dest-list-mode-tabs">
-      <button class="dest-chip" [class.dest-chip--active]="listMode() === 'active'" (click)="setListMode('active')">
+    <div class="dest-tabs">
+      <button class="dest-tab" [class.dest-tab--active]="listMode() === 'active'" (click)="setListMode('active')">
         {{ ui.t('destinations.tabs.active') }}
+        @if (stats()?.activeCount) {
+          <span class="dest-tab__badge dest-tab__badge--green">{{ compactCount(stats()!.activeCount) }}</span>
+        }
       </button>
-      <button class="dest-chip" [class.dest-chip--active]="listMode() === 'deleted'" (click)="setListMode('deleted')">
+      <button class="dest-tab" [class.dest-tab--active]="listMode() === 'deleted'" (click)="setListMode('deleted')">
         {{ ui.t('destinations.tabs.deleted') }}
+        @if (stats()?.deletedCount) {
+          <span class="dest-tab__badge dest-tab__badge--red">{{ compactCount(stats()!.deletedCount) }}</span>
+        }
       </button>
     </div>
 

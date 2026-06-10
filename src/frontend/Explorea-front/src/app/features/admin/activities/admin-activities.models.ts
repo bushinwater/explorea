@@ -29,6 +29,7 @@ export interface ActivityRow {
   startPoint: string | null;
   avgRating: number;
   popularity: number;
+  views: number;
   isFeatured: boolean;
   isActive: boolean;
   previewImageUrl: string | null;
@@ -72,6 +73,8 @@ export interface ActivityDetail extends ActivityRow {
 
 export interface ActivityStats {
   totalActivities: number;
+  activeCount: number;
+  deletedCount: number;
   mostPopularName: string;
   mostPopularViews: number;
   inactiveCount: number;

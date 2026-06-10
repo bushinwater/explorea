@@ -252,6 +252,28 @@ namespace Explorea.Server.Services.Admin
                     l.Source == "click" &&
                     l.CreatedAt > recentCutoff));
             var addedLast30Days = await destinationQuery.CountAsync(d => d.CreatedAt > recentCutoff);
+            var activeCount = await destinationQuery.CountAsync();
+
+            // Deleted destinations — bypass IsDeleted filter but keep role scope
+            var deletedQuery = _db.Destinations
+                .IgnoreQueryFilters()
+                .Where(d => d.IsDeleted);
+            if (user?.Role.Name == RoleNames.TouristOrganization)
+            {
+                if (user.ManagedRegionId.HasValue)
+                {
+                    deletedQuery = deletedQuery.Where(d =>
+                        (d.RegionId != null && d.RegionId == user.ManagedRegionId.Value)
+                        || (d.RegionId == null && d.City != null && d.City.RegionId == user.ManagedRegionId.Value));
+                }
+                else
+                {
+                    var assignments = await _assignmentRepo.GetByUserIdAsync(currentUserId);
+                    var destinationIds = assignments.Select(a => a.DestinationId).ToList();
+                    deletedQuery = deletedQuery.Where(d => destinationIds.Contains(d.Id));
+                }
+            }
+            var deletedCount = await deletedQuery.CountAsync();
 
             var destinationStats = await destinationQuery
                 .Select(d => new
@@ -289,6 +311,8 @@ namespace Explorea.Server.Services.Admin
             return new AdminDestinationStatsDto
             {
                 TotalViews = totalViews,
+                ActiveCount = activeCount,
+                DeletedCount = deletedCount,
                 InactiveCount = inactiveCount,
                 AddedLast30Days = addedLast30Days,
                 MostPopularName = mostPopular?.Name ?? string.Empty,
@@ -392,7 +416,9 @@ namespace Explorea.Server.Services.Admin
                 if (ownerDestination == null || ownerDestination.IsDeleted || !IsPublicDestination(ownerDestination))
                     return null;
 
-                return MapToListDto(ownerDestination);
+                var ownerCount = await _db.PopularityLogs
+                    .CountAsync(l => l.EntityType == "destination" && l.Source == "click" && l.EntityId == id);
+                return MapToListDto(ownerDestination, new Dictionary<Guid, int> { [id] = ownerCount });
             }
             else if (user?.Role.Name != RoleNames.SuperAdmin)
             {
@@ -400,7 +426,10 @@ namespace Explorea.Server.Services.Admin
             }
 
             var destination = await _destinationRepo.GetAdminByIdAsync(id);
-            return destination == null ? null : MapToListDto(destination);
+            if (destination == null) return null;
+            var viewCount = await _db.PopularityLogs
+                .CountAsync(l => l.EntityType == "destination" && l.Source == "click" && l.EntityId == id);
+            return MapToListDto(destination, new Dictionary<Guid, int> { [id] = viewCount });
         }
 
         public async Task<AdminDestinationListDto> CreateAsync(AdminCreateDestinationDto dto, Guid createdBy)

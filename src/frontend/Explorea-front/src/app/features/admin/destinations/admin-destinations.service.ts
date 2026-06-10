@@ -48,6 +48,8 @@ interface ApiDestinationItem {
 
 interface ApiDestinationStats {
   totalViews: number;
+  activeCount: number;
+  deletedCount: number;
   inactiveCount: number;
   addedLast30Days: number;
   mostPopularName: string;

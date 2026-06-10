@@ -328,7 +328,7 @@
           {{ ui.t('events.tabs.active_events') }}
           @if (stats()?.tabActiveCount) {
             <span class="evts-tab__badge evts-tab__badge--green">{{
-              stats()!.tabActiveCount
+              compactCount(stats()!.tabActiveCount)
             }}</span>
           }
         </button>
@@ -339,7 +339,7 @@
         >
           {{ ui.t('events.tabs.pending') }}
           @if (stats()?.tabPendingCount) {
-            <span class="evts-tab__badge">{{ stats()!.tabPendingCount }}</span>
+            <span class="evts-tab__badge">{{ compactCount(stats()!.tabPendingCount) }}</span>
           }
         </button>
         <button
@@ -349,7 +349,7 @@
         >
           {{ ui.t('events.tabs.rejected') }}
           @if (stats()?.rejected) {
-            <span class="evts-tab__badge evts-tab__badge--red">{{ stats()!.rejected }}</span>
+            <span class="evts-tab__badge evts-tab__badge--red">{{ compactCount(stats()!.rejected) }}</span>
           }
         </button>
         <button
@@ -359,7 +359,7 @@
         >
           {{ ui.t('events.tabs.expired') }}
           @if (stats()?.tabExpiredCount) {
-            <span class="evts-tab__badge">{{ stats()!.tabExpiredCount }}</span>
+            <span class="evts-tab__badge">{{ compactCount(stats()!.tabExpiredCount) }}</span>
           }
         </button>
         <button
@@ -763,6 +763,10 @@
             <span class="ddp-grid__value">{{ formatRating(ev.avgRating) }} / 5</span>
           </div>
         }
+        <div class="ddp-grid__item">
+          <span class="ddp-grid__label">{{ ui.t('common.views') }}</span>
+          <span class="ddp-grid__value">{{ ev.views ?? '—' }}</span>
+        </div>
         @if (ev.ticketUrl) {
           <div class="ddp-grid__item ddp-grid__item--full">
             <span class="ddp-grid__label">{{ ui.t('events.details.ticket') }}</span>

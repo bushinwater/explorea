@@ -12,6 +12,7 @@ import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
+import { formatCompactCount } from '../core/utils/compact-number.utils';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { effect, untracked } from '@angular/core';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
@@ -544,6 +545,11 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
   protected onEditSaved(row: EventRow): void {
     this.isEditClosing.set(true);
+    // Optimistically patch the row in the loaded list so visible cells (incl. thumbnail) update immediately.
+    this.events.update(list => list.map(item => {
+      if (item.id !== row.id) return item;
+      return { ...item, ...row, heroImageUrl: row.heroImageUrl ?? item.heroImageUrl };
+    }));
     setTimeout(() => {
       this.isEditOpen.set(false);
       this.isEditClosing.set(false);
@@ -643,6 +649,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  protected compactCount(n: number): string {
+    return formatCompactCount(n);
   }
 
   protected rowKey(ev: EventRow): string {

@@ -117,6 +117,7 @@ export interface PlaceDetail {
   email: string | null;
   websiteUrl: string | null;
   avgRating: number;
+  views: number;
   isFeatured: boolean;
   status: PlaceStatus;
   type: string | null;

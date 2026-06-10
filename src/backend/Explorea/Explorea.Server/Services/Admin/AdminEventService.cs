@@ -1222,6 +1222,7 @@ namespace Explorea.Server.Services.Admin
                 TicketUrl      = e.TicketUrl,
                 AvgRating      = e.AvgRating,
                 Popularity     = e.Popularity,
+                Views          = await _db.PopularityLogs.CountAsync(l => l.EntityType == "event" && l.Source == "click" && l.EntityId == e.Id),
                 IsFeatured     = e.IsFeatured,
                 RecursAnnually = e.RecursAnnually,
                 Images         = e.Images.OrderBy(i => i.SortOrder)

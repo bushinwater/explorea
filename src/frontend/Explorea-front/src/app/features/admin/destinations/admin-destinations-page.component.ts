@@ -11,6 +11,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, interval } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
+import { formatCompactCount } from '../core/utils/compact-number.utils';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
@@ -532,14 +533,16 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   }
 
   protected formatBigNumber(n: number): string {
-    return n.toLocaleString('en-US');
+    return formatCompactCount(n);
   }
 
   protected formatViews(views: number): string {
     if (views == null) return '—';
-    if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`;
-    if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
-    return views.toString();
+    return formatCompactCount(views);
+  }
+
+  protected compactCount(n: number): string {
+    return formatCompactCount(n);
   }
 
   protected addedLast30DaysValue(): number {

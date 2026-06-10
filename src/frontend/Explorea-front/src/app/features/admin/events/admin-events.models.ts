@@ -103,6 +103,7 @@ export interface EventRow {
   isFeatured: boolean;
   recursAnnually: boolean;
   avgRating: number;
+  views: number;
   documents: EventDocument[];
   ownerName: string | null;
   region: string | null;

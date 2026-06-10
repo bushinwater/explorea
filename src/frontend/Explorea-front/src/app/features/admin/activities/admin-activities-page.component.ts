@@ -14,6 +14,7 @@ import { HttpClient } from '@angular/common/http';
 import { DecimalPipe } from '@angular/common';
 import { StatCardComponent } from '@shared/components';
 import { ActivatedRoute, Router } from '@angular/router';
+import { formatCompactCount } from '../core/utils/compact-number.utils';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
@@ -1178,13 +1179,15 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   protected formatBigNumber(n: number): string {
-    return n.toLocaleString('en-US');
+    return formatCompactCount(n);
   }
 
   protected formatViews(views: number): string {
-    if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`;
-    if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
-    return views.toString();
+    return formatCompactCount(views);
+  }
+
+  protected compactCount(n: number): string {
+    return formatCompactCount(n);
   }
 
   protected difficultyLabel(difficulty: string | null): string {

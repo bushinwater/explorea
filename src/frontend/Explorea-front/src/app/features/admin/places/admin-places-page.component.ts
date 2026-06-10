@@ -13,6 +13,7 @@ import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs'
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
+import { formatCompactCount } from '../core/utils/compact-number.utils';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
 import { DependencyDeleteDialogComponent } from '../shared/components/dependency-delete-dialog/dependency-delete-dialog.component';
 import { EmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
@@ -630,6 +631,10 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
 
   protected formatRating(r: number): string {
     return r.toFixed(1);
+  }
+
+  protected compactCount(n: number): string {
+    return formatCompactCount(n);
   }
 
   protected statusLabel(status: PlaceStatus): string {

@@ -321,20 +321,26 @@
       </div>
     </div>
 
-    <div class="activity-filter-chips activity-list-mode-tabs">
+    <div class="activity-tabs">
       <button
-        class="activity-chip"
-        [class.activity-chip--active]="listMode() === 'active'"
+        class="activity-tab"
+        [class.activity-tab--active]="listMode() === 'active'"
         (click)="setListMode('active')"
       >
         {{ ui.t('activities.tabs.active') }}
+        @if (stats()?.activeCount) {
+          <span class="activity-tab__badge activity-tab__badge--green">{{ compactCount(stats()!.activeCount) }}</span>
+        }
       </button>
       <button
-        class="activity-chip"
-        [class.activity-chip--active]="listMode() === 'deleted'"
+        class="activity-tab"
+        [class.activity-tab--active]="listMode() === 'deleted'"
         (click)="setListMode('deleted')"
       >
         {{ ui.t('activities.tabs.deleted') }}
+        @if (stats()?.deletedCount) {
+          <span class="activity-tab__badge activity-tab__badge--red">{{ compactCount(stats()!.deletedCount) }}</span>
+        }
       </button>
     </div>
 
@@ -753,6 +759,11 @@
             <div class="ddp-grid__item">
               <span class="ddp-grid__label">{{ ui.t('common.popularity') }}</span>
               <strong class="ddp-grid__value">{{ formatViews(detail.popularity) }}</strong>
+            </div>
+
+            <div class="ddp-grid__item">
+              <span class="ddp-grid__label">{{ ui.t('common.views') }}</span>
+              <strong class="ddp-grid__value">{{ formatViews(detail.views ?? 0) }}</strong>
             </div>
 
             <div class="ddp-grid__item">

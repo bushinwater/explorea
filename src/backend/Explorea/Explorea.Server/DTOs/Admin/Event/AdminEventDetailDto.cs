@@ -26,6 +26,7 @@ namespace Explorea.API.DTOs.Admin.Event
         public string?         TicketUrl      { get; set; }
         public decimal         AvgRating      { get; set; }
         public int             Popularity     { get; set; }
+        public int             Views          { get; set; }
         public bool            IsFeatured     { get; set; }
         public bool            RecursAnnually { get; set; }
         public List<AdminEventImageDto> Images { get; set; } = new();

@@ -615,6 +615,7 @@ export class AdminEventsService {
       isFeatured: e.isFeatured,
       recursAnnually: e.recursAnnually ?? false,
       avgRating: e.avgRating ?? 0,
+      views: (e as any).views ?? 0,
       documents: [],
       ownerName: null,
       region: e.city,
@@ -656,6 +657,7 @@ export class AdminEventsService {
       isFeatured: false,
       recursAnnually: false,
       avgRating: 0,
+      views: 0,
       documents: (q.documents ?? []).map((doc: ApiOwnerSubmissionDocument) => ({
         id: doc.id,
         name: this.documentLabel(doc),
@@ -703,6 +705,7 @@ export class AdminEventsService {
       isFeatured: e.isFeatured ?? false,
       recursAnnually: e.recursAnnually ?? false,
       avgRating: e.avgRating ?? 0,
+      views: (e as any).views ?? base?.views ?? 0,
       documents: base?.documents ?? [],
       ownerName: base ? base.ownerName : (e.placeId && e.placeHasOwner ? 'Vlasnik objekta' : null),
       region: e.city,

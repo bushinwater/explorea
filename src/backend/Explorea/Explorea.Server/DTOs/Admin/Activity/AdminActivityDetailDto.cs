@@ -49,6 +49,7 @@ namespace Explorea.API.DTOs.Admin.Activity
 
         public decimal AvgRating { get; set; }
         public int Popularity { get; set; }
+        public int Views { get; set; }
 
         public string? ExtraData { get; set; }
         public Dictionary<string, string>? ExtraFilters { get; set; }

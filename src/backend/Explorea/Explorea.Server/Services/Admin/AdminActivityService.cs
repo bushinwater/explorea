@@ -332,9 +332,12 @@ namespace Explorea.Server.Services.Admin
         })
         .ToListAsync();
 
+      var views = await _context.PopularityLogs.CountAsync(l => l.EntityType == "activity" && l.Source == "click" && l.EntityId == id);
+
       return new AdminActivityDetailsDto
       {
         Id = activity.Id,
+        Views = views,
 
         CityId        = activity.CityId,
         CityName      = activity.City?.Name,

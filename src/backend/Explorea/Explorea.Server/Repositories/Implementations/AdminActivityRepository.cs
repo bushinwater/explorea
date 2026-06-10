@@ -99,9 +99,16 @@ namespace Explorea.Server.Repositories.Admin
         .Select(a => new { a.Name, a.CreatedAt })
         .FirstOrDefaultAsync();
 
+      var deletedCount = await _context.Activities
+        .IgnoreQueryFilters()
+        .AsNoTracking()
+        .CountAsync(a => a.IsDeleted);
+
       return new AdminActivityStatsDto
       {
         TotalActivities  = totalActivities,
+        ActiveCount      = totalActivities,
+        DeletedCount     = deletedCount,
         MostPopularName  = mostPopular?.Name,
         MostPopularViews = mostPopularViews,
         InactiveCount    = inactiveCount,

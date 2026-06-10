@@ -94,6 +94,8 @@ export interface TopDestination {
 
 export interface DestinationStats {
   totalViews: number;
+  activeCount: number;
+  deletedCount: number;
   inactiveCount: number;
   addedLast30Days: number;
   mostPopularName: string;

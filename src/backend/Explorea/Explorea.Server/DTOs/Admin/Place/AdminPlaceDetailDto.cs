@@ -23,6 +23,7 @@ namespace Explorea.API.DTOs.Admin.Place
         public string? WebsiteUrl { get; set; }
 
         public decimal AvgRating { get; set; }
+        public int Views { get; set; }
         public bool IsFeatured { get; set; }
         public string Status { get; set; } = "approved";
 
