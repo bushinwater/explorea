@@ -698,17 +698,29 @@
           <p class="rp-builder-card__subtitle">{{ ui.t('reports.queue.subtitle') }}</p>
         </div>
       </div>
-      <button
-        class="btn btn-primary"
-        [disabled]="!reportQueue().length || pdfGenerating()"
-        (click)="generateQueuePdf()"
-      >
-        @if (pdfGenerating()) {
-          <span class="rp-spinner"></span> {{ ui.t('reports.btn.generating') }}
-        } @else {
-          <span class="material-icons">picture_as_pdf</span> {{ ui.t('reports.btn.generate_pdf') }}
+      <div class="rp-queue-actions">
+        @if (reportQueue().length > 0) {
+          <button
+            class="btn btn-secondary"
+            type="button"
+            (click)="clearQueue()"
+            [disabled]="pdfGenerating()"
+          >
+            <span class="material-icons">delete_sweep</span> {{ ui.t('reports.btn.clear_queue') }}
+          </button>
         }
-      </button>
+        <button
+          class="btn btn-primary"
+          [disabled]="!reportQueue().length || pdfGenerating()"
+          (click)="generateQueuePdf()"
+        >
+          @if (pdfGenerating()) {
+            <span class="rp-spinner"></span> {{ ui.t('reports.btn.generating') }}
+          } @else {
+            <span class="material-icons">picture_as_pdf</span> {{ ui.t('reports.btn.generate_pdf') }}
+          }
+        </button>
+      </div>
     </div>
 
     <div class="rp-queue-body">

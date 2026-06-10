@@ -772,6 +772,58 @@
           </div>
         }
 
+        <!-- Analytics -->
+        @if (detailsPanelAnalytics(); as analytics) {
+          <div class="ddp-analytics-section">
+            <div class="ddp-analytics-section__head">
+              <h4 class="ddp-section-label">{{ ui.t('destinations.analytics.title') }}</h4>
+              <button type="button" class="ddp-analytics__send" (click)="sendAnalyticsToReports()">
+                <span class="material-icons">assessment</span>
+                {{ ui.t('destinations.analytics.send_to_reports') }}
+              </button>
+            </div>
+
+            <div class="ddp-analytics-chart-wrap">
+              <span class="ddp-analytics-chart__title">{{ ui.t('destinations.analytics.views_30d') }}</span>
+              <div class="ddp-analytics-chart">
+                <canvas #analyticsCanvas></canvas>
+              </div>
+            </div>
+
+            <div class="ddp-analytics-stats">
+              <div class="ddp-analytics-stat">
+                <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.saved_by_users') }}</span>
+                <span class="ddp-analytics-stat__value">{{ compactCount(analytics.savedByUsers) }}</span>
+              </div>
+              <div class="ddp-analytics-stat">
+                <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.planner_users') }}</span>
+                <span class="ddp-analytics-stat__value">{{ compactCount(analytics.plannerByUsers) }}</span>
+              </div>
+              <div class="ddp-analytics-stat">
+                <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.top_planner_month') }}</span>
+                <span class="ddp-analytics-stat__value">{{ plannerMonthLabel(analytics.topPlannerMonth) }}</span>
+                @if (analytics.topPlannerMonthCount) {
+                  <span class="ddp-analytics-stat__hint">{{ analytics.topPlannerMonthCount }} {{ ui.t('destinations.analytics.entries_short') }}</span>
+                }
+              </div>
+              <div class="ddp-analytics-stat">
+                <span class="ddp-analytics-stat__label">{{ ui.t('places.analytics.events_count') }}</span>
+                <span class="ddp-analytics-stat__value">{{ compactCount(analytics.eventCount) }}</span>
+                @if (analytics.upcomingEventCount) {
+                  <span class="ddp-analytics-stat__hint">{{ analytics.upcomingEventCount }} {{ ui.t('places.analytics.upcoming_short') }}</span>
+                }
+              </div>
+              <div class="ddp-analytics-stat">
+                <span class="ddp-analytics-stat__label">{{ ui.t('places.analytics.review_count') }}</span>
+                <span class="ddp-analytics-stat__value">{{ compactCount(analytics.reviewCount) }}</span>
+                @if (analytics.avgRating) {
+                  <span class="ddp-analytics-stat__hint">⭐ {{ analytics.avgRating }}</span>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
         <!-- Reviews -->
         <div class="place-details-section">
           <h4 class="place-details-section__title">

@@ -1,9 +1,11 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   HostListener,
   OnDestroy,
   OnInit,
+  ViewChild,
   computed,
   signal,
 } from '@angular/core';
@@ -13,6 +15,11 @@ import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } f
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { formatCompactCount } from '../core/utils/compact-number.utils';
+import { appendToReportsQueue } from '../core/utils/reports-queue.utils';
+import { Chart, registerables } from 'chart.js';
+import type { ReportQueueItem } from '../reports/admin-reports.models';
+
+Chart.register(...registerables);
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { effect, untracked } from '@angular/core';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
@@ -29,6 +36,7 @@ import {
   EventType,
   EventsTab,
   InterestTagOption,
+  EventAnalytics,
   ReviewItem,
 } from './admin-events.models';
 import { AdminEventsService } from './admin-events.service';
@@ -111,6 +119,9 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly descriptionExpanded = signal(false);
   protected readonly detailsInterests = signal<InterestTagOption[]>([]);
   protected readonly detailsReviews   = signal<ReviewItem[]>([]);
+  protected readonly detailsAnalytics = signal<EventAnalytics | null>(null);
+  private analyticsChart: Chart | null = null;
+  @ViewChild('analyticsCanvas') private analyticsCanvasRef?: ElementRef<HTMLCanvasElement>;
 
   protected readonly isSuperAdmin = computed(
     () => this.auth.getRole() === 'super_admin',
@@ -398,17 +409,170 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
         error: () => this.detailsReviews.set([]),
       }),
     );
+
+    this.detailsAnalytics.set(null);
+    this.analyticsChart?.destroy();
+    this.analyticsChart = null;
+    this.subscription.add(
+      this.eventsService.getAnalytics(event.id).subscribe({
+        next: (analytics) => {
+          this.detailsAnalytics.set(analytics);
+          setTimeout(() => this.renderAnalyticsChart(), 60);
+        },
+      }),
+    );
+  }
+
+  private renderAnalyticsChart(): void {
+    const data = this.detailsAnalytics();
+    if (!data || !this.analyticsCanvasRef?.nativeElement) return;
+    this.analyticsChart?.destroy();
+    this.analyticsChart = new Chart(this.analyticsCanvasRef.nativeElement, {
+      type: 'line',
+      data: {
+        labels: data.viewsTimeline.map(p => this.shortDate(p.date)),
+        datasets: [{
+          label: this.ui.t('destinations.analytics.views_label'),
+          data: data.viewsTimeline.map(p => p.value),
+          borderColor: '#2DD4BF',
+          backgroundColor: 'rgba(45, 212, 191, 0.18)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 2,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 } },
+          x: { ticks: { maxTicksLimit: 8 } },
+        },
+      },
+    });
+  }
+
+  private shortDate(iso: string): string {
+    const d = new Date(iso);
+    return `${d.getDate()}.${d.getMonth() + 1}.`;
+  }
+
+  protected plannerMonthLabel(iso: string | null): string {
+    if (!iso) return '—';
+    const [yearStr, monthStr] = iso.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    if (isNaN(year) || isNaN(month)) return iso;
+    const d = new Date(year, month - 1, 1);
+    return d.toLocaleString(this.ui.language() === 'en' ? 'en-US' : 'sr-RS', { month: 'long', year: 'numeric' });
+  }
+
+  protected plannerDateLabel(iso: string | null): string {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString(this.ui.language() === 'en' ? 'en-US' : 'sr-RS', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  protected sendAnalyticsToReports(): void {
+    const ev = this.selectedEvent();
+    const a = this.detailsAnalytics();
+    if (!ev || !a) return;
+
+    const items: ReportQueueItem[] = [];
+    const now = Date.now();
+
+    if (a.viewsTimeline.length > 0) {
+      const imageUrl = this.captureAnalyticsChartHighRes();
+      if (imageUrl) {
+        items.push({
+          id: now.toString(),
+          title: `${ev.name} — ${this.ui.t('destinations.analytics.views_30d')}`,
+          qtype: 'chart',
+          imageUrl,
+        });
+      }
+    }
+
+    const rows: { label: string; value: number }[] = [
+      { label: this.ui.t('destinations.analytics.saved_by_users'), value: a.savedByUsers },
+      { label: this.ui.t('destinations.analytics.planner_users'),  value: a.plannerByUsers },
+    ];
+    if (a.topPlannerMonth) {
+      rows.push({
+        label: `${this.ui.t('destinations.analytics.top_planner_month')} (${this.plannerMonthLabel(a.topPlannerMonth)})`,
+        value: a.topPlannerMonthCount,
+      });
+    }
+    if (a.isMultiDay && a.topPlannerDate) {
+      rows.push({
+        label: `${this.ui.t('events.analytics.top_planner_date')} (${this.plannerDateLabel(a.topPlannerDate)})`,
+        value: a.topPlannerDateCount,
+      });
+    }
+    if (rows.length > 0) {
+      items.push({
+        id: (now + 1).toString(),
+        title: `${ev.name} — ${this.ui.t('events.analytics.user_interest')}`,
+        qtype: 'table',
+        data: rows,
+        colLabel: this.ui.t('events.analytics.metric'),
+        colValue: this.ui.t('events.analytics.users'),
+      });
+    }
+
+    appendToReportsQueue(items);
+    this.closeDetailsPanel();
+    void this.router.navigate(['/admin/reports']);
+  }
+
+  private captureAnalyticsChartHighRes(): string | null {
+    const data = this.detailsAnalytics();
+    if (!data) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 1280;
+    canvas.height = 480;
+    const tmpChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: data.viewsTimeline.map(p => this.shortDate(p.date)),
+        datasets: [{
+          label: this.ui.t('destinations.analytics.views_label'),
+          data: data.viewsTimeline.map(p => p.value),
+          borderColor: '#2DD4BF',
+          backgroundColor: 'rgba(45, 212, 191, 0.18)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 3,
+        }],
+      },
+      options: {
+        responsive: false,
+        animation: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0, color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.2)' } },
+          x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+        },
+      },
+    });
+    const url = canvas.toDataURL('image/png');
+    tmpChart.destroy();
+    return url;
   }
 
   protected closeDetailsPanel(): void {
     if (this.isPanelClosing()) return;
     this.isPanelClosing.set(true);
+    this.analyticsChart?.destroy();
+    this.analyticsChart = null;
     setTimeout(() => {
       this.selectedEvent.set(null);
       this.isPanelOpen.set(false);
       this.isPanelClosing.set(false);
       this.detailsInterests.set([]);
       this.detailsReviews.set([]);
+      this.detailsAnalytics.set(null);
     }, 220);
   }
 

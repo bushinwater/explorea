@@ -7,6 +7,7 @@ import {
   OnDestroy,
   ViewChild,
   computed,
+  effect,
   signal,
 } from '@angular/core';
 import { Chart, registerables, TooltipItem } from 'chart.js';
@@ -285,21 +286,40 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     });
     this.svc.getTemplates().subscribe({ next: d => { this.templates.set(d); this.cdr.detectChanges(); } });
 
-    // Hydrate the queue from another page that handed off items via sessionStorage
-    // (e.g. "Send to Reports Builder" button on destination preview).
+    // Hydrate the queue from sessionStorage (items kept across navigation,
+    // including items pushed from entity preview panels via "Send to Reports Builder").
     try {
       const raw = sessionStorage.getItem('reports_pending_queue');
       if (raw) {
         const items = JSON.parse(raw) as ReportQueueItem[];
         if (Array.isArray(items) && items.length > 0) {
-          this.reportQueue.update(q => [...q, ...items]);
+          this.reportQueue.set(items);
           this.isQueueOpen.set(true);
         }
-        sessionStorage.removeItem('reports_pending_queue');
       }
     } catch {
       sessionStorage.removeItem('reports_pending_queue');
     }
+
+    // Keep sessionStorage in sync with the queue signal so items persist across
+    // route changes and accumulate when sent from multiple entity panels.
+    effect(() => {
+      const queue = this.reportQueue();
+      if (queue.length > 0) {
+        try {
+          sessionStorage.setItem('reports_pending_queue', JSON.stringify(queue));
+        } catch { /* quota / serialization errors are non-fatal */ }
+      } else {
+        sessionStorage.removeItem('reports_pending_queue');
+      }
+    });
+  }
+
+  /** Removes all queued items (and the persisted sessionStorage copy). */
+  clearQueue(): void {
+    this.reportQueue.set([]);
+    this.isQueueOpen.set(false);
+    this.cdr.detectChanges();
   }
 
   ngAfterViewInit(): void { this.viewReady = true; }

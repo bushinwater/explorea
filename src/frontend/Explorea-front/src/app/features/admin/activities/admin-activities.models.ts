@@ -38,6 +38,23 @@ export interface ActivityRow {
   deletedAt?: string | null;
 }
 
+export interface ActivityAnalyticsTimelinePoint {
+  date: string;
+  value: number;
+}
+
+export interface ActivityAnalytics {
+  totalViews: number;
+  viewsLast30: number;
+  viewsTimeline: ActivityAnalyticsTimelinePoint[];
+  savedByUsers: number;
+  plannerByUsers: number;
+  topPlannerMonth: string | null;
+  topPlannerMonthCount: number;
+  reviewCount: number;
+  avgRating: number;
+}
+
 export interface ActivityReview {
   id?: string;
   authorName: string;

@@ -815,6 +815,53 @@
         </div>
       }
 
+      <!-- Analytics -->
+      @if (detailsAnalytics(); as analytics) {
+        <div class="ddp-analytics-section">
+          <div class="ddp-analytics-section__head">
+            <h4 class="ddp-section-label">{{ ui.t('destinations.analytics.title') }}</h4>
+            <button type="button" class="ddp-analytics__send" (click)="sendAnalyticsToReports()">
+              <span class="material-icons">assessment</span>
+              {{ ui.t('destinations.analytics.send_to_reports') }}
+            </button>
+          </div>
+
+          <div class="ddp-analytics-chart-wrap">
+            <span class="ddp-analytics-chart__title">{{ ui.t('destinations.analytics.views_30d') }}</span>
+            <div class="ddp-analytics-chart">
+              <canvas #analyticsCanvas></canvas>
+            </div>
+          </div>
+
+          <div class="ddp-analytics-stats">
+            <div class="ddp-analytics-stat">
+              <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.saved_by_users') }}</span>
+              <span class="ddp-analytics-stat__value">{{ compactCount(analytics.savedByUsers) }}</span>
+            </div>
+            <div class="ddp-analytics-stat">
+              <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.planner_users') }}</span>
+              <span class="ddp-analytics-stat__value">{{ compactCount(analytics.plannerByUsers) }}</span>
+            </div>
+            <div class="ddp-analytics-stat">
+              <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.top_planner_month') }}</span>
+              <span class="ddp-analytics-stat__value">{{ plannerMonthLabel(analytics.topPlannerMonth) }}</span>
+              @if (analytics.topPlannerMonthCount) {
+                <span class="ddp-analytics-stat__hint">{{ analytics.topPlannerMonthCount }} {{ ui.t('destinations.analytics.entries_short') }}</span>
+              }
+            </div>
+            @if (analytics.isMultiDay) {
+              <div class="ddp-analytics-stat ddp-analytics-stat--wide">
+                <span class="ddp-analytics-stat__label">{{ ui.t('events.analytics.top_planner_date') }}</span>
+                <span class="ddp-analytics-stat__value">{{ plannerDateLabel(analytics.topPlannerDate) }}</span>
+                @if (analytics.topPlannerDateCount) {
+                  <span class="ddp-analytics-stat__hint">{{ analytics.topPlannerDateCount }} {{ ui.t('events.analytics.users_short') }}</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
       <!-- Reviews -->
       <div class="ddp-reviews-section">
         <h4 class="ddp-section-label">

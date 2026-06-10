@@ -8,6 +8,7 @@ import {
   DestinationOption,
   InterestTagOption,
   PlaceDependenciesResponse,
+  PlaceAnalytics,
   PlaceDetail,
   PlaceFilters,
   PlaceImage,
@@ -157,6 +158,10 @@ export class AdminPlacesService {
 
   getPlaceReviews(placeId: string): Observable<PlaceReview[]> {
     return this.http.get<PlaceReview[]>(`${this.base}/${placeId}/reviews`);
+  }
+
+  getAnalytics(id: string): Observable<PlaceAnalytics> {
+    return this.http.get<PlaceAnalytics>(`${this.base}/${id}/analytics`);
   }
 
   getById(id: string): Observable<PlaceDetail> {

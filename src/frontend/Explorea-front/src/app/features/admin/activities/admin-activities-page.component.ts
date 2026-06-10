@@ -15,6 +15,11 @@ import { DecimalPipe } from '@angular/common';
 import { StatCardComponent } from '@shared/components';
 import { ActivatedRoute, Router } from '@angular/router';
 import { formatCompactCount } from '../core/utils/compact-number.utils';
+import { appendToReportsQueue } from '../core/utils/reports-queue.utils';
+import { Chart, registerables } from 'chart.js';
+import type { ReportQueueItem } from '../reports/admin-reports.models';
+
+Chart.register(...registerables);
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
@@ -24,6 +29,7 @@ import { EmptyStateComponent } from '../shared/components/empty-state/empty-stat
 import { FeedbackBannerComponent } from '../shared/components/feedback-banner/feedback-banner.component';
 import { TableSkeletonComponent } from '../shared/components/table-skeleton/table-skeleton.component';
 import {
+  ActivityAnalytics,
   ActivityDetail,
   ActivityDifficulty,
   ActivityFilters,
@@ -132,6 +138,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly selectedActivityDetail = signal<ActivityDetail | null>(null);
   protected readonly isDescriptionExpanded = signal(false);
   protected readonly detailsInterests = signal<InterestTagOption[]>([]);
+  protected readonly detailsAnalytics = signal<ActivityAnalytics | null>(null);
+  private analyticsChart: Chart | null = null;
+  @ViewChild('analyticsCanvas') private analyticsCanvasRef?: ElementRef<HTMLCanvasElement>;
 
   protected readonly isCreateModalOpen = signal(false);
   protected readonly isEditModalClosing = signal(false);
@@ -555,10 +564,150 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         next: (tags) => this.detailsInterests.set(tags.filter(t => t.isAssigned)),
       }),
     );
+
+    this.detailsAnalytics.set(null);
+    this.analyticsChart?.destroy();
+    this.analyticsChart = null;
+    this.subscription.add(
+      this.activitiesService.getAnalytics(activity.id).subscribe({
+        next: (analytics) => {
+          this.detailsAnalytics.set(analytics);
+          setTimeout(() => this.renderAnalyticsChart(), 60);
+        },
+      }),
+    );
+  }
+
+  private renderAnalyticsChart(): void {
+    const data = this.detailsAnalytics();
+    if (!data || !this.analyticsCanvasRef?.nativeElement) return;
+    this.analyticsChart?.destroy();
+    this.analyticsChart = new Chart(this.analyticsCanvasRef.nativeElement, {
+      type: 'line',
+      data: {
+        labels: data.viewsTimeline.map(p => this.shortDate(p.date)),
+        datasets: [{
+          label: this.ui.t('destinations.analytics.views_label'),
+          data: data.viewsTimeline.map(p => p.value),
+          borderColor: '#2DD4BF',
+          backgroundColor: 'rgba(45, 212, 191, 0.18)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 2,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 } },
+          x: { ticks: { maxTicksLimit: 8 } },
+        },
+      },
+    });
+  }
+
+  private shortDate(iso: string): string {
+    const d = new Date(iso);
+    return `${d.getDate()}.${d.getMonth() + 1}.`;
+  }
+
+  protected plannerMonthLabel(iso: string | null): string {
+    if (!iso) return '—';
+    const [yearStr, monthStr] = iso.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    if (isNaN(year) || isNaN(month)) return iso;
+    const d = new Date(year, month - 1, 1);
+    return d.toLocaleString(this.ui.language() === 'en' ? 'en-US' : 'sr-RS', { month: 'long', year: 'numeric' });
+  }
+
+  protected sendAnalyticsToReports(): void {
+    const activity = this.selectedActivity();
+    const a = this.detailsAnalytics();
+    if (!activity || !a) return;
+
+    const items: ReportQueueItem[] = [];
+    const now = Date.now();
+
+    if (a.viewsTimeline.length > 0) {
+      const imageUrl = this.captureAnalyticsChartHighRes();
+      if (imageUrl) {
+        items.push({
+          id: now.toString(),
+          title: `${activity.name} — ${this.ui.t('destinations.analytics.views_30d')}`,
+          qtype: 'chart',
+          imageUrl,
+        });
+      }
+    }
+
+    const rows = [
+      { label: this.ui.t('destinations.analytics.saved_by_users'), value: a.savedByUsers },
+      { label: this.ui.t('destinations.analytics.planner_users'),  value: a.plannerByUsers },
+      { label: this.ui.t('places.analytics.review_count'),         value: a.reviewCount },
+    ];
+    if (a.topPlannerMonth) {
+      rows.push({
+        label: `${this.ui.t('destinations.analytics.top_planner_month')} (${this.plannerMonthLabel(a.topPlannerMonth)})`,
+        value: a.topPlannerMonthCount,
+      });
+    }
+
+    items.push({
+      id: (now + 1).toString(),
+      title: `${activity.name} — ${this.ui.t('events.analytics.user_interest')}`,
+      qtype: 'table',
+      data: rows,
+      colLabel: this.ui.t('events.analytics.metric'),
+      colValue: this.ui.t('events.analytics.users'),
+    });
+
+    appendToReportsQueue(items);
+    this.closeDetailsPanel();
+    void this.router.navigate(['/admin/reports']);
+  }
+
+  private captureAnalyticsChartHighRes(): string | null {
+    const data = this.detailsAnalytics();
+    if (!data) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 1280;
+    canvas.height = 480;
+    const tmpChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: data.viewsTimeline.map(p => this.shortDate(p.date)),
+        datasets: [{
+          label: this.ui.t('destinations.analytics.views_label'),
+          data: data.viewsTimeline.map(p => p.value),
+          borderColor: '#2DD4BF',
+          backgroundColor: 'rgba(45, 212, 191, 0.18)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 3,
+        }],
+      },
+      options: {
+        responsive: false,
+        animation: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0, color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.2)' } },
+          x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+        },
+      },
+    });
+    const url = canvas.toDataURL('image/png');
+    tmpChart.destroy();
+    return url;
   }
 
   protected closeDetailsPanel(): void {
     this.isPanelClosing.set(true);
+    this.analyticsChart?.destroy();
+    this.analyticsChart = null;
     setTimeout(() => {
       this.isPanelClosing.set(false);
       this.isDetailsPanelOpen.set(false);
@@ -568,6 +717,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       this.detailsInterests.set([]);
       this.detailFallbackLat.set(null);
       this.detailFallbackLng.set(null);
+      this.detailsAnalytics.set(null);
     }, 220);
   }
 

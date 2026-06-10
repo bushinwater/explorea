@@ -479,6 +479,114 @@ namespace Explorea.Server.Controllers.Admin
             return Ok(reviews);
         }
 
+        // GET /api/admin/events/{id}/analytics
+        [HttpGet("{id}/analytics")]
+        public async Task<IActionResult> GetAnalytics(Guid id)
+        {
+            var now      = DateTimeOffset.UtcNow;
+            var monthAgo = now.AddDays(-30);
+
+            // 30-day visits timeline — materialize raw rows then bucket in memory
+            // to avoid EF DateTimeOffset translation gotchas with groupings.
+            var clickDates = await _context.PopularityLogs
+                .Where(l => l.EntityType == "event" && l.EntityId == id
+                            && l.Source == "click" && l.CreatedAt >= monthAgo)
+                .Select(l => l.CreatedAt)
+                .ToListAsync();
+            var lookup = clickDates
+                .GroupBy(d => d.UtcDateTime.Date)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var timeline = new List<object>(31);
+            for (var i = 30; i >= 0; i--)
+            {
+                var d = now.AddDays(-i).UtcDateTime.Date;
+                timeline.Add(new
+                {
+                    date  = d.ToString("yyyy-MM-dd"),
+                    value = lookup.GetValueOrDefault(d, 0),
+                });
+            }
+
+            var totalViews = await _context.PopularityLogs
+                .CountAsync(l => l.EntityType == "event" && l.EntityId == id && l.Source == "click");
+            var viewsLast30 = clickDates.Count;
+
+            var savedByUsers = await _context.SavedItems
+                .Where(s => s.EntityType == "event" && s.EntityId == id)
+                .Select(s => s.UserId)
+                .Distinct()
+                .CountAsync();
+
+            // Pull TripPlanItems for this event into memory so all aggregations
+            // (planner users, top month, top date) operate on the same materialized set.
+            var planRaw = await _context.TripPlanItems
+                .Where(t => t.EntityType == "event" && t.EntityId == id)
+                .Select(t => new
+                {
+                    UserId    = t.TripPlan.UserId,
+                    PlannedAt = t.PlannedAt,
+                    CreatedAt = t.CreatedAt,
+                })
+                .ToListAsync();
+
+            var plannerByUsers = planRaw.Select(p => p.UserId).Distinct().Count();
+
+            // Determine if event spans multiple dates.
+            var ev = await _context.Events
+                .IgnoreQueryFilters()
+                .Where(e => e.Id == id)
+                .Select(e => new { e.StartDatetime, e.EndDatetime })
+                .FirstOrDefaultAsync();
+            var isMultiDay = ev != null && ev.StartDatetime.UtcDateTime.Date != ev.EndDatetime.UtcDateTime.Date;
+
+            // Top planner month — bucket by (year, month) of PlannedAt ?? CreatedAt.
+            string? topPlannerMonth = null;
+            int topPlannerMonthCount = 0;
+            var monthGroups = planRaw
+                .Select(p => (p.PlannedAt ?? p.CreatedAt).UtcDateTime)
+                .GroupBy(d => new { d.Year, d.Month })
+                .OrderByDescending(g => g.Count())
+                .FirstOrDefault();
+            if (monthGroups != null)
+            {
+                topPlannerMonth = $"{monthGroups.Key.Year}-{monthGroups.Key.Month:D2}";
+                topPlannerMonthCount = monthGroups.Count();
+            }
+
+            // Top event date — only meaningful for multi-day events.
+            string? topPlannerDate = null;
+            int topPlannerDateCount = 0;
+            if (isMultiDay)
+            {
+                var dateGroups = planRaw
+                    .Where(p => p.PlannedAt.HasValue)
+                    .GroupBy(p => p.PlannedAt!.Value.UtcDateTime.Date)
+                    .Select(g => new { Date = g.Key, Users = g.Select(x => x.UserId).Distinct().Count() })
+                    .OrderByDescending(g => g.Users)
+                    .FirstOrDefault();
+                if (dateGroups != null)
+                {
+                    topPlannerDate = dateGroups.Date.ToString("yyyy-MM-dd");
+                    topPlannerDateCount = dateGroups.Users;
+                }
+            }
+
+            return Ok(new
+            {
+                totalViews,
+                viewsLast30,
+                viewsTimeline = timeline,
+                savedByUsers,
+                plannerByUsers,
+                topPlannerMonth,
+                topPlannerMonthCount,
+                isMultiDay,
+                topPlannerDate,
+                topPlannerDateCount,
+            });
+        }
+
         private async Task<OwnerSubmissionDocumentDto> UploadOwnerDocumentAsync(
             string entityType,
             Guid entityId,

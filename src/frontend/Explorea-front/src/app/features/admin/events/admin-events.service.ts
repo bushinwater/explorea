@@ -17,6 +17,7 @@ import {
   RegionWithCountry,
   DestinationSearchItem,
   PlaceSearchItem,
+  EventAnalytics,
   ReviewItem,
   OwnerSubmissionDocument,
   RenewEventPayload,
@@ -400,6 +401,10 @@ export class AdminEventsService {
 
   getEventReviews(id: string): Observable<ReviewItem[]> {
     return this.http.get<ReviewItem[]>(`/api/admin/events/${id}/reviews`);
+  }
+
+  getAnalytics(id: string): Observable<EventAnalytics> {
+    return this.http.get<EventAnalytics>(`/api/admin/events/${id}/analytics`);
   }
 
   setEventInterests(id: string, tagIds: number[]): Observable<void> {

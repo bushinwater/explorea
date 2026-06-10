@@ -270,6 +270,101 @@ namespace Explorea.Server.Controllers.Admin
             return Ok(reviews);
         }
 
+        // GET /api/admin/places/{id}/analytics
+        [HttpGet("{id}/analytics")]
+        public async Task<IActionResult> GetAnalytics(Guid id)
+        {
+            var now      = DateTimeOffset.UtcNow;
+            var monthAgo = now.AddDays(-30);
+
+            // 30-day views timeline
+            var clickDates = await _context.PopularityLogs
+                .Where(l => l.EntityType == "place" && l.EntityId == id
+                            && l.Source == "click" && l.CreatedAt >= monthAgo)
+                .Select(l => l.CreatedAt)
+                .ToListAsync();
+            var lookup = clickDates
+                .GroupBy(d => d.UtcDateTime.Date)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var timeline = new List<object>(31);
+            for (var i = 30; i >= 0; i--)
+            {
+                var d = now.AddDays(-i).UtcDateTime.Date;
+                timeline.Add(new
+                {
+                    date  = d.ToString("yyyy-MM-dd"),
+                    value = lookup.GetValueOrDefault(d, 0),
+                });
+            }
+
+            var totalViews = await _context.PopularityLogs
+                .CountAsync(l => l.EntityType == "place" && l.EntityId == id && l.Source == "click");
+            var viewsLast30 = clickDates.Count;
+
+            var savedByUsers = await _context.SavedItems
+                .Where(s => s.EntityType == "place" && s.EntityId == id)
+                .Select(s => s.UserId)
+                .Distinct()
+                .CountAsync();
+
+            var planRaw = await _context.TripPlanItems
+                .Where(t => t.EntityType == "place" && t.EntityId == id)
+                .Select(t => new
+                {
+                    UserId    = t.TripPlan.UserId,
+                    PlannedAt = t.PlannedAt,
+                    CreatedAt = t.CreatedAt,
+                })
+                .ToListAsync();
+            var plannerByUsers = planRaw.Select(p => p.UserId).Distinct().Count();
+
+            // Top planner month
+            string? topPlannerMonth = null;
+            int topPlannerMonthCount = 0;
+            var monthGroups = planRaw
+                .Select(p => (p.PlannedAt ?? p.CreatedAt).UtcDateTime)
+                .GroupBy(d => new { d.Year, d.Month })
+                .OrderByDescending(g => g.Count())
+                .FirstOrDefault();
+            if (monthGroups != null)
+            {
+                topPlannerMonth = $"{monthGroups.Key.Year}-{monthGroups.Key.Month:D2}";
+                topPlannerMonthCount = monthGroups.Count();
+            }
+
+            // Avg rating + review count
+            var reviewStats = await _context.Reviews
+                .Where(r => r.EntityType == "place" && r.EntityId == id && !r.IsDeleted && !r.IsHidden)
+                .Select(r => (decimal?)r.Rating)
+                .ToListAsync();
+            var reviewCount = reviewStats.Count;
+            decimal avgRating = reviewCount > 0 ? Math.Round(reviewStats.Average() ?? 0, 2) : 0;
+
+            // Events hosted at this place
+            var eventCount = await _context.Events
+                .IgnoreQueryFilters()
+                .CountAsync(e => !e.IsDeleted && e.PlaceId == id);
+            var upcomingEventCount = await _context.Events
+                .IgnoreQueryFilters()
+                .CountAsync(e => !e.IsDeleted && e.PlaceId == id && e.StartDatetime >= now);
+
+            return Ok(new
+            {
+                totalViews,
+                viewsLast30,
+                viewsTimeline = timeline,
+                savedByUsers,
+                plannerByUsers,
+                topPlannerMonth,
+                topPlannerMonthCount,
+                reviewCount,
+                avgRating,
+                eventCount,
+                upcomingEventCount,
+            });
+        }
+
         [HttpPost("{id}/images")]
         public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
         {

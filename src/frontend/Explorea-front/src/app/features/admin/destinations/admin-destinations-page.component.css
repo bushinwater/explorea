@@ -1725,6 +1725,9 @@
   border: 1px solid var(--color-border);
   border-radius: 10px;
   background: var(--color-surface);
+  text-align: center;
+  align-items: center;
+  justify-content: center;
 }
 
 .ddp-analytics-stat__label {
@@ -1733,10 +1736,15 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--color-text-muted);
+  line-height: 1.3;
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ddp-analytics-stat__value {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--color-text-primary);
   line-height: 1.2;

@@ -99,6 +99,25 @@ export interface PlaceAmenity {
   name: string;
 }
 
+export interface PlaceAnalyticsTimelinePoint {
+  date: string;
+  value: number;
+}
+
+export interface PlaceAnalytics {
+  totalViews: number;
+  viewsLast30: number;
+  viewsTimeline: PlaceAnalyticsTimelinePoint[];
+  savedByUsers: number;
+  plannerByUsers: number;
+  topPlannerMonth: string | null;
+  topPlannerMonthCount: number;
+  reviewCount: number;
+  avgRating: number;
+  eventCount: number;
+  upcomingEventCount: number;
+}
+
 export interface PlaceDetail {
   id: string;
   destinationId: string | null;

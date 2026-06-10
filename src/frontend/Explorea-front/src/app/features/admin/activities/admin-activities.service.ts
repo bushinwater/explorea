@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
+  ActivityAnalytics,
   ActivityDetail,
   ActivityFilterOptions,
   ActivityFilters,
@@ -166,6 +167,10 @@ export class AdminActivitiesService {
 
   getById(id: string): Observable<ActivityDetail> {
     return this.http.get<ActivityDetail>(`${this.base}/${id}`);
+  }
+
+  getAnalytics(id: string): Observable<ActivityAnalytics> {
+    return this.http.get<ActivityAnalytics>(`${this.base}/${id}/analytics`);
   }
 
   create(dto: CreateActivityDto): Observable<ActivityDetail> {

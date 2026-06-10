@@ -14,6 +14,7 @@ import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, interval } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { formatCompactCount } from '../core/utils/compact-number.utils';
+import { appendToReportsQueue } from '../core/utils/reports-queue.utils';
 import { Chart, registerables } from 'chart.js';
 import { DestinationAnalytics, AnalyticsTopChild } from './admin-destinations.models';
 import type { ReportQueueItem } from '../reports/admin-reports.models';
@@ -554,7 +555,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       });
     }
 
-    sessionStorage.setItem('reports_pending_queue', JSON.stringify(items));
+    appendToReportsQueue(items);
     this.closeDetailsPanel();
     void this.router.navigate(['/admin/reports']);
   }
