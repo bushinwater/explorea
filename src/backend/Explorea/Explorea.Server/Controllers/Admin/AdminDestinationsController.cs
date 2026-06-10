@@ -360,15 +360,148 @@ namespace Explorea.Server.Controllers.Admin
 
         // GET /api/admin/destinations/{id}/analytics
         [HttpGet("{id}/analytics")]
-        public IActionResult GetAnalytics(Guid id)
+        public async Task<IActionResult> GetAnalytics(Guid id)
         {
+            var now      = DateTimeOffset.UtcNow;
+            var monthAgo = now.AddDays(-30);
+
+            // 30-day visits timeline (daily buckets, zero-filled)
+            var rawDaily = await _context.PopularityLogs
+                .Where(l => l.EntityType == "destination" && l.EntityId == id
+                            && l.Source == "click" && l.CreatedAt >= monthAgo)
+                .GroupBy(l => new { l.CreatedAt.UtcDateTime.Year, l.CreatedAt.UtcDateTime.Month, l.CreatedAt.UtcDateTime.Day })
+                .Select(g => new { g.Key.Year, g.Key.Month, g.Key.Day, Count = g.Count() })
+                .ToListAsync();
+            var lookup = rawDaily
+                .ToDictionary(x => new DateTime(x.Year, x.Month, x.Day), x => x.Count);
+
+            var timeline = new List<object>(31);
+            for (var i = 30; i >= 0; i--)
+            {
+                var d = now.AddDays(-i).UtcDateTime.Date;
+                timeline.Add(new
+                {
+                    date  = d.ToString("yyyy-MM-dd"),
+                    value = lookup.GetValueOrDefault(d, 0),
+                });
+            }
+
+            // Top place / activity / event by clicks on entities belonging to this destination
+            var topPlace = await GetTopChildAsync(id, "place");
+            var topActivity = await GetTopChildAsync(id, "activity");
+            var topEvent = await GetTopChildAsync(id, "event");
+
+            var totalViews = await _context.PopularityLogs
+                .CountAsync(l => l.EntityType == "destination" && l.EntityId == id && l.Source == "click");
+            var viewsLast30 = await _context.PopularityLogs
+                .CountAsync(l => l.EntityType == "destination" && l.EntityId == id && l.Source == "click" && l.CreatedAt >= monthAgo);
+            var reviewCount = await _context.Reviews
+                .CountAsync(r => r.EntityType == "destination" && r.EntityId == id && !r.IsDeleted && !r.IsHidden);
+
+            // Saved-by users — distinct users who bookmarked this destination
+            var savedByUsers = await _context.SavedItems
+                .Where(s => s.EntityType == "destination" && s.EntityId == id)
+                .Select(s => s.UserId)
+                .Distinct()
+                .CountAsync();
+
+            // Planner users — distinct users whose TripPlan contains this destination
+            var plannerByUsers = await _context.TripPlanItems
+                .Where(t => t.EntityType == "destination" && t.EntityId == id)
+                .Select(t => t.TripPlan.UserId)
+                .Distinct()
+                .CountAsync();
+
+            // Most popular planner month for this destination
+            var plannerMonthGrouped = await _context.TripPlanItems
+                .Where(t => t.EntityType == "destination" && t.EntityId == id)
+                .Select(t => new
+                {
+                    EffectiveDate = t.PlannedAt ?? t.CreatedAt,
+                })
+                .GroupBy(x => new { x.EffectiveDate.UtcDateTime.Year, x.EffectiveDate.UtcDateTime.Month })
+                .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
+                .OrderByDescending(x => x.Count)
+                .FirstOrDefaultAsync();
+
+            string? topPlannerMonth = null;
+            int topPlannerMonthCount = 0;
+            if (plannerMonthGrouped != null)
+            {
+                topPlannerMonth = $"{plannerMonthGrouped.Year}-{plannerMonthGrouped.Month:D2}";
+                topPlannerMonthCount = plannerMonthGrouped.Count;
+            }
+
             return Ok(new
             {
-                views         = 0,
-                reviewCount   = 0,
-                queuePending  = 0,
-                queueApproved = 0
+                totalViews,
+                viewsLast30,
+                reviewCount,
+                viewsTimeline = timeline,
+                topPlace,
+                topActivity,
+                topEvent,
+                savedByUsers,
+                plannerByUsers,
+                topPlannerMonth,
+                topPlannerMonthCount,
             });
+        }
+
+        private async Task<object?> GetTopChildAsync(Guid destinationId, string entityType)
+        {
+            // Get all entity IDs of given type that belong to this destination.
+            IQueryable<Guid> entityIds = entityType switch
+            {
+                "place" => _context.Places
+                    .IgnoreQueryFilters()
+                    .Where(p => !p.IsDeleted && p.DestinationId == destinationId)
+                    .Select(p => p.Id),
+                "activity" => _context.Activities
+                    .IgnoreQueryFilters()
+                    .Where(a => !a.IsDeleted && a.DestinationId == destinationId)
+                    .Select(a => a.Id),
+                "event" => _context.Events
+                    .IgnoreQueryFilters()
+                    .Where(e => !e.IsDeleted && e.DestinationId == destinationId)
+                    .Select(e => e.Id),
+                _ => Enumerable.Empty<Guid>().AsQueryable(),
+            };
+            var idList = await entityIds.ToListAsync();
+            if (idList.Count == 0) return null;
+
+            // Pick the one with most clicks.
+            var topGroup = await _context.PopularityLogs
+                .Where(l => l.EntityType == entityType && idList.Contains(l.EntityId) && l.Source == "click")
+                .GroupBy(l => l.EntityId)
+                .Select(g => new { Id = g.Key, Views = g.Count() })
+                .OrderByDescending(g => g.Views)
+                .FirstOrDefaultAsync();
+
+            // Fall back to any entity (with 0 views) if no clicks exist.
+            Guid targetId; int views;
+            if (topGroup != null) { targetId = topGroup.Id; views = topGroup.Views; }
+            else                  { targetId = idList[0];   views = 0; }
+
+            return entityType switch
+            {
+                "place" => await _context.Places
+                    .IgnoreQueryFilters()
+                    .Where(p => p.Id == targetId)
+                    .Select(p => new { id = p.Id, name = p.Name, slug = p.Slug, views, entityType = "place" })
+                    .FirstOrDefaultAsync(),
+                "activity" => await _context.Activities
+                    .IgnoreQueryFilters()
+                    .Where(a => a.Id == targetId)
+                    .Select(a => new { id = a.Id, name = a.Name, slug = a.Slug, views, entityType = "activity" })
+                    .FirstOrDefaultAsync(),
+                "event" => await _context.Events
+                    .IgnoreQueryFilters()
+                    .Where(e => e.Id == targetId)
+                    .Select(e => new { id = e.Id, name = e.Name, slug = e.Slug, views, entityType = "event" })
+                    .FirstOrDefaultAsync(),
+                _ => null,
+            };
         }
 
         [HttpGet("{id}/reviews")]

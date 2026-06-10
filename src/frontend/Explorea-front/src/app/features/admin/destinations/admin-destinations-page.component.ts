@@ -1,9 +1,11 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   HostListener,
   OnDestroy,
   OnInit,
+  ViewChild,
   computed,
   signal,
 } from '@angular/core';
@@ -12,6 +14,11 @@ import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, interval } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { formatCompactCount } from '../core/utils/compact-number.utils';
+import { Chart, registerables } from 'chart.js';
+import { DestinationAnalytics, AnalyticsTopChild } from './admin-destinations.models';
+import type { ReportQueueItem } from '../reports/admin-reports.models';
+
+Chart.register(...registerables);
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
@@ -101,7 +108,10 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   protected readonly detailsPanelDetail = signal<DestinationDetail | null>(null);
   protected readonly detailsPanelInterests = signal<InterestTagOption[]>([]);
   protected readonly detailsPanelReviews   = signal<ReviewItem[]>([]);
+  protected readonly detailsPanelAnalytics = signal<DestinationAnalytics | null>(null);
   protected readonly descriptionExpanded = signal(false);
+  private analyticsChart: Chart | null = null;
+  @ViewChild('analyticsCanvas') private analyticsCanvasRef?: ElementRef<HTMLCanvasElement>;
 
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.total() / this.filters().pageSize)),
@@ -432,6 +442,167 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
         error: () => this.detailsPanelReviews.set([]),
       }),
     );
+
+    this.detailsPanelAnalytics.set(null);
+    this.analyticsChart?.destroy();
+    this.analyticsChart = null;
+    this.subscription.add(
+      this.destinationsService.getAnalytics(dest.id).subscribe({
+        next: (analytics) => {
+          this.detailsPanelAnalytics.set(analytics);
+          setTimeout(() => this.renderAnalyticsChart(), 60);
+        },
+      }),
+    );
+  }
+
+  private renderAnalyticsChart(): void {
+    const data = this.detailsPanelAnalytics();
+    if (!data || !this.analyticsCanvasRef?.nativeElement) return;
+    this.analyticsChart?.destroy();
+    this.analyticsChart = new Chart(this.analyticsCanvasRef.nativeElement, {
+      type: 'line',
+      data: {
+        labels: data.viewsTimeline.map(p => this.shortDate(p.date)),
+        datasets: [{
+          label: this.ui.t('destinations.analytics.views_label'),
+          data: data.viewsTimeline.map(p => p.value),
+          borderColor: '#2DD4BF',
+          backgroundColor: 'rgba(45, 212, 191, 0.18)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 2,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 } },
+          x: { ticks: { maxTicksLimit: 8 } },
+        },
+      },
+    });
+  }
+
+  private shortDate(iso: string): string {
+    const d = new Date(iso);
+    return `${d.getDate()}.${d.getMonth() + 1}.`;
+  }
+
+  protected openChildInAdmin(child: AnalyticsTopChild): void {
+    const routeMap: Record<string, string> = {
+      place: '/admin/places',
+      activity: '/admin/activities',
+      event: '/admin/events',
+    };
+    const route = routeMap[child.entityType];
+    if (!route) return;
+    this.closeDetailsPanel();
+    void this.router.navigate([route], {
+      queryParams: { openId: child.id, openName: child.name },
+    });
+  }
+
+  protected openChildInApp(child: AnalyticsTopChild): void {
+    if (!child.slug) return;
+    const base: Record<string, string> = {
+      place: '/places',
+      activity: '/activities',
+      event: '/events',
+    };
+    window.open(`${base[child.entityType]}/${child.slug}`, '_blank');
+  }
+
+  protected sendAnalyticsToReports(): void {
+    const dest = this.detailsPanelRow();
+    const a = this.detailsPanelAnalytics();
+    if (!dest || !a) return;
+
+    const items: ReportQueueItem[] = [];
+    const now = Date.now();
+
+    // Render an off-screen high-resolution chart so the PDF/preview has a crisp image.
+    if (a.viewsTimeline.length > 0) {
+      const imageUrl = this.captureAnalyticsChartHighRes();
+      if (imageUrl) {
+        items.push({
+          id: (now).toString(),
+          title: `${dest.name} — ${this.ui.t('destinations.analytics.views_30d')}`,
+          qtype: 'chart',
+          imageUrl,
+        });
+      }
+    }
+    const topRows: { label: string; child: AnalyticsTopChild | null }[] = [
+      { label: this.ui.t('destinations.analytics.top_place'), child: a.topPlace },
+      { label: this.ui.t('destinations.analytics.top_activity'), child: a.topActivity },
+      { label: this.ui.t('destinations.analytics.top_event'), child: a.topEvent },
+    ];
+    const topData = topRows
+      .filter(r => r.child)
+      .map(r => ({ label: `${r.label}: ${r.child!.name}`, value: r.child!.views }));
+    if (topData.length > 0) {
+      items.push({
+        id: (now + 1).toString(),
+        title: `${dest.name} — ${this.ui.t('destinations.analytics.top_entities')}`,
+        qtype: 'table',
+        data: topData,
+        colLabel: this.ui.t('destinations.analytics.entity'),
+        colValue: this.ui.t('destinations.analytics.views_label'),
+      });
+    }
+
+    sessionStorage.setItem('reports_pending_queue', JSON.stringify(items));
+    this.closeDetailsPanel();
+    void this.router.navigate(['/admin/reports']);
+  }
+
+  private captureAnalyticsChartHighRes(): string | null {
+    const data = this.detailsPanelAnalytics();
+    if (!data) return null;
+    // Render to an off-screen canvas at high resolution so PDF/preview is crisp.
+    const canvas = document.createElement('canvas');
+    canvas.width = 1280;
+    canvas.height = 480;
+    const tmpChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: data.viewsTimeline.map(p => this.shortDate(p.date)),
+        datasets: [{
+          label: this.ui.t('destinations.analytics.views_label'),
+          data: data.viewsTimeline.map(p => p.value),
+          borderColor: '#2DD4BF',
+          backgroundColor: 'rgba(45, 212, 191, 0.18)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 3,
+        }],
+      },
+      options: {
+        responsive: false,
+        animation: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0, color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.2)' } },
+          x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+        },
+      },
+    });
+    const dataUrl = canvas.toDataURL('image/png');
+    tmpChart.destroy();
+    return dataUrl;
+  }
+
+  protected plannerMonthLabel(iso: string | null): string {
+    if (!iso) return '—';
+    const [yearStr, monthStr] = iso.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    if (isNaN(year) || isNaN(month)) return iso;
+    const date = new Date(year, month - 1, 1);
+    return date.toLocaleString(this.ui.language() === 'en' ? 'en-US' : 'sr-RS', { month: 'long', year: 'numeric' });
   }
 
   protected openReviewInAdmin(reviewId: string): void {
@@ -443,6 +614,8 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
 
   protected closeDetailsPanel(): void {
     this.isPanelClosing.set(true);
+    this.analyticsChart?.destroy();
+    this.analyticsChart = null;
     setTimeout(() => {
       this.isPanelClosing.set(false);
       this.isDetailsPanelOpen.set(false);
@@ -450,6 +623,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
       this.detailsPanelDetail.set(null);
       this.detailsPanelInterests.set([]);
       this.detailsPanelReviews.set([]);
+      this.detailsPanelAnalytics.set(null);
     }, 220);
   }
 

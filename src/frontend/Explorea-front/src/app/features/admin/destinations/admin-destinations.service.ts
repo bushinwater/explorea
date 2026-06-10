@@ -12,6 +12,7 @@ import {
   DestinationImage,
   DestinationPagedResponse,
   DestinationRow,
+  DestinationAnalytics,
   DestinationStats,
   DestinationStatus,
   InterestTagOption,
@@ -68,6 +69,10 @@ export class AdminDestinationsService {
         topDestinations: stats.topDestinations ?? [],
       })),
     );
+  }
+
+  getAnalytics(id: string): Observable<DestinationAnalytics> {
+    return this.http.get<DestinationAnalytics>(`/api/admin/destinations/${id}/analytics`);
   }
 
   getDestinations(filters: DestinationFilters): Observable<DestinationPagedResponse> {

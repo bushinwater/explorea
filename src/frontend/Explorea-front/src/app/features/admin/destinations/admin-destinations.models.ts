@@ -92,6 +92,33 @@ export interface TopDestination {
   views: number;
 }
 
+export interface AnalyticsTopChild {
+  id: string;
+  entityType: 'place' | 'activity' | 'event';
+  name: string;
+  slug: string | null;
+  views: number;
+}
+
+export interface AnalyticsTimelinePoint {
+  date: string;
+  value: number;
+}
+
+export interface DestinationAnalytics {
+  totalViews: number;
+  viewsLast30: number;
+  reviewCount: number;
+  viewsTimeline: AnalyticsTimelinePoint[];
+  topPlace: AnalyticsTopChild | null;
+  topActivity: AnalyticsTopChild | null;
+  topEvent: AnalyticsTopChild | null;
+  savedByUsers: number;
+  plannerByUsers: number;
+  topPlannerMonth: string | null;
+  topPlannerMonthCount: number;
+}
+
 export interface DestinationStats {
   totalViews: number;
   activeCount: number;

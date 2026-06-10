@@ -284,6 +284,22 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
       },
     });
     this.svc.getTemplates().subscribe({ next: d => { this.templates.set(d); this.cdr.detectChanges(); } });
+
+    // Hydrate the queue from another page that handed off items via sessionStorage
+    // (e.g. "Send to Reports Builder" button on destination preview).
+    try {
+      const raw = sessionStorage.getItem('reports_pending_queue');
+      if (raw) {
+        const items = JSON.parse(raw) as ReportQueueItem[];
+        if (Array.isArray(items) && items.length > 0) {
+          this.reportQueue.update(q => [...q, ...items]);
+          this.isQueueOpen.set(true);
+        }
+        sessionStorage.removeItem('reports_pending_queue');
+      }
+    } catch {
+      sessionStorage.removeItem('reports_pending_queue');
+    }
   }
 
   ngAfterViewInit(): void { this.viewReady = true; }

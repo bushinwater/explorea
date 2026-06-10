@@ -1562,3 +1562,191 @@
 }
 
 .ddp-review-card__thumb-more .material-icons { font-size: 12px; }
+
+/* ===== Destination analytics in DDP ===== */
+.ddp-analytics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.ddp-analytics-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ddp-analytics__send {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.ddp-analytics__send:hover {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.ddp-analytics__send .material-icons { font-size: 14px; }
+
+.ddp-analytics-chart-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.ddp-analytics-chart__title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.ddp-analytics-chart {
+  position: relative;
+  height: 200px;
+}
+
+.ddp-analytics-top {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ddp-analytics-top__row {
+  display: grid;
+  grid-template-columns: 130px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+}
+
+.ddp-analytics-top__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.ddp-analytics-top__label .material-icons {
+  font-size: 14px;
+  color: var(--color-primary);
+}
+
+.ddp-analytics-top__name {
+  font-size: 13px;
+  color: var(--color-text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ddp-analytics-top__name--empty { color: var(--color-text-muted); }
+
+.ddp-analytics-top__views {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.ddp-analytics-top__actions {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.ddp-analytics-top__btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.ddp-analytics-top__btn:hover:not(:disabled) {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.ddp-analytics-top__btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.ddp-analytics-top__btn .material-icons { font-size: 14px; }
+
+@media (max-width: 600px) {
+  .ddp-analytics-top__row { grid-template-columns: 1fr; }
+  .ddp-analytics-top__label { font-size: 10px; }
+  .ddp-analytics-top__views { justify-self: start; }
+}
+
+.ddp-analytics-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.ddp-analytics-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+}
+
+.ddp-analytics-stat__label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.ddp-analytics-stat__value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}
+
+.ddp-analytics-stat__hint {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 600px) {
+  .ddp-analytics-stats { grid-template-columns: 1fr; }
+}
