@@ -60,7 +60,7 @@ export const ENTITY_CONFIGS: EntityConfig[] = [
 
 export const VIZ_BY_DIM: Record<DimensionType, VizType[]> = {
   categorical: ['bar', 'pie', 'table'],
-  time:        ['line', 'bar', 'table'],
+  time:        ['line', 'table'],
 };
 
 export const VIZ_ICONS: Record<VizType, string> = {

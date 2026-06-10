@@ -1,9 +1,11 @@
 using System.Text;
 using Explorea.API.DTOs.Admin.Report;
 using Explorea.API.Models;
+using Explorea.Server.Data;
 using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Services.Admin.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -15,15 +17,18 @@ namespace Explorea.Server.Services.Admin
         private readonly IAdminReportRepository _repo;
         private readonly IUserRepository _userRepo;
         private readonly IOrganizationAssignmentRepository _assignmentRepo;
+        private readonly AppDbContext _db;
 
         public AdminReportService(
             IAdminReportRepository repo,
             IUserRepository userRepo,
-            IOrganizationAssignmentRepository assignmentRepo)
+            IOrganizationAssignmentRepository assignmentRepo,
+            AppDbContext db)
         {
             _repo = repo;
             _userRepo = userRepo;
             _assignmentRepo = assignmentRepo;
+            _db = db;
         }
 
         public async Task<ReportInsightsDto> GetInsightsAsync(Guid currentUserId)
@@ -236,8 +241,13 @@ namespace Explorea.Server.Services.Admin
         {
             var (destIds, placeOwnerUserId) = await BuildScopeAsync(currentUserId);
 
-            var entities  = new[] { "destinations", "activities", "events", "places" };
-            var singulars = new[] { "destination",  "activity",   "event",  "place"  };
+            // Place owners can only search their own places and events.
+            var entities  = placeOwnerUserId.HasValue
+                ? new[] { "events", "places" }
+                : new[] { "destinations", "activities", "events", "places" };
+            var singulars = placeOwnerUserId.HasValue
+                ? new[] { "event",  "place"  }
+                : new[] { "destination",  "activity",   "event",  "place"  };
 
             var output = new List<AdminGlobalSearchResultDto>();
             for (var i = 0; i < entities.Length; i++)
@@ -354,5 +364,6 @@ namespace Explorea.Server.Services.Admin
             Parameters = t.Parameters,
             CreatedAt  = t.CreatedAt
         };
+
     }
 }

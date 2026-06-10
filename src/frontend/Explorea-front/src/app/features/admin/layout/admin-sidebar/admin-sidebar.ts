@@ -24,7 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: 'star',           labelKey: 'sidebar.reviews',      route: '/admin/reviews',      roles: ['super_admin', 'tourist_organization', 'place_owner'] },
   { icon: 'people',         labelKey: 'sidebar.users',        route: '/admin/users',        roles: ['super_admin'] },
   { icon: 'bug_report',     labelKey: 'sidebar.bug_reports',  route: '/admin/bug-reports',  roles: ['super_admin'] },
-  { icon: 'bar_chart',      labelKey: 'sidebar.reports',      route: '/admin/reports',      roles: ['super_admin', 'tourist_organization'] },
+  { icon: 'bar_chart',      labelKey: 'sidebar.reports',      route: '/admin/reports',      roles: ['super_admin', 'tourist_organization', 'place_owner'] },
   { icon: 'support_agent',  labelKey: 'sidebar.support',      route: '/admin/support',      roles: ['super_admin', 'tourist_organization', 'place_owner'] },
   { icon: 'settings',       labelKey: 'sidebar.settings',     route: '/admin/settings',     roles: ['super_admin', 'tourist_organization', 'place_owner'] },
 ];

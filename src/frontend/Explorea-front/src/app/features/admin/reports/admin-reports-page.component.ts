@@ -24,6 +24,7 @@ import {
 } from './admin-reports.models';
 import { AdminReportsService } from './admin-reports.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 
 Chart.register(...registerables);
 
@@ -204,11 +205,10 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
 
   readonly flatCols = computed(() => FLAT_TABLE_COLS[this.flatEntity()]);
 
-  readonly flatScopedEntities = computed(() =>
-    this.flatDestId()
-      ? FLAT_TABLE_ENTITIES.filter(e => e.id !== 'destinations')
-      : FLAT_TABLE_ENTITIES,
-  );
+  readonly flatScopedEntities = computed(() => {
+    const base = this.flatTableEntities();
+    return this.flatDestId() ? base.filter(e => e.id !== 'destinations') : base;
+  });
 
   // Computed: destinations table grouped by region for display
   readonly destTableGrouped = computed(() => {
@@ -225,12 +225,31 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   });
 
   readonly destSortOptions    = DEST_SORT_OPTIONS;
-  readonly flatTableEntities  = FLAT_TABLE_ENTITIES;
   readonly flatTableSortOpts  = FLAT_TABLE_SORT_OPTIONS;
   readonly flatTableColDefs   = FLAT_TABLE_COLS;
   readonly vizIcons           = VIZ_ICONS;
   readonly vizLabels          = VIZ_LABELS;
-  readonly entityConfigs      = ENTITY_CONFIGS;
+
+  // Place owners only manage places and events; reviews/users/destinations/activities are not their scope.
+  readonly isPlaceOwner = computed(() => this.role() === 'place_owner');
+
+  readonly entityConfigs = computed(() =>
+    this.isPlaceOwner()
+      ? ENTITY_CONFIGS.filter(e => e.id === 'places' || e.id === 'events')
+      : ENTITY_CONFIGS,
+  );
+
+  readonly flatTableEntities = computed(() =>
+    this.isPlaceOwner()
+      ? FLAT_TABLE_ENTITIES.filter(e => e.id === 'places' || e.id === 'events')
+      : FLAT_TABLE_ENTITIES,
+  );
+
+  readonly searchableEntities = computed(() =>
+    this.isPlaceOwner()
+      ? SEARCHABLE_ENTITIES.filter(e => e === 'places' || e === 'events')
+      : SEARCHABLE_ENTITIES,
+  );
 
   readonly subTypeLabel = computed(() => {
     const e = this.flatEntity();
@@ -239,11 +258,24 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
 
   readonly scopeRegion = computed(() => this.insights()?.scopeRegion ?? null);
 
+  readonly role: () => string;
+
   constructor(
     private readonly svc: AdminReportsService,
     private readonly cdr: ChangeDetectorRef,
     public readonly ui: AdminUiPreferencesService,
+    private readonly auth: DashboardAuthService,
   ) {
+    this.role = this.auth.role;
+    // Place owners can't query destinations/activities — default the builder to their entities.
+    if (this.role() === 'place_owner') {
+      this.entity.set('places');
+      this.flatEntities.set(['places']);
+      this.loadFilterOptions('places');
+    } else {
+      this.loadFilterOptions('destinations');
+    }
+
     this.svc.getInsights().subscribe({
       next: d => {
         this.insights.set(d);
@@ -252,7 +284,6 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
       },
     });
     this.svc.getTemplates().subscribe({ next: d => { this.templates.set(d); this.cdr.detectChanges(); } });
-    this.loadFilterOptions('destinations');
   }
 
   ngAfterViewInit(): void { this.viewReady = true; }

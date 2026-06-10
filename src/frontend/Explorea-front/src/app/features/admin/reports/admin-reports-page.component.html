@@ -45,7 +45,7 @@
         <div class="rp-config-section">
           <span class="rp-config-section__label">{{ ui.t('reports.table.entity_label') }}</span>
           <div class="rp-source-tabs">
-            @for (ec of entityConfigs; track ec.id) {
+            @for (ec of entityConfigs(); track ec.id) {
               <button
                 class="rp-source-tab"
                 [class.rp-source-tab--active]="entity() === ec.id"
