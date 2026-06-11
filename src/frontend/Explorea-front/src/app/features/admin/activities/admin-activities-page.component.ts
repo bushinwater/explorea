@@ -51,6 +51,7 @@ import { MapPreviewComponent } from '../shared/components/map-preview/map-previe
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 import { isPointInGeoJsonGeometry, parseRegionBoundary } from '../core/utils/geo-boundary.utils';
+import { applyRegionScopeOverlay, drawManagedRegion, drawManagedRegions, fitMapToBoundary, fitMapToRegions, RegionGeoItem } from '../core/utils/region-overlay.utils';
 
 const DARK = {
   land: '#1e2e24', water: '#102840', park: '#1e3228',
@@ -249,6 +250,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly managedRegion = signal<{ id: number; name: string } | null>(null);
   protected readonly locationOutsideRegion = signal(false);
   private regionBoundary: any = null;
+  private regionBoundaryRaw: string | null = null;
+  private regionsRaw: RegionGeoItem[] | null = null;
   protected readonly hoverRating = signal<number | null>(null);
   protected readonly allInterestTags = signal<InterestTagOption[]>([]);
   protected readonly selectedInterestIds = signal<number[]>([]);
@@ -1711,17 +1714,17 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           if (mr) {
             this.filters.update(f => ({ ...f, regionId: mr.id }));
             this.syncFiltersToQueryParams();
-            this.subscription.add(
-              this.activitiesService.getRegionsGeo().subscribe({
-                next: (geo) => {
-                  const regionData = geo.regions.find(r => r.id === mr.id);
-                  if (regionData?.boundaryGeoJson) {
-                    this.regionBoundary = parseRegionBoundary(regionData.boundaryGeoJson);
-                  }
-                },
-              }),
-            );
           }
+          this.subscription.add(
+            this.activitiesService.getRegionsGeo().subscribe({
+              next: (geo) => {
+                const result = applyRegionScopeOverlay(this.map, geo, mr ? mr.id : null, { fit: !this.isEditMode() });
+                this.regionBoundaryRaw = result.boundaryRaw;
+                this.regionsRaw = result.regions;
+                this.regionBoundary = result.boundaryRaw ? parseRegionBoundary(result.boundaryRaw) : null;
+              },
+            }),
+          );
         },
       }),
     );
@@ -1813,6 +1816,14 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       attributes: true,
       attributeFilter: ['data-theme'],
     });
+
+    if (this.regionBoundaryRaw && this.map) {
+      drawManagedRegion(this.map, this.regionBoundaryRaw);
+      if (!this.isEditMode()) fitMapToBoundary(this.map, this.regionBoundaryRaw);
+    } else if (this.regionsRaw && this.map) {
+      drawManagedRegions(this.map, this.regionsRaw);
+      if (!this.isEditMode()) fitMapToRegions(this.map, this.regionsRaw);
+    }
   }
 
   private setMapCoords(lat: number, lng: number, reverseGeocode = false): void {

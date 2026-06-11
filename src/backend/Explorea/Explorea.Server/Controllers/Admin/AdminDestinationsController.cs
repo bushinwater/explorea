@@ -154,7 +154,23 @@ namespace Explorea.Server.Controllers.Admin
                 query = query.Where(r => r.Id == managedRegionId.Value);
             }
 
-            var regions = await query.OrderBy(r => r.Id).ToListAsync();
+            List<Explorea.API.Models.Region> regions;
+            if (isSuperAdmin && user?.CountryId.HasValue == true)
+            {
+                // SuperAdmin assigned to a country — try to restrict to that country's regions.
+                regions = await query
+                    .Where(r => r.CountryId == user.CountryId.Value)
+                    .OrderBy(r => r.Id)
+                    .ToListAsync();
+                // If no regions are tagged with that country, fall back to all regions so
+                // the outline is still drawn (otherwise the mini-map shows nothing).
+                if (regions.Count == 0)
+                    regions = await query.OrderBy(r => r.Id).ToListAsync();
+            }
+            else
+            {
+                regions = await query.OrderBy(r => r.Id).ToListAsync();
+            }
 
             var regionDtos = regions.Select(r => new
             {
@@ -166,9 +182,19 @@ namespace Explorea.Server.Controllers.Admin
             string? serbiaOutlineGeoJson = null;
             if (isSuperAdmin && regions.Count > 0)
             {
-                var union = regions[0].Boundary!;
-                for (int i = 1; i < regions.Count; i++)
-                    union = union.Union(regions[i].Boundary!);
+                Geometry union;
+                try
+                {
+                    var boundaries = regions.Select(r => r.Boundary!).ToArray();
+                    union = NetTopologySuite.Operation.Union.UnaryUnionOp.Union(boundaries);
+                }
+                catch
+                {
+                    // Fallback to pairwise union if UnaryUnion fails.
+                    union = regions[0].Boundary!;
+                    for (int i = 1; i < regions.Count; i++)
+                        union = union.Union(regions[i].Boundary!);
+                }
                 serbiaOutlineGeoJson = GeometryToGeoJson(union);
             }
 
@@ -220,6 +246,18 @@ namespace Explorea.Server.Controllers.Admin
             {
                 return StatusCode(403, new { message = ex.Message });
             }
+        }
+
+        // POST /api/admin/destinations/backfill-city-type
+        [HttpPost("backfill-city-type")]
+        public async Task<IActionResult> BackfillCityForCityType()
+        {
+            try
+            {
+                var touched = await _service.BackfillCityForCityTypeDestinationsAsync(GetCurrentUserId());
+                return Ok(new { touched });
+            }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
         }
 
         // POST /api/admin/destinations
@@ -542,7 +580,31 @@ namespace Explorea.Server.Controllers.Admin
             }
             if (geom is Polygon poly)
                 return $"{{\"type\":\"Polygon\",\"coordinates\":{PolygonToGeoJson(poly)}}}";
+
+            // GeometryCollection / other complex types: extract polygonal children
+            // and emit them as a MultiPolygon so the front-end can still render them.
+            var polygons = new List<Polygon>();
+            CollectPolygons(geom, polygons);
+            if (polygons.Count > 0)
+            {
+                var polys = string.Join(",", polygons.Select(PolygonToGeoJson));
+                return $"{{\"type\":\"MultiPolygon\",\"coordinates\":[{polys}]}}";
+            }
             return "null";
+        }
+
+        private static void CollectPolygons(Geometry geom, List<Polygon> sink)
+        {
+            switch (geom)
+            {
+                case Polygon p: sink.Add(p); break;
+                case MultiPolygon mp:
+                    foreach (var g in mp.Geometries) sink.Add((Polygon)g);
+                    break;
+                case GeometryCollection gc:
+                    foreach (var g in gc.Geometries) CollectPolygons(g, sink);
+                    break;
+            }
         }
 
         private static string PolygonToGeoJson(Polygon poly)

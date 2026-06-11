@@ -168,23 +168,43 @@ namespace Explorea.Server.Repositories.Implementations
             if (filterMinRating.HasValue)
                 q = q.Where(d => (double)d.AvgRating >= (double)filterMinRating.Value);
 
-            var proj = q.Select(d => new DestinationsTableItemDto
+            // Region: prefer direct FK on destination, fall back to City.Region.
+            // City: prefer the linked city; for city-type destinations (no CityId) fall back to the destination's own name.
+            var baseRows = await q.Select(d => new
             {
-                Name       = d.Name,
-                City       = d.City != null ? d.City.Name : null,
-                Region     = d.City != null && d.City.Region != null ? d.City.Region.Name : null,
-                Type       = d.Type != null ? d.Type.Name : null,
-                AvgRating  = Math.Round((double)d.AvgRating, 1),
-                Popularity = (long)d.Popularity,
-            });
+                d.Id,
+                d.Name,
+                CityName    = d.City != null
+                                ? d.City.Name
+                                : (d.Type != null && d.Type.Name == "Grad" ? d.Name : null),
+                RegionName  = d.Region != null
+                                ? d.Region.Name
+                                : (d.City != null && d.City.Region != null ? d.City.Region.Name : null),
+                TypeName    = d.Type != null ? d.Type.Name : null,
+                AvgRating   = Math.Round((double)d.AvgRating, 1),
+            }).ToListAsync();
+
+            // Real click counts from PopularityLogs (last 30 days, same as ddp panel "Views").
+            var ids = baseRows.Select(r => r.Id).ToList();
+            var clickCounts = await GetClickCountsAsync("destination", ids);
+
+            var rows = baseRows.Select(r => new DestinationsTableItemDto
+            {
+                Name       = r.Name,
+                City       = r.CityName,
+                Region     = r.RegionName,
+                Type       = r.TypeName,
+                AvgRating  = r.AvgRating,
+                Popularity = clickCounts.GetValueOrDefault(r.Id, 0),
+            }).ToList();
 
             return sortBy switch
             {
-                "region"     => await proj.OrderBy(d => d.Region).ThenBy(d => d.Name).ToListAsync(),
-                "type"       => await proj.OrderBy(d => d.Type).ThenBy(d => d.Name).ToListAsync(),
-                "rating"     => await proj.OrderByDescending(d => d.AvgRating).ToListAsync(),
-                "popularity" => await proj.OrderByDescending(d => d.Popularity).ToListAsync(),
-                _            => await proj.OrderBy(d => d.Name).ToListAsync(),
+                "region"     => rows.OrderBy(d => d.Region).ThenBy(d => d.Name).ToList(),
+                "type"       => rows.OrderBy(d => d.Type).ThenBy(d => d.Name).ToList(),
+                "rating"     => rows.OrderByDescending(d => d.AvgRating).ToList(),
+                "popularity" => rows.OrderByDescending(d => d.Popularity).ToList(),
+                _            => rows.OrderBy(d => d.Name).ToList(),
             };
         }
 
@@ -278,6 +298,18 @@ namespace Explorea.Server.Repositories.Implementations
             };
         }
 
+        private async Task<Dictionary<Guid, long>> GetClickCountsAsync(string entityType, List<Guid> ids)
+        {
+            if (ids.Count == 0) return new Dictionary<Guid, long>();
+            var monthAgo = DateTimeOffset.UtcNow.AddDays(-30);
+            return await _db.PopularityLogs
+                .Where(l => l.EntityType == entityType && l.Source == "click"
+                            && l.CreatedAt >= monthAgo && ids.Contains(l.EntityId))
+                .GroupBy(l => l.EntityId)
+                .Select(g => new { EntityId = g.Key, Count = (long)g.Count() })
+                .ToDictionaryAsync(x => x.EntityId, x => x.Count);
+        }
+
         private async Task<List<EntityTableRowDto>> GetActivitiesTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
             string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
@@ -297,23 +329,33 @@ namespace Explorea.Server.Repositories.Implementations
             if (filterMinPrice.HasValue) q = q.Where(a => a.Price != null && a.Price >= filterMinPrice.Value);
             if (filterMaxPrice.HasValue) q = q.Where(a => a.Price != null && a.Price <= filterMaxPrice.Value);
 
-            var proj = q.Select(a => new EntityTableRowDto
+            var baseRows = await q.Select(a => new
             {
-                Name       = a.Name,
+                a.Id,
+                a.Name,
                 SubType    = a.Category != null ? a.Category.Name : null,
                 Location   = a.Destination != null ? a.Destination.Name : null,
                 Region     = a.City != null && a.City.Region != null ? a.City.Region.Name : null,
                 AvgRating  = Math.Round((double)a.AvgRating, 1),
-                Popularity = (long)a.Popularity,
-            });
+            }).ToListAsync();
+            var clicks = await GetClickCountsAsync("activity", baseRows.Select(r => r.Id).ToList());
+            var rows = baseRows.Select(r => new EntityTableRowDto
+            {
+                Name       = r.Name,
+                SubType    = r.SubType,
+                Location   = r.Location,
+                Region     = r.Region,
+                AvgRating  = r.AvgRating,
+                Popularity = clicks.GetValueOrDefault(r.Id, 0),
+            }).ToList();
             return sortBy switch
             {
-                "subType"    => await proj.OrderBy(x => x.SubType).ThenBy(x => x.Name).ToListAsync(),
-                "location"   => await proj.OrderBy(x => x.Location).ThenBy(x => x.Name).ToListAsync(),
-                "region"     => await proj.OrderBy(x => x.Region).ThenBy(x => x.Name).ToListAsync(),
-                "rating"     => await proj.OrderByDescending(x => x.AvgRating).ToListAsync(),
-                "popularity" => await proj.OrderByDescending(x => x.Popularity).ToListAsync(),
-                _            => await proj.OrderBy(x => x.Name).ToListAsync(),
+                "subType"    => rows.OrderBy(x => x.SubType).ThenBy(x => x.Name).ToList(),
+                "location"   => rows.OrderBy(x => x.Location).ThenBy(x => x.Name).ToList(),
+                "region"     => rows.OrderBy(x => x.Region).ThenBy(x => x.Name).ToList(),
+                "rating"     => rows.OrderByDescending(x => x.AvgRating).ToList(),
+                "popularity" => rows.OrderByDescending(x => x.Popularity).ToList(),
+                _            => rows.OrderBy(x => x.Name).ToList(),
             };
         }
 
@@ -346,23 +388,33 @@ namespace Explorea.Server.Repositories.Implementations
                 }
             }
 
-            var proj = q.Select(e => new EntityTableRowDto
+            var baseRows = await q.Select(e => new
             {
-                Name       = e.Name,
+                e.Id,
+                e.Name,
                 SubType    = e.Type != null ? e.Type.Name : null,
                 Location   = e.Destination != null ? e.Destination.Name : null,
                 Region     = e.City != null && e.City.Region != null ? e.City.Region.Name : null,
                 AvgRating  = Math.Round((double)e.AvgRating, 1),
-                Popularity = (long)e.Popularity,
-            });
+            }).ToListAsync();
+            var clicks = await GetClickCountsAsync("event", baseRows.Select(r => r.Id).ToList());
+            var rows = baseRows.Select(r => new EntityTableRowDto
+            {
+                Name       = r.Name,
+                SubType    = r.SubType,
+                Location   = r.Location,
+                Region     = r.Region,
+                AvgRating  = r.AvgRating,
+                Popularity = clicks.GetValueOrDefault(r.Id, 0),
+            }).ToList();
             return sortBy switch
             {
-                "subType"    => await proj.OrderBy(x => x.SubType).ThenBy(x => x.Name).ToListAsync(),
-                "location"   => await proj.OrderBy(x => x.Location).ThenBy(x => x.Name).ToListAsync(),
-                "region"     => await proj.OrderBy(x => x.Region).ThenBy(x => x.Name).ToListAsync(),
-                "rating"     => await proj.OrderByDescending(x => x.AvgRating).ToListAsync(),
-                "popularity" => await proj.OrderByDescending(x => x.Popularity).ToListAsync(),
-                _            => await proj.OrderBy(x => x.Name).ToListAsync(),
+                "subType"    => rows.OrderBy(x => x.SubType).ThenBy(x => x.Name).ToList(),
+                "location"   => rows.OrderBy(x => x.Location).ThenBy(x => x.Name).ToList(),
+                "region"     => rows.OrderBy(x => x.Region).ThenBy(x => x.Name).ToList(),
+                "rating"     => rows.OrderByDescending(x => x.AvgRating).ToList(),
+                "popularity" => rows.OrderByDescending(x => x.Popularity).ToList(),
+                _            => rows.OrderBy(x => x.Name).ToList(),
             };
         }
 
@@ -393,23 +445,33 @@ namespace Explorea.Server.Repositories.Implementations
                 }
             }
 
-            var proj = q.Select(p => new EntityTableRowDto
+            var baseRows = await q.Select(p => new
             {
-                Name       = p.Name,
+                p.Id,
+                p.Name,
                 SubType    = p.Type != null ? p.Type.Name : null,
                 Location   = p.Destination != null ? p.Destination.Name : null,
                 Region     = p.City != null && p.City.Region != null ? p.City.Region.Name : null,
                 AvgRating  = Math.Round((double)p.AvgRating, 1),
-                Popularity = (long)p.Popularity,
-            });
+            }).ToListAsync();
+            var clicks = await GetClickCountsAsync("place", baseRows.Select(r => r.Id).ToList());
+            var rows = baseRows.Select(r => new EntityTableRowDto
+            {
+                Name       = r.Name,
+                SubType    = r.SubType,
+                Location   = r.Location,
+                Region     = r.Region,
+                AvgRating  = r.AvgRating,
+                Popularity = clicks.GetValueOrDefault(r.Id, 0),
+            }).ToList();
             return sortBy switch
             {
-                "subType"    => await proj.OrderBy(x => x.SubType).ThenBy(x => x.Name).ToListAsync(),
-                "location"   => await proj.OrderBy(x => x.Location).ThenBy(x => x.Name).ToListAsync(),
-                "region"     => await proj.OrderBy(x => x.Region).ThenBy(x => x.Name).ToListAsync(),
-                "rating"     => await proj.OrderByDescending(x => x.AvgRating).ToListAsync(),
-                "popularity" => await proj.OrderByDescending(x => x.Popularity).ToListAsync(),
-                _            => await proj.OrderBy(x => x.Name).ToListAsync(),
+                "subType"    => rows.OrderBy(x => x.SubType).ThenBy(x => x.Name).ToList(),
+                "location"   => rows.OrderBy(x => x.Location).ThenBy(x => x.Name).ToList(),
+                "region"     => rows.OrderBy(x => x.Region).ThenBy(x => x.Name).ToList(),
+                "rating"     => rows.OrderByDescending(x => x.AvgRating).ToList(),
+                "popularity" => rows.OrderByDescending(x => x.Popularity).ToList(),
+                _            => rows.OrderBy(x => x.Name).ToList(),
             };
         }
 
@@ -475,7 +537,7 @@ namespace Explorea.Server.Repositories.Implementations
             if (metric == "avgRating")
             {
                 var raw = await q
-                    .GroupBy(d => d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato")
+                    .GroupBy(d => d.Region != null ? d.Region.Name : (d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato"))
                     .Select(g => new { Label = g.Key, Value = g.Average(d => (double)d.AvgRating) })
                     .OrderByDescending(x => x.Value).ToListAsync();
                 return raw.Select(x => new AggregatePointDto { Label = x.Label, Value = Math.Round(x.Value, 1) }).ToList();
@@ -483,7 +545,7 @@ namespace Explorea.Server.Repositories.Implementations
 
             if (metric == "traffic")
             {
-                var rows = await q.Select(d => new { d.Id, Region = d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato" }).ToListAsync();
+                var rows = await q.Select(d => new { d.Id, Region = d.Region != null ? d.Region.Name : (d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato") }).ToListAsync();
                 var entityIds = rows.Select(r => r.Id).ToList();
                 var logCounts = await _db.PopularityLogs
                     .Where(l => l.EntityType == "destination" && entityIds.Contains(l.EntityId))
@@ -494,7 +556,7 @@ namespace Explorea.Server.Repositories.Implementations
                     .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(r => logCounts.GetValueOrDefault(r.Id, 0)) })
                     .OrderByDescending(x => x.Value).ToList();
             }
-            return await q.Select(d => new { Region = d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato" })
+            return await q.Select(d => new { Region = d.Region != null ? d.Region.Name : (d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato") })
                 .GroupBy(x => x.Region)
                 .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
                 .OrderByDescending(x => x.Value).ToListAsync();

@@ -432,6 +432,58 @@ namespace Explorea.Server.Services.Admin
             return MapToListDto(destination, new Dictionary<Guid, int> { [id] = viewCount });
         }
 
+        /// <summary>
+        /// City-type destinations represent a city themselves. If they don't have a CityId
+        /// linked, look up an existing City with matching name (and region if available) or
+        /// create one, then store its Id on the destination. Skips non-city destinations.
+        /// </summary>
+        private async Task EnsureCityForCityTypeAsync(Destination destination)
+        {
+            if (destination.CityId.HasValue) return;
+            if (destination.TypeId == null) return;
+
+            var typeName = await _db.DestinationTypes
+                .Where(t => t.Id == destination.TypeId.Value)
+                .Select(t => t.Name)
+                .FirstOrDefaultAsync();
+            if (!string.Equals(typeName, "Grad", StringComparison.OrdinalIgnoreCase)) return;
+
+            // Try existing city — prefer one with matching region, else any name match.
+            City? existing = null;
+            if (destination.RegionId.HasValue)
+            {
+                existing = await _db.Cities
+                    .FirstOrDefaultAsync(c => c.Name == destination.Name && c.RegionId == destination.RegionId.Value);
+            }
+            existing ??= await _db.Cities.FirstOrDefaultAsync(c => c.Name == destination.Name);
+
+            if (existing != null)
+            {
+                destination.CityId = existing.Id;
+                return;
+            }
+
+            // Otherwise create a fresh city using the destination's own attributes.
+            var now = DateTimeOffset.UtcNow;
+            var lat = destination.Latitude ?? 0;
+            var lng = destination.Longitude ?? 0;
+            var city = new City
+            {
+                Name      = destination.Name,
+                RegionId  = destination.RegionId,
+                Latitude  = lat,
+                Longitude = lng,
+                Location  = _geometryFactory.CreatePoint(new Coordinate(lng, lat)),
+                CreatedAt = now,
+                UpdatedAt = now,
+                CreatedBy = destination.CreatedBy,
+                UpdatedBy = destination.UpdatedBy,
+            };
+            _db.Cities.Add(city);
+            await _db.SaveChangesAsync();
+            destination.CityId = city.Id;
+        }
+
         public async Task<AdminDestinationListDto> CreateAsync(AdminCreateDestinationDto dto, Guid createdBy)
         {
             var user = await _userRepo.GetByIdWithRoleAsync(createdBy);
@@ -468,6 +520,10 @@ namespace Explorea.Server.Services.Admin
 
             await _destinationRepo.AddAsync(destination);
             await _destinationRepo.SaveChangesAsync();
+
+            await EnsureCityForCityTypeAsync(destination);
+            if (_db.Entry(destination).State == EntityState.Modified)
+                await _db.SaveChangesAsync();
 
             var created = await _destinationRepo.GetAdminByIdAsync(destination.Id);
             return MapToListDto(created!);
@@ -527,6 +583,10 @@ namespace Explorea.Server.Services.Admin
 
             _destinationRepo.Update(destination);
             await _destinationRepo.SaveChangesAsync();
+
+            await EnsureCityForCityTypeAsync(destination);
+            if (_db.Entry(destination).State == EntityState.Modified)
+                await _db.SaveChangesAsync();
 
             var updated = await _destinationRepo.GetAdminByIdAsync(id);
             return MapToListDto(updated!);
@@ -1022,6 +1082,36 @@ namespace Explorea.Server.Services.Admin
             await _db.SaveChangesAsync();
 
             return new AdminDestinationLookupDto { Id = type.Id, Name = type.Name };
+        }
+
+        /// <summary>
+        /// One-shot backfill: finds all destinations of type "Grad" that have no CityId and
+        /// links them to a matching city (creating one if needed). Returns the number of rows touched.
+        /// </summary>
+        public async Task<int> BackfillCityForCityTypeDestinationsAsync(Guid userId)
+        {
+            var user = await _userRepo.GetByIdWithRoleAsync(userId);
+            if (user?.Role.Name != RoleNames.SuperAdmin)
+                throw new UnauthorizedAccessException("Only SuperAdmin can run this backfill.");
+
+            var gradTypeId = await _db.DestinationTypes
+                .Where(t => t.Name.ToLower() == "grad")
+                .Select(t => (int?)t.Id)
+                .FirstOrDefaultAsync();
+            if (gradTypeId == null) return 0;
+
+            var candidates = await _db.Destinations
+                .Where(d => d.TypeId == gradTypeId.Value && d.CityId == null && !d.IsDeleted)
+                .ToListAsync();
+
+            var touched = 0;
+            foreach (var dest in candidates)
+            {
+                await EnsureCityForCityTypeAsync(dest);
+                if (dest.CityId.HasValue) touched++;
+            }
+            if (touched > 0) await _db.SaveChangesAsync();
+            return touched;
         }
 
         private async Task ValidateLocationWithinRegionAsync(double lat, double lng, int regionId)

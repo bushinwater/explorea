@@ -216,9 +216,10 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
     const data = this.destTableData();
     if (!data) return null;
     if (this.destSortBy() !== 'region') return null; // only group visually when sorted by region
+    const unknownLabel = this.ui.t('reports.filter.unknown');
     const groups = new Map<string, DestinationsTableItem[]>();
     for (const item of data) {
-      const key = item.region ?? 'Nepoznato';
+      const key = item.region ?? unknownLabel;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(item);
     }
@@ -1044,9 +1045,10 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   // ─── Utilities ───────────────────────────────────────────────────────────
 
   formatNum(n: number): string {
+    if (n == null || isNaN(n)) return '0';
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
     if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}k`;
-    return n.toFixed(n < 10 ? 1 : 0);
+    return Math.round(n).toString();
   }
 
   queueIcon(type: string): string {

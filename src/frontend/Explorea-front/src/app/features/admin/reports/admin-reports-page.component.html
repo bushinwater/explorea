@@ -418,7 +418,7 @@
         <div class="rp-filter-row">
           <span class="rp-filter-label">{{ ui.t('reports.table.rating') }}</span>
           <div class="rp-pills">
-            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === null"  (click)="filterMinRating.set(null)">Sve</button>
+            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === null"  (click)="filterMinRating.set(null)">{{ ui.t('reports.filter.all') }}</button>
             <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '3'"   (click)="toggleFilter('minRating', '3')">≥ 3 ★</button>
             <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '4'"   (click)="toggleFilter('minRating', '4')">≥ 4 ★</button>
             <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '4.5'" (click)="toggleFilter('minRating', '4.5')">≥ 4.5 ★</button>
@@ -430,7 +430,7 @@
           <div class="rp-filter-row">
             <span class="rp-filter-label">{{ ui.t('reports.table.difficulty') }}</span>
             <div class="rp-pills">
-              <button class="rp-pill" [class.rp-pill--active]="filterDifficulty() === null" (click)="filterDifficulty.set(null)">Sve</button>
+              <button class="rp-pill" [class.rp-pill--active]="filterDifficulty() === null" (click)="filterDifficulty.set(null)">{{ ui.t('reports.filter.all') }}</button>
               @for (opt of filterDifficultyOpts(); track opt) {
                 <button class="rp-pill" [class.rp-pill--active]="filterDifficulty() === opt" (click)="toggleFilter('difficulty', opt)">{{ opt }}</button>
               }

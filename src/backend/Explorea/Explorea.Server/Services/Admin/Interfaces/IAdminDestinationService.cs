@@ -58,5 +58,7 @@ namespace Explorea.Server.Services.Admin.Interfaces
         Task<string?> SetPreviewImageAsync(Guid destinationId, Guid imageId, Guid userId);
 
         Task<AdminDestinationLookupDto> CreateTypeAsync(string name, Guid userId);
+
+        Task<int> BackfillCityForCityTypeDestinationsAsync(Guid userId);
     }
 }

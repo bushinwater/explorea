@@ -289,6 +289,72 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// One-shot backfill: link CityId on city-type destinations that don't have one yet.
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var destService = scope.ServiceProvider
+            .GetRequiredService<Explorea.Server.Services.Admin.Interfaces.IAdminDestinationService>();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var gradTypeId = await db.DestinationTypes
+            .Where(t => t.Name.ToLower() == "grad")
+            .Select(t => (int?)t.Id)
+            .FirstOrDefaultAsync();
+        if (gradTypeId.HasValue)
+        {
+            var pendingCount = await db.Destinations
+                .CountAsync(d => d.TypeId == gradTypeId.Value && d.CityId == null && !d.IsDeleted);
+            if (pendingCount > 0)
+            {
+                // System-runs the backfill — bypass user permission check by writing directly.
+                var candidates = await db.Destinations
+                    .Where(d => d.TypeId == gradTypeId.Value && d.CityId == null && !d.IsDeleted)
+                    .ToListAsync();
+                var touched = 0;
+                foreach (var dest in candidates)
+                {
+                    City? existing = null;
+                    if (dest.RegionId.HasValue)
+                        existing = await db.Cities.FirstOrDefaultAsync(c => c.Name == dest.Name && c.RegionId == dest.RegionId.Value);
+                    existing ??= await db.Cities.FirstOrDefaultAsync(c => c.Name == dest.Name);
+                    if (existing != null)
+                    {
+                        dest.CityId = existing.Id;
+                        touched++;
+                        continue;
+                    }
+                    var lat = dest.Latitude ?? 0;
+                    var lng = dest.Longitude ?? 0;
+                    var geometryFactory = new NetTopologySuite.NtsGeometryServices(new NetTopologySuite.Geometries.PrecisionModel(), 4326)
+                        .CreateGeometryFactory();
+                    var newCity = new City
+                    {
+                        Name = dest.Name,
+                        RegionId = dest.RegionId,
+                        Latitude = lat,
+                        Longitude = lng,
+                        Location = geometryFactory.CreatePoint(new NetTopologySuite.Geometries.Coordinate(lng, lat)),
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        UpdatedAt = DateTimeOffset.UtcNow,
+                        CreatedBy = dest.CreatedBy,
+                        UpdatedBy = dest.UpdatedBy,
+                    };
+                    db.Cities.Add(newCity);
+                    await db.SaveChangesAsync();
+                    dest.CityId = newCity.Id;
+                    touched++;
+                }
+                if (touched > 0) await db.SaveChangesAsync();
+            }
+        }
+    }
+    catch
+    {
+        /* startup backfill is best-effort */
+    }
+}
+
 app.UseCors("AllowAngular");
 //app.UseHttpsRedirection();
 

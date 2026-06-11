@@ -26,6 +26,7 @@ import { FilterDefinition, LookupService } from '../../../core/services/lookup.s
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 import { isPointInGeoJsonGeometry, parseRegionBoundary } from '../core/utils/geo-boundary.utils';
+import { applyRegionScopeOverlay, drawManagedRegion, drawManagedRegions, fitMapToBoundary, fitMapToRegions, RegionGeoItem } from '../core/utils/region-overlay.utils';
 const MAX_IMAGES = 10;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_DESC = 2000;
@@ -107,6 +108,8 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
   protected readonly locationOutsideRegion = signal(false);
 
   private regionBoundary: any = null;
+  private regionBoundaryRaw: string | null = null;
+  private regionsRaw: RegionGeoItem[] | null = null;
 
   protected readonly filterDefs     = signal<FilterDefinition[]>([]);
   protected readonly showAddFilter  = signal(false);
@@ -139,14 +142,12 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
   ngOnInit(): void {
     this.localTypes.set([...this.types]);
     this.svc.getRegions().subscribe(r => { this.localRegions.set(r); this.cdr.detectChanges(); });
-    if (this.lockedRegionId !== null) {
-      this.svc.getRegionsGeo().subscribe(data => {
-        const region = data.regions.find(r => r.id === this.lockedRegionId);
-        if (region?.boundaryGeoJson) {
-          this.regionBoundary = parseRegionBoundary(region.boundaryGeoJson);
-        }
-      });
-    }
+    this.svc.getRegionsGeo().subscribe(data => {
+      const result = applyRegionScopeOverlay(this.map, data, this.lockedRegionId, { fit: false });
+      this.regionBoundaryRaw = result.boundaryRaw;
+      this.regionsRaw = result.regions;
+      this.regionBoundary = result.boundaryRaw ? parseRegionBoundary(result.boundaryRaw) : null;
+    });
     this.svc.getCountries().subscribe(c => { this.localCountries.set(c); this.cdr.detectChanges(); });
     this.svc.getDestinationInterests(this.row.id).subscribe(tags => {
       this.allInterestTags.set(tags);
@@ -509,6 +510,12 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
       attributes: true,
       attributeFilter: ['data-theme'],
     });
+
+    if (this.regionBoundaryRaw && this.map) {
+      drawManagedRegion(this.map, this.regionBoundaryRaw);
+    } else if (this.regionsRaw && this.map) {
+      drawManagedRegions(this.map, this.regionsRaw);
+    }
   }
 
   private get isDark(): boolean {
