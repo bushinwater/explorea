@@ -1,7 +1,7 @@
 .review-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 500;
+  z-index: 1100;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
