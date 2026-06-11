@@ -133,6 +133,31 @@
       multiple
       (change)="onEditFilesSelected($event)"
     />
+    <input
+      #editCameraInput
+      type="file"
+      class="review-card__edit-file"
+      accept="image/*"
+      capture="environment"
+      (change)="onEditFilesSelected($event)"
+    />
+
+    <div *ngIf="sourcePickerOpen" class="rm-source-picker" (click)="closeSourcePicker()">
+      <div class="rm-source-picker__sheet" (click)="$event.stopPropagation()">
+        <h3 class="rm-source-picker__title">{{ 'REVIEW_MODAL.ADD_IMAGE_SOURCE' | translate }}</h3>
+        <button class="rm-source-picker__option" type="button" (click)="pickEditFromCamera()">
+          <span class="material-icons">photo_camera</span>
+          <span>{{ 'REVIEW_MODAL.TAKE_PHOTO' | translate }}</span>
+        </button>
+        <button class="rm-source-picker__option" type="button" (click)="pickEditFromLibrary()">
+          <span class="material-icons">photo_library</span>
+          <span>{{ 'REVIEW_MODAL.CHOOSE_FROM_GALLERY' | translate }}</span>
+        </button>
+        <button class="rm-source-picker__cancel" type="button" (click)="closeSourcePicker()">
+          {{ 'REVIEW_MODAL.CANCEL' | translate }}
+        </button>
+      </div>
+    </div>
 
     <p *ngIf="editError" class="review-card__edit-error">{{ editError }}</p>
     <div class="review-card__edit-actions">

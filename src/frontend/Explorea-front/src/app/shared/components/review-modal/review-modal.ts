@@ -39,6 +39,10 @@ export class ReviewModal implements OnChanges, OnDestroy {
   @Output() reviewSubmitted = new EventEmitter<ReviewDto>();
 
   @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('cameraInput') cameraInput?: ElementRef<HTMLInputElement>;
+
+  sourcePickerOpen = false;
+  isTouchDevice = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 
   rating = 0;
   hoverRating = 0;
@@ -103,7 +107,26 @@ export class ReviewModal implements OnChanges, OnDestroy {
   }
 
   triggerFilePicker(): void {
+    // On touch devices, prompt the user to choose between camera and library.
+    if (this.isTouchDevice) {
+      this.sourcePickerOpen = true;
+      return;
+    }
     this.fileInput?.nativeElement.click();
+  }
+
+  pickFromCamera(): void {
+    this.sourcePickerOpen = false;
+    this.cameraInput?.nativeElement.click();
+  }
+
+  pickFromLibrary(): void {
+    this.sourcePickerOpen = false;
+    this.fileInput?.nativeElement.click();
+  }
+
+  closeSourcePicker(): void {
+    this.sourcePickerOpen = false;
   }
 
   onFilesSelected(event: Event): void {

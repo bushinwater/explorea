@@ -33,7 +33,10 @@
     "IMAGE_TOO_LARGE": "Image \"{{name}}\" exceeds 5MB.",
     "IMAGE_UPLOAD_FAILED": "Image upload failed.",
     "IMAGE_REMOVE": "Remove photo",
-    "UPLOADING": "Uploading..."
+    "UPLOADING": "Uploading...",
+    "ADD_IMAGE_SOURCE": "Where do you want the image from?",
+    "TAKE_PHOTO": "Take a photo",
+    "CHOOSE_FROM_GALLERY": "Pick from gallery"
   },
   "SIDEBAR": {
     "HOME": "Home",

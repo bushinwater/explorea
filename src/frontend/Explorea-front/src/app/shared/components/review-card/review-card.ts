@@ -47,6 +47,10 @@ export class ReviewCard implements OnDestroy {
   @Output() imageClicked = new EventEmitter<{ reviewId: string; imageIndex: number }>();
 
   @ViewChild('editFileInput') editFileInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('editCameraInput') editCameraInput?: ElementRef<HTMLInputElement>;
+
+  sourcePickerOpen = false;
+  isTouchDevice = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 
   editMode = false;
   confirmingDelete = false;
@@ -206,7 +210,25 @@ export class ReviewCard implements OnDestroy {
   }
 
   triggerEditFilePicker(): void {
+    if (this.isTouchDevice) {
+      this.sourcePickerOpen = true;
+      return;
+    }
     this.editFileInput?.nativeElement.click();
+  }
+
+  pickEditFromCamera(): void {
+    this.sourcePickerOpen = false;
+    this.editCameraInput?.nativeElement.click();
+  }
+
+  pickEditFromLibrary(): void {
+    this.sourcePickerOpen = false;
+    this.editFileInput?.nativeElement.click();
+  }
+
+  closeSourcePicker(): void {
+    this.sourcePickerOpen = false;
   }
 
   onEditFilesSelected(event: Event): void {

@@ -33,7 +33,10 @@
     "IMAGE_TOO_LARGE": "Slika \"{{name}}\" je veća od 5MB.",
     "IMAGE_UPLOAD_FAILED": "Otpremanje slike nije uspelo.",
     "IMAGE_REMOVE": "Ukloni sliku",
-    "UPLOADING": "Otpremanje..."
+    "UPLOADING": "Otpremanje...",
+    "ADD_IMAGE_SOURCE": "Odakle želiš sliku?",
+    "TAKE_PHOTO": "Slikaj sada",
+    "CHOOSE_FROM_GALLERY": "Iz galerije"
   },
   "SIDEBAR": {
     "HOME": "Početna",

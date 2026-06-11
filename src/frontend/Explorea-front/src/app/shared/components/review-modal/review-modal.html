@@ -86,6 +86,14 @@
             multiple
             (change)="onFilesSelected($event)"
           />
+          <input
+            #cameraInput
+            type="file"
+            class="rm-image-input"
+            accept="image/*"
+            capture="environment"
+            (change)="onFilesSelected($event)"
+          />
 
           <span class="rm-field__hint rm-field__hint--block">{{ 'REVIEW_MODAL.IMAGES_RULES' | translate }}</span>
         </div>
@@ -106,6 +114,23 @@
         </button>
       </div>
 
+    </div>
+  </div>
+
+  <div *ngIf="sourcePickerOpen" class="rm-source-picker" (click)="closeSourcePicker()">
+    <div class="rm-source-picker__sheet" (click)="$event.stopPropagation()">
+      <h3 class="rm-source-picker__title">{{ 'REVIEW_MODAL.ADD_IMAGE_SOURCE' | translate }}</h3>
+      <button class="rm-source-picker__option" type="button" (click)="pickFromCamera()">
+        <span class="material-icons">photo_camera</span>
+        <span>{{ 'REVIEW_MODAL.TAKE_PHOTO' | translate }}</span>
+      </button>
+      <button class="rm-source-picker__option" type="button" (click)="pickFromLibrary()">
+        <span class="material-icons">photo_library</span>
+        <span>{{ 'REVIEW_MODAL.CHOOSE_FROM_GALLERY' | translate }}</span>
+      </button>
+      <button class="rm-source-picker__cancel" type="button" (click)="closeSourcePicker()">
+        {{ 'REVIEW_MODAL.CANCEL' | translate }}
+      </button>
     </div>
   </div>
 </ng-container>
