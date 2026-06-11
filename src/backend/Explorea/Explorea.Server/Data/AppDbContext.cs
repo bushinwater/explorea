@@ -48,6 +48,7 @@ namespace Explorea.Server.Data
         public DbSet<ActivityInclusion> ActivityInclusions { get; set; }
         public DbSet<ActivityImage> ActivityImages { get; set; }
         public DbSet<Review> Reviews { get; set; }
+        public DbSet<ReviewImage> ReviewImages { get; set; }
         public DbSet<SavedItem> SavedItems { get; set; }
         public DbSet<Visit> Visits { get; set; }
         public DbSet<TripPlan> TripPlans { get; set; }

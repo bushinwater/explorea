@@ -18,5 +18,6 @@ namespace Explorea.API.DTOs.Admin.Review
         public DateTimeOffset   CreatedAt           { get; set; }
         public string?          OwnerReply          { get; set; }
         public DateTimeOffset?  OwnerReplyAt        { get; set; }
+        public List<string>     ImageUrls           { get; set; } = new();
     }
 }

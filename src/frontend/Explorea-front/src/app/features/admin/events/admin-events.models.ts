@@ -6,11 +6,31 @@ export interface InterestTagOption {
 }
 
 export interface ReviewItem {
+  id?: string;
   authorName: string;
   authorAvatarUrl: string | null;
   rating: number;
   comment: string | null;
   createdAt: string;
+  imageUrls?: string[];
+}
+
+export interface EventAnalyticsTimelinePoint {
+  date: string;
+  value: number;
+}
+
+export interface EventAnalytics {
+  totalViews: number;
+  viewsLast30: number;
+  viewsTimeline: EventAnalyticsTimelinePoint[];
+  savedByUsers: number;
+  plannerByUsers: number;
+  topPlannerMonth: string | null;
+  topPlannerMonthCount: number;
+  isMultiDay: boolean;
+  topPlannerDate: string | null;
+  topPlannerDateCount: number;
 }
 
 export interface CountryOption {
@@ -101,6 +121,7 @@ export interface EventRow {
   isFeatured: boolean;
   recursAnnually: boolean;
   avgRating: number;
+  views: number;
   documents: EventDocument[];
   ownerName: string | null;
   region: string | null;

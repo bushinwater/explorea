@@ -4,5 +4,6 @@ namespace Explorea.API.DTOs.Review
     {
         public int Rating { get; set; }
         public string? Comment { get; set; }
+        public List<string>? ImageUrls { get; set; }
     }
 }

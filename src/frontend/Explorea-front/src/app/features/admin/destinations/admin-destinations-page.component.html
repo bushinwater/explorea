@@ -345,12 +345,18 @@
       </div>
     </div>
 
-    <div class="dest-filter-chips dest-list-mode-tabs">
-      <button class="dest-chip" [class.dest-chip--active]="listMode() === 'active'" (click)="setListMode('active')">
+    <div class="dest-tabs">
+      <button class="dest-tab" [class.dest-tab--active]="listMode() === 'active'" (click)="setListMode('active')">
         {{ ui.t('destinations.tabs.active') }}
+        @if (stats()?.activeCount) {
+          <span class="dest-tab__badge dest-tab__badge--green">{{ compactCount(stats()!.activeCount) }}</span>
+        }
       </button>
-      <button class="dest-chip" [class.dest-chip--active]="listMode() === 'deleted'" (click)="setListMode('deleted')">
+      <button class="dest-tab" [class.dest-tab--active]="listMode() === 'deleted'" (click)="setListMode('deleted')">
         {{ ui.t('destinations.tabs.deleted') }}
+        @if (stats()?.deletedCount) {
+          <span class="dest-tab__badge dest-tab__badge--red">{{ compactCount(stats()!.deletedCount) }}</span>
+        }
       </button>
     </div>
 
@@ -378,7 +384,7 @@
           </thead>
           <tbody>
             @for (dest of destinations(); track dest.id) {
-              <tr class="dest-row" [class.dest-row--selected]="detailsPanelRow()?.id === dest.id" (click)="openDetailsPanel(dest)">
+              <tr class="dest-row" [attr.data-admin-row-id]="dest.id" [class.dest-row--selected]="detailsPanelRow()?.id === dest.id || (isEditModalOpen() && selectedDestination()?.id === dest.id)" (click)="openDetailsPanel(dest)">
                 <!-- Destination name + thumb -->
                 <td class="dest-td">
                   <div class="dest-name-cell">
@@ -659,6 +665,73 @@
           }
         </div>
 
+        <!-- Analytics -->
+        @if (detailsPanelAnalytics(); as analytics) {
+          <div class="ddp-analytics-section">
+            <div class="ddp-analytics-section__head">
+              <h4 class="ddp-section-label">{{ ui.t('destinations.analytics.title') }}</h4>
+              <button type="button" class="ddp-analytics__send" (click)="sendAnalyticsToReports()">
+                <span class="material-icons">assessment</span>
+                {{ ui.t('destinations.analytics.send_to_reports') }}
+              </button>
+            </div>
+
+            <div class="ddp-analytics-chart-wrap">
+              <span class="ddp-analytics-chart__title">{{ ui.t('destinations.analytics.views_30d') }}</span>
+              <div class="ddp-analytics-chart">
+                <canvas #analyticsCanvas></canvas>
+              </div>
+            </div>
+
+            <div class="ddp-analytics-stats">
+              <div class="ddp-analytics-stat">
+                <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.saved_by_users') }}</span>
+                <span class="ddp-analytics-stat__value">{{ compactCount(analytics.savedByUsers) }}</span>
+              </div>
+              <div class="ddp-analytics-stat">
+                <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.planner_users') }}</span>
+                <span class="ddp-analytics-stat__value">{{ compactCount(analytics.plannerByUsers) }}</span>
+              </div>
+              <div class="ddp-analytics-stat">
+                <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.top_planner_month') }}</span>
+                <span class="ddp-analytics-stat__value">{{ plannerMonthLabel(analytics.topPlannerMonth) }}</span>
+                @if (analytics.topPlannerMonthCount) {
+                  <span class="ddp-analytics-stat__hint">{{ analytics.topPlannerMonthCount }} {{ ui.t('destinations.analytics.entries_short') }}</span>
+                }
+              </div>
+            </div>
+
+            <div class="ddp-analytics-top">
+              @for (row of [
+                { label: ui.t('destinations.analytics.top_place'),    child: analytics.topPlace,    icon: 'store' },
+                { label: ui.t('destinations.analytics.top_activity'), child: analytics.topActivity, icon: 'hiking' },
+                { label: ui.t('destinations.analytics.top_event'),    child: analytics.topEvent,    icon: 'event' }
+              ]; track row.label) {
+                <div class="ddp-analytics-top__row">
+                  <span class="ddp-analytics-top__label">
+                    <span class="material-icons">{{ row.icon }}</span>
+                    {{ row.label }}
+                  </span>
+                  @if (row.child) {
+                    <span class="ddp-analytics-top__name">{{ row.child.name }}</span>
+                    <span class="ddp-analytics-top__views">{{ compactCount(row.child.views) }}</span>
+                    <span class="ddp-analytics-top__actions">
+                      <button type="button" class="ddp-analytics-top__btn" (click)="openChildInAdmin(row.child)" [title]="ui.t('owner_reports.actions.open_admin')">
+                        <span class="material-icons">admin_panel_settings</span>
+                      </button>
+                      <button type="button" class="ddp-analytics-top__btn" (click)="openChildInApp(row.child)" [disabled]="!row.child.slug" [title]="ui.t('owner_reports.actions.open_app')">
+                        <span class="material-icons">open_in_new</span>
+                      </button>
+                    </span>
+                  } @else {
+                    <span class="ddp-analytics-top__name ddp-analytics-top__name--empty">—</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
         <!-- Reviews -->
         <div class="ddp-reviews-section">
           <h4 class="ddp-section-label">
@@ -685,6 +758,13 @@
                       <span class="ddp-review-card__author">{{ review.authorName }}</span>
                       <span class="ddp-review-card__date">{{ formatDate(review.createdAt) }}</span>
                     </div>
+                    @if (review.id) {
+                      <button type="button" class="ddp-review-card__open"
+                              (click)="openReviewInAdmin(review.id!)"
+                              [title]="ui.t('reviews.actions.open_in_admin')">
+                        <span class="material-icons">arrow_outward</span>
+                      </button>
+                    }
                   </div>
                   <div class="ddp-review-card__stars">
                     @for (star of starArray(); track star) {
@@ -694,6 +774,21 @@
                   </div>
                   @if (review.comment) {
                     <p class="ddp-review-card__comment">{{ review.comment }}</p>
+                  }
+                  @if (review.imageUrls && review.imageUrls.length > 0) {
+                    <div class="ddp-review-card__images">
+                      @for (url of review.imageUrls.slice(0, 3); track url; let i = $index) {
+                        <span class="ddp-review-card__thumb"
+                              [class.ddp-review-card__thumb--more]="i === 2 && review.imageUrls!.length > 3">
+                          <img [src]="url" alt="" loading="lazy" />
+                          @if (i === 2 && review.imageUrls!.length > 3) {
+                            <span class="ddp-review-card__thumb-more">
+                              <span class="material-icons">add</span>{{ review.imageUrls!.length - 3 }}
+                            </span>
+                          }
+                        </span>
+                      }
+                    </div>
                   }
                 </div>
               }

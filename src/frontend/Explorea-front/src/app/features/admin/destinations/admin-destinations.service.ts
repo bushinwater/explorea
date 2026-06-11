@@ -12,6 +12,7 @@ import {
   DestinationImage,
   DestinationPagedResponse,
   DestinationRow,
+  DestinationAnalytics,
   DestinationStats,
   DestinationStatus,
   InterestTagOption,
@@ -48,6 +49,8 @@ interface ApiDestinationItem {
 
 interface ApiDestinationStats {
   totalViews: number;
+  activeCount: number;
+  deletedCount: number;
   inactiveCount: number;
   addedLast30Days: number;
   mostPopularName: string;
@@ -66,6 +69,10 @@ export class AdminDestinationsService {
         topDestinations: stats.topDestinations ?? [],
       })),
     );
+  }
+
+  getAnalytics(id: string): Observable<DestinationAnalytics> {
+    return this.http.get<DestinationAnalytics>(`/api/admin/destinations/${id}/analytics`);
   }
 
   getDestinations(filters: DestinationFilters): Observable<DestinationPagedResponse> {
@@ -169,6 +176,12 @@ export class AdminDestinationsService {
   createType(name: string): Observable<{ id: number; name: string }> {
     return this.http.post<{ id: number; name: string }>(
       '/api/admin/destinations/types', { name }
+    );
+  }
+
+  getDestinationRowById(id: string): Observable<DestinationRow> {
+    return this.http.get<ApiDestinationItem>(`/api/admin/destinations/${id}`).pipe(
+      map((item) => this.mapToRow(item)),
     );
   }
 

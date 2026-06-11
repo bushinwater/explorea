@@ -1,6 +1,8 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {
+  AdminUserDetails,
+  AdminUserOwnedEntity,
   PagedResponse,
   UpdateAdminUserDto,
   UpsertAdminUserDto,
@@ -98,6 +100,14 @@ export class AdminUserDirectoryService {
 
   deleteUser(id: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/${id}`);
+  }
+
+  getUserDetails(id: string): Observable<AdminUserDetails> {
+    return this.http.get<AdminUserDetails>(`${this.api}/${id}/details`);
+  }
+
+  getUserOwnedEntities(id: string, type: 'place' | 'event'): Observable<AdminUserOwnedEntity[]> {
+    return this.http.get<AdminUserOwnedEntity[]>(`${this.api}/${id}/owned-entities`, { params: { type } });
   }
 }
 

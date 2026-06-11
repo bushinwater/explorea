@@ -17,6 +17,7 @@ import { EventCard } from '../../../shared/components/event-card/event-card';
 import { ImageGallery } from '../../../shared/components/image-gallery/image-gallery';
 import { ReviewCard } from '../../../shared/components/review-card/review-card';
 import { ReviewModal } from '../../../shared/components/review-modal/review-modal';
+import { ReviewsLightbox } from '../../../shared/components/reviews-lightbox/reviews-lightbox';
 import { RatingStats } from '../../../shared/components/rating-stats/rating-stats';
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { PopularityService } from '../../../core/services/popularity.service';
@@ -46,7 +47,7 @@ const LIGHT = {
 @Component({
   selector: 'app-event-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, EventCard, ImageGallery, DetailFooter, ReviewCard, ReviewModal, RatingStats, ReviewsPanel, ShareButton, AddToPlannerModal],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, EventCard, ImageGallery, DetailFooter, ReviewCard, ReviewModal, ReviewsLightbox, RatingStats, ReviewsPanel, ShareButton, AddToPlannerModal],
   templateUrl: './event-detail.html',
   styleUrl: './event-detail.css',
 })
@@ -67,6 +68,16 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   hasReviewed = false;
   reviewFormOpen = false;
   reviewsPanelOpen = false;
+  reviewsLightboxOpen = false;
+  lightboxStartReviewId = '';
+  lightboxStartImageIndex = 0;
+
+  openReviewsLightbox(payload: { reviewId: string; imageIndex: number }): void {
+    this.lightboxStartReviewId = payload.reviewId;
+    this.lightboxStartImageIndex = payload.imageIndex;
+    this.reviewsLightboxOpen = true;
+    this.cdr.detectChanges();
+  }
   currentUserId = '';
   private savedScrollY = 0;
 
@@ -209,21 +220,6 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
   }
 
-  get reviewsAsDto(): ReviewDto[] {
-    return this.event?.reviews.map(r => ({
-      id: r.id,
-      rating: r.rating,
-      comment: r.comment ?? '',
-      createdAt: r.createdAt,
-      user: {
-        id: r.user.id,
-        firstName: r.user.firstName,
-        lastName: r.user.lastName,
-        travelerRank: r.user.travelerRank,
-        profileImageUrl: r.user.profileImageUrl,
-      },
-    })) ?? [];
-  }
 
   openReviewForm(): void {
     if (!this.authService.isLoggedIn()) {
@@ -237,7 +233,7 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.event) return;
     this.event = {
       ...this.event,
-      reviews: [{ id: review.id, rating: review.rating, comment: review.comment ?? null, createdAt: review.createdAt, user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.event.reviews],
+      reviews: [{ id: review.id, rating: review.rating, comment: review.comment ?? null, createdAt: review.createdAt, images: review.images ?? [], user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.event.reviews],
     };
     this.hasReviewed = true;
     this.cdr.detectChanges();
@@ -255,7 +251,7 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     const idx = this.event.reviews.findIndex(r => r.id === review.id);
     if (idx !== -1) {
       const updated = [...this.event.reviews];
-      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment ?? null };
+      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment ?? null, images: review.images ?? [] };
       this.event = { ...this.event, reviews: updated };
       this.cdr.detectChanges();
     }

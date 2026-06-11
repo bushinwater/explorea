@@ -23,5 +23,9 @@ namespace Explorea.Server.Services.Admin.Interfaces
         Task RestoreAsync(Guid id, Guid currentUserId);
 
         Task<AdminUserDirectoryItemDto> SetStatusAsync(Guid id, AdminSetUserStatusDto dto, Guid currentUserId);
+
+        Task<AdminUserDetailsDto?> GetUserDetailsAsync(Guid id, Guid currentUserId);
+
+        Task<List<AdminUserOwnedEntityDto>> GetUserOwnedEntitiesAsync(Guid userId, string entityType, Guid currentUserId);
     }
 }

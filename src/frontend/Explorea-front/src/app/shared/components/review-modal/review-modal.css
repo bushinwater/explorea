@@ -148,6 +148,123 @@
   text-align: right;
 }
 
+.rm-field__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rm-field__hint {
+  font-size: 11px;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}
+
+.rm-field__hint--block {
+  display: block;
+  margin-top: 2px;
+}
+
+/* IMAGE UPLOAD */
+
+.rm-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.rm-image-thumb {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-border);
+  border: 1px solid var(--color-border);
+}
+
+.rm-image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.rm-image-thumb__overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+}
+
+.rm-image-thumb__overlay--error { background: rgba(239, 68, 68, 0.65); }
+
+.rm-image-thumb__spin {
+  font-size: 22px;
+  animation: rm-spin 0.9s linear infinite;
+}
+
+@keyframes rm-spin {
+  to { transform: rotate(360deg); }
+}
+
+.rm-image-thumb__remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.rm-image-thumb__remove .material-icons { font-size: 14px; }
+
+.rm-image-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  aspect-ratio: 1 / 1;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  font-family: inherit;
+}
+
+.rm-image-add:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.rm-image-add .material-icons { font-size: 22px; }
+
+.rm-image-add__label {
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+}
+
+.rm-image-input { display: none; }
+
+.rm-btn__spin {
+  font-size: 16px;
+  animation: rm-spin 0.9s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
 /* ERROR */
 
 .rm-error {

@@ -12,6 +12,7 @@ namespace Explorea.API.DTOs.Review
         public string? EntitySlug { get; set; }
         public string? OwnerReply { get; set; }
         public DateTimeOffset? OwnerReplyAt { get; set; }
+        public List<ReviewImageDto> Images { get; set; } = new();
     }
 
     public class ReviewUserDto
@@ -21,5 +22,12 @@ namespace Explorea.API.DTOs.Review
         public string LastName { get; set; } = null!;
         public string TravelerRank { get; set; } = null!;
         public string? ProfileImageUrl { get; set; }
+    }
+
+    public class ReviewImageDto
+    {
+        public Guid Id { get; set; }
+        public string ImageUrl { get; set; } = null!;
+        public int SortOrder { get; set; }
     }
 }

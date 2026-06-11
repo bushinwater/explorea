@@ -188,7 +188,7 @@ namespace Explorea.Server.Services.Admin
             var totalCount = await query.CountAsync();
             var activeCount = await query.CountAsync(p => p.ApprovalStatus == "approved");
             var pendingCount = await query.CountAsync(p => p.ApprovalStatus == "pending");
-            var inactiveCount = await query.CountAsync(p => p.ApprovalStatus == "inactive");
+            var inactiveCount = await query.CountAsync(p => p.ApprovalStatus == "rejected");
             var addedLast30Days = await query.CountAsync(p => p.CreatedAt >= thirtyDaysAgo);
 
             var topPlaces = await query
@@ -258,7 +258,9 @@ namespace Explorea.Server.Services.Admin
                 throw new UnauthorizedAccessException("Access denied.");
             }
 
-            return MapToDetailDto(place);
+            var result = MapToDetailDto(place);
+            result.Views = await _context.PopularityLogs.CountAsync(l => l.EntityType == "place" && l.Source == "click" && l.EntityId == id);
+            return result;
         }
 
         public async Task<AdminPlaceDetailDto> CreateAsync(AdminCreatePlaceDto dto, Guid createdBy)
@@ -884,9 +886,7 @@ namespace Explorea.Server.Services.Admin
             Region = p.City?.Region?.Name,
             Destination = p.Destination?.Name,
             Country = p.Country?.Name,
-            ExtraFilters = p.ExtraFilters != null
-                ? JsonSerializer.Deserialize<Dictionary<string, string>>(p.ExtraFilters)
-                : null,
+            ExtraFilters = JsonbDictionaryHelper.ParseStringDictionary(p.ExtraFilters),
             CreatedBy = p.CreatedBy,
             Images = p.Images
                 .OrderBy(i => i.SortOrder)

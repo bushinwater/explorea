@@ -5,6 +5,7 @@ import {
   DeleteReviewRequest,
   ReviewFilters,
   ReviewPagedResponse,
+  ReviewRow,
   ReviewStats,
 } from './admin-reviews.models';
 
@@ -95,5 +96,9 @@ export class AdminReviewsService {
       `/api/reviews/${id}/reply`,
       { reply: replyText },
     );
+  }
+
+  getById(id: string): Observable<ReviewRow> {
+    return this.http.get<ReviewRow>(`${this.api}/${id}`);
   }
 }

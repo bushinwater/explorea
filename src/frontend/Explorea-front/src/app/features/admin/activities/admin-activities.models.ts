@@ -29,6 +29,7 @@ export interface ActivityRow {
   startPoint: string | null;
   avgRating: number;
   popularity: number;
+  views: number;
   isFeatured: boolean;
   isActive: boolean;
   previewImageUrl: string | null;
@@ -37,12 +38,31 @@ export interface ActivityRow {
   deletedAt?: string | null;
 }
 
+export interface ActivityAnalyticsTimelinePoint {
+  date: string;
+  value: number;
+}
+
+export interface ActivityAnalytics {
+  totalViews: number;
+  viewsLast30: number;
+  viewsTimeline: ActivityAnalyticsTimelinePoint[];
+  savedByUsers: number;
+  plannerByUsers: number;
+  topPlannerMonth: string | null;
+  topPlannerMonthCount: number;
+  reviewCount: number;
+  avgRating: number;
+}
+
 export interface ActivityReview {
+  id?: string;
   authorName: string;
   authorAvatarUrl: string | null;
   rating: number;
   comment: string | null;
   createdAt: string;
+  imageUrls?: string[];
 }
 
 export interface ActivityImageItem {
@@ -70,6 +90,8 @@ export interface ActivityDetail extends ActivityRow {
 
 export interface ActivityStats {
   totalActivities: number;
+  activeCount: number;
+  deletedCount: number;
   mostPopularName: string;
   mostPopularViews: number;
   inactiveCount: number;

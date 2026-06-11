@@ -276,7 +276,9 @@
           </thead>
           <tbody>
             @for (user of pagedUsers(); track user.id) {
-              <tr class="user-row">
+              <tr class="user-row user-row--clickable"
+                  [class.user-row--selected]="detailsPanelUser()?.id === user.id"
+                  (click)="openDetailsPanel(user, $event)">
                 <td class="user-td">
                   <div class="user-identity">
                     <div class="user-avatar">
@@ -426,4 +428,322 @@
     (cancel)="closeRestoreDialog()"
     (confirm)="restoreUser()"
   />
+}
+
+@if (detailsPanelUser(); as panelUser) {
+  <div class="udp-backdrop" [class.udp-backdrop--closing]="isDetailsPanelClosing()" (click)="closeDetailsPanel()"></div>
+  <aside class="udp-panel" [class.udp-panel--closing]="isDetailsPanelClosing()" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <header class="udp-header">
+      <div class="udp-header__avatar">
+        @if (panelUser.avatarUrl && !brokenAvatarIds.has(panelUser.id)) {
+          <img [src]="panelUser.avatarUrl" [alt]="initials(panelUser)" />
+        } @else {
+          {{ initials(panelUser) }}
+        }
+      </div>
+      <div class="udp-header__title">
+        <h2>{{ panelUser.firstName }} {{ panelUser.lastName }}</h2>
+        <p>{{ panelUser.email }}</p>
+        <div class="udp-header__chips">
+          <span class="role-pill" [class]="roleClass(panelUser.role)">{{ roleLabel(panelUser.role) }}</span>
+          <app-status-badge [status]="displayStatus(panelUser)" />
+        </div>
+      </div>
+      <button class="udp-close" type="button" (click)="closeDetailsPanel()">
+        <span class="material-icons">close</span>
+      </button>
+    </header>
+
+    @if (isDetailsLoading()) {
+      <div class="udp-loading"><span class="material-icons spin">sync</span></div>
+    } @else if (detailsPanelData(); as d) {
+      <div class="udp-body">
+        <section class="udp-section">
+          <h3>{{ ui.t('users.details.basic') }}</h3>
+          <div class="udp-grid">
+            <div><span class="udp-label">{{ ui.t('users.details.gender') }}</span><span class="udp-value">{{ genderLabel(d.gender) }}</span></div>
+            <div><span class="udp-label">{{ ui.t('users.details.age') }}</span><span class="udp-value">{{ d.age ?? ui.t('users.details.placeholder_dash') }}</span></div>
+            <div><span class="udp-label">{{ ui.t('users.details.dob') }}</span><span class="udp-value">{{ d.dateOfBirth ? (d.dateOfBirth | date:'d. MMM yyyy') : ui.t('users.details.placeholder_dash') }}</span></div>
+            <div><span class="udp-label">{{ ui.t('users.details.rank') }}</span><span class="udp-value">{{ d.travelerRank }}</span></div>
+            <div><span class="udp-label">{{ ui.t('users.details.member_since') }}</span><span class="udp-value">{{ d.memberSince | date:'d. MMM yyyy' }}</span></div>
+            <div><span class="udp-label">{{ ui.t('users.details.last_login') }}</span><span class="udp-value">{{ d.lastLoginAt ? (d.lastLoginAt | date:'d. MMM yyyy HH:mm') : ui.t('users.details.placeholder_dash') }}</span></div>
+            <div><span class="udp-label">{{ ui.t('users.details.email_verified') }}</span><span class="udp-value">{{ d.emailVerifiedAt ? (d.emailVerifiedAt | date:'d. MMM yyyy') : ui.t('users.details.email_not_verified') }}</span></div>
+            <div><span class="udp-label">{{ ui.t('users.details.planner_total') }}</span><span class="udp-value">{{ d.plannerItemsTotal }}</span></div>
+          </div>
+        </section>
+
+        @if (d.bio) {
+          <section class="udp-section">
+            <h3>{{ ui.t('users.details.bio') }}</h3>
+            <p class="udp-bio">{{ d.bio }}</p>
+          </section>
+        }
+
+        @if (d.location) {
+          <section class="udp-section">
+            <h3>{{ ui.t('users.details.location') }}</h3>
+            <div class="udp-location">
+              <span class="material-icons">location_on</span>
+              <span>
+                {{ d.location.cityName ?? '?' }}@if (d.location.regionName) { , {{ d.location.regionName }} }@if (d.location.countryName) { , {{ d.location.countryName }} }
+              </span>
+            </div>
+            @if (d.location.latitude !== null && d.location.longitude !== null) {
+              <a class="udp-map-link" target="_blank" rel="noopener"
+                 [href]="'https://www.google.com/maps?q=' + d.location.latitude + ',' + d.location.longitude">
+                <span class="material-icons">map</span>
+                {{ ui.t('users.details.location_open_map') }} ({{ d.location.latitude | number:'1.4-4' }}, {{ d.location.longitude | number:'1.4-4' }})
+              </a>
+            }
+          </section>
+        }
+
+        @if (d.managedRegion) {
+          <section class="udp-section">
+            <h3>{{ ui.t('users.details.managed_region') }}</h3>
+            <p class="udp-bio">{{ d.managedRegion }}</p>
+          </section>
+        }
+
+        @if (d.selectedInterests.length > 0) {
+          <section class="udp-section">
+            <h3>{{ ui.t('users.details.interests_selected') }}</h3>
+            <div class="udp-tags">
+              @for (i of d.selectedInterests; track i.id) {
+                <span class="udp-tag">
+                  @if (i.icon) { <span class="material-icons">{{ i.icon }}</span> }
+                  {{ i.name }}
+                </span>
+              }
+            </div>
+          </section>
+        }
+
+        @if (d.topInterests.length > 0) {
+          <section class="udp-section">
+            <h3>{{ ui.t('users.details.interests_top') }}</h3>
+            <div class="udp-tags">
+              @for (i of d.topInterests; track i.id) {
+                <span class="udp-tag udp-tag--score">
+                  @if (i.icon) { <span class="material-icons">{{ i.icon }}</span> }
+                  {{ i.name }} <strong>{{ i.score }}</strong>
+                </span>
+              }
+            </div>
+          </section>
+        }
+
+        @if (d.recentClicks.length > 0) {
+          <section class="udp-section">
+            <h3>{{ ui.t('users.details.recent_clicks') }}</h3>
+            <div class="udp-list">
+              @for (c of d.recentClicks; track c.at) {
+                @if (entityTouristRoute(c.entityType, c.entitySlug); as link) {
+                  <a class="udp-list-row" [href]="link" target="_blank" rel="noopener">
+                    <span class="material-icons">{{ entityIcon(c.entityType) }}</span>
+                    <span class="udp-list-row__name">{{ c.entityName ?? c.entityId }}</span>
+                    <span class="udp-list-row__time">{{ formatRelative(c.at) }}</span>
+                  </a>
+                } @else {
+                  <div class="udp-list-row">
+                    <span class="material-icons">{{ entityIcon(c.entityType) }}</span>
+                    <span class="udp-list-row__name">{{ c.entityName ?? c.entityId }}</span>
+                    <span class="udp-list-row__time">{{ formatRelative(c.at) }}</span>
+                  </div>
+                }
+              }
+            </div>
+          </section>
+        }
+
+        @if (d.savedItems.length > 0) {
+          <section class="udp-section">
+            <h3>{{ ui.t('users.details.saved') }} <span class="udp-count">({{ d.savedItemsTotal }})</span></h3>
+            <div class="udp-saved-grid">
+              @for (s of d.savedItems; track s.entityId) {
+                <div class="udp-saved-card">
+                  <div class="udp-saved-card__img">
+                    @if (s.previewImageUrl) {
+                      <img [src]="s.previewImageUrl" [alt]="s.entityName ?? ''" />
+                    } @else {
+                      <span class="material-icons">{{ entityIcon(s.entityType) }}</span>
+                    }
+                  </div>
+                  <span class="udp-saved-card__name">{{ s.entityName ?? '—' }}</span>
+                  <div class="udp-saved-card__actions">
+                    <button type="button" class="udp-link-btn" (click)="openEntityInAdmin(s.entityType, s.entityId, s.entityName)" [title]="ui.t('users.details.open_in_admin')">
+                      <span class="material-icons">admin_panel_settings</span>
+                    </button>
+                    @if (entityTouristRoute(s.entityType, s.entitySlug); as link) {
+                      <a class="udp-link-btn" [href]="link" target="_blank" rel="noopener" [title]="ui.t('users.details.open_in_app')">
+                        <span class="material-icons">open_in_new</span>
+                      </a>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        @if (d.reviews.length > 0) {
+          <section class="udp-section">
+            <h3>{{ ui.t('users.details.reviews') }} <span class="udp-count">({{ d.reviewsTotal }})</span></h3>
+            <div class="udp-list">
+              @for (r of d.reviews; track r.id) {
+                <button type="button" class="udp-review udp-review--clickable" (click)="openReviewInAdmin(r.id)">
+                  <div class="udp-review__head">
+                    <span class="material-icons">{{ entityIcon(r.entityType) }}</span>
+                    <span class="udp-review__name">{{ r.entityName ?? '—' }}</span>
+                    <span class="udp-review__stars">
+                      @for (n of [1,2,3,4,5]; track n) {
+                        <span class="material-icons" [class.udp-review__star--filled]="n <= r.rating">{{ n <= r.rating ? 'star' : 'star_border' }}</span>
+                      }
+                    </span>
+                  </div>
+                  @if (r.comment) { <p class="udp-review__text">{{ r.comment }}</p> }
+                  <span class="udp-review__date">{{ r.createdAt | date:'d. MMM yyyy' }}</span>
+                </button>
+              }
+            </div>
+          </section>
+        }
+
+        @if (d.recentAdminActions.length > 0) {
+          <section class="udp-section">
+            <h3>{{ ui.t('users.details.admin_actions') }}</h3>
+            <div class="udp-list">
+              @for (a of d.recentAdminActions; track a.at) {
+                <div class="udp-list-row udp-list-row--block">
+                  <span class="material-icons">history</span>
+                  <span class="udp-list-row__name">{{ a.description }}</span>
+                  <span class="udp-list-row__time">{{ formatRelative(a.at) }}</span>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        @if (panelUser.role === 'place_owner' && (d.ownedPlacesTotal > 0 || d.ownedEventsTotal > 0)) {
+          <section class="udp-section">
+            <div class="udp-section__head-row">
+              <h3>{{ ui.t('users.details.owned') }} <span class="udp-count">({{ ui.t('users.details.owned_counts', { places: d.ownedPlacesTotal, events: d.ownedEventsTotal }) }})</span></h3>
+              @if (d.ownedPlacesTotal > 5 || d.ownedEventsTotal > 5) {
+                <button type="button" class="udp-link-text" (click)="openAllOwned('place')">
+                  {{ ui.t('users.details.open_all') }}
+                  <span class="material-icons">arrow_forward</span>
+                </button>
+              }
+            </div>
+
+            @if (d.ownedPlaces.length > 0) {
+              <h4 class="udp-subhead">{{ ui.t('users.details.places') }}</h4>
+              <div class="udp-saved-grid">
+                @for (p of d.ownedPlaces; track p.id) {
+                  <div class="udp-saved-card">
+                    <div class="udp-saved-card__img">
+                      @if (p.previewImageUrl) {
+                        <img [src]="p.previewImageUrl" [alt]="p.name" />
+                      } @else {
+                        <span class="material-icons">store</span>
+                      }
+                    </div>
+                    <span class="udp-saved-card__name">{{ p.name }}</span>
+                    <div class="udp-saved-card__actions">
+                      <button type="button" class="udp-link-btn" (click)="openEntityInAdmin('place', p.id, p.name)" [title]="ui.t('users.details.open_in_admin')">
+                        <span class="material-icons">admin_panel_settings</span>
+                      </button>
+                      @if (entityTouristRoute('place', p.slug); as link) {
+                        <a class="udp-link-btn" [href]="link" target="_blank" rel="noopener" [title]="ui.t('users.details.open_in_app')">
+                          <span class="material-icons">open_in_new</span>
+                        </a>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (d.ownedEvents.length > 0) {
+              <h4 class="udp-subhead">{{ ui.t('users.details.events') }}</h4>
+              <div class="udp-saved-grid">
+                @for (e of d.ownedEvents; track e.id) {
+                  <div class="udp-saved-card">
+                    <div class="udp-saved-card__img">
+                      @if (e.previewImageUrl) {
+                        <img [src]="e.previewImageUrl" [alt]="e.name" />
+                      } @else {
+                        <span class="material-icons">event</span>
+                      }
+                    </div>
+                    <span class="udp-saved-card__name">{{ e.name }}</span>
+                    <div class="udp-saved-card__actions">
+                      <button type="button" class="udp-link-btn" (click)="openEntityInAdmin('event', e.id, e.name)" [title]="ui.t('users.details.open_in_admin')">
+                        <span class="material-icons">admin_panel_settings</span>
+                      </button>
+                      @if (entityTouristRoute('event', e.slug); as link) {
+                        <a class="udp-link-btn" [href]="link" target="_blank" rel="noopener" [title]="ui.t('users.details.open_in_app')">
+                          <span class="material-icons">open_in_new</span>
+                        </a>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+        }
+      </div>
+    }
+  </aside>
+
+  @if (ownedPopupOpen()) {
+    <div class="udp-popup-backdrop" (click)="closeOwnedPopup()"></div>
+    <div class="udp-popup" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <header class="udp-popup__header">
+        <h2>{{ ui.t('users.details.popup_title', { name: panelUser.firstName + ' ' + panelUser.lastName }) }}</h2>
+        <button type="button" class="udp-close" (click)="closeOwnedPopup()">
+          <span class="material-icons">close</span>
+        </button>
+      </header>
+      <div class="udp-popup__tabs">
+        <button type="button" class="udp-popup__tab" [class.udp-popup__tab--active]="ownedPopupTab() === 'place'" (click)="ownedPopupTab.set('place')">
+          {{ ui.t('users.details.places') }} ({{ ownedAllPlaces().length }})
+        </button>
+        <button type="button" class="udp-popup__tab" [class.udp-popup__tab--active]="ownedPopupTab() === 'event'" (click)="ownedPopupTab.set('event')">
+          {{ ui.t('users.details.events') }} ({{ ownedAllEvents().length }})
+        </button>
+      </div>
+      <div class="udp-popup__body">
+        @if (ownedLoading()) {
+          <div class="udp-loading"><span class="material-icons spin">sync</span></div>
+        } @else {
+          <div class="udp-saved-grid">
+            @for (item of (ownedPopupTab() === 'place' ? ownedAllPlaces() : ownedAllEvents()); track item.id) {
+              <div class="udp-saved-card">
+                <div class="udp-saved-card__img">
+                  @if (item.previewImageUrl) {
+                    <img [src]="item.previewImageUrl" [alt]="item.name" />
+                  } @else {
+                    <span class="material-icons">{{ ownedPopupTab() === 'place' ? 'store' : 'event' }}</span>
+                  }
+                </div>
+                <span class="udp-saved-card__name">{{ item.name }}</span>
+                <div class="udp-saved-card__actions">
+                  <button type="button" class="udp-link-btn" (click)="openEntityInAdmin(item.entityType, item.id, item.name); closeOwnedPopup()" [title]="ui.t('users.details.open_in_admin')">
+                    <span class="material-icons">admin_panel_settings</span>
+                  </button>
+                  @if (entityTouristRoute(item.entityType, item.slug); as link) {
+                    <a class="udp-link-btn" [href]="link" target="_blank" rel="noopener" [title]="ui.t('users.details.open_in_app')">
+                      <span class="material-icons">open_in_new</span>
+                    </a>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
 }

@@ -1055,15 +1055,7 @@ namespace Explorea.Server.Services.Admin
             if (requested.Count == 0) return true;
             if (string.IsNullOrWhiteSpace(ev.ExtraFilters)) return false;
 
-            Dictionary<string, string>? stored;
-            try
-            {
-                stored = JsonSerializer.Deserialize<Dictionary<string, string>>(ev.ExtraFilters);
-            }
-            catch (JsonException)
-            {
-                return false;
-            }
+            var stored = JsonbDictionaryHelper.ParseStringDictionary(ev.ExtraFilters);
 
             if (stored == null) return false;
 
@@ -1230,6 +1222,7 @@ namespace Explorea.Server.Services.Admin
                 TicketUrl      = e.TicketUrl,
                 AvgRating      = e.AvgRating,
                 Popularity     = e.Popularity,
+                Views          = await _db.PopularityLogs.CountAsync(l => l.EntityType == "event" && l.Source == "click" && l.EntityId == e.Id),
                 IsFeatured     = e.IsFeatured,
                 RecursAnnually = e.RecursAnnually,
                 Images         = e.Images.OrderBy(i => i.SortOrder)
@@ -1237,9 +1230,7 @@ namespace Explorea.Server.Services.Admin
                                     .ToList(),
                 CreatedAt      = e.CreatedAt,
                 UpdatedAt      = e.UpdatedAt,
-                ExtraFilters   = string.IsNullOrEmpty(e.ExtraFilters)
-                                   ? null
-                                   : JsonSerializer.Deserialize<Dictionary<string, string>>(e.ExtraFilters)
+                ExtraFilters   = JsonbDictionaryHelper.ParseStringDictionary(e.ExtraFilters)
             };
         }
 

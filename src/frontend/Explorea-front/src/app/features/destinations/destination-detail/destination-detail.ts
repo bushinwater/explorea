@@ -41,6 +41,7 @@ import { Sidebar } from '../../../layout/shell/sidebar/sidebar';
 import { BottomNav } from '../../../shared/bottom-nav/bottom-nav';
 import { ReviewCard } from '../../../shared/components/review-card/review-card';
 import { ReviewModal } from '../../../shared/components/review-modal/review-modal';
+import { ReviewsLightbox } from '../../../shared/components/reviews-lightbox/reviews-lightbox';
 import { DetailFooter } from '../../../shared/components/detail-footer/detail-footer';
 import { RatingStats } from '../../../shared/components/rating-stats/rating-stats';
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
@@ -54,7 +55,7 @@ type TabItem = PlaceCard | EventCard | ActivityCard;
 @Component({
   selector: 'app-destination-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel, ShareButton, AddToPlannerModal],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, ReviewsLightbox, DetailFooter, RatingStats, ReviewsPanel, ShareButton, AddToPlannerModal],
   templateUrl: './destination-detail.html',
   styleUrls: ['./destination-detail.css']
 })
@@ -87,6 +88,17 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
   isLoading = true;
   error: string | null = null;
   notFound = false;
+
+  reviewsLightboxOpen = false;
+  lightboxStartReviewId = '';
+  lightboxStartImageIndex = 0;
+
+  openReviewsLightbox(payload: { reviewId: string; imageIndex: number }): void {
+    this.lightboxStartReviewId = payload.reviewId;
+    this.lightboxStartImageIndex = payload.imageIndex;
+    this.reviewsLightboxOpen = true;
+    this.cdr.detectChanges();
+  }
   selectedTab: DetailTab = 'places';
   descriptionExpanded = false;
 
@@ -307,7 +319,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
 
   onReviewSubmitted(review: ReviewDto): void {
     if (!this.destination) return;
-    const newReviews = [{ id: review.id, rating: review.rating, comment: review.comment ?? '', createdAt: review.createdAt, user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.destination.reviews];
+    const newReviews = [{ id: review.id, rating: review.rating, comment: review.comment ?? '', createdAt: review.createdAt, images: review.images ?? [], user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.destination.reviews];
     this.destination.reviews = newReviews;
     this.destination.avgRating = this.calcAvg(newReviews);
     this.hasReviewed = true;
@@ -327,7 +339,7 @@ export class DestinationDetailComponent implements OnInit, AfterViewInit, OnDest
     const idx = this.destination.reviews.findIndex((r: any) => r.id === review.id);
     if (idx !== -1) {
       const updated = [...this.destination.reviews];
-      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment };
+      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment, images: review.images ?? [] };
       this.destination.reviews = updated;
       this.destination.avgRating = this.calcAvg(updated);
       this.cdr.detectChanges();

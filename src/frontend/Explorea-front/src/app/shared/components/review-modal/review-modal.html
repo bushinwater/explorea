@@ -47,6 +47,50 @@
           <span class="rm-field__count">{{ comment.length }} / 1000</span>
         </div>
 
+        <div class="rm-field">
+          <label class="rm-field__label">
+            {{ 'REVIEW_MODAL.IMAGES_LABEL' | translate }}
+            <span class="rm-field__hint">{{ images.length }}/{{ maxImages }}</span>
+          </label>
+
+          <div class="rm-images">
+            <div class="rm-image-thumb" *ngFor="let img of images; let i = index">
+              <img [src]="img.previewUrl" alt="" />
+              <div class="rm-image-thumb__overlay" *ngIf="img.uploading">
+                <span class="material-icons rm-image-thumb__spin">sync</span>
+              </div>
+              <div class="rm-image-thumb__overlay rm-image-thumb__overlay--error" *ngIf="img.error">
+                <span class="material-icons">error_outline</span>
+              </div>
+              <button type="button" class="rm-image-thumb__remove" (click)="removeImage(i)" [attr.aria-label]="'REVIEW_MODAL.IMAGE_REMOVE' | translate">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+
+            <button
+              *ngIf="images.length < maxImages"
+              type="button"
+              class="rm-image-add"
+              (click)="triggerFilePicker()"
+            >
+              <span class="material-icons">add_a_photo</span>
+              <span class="rm-image-add__label">{{ 'REVIEW_MODAL.ADD_PHOTO' | translate }}</span>
+            </button>
+          </div>
+
+          <input
+            #fileInput
+            type="file"
+            class="rm-image-input"
+            accept="image/*"
+            capture="environment"
+            multiple
+            (change)="onFilesSelected($event)"
+          />
+
+          <span class="rm-field__hint rm-field__hint--block">{{ 'REVIEW_MODAL.IMAGES_RULES' | translate }}</span>
+        </div>
+
         <p class="rm-error" *ngIf="error">{{ error }}</p>
 
       </div>
@@ -56,9 +100,10 @@
           {{ 'REVIEW_MODAL.CANCEL' | translate }}
         </button>
         <button class="rm-btn rm-btn--primary" type="button"
-          [disabled]="rating === 0 || submitting"
+          [disabled]="!canSubmit"
           (click)="submit()">
-          {{ 'REVIEW_MODAL.SUBMIT' | translate }}
+          <span *ngIf="hasUploads" class="material-icons rm-btn__spin">sync</span>
+          {{ hasUploads ? ('REVIEW_MODAL.UPLOADING' | translate) : ('REVIEW_MODAL.SUBMIT' | translate) }}
         </button>
       </div>
 

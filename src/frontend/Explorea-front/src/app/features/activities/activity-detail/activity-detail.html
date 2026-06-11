@@ -247,7 +247,8 @@
                   [review]="$any(review)"
                   [currentUserId]="currentUserId"
                   (deleted)="onReviewDeleted($event)"
-                  (updated)="onReviewUpdated($event)" />
+                  (updated)="onReviewUpdated($event)"
+                  (imageClicked)="openReviewsLightbox($event)" />
               </div>
 
               <app-rating-stats
@@ -377,7 +378,16 @@
     [currentUserId]="currentUserId"
     (closed)="closeShowAll()"
     (deleted)="onReviewDeleted($event)"
-    (updated)="onReviewUpdated($event)" />
+    (updated)="onReviewUpdated($event)"
+    (imageClicked)="openReviewsLightbox($event)" />
+
+  <app-reviews-lightbox
+    *ngIf="activity"
+    [isOpen]="reviewsLightboxOpen"
+    [reviews]="$any(activity.reviews)"
+    [startReviewId]="lightboxStartReviewId"
+    [startImageIndex]="lightboxStartImageIndex"
+    (closed)="reviewsLightboxOpen = false" />
 
   <!-- REVIEW MODAL -->
   <app-review-modal

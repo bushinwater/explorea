@@ -313,7 +313,8 @@
                     [review]="$any(review)"
                     [currentUserId]="currentUserId"
                     (deleted)="onReviewDeleted($event)"
-                    (updated)="onReviewUpdated($event)" />
+                    (updated)="onReviewUpdated($event)"
+                    (imageClicked)="openReviewsLightbox($event)" />
                 </div>
 
                 <app-rating-stats [avgRating]="destination.avgRating" [reviews]="destination.reviews" />
@@ -418,7 +419,15 @@
         [currentUserId]="currentUserId"
         (closed)="closeShowAll()"
         (deleted)="onReviewDeleted($event)"
-        (updated)="onReviewUpdated($event)" />
+        (updated)="onReviewUpdated($event)"
+        (imageClicked)="openReviewsLightbox($event)" />
+
+      <app-reviews-lightbox
+        [isOpen]="reviewsLightboxOpen"
+        [reviews]="$any(destination.reviews)"
+        [startReviewId]="lightboxStartReviewId"
+        [startImageIndex]="lightboxStartImageIndex"
+        (closed)="reviewsLightboxOpen = false" />
 
       <!-- REVIEW MODAL -->
       <app-review-modal

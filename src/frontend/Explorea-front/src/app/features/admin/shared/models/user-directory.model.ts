@@ -73,3 +73,95 @@ export interface UserPermissionContext {
   canEditUsers: boolean;
   canDeleteUsers: boolean;
 }
+
+export interface AdminUserLocation {
+  cityName: string | null;
+  regionName: string | null;
+  countryName: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+export interface AdminUserInterest {
+  id: number;
+  name: string;
+  icon: string | null;
+  score: number | null;
+}
+
+export interface AdminUserActivityItem {
+  entityType: string;
+  entityId: string;
+  entityName: string | null;
+  entitySlug: string | null;
+  at: string;
+}
+
+export interface AdminUserSavedItem {
+  entityType: string;
+  entityId: string;
+  entityName: string | null;
+  entitySlug: string | null;
+  previewImageUrl: string | null;
+  savedAt: string;
+}
+
+export interface AdminUserReview {
+  id: string;
+  entityType: string;
+  entityId: string;
+  entityName: string | null;
+  entitySlug: string | null;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
+export interface AdminUserAdminAction {
+  type: string;
+  description: string;
+  at: string;
+}
+
+export interface AdminUserOwnedEntity {
+  id: string;
+  entityType: string;
+  name: string;
+  slug: string | null;
+  previewImageUrl: string | null;
+  status: string | null;
+  createdAt: string;
+}
+
+export interface AdminUserDetails {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  status: string;
+  travelerRank: string;
+  avatarUrl: string | null;
+  bio: string | null;
+  gender: string | null;
+  dateOfBirth: string | null;
+  age: number | null;
+  memberSince: string;
+  lastLoginAt: string | null;
+  emailVerifiedAt: string | null;
+  plannerItemsTotal: number;
+  location: AdminUserLocation | null;
+  managedRegion: string | null;
+  selectedInterests: AdminUserInterest[];
+  topInterests: AdminUserInterest[];
+  recentClicks: AdminUserActivityItem[];
+  savedItems: AdminUserSavedItem[];
+  savedItemsTotal: number;
+  reviews: AdminUserReview[];
+  reviewsTotal: number;
+  recentAdminActions: AdminUserAdminAction[];
+  ownedPlaces: AdminUserOwnedEntity[];
+  ownedPlacesTotal: number;
+  ownedEvents: AdminUserOwnedEntity[];
+  ownedEventsTotal: number;
+}

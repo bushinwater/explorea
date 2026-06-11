@@ -17,6 +17,7 @@ import { ReviewService } from '../../../core/services/review.service';
 import { ReviewDto } from '../../../core/models/home.model';
 import { ReviewCard } from '../../../shared/components/review-card/review-card';
 import { ReviewModal } from '../../../shared/components/review-modal/review-modal';
+import { ReviewsLightbox } from '../../../shared/components/reviews-lightbox/reviews-lightbox';
 import { DetailFooter } from '../../../shared/components/detail-footer/detail-footer';
 import { RatingStats } from '../../../shared/components/rating-stats/rating-stats';
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
@@ -50,7 +51,7 @@ const LIGHT = {
 @Component({
   selector: 'app-activity-detail',
   standalone: true,
-  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, DetailFooter, RatingStats, ReviewsPanel, ShareButton, AddToPlannerModal],
+  imports: [CommonModule, NgStyle, RouterModule, TranslateModule, Sidebar, BottomNav, ReviewCard, ReviewModal, ReviewsLightbox, DetailFooter, RatingStats, ReviewsPanel, ShareButton, AddToPlannerModal],
   templateUrl: './activity-detail.html',
   styleUrl: './activity-detail.css',
 })
@@ -91,6 +92,16 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
   showAllOpen = false;
   showAllMode: 'similar' | 'reviews' = 'similar';
   reviewsPanelOpen = false;
+  reviewsLightboxOpen = false;
+  lightboxStartReviewId = '';
+  lightboxStartImageIndex = 0;
+
+  openReviewsLightbox(payload: { reviewId: string; imageIndex: number }): void {
+    this.lightboxStartReviewId = payload.reviewId;
+    this.lightboxStartImageIndex = payload.imageIndex;
+    this.reviewsLightboxOpen = true;
+    this.cdr.detectChanges();
+  }
   private savedScrollY = 0;
 
   // Review form
@@ -436,7 +447,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
 
   onReviewSubmitted(review: ReviewDto): void {
     if (!this.activity) return;
-    const newReviews = [{ id: review.id, rating: review.rating, comment: review.comment, createdAt: review.createdAt, user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.activity.reviews];
+    const newReviews = [{ id: review.id, rating: review.rating, comment: review.comment, createdAt: review.createdAt, images: review.images ?? [], user: { id: review.user.id, firstName: review.user.firstName, lastName: review.user.lastName, travelerRank: review.user.travelerRank, profileImageUrl: review.user.profileImageUrl ?? null } }, ...this.activity.reviews];
     this.activity.reviews = newReviews;
     this.activity.avgRating = this.calcAvg(newReviews);
     this.hasReviewed = true;
@@ -456,7 +467,7 @@ export class ActivityDetailComponent implements OnInit, AfterViewInit, OnDestroy
     const idx = this.activity.reviews.findIndex(r => r.id === review.id);
     if (idx !== -1) {
       const updated = [...this.activity.reviews];
-      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment };
+      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment, images: review.images ?? [] };
       this.activity.reviews = updated;
       this.activity.avgRating = this.calcAvg(updated);
       this.cdr.detectChanges();

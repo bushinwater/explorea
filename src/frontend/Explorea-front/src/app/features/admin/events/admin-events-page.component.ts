@@ -1,9 +1,11 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   HostListener,
   OnDestroy,
   OnInit,
+  ViewChild,
   computed,
   signal,
 } from '@angular/core';
@@ -12,6 +14,12 @@ import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { DashboardAuthService } from '../core/services/dashboard-auth.service';
+import { formatCompactCount } from '../core/utils/compact-number.utils';
+import { appendToReportsQueue } from '../core/utils/reports-queue.utils';
+import { Chart, registerables } from 'chart.js';
+import type { ReportQueueItem } from '../reports/admin-reports.models';
+
+Chart.register(...registerables);
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { effect, untracked } from '@angular/core';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
@@ -28,6 +36,7 @@ import {
   EventType,
   EventsTab,
   InterestTagOption,
+  EventAnalytics,
   ReviewItem,
 } from './admin-events.models';
 import { AdminEventsService } from './admin-events.service';
@@ -110,6 +119,9 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   protected readonly descriptionExpanded = signal(false);
   protected readonly detailsInterests = signal<InterestTagOption[]>([]);
   protected readonly detailsReviews   = signal<ReviewItem[]>([]);
+  protected readonly detailsAnalytics = signal<EventAnalytics | null>(null);
+  private analyticsChart: Chart | null = null;
+  @ViewChild('analyticsCanvas') private analyticsCanvasRef?: ElementRef<HTMLCanvasElement>;
 
   protected readonly isSuperAdmin = computed(
     () => this.auth.getRole() === 'super_admin',
@@ -214,6 +226,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
         if (openId) {
           const openName = params.get('openName') ?? '';
+          this.pendingScrollRowId = openId;
           this.openDetailsPanel({ id: openId, name: openName } as unknown as EventRow);
           void this.router.navigate([], {
             relativeTo: this.route,
@@ -262,6 +275,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       this.loadFilterOptions();
     }
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
+    if (openEditId) this.pendingScrollRowId = openEditId;
     this.loadEvents(openEditId ? (items) => {
       const ev = items.find(e => e.id === openEditId);
       if (ev) this.openEditFromRow(ev);
@@ -348,9 +362,21 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.loadEvents();
   }
 
+  protected openReviewInAdmin(reviewId: string): void {
+    this.closeDetailsPanel();
+    void this.router.navigate(['/admin/reviews'], {
+      queryParams: { openReviewId: reviewId },
+    });
+  }
+
   protected openDetailsPanel(event: EventRow): void {
     this.activeMenuId.set(null);
     this.descriptionExpanded.set(false);
+
+    // Enrich stub row from loaded rows when opened via openId.
+    const loaded = this.events().find(r => r.id === event.id);
+    if (loaded) event = { ...loaded, ...event, name: event.name || loaded.name };
+
     this.selectedEvent.set(event);
     this.isPanelOpen.set(true);
     this.detailsInterests.set([]);
@@ -383,17 +409,170 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
         error: () => this.detailsReviews.set([]),
       }),
     );
+
+    this.detailsAnalytics.set(null);
+    this.analyticsChart?.destroy();
+    this.analyticsChart = null;
+    this.subscription.add(
+      this.eventsService.getAnalytics(event.id).subscribe({
+        next: (analytics) => {
+          this.detailsAnalytics.set(analytics);
+          setTimeout(() => this.renderAnalyticsChart(), 60);
+        },
+      }),
+    );
+  }
+
+  private renderAnalyticsChart(): void {
+    const data = this.detailsAnalytics();
+    if (!data || !this.analyticsCanvasRef?.nativeElement) return;
+    this.analyticsChart?.destroy();
+    this.analyticsChart = new Chart(this.analyticsCanvasRef.nativeElement, {
+      type: 'line',
+      data: {
+        labels: data.viewsTimeline.map(p => this.shortDate(p.date)),
+        datasets: [{
+          label: this.ui.t('destinations.analytics.views_label'),
+          data: data.viewsTimeline.map(p => p.value),
+          borderColor: '#2DD4BF',
+          backgroundColor: 'rgba(45, 212, 191, 0.18)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 2,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 } },
+          x: { ticks: { maxTicksLimit: 8 } },
+        },
+      },
+    });
+  }
+
+  private shortDate(iso: string): string {
+    const d = new Date(iso);
+    return `${d.getDate()}.${d.getMonth() + 1}.`;
+  }
+
+  protected plannerMonthLabel(iso: string | null): string {
+    if (!iso) return '—';
+    const [yearStr, monthStr] = iso.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    if (isNaN(year) || isNaN(month)) return iso;
+    const d = new Date(year, month - 1, 1);
+    return d.toLocaleString(this.ui.language() === 'en' ? 'en-US' : 'sr-RS', { month: 'long', year: 'numeric' });
+  }
+
+  protected plannerDateLabel(iso: string | null): string {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString(this.ui.language() === 'en' ? 'en-US' : 'sr-RS', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  protected sendAnalyticsToReports(): void {
+    const ev = this.selectedEvent();
+    const a = this.detailsAnalytics();
+    if (!ev || !a) return;
+
+    const items: ReportQueueItem[] = [];
+    const now = Date.now();
+
+    if (a.viewsTimeline.length > 0) {
+      const imageUrl = this.captureAnalyticsChartHighRes();
+      if (imageUrl) {
+        items.push({
+          id: now.toString(),
+          title: `${ev.name} — ${this.ui.t('destinations.analytics.views_30d')}`,
+          qtype: 'chart',
+          imageUrl,
+        });
+      }
+    }
+
+    const rows: { label: string; value: number }[] = [
+      { label: this.ui.t('destinations.analytics.saved_by_users'), value: a.savedByUsers },
+      { label: this.ui.t('destinations.analytics.planner_users'),  value: a.plannerByUsers },
+    ];
+    if (a.topPlannerMonth) {
+      rows.push({
+        label: `${this.ui.t('destinations.analytics.top_planner_month')} (${this.plannerMonthLabel(a.topPlannerMonth)})`,
+        value: a.topPlannerMonthCount,
+      });
+    }
+    if (a.isMultiDay && a.topPlannerDate) {
+      rows.push({
+        label: `${this.ui.t('events.analytics.top_planner_date')} (${this.plannerDateLabel(a.topPlannerDate)})`,
+        value: a.topPlannerDateCount,
+      });
+    }
+    if (rows.length > 0) {
+      items.push({
+        id: (now + 1).toString(),
+        title: `${ev.name} — ${this.ui.t('events.analytics.user_interest')}`,
+        qtype: 'table',
+        data: rows,
+        colLabel: this.ui.t('events.analytics.metric'),
+        colValue: this.ui.t('events.analytics.users'),
+      });
+    }
+
+    appendToReportsQueue(items);
+    this.closeDetailsPanel();
+    void this.router.navigate(['/admin/reports']);
+  }
+
+  private captureAnalyticsChartHighRes(): string | null {
+    const data = this.detailsAnalytics();
+    if (!data) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 1280;
+    canvas.height = 480;
+    const tmpChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: data.viewsTimeline.map(p => this.shortDate(p.date)),
+        datasets: [{
+          label: this.ui.t('destinations.analytics.views_label'),
+          data: data.viewsTimeline.map(p => p.value),
+          borderColor: '#2DD4BF',
+          backgroundColor: 'rgba(45, 212, 191, 0.18)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 3,
+        }],
+      },
+      options: {
+        responsive: false,
+        animation: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0, color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.2)' } },
+          x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+        },
+      },
+    });
+    const url = canvas.toDataURL('image/png');
+    tmpChart.destroy();
+    return url;
   }
 
   protected closeDetailsPanel(): void {
     if (this.isPanelClosing()) return;
     this.isPanelClosing.set(true);
+    this.analyticsChart?.destroy();
+    this.analyticsChart = null;
     setTimeout(() => {
       this.selectedEvent.set(null);
       this.isPanelOpen.set(false);
       this.isPanelClosing.set(false);
       this.detailsInterests.set([]);
       this.detailsReviews.set([]);
+      this.detailsAnalytics.set(null);
     }, 220);
   }
 
@@ -530,6 +709,11 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
   protected onEditSaved(row: EventRow): void {
     this.isEditClosing.set(true);
+    // Optimistically patch the row in the loaded list so visible cells (incl. thumbnail) update immediately.
+    this.events.update(list => list.map(item => {
+      if (item.id !== row.id) return item;
+      return { ...item, ...row, heroImageUrl: row.heroImageUrl ?? item.heroImageUrl };
+    }));
     setTimeout(() => {
       this.isEditOpen.set(false);
       this.isEditClosing.set(false);
@@ -631,14 +815,18 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected compactCount(n: number): string {
+    return formatCompactCount(n);
+  }
+
   protected rowKey(ev: EventRow): string {
     return ev.queueId ?? ev.id;
   }
 
   protected isSelected(ev: EventRow): boolean {
-    if (!this.isPanelOpen()) return false;
+    if (!this.isPanelOpen() && !this.isEditOpen()) return false;
     const selected = this.selectedEvent();
-    return selected?.id === ev.id && selected?.queueId === ev.queueId;
+    return selected?.id === ev.id;
   }
 
   protected priorityLabel(p: EventPriority | null): string {
@@ -786,6 +974,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
             this.events.set(response.items);
             this.total.set(response.total);
             afterLoad?.(response.items);
+            this.scrollToPendingRow();
           },
           error: () => {
             this.events.set([]);
@@ -794,6 +983,18 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
           },
         }),
     );
+  }
+
+  private pendingScrollRowId: string | null = null;
+
+  private scrollToPendingRow(): void {
+    if (!this.pendingScrollRowId) return;
+    const id = this.pendingScrollRowId;
+    this.pendingScrollRowId = null;
+    setTimeout(() => {
+      const el = document.querySelector(`[data-admin-row-id="${id}"]`) as HTMLElement | null;
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
   }
 
   private loadEventsFuzzy(query: string): void {

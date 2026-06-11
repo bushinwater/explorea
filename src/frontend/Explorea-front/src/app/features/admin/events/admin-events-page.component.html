@@ -328,7 +328,7 @@
           {{ ui.t('events.tabs.active_events') }}
           @if (stats()?.tabActiveCount) {
             <span class="evts-tab__badge evts-tab__badge--green">{{
-              stats()!.tabActiveCount
+              compactCount(stats()!.tabActiveCount)
             }}</span>
           }
         </button>
@@ -339,7 +339,7 @@
         >
           {{ ui.t('events.tabs.pending') }}
           @if (stats()?.tabPendingCount) {
-            <span class="evts-tab__badge">{{ stats()!.tabPendingCount }}</span>
+            <span class="evts-tab__badge">{{ compactCount(stats()!.tabPendingCount) }}</span>
           }
         </button>
         <button
@@ -349,7 +349,7 @@
         >
           {{ ui.t('events.tabs.rejected') }}
           @if (stats()?.rejected) {
-            <span class="evts-tab__badge evts-tab__badge--red">{{ stats()!.rejected }}</span>
+            <span class="evts-tab__badge evts-tab__badge--red">{{ compactCount(stats()!.rejected) }}</span>
           }
         </button>
         <button
@@ -359,7 +359,7 @@
         >
           {{ ui.t('events.tabs.expired') }}
           @if (stats()?.tabExpiredCount) {
-            <span class="evts-tab__badge">{{ stats()!.tabExpiredCount }}</span>
+            <span class="evts-tab__badge">{{ compactCount(stats()!.tabExpiredCount) }}</span>
           }
         </button>
         <button
@@ -399,6 +399,7 @@
               @for (ev of events(); track rowKey(ev)) {
                 <tr
                   class="evts-row"
+                  [attr.data-admin-row-id]="ev.id"
                   [class.evts-row--selected]="isSelected(ev)"
                   (click)="openDetailsPanel(ev)"
                 >
@@ -762,6 +763,10 @@
             <span class="ddp-grid__value">{{ formatRating(ev.avgRating) }} / 5</span>
           </div>
         }
+        <div class="ddp-grid__item">
+          <span class="ddp-grid__label">{{ ui.t('common.views') }}</span>
+          <span class="ddp-grid__value">{{ ev.views }}</span>
+        </div>
         @if (ev.ticketUrl) {
           <div class="ddp-grid__item ddp-grid__item--full">
             <span class="ddp-grid__label">{{ ui.t('events.details.ticket') }}</span>
@@ -810,6 +815,53 @@
         </div>
       }
 
+      <!-- Analytics -->
+      @if (detailsAnalytics(); as analytics) {
+        <div class="ddp-analytics-section">
+          <div class="ddp-analytics-section__head">
+            <h4 class="ddp-section-label">{{ ui.t('destinations.analytics.title') }}</h4>
+            <button type="button" class="ddp-analytics__send" (click)="sendAnalyticsToReports()">
+              <span class="material-icons">assessment</span>
+              {{ ui.t('destinations.analytics.send_to_reports') }}
+            </button>
+          </div>
+
+          <div class="ddp-analytics-chart-wrap">
+            <span class="ddp-analytics-chart__title">{{ ui.t('destinations.analytics.views_30d') }}</span>
+            <div class="ddp-analytics-chart">
+              <canvas #analyticsCanvas></canvas>
+            </div>
+          </div>
+
+          <div class="ddp-analytics-stats">
+            <div class="ddp-analytics-stat">
+              <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.saved_by_users') }}</span>
+              <span class="ddp-analytics-stat__value">{{ compactCount(analytics.savedByUsers) }}</span>
+            </div>
+            <div class="ddp-analytics-stat">
+              <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.planner_users') }}</span>
+              <span class="ddp-analytics-stat__value">{{ compactCount(analytics.plannerByUsers) }}</span>
+            </div>
+            <div class="ddp-analytics-stat">
+              <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.top_planner_month') }}</span>
+              <span class="ddp-analytics-stat__value">{{ plannerMonthLabel(analytics.topPlannerMonth) }}</span>
+              @if (analytics.topPlannerMonthCount) {
+                <span class="ddp-analytics-stat__hint">{{ analytics.topPlannerMonthCount }} {{ ui.t('destinations.analytics.entries_short') }}</span>
+              }
+            </div>
+            @if (analytics.isMultiDay) {
+              <div class="ddp-analytics-stat ddp-analytics-stat--wide">
+                <span class="ddp-analytics-stat__label">{{ ui.t('events.analytics.top_planner_date') }}</span>
+                <span class="ddp-analytics-stat__value">{{ plannerDateLabel(analytics.topPlannerDate) }}</span>
+                @if (analytics.topPlannerDateCount) {
+                  <span class="ddp-analytics-stat__hint">{{ analytics.topPlannerDateCount }} {{ ui.t('events.analytics.users_short') }}</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
       <!-- Reviews -->
       <div class="ddp-reviews-section">
         <h4 class="ddp-section-label">
@@ -840,6 +892,13 @@
                     <span class="ddp-review-card__author">{{ review.authorName }}</span>
                     <span class="ddp-review-card__date">{{ formatDate(review.createdAt) }}</span>
                   </div>
+                  @if (review.id) {
+                    <button type="button" class="ddp-review-card__open"
+                            (click)="openReviewInAdmin(review.id!)"
+                            [title]="ui.t('reviews.actions.open_in_admin')">
+                      <span class="material-icons">arrow_outward</span>
+                    </button>
+                  }
                 </div>
                 <div class="ddp-review-card__stars">
                   @for (star of starArray(); track star) {
@@ -852,6 +911,21 @@
                 </div>
                 @if (review.comment) {
                   <p class="ddp-review-card__comment">{{ review.comment }}</p>
+                }
+                @if (review.imageUrls && review.imageUrls.length > 0) {
+                  <div class="ddp-review-card__images">
+                    @for (url of review.imageUrls.slice(0, 3); track url; let i = $index) {
+                      <span class="ddp-review-card__thumb"
+                            [class.ddp-review-card__thumb--more]="i === 2 && review.imageUrls!.length > 3">
+                        <img [src]="url" alt="" loading="lazy" />
+                        @if (i === 2 && review.imageUrls!.length > 3) {
+                          <span class="ddp-review-card__thumb-more">
+                            <span class="material-icons">add</span>{{ review.imageUrls!.length - 3 }}
+                          </span>
+                        }
+                      </span>
+                    }
+                  </div>
                 }
               </div>
             }

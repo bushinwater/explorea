@@ -316,22 +316,28 @@ namespace Explorea.Server.Services.Admin
       var reviews = await _context.Reviews
         .AsNoTracking()
         .Include(r => r.User)
+        .Include(r => r.Images)
         .Where(r => r.EntityType == "activity" && r.EntityId == id && !r.IsDeleted && !r.IsHidden)
         .OrderByDescending(r => r.CreatedAt)
         .Take(10)
         .Select(r => new ActivityReviewDto
         {
+          Id              = r.Id,
           AuthorName      = r.User.FirstName + " " + r.User.LastName,
           AuthorAvatarUrl = r.User.ProfileImageUrl,
           Rating          = r.Rating,
           Comment         = r.Comment,
           CreatedAt       = r.CreatedAt,
+          ImageUrls       = r.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList(),
         })
         .ToListAsync();
+
+      var views = await _context.PopularityLogs.CountAsync(l => l.EntityType == "activity" && l.Source == "click" && l.EntityId == id);
 
       return new AdminActivityDetailsDto
       {
         Id = activity.Id,
+        Views = views,
 
         CityId        = activity.CityId,
         CityName      = activity.City?.Name,
@@ -362,9 +368,7 @@ namespace Explorea.Server.Services.Admin
         Popularity = activity.Popularity,
 
         ExtraData = activity.ExtraData,
-        ExtraFilters = activity.ExtraData != null
-          ? JsonSerializer.Deserialize<Dictionary<string, string>>(activity.ExtraData)
-          : null,
+        ExtraFilters = JsonbDictionaryHelper.ParseStringDictionary(activity.ExtraData),
 
         Latitude  = activity.Latitude,
         Longitude = activity.Longitude,

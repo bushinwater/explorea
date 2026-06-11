@@ -168,23 +168,43 @@ namespace Explorea.Server.Repositories.Implementations
             if (filterMinRating.HasValue)
                 q = q.Where(d => (double)d.AvgRating >= (double)filterMinRating.Value);
 
-            var proj = q.Select(d => new DestinationsTableItemDto
+            // Region: prefer direct FK on destination, fall back to City.Region.
+            // City: prefer the linked city; for city-type destinations (no CityId) fall back to the destination's own name.
+            var baseRows = await q.Select(d => new
             {
-                Name       = d.Name,
-                City       = d.City != null ? d.City.Name : null,
-                Region     = d.City != null && d.City.Region != null ? d.City.Region.Name : null,
-                Type       = d.Type != null ? d.Type.Name : null,
-                AvgRating  = Math.Round((double)d.AvgRating, 1),
-                Popularity = (long)d.Popularity,
-            });
+                d.Id,
+                d.Name,
+                CityName    = d.City != null
+                                ? d.City.Name
+                                : (d.Type != null && d.Type.Name == "Grad" ? d.Name : null),
+                RegionName  = d.Region != null
+                                ? d.Region.Name
+                                : (d.City != null && d.City.Region != null ? d.City.Region.Name : null),
+                TypeName    = d.Type != null ? d.Type.Name : null,
+                AvgRating   = Math.Round((double)d.AvgRating, 1),
+            }).ToListAsync();
+
+            // Real click counts from PopularityLogs (last 30 days, same as ddp panel "Views").
+            var ids = baseRows.Select(r => r.Id).ToList();
+            var clickCounts = await GetClickCountsAsync("destination", ids);
+
+            var rows = baseRows.Select(r => new DestinationsTableItemDto
+            {
+                Name       = r.Name,
+                City       = r.CityName,
+                Region     = r.RegionName,
+                Type       = r.TypeName,
+                AvgRating  = r.AvgRating,
+                Popularity = clickCounts.GetValueOrDefault(r.Id, 0),
+            }).ToList();
 
             return sortBy switch
             {
-                "region"     => await proj.OrderBy(d => d.Region).ThenBy(d => d.Name).ToListAsync(),
-                "type"       => await proj.OrderBy(d => d.Type).ThenBy(d => d.Name).ToListAsync(),
-                "rating"     => await proj.OrderByDescending(d => d.AvgRating).ToListAsync(),
-                "popularity" => await proj.OrderByDescending(d => d.Popularity).ToListAsync(),
-                _            => await proj.OrderBy(d => d.Name).ToListAsync(),
+                "region"     => rows.OrderBy(d => d.Region).ThenBy(d => d.Name).ToList(),
+                "type"       => rows.OrderBy(d => d.Type).ThenBy(d => d.Name).ToList(),
+                "rating"     => rows.OrderByDescending(d => d.AvgRating).ToList(),
+                "popularity" => rows.OrderByDescending(d => d.Popularity).ToList(),
+                _            => rows.OrderBy(d => d.Name).ToList(),
             };
         }
 
@@ -278,6 +298,18 @@ namespace Explorea.Server.Repositories.Implementations
             };
         }
 
+        private async Task<Dictionary<Guid, long>> GetClickCountsAsync(string entityType, List<Guid> ids)
+        {
+            if (ids.Count == 0) return new Dictionary<Guid, long>();
+            var monthAgo = DateTimeOffset.UtcNow.AddDays(-30);
+            return await _db.PopularityLogs
+                .Where(l => l.EntityType == entityType && l.Source == "click"
+                            && l.CreatedAt >= monthAgo && ids.Contains(l.EntityId))
+                .GroupBy(l => l.EntityId)
+                .Select(g => new { EntityId = g.Key, Count = (long)g.Count() })
+                .ToDictionaryAsync(x => x.EntityId, x => x.Count);
+        }
+
         private async Task<List<EntityTableRowDto>> GetActivitiesTableAsync(
             string? sortBy, string? filterSubType, string? filterRegion, decimal? filterMinRating,
             string? filterDifficulty, decimal? filterMinPrice, decimal? filterMaxPrice,
@@ -297,23 +329,33 @@ namespace Explorea.Server.Repositories.Implementations
             if (filterMinPrice.HasValue) q = q.Where(a => a.Price != null && a.Price >= filterMinPrice.Value);
             if (filterMaxPrice.HasValue) q = q.Where(a => a.Price != null && a.Price <= filterMaxPrice.Value);
 
-            var proj = q.Select(a => new EntityTableRowDto
+            var baseRows = await q.Select(a => new
             {
-                Name       = a.Name,
+                a.Id,
+                a.Name,
                 SubType    = a.Category != null ? a.Category.Name : null,
                 Location   = a.Destination != null ? a.Destination.Name : null,
                 Region     = a.City != null && a.City.Region != null ? a.City.Region.Name : null,
                 AvgRating  = Math.Round((double)a.AvgRating, 1),
-                Popularity = (long)a.Popularity,
-            });
+            }).ToListAsync();
+            var clicks = await GetClickCountsAsync("activity", baseRows.Select(r => r.Id).ToList());
+            var rows = baseRows.Select(r => new EntityTableRowDto
+            {
+                Name       = r.Name,
+                SubType    = r.SubType,
+                Location   = r.Location,
+                Region     = r.Region,
+                AvgRating  = r.AvgRating,
+                Popularity = clicks.GetValueOrDefault(r.Id, 0),
+            }).ToList();
             return sortBy switch
             {
-                "subType"    => await proj.OrderBy(x => x.SubType).ThenBy(x => x.Name).ToListAsync(),
-                "location"   => await proj.OrderBy(x => x.Location).ThenBy(x => x.Name).ToListAsync(),
-                "region"     => await proj.OrderBy(x => x.Region).ThenBy(x => x.Name).ToListAsync(),
-                "rating"     => await proj.OrderByDescending(x => x.AvgRating).ToListAsync(),
-                "popularity" => await proj.OrderByDescending(x => x.Popularity).ToListAsync(),
-                _            => await proj.OrderBy(x => x.Name).ToListAsync(),
+                "subType"    => rows.OrderBy(x => x.SubType).ThenBy(x => x.Name).ToList(),
+                "location"   => rows.OrderBy(x => x.Location).ThenBy(x => x.Name).ToList(),
+                "region"     => rows.OrderBy(x => x.Region).ThenBy(x => x.Name).ToList(),
+                "rating"     => rows.OrderByDescending(x => x.AvgRating).ToList(),
+                "popularity" => rows.OrderByDescending(x => x.Popularity).ToList(),
+                _            => rows.OrderBy(x => x.Name).ToList(),
             };
         }
 
@@ -346,23 +388,33 @@ namespace Explorea.Server.Repositories.Implementations
                 }
             }
 
-            var proj = q.Select(e => new EntityTableRowDto
+            var baseRows = await q.Select(e => new
             {
-                Name       = e.Name,
+                e.Id,
+                e.Name,
                 SubType    = e.Type != null ? e.Type.Name : null,
                 Location   = e.Destination != null ? e.Destination.Name : null,
                 Region     = e.City != null && e.City.Region != null ? e.City.Region.Name : null,
                 AvgRating  = Math.Round((double)e.AvgRating, 1),
-                Popularity = (long)e.Popularity,
-            });
+            }).ToListAsync();
+            var clicks = await GetClickCountsAsync("event", baseRows.Select(r => r.Id).ToList());
+            var rows = baseRows.Select(r => new EntityTableRowDto
+            {
+                Name       = r.Name,
+                SubType    = r.SubType,
+                Location   = r.Location,
+                Region     = r.Region,
+                AvgRating  = r.AvgRating,
+                Popularity = clicks.GetValueOrDefault(r.Id, 0),
+            }).ToList();
             return sortBy switch
             {
-                "subType"    => await proj.OrderBy(x => x.SubType).ThenBy(x => x.Name).ToListAsync(),
-                "location"   => await proj.OrderBy(x => x.Location).ThenBy(x => x.Name).ToListAsync(),
-                "region"     => await proj.OrderBy(x => x.Region).ThenBy(x => x.Name).ToListAsync(),
-                "rating"     => await proj.OrderByDescending(x => x.AvgRating).ToListAsync(),
-                "popularity" => await proj.OrderByDescending(x => x.Popularity).ToListAsync(),
-                _            => await proj.OrderBy(x => x.Name).ToListAsync(),
+                "subType"    => rows.OrderBy(x => x.SubType).ThenBy(x => x.Name).ToList(),
+                "location"   => rows.OrderBy(x => x.Location).ThenBy(x => x.Name).ToList(),
+                "region"     => rows.OrderBy(x => x.Region).ThenBy(x => x.Name).ToList(),
+                "rating"     => rows.OrderByDescending(x => x.AvgRating).ToList(),
+                "popularity" => rows.OrderByDescending(x => x.Popularity).ToList(),
+                _            => rows.OrderBy(x => x.Name).ToList(),
             };
         }
 
@@ -393,23 +445,33 @@ namespace Explorea.Server.Repositories.Implementations
                 }
             }
 
-            var proj = q.Select(p => new EntityTableRowDto
+            var baseRows = await q.Select(p => new
             {
-                Name       = p.Name,
+                p.Id,
+                p.Name,
                 SubType    = p.Type != null ? p.Type.Name : null,
                 Location   = p.Destination != null ? p.Destination.Name : null,
                 Region     = p.City != null && p.City.Region != null ? p.City.Region.Name : null,
                 AvgRating  = Math.Round((double)p.AvgRating, 1),
-                Popularity = (long)p.Popularity,
-            });
+            }).ToListAsync();
+            var clicks = await GetClickCountsAsync("place", baseRows.Select(r => r.Id).ToList());
+            var rows = baseRows.Select(r => new EntityTableRowDto
+            {
+                Name       = r.Name,
+                SubType    = r.SubType,
+                Location   = r.Location,
+                Region     = r.Region,
+                AvgRating  = r.AvgRating,
+                Popularity = clicks.GetValueOrDefault(r.Id, 0),
+            }).ToList();
             return sortBy switch
             {
-                "subType"    => await proj.OrderBy(x => x.SubType).ThenBy(x => x.Name).ToListAsync(),
-                "location"   => await proj.OrderBy(x => x.Location).ThenBy(x => x.Name).ToListAsync(),
-                "region"     => await proj.OrderBy(x => x.Region).ThenBy(x => x.Name).ToListAsync(),
-                "rating"     => await proj.OrderByDescending(x => x.AvgRating).ToListAsync(),
-                "popularity" => await proj.OrderByDescending(x => x.Popularity).ToListAsync(),
-                _            => await proj.OrderBy(x => x.Name).ToListAsync(),
+                "subType"    => rows.OrderBy(x => x.SubType).ThenBy(x => x.Name).ToList(),
+                "location"   => rows.OrderBy(x => x.Location).ThenBy(x => x.Name).ToList(),
+                "region"     => rows.OrderBy(x => x.Region).ThenBy(x => x.Name).ToList(),
+                "rating"     => rows.OrderByDescending(x => x.AvgRating).ToList(),
+                "popularity" => rows.OrderByDescending(x => x.Popularity).ToList(),
+                _            => rows.OrderBy(x => x.Name).ToList(),
             };
         }
 
@@ -475,7 +537,7 @@ namespace Explorea.Server.Repositories.Implementations
             if (metric == "avgRating")
             {
                 var raw = await q
-                    .GroupBy(d => d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato")
+                    .GroupBy(d => d.Region != null ? d.Region.Name : (d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato"))
                     .Select(g => new { Label = g.Key, Value = g.Average(d => (double)d.AvgRating) })
                     .OrderByDescending(x => x.Value).ToListAsync();
                 return raw.Select(x => new AggregatePointDto { Label = x.Label, Value = Math.Round(x.Value, 1) }).ToList();
@@ -483,7 +545,7 @@ namespace Explorea.Server.Repositories.Implementations
 
             if (metric == "traffic")
             {
-                var rows = await q.Select(d => new { d.Id, Region = d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato" }).ToListAsync();
+                var rows = await q.Select(d => new { d.Id, Region = d.Region != null ? d.Region.Name : (d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato") }).ToListAsync();
                 var entityIds = rows.Select(r => r.Id).ToList();
                 var logCounts = await _db.PopularityLogs
                     .Where(l => l.EntityType == "destination" && entityIds.Contains(l.EntityId))
@@ -494,7 +556,7 @@ namespace Explorea.Server.Repositories.Implementations
                     .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Sum(r => logCounts.GetValueOrDefault(r.Id, 0)) })
                     .OrderByDescending(x => x.Value).ToList();
             }
-            return await q.Select(d => new { Region = d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato" })
+            return await q.Select(d => new { Region = d.Region != null ? d.Region.Name : (d.City != null && d.City.Region != null ? d.City.Region.Name : "Nepoznato") })
                 .GroupBy(x => x.Region)
                 .Select(g => new AggregatePointDto { Label = g.Key, Value = g.Count() })
                 .OrderByDescending(x => x.Value).ToListAsync();
@@ -541,7 +603,7 @@ namespace Explorea.Server.Repositories.Implementations
                 if (from.HasValue) logQ = logQ.Where(l => l.CreatedAt >= from.Value);
                 if (to.HasValue)   logQ = logQ.Where(l => l.CreatedAt < to.Value);
                 if (destIds != null) logQ = logQ.Where(l => destIds.Contains(l.EntityId));
-                return await GroupByMonth(logQ.Select(l => l.CreatedAt));
+                return await GroupByMonth(logQ.Select(l => l.CreatedAt), from, to);
             }
             if (metric == "avgRating")
             {
@@ -549,12 +611,12 @@ namespace Explorea.Server.Repositories.Implementations
                 if (from.HasValue)   revQ = revQ.Where(r => r.CreatedAt >= from.Value);
                 if (to.HasValue)     revQ = revQ.Where(r => r.CreatedAt < to.Value);
                 if (destIds != null) revQ = revQ.Where(r => destIds.Contains(r.EntityId));
-                return await GroupByMonthAvgRating(revQ);
+                return await GroupByMonthAvgRating(revQ, from, to);
             }
             var q = ScopeDestinations(destIds, filterStatus);
             if (from.HasValue) q = q.Where(d => d.CreatedAt >= from.Value);
             if (to.HasValue)   q = q.Where(d => d.CreatedAt < to.Value);
-            return await GroupByMonth(q.Select(d => d.CreatedAt));
+            return await GroupByMonth(q.Select(d => d.CreatedAt), from, to);
         }
 
         // ─── Activities ──────────────────────────────────────────────────────────
@@ -650,7 +712,7 @@ namespace Explorea.Server.Repositories.Implementations
                 var logQ = _db.PopularityLogs.Where(l => l.EntityType == "activity" && actIds.Contains(l.EntityId));
                 if (from.HasValue) logQ = logQ.Where(l => l.CreatedAt >= from.Value);
                 if (to.HasValue)   logQ = logQ.Where(l => l.CreatedAt < to.Value);
-                return await GroupByMonth(logQ.Select(l => l.CreatedAt));
+                return await GroupByMonth(logQ.Select(l => l.CreatedAt), from, to);
             }
             if (metric == "avgRating")
             {
@@ -660,14 +722,14 @@ namespace Explorea.Server.Repositories.Implementations
                 var revQ = _db.Reviews.Where(r => !r.IsDeleted && !r.IsHidden && r.EntityType == "activity" && entityIds.Contains(r.EntityId));
                 if (from.HasValue) revQ = revQ.Where(r => r.CreatedAt >= from.Value);
                 if (to.HasValue)   revQ = revQ.Where(r => r.CreatedAt < to.Value);
-                return await GroupByMonthAvgRating(revQ);
+                return await GroupByMonthAvgRating(revQ, from, to);
             }
             var q = specificEntityId.HasValue
                 ? _db.Activities.Where(a => a.Id == specificEntityId.Value && !a.IsDeleted)
                 : ScopeActivities(destIds, placeOwnerUserId, filterStatus);
             if (from.HasValue) q = q.Where(a => a.CreatedAt >= from.Value);
             if (to.HasValue)   q = q.Where(a => a.CreatedAt < to.Value);
-            return await GroupByMonth(q.Select(a => a.CreatedAt));
+            return await GroupByMonth(q.Select(a => a.CreatedAt), from, to);
         }
 
         // ─── Events ──────────────────────────────────────────────────────────────
@@ -763,7 +825,7 @@ namespace Explorea.Server.Repositories.Implementations
                 var logQ = _db.PopularityLogs.Where(l => l.EntityType == "event" && evIds.Contains(l.EntityId));
                 if (from.HasValue) logQ = logQ.Where(l => l.CreatedAt >= from.Value);
                 if (to.HasValue)   logQ = logQ.Where(l => l.CreatedAt < to.Value);
-                return await GroupByMonth(logQ.Select(l => l.CreatedAt));
+                return await GroupByMonth(logQ.Select(l => l.CreatedAt), from, to);
             }
             if (metric == "avgRating")
             {
@@ -773,14 +835,14 @@ namespace Explorea.Server.Repositories.Implementations
                 var revQ = _db.Reviews.Where(r => !r.IsDeleted && !r.IsHidden && r.EntityType == "event" && entityIds.Contains(r.EntityId));
                 if (from.HasValue) revQ = revQ.Where(r => r.CreatedAt >= from.Value);
                 if (to.HasValue)   revQ = revQ.Where(r => r.CreatedAt < to.Value);
-                return await GroupByMonthAvgRating(revQ);
+                return await GroupByMonthAvgRating(revQ, from, to);
             }
             var q = specificEntityId.HasValue
                 ? _db.Events.Where(e => e.Id == specificEntityId.Value && !e.IsDeleted)
                 : ScopeEvents(destIds, placeOwnerUserId, filterStatus);
             if (from.HasValue) q = q.Where(e => e.CreatedAt >= from.Value);
             if (to.HasValue)   q = q.Where(e => e.CreatedAt < to.Value);
-            return await GroupByMonth(q.Select(e => e.CreatedAt));
+            return await GroupByMonth(q.Select(e => e.CreatedAt), from, to);
         }
 
         // ─── Places ──────────────────────────────────────────────────────────────
@@ -876,7 +938,7 @@ namespace Explorea.Server.Repositories.Implementations
                 var logQ = _db.PopularityLogs.Where(l => l.EntityType == "place" && placeIds.Contains(l.EntityId));
                 if (from.HasValue) logQ = logQ.Where(l => l.CreatedAt >= from.Value);
                 if (to.HasValue)   logQ = logQ.Where(l => l.CreatedAt < to.Value);
-                return await GroupByMonth(logQ.Select(l => l.CreatedAt));
+                return await GroupByMonth(logQ.Select(l => l.CreatedAt), from, to);
             }
             if (metric == "avgRating")
             {
@@ -886,14 +948,14 @@ namespace Explorea.Server.Repositories.Implementations
                 var revQ = _db.Reviews.Where(r => !r.IsDeleted && !r.IsHidden && r.EntityType == "place" && entityIds.Contains(r.EntityId));
                 if (from.HasValue) revQ = revQ.Where(r => r.CreatedAt >= from.Value);
                 if (to.HasValue)   revQ = revQ.Where(r => r.CreatedAt < to.Value);
-                return await GroupByMonthAvgRating(revQ);
+                return await GroupByMonthAvgRating(revQ, from, to);
             }
             var q = specificEntityId.HasValue
                 ? _db.Places.Where(p => p.Id == specificEntityId.Value && !p.IsDeleted)
                 : ScopePlaces(destIds, placeOwnerUserId, filterStatus);
             if (from.HasValue) q = q.Where(p => p.CreatedAt >= from.Value);
             if (to.HasValue)   q = q.Where(p => p.CreatedAt < to.Value);
-            return await GroupByMonth(q.Select(p => p.CreatedAt));
+            return await GroupByMonth(q.Select(p => p.CreatedAt), from, to);
         }
 
         // ─── Reviews ─────────────────────────────────────────────────────────────
@@ -922,7 +984,7 @@ namespace Explorea.Server.Repositories.Implementations
             DateTimeOffset? from, DateTimeOffset? to, List<Guid>? destIds, Guid? placeOwnerUserId)
         {
             var q = BaseReviews(from, to, destIds, placeOwnerUserId);
-            return await GroupByMonth(q.Select(r => r.CreatedAt));
+            return await GroupByMonth(q.Select(r => r.CreatedAt), from, to);
         }
 
         // ─── Users ───────────────────────────────────────────────────────────────
@@ -932,7 +994,7 @@ namespace Explorea.Server.Repositories.Implementations
             var q = _db.Users.AsQueryable();
             if (from.HasValue) q = q.Where(u => u.CreatedAt >= from.Value);
             if (to.HasValue)   q = q.Where(u => u.CreatedAt < to.Value);
-            return await GroupByMonth(q.Select(u => u.CreatedAt));
+            return await GroupByMonth(q.Select(u => u.CreatedAt), from, to);
         }
 
         private async Task<List<AggregatePointDto>> AggUsers_Gender(DateTimeOffset? from, DateTimeOffset? to)
@@ -1328,30 +1390,142 @@ namespace Explorea.Server.Repositories.Implementations
         }
 
         // Groups a DateTimeOffset sequence by year-month and returns ordered AggregatePoints
-        private async Task<List<AggregatePointDto>> GroupByMonth(IQueryable<DateTimeOffset> dates)
-            => await dates
-                .GroupBy(d => new { d.Year, d.Month })
-                .Select(g => new AggregatePointDto
-                {
-                    Label = g.Key.Year.ToString() + "-" + (g.Key.Month < 10 ? "0" : "") + g.Key.Month.ToString(),
-                    Value = g.Count(),
-                })
-                .OrderBy(x => x.Label)
-                .ToListAsync();
+        // Auto-picks granularity (day / month / year) based on the span
+        // and fills empty buckets with 0 so line charts are continuous.
+        private async Task<List<AggregatePointDto>> GroupByMonth(IQueryable<DateTimeOffset> dates, DateTimeOffset? from = null, DateTimeOffset? to = null)
+            => await GroupByTimeAutoAsync(dates, from, to);
 
-        // Groups reviews by year-month and averages their rating
-        private async Task<List<AggregatePointDto>> GroupByMonthAvgRating(IQueryable<Review> reviews)
+        private async Task<List<AggregatePointDto>> GroupByMonthAvgRating(IQueryable<Review> reviews, DateTimeOffset? from = null, DateTimeOffset? to = null)
+            => await GroupByTimeAutoAvgAsync(reviews, from, to);
+
+        private static (string granularity, DateTime fromDate, DateTime toDate) PickGranularity(DateTimeOffset? from, DateTimeOffset? to)
         {
-            var raw = await reviews
-                .GroupBy(r => new { r.CreatedAt.Year, r.CreatedAt.Month })
-                .Select(g => new
+            var toUtc   = (to   ?? DateTimeOffset.UtcNow).UtcDateTime.Date;
+            var fromUtc = (from ?? toUtc.AddDays(-365)).UtcDateTime.Date;
+            var spanDays = (toUtc - fromUtc).TotalDays;
+            var g = spanDays <= 60 ? "day" : spanDays <= 730 ? "month" : "year";
+            return (g, fromUtc, toUtc);
+        }
+
+        private static string FormatLabel(DateTime d, string g) => g switch
+        {
+            "day"   => d.ToString("yyyy-MM-dd"),
+            "month" => d.ToString("yyyy-MM"),
+            _       => d.ToString("yyyy"),
+        };
+
+        private static List<DateTime> EnumerateBuckets(DateTime from, DateTime to, string g)
+        {
+            var list = new List<DateTime>();
+            DateTime cur = g switch
+            {
+                "day"   => from.Date,
+                "month" => new DateTime(from.Year, from.Month, 1),
+                _       => new DateTime(from.Year, 1, 1),
+            };
+            DateTime end = g switch
+            {
+                "day"   => to.Date,
+                "month" => new DateTime(to.Year, to.Month, 1),
+                _       => new DateTime(to.Year, 1, 1),
+            };
+            while (cur <= end)
+            {
+                list.Add(cur);
+                cur = g switch
                 {
-                    Label = g.Key.Year.ToString() + "-" + (g.Key.Month < 10 ? "0" : "") + g.Key.Month.ToString(),
-                    Value = g.Average(r => (double)r.Rating),
+                    "day"   => cur.AddDays(1),
+                    "month" => cur.AddMonths(1),
+                    _       => cur.AddYears(1),
+                };
+            }
+            return list;
+        }
+
+        private async Task<List<AggregatePointDto>> GroupByTimeAutoAsync(IQueryable<DateTimeOffset> dates, DateTimeOffset? from, DateTimeOffset? to)
+        {
+            var (g, fromDate, toDate) = PickGranularity(from, to);
+
+            List<(DateTime Bucket, int Count)> raw;
+            if (g == "day")
+            {
+                raw = (await dates
+                    .GroupBy(d => new { d.UtcDateTime.Year, d.UtcDateTime.Month, d.UtcDateTime.Day })
+                    .Select(grp => new { grp.Key.Year, grp.Key.Month, grp.Key.Day, Count = grp.Count() })
+                    .ToListAsync())
+                    .Select(x => (new DateTime(x.Year, x.Month, x.Day), x.Count))
+                    .ToList();
+            }
+            else if (g == "month")
+            {
+                raw = (await dates
+                    .GroupBy(d => new { d.UtcDateTime.Year, d.UtcDateTime.Month })
+                    .Select(grp => new { grp.Key.Year, grp.Key.Month, Count = grp.Count() })
+                    .ToListAsync())
+                    .Select(x => (new DateTime(x.Year, x.Month, 1), x.Count))
+                    .ToList();
+            }
+            else
+            {
+                raw = (await dates
+                    .GroupBy(d => d.UtcDateTime.Year)
+                    .Select(grp => new { Year = grp.Key, Count = grp.Count() })
+                    .ToListAsync())
+                    .Select(x => (new DateTime(x.Year, 1, 1), x.Count))
+                    .ToList();
+            }
+
+            var lookup = raw.ToDictionary(x => x.Bucket, x => x.Count);
+            return EnumerateBuckets(fromDate, toDate, g)
+                .Select(b => new AggregatePointDto
+                {
+                    Label = FormatLabel(b, g),
+                    Value = lookup.GetValueOrDefault(b, 0),
                 })
-                .OrderBy(x => x.Label)
-                .ToListAsync();
-            return raw.Select(x => new AggregatePointDto { Label = x.Label, Value = Math.Round(x.Value, 1) }).ToList();
+                .ToList();
+        }
+
+        private async Task<List<AggregatePointDto>> GroupByTimeAutoAvgAsync(IQueryable<Review> reviews, DateTimeOffset? from, DateTimeOffset? to)
+        {
+            var (g, fromDate, toDate) = PickGranularity(from, to);
+
+            List<(DateTime Bucket, double Value)> raw;
+            if (g == "day")
+            {
+                raw = (await reviews
+                    .GroupBy(r => new { r.CreatedAt.UtcDateTime.Year, r.CreatedAt.UtcDateTime.Month, r.CreatedAt.UtcDateTime.Day })
+                    .Select(grp => new { grp.Key.Year, grp.Key.Month, grp.Key.Day, Avg = grp.Average(r => (double)r.Rating) })
+                    .ToListAsync())
+                    .Select(x => (new DateTime(x.Year, x.Month, x.Day), x.Avg))
+                    .ToList();
+            }
+            else if (g == "month")
+            {
+                raw = (await reviews
+                    .GroupBy(r => new { r.CreatedAt.UtcDateTime.Year, r.CreatedAt.UtcDateTime.Month })
+                    .Select(grp => new { grp.Key.Year, grp.Key.Month, Avg = grp.Average(r => (double)r.Rating) })
+                    .ToListAsync())
+                    .Select(x => (new DateTime(x.Year, x.Month, 1), x.Avg))
+                    .ToList();
+            }
+            else
+            {
+                raw = (await reviews
+                    .GroupBy(r => r.CreatedAt.UtcDateTime.Year)
+                    .Select(grp => new { Year = grp.Key, Avg = grp.Average(r => (double)r.Rating) })
+                    .ToListAsync())
+                    .Select(x => (new DateTime(x.Year, 1, 1), x.Avg))
+                    .ToList();
+            }
+
+            var lookup = raw.ToDictionary(x => x.Bucket, x => x.Value);
+            return EnumerateBuckets(fromDate, toDate, g)
+                .Select(b =>
+                {
+                    var v = lookup.GetValueOrDefault(b, 0);
+                    return new AggregatePointDto { Label = FormatLabel(b, g), Value = Math.Round(v, 1) };
+                })
+                .ToList();
         }
     }
 }

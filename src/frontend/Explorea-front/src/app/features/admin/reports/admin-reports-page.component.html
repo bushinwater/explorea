@@ -45,7 +45,7 @@
         <div class="rp-config-section">
           <span class="rp-config-section__label">{{ ui.t('reports.table.entity_label') }}</span>
           <div class="rp-source-tabs">
-            @for (ec of entityConfigs; track ec.id) {
+            @for (ec of entityConfigs(); track ec.id) {
               <button
                 class="rp-source-tab"
                 [class.rp-source-tab--active]="entity() === ec.id"
@@ -418,7 +418,7 @@
         <div class="rp-filter-row">
           <span class="rp-filter-label">{{ ui.t('reports.table.rating') }}</span>
           <div class="rp-pills">
-            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === null"  (click)="filterMinRating.set(null)">Sve</button>
+            <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === null"  (click)="filterMinRating.set(null)">{{ ui.t('reports.filter.all') }}</button>
             <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '3'"   (click)="toggleFilter('minRating', '3')">≥ 3 ★</button>
             <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '4'"   (click)="toggleFilter('minRating', '4')">≥ 4 ★</button>
             <button class="rp-pill" [class.rp-pill--active]="filterMinRating() === '4.5'" (click)="toggleFilter('minRating', '4.5')">≥ 4.5 ★</button>
@@ -430,7 +430,7 @@
           <div class="rp-filter-row">
             <span class="rp-filter-label">{{ ui.t('reports.table.difficulty') }}</span>
             <div class="rp-pills">
-              <button class="rp-pill" [class.rp-pill--active]="filterDifficulty() === null" (click)="filterDifficulty.set(null)">Sve</button>
+              <button class="rp-pill" [class.rp-pill--active]="filterDifficulty() === null" (click)="filterDifficulty.set(null)">{{ ui.t('reports.filter.all') }}</button>
               @for (opt of filterDifficultyOpts(); track opt) {
                 <button class="rp-pill" [class.rp-pill--active]="filterDifficulty() === opt" (click)="toggleFilter('difficulty', opt)">{{ opt }}</button>
               }
@@ -698,17 +698,29 @@
           <p class="rp-builder-card__subtitle">{{ ui.t('reports.queue.subtitle') }}</p>
         </div>
       </div>
-      <button
-        class="btn btn-primary"
-        [disabled]="!reportQueue().length || pdfGenerating()"
-        (click)="generateQueuePdf()"
-      >
-        @if (pdfGenerating()) {
-          <span class="rp-spinner"></span> {{ ui.t('reports.btn.generating') }}
-        } @else {
-          <span class="material-icons">picture_as_pdf</span> {{ ui.t('reports.btn.generate_pdf') }}
+      <div class="rp-queue-actions">
+        @if (reportQueue().length > 0) {
+          <button
+            class="btn btn-secondary"
+            type="button"
+            (click)="clearQueue()"
+            [disabled]="pdfGenerating()"
+          >
+            <span class="material-icons">delete_sweep</span> {{ ui.t('reports.btn.clear_queue') }}
+          </button>
         }
-      </button>
+        <button
+          class="btn btn-primary"
+          [disabled]="!reportQueue().length || pdfGenerating()"
+          (click)="generateQueuePdf()"
+        >
+          @if (pdfGenerating()) {
+            <span class="rp-spinner"></span> {{ ui.t('reports.btn.generating') }}
+          } @else {
+            <span class="material-icons">picture_as_pdf</span> {{ ui.t('reports.btn.generate_pdf') }}
+          }
+        </button>
+      </div>
     </div>
 
     <div class="rp-queue-body">

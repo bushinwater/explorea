@@ -20,6 +20,7 @@ import { ReviewCard } from '../../../shared/components/review-card/review-card';
 import { RatingStats } from '../../../shared/components/rating-stats/rating-stats';
 import { ReviewsPanel } from '../../../shared/components/reviews-panel/reviews-panel';
 import { ReviewModal } from '../../../shared/components/review-modal/review-modal';
+import { ReviewsLightbox } from '../../../shared/components/reviews-lightbox/reviews-lightbox';
 import { ReviewDto } from '../../../core/models/home.model';
 import { ShareButton } from '../../../shared/components/share-button/share-button';
 import { AddToPlannerModal } from '../../../shared/components/add-to-planner-modal/add-to-planner-modal';
@@ -50,7 +51,7 @@ const LIGHT = {
   imports: [
     CommonModule, NgStyle, RouterModule, TranslateModule,
     Sidebar, BottomNav,
-    ReviewCard, RatingStats, ReviewsPanel, ReviewModal, ShareButton, AddToPlannerModal,
+    ReviewCard, RatingStats, ReviewsPanel, ReviewModal, ReviewsLightbox, ShareButton, AddToPlannerModal,
   ],
   templateUrl: './place-detail.html',
   styleUrl: './place-detail.css',
@@ -89,6 +90,17 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
 
   lightboxOpen = false;
   lightboxIndex = 0;
+
+  reviewsLightboxOpen = false;
+  lightboxStartReviewId = '';
+  lightboxStartImageIndex = 0;
+
+  openReviewsLightbox(payload: { reviewId: string; imageIndex: number }): void {
+    this.lightboxStartReviewId = payload.reviewId;
+    this.lightboxStartImageIndex = payload.imageIndex;
+    this.reviewsLightboxOpen = true;
+    this.cdr.detectChanges();
+  }
   private lightboxScrollY = 0;
   private lightboxLockedBody = false;
   private touchStartX = 0;
@@ -385,7 +397,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     const idx = this.place.reviews.findIndex((r: any) => r.id === review.id);
     if (idx !== -1) {
       const updated = [...this.place.reviews];
-      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment };
+      updated[idx] = { ...updated[idx], rating: review.rating, comment: review.comment, images: review.images ?? [] };
       this.place = { ...this.place, reviews: updated, avgRating: this.calcAvg(updated) };
       this.cdr.detectChanges();
     }

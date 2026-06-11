@@ -44,11 +44,13 @@ export interface DestinationOption {
 }
 
 export interface PlaceReview {
+  id?: string;
   authorName: string;
   authorAvatarUrl: string | null;
   rating: number;
   comment: string | null;
   createdAt: string;
+  imageUrls?: string[];
 }
 
 export interface PlaceImage {
@@ -97,6 +99,25 @@ export interface PlaceAmenity {
   name: string;
 }
 
+export interface PlaceAnalyticsTimelinePoint {
+  date: string;
+  value: number;
+}
+
+export interface PlaceAnalytics {
+  totalViews: number;
+  viewsLast30: number;
+  viewsTimeline: PlaceAnalyticsTimelinePoint[];
+  savedByUsers: number;
+  plannerByUsers: number;
+  topPlannerMonth: string | null;
+  topPlannerMonthCount: number;
+  reviewCount: number;
+  avgRating: number;
+  eventCount: number;
+  upcomingEventCount: number;
+}
+
 export interface PlaceDetail {
   id: string;
   destinationId: string | null;
@@ -115,6 +136,7 @@ export interface PlaceDetail {
   email: string | null;
   websiteUrl: string | null;
   avgRating: number;
+  views: number;
   isFeatured: boolean;
   status: PlaceStatus;
   type: string | null;

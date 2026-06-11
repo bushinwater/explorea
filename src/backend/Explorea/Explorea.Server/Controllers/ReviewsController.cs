@@ -2,6 +2,7 @@ using Explorea.API.DTOs.Review;
 using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Helpers;
+using Explorea.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,11 +20,50 @@ namespace Explorea.Server.Controllers
     [Route("api/reviews")]
     public class ReviewsController : ControllerBase
     {
-        private readonly AppDbContext _db;
+        private const int MaxImagesPerReview = 5;
+        private const long MaxImageBytes = 5L * 1024 * 1024;
+        private static readonly string[] AllowedImageContentTypes =
+        {
+            "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"
+        };
 
-        public ReviewsController(AppDbContext db)
+        private readonly AppDbContext _db;
+        private readonly ICloudinaryService _cloudinary;
+
+        public ReviewsController(AppDbContext db, ICloudinaryService cloudinary)
         {
             _db = db;
+            _cloudinary = cloudinary;
+        }
+
+        [HttpPost("images")]
+        [Authorize]
+        [RequestSizeLimit(40 * 1024 * 1024)]
+        public async Task<IActionResult> UploadImages([FromForm] IFormFileCollection files)
+        {
+            if (files == null || files.Count == 0)
+                return BadRequest(new { message = "Nije priložen nijedan fajl." });
+
+            if (files.Count > MaxImagesPerReview)
+                return BadRequest(new { message = $"Maksimalno {MaxImagesPerReview} slika po recenziji." });
+
+            var urls = new List<string>();
+            foreach (var file in files)
+            {
+                if (file.Length == 0)
+                    return BadRequest(new { message = $"Fajl \"{file.FileName}\" je prazan." });
+                if (file.Length > MaxImageBytes)
+                    return BadRequest(new { message = $"Fajl \"{file.FileName}\" je veći od 5MB." });
+
+                var contentType = (file.ContentType ?? string.Empty).ToLowerInvariant();
+                if (!AllowedImageContentTypes.Contains(contentType))
+                    return BadRequest(new { message = $"Fajl \"{file.FileName}\" nije slika (dozvoljeni formati: JPG, PNG, WEBP, GIF, HEIC)." });
+
+                var url = await _cloudinary.UploadReviewImageAsync(file, "explorea/reviews");
+                urls.Add(url);
+            }
+
+            return Ok(new { urls });
         }
 
         [HttpGet("check")]
@@ -48,6 +88,14 @@ namespace Explorea.Server.Controllers
             if (already)
                 return Conflict(new { message = "You have already reviewed this." });
 
+            var imageUrls = (dto.ImageUrls ?? new List<string>())
+                .Where(u => !string.IsNullOrWhiteSpace(u))
+                .Take(MaxImagesPerReview)
+                .ToList();
+
+            if ((dto.ImageUrls?.Count ?? 0) > MaxImagesPerReview)
+                return BadRequest(new { message = $"Maksimalno {MaxImagesPerReview} slika po recenziji." });
+
             var review = new Review
             {
                 Id = Guid.NewGuid(),
@@ -63,10 +111,24 @@ namespace Explorea.Server.Controllers
             };
 
             _db.Reviews.Add(review);
+
+            for (var i = 0; i < imageUrls.Count; i++)
+            {
+                _db.ReviewImages.Add(new ReviewImage
+                {
+                    Id = Guid.NewGuid(),
+                    ReviewId = review.Id,
+                    ImageUrl = imageUrls[i],
+                    SortOrder = i,
+                    CreatedAt = DateTimeOffset.UtcNow
+                });
+            }
+
             await _db.SaveChangesAsync();
 
             var created = await _db.Reviews
                 .Include(r => r.User)
+                .Include(r => r.Images)
                 .FirstAsync(r => r.Id == review.Id);
 
             try { await UpdateAvgRating(dto.EntityType, dto.EntityId); } catch { /* non-fatal */ }
@@ -84,7 +146,11 @@ namespace Explorea.Server.Controllers
                     LastName = created.User.LastName,
                     TravelerRank = created.User.TravelerRank,
                     ProfileImageUrl = created.User.ProfileImageUrl
-                }
+                },
+                Images = created.Images
+                    .OrderBy(i => i.SortOrder)
+                    .Select(i => new ReviewImageDto { Id = i.Id, ImageUrl = i.ImageUrl, SortOrder = i.SortOrder })
+                    .ToList()
             });
         }
 
@@ -95,6 +161,7 @@ namespace Explorea.Server.Controllers
             var userId = await GetCurrentUserId();
             var review = await _db.Reviews
                 .Include(r => r.User)
+                .Include(r => r.Images)
                 .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
 
             if (review == null) return NotFound();
@@ -104,24 +171,55 @@ namespace Explorea.Server.Controllers
             review.UpdatedAt = DateTimeOffset.UtcNow;
             review.UpdatedBy = userId;
 
+            // Replace images if client sent an image list.
+            if (dto.ImageUrls != null)
+            {
+                if (dto.ImageUrls.Count > MaxImagesPerReview)
+                    return BadRequest(new { message = $"Maksimalno {MaxImagesPerReview} slika po recenziji." });
+
+                _db.ReviewImages.RemoveRange(review.Images);
+
+                var newUrls = dto.ImageUrls.Where(u => !string.IsNullOrWhiteSpace(u)).ToList();
+                for (var i = 0; i < newUrls.Count; i++)
+                {
+                    _db.ReviewImages.Add(new ReviewImage
+                    {
+                        Id = Guid.NewGuid(),
+                        ReviewId = review.Id,
+                        ImageUrl = newUrls[i],
+                        SortOrder = i,
+                        CreatedAt = DateTimeOffset.UtcNow
+                    });
+                }
+            }
+
             await _db.SaveChangesAsync();
 
             try { await UpdateAvgRating(review.EntityType, review.EntityId); } catch { /* non-fatal */ }
 
+            var refreshed = await _db.Reviews
+                .Include(r => r.User)
+                .Include(r => r.Images)
+                .FirstAsync(r => r.Id == review.Id);
+
             return Ok(new ReviewDto
             {
-                Id = review.Id,
-                Rating = review.Rating,
-                Comment = review.Comment,
-                CreatedAt = review.CreatedAt,
+                Id = refreshed.Id,
+                Rating = refreshed.Rating,
+                Comment = refreshed.Comment,
+                CreatedAt = refreshed.CreatedAt,
                 User = new ReviewUserDto
                 {
-                    Id = review.User.Id,
-                    FirstName = review.User.FirstName,
-                    LastName = review.User.LastName,
-                    TravelerRank = review.User.TravelerRank,
-                    ProfileImageUrl = review.User.ProfileImageUrl
-                }
+                    Id = refreshed.User.Id,
+                    FirstName = refreshed.User.FirstName,
+                    LastName = refreshed.User.LastName,
+                    TravelerRank = refreshed.User.TravelerRank,
+                    ProfileImageUrl = refreshed.User.ProfileImageUrl
+                },
+                Images = refreshed.Images
+                    .OrderBy(i => i.SortOrder)
+                    .Select(i => new ReviewImageDto { Id = i.Id, ImageUrl = i.ImageUrl, SortOrder = i.SortOrder })
+                    .ToList()
             });
         }
 

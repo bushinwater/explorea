@@ -1,0 +1,53 @@
+<div
+  *ngIf="isOpen && current"
+  class="rev-lightbox__backdrop"
+  (click)="onBackdropClick($event)"
+  (touchstart)="onTouchStart($event)"
+  (touchend)="onTouchEnd($event)"
+>
+  <button class="rev-lightbox__close" type="button" (click)="close()" aria-label="Zatvori">
+    <span class="material-icons">close</span>
+  </button>
+
+  <span class="rev-lightbox__counter" *ngIf="images.length > 0">
+    {{ currentIndex + 1 }} / {{ images.length }}
+  </span>
+
+  <div class="rev-lightbox__stage">
+    <button
+      *ngIf="images.length > 1"
+      class="rev-lightbox__nav rev-lightbox__nav--prev"
+      type="button"
+      (click)="prev(); $event.stopPropagation()"
+      aria-label="Prethodna"
+    >
+      <span class="material-icons">chevron_left</span>
+    </button>
+
+    <img [src]="current.imageUrl" alt="" class="rev-lightbox__image" />
+
+    <button
+      *ngIf="images.length > 1"
+      class="rev-lightbox__nav rev-lightbox__nav--next"
+      type="button"
+      (click)="next(); $event.stopPropagation()"
+      aria-label="Sledeća"
+    >
+      <span class="material-icons">chevron_right</span>
+    </button>
+  </div>
+
+  <div class="rev-lightbox__footer">
+    <div class="rev-lightbox__meta">
+      <span class="rev-lightbox__reviewer">{{ current.reviewerName }}</span>
+      <span class="rev-lightbox__stars">
+        <ng-container *ngFor="let n of [1,2,3,4,5]">
+          <span class="material-icons" [class.rev-lightbox__star--filled]="n <= current.rating">
+            {{ n <= current.rating ? 'star' : 'star_border' }}
+          </span>
+        </ng-container>
+      </span>
+    </div>
+    <p *ngIf="current.comment" class="rev-lightbox__comment">{{ current.comment }}</p>
+  </div>
+</div>

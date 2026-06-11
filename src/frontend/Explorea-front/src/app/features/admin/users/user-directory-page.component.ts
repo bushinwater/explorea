@@ -1,7 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import {
+  AdminUserDetails,
+  AdminUserOwnedEntity,
   AdminUserGender,
   AdminUserRole,
   AdminUserStatus,
@@ -15,6 +17,7 @@ import {
   UpsertAdminUserDto,
 } from '@shared/models';
 import { AdminUserDirectoryService } from '@shared/services';
+import { Router } from '@angular/router';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
@@ -33,6 +36,7 @@ import { TableSkeletonComponent } from '@shared/components/table-skeleton/table-
   standalone: true,
   imports: [
     DatePipe,
+    DecimalPipe,
     StatCardComponent,
     EmptyStateComponent,
     StatusBadgeComponent,
@@ -77,6 +81,151 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
   protected readonly regions = signal<string[]>([]);
   protected readonly countries = signal<{ id: number; name: string }[]>([]);
   protected readonly users = signal<UserDirectoryUser[]>([]);
+
+  protected readonly detailsPanelUser = signal<UserDirectoryUser | null>(null);
+  protected readonly detailsPanelData = signal<AdminUserDetails | null>(null);
+  protected readonly isDetailsLoading = signal(false);
+  protected readonly isDetailsPanelClosing = signal(false);
+
+  protected openDetailsPanel(user: UserDirectoryUser, event?: Event): void {
+    if (event) {
+      const target = event.target as HTMLElement;
+      if (target.closest('button, a')) return;
+    }
+    this.detailsPanelUser.set(user);
+    this.detailsPanelData.set(null);
+    this.isDetailsLoading.set(true);
+    this.subscription.add(
+      this.adminUserDirectoryService.getUserDetails(user.id).subscribe({
+        next: (details) => {
+          this.detailsPanelData.set(details);
+          this.isDetailsLoading.set(false);
+        },
+        error: () => {
+          this.isDetailsLoading.set(false);
+        },
+      }),
+    );
+  }
+
+  protected closeDetailsPanel(): void {
+    if (this.isDetailsPanelClosing()) return;
+    this.isDetailsPanelClosing.set(true);
+    setTimeout(() => {
+      this.detailsPanelUser.set(null);
+      this.detailsPanelData.set(null);
+      this.isDetailsPanelClosing.set(false);
+    }, 200);
+  }
+
+  protected entityIcon(type: string): string {
+    const map: Record<string, string> = {
+      destination: 'landscape',
+      place: 'store',
+      activity: 'directions_walk',
+      event: 'event',
+    };
+    return map[type.toLowerCase()] ?? 'circle';
+  }
+
+  protected entityTouristRoute(type: string, slug: string | null): string | null {
+    if (!slug) return null;
+    const map: Record<string, string> = {
+      destination: '/destinations',
+      place: '/places',
+      activity: '/activities',
+      event: '/events',
+    };
+    const base = map[type.toLowerCase()];
+    return base ? `${base}/${slug}` : null;
+  }
+
+  protected formatRelative(iso: string): string {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const diffMs = Date.now() - d.getTime();
+    const min = Math.round(diffMs / 60000);
+    if (min < 1) return 'upravo';
+    if (min < 60) return `pre ${min} min`;
+    const h = Math.round(min / 60);
+    if (h < 24) return `pre ${h}h`;
+    const days = Math.round(h / 24);
+    if (days < 30) return `pre ${days} d.`;
+    return d.toLocaleDateString();
+  }
+
+  protected genderLabel(g: string | null): string {
+    if (!g) return this.ui.t('users.details.placeholder_dash');
+    const keyMap: Record<string, string> = {
+      male: 'users.details.gender_male',
+      female: 'users.details.gender_female',
+      other: 'users.details.gender_other',
+      unknown: 'users.details.gender_unknown',
+    };
+    const key = keyMap[g];
+    return key ? this.ui.t(key) : g;
+  }
+
+  protected adminEntityRoute(type: string): string | null {
+    const map: Record<string, string> = {
+      destination: '/admin/destinations',
+      place: '/admin/places',
+      activity: '/admin/activities',
+      event: '/admin/events',
+    };
+    return map[type.toLowerCase()] ?? null;
+  }
+
+  protected openEntityInAdmin(type: string, id: string, name?: string | null): void {
+    const route = this.adminEntityRoute(type);
+    if (!route) return;
+    this.closeDetailsPanel();
+    void this.router.navigate([route], {
+      queryParams: { openId: id, openName: name ?? '' },
+    });
+  }
+
+  protected openReviewInAdmin(reviewId: string): void {
+    this.closeDetailsPanel();
+    void this.router.navigate(['/admin/reviews'], {
+      queryParams: { openReviewId: reviewId },
+    });
+  }
+
+  // ===== Owned entities popup (place_owner) =====
+  protected readonly ownedPopupOpen = signal(false);
+  protected readonly ownedPopupTab = signal<'place' | 'event'>('place');
+  protected readonly ownedAllPlaces = signal<AdminUserOwnedEntity[]>([]);
+  protected readonly ownedAllEvents = signal<AdminUserOwnedEntity[]>([]);
+  protected readonly ownedLoading = signal(false);
+
+  protected openAllOwned(initialTab: 'place' | 'event' = 'place'): void {
+    const user = this.detailsPanelUser();
+    if (!user) return;
+    this.ownedPopupTab.set(initialTab);
+    this.ownedPopupOpen.set(true);
+    this.ownedLoading.set(true);
+    this.ownedAllPlaces.set([]);
+    this.ownedAllEvents.set([]);
+    this.subscription.add(
+      this.adminUserDirectoryService.getUserOwnedEntities(user.id, 'place').subscribe({
+        next: items => this.ownedAllPlaces.set(items),
+      }),
+    );
+    this.subscription.add(
+      this.adminUserDirectoryService.getUserOwnedEntities(user.id, 'event').subscribe({
+        next: items => {
+          this.ownedAllEvents.set(items);
+          this.ownedLoading.set(false);
+        },
+        error: () => this.ownedLoading.set(false),
+      }),
+    );
+  }
+
+  protected closeOwnedPopup(): void {
+    this.ownedPopupOpen.set(false);
+  }
   protected readonly totalUsers = signal(0);
   protected readonly selectedUser = signal<UserDirectoryUser | null>(null);
   protected readonly deletedUsers = signal<UserDirectoryUser[]>([]);
@@ -160,6 +309,7 @@ export class UserDirectoryPageComponent implements OnInit, OnDestroy {
     protected readonly authContext: AdminAuthContextService,
     protected readonly ui: AdminUiPreferencesService,
     private readonly dashboardAuth: DashboardAuthService,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {

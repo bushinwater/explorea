@@ -276,33 +276,42 @@
       </div>
     </div>
 
-    <div class="place-filter-chips place-list-mode-tabs">
+    <div class="place-tabs">
       <button
-        class="place-chip"
-        [class.place-chip--active]="listMode() === 'active'"
+        class="place-tab"
+        [class.place-tab--active]="listMode() === 'active'"
         (click)="setListMode('active')"
       >
         {{ ui.t('places.tabs.active') }}
+        @if (stats()?.activeCount) {
+          <span class="place-tab__badge place-tab__badge--green">{{ compactCount(stats()!.activeCount) }}</span>
+        }
       </button>
       <button
-        class="place-chip"
-        [class.place-chip--active]="listMode() === 'pending'"
+        class="place-tab"
+        [class.place-tab--active]="listMode() === 'pending'"
         (click)="setListMode('pending')"
       >
         {{ ui.t('places.tabs.pending') }}
+        @if (stats()?.pendingCount) {
+          <span class="place-tab__badge">{{ compactCount(stats()!.pendingCount) }}</span>
+        }
       </button>
       @if (canReviewOwnerSubmissions()) {
         <button
-          class="place-chip"
-          [class.place-chip--active]="listMode() === 'rejected'"
+          class="place-tab"
+          [class.place-tab--active]="listMode() === 'rejected'"
           (click)="setListMode('rejected')"
         >
           {{ ui.t('places.tabs.rejected') }}
+          @if (stats()?.inactiveCount) {
+            <span class="place-tab__badge place-tab__badge--red">{{ compactCount(stats()!.inactiveCount) }}</span>
+          }
         </button>
       }
       <button
-        class="place-chip"
-        [class.place-chip--active]="listMode() === 'deleted'"
+        class="place-tab"
+        [class.place-tab--active]="listMode() === 'deleted'"
         (click)="setListMode('deleted')"
       >
         {{ ui.t('places.tabs.deleted') }}
@@ -339,7 +348,8 @@
             @for (place of places(); track place.id) {
               <tr
                 class="place-row"
-                [class.place-row--selected]="detailsPanelRow()?.id === place.id"
+                [attr.data-admin-row-id]="place.id"
+                [class.place-row--selected]="detailsPanelRow()?.id === place.id || (isEditModalOpen() && selectedPlace()?.id === place.id)"
                 (click)="openDetailsPanel(place)"
               >
                 <!-- Name + address + thumb -->
@@ -690,6 +700,10 @@
               {{ place.avgRating ? formatRating(place.avgRating) + ' / 5' : '—' }}
             </span>
           </div>
+          <div class="ddp-grid__item">
+            <span class="ddp-grid__label">{{ ui.t('common.views') }}</span>
+            <span class="ddp-grid__value">{{ detailsPanelDetail()?.views ?? '—' }}</span>
+          </div>
           @if (detailsPanelDetail()?.address) {
             <div class="ddp-grid__item ddp-grid__item--full">
               <span class="ddp-grid__label">{{ ui.t('places.details.address') }}</span>
@@ -758,6 +772,58 @@
           </div>
         }
 
+        <!-- Analytics -->
+        @if (detailsPanelAnalytics(); as analytics) {
+          <div class="ddp-analytics-section">
+            <div class="ddp-analytics-section__head">
+              <h4 class="ddp-section-label">{{ ui.t('destinations.analytics.title') }}</h4>
+              <button type="button" class="ddp-analytics__send" (click)="sendAnalyticsToReports()">
+                <span class="material-icons">assessment</span>
+                {{ ui.t('destinations.analytics.send_to_reports') }}
+              </button>
+            </div>
+
+            <div class="ddp-analytics-chart-wrap">
+              <span class="ddp-analytics-chart__title">{{ ui.t('destinations.analytics.views_30d') }}</span>
+              <div class="ddp-analytics-chart">
+                <canvas #analyticsCanvas></canvas>
+              </div>
+            </div>
+
+            <div class="ddp-analytics-stats">
+              <div class="ddp-analytics-stat">
+                <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.saved_by_users') }}</span>
+                <span class="ddp-analytics-stat__value">{{ compactCount(analytics.savedByUsers) }}</span>
+              </div>
+              <div class="ddp-analytics-stat">
+                <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.planner_users') }}</span>
+                <span class="ddp-analytics-stat__value">{{ compactCount(analytics.plannerByUsers) }}</span>
+              </div>
+              <div class="ddp-analytics-stat">
+                <span class="ddp-analytics-stat__label">{{ ui.t('destinations.analytics.top_planner_month') }}</span>
+                <span class="ddp-analytics-stat__value">{{ plannerMonthLabel(analytics.topPlannerMonth) }}</span>
+                @if (analytics.topPlannerMonthCount) {
+                  <span class="ddp-analytics-stat__hint">{{ analytics.topPlannerMonthCount }} {{ ui.t('destinations.analytics.entries_short') }}</span>
+                }
+              </div>
+              <div class="ddp-analytics-stat">
+                <span class="ddp-analytics-stat__label">{{ ui.t('places.analytics.events_count') }}</span>
+                <span class="ddp-analytics-stat__value">{{ compactCount(analytics.eventCount) }}</span>
+                @if (analytics.upcomingEventCount) {
+                  <span class="ddp-analytics-stat__hint">{{ analytics.upcomingEventCount }} {{ ui.t('places.analytics.upcoming_short') }}</span>
+                }
+              </div>
+              <div class="ddp-analytics-stat">
+                <span class="ddp-analytics-stat__label">{{ ui.t('places.analytics.review_count') }}</span>
+                <span class="ddp-analytics-stat__value">{{ compactCount(analytics.reviewCount) }}</span>
+                @if (analytics.avgRating) {
+                  <span class="ddp-analytics-stat__hint">⭐ {{ analytics.avgRating }}</span>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
         <!-- Reviews -->
         <div class="place-details-section">
           <h4 class="place-details-section__title">
@@ -797,9 +863,31 @@
                         >
                       }
                     </div>
+                    @if (review.id) {
+                      <button type="button" class="place-review__open"
+                              (click)="openReviewInAdmin(review.id!)"
+                              [title]="ui.t('reviews.actions.open_in_admin')">
+                        <span class="material-icons">arrow_outward</span>
+                      </button>
+                    }
                   </div>
                   @if (review.comment) {
                     <p class="place-review__comment">{{ review.comment }}</p>
+                  }
+                  @if (review.imageUrls && review.imageUrls.length > 0) {
+                    <div class="place-review__images">
+                      @for (url of review.imageUrls.slice(0, 3); track url; let i = $index) {
+                        <span class="place-review__thumb"
+                              [class.place-review__thumb--more]="i === 2 && review.imageUrls!.length > 3">
+                          <img [src]="url" alt="" loading="lazy" />
+                          @if (i === 2 && review.imageUrls!.length > 3) {
+                            <span class="place-review__thumb-more">
+                              <span class="material-icons">add</span>{{ review.imageUrls!.length - 3 }}
+                            </span>
+                          }
+                        </span>
+                      }
+                    </div>
                   }
                 </div>
               }

@@ -9,11 +9,13 @@ namespace Explorea.API.DTOs.Admin.Activity
 
     public class ActivityReviewDto
     {
+        public Guid Id { get; set; }
         public string AuthorName { get; set; } = null!;
         public string? AuthorAvatarUrl { get; set; }
         public short Rating { get; set; }
         public string? Comment { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
+        public List<string> ImageUrls { get; set; } = new();
     }
 
     public class AdminActivityDetailsDto
@@ -47,6 +49,7 @@ namespace Explorea.API.DTOs.Admin.Activity
 
         public decimal AvgRating { get; set; }
         public int Popularity { get; set; }
+        public int Views { get; set; }
 
         public string? ExtraData { get; set; }
         public Dictionary<string, string>? ExtraFilters { get; set; }

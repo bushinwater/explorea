@@ -49,6 +49,7 @@ namespace Explorea.Server.Repositories.Implementations
             return await _db.Reviews
                 .AsNoTracking()
                 .Include(r => r.User)
+                .Include(r => r.Images)
                 .Where(r => r.EntityType == "event" && r.EntityId == eventId)
                 .OrderByDescending(r => r.CreatedAt)
                 .Take(take)

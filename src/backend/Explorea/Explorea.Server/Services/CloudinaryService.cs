@@ -79,6 +79,28 @@ namespace Explorea.Server.Services
             return result.SecureUrl.ToString();
         }
 
+        public async Task<string> UploadReviewImageAsync(IFormFile file, string folder)
+        {
+            if (_cloudinary == null) throw new InvalidOperationException("Cloudinary is not configured.");
+
+            await using var stream = file.OpenReadStream();
+
+            var uploadParams = new ImageUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = folder,
+                Transformation = new Transformation()
+                    .Width(1600).Height(1600).Crop("limit").Quality("auto")
+            };
+
+            var result = await _cloudinary.UploadAsync(uploadParams);
+
+            if (result.Error != null)
+                throw new Exception($"Cloudinary upload failed: {result.Error.Message}");
+
+            return result.SecureUrl.ToString();
+        }
+
         public async Task<string> UploadRawAsync(IFormFile file, string folder)
         {
             if (_cloudinary == null) throw new InvalidOperationException("Cloudinary is not configured.");

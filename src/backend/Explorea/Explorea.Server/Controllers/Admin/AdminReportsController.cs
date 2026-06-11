@@ -30,6 +30,7 @@ namespace Explorea.Server.Controllers.Admin
             }
         }
 
+
         // GET /api/admin/reports/destinations-table
         [HttpGet("destinations-table")]
         public async Task<IActionResult> GetDestinationsTable(

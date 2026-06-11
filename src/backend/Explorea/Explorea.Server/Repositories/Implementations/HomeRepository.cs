@@ -121,6 +121,7 @@ namespace Explorea.Server.Repositories.Implementations
       var reviews = await _db.Reviews
           .AsNoTracking()
           .Include(r => r.User)
+          .Include(r => r.Images)
           .Where(r => r.Comment != null && r.Comment != "")
           .OrderByDescending(r => r.CreatedAt)
           .Take(take)

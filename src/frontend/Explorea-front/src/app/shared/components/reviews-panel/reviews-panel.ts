@@ -1,13 +1,14 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReviewCard } from '../review-card/review-card';
-import { ReviewDto } from '../../../core/models/home.model';
+import { ReviewDto, ReviewImageDto } from '../../../core/models/home.model';
 
 export interface ReviewPanelItem {
   id: string;
   rating: number;
   comment?: string | null;
   createdAt: string;
+  images?: ReviewImageDto[];
   user: {
     id: string;
     firstName: string;
@@ -35,6 +36,7 @@ export class ReviewsPanel {
   @Output() closed = new EventEmitter<void>();
   @Output() deleted = new EventEmitter<string>();
   @Output() updated = new EventEmitter<ReviewDto>();
+  @Output() imageClicked = new EventEmitter<{ reviewId: string; imageIndex: number }>();
 
   asDto(r: ReviewPanelItem): ReviewDto {
     return {
@@ -42,6 +44,7 @@ export class ReviewsPanel {
       rating: r.rating,
       comment: r.comment ?? '',
       createdAt: r.createdAt,
+      images: r.images ?? [],
       user: {
         id: r.user.id,
         firstName: r.user.firstName,

@@ -35,6 +35,9 @@ export interface PlaceDetail extends PlaceCard {
     comment: string | null;
     createdAt: string;
     user: { id: string; firstName: string; lastName: string; travelerRank: string; profileImageUrl?: string | null };
+    images?: { id: string; imageUrl: string; sortOrder: number }[];
+    ownerReply?: string | null;
+    ownerReplyAt?: string | null;
   }[];
   similarPlaces: PlaceCard[];
   totalReviews: number;

@@ -144,7 +144,11 @@ namespace Explorea.Server.Services
           LastName = review.User.LastName,
           TravelerRank = review.User.TravelerRank,
           ProfileImageUrl = review.User.ProfileImageUrl
-        }
+        },
+        Images = review.Images
+          .OrderBy(i => i.SortOrder)
+          .Select(i => new ReviewImageDto { Id = i.Id, ImageUrl = i.ImageUrl, SortOrder = i.SortOrder })
+          .ToList()
       };
     }
   }

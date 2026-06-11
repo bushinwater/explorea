@@ -32,6 +32,7 @@ namespace Explorea.Server.Repositories.Implementations
         {
             var query = _db.Reviews
                 .Include(r => r.User)
+                .Include(r => r.Images)
                 .Where(r => !r.IsDeleted)
                 .AsQueryable();
 
@@ -244,6 +245,7 @@ namespace Explorea.Server.Repositories.Implementations
         {
             return await _db.Reviews
                 .Include(r => r.User)
+                .Include(r => r.Images)
                 .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
         }
     }

@@ -63,6 +63,12 @@ export interface SavedItemDto {
   endDatetime?: string;
 }
 
+export interface ProfileReviewImage {
+  id: string;
+  imageUrl: string;
+  sortOrder: number;
+}
+
 export interface ProfileReviewDto {
   id: string;
   entityType: string;
@@ -74,4 +80,5 @@ export interface ProfileReviewDto {
   comment?: string;
   createdAt: string;
   updatedAt: string;
+  images?: ProfileReviewImage[];
 }

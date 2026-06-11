@@ -34,6 +34,7 @@ import { FilterDefinition, LookupService } from '../../../core/services/lookup.s
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 import { isPointInGeoJsonGeometry, parseRegionBoundary } from '../core/utils/geo-boundary.utils';
+import { applyRegionScopeOverlay, drawManagedRegion, drawManagedRegions, fitMapToBoundary, fitMapToRegions, RegionGeoItem } from '../core/utils/region-overlay.utils';
 
 const MAX_IMAGES = 10;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -178,6 +179,8 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   protected readonly lockedCountryId = signal<number | null>(null);
 
   private regionBoundary: any = null;
+  private regionBoundaryRaw: string | null = null;
+  private regionsRaw: RegionGeoItem[] | null = null;
   private map: MapLibreMap | null = null;
   private marker: Marker | null = null;
   private lightStyle: any;
@@ -248,12 +251,12 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
       },
       error: () => {},
     }));
-    if (this.lockedRegionId !== null) {
-      this.eventsService.getRegionsGeo().subscribe(data => {
-        const region = data.regions.find(r => r.id === this.lockedRegionId);
-        if (region?.boundaryGeoJson) this.regionBoundary = parseRegionBoundary(region.boundaryGeoJson);
-      });
-    }
+    this.eventsService.getRegionsGeo().subscribe(data => {
+      const result = applyRegionScopeOverlay(this.map, data, this.lockedRegionId);
+      this.regionBoundaryRaw = result.boundaryRaw;
+      this.regionsRaw = result.regions;
+      this.regionBoundary = result.boundaryRaw ? parseRegionBoundary(result.boundaryRaw) : null;
+    });
   }
 
   private applyRegionLock(): void {
@@ -884,6 +887,14 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
       if (style) this.map?.setStyle(style);
     });
     this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    if (this.regionBoundaryRaw && this.map) {
+      drawManagedRegion(this.map, this.regionBoundaryRaw);
+      fitMapToBoundary(this.map, this.regionBoundaryRaw);
+    } else if (this.regionsRaw && this.map) {
+      drawManagedRegions(this.map, this.regionsRaw);
+      fitMapToRegions(this.map, this.regionsRaw);
+    }
   }
 
   private setCoords(lat: number, lng: number, reverseGeocode = false): void {

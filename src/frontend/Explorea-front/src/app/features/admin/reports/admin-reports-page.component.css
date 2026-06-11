@@ -1245,3 +1245,32 @@
   justify-content: flex-end;
   gap: var(--sp-2);
 }
+
+.rp-queue-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rp-queue-actions .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.rp-queue-actions .btn-secondary:hover:not(:disabled) {
+  color: var(--color-danger, #ef4444);
+  border-color: var(--color-danger, #ef4444);
+}
+
+.rp-queue-actions .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+.rp-queue-actions .btn-secondary .material-icons { font-size: 16px; }

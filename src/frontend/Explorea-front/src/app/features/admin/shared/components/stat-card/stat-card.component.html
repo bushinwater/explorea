@@ -6,7 +6,7 @@
     <span class="stat-card__trend" [class.stat-card__trend--hidden]="!trend">{{ trend || '\u00A0' }}</span>
   </div>
 
-  <div class="stat-card__value">{{ value }}</div>
+  <div class="stat-card__value">{{ displayValue }}</div>
 
   <p class="stat-card__hint" [class.stat-card__hint--hidden]="!hint">{{ hint || ' ' }}</p>
 </article>

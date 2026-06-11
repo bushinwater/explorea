@@ -58,6 +58,7 @@ namespace Explorea.Server.Controllers
             var reviews = await _db.Reviews
                 .Where(r => r.EntityType == "place" && r.EntityId == place.Id)
                 .Include(r => r.User)
+                .Include(r => r.Images)
                 .OrderByDescending(r => r.CreatedAt)
                 .Take(20)
                 .ToListAsync();
@@ -121,6 +122,9 @@ namespace Explorea.Server.Controllers
                         travelerRank = r.User.TravelerRank,
                         profileImageUrl = r.User.ProfileImageUrl,
                     },
+                    images = r.Images
+                        .OrderBy(i => i.SortOrder)
+                        .Select(i => new { id = i.Id, imageUrl = i.ImageUrl, sortOrder = i.SortOrder }),
                 }),
                 similarPlaces,
                 totalReviews,

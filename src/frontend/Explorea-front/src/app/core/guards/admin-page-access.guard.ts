@@ -14,7 +14,7 @@ const ADMIN_PAGE_ROLES: Record<string, AdminRole[]> = {
   'notifications/broadcast': ['super_admin', 'tourist_organization'],
   reviews: ['super_admin', 'tourist_organization', 'place_owner'],
   'object-requests/:id': ['super_admin', 'tourist_organization'],
-  reports: ['super_admin', 'tourist_organization'],
+  reports: ['super_admin', 'tourist_organization', 'place_owner'],
   settings: ['super_admin', 'tourist_organization', 'place_owner'],
   support: ['super_admin', 'tourist_organization', 'place_owner'],
   users: ['super_admin'],

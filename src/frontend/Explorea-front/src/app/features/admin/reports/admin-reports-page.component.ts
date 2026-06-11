@@ -7,6 +7,7 @@ import {
   OnDestroy,
   ViewChild,
   computed,
+  effect,
   signal,
 } from '@angular/core';
 import { Chart, registerables, TooltipItem } from 'chart.js';
@@ -24,6 +25,7 @@ import {
 } from './admin-reports.models';
 import { AdminReportsService } from './admin-reports.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { DashboardAuthService } from '../core/services/dashboard-auth.service';
 
 Chart.register(...registerables);
 
@@ -204,20 +206,20 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
 
   readonly flatCols = computed(() => FLAT_TABLE_COLS[this.flatEntity()]);
 
-  readonly flatScopedEntities = computed(() =>
-    this.flatDestId()
-      ? FLAT_TABLE_ENTITIES.filter(e => e.id !== 'destinations')
-      : FLAT_TABLE_ENTITIES,
-  );
+  readonly flatScopedEntities = computed(() => {
+    const base = this.flatTableEntities();
+    return this.flatDestId() ? base.filter(e => e.id !== 'destinations') : base;
+  });
 
   // Computed: destinations table grouped by region for display
   readonly destTableGrouped = computed(() => {
     const data = this.destTableData();
     if (!data) return null;
     if (this.destSortBy() !== 'region') return null; // only group visually when sorted by region
+    const unknownLabel = this.ui.t('reports.filter.unknown');
     const groups = new Map<string, DestinationsTableItem[]>();
     for (const item of data) {
-      const key = item.region ?? 'Nepoznato';
+      const key = item.region ?? unknownLabel;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(item);
     }
@@ -225,12 +227,31 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   });
 
   readonly destSortOptions    = DEST_SORT_OPTIONS;
-  readonly flatTableEntities  = FLAT_TABLE_ENTITIES;
   readonly flatTableSortOpts  = FLAT_TABLE_SORT_OPTIONS;
   readonly flatTableColDefs   = FLAT_TABLE_COLS;
   readonly vizIcons           = VIZ_ICONS;
   readonly vizLabels          = VIZ_LABELS;
-  readonly entityConfigs      = ENTITY_CONFIGS;
+
+  // Place owners only manage places and events; reviews/users/destinations/activities are not their scope.
+  readonly isPlaceOwner = computed(() => this.role() === 'place_owner');
+
+  readonly entityConfigs = computed(() =>
+    this.isPlaceOwner()
+      ? ENTITY_CONFIGS.filter(e => e.id === 'places' || e.id === 'events')
+      : ENTITY_CONFIGS,
+  );
+
+  readonly flatTableEntities = computed(() =>
+    this.isPlaceOwner()
+      ? FLAT_TABLE_ENTITIES.filter(e => e.id === 'places' || e.id === 'events')
+      : FLAT_TABLE_ENTITIES,
+  );
+
+  readonly searchableEntities = computed(() =>
+    this.isPlaceOwner()
+      ? SEARCHABLE_ENTITIES.filter(e => e === 'places' || e === 'events')
+      : SEARCHABLE_ENTITIES,
+  );
 
   readonly subTypeLabel = computed(() => {
     const e = this.flatEntity();
@@ -239,11 +260,24 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
 
   readonly scopeRegion = computed(() => this.insights()?.scopeRegion ?? null);
 
+  readonly role: () => string;
+
   constructor(
     private readonly svc: AdminReportsService,
     private readonly cdr: ChangeDetectorRef,
     public readonly ui: AdminUiPreferencesService,
+    private readonly auth: DashboardAuthService,
   ) {
+    this.role = this.auth.role;
+    // Place owners can't query destinations/activities — default the builder to their entities.
+    if (this.role() === 'place_owner') {
+      this.entity.set('places');
+      this.flatEntities.set(['places']);
+      this.loadFilterOptions('places');
+    } else {
+      this.loadFilterOptions('destinations');
+    }
+
     this.svc.getInsights().subscribe({
       next: d => {
         this.insights.set(d);
@@ -252,7 +286,41 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
       },
     });
     this.svc.getTemplates().subscribe({ next: d => { this.templates.set(d); this.cdr.detectChanges(); } });
-    this.loadFilterOptions('destinations');
+
+    // Hydrate the queue from sessionStorage (items kept across navigation,
+    // including items pushed from entity preview panels via "Send to Reports Builder").
+    try {
+      const raw = sessionStorage.getItem('reports_pending_queue');
+      if (raw) {
+        const items = JSON.parse(raw) as ReportQueueItem[];
+        if (Array.isArray(items) && items.length > 0) {
+          this.reportQueue.set(items);
+          this.isQueueOpen.set(true);
+        }
+      }
+    } catch {
+      sessionStorage.removeItem('reports_pending_queue');
+    }
+
+    // Keep sessionStorage in sync with the queue signal so items persist across
+    // route changes and accumulate when sent from multiple entity panels.
+    effect(() => {
+      const queue = this.reportQueue();
+      if (queue.length > 0) {
+        try {
+          sessionStorage.setItem('reports_pending_queue', JSON.stringify(queue));
+        } catch { /* quota / serialization errors are non-fatal */ }
+      } else {
+        sessionStorage.removeItem('reports_pending_queue');
+      }
+    });
+  }
+
+  /** Removes all queued items (and the persisted sessionStorage copy). */
+  clearQueue(): void {
+    this.reportQueue.set([]);
+    this.isQueueOpen.set(false);
+    this.cdr.detectChanges();
   }
 
   ngAfterViewInit(): void { this.viewReady = true; }
@@ -977,9 +1045,10 @@ export class AdminReportsPageComponent implements AfterViewInit, OnDestroy {
   // ─── Utilities ───────────────────────────────────────────────────────────
 
   formatNum(n: number): string {
+    if (n == null || isNaN(n)) return '0';
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
     if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}k`;
-    return n.toFixed(n < 10 ? 1 : 0);
+    return Math.round(n).toString();
   }
 
   queueIcon(type: string): string {

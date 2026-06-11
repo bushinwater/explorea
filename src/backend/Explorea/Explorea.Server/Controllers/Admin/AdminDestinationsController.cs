@@ -154,7 +154,23 @@ namespace Explorea.Server.Controllers.Admin
                 query = query.Where(r => r.Id == managedRegionId.Value);
             }
 
-            var regions = await query.OrderBy(r => r.Id).ToListAsync();
+            List<Explorea.API.Models.Region> regions;
+            if (isSuperAdmin && user?.CountryId.HasValue == true)
+            {
+                // SuperAdmin assigned to a country — try to restrict to that country's regions.
+                regions = await query
+                    .Where(r => r.CountryId == user.CountryId.Value)
+                    .OrderBy(r => r.Id)
+                    .ToListAsync();
+                // If no regions are tagged with that country, fall back to all regions so
+                // the outline is still drawn (otherwise the mini-map shows nothing).
+                if (regions.Count == 0)
+                    regions = await query.OrderBy(r => r.Id).ToListAsync();
+            }
+            else
+            {
+                regions = await query.OrderBy(r => r.Id).ToListAsync();
+            }
 
             var regionDtos = regions.Select(r => new
             {
@@ -166,9 +182,19 @@ namespace Explorea.Server.Controllers.Admin
             string? serbiaOutlineGeoJson = null;
             if (isSuperAdmin && regions.Count > 0)
             {
-                var union = regions[0].Boundary!;
-                for (int i = 1; i < regions.Count; i++)
-                    union = union.Union(regions[i].Boundary!);
+                Geometry union;
+                try
+                {
+                    var boundaries = regions.Select(r => r.Boundary!).ToArray();
+                    union = NetTopologySuite.Operation.Union.UnaryUnionOp.Union(boundaries);
+                }
+                catch
+                {
+                    // Fallback to pairwise union if UnaryUnion fails.
+                    union = regions[0].Boundary!;
+                    for (int i = 1; i < regions.Count; i++)
+                        union = union.Union(regions[i].Boundary!);
+                }
                 serbiaOutlineGeoJson = GeometryToGeoJson(union);
             }
 
@@ -220,6 +246,18 @@ namespace Explorea.Server.Controllers.Admin
             {
                 return StatusCode(403, new { message = ex.Message });
             }
+        }
+
+        // POST /api/admin/destinations/backfill-city-type
+        [HttpPost("backfill-city-type")]
+        public async Task<IActionResult> BackfillCityForCityType()
+        {
+            try
+            {
+                var touched = await _service.BackfillCityForCityTypeDestinationsAsync(GetCurrentUserId());
+                return Ok(new { touched });
+            }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
         }
 
         // POST /api/admin/destinations
@@ -360,15 +398,148 @@ namespace Explorea.Server.Controllers.Admin
 
         // GET /api/admin/destinations/{id}/analytics
         [HttpGet("{id}/analytics")]
-        public IActionResult GetAnalytics(Guid id)
+        public async Task<IActionResult> GetAnalytics(Guid id)
         {
+            var now      = DateTimeOffset.UtcNow;
+            var monthAgo = now.AddDays(-30);
+
+            // 30-day visits timeline (daily buckets, zero-filled)
+            var rawDaily = await _context.PopularityLogs
+                .Where(l => l.EntityType == "destination" && l.EntityId == id
+                            && l.Source == "click" && l.CreatedAt >= monthAgo)
+                .GroupBy(l => new { l.CreatedAt.UtcDateTime.Year, l.CreatedAt.UtcDateTime.Month, l.CreatedAt.UtcDateTime.Day })
+                .Select(g => new { g.Key.Year, g.Key.Month, g.Key.Day, Count = g.Count() })
+                .ToListAsync();
+            var lookup = rawDaily
+                .ToDictionary(x => new DateTime(x.Year, x.Month, x.Day), x => x.Count);
+
+            var timeline = new List<object>(31);
+            for (var i = 30; i >= 0; i--)
+            {
+                var d = now.AddDays(-i).UtcDateTime.Date;
+                timeline.Add(new
+                {
+                    date  = d.ToString("yyyy-MM-dd"),
+                    value = lookup.GetValueOrDefault(d, 0),
+                });
+            }
+
+            // Top place / activity / event by clicks on entities belonging to this destination
+            var topPlace = await GetTopChildAsync(id, "place");
+            var topActivity = await GetTopChildAsync(id, "activity");
+            var topEvent = await GetTopChildAsync(id, "event");
+
+            var totalViews = await _context.PopularityLogs
+                .CountAsync(l => l.EntityType == "destination" && l.EntityId == id && l.Source == "click");
+            var viewsLast30 = await _context.PopularityLogs
+                .CountAsync(l => l.EntityType == "destination" && l.EntityId == id && l.Source == "click" && l.CreatedAt >= monthAgo);
+            var reviewCount = await _context.Reviews
+                .CountAsync(r => r.EntityType == "destination" && r.EntityId == id && !r.IsDeleted && !r.IsHidden);
+
+            // Saved-by users — distinct users who bookmarked this destination
+            var savedByUsers = await _context.SavedItems
+                .Where(s => s.EntityType == "destination" && s.EntityId == id)
+                .Select(s => s.UserId)
+                .Distinct()
+                .CountAsync();
+
+            // Planner users — distinct users whose TripPlan contains this destination
+            var plannerByUsers = await _context.TripPlanItems
+                .Where(t => t.EntityType == "destination" && t.EntityId == id)
+                .Select(t => t.TripPlan.UserId)
+                .Distinct()
+                .CountAsync();
+
+            // Most popular planner month for this destination
+            var plannerMonthGrouped = await _context.TripPlanItems
+                .Where(t => t.EntityType == "destination" && t.EntityId == id)
+                .Select(t => new
+                {
+                    EffectiveDate = t.PlannedAt ?? t.CreatedAt,
+                })
+                .GroupBy(x => new { x.EffectiveDate.UtcDateTime.Year, x.EffectiveDate.UtcDateTime.Month })
+                .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
+                .OrderByDescending(x => x.Count)
+                .FirstOrDefaultAsync();
+
+            string? topPlannerMonth = null;
+            int topPlannerMonthCount = 0;
+            if (plannerMonthGrouped != null)
+            {
+                topPlannerMonth = $"{plannerMonthGrouped.Year}-{plannerMonthGrouped.Month:D2}";
+                topPlannerMonthCount = plannerMonthGrouped.Count;
+            }
+
             return Ok(new
             {
-                views         = 0,
-                reviewCount   = 0,
-                queuePending  = 0,
-                queueApproved = 0
+                totalViews,
+                viewsLast30,
+                reviewCount,
+                viewsTimeline = timeline,
+                topPlace,
+                topActivity,
+                topEvent,
+                savedByUsers,
+                plannerByUsers,
+                topPlannerMonth,
+                topPlannerMonthCount,
             });
+        }
+
+        private async Task<object?> GetTopChildAsync(Guid destinationId, string entityType)
+        {
+            // Get all entity IDs of given type that belong to this destination.
+            IQueryable<Guid> entityIds = entityType switch
+            {
+                "place" => _context.Places
+                    .IgnoreQueryFilters()
+                    .Where(p => !p.IsDeleted && p.DestinationId == destinationId)
+                    .Select(p => p.Id),
+                "activity" => _context.Activities
+                    .IgnoreQueryFilters()
+                    .Where(a => !a.IsDeleted && a.DestinationId == destinationId)
+                    .Select(a => a.Id),
+                "event" => _context.Events
+                    .IgnoreQueryFilters()
+                    .Where(e => !e.IsDeleted && e.DestinationId == destinationId)
+                    .Select(e => e.Id),
+                _ => Enumerable.Empty<Guid>().AsQueryable(),
+            };
+            var idList = await entityIds.ToListAsync();
+            if (idList.Count == 0) return null;
+
+            // Pick the one with most clicks.
+            var topGroup = await _context.PopularityLogs
+                .Where(l => l.EntityType == entityType && idList.Contains(l.EntityId) && l.Source == "click")
+                .GroupBy(l => l.EntityId)
+                .Select(g => new { Id = g.Key, Views = g.Count() })
+                .OrderByDescending(g => g.Views)
+                .FirstOrDefaultAsync();
+
+            // Fall back to any entity (with 0 views) if no clicks exist.
+            Guid targetId; int views;
+            if (topGroup != null) { targetId = topGroup.Id; views = topGroup.Views; }
+            else                  { targetId = idList[0];   views = 0; }
+
+            return entityType switch
+            {
+                "place" => await _context.Places
+                    .IgnoreQueryFilters()
+                    .Where(p => p.Id == targetId)
+                    .Select(p => new { id = p.Id, name = p.Name, slug = p.Slug, views, entityType = "place" })
+                    .FirstOrDefaultAsync(),
+                "activity" => await _context.Activities
+                    .IgnoreQueryFilters()
+                    .Where(a => a.Id == targetId)
+                    .Select(a => new { id = a.Id, name = a.Name, slug = a.Slug, views, entityType = "activity" })
+                    .FirstOrDefaultAsync(),
+                "event" => await _context.Events
+                    .IgnoreQueryFilters()
+                    .Where(e => e.Id == targetId)
+                    .Select(e => new { id = e.Id, name = e.Name, slug = e.Slug, views, entityType = "event" })
+                    .FirstOrDefaultAsync(),
+                _ => null,
+            };
         }
 
         [HttpGet("{id}/reviews")]
@@ -377,15 +548,18 @@ namespace Explorea.Server.Controllers.Admin
             var reviews = await _context.Reviews
                 .Where(r => r.EntityType == "destination" && r.EntityId == id)
                 .Include(r => r.User)
+                .Include(r => r.Images)
                 .OrderByDescending(r => r.CreatedAt)
                 .Take(10)
                 .Select(r => new
                 {
+                    id = r.Id,
                     authorName = r.User.FirstName + " " + r.User.LastName,
                     authorAvatarUrl = r.User.ProfileImageUrl,
                     rating = (int)r.Rating,
                     comment = r.Comment,
                     createdAt = r.CreatedAt,
+                    imageUrls = r.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList(),
                 })
                 .ToListAsync();
             return Ok(reviews);
@@ -406,7 +580,31 @@ namespace Explorea.Server.Controllers.Admin
             }
             if (geom is Polygon poly)
                 return $"{{\"type\":\"Polygon\",\"coordinates\":{PolygonToGeoJson(poly)}}}";
+
+            // GeometryCollection / other complex types: extract polygonal children
+            // and emit them as a MultiPolygon so the front-end can still render them.
+            var polygons = new List<Polygon>();
+            CollectPolygons(geom, polygons);
+            if (polygons.Count > 0)
+            {
+                var polys = string.Join(",", polygons.Select(PolygonToGeoJson));
+                return $"{{\"type\":\"MultiPolygon\",\"coordinates\":[{polys}]}}";
+            }
             return "null";
+        }
+
+        private static void CollectPolygons(Geometry geom, List<Polygon> sink)
+        {
+            switch (geom)
+            {
+                case Polygon p: sink.Add(p); break;
+                case MultiPolygon mp:
+                    foreach (var g in mp.Geometries) sink.Add((Polygon)g);
+                    break;
+                case GeometryCollection gc:
+                    foreach (var g in gc.Geometries) CollectPolygons(g, sink);
+                    break;
+            }
         }
 
         private static string PolygonToGeoJson(Polygon poly)

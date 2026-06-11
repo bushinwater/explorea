@@ -14,6 +14,12 @@ import { HttpClient } from '@angular/common/http';
 import { DecimalPipe } from '@angular/common';
 import { StatCardComponent } from '@shared/components';
 import { ActivatedRoute, Router } from '@angular/router';
+import { formatCompactCount } from '../core/utils/compact-number.utils';
+import { appendToReportsQueue } from '../core/utils/reports-queue.utils';
+import { Chart, registerables } from 'chart.js';
+import type { ReportQueueItem } from '../reports/admin-reports.models';
+
+Chart.register(...registerables);
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
@@ -23,6 +29,7 @@ import { EmptyStateComponent } from '../shared/components/empty-state/empty-stat
 import { FeedbackBannerComponent } from '../shared/components/feedback-banner/feedback-banner.component';
 import { TableSkeletonComponent } from '../shared/components/table-skeleton/table-skeleton.component';
 import {
+  ActivityAnalytics,
   ActivityDetail,
   ActivityDifficulty,
   ActivityFilters,
@@ -44,6 +51,7 @@ import { MapPreviewComponent } from '../shared/components/map-preview/map-previe
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 import { isPointInGeoJsonGeometry, parseRegionBoundary } from '../core/utils/geo-boundary.utils';
+import { applyRegionScopeOverlay, drawManagedRegion, drawManagedRegions, fitMapToBoundary, fitMapToRegions, RegionGeoItem } from '../core/utils/region-overlay.utils';
 
 const DARK = {
   land: '#1e2e24', water: '#102840', park: '#1e3228',
@@ -131,6 +139,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly selectedActivityDetail = signal<ActivityDetail | null>(null);
   protected readonly isDescriptionExpanded = signal(false);
   protected readonly detailsInterests = signal<InterestTagOption[]>([]);
+  protected readonly detailsAnalytics = signal<ActivityAnalytics | null>(null);
+  private analyticsChart: Chart | null = null;
+  @ViewChild('analyticsCanvas') private analyticsCanvasRef?: ElementRef<HTMLCanvasElement>;
 
   protected readonly isCreateModalOpen = signal(false);
   protected readonly isEditModalClosing = signal(false);
@@ -239,6 +250,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly managedRegion = signal<{ id: number; name: string } | null>(null);
   protected readonly locationOutsideRegion = signal(false);
   private regionBoundary: any = null;
+  private regionBoundaryRaw: string | null = null;
+  private regionsRaw: RegionGeoItem[] | null = null;
   protected readonly hoverRating = signal<number | null>(null);
   protected readonly allInterestTags = signal<InterestTagOption[]>([]);
   protected readonly selectedInterestIds = signal<number[]>([]);
@@ -304,14 +317,28 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.loadRegions();
     this.loadCountries();
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
+    if (openEditId) this.pendingScrollRowId = openEditId;
     this.loadActivities(openEditId ? (items) => {
       const activity = items.find(a => a.id === openEditId);
       if (activity) this.openEditFromRow(activity);
     } : undefined);
 
     if (openId) {
+      this.pendingScrollRowId = openId;
       this.openDetailsPanel({ id: openId, name: openName } as unknown as ActivityRow);
     }
+  }
+
+  private pendingScrollRowId: string | null = null;
+
+  private scrollToPendingRow(): void {
+    if (!this.pendingScrollRowId) return;
+    const id = this.pendingScrollRowId;
+    this.pendingScrollRowId = null;
+    setTimeout(() => {
+      const el = document.querySelector(`[data-admin-row-id="${id}"]`) as HTMLElement | null;
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
   }
 
   ngOnDestroy(): void {
@@ -481,7 +508,18 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected openReviewInAdmin(reviewId: string): void {
+    this.closeDetailsPanel();
+    void this.router.navigate(['/admin/reviews'], {
+      queryParams: { openReviewId: reviewId },
+    });
+  }
+
   protected openDetailsPanel(activity: ActivityRow): void {
+
+    // Enrich stub row from loaded rows when opened via openId.
+    const loaded = this.activities().find(r => r.id === activity.id);
+    if (loaded) activity = { ...loaded, ...activity, name: activity.name || loaded.name };
 
     this.activeMenuId.set(null);
     this.selectedActivity.set(activity);
@@ -496,6 +534,12 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       this.activitiesService.getById(activity.id).subscribe({
         next: (detail) => {
           this.selectedActivityDetail.set(detail);
+          // ActivityDetail extends ActivityRow — backfill row header from detail.
+          this.selectedActivity.set({
+            ...activity,
+            ...detail,
+            name: detail.name || activity.name,
+          });
           this.detailFallbackLat.set(null);
           this.detailFallbackLng.set(null);
           if (detail.latitude == null && detail.destinationId) {
@@ -523,10 +567,150 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
         next: (tags) => this.detailsInterests.set(tags.filter(t => t.isAssigned)),
       }),
     );
+
+    this.detailsAnalytics.set(null);
+    this.analyticsChart?.destroy();
+    this.analyticsChart = null;
+    this.subscription.add(
+      this.activitiesService.getAnalytics(activity.id).subscribe({
+        next: (analytics) => {
+          this.detailsAnalytics.set(analytics);
+          setTimeout(() => this.renderAnalyticsChart(), 60);
+        },
+      }),
+    );
+  }
+
+  private renderAnalyticsChart(): void {
+    const data = this.detailsAnalytics();
+    if (!data || !this.analyticsCanvasRef?.nativeElement) return;
+    this.analyticsChart?.destroy();
+    this.analyticsChart = new Chart(this.analyticsCanvasRef.nativeElement, {
+      type: 'line',
+      data: {
+        labels: data.viewsTimeline.map(p => this.shortDate(p.date)),
+        datasets: [{
+          label: this.ui.t('destinations.analytics.views_label'),
+          data: data.viewsTimeline.map(p => p.value),
+          borderColor: '#2DD4BF',
+          backgroundColor: 'rgba(45, 212, 191, 0.18)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 2,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 } },
+          x: { ticks: { maxTicksLimit: 8 } },
+        },
+      },
+    });
+  }
+
+  private shortDate(iso: string): string {
+    const d = new Date(iso);
+    return `${d.getDate()}.${d.getMonth() + 1}.`;
+  }
+
+  protected plannerMonthLabel(iso: string | null): string {
+    if (!iso) return '—';
+    const [yearStr, monthStr] = iso.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    if (isNaN(year) || isNaN(month)) return iso;
+    const d = new Date(year, month - 1, 1);
+    return d.toLocaleString(this.ui.language() === 'en' ? 'en-US' : 'sr-RS', { month: 'long', year: 'numeric' });
+  }
+
+  protected sendAnalyticsToReports(): void {
+    const activity = this.selectedActivity();
+    const a = this.detailsAnalytics();
+    if (!activity || !a) return;
+
+    const items: ReportQueueItem[] = [];
+    const now = Date.now();
+
+    if (a.viewsTimeline.length > 0) {
+      const imageUrl = this.captureAnalyticsChartHighRes();
+      if (imageUrl) {
+        items.push({
+          id: now.toString(),
+          title: `${activity.name} — ${this.ui.t('destinations.analytics.views_30d')}`,
+          qtype: 'chart',
+          imageUrl,
+        });
+      }
+    }
+
+    const rows = [
+      { label: this.ui.t('destinations.analytics.saved_by_users'), value: a.savedByUsers },
+      { label: this.ui.t('destinations.analytics.planner_users'),  value: a.plannerByUsers },
+      { label: this.ui.t('places.analytics.review_count'),         value: a.reviewCount },
+    ];
+    if (a.topPlannerMonth) {
+      rows.push({
+        label: `${this.ui.t('destinations.analytics.top_planner_month')} (${this.plannerMonthLabel(a.topPlannerMonth)})`,
+        value: a.topPlannerMonthCount,
+      });
+    }
+
+    items.push({
+      id: (now + 1).toString(),
+      title: `${activity.name} — ${this.ui.t('events.analytics.user_interest')}`,
+      qtype: 'table',
+      data: rows,
+      colLabel: this.ui.t('events.analytics.metric'),
+      colValue: this.ui.t('events.analytics.users'),
+    });
+
+    appendToReportsQueue(items);
+    this.closeDetailsPanel();
+    void this.router.navigate(['/admin/reports']);
+  }
+
+  private captureAnalyticsChartHighRes(): string | null {
+    const data = this.detailsAnalytics();
+    if (!data) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 1280;
+    canvas.height = 480;
+    const tmpChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: data.viewsTimeline.map(p => this.shortDate(p.date)),
+        datasets: [{
+          label: this.ui.t('destinations.analytics.views_label'),
+          data: data.viewsTimeline.map(p => p.value),
+          borderColor: '#2DD4BF',
+          backgroundColor: 'rgba(45, 212, 191, 0.18)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 3,
+        }],
+      },
+      options: {
+        responsive: false,
+        animation: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0, color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.2)' } },
+          x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+        },
+      },
+    });
+    const url = canvas.toDataURL('image/png');
+    tmpChart.destroy();
+    return url;
   }
 
   protected closeDetailsPanel(): void {
     this.isPanelClosing.set(true);
+    this.analyticsChart?.destroy();
+    this.analyticsChart = null;
     setTimeout(() => {
       this.isPanelClosing.set(false);
       this.isDetailsPanelOpen.set(false);
@@ -536,6 +720,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       this.detailsInterests.set([]);
       this.detailFallbackLat.set(null);
       this.detailFallbackLng.set(null);
+      this.detailsAnalytics.set(null);
     }, 220);
   }
 
@@ -1147,13 +1332,15 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   }
 
   protected formatBigNumber(n: number): string {
-    return n.toLocaleString('en-US');
+    return formatCompactCount(n);
   }
 
   protected formatViews(views: number): string {
-    if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`;
-    if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
-    return views.toString();
+    return formatCompactCount(views);
+  }
+
+  protected compactCount(n: number): string {
+    return formatCompactCount(n);
   }
 
   protected difficultyLabel(difficulty: string | null): string {
@@ -1480,6 +1667,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           this.total.set(response.total);
           this.isLoading.set(false);
           afterLoad?.(response.items);
+          this.scrollToPendingRow();
         },
         error: () => {
           this.activities.set([]);
@@ -1526,17 +1714,17 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           if (mr) {
             this.filters.update(f => ({ ...f, regionId: mr.id }));
             this.syncFiltersToQueryParams();
-            this.subscription.add(
-              this.activitiesService.getRegionsGeo().subscribe({
-                next: (geo) => {
-                  const regionData = geo.regions.find(r => r.id === mr.id);
-                  if (regionData?.boundaryGeoJson) {
-                    this.regionBoundary = parseRegionBoundary(regionData.boundaryGeoJson);
-                  }
-                },
-              }),
-            );
           }
+          this.subscription.add(
+            this.activitiesService.getRegionsGeo().subscribe({
+              next: (geo) => {
+                const result = applyRegionScopeOverlay(this.map, geo, mr ? mr.id : null, { fit: !this.isEditMode() });
+                this.regionBoundaryRaw = result.boundaryRaw;
+                this.regionsRaw = result.regions;
+                this.regionBoundary = result.boundaryRaw ? parseRegionBoundary(result.boundaryRaw) : null;
+              },
+            }),
+          );
         },
       }),
     );
@@ -1628,6 +1816,14 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       attributes: true,
       attributeFilter: ['data-theme'],
     });
+
+    if (this.regionBoundaryRaw && this.map) {
+      drawManagedRegion(this.map, this.regionBoundaryRaw);
+      if (!this.isEditMode()) fitMapToBoundary(this.map, this.regionBoundaryRaw);
+    } else if (this.regionsRaw && this.map) {
+      drawManagedRegions(this.map, this.regionsRaw);
+      if (!this.isEditMode()) fitMapToRegions(this.map, this.regionsRaw);
+    }
   }
 
   private setMapCoords(lat: number, lng: number, reverseGeocode = false): void {
