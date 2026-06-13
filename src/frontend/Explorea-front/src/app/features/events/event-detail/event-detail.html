@@ -246,11 +246,11 @@
           <span class="booking-total__value">{{ event.price * persons | number }} RSD</span>
         </div>
 
-        <button class="cta-btn" (click)="buyTickets()" type="button">
+        <button *ngIf="event.ticketUrl" class="cta-btn" (click)="buyTickets()" type="button">
           {{ (event.price ? 'EVENT_DETAIL.BUY_TICKET' : 'EVENT_DETAIL.VISIT_ORGANIZER_SITE') | translate }}
         </button>
 
-        <p class="booking-card__note">
+        <p *ngIf="event.ticketUrl" class="booking-card__note">
           <span class="material-icons">check_circle_outline</span>
           {{ 'EVENT_DETAIL.FREE_CANCEL' | translate }}
         </p>
@@ -368,7 +368,7 @@
   <div class="mobile-cta__price" *ngIf="!event.price">
     <strong>{{ 'EVENT_DETAIL.FREE' | translate }}</strong>
   </div>
-  <button class="cta-btn" (click)="buyTickets()" type="button">
+  <button *ngIf="event.ticketUrl" class="cta-btn" (click)="buyTickets()" type="button">
     {{ (event.price ? 'EVENT_DETAIL.BUY_TICKET' : 'EVENT_DETAIL.VISIT_ORGANIZER_SITE') | translate }}
   </button>
 </div>

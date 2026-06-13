@@ -429,13 +429,13 @@
                 <!-- Status -->
                 <td class="place-td">
                   @if (listMode() === 'deleted') {
-                    <span class="place-status place-status--deleted">Obrisano</span>
+                    <span class="place-status place-status--deleted" [title]="statusTooltip('deleted')">Obrisano</span>
                   } @else if (place.status === 'approved') {
-                    <span class="place-status place-status--approved">
+                    <span class="place-status place-status--approved" [title]="statusTooltip(place.status)">
                       {{ statusLabel(place.status) }}
                     </span>
                   } @else {
-                    <span class="place-status place-status--{{ place.status }}">
+                    <span class="place-status place-status--{{ place.status }}" [title]="statusTooltip(place.status)">
                       {{ statusLabel(place.status) }}
                     </span>
                   }

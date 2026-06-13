@@ -148,6 +148,10 @@ namespace Explorea.Server.Controllers.Admin
             {
                 return StatusCode(403, new { message = ex.Message });
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
             catch (Exception ex)
             {
                 return BadRequest(new { message = ex.ToString() });

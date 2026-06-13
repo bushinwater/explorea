@@ -180,7 +180,8 @@ namespace Explorea.Server.Services.Admin
                 restrictToDestinationIds, restrictToCityIds,
                 page, pageSize, sortBy);
 
-            return (items.Select(MapToListDto).ToList(), total);
+            var recentActiveIds = await GetRecentlyActiveEventIdsAsync(items.Select(e => e.Id));
+            return (items.Select(e => MapToListDto(e, recentActiveIds)).ToList(), total);
         }
 
         public async Task<(List<AdminEventListDto> Items, int Total)> GetDeletedAsync(
@@ -252,7 +253,7 @@ namespace Explorea.Server.Services.Admin
                 .Take(pageSize)
                 .ToListAsync();
 
-            return (items.Select(MapToListDto).ToList(), total);
+            return (items.Select(e => MapToListDto(e)).ToList(), total);
         }
 
         public async Task<(List<AdminEventListDto> Items, int Total)> GetRejectedAsync(
@@ -280,7 +281,7 @@ namespace Explorea.Server.Services.Admin
                     .Take(pageSize)
                     .ToListAsync();
 
-                return (ownerItems.Select(MapToListDto).ToList(), ownerTotal);
+                return (ownerItems.Select(e => MapToListDto(e)).ToList(), ownerTotal);
             }
 
             var (restrictToDestinationIds, restrictToCityIds) =
@@ -328,7 +329,7 @@ namespace Explorea.Server.Services.Admin
                 .Take(pageSize)
                 .ToListAsync();
 
-            return (items.Select(MapToListDto).ToList(), total);
+            return (items.Select(e => MapToListDto(e)).ToList(), total);
         }
 
         public async Task<(List<AdminEventListDto> Items, int Total)> GetExpiredAsync(
@@ -379,7 +380,7 @@ namespace Explorea.Server.Services.Admin
                 .Take(pageSize)
                 .ToListAsync();
 
-            return (items.Select(MapToListDto).ToList(), total);
+            return (items.Select(e => MapToListDto(e)).ToList(), total);
         }
 
         public async Task<AdminEventDetailDto?> GetByIdAsync(Guid id, Guid currentUserId)
@@ -416,6 +417,7 @@ namespace Explorea.Server.Services.Admin
 
         public async Task<AdminEventDetailDto> CreateAsync(AdminCreateEventDto dto, Guid createdBy)
         {
+            await EnsureUniqueNameAsync(dto.Name);
             var user = await _userRepo.GetByIdWithRoleAsync(createdBy);
             if (user?.Role.Name != RoleNames.SuperAdmin &&
                 user?.Role.Name != RoleNames.TouristOrganization &&
@@ -923,7 +925,7 @@ namespace Explorea.Server.Services.Admin
             var paged = items
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(MapToListDto)
+                .Select(e => MapToListDto(e))
                 .ToList();
 
             return (paged, total);
@@ -951,7 +953,7 @@ namespace Explorea.Server.Services.Admin
                 .Take(pageSize)
                 .ToListAsync();
 
-            return (items.Select(MapToListDto).ToList(), total);
+            return (items.Select(e => MapToListDto(e)).ToList(), total);
         }
 
         private async Task<(List<AdminEventListDto> Items, int Total)> GetOwnerExpiredEventsAsync(
@@ -979,7 +981,7 @@ namespace Explorea.Server.Services.Admin
                 .Take(pageSize)
                 .ToListAsync();
 
-            return (items.Select(MapToListDto).ToList(), total);
+            return (items.Select(e => MapToListDto(e)).ToList(), total);
         }
 
         private IQueryable<Event> BuildOwnerEventScope(Guid ownerId)
@@ -1136,6 +1138,22 @@ namespace Explorea.Server.Services.Admin
             return createdByRole == RoleNames.PlaceOwner ? ev.CreatedBy : null;
         }
 
+        /// <summary>
+        /// Rejects creating an event whose name collides with an existing one after
+        /// Serbian-diacritic normalization (e.g. "Cacak" == "Čačak" == "CACAK").
+        /// </summary>
+        private async Task EnsureUniqueNameAsync(string name)
+        {
+            var normalized = NameNormalizer.Normalize(name);
+            if (normalized.Length == 0) return;
+            var existingNames = await _db.Events
+                .Where(e => !e.IsDeleted)
+                .Select(e => e.Name)
+                .ToListAsync();
+            if (existingNames.Any(n => NameNormalizer.Normalize(n) == normalized))
+                throw new InvalidOperationException($"Događaj sa imenom \"{name.Trim()}\" već postoji.");
+        }
+
         private static void AddChangedField<T>(ICollection<string> fields, string label, T oldValue, T newValue)
         {
             if (oldValue is string || newValue is string)
@@ -1155,7 +1173,7 @@ namespace Explorea.Server.Services.Admin
             }
         }
 
-        private static AdminEventListDto MapToListDto(Event e) => new()
+        private static AdminEventListDto MapToListDto(Event e, HashSet<Guid>? recentlyActiveIds = null) => new()
         {
             Id             = e.Id,
             Name           = e.Name,
@@ -1175,8 +1193,27 @@ namespace Explorea.Server.Services.Admin
             RecursAnnually = e.RecursAnnually,
             CreatedAt      = e.CreatedAt,
             UpdatedAt      = e.UpdatedAt,
-            DeletedAt      = e.DeletedAt
+            DeletedAt      = e.DeletedAt,
+            HasRecentActivity = recentlyActiveIds?.Contains(e.Id) ?? (e.CreatedAt >= DateTimeOffset.UtcNow.AddDays(-30)),
         };
+
+        /// <summary>
+        /// Returns the subset of event ids that had at least one popularity-log event
+        /// in the last 30 days. New events (without log entries yet) fall back to
+        /// CreatedAt inside MapToListDto so they're not unfairly flagged Neaktivno.
+        /// </summary>
+        private async Task<HashSet<Guid>> GetRecentlyActiveEventIdsAsync(IEnumerable<Guid> ids)
+        {
+            var idList = ids.ToList();
+            if (idList.Count == 0) return new HashSet<Guid>();
+            var thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30);
+            var hits = await _db.PopularityLogs
+                .Where(l => l.EntityType == "event" && idList.Contains(l.EntityId) && l.CreatedAt >= thirtyDaysAgo)
+                .Select(l => l.EntityId)
+                .Distinct()
+                .ToListAsync();
+            return hits.ToHashSet();
+        }
 
         private async Task<AdminEventDetailDto> MapToDetailDtoAsync(Event e)
         {

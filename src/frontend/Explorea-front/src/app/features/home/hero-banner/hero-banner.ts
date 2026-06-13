@@ -253,10 +253,16 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
     this.draftFilters       = { ...this.filters };
     this.draftNearbyEnabled = this.nearbyEnabled;
     this.draftEntityTypes   = this.filterEntityType ? [this.filterEntityType] : [];
+    // Reset any leftover filter defs from a previous panel session so we
+    // don't show stale chips (e.g. synthetic "Besplatan ulaz" from a prior
+    // events selection) when the user reopens the panel with a different draft.
+    this.filterDefs = [];
+    this.filterDefsTypeId = null;
     if (this.filterEntityType) {
       const ids = this.getSelectedCategoryIds();
-      if (ids.length === 1 && this.filterDefsTypeId !== ids[0]) this.loadFilterDefs(ids[0]);
+      if (ids.length === 1) this.loadFilterDefs(ids[0]);
     }
+    this.ensureEventsFreeEntryFilter();
     this.showFilterPanel = true;
     this.lockPageScroll();
     this.cdr.markForCheck();
@@ -340,7 +346,10 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
       this.filterDefsTypeId = null;
     } else {
       this.filterEntityType = null;
+      this.filterDefs = [];
+      this.filterDefsTypeId = null;
     }
+    this.ensureEventsFreeEntryFilter();
     this.cdr.markForCheck();
   }
 
@@ -403,6 +412,7 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
         break;
       }
     }
+    this.ensureEventsFreeEntryFilter();
   }
 
   isExtraFilterActive(key: string, value: string = 'true'): boolean {
@@ -414,6 +424,40 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
     if (current[key] === value) delete current[key];
     else current[key] = value;
     this.draftFilters = { ...this.draftFilters, extraFilters: current };
+  }
+
+  private syntheticFreeEntryDef(): FilterDefinition {
+    return {
+      id: -1,
+      filterKey: 'free_entry',
+      filterLabel: 'Besplatan ulaz',
+      filterType: 'boolean',
+      sortOrder: 0,
+      options: [],
+    };
+  }
+
+  private ensureEventsFreeEntryFilter(): void {
+    if (!this.draftEntityTypes.includes('event')) return;
+    // When user picked exactly one event subcategory, the server response
+    // already includes free_entry — don't add a duplicate.
+    const eventIds = this.draftFilters.eventTypeIds ?? [];
+    const serverLoadedEventDefs =
+      this.filterEntityType === 'event' && this.draftEntityTypes.length === 1 && eventIds.length === 1;
+    if (serverLoadedEventDefs) return;
+    if (this.filterDefs.some(d => d.filterKey === 'free_entry')) return;
+    this.filterDefs = [this.syntheticFreeEntryDef(), ...this.filterDefs];
+  }
+
+  /** Whether the extra-filters panel should render, including the events-shared free_entry case. */
+  get showFilterDefsPanel(): boolean {
+    if (this.filterDefsLoading) return false;
+    if (this.filterDefs.length === 0) return false;
+    // Originally: panel is hidden for multi-entity drafts. Events share a
+    // "Besplatan ulaz" filter across all event types, so allow the panel
+    // through when events are part of the multi-entity selection too.
+    if (this.isMultiEntityDraft && !this.draftEntityTypes.includes('event')) return false;
+    return true;
   }
 
   loadFilterDefs(typeId: number): void {
@@ -436,6 +480,7 @@ export class HeroBanner implements OnInit, OnChanges, AfterViewInit, OnDestroy {
         }
         this.filterDefs        = defs;
         this.filterDefsLoading = false;
+        this.ensureEventsFreeEntryFilter();
         this.cdr.markForCheck();
       },
       error: () => {

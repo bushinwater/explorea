@@ -80,6 +80,12 @@ export interface DestinationRow {
   typeId?: number | null;
   typeName?: string | null;
   status: DestinationStatus;
+  /**
+   * Backend-computed: at least one click in the last 30 days, OR created
+   * within the last 30 days (grace period for brand-new rows). Drives the
+   * "Aktivno / Neaktivno" status pill in the admin table.
+   */
+  hasRecentActivity: boolean;
   thumbnailUrl: string | null;
   views: number;
   avgRating?: number;

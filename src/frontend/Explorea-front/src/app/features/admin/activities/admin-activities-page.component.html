@@ -505,12 +505,13 @@
 
                 <td class="activity-td">
                   @if (listMode() === 'deleted') {
-                    <span class="activity-status activity-status--deleted">{{
+                    <span class="activity-status activity-status--deleted" [title]="statusTooltip('deleted')">{{
                       ui.t('common.deleted')
                     }}</span>
                   } @else {
                     <span
                       class="activity-status activity-status--{{ statusKey(activity.isActive) }}"
+                      [title]="statusTooltip(statusKey(activity.isActive))"
                     >
                       {{ statusLabel(activity.isActive) }}
                     </span>
@@ -682,11 +683,11 @@
           <!-- Status + difficulty badges -->
           <div class="ddp-badges">
             @if (listMode() === 'deleted') {
-              <span class="activity-status activity-status--deleted">{{
+              <span class="activity-status activity-status--deleted" [title]="statusTooltip('deleted')">{{
                 ui.t('common.deleted')
               }}</span>
             } @else {
-              <span class="activity-status activity-status--{{ statusKey(detail.isActive) }}">
+              <span class="activity-status activity-status--{{ statusKey(detail.isActive) }}" [title]="statusTooltip(statusKey(detail.isActive))">
                 {{ statusLabel(detail.isActive) }}
               </span>
             }
@@ -1067,11 +1068,17 @@
             >
             <input
               class="edit-field__input"
+              [class.edit-field__input--error]="editingActivityId() === null && nameAlreadyExists()"
               type="text"
               [value]="createForm().name"
               (input)="updateCreateField('name', $any($event.target).value)"
               [placeholder]="ui.t('common.name_label')"
             />
+            @if (editingActivityId() === null && nameAlreadyExists()) {
+              <span class="edit-field__error">Aktivnost sa ovim imenom već postoji.</span>
+            } @else if (editingActivityId() === null && nameChecking()) {
+              <span class="edit-field__hint">Provera imena…</span>
+            }
           </div>
 
           <div class="edit-field">

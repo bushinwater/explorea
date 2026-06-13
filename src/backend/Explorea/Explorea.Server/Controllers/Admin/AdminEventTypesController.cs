@@ -40,6 +40,27 @@ namespace Explorea.Server.Controllers.Admin
             var et = new EventType { Name = req.Name.Trim(), CreatedAt = now, UpdatedAt = now };
             _context.EventTypes.Add(et);
             await _context.SaveChangesAsync();
+
+            // Auto-seed a "Besplatan ulaz" boolean filter for this new event type,
+            // matching the convention used by other event categories.
+            var exists = await _context.FilterDefinitions
+                .AnyAsync(f => f.EntityType == "event" && f.TypeId == et.Id && f.FilterKey == "free_entry");
+            if (!exists)
+            {
+                _context.FilterDefinitions.Add(new FilterDefinition
+                {
+                    EntityType  = "event",
+                    TypeId      = et.Id,
+                    FilterKey   = "free_entry",
+                    FilterLabel = "Besplatan ulaz",
+                    FilterType  = "boolean",
+                    SortOrder   = 0,
+                    CreatedAt   = now,
+                    UpdatedAt   = now,
+                });
+                await _context.SaveChangesAsync();
+            }
+
             return Ok(new { id = et.Id, name = et.Name });
         }
 

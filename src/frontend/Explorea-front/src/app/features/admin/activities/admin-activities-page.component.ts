@@ -20,9 +20,11 @@ import { Chart, registerables } from 'chart.js';
 import type { ReportQueueItem } from '../reports/admin-reports.models';
 
 Chart.register(...registerables);
-import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, Subscription, debounceTime, distinctUntilChanged, of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminAuthContextService } from '../core/services/admin-auth-context.service';
+import { AdminProfileService } from '../core/services/admin-profile.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
@@ -91,6 +93,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   private readonly searchInput$ = new Subject<string>();
   private readonly destinationSearch$ = new Subject<string>();
+  private readonly nameInput$ = new Subject<string>();
+  protected readonly nameAlreadyExists = signal(false);
+  protected readonly nameChecking      = signal(false);
   private readonly subscription = new Subscription();
 
   private map: MapLibreMap | null = null;
@@ -208,7 +213,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected readonly filteredModalRegions = computed(() => {
     const cid = this.selectedCountryId();
-    return cid === null ? this.regions() : this.regions().filter(r => r.countryId === cid);
+    // Regions stay empty until a country is selected, so the user never sees a
+    // region from outside the current country context.
+    if (cid === null) return [];
+    return this.regions().filter(r => r.countryId === cid);
   });
 
   protected readonly isSuperAdmin = computed(
@@ -265,6 +273,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     private readonly cdr: ChangeDetectorRef,
     protected readonly authContext: AdminAuthContextService,
     protected readonly ui: AdminUiPreferencesService,
+    private readonly profileService: AdminProfileService,
   ) {}
 
   ngOnInit(): void {
@@ -296,6 +305,35 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
             error: () => this.isDestinationSearching.set(false),
           }),
         );
+      }),
+    );
+
+    // Live duplicate-name check while the user types in the create modal.
+    this.subscription.add(
+      this.nameInput$.pipe(
+        debounceTime(350),
+        distinctUntilChanged(),
+        switchMap(value => {
+          const name = (value ?? '').trim();
+          if (name.length < 2 || this.editingActivityId() !== null) {
+            this.nameAlreadyExists.set(false);
+            this.nameChecking.set(false);
+            return of(null);
+          }
+          this.nameChecking.set(true);
+          return this.http.get<{ exists: boolean }>('/api/admin/check-name', {
+            params: { entity: 'activity', name },
+          });
+        }),
+      ).subscribe({
+        next: res => {
+          this.nameChecking.set(false);
+          this.nameAlreadyExists.set(res?.exists === true);
+        },
+        error: () => {
+          this.nameChecking.set(false);
+          this.nameAlreadyExists.set(false);
+        },
       }),
     );
 
@@ -728,6 +766,8 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.destroyMap();
     this.isEditMode.set(false);
     this.editingActivityId.set(null);
+    this.nameAlreadyExists.set(false);
+    this.nameChecking.set(false);
     this.modalInclusions.set([]);
     this.modalImagePreviews().forEach(p => URL.revokeObjectURL(p.url));
     this.modalImagePreviews.set([]);
@@ -750,7 +790,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       const region = this.regions().find(r => r.id === mr.id);
       this.selectedCountryId.set(region?.countryId ?? null);
     } else {
-      this.selectedCountryId.set(null);
+      // Pre-select super_admin's home country so they don't have to pick it
+      // manually on every Create. Tourist orgs are already region-locked above.
+      const cid = this.profileService.profile()?.countryId ?? null;
+      this.selectedCountryId.set(cid != null && this.countries().some(c => c.id === cid) ? cid : null);
     }
     this.modalExtraFilters.set({});
     this.modalFilterDefs.set([]);
@@ -920,6 +963,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected updateCreateField<K extends keyof CreateActivityDto>(key: K, value: CreateActivityDto[K]): void {
     this.createForm.update((f) => ({ ...f, [key]: value }));
+    if (key === 'name') this.nameInput$.next(typeof value === 'string' ? value : '');
   }
 
   protected updateDestinationSearch(value: string): void {
@@ -1214,6 +1258,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected submitCreate(): void {
     const form = this.createForm();
     if (!form.name.trim() || !form.categoryId) return;
+    if (this.editingActivityId() === null && this.nameAlreadyExists()) {
+      this.errorMessage.set('Aktivnost sa ovim imenom već postoji.');
+      return;
+    }
     if (!this.managedRegion() && !this.selectedCountryId()) return;
     if (!this.managedRegion() && this.modalRegionId() === 'all') return;
     if (!form.description?.trim()) { this.errorMessage.set('Opis je obavezno polje.'); return; }
@@ -1359,6 +1407,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected statusKey(isActive: boolean): string {
     return isActive ? 'active' : 'inactive';
+  }
+
+  protected statusTooltip(status: string): string {
+    return this.ui.t('common.status.tooltip.' + status);
   }
 
   protected categoryIcon(categoryName: string): string {

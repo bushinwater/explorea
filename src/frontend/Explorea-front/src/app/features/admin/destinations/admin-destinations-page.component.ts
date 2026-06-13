@@ -758,6 +758,19 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     return this.ui.t('common.status.' + status);
   }
 
+  protected statusTooltip(status: string): string {
+    return this.ui.t('common.status.tooltip.' + status);
+  }
+
+  /** Activity-based pill key: aktivno = recent click in last 30 days OR created within 30 days. */
+  protected activityStatusKey(dest: DestinationRow): 'active' | 'inactive' {
+    return dest.hasRecentActivity ? 'active' : 'inactive';
+  }
+
+  protected activityStatusLabel(dest: DestinationRow): string {
+    return this.ui.t('common.status.' + this.activityStatusKey(dest));
+  }
+
   protected isDeleted(dest: DestinationRow): boolean {
     return this.listMode() === 'deleted';
   }

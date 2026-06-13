@@ -17,7 +17,8 @@ import {
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Subscription } from 'rxjs';
+import { Subscription, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminPlacesService } from './admin-places.service';
 import { AdminProfileService } from '../core/services/admin-profile.service';
@@ -144,6 +145,8 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
   protected readonly allTypeOptions = computed(() => [...this.types, ...this.extraTypes()]);
 
   protected readonly locationOutsideRegion = signal(false);
+  protected readonly nameAlreadyExists     = signal(false);
+  protected readonly nameChecking          = signal(false);
 
   private regionBoundary: any = null;
   private regionBoundaryRaw: string | null = null;
@@ -187,12 +190,48 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
     if (profile?.email) {
       this.form.patchValue({ email: profile.email });
     }
+    // Pre-select super_admin's home country so they don't have to pick it
+    // manually on every Create. Tourist orgs are already locked to a region
+    // (and therefore a country), so this only kicks in for super_admin.
+    if (this.isSuperAdmin && this.lockedRegionId === null && profile?.countryId != null) {
+      this.selectedCountryId.set(profile.countryId);
+    }
 
     this.form.get('name')!.valueChanges.subscribe((name) => {
       if (name && !this.createdId) {
         this.form.patchValue({ slug: this.toSlug(name) }, { emitEvent: false });
       }
     });
+    // Live duplicate-name check so the user sees the warning while typing.
+    this.sub.add(
+      this.form.controls.name.valueChanges.pipe(
+        debounceTime(350),
+        distinctUntilChanged(),
+        switchMap(value => {
+          const name = (value ?? '').trim();
+          if (name.length < 2 || this.createdId) {
+            this.nameAlreadyExists.set(false);
+            this.nameChecking.set(false);
+            return of(null);
+          }
+          this.nameChecking.set(true);
+          return this.http.get<{ exists: boolean }>('/api/admin/check-name', {
+            params: { entity: 'place', name },
+          });
+        }),
+      ).subscribe({
+        next: res => {
+          this.nameChecking.set(false);
+          this.nameAlreadyExists.set(res?.exists === true);
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.nameChecking.set(false);
+          this.nameAlreadyExists.set(false);
+          this.cdr.detectChanges();
+        },
+      }),
+    );
   }
 
   ngOnDestroy(): void {
@@ -225,7 +264,10 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
 
   protected get filteredRegions(): RegionOption[] {
     const cid = this.selectedCountryId();
-    return cid === null ? this.regions : this.regions.filter(r => r.countryId === cid);
+    // Regions stay empty until a country is selected, so the user never sees
+    // a region from outside the current country context.
+    if (cid === null) return [];
+    return this.regions.filter(r => r.countryId === cid);
   }
 
   // ── Region / country cascade ───────────────────────────────────────────
@@ -514,6 +556,7 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
     this.cdr.detectChanges();
     if (this.form.invalid) return;
     if (this.locationOutsideRegion()) return;
+    if (this.nameAlreadyExists()) return;
     if (!this.selectedDestinationId()) {
       this.error.set('Destinacija je obavezna.');
       return;

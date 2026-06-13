@@ -689,8 +689,14 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
     if (startDate && isNaN(startDate.getTime())) errs.push('Datum početka nije validan.');
     if (endDate && isNaN(endDate.getTime())) errs.push('Datum završetka nije validan.');
     if (startDate && endDate && endDate < startDate) errs.push('Datum završetka mora biti posle datuma početka.');
-    const price = f.price.trim() ? Number(f.price.trim().replace(',', '.')) : null;
+    const fek = this.freeEntryKey();
+    const isFreeEntry = fek !== null && f.extraFilters[fek] === 'true';
+    const price = isFreeEntry ? null : (f.price.trim() ? Number(f.price.trim().replace(',', '.')) : null);
     if (price !== null && (isNaN(price) || price < 0)) errs.push('Cena mora biti pozitivan broj.');
+    if (!isFreeEntry) {
+      if (price === null) errs.push('Cena je obavezna kada ulaz nije besplatan.');
+      if (!f.ticketUrl.trim()) errs.push('Link za karte je obavezan kada ulaz nije besplatan.');
+    }
     if (errs.length) { this.errors.set(errs); return; }
 
     const payload: UpdateEventPayload = {

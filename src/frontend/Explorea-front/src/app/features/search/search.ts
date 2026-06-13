@@ -330,6 +330,37 @@ export class Search implements OnInit, OnDestroy {
     });
   }
 
+  private syntheticFreeEntryDef(): FilterDefinition {
+    return {
+      id: -1,
+      filterKey: 'free_entry',
+      filterLabel: 'Besplatan ulaz',
+      filterType: 'boolean',
+      sortOrder: 0,
+      options: [],
+    };
+  }
+
+  private ensureEventsFreeEntryFilter(): void {
+    if (!this.draftEntityTypes.includes('event')) return;
+    // When user picked exactly one event subcategory, the server response
+    // already includes free_entry — don't add a duplicate.
+    const eventIds = this.draftFilters.eventTypeIds ?? [];
+    const serverLoadedEventDefs =
+      this.filterEntityType === 'event' && this.draftEntityTypes.length === 1 && eventIds.length === 1;
+    if (serverLoadedEventDefs) return;
+    if (this.filterDefs.some(d => d.filterKey === 'free_entry')) return;
+    this.filterDefs = [this.syntheticFreeEntryDef(), ...this.filterDefs];
+  }
+
+  /** Whether the extra-filters panel should render, including the events-shared free_entry case. */
+  get showFilterDefsPanel(): boolean {
+    if (this.filterDefsLoading) return false;
+    if (this.filterDefs.length === 0) return false;
+    if (this.isMultiEntityDraft && !this.draftEntityTypes.includes('event')) return false;
+    return true;
+  }
+
   loadFilterDefs(typeId: number): void {
     if (!this.filterEntityType || this.filterDefsTypeId === typeId) return;
     this.filterDefsTypeId  = typeId;
@@ -350,6 +381,7 @@ export class Search implements OnInit, OnDestroy {
         }
         this.filterDefs        = defs;
         this.filterDefsLoading = false;
+        this.ensureEventsFreeEntryFilter();
         this.cdr.detectChanges();
       },
       error: () => {
@@ -818,6 +850,7 @@ export class Search implements OnInit, OnDestroy {
         break;
       }
     }
+    this.ensureEventsFreeEntryFilter();
   }
 
   // ─── Extra filters (dynamic boolean/select checkboxes) ────────────────────
@@ -868,6 +901,7 @@ export class Search implements OnInit, OnDestroy {
       this.filterDefs = [];
       this.filterDefsTypeId = null;
     }
+    this.ensureEventsFreeEntryFilter();
     this.cdr.detectChanges();
   }
 
@@ -1063,13 +1097,19 @@ export class Search implements OnInit, OnDestroy {
       }
       this.draftEntityTypes = this.filterEntityType ? [this.filterEntityType] : [];
     }
+    // Reset any leftover filter defs from a previous panel session so we
+    // don't show stale chips (e.g. synthetic "Besplatan ulaz" from a prior
+    // events selection) when the user reopens the panel with a different draft.
+    this.filterDefs = [];
+    this.filterDefsTypeId = null;
     // Auto-load extra filter defs if exactly one subcat was pre-selected via inline chips
     if (this.filterEntityType) {
       const selectedIds = this.getSelectedCategoryIds();
-      if (selectedIds.length === 1 && this.filterDefsTypeId !== selectedIds[0]) {
+      if (selectedIds.length === 1) {
         this.loadFilterDefs(selectedIds[0]);
       }
     }
+    this.ensureEventsFreeEntryFilter();
     this.showFilterPanel = true;
     this.lockPageScroll();
     this.cdr.detectChanges();

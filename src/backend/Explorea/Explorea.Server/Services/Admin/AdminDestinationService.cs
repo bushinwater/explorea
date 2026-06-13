@@ -123,7 +123,8 @@ namespace Explorea.Server.Services.Admin
                 sortBy);
 
             var viewCounts = await GetViewCountsAsync(items);
-            return (items.Select(d => MapToListDto(d, viewCounts)).ToList(), total);
+            var recentActiveIds = await GetRecentlyActiveIdsAsync("destination", items.Select(d => d.Id));
+            return (items.Select(d => MapToListDto(d, viewCounts, recentActiveIds)).ToList(), total);
         }
 
         public async Task<(List<AdminDestinationListDto> Items, int Total)> GetDeletedAsync(
@@ -437,6 +438,22 @@ namespace Explorea.Server.Services.Admin
         /// linked, look up an existing City with matching name (and region if available) or
         /// create one, then store its Id on the destination. Skips non-city destinations.
         /// </summary>
+        /// <summary>
+        /// Rejects creating a destination whose name collides with an existing one
+        /// after Serbian-diacritic normalization ("Nis" == "Niš" == "NIS").
+        /// </summary>
+        private async Task EnsureUniqueNameAsync(string name)
+        {
+            var normalized = NameNormalizer.Normalize(name);
+            if (normalized.Length == 0) return;
+            var existingNames = await _db.Destinations
+                .Where(d => !d.IsDeleted)
+                .Select(d => d.Name)
+                .ToListAsync();
+            if (existingNames.Any(n => NameNormalizer.Normalize(n) == normalized))
+                throw new InvalidOperationException($"Destinacija sa imenom \"{name.Trim()}\" već postoji.");
+        }
+
         private async Task EnsureCityForCityTypeAsync(Destination destination)
         {
             if (destination.CityId.HasValue) return;
@@ -492,6 +509,8 @@ namespace Explorea.Server.Services.Admin
 
             if (user.Role.Name == RoleNames.TouristOrganization && user.ManagedRegionId.HasValue)
                 await ValidateLocationWithinRegionAsync(dto.Latitude, dto.Longitude, user.ManagedRegionId.Value);
+
+            await EnsureUniqueNameAsync(dto.Name);
 
             var now = DateTimeOffset.UtcNow;
 
@@ -880,7 +899,8 @@ namespace Explorea.Server.Services.Admin
 
         private static AdminDestinationListDto MapToListDto(
             Destination d,
-            IReadOnlyDictionary<Guid, int>? viewCounts = null) => new()
+            IReadOnlyDictionary<Guid, int>? viewCounts = null,
+            HashSet<Guid>? recentlyActiveIds = null) => new()
         {
             Id              = d.Id,
             Name            = d.Name,
@@ -891,6 +911,7 @@ namespace Explorea.Server.Services.Admin
             CityId          = d.CityId,
             Views           = viewCounts?.GetValueOrDefault(d.Id) ?? 0,
             Status          = MapStatus(d.Visibility),
+            HasRecentActivity = recentlyActiveIds?.Contains(d.Id) ?? (d.CreatedAt >= DateTimeOffset.UtcNow.AddDays(-30)),
             TypeId          = d.TypeId,
             TypeName        = d.Type?.Name,
             AvgRating       = d.AvgRating,
@@ -922,6 +943,26 @@ namespace Explorea.Server.Services.Admin
         {
             var visibility = destination.Visibility?.Trim().ToLowerInvariant();
             return visibility is "active" or "published";
+        }
+
+        /// <summary>
+        /// Returns the subset of ids that had at least one popularity-log event
+        /// in the last 30 days — used to flag entities as "Aktivno" in the admin
+        /// table. Brand-new rows (without log events yet) are not included here;
+        /// the mapper falls back to CreatedAt so they aren't unfairly marked
+        /// neaktivno during their first month.
+        /// </summary>
+        private async Task<HashSet<Guid>> GetRecentlyActiveIdsAsync(string entityType, IEnumerable<Guid> ids)
+        {
+            var idList = ids.ToList();
+            if (idList.Count == 0) return new HashSet<Guid>();
+            var thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30);
+            var hits = await _db.PopularityLogs
+                .Where(l => l.EntityType == entityType && idList.Contains(l.EntityId) && l.CreatedAt >= thirtyDaysAgo)
+                .Select(l => l.EntityId)
+                .Distinct()
+                .ToListAsync();
+            return hits.ToHashSet();
         }
 
         private async Task<Dictionary<Guid, int>> GetViewCountsAsync(List<Destination> destinations)
@@ -1131,6 +1172,8 @@ namespace Explorea.Server.Services.Admin
         {
             var recentCutoff = DateTimeOffset.UtcNow.AddDays(-30);
 
+            // published → inactive: row has aged past the 30-day grace period and nobody
+            // has clicked it in the last 30 days, so it should drop to "Neaktivno".
             await _db.Destinations
                 .IgnoreQueryFilters()
                 .Where(d =>
@@ -1143,6 +1186,21 @@ namespace Explorea.Server.Services.Admin
                         l.Source == "click" &&
                         l.CreatedAt > recentCutoff))
                 .ExecuteUpdateAsync(s => s.SetProperty(d => d.Visibility, "inactive"));
+
+            // inactive → published: someone clicked an inactive row recently — flip it
+            // back to "Aktivno" so the admin pill reflects the latest activity instead
+            // of remaining frozen at "Neaktivno".
+            await _db.Destinations
+                .IgnoreQueryFilters()
+                .Where(d =>
+                    !d.IsDeleted &&
+                    d.Visibility == "inactive" &&
+                    _db.PopularityLogs.Any(l =>
+                        l.EntityType == "destination" &&
+                        l.EntityId == d.Id &&
+                        l.Source == "click" &&
+                        l.CreatedAt > recentCutoff))
+                .ExecuteUpdateAsync(s => s.SetProperty(d => d.Visibility, "published"));
         }
     }
 }

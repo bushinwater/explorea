@@ -458,9 +458,13 @@ export class EventDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return `${startDay} – ${endDay}`;
   }
 
-  get exploreMapParams(): { lat?: number; lng?: number } {
+  get exploreMapParams(): { lat?: number; lng?: number; entityType?: string; slug?: string } {
     const loc = this.event?.location;
-    return loc ? { lat: loc.lat, lng: loc.lng } : {};
+    if (!loc) return {};
+    const slug = this.event?.slug;
+    return slug
+      ? { lat: loc.lat, lng: loc.lng, entityType: 'event', slug }
+      : { lat: loc.lat, lng: loc.lng };
   }
 
   get googleMapsDirectionsUrl(): string {

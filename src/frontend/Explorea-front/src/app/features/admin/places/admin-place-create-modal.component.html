@@ -39,12 +39,17 @@
           </label>
           <input
             class="edit-field__input"
+            [class.edit-field__input--error]="nameAlreadyExists()"
             type="text"
             [formControl]="form.controls.name"
             [placeholder]="ui.t('common.name_label')"
           />
           @if (form.controls.name.touched && form.controls.name.errors?.['required']) {
             <span class="edit-field__error">Naziv je obavezan.</span>
+          } @else if (nameAlreadyExists()) {
+            <span class="edit-field__error">Objekat sa ovim imenom već postoji.</span>
+          } @else if (nameChecking()) {
+            <span class="edit-field__hint">Provera imena…</span>
           }
         </div>
 

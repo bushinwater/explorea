@@ -28,7 +28,10 @@ namespace Explorea.Server.Repositories.Implementations
             var query = _db.Destinations
                 .AsNoTracking()
                 .Include(d => d.City)
-                .Where(d => !d.IsDeleted && (includeAll || d.Visibility == "published"));
+                // Tourist app surfaces everything that isn't a draft/rejected admin state.
+                // The click-based "Aktivno / Neaktivno" pill is purely informational in the
+                // admin UI — it does NOT gate availability in the tourist app.
+                .Where(d => !d.IsDeleted && (includeAll || (d.Visibility != "draft" && d.Visibility != "rejected")));
 
             if (lat.HasValue && lng.HasValue)
             {
@@ -121,7 +124,8 @@ namespace Explorea.Server.Repositories.Implementations
 
         public async Task<List<Event>> GetNearbyEventsAsync(
             double? lat, double? lng, double radiusKm, int limit,
-            decimal? minRating = null, List<int>? eventTypeIds = null, decimal? minPrice = null, decimal? maxPrice = null, int? regionId = null, bool includeAll = false)
+            decimal? minRating = null, List<int>? eventTypeIds = null, decimal? minPrice = null, decimal? maxPrice = null,
+            List<string>? extraFilters = null, int? regionId = null, bool includeAll = false)
         {
             var now = DateTimeOffset.UtcNow;
 
@@ -129,7 +133,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .AsNoTracking()
                 .Include(e => e.Type)
                 .Include(e => e.Images)
-                .Where(e => !e.IsDeleted && (includeAll || (e.Visibility == "published" && e.EndDatetime >= now)));
+                .Where(e => !e.IsDeleted && (includeAll || (e.Visibility != "draft" && e.Visibility != "rejected" && e.EndDatetime >= now)));
 
             if (lat.HasValue && lng.HasValue)
             {
@@ -152,6 +156,13 @@ namespace Explorea.Server.Repositories.Implementations
 
             if (regionId.HasValue)
                 query = query.Where(e => e.City != null && e.City.RegionId == regionId.Value);
+
+            var extraFiltersDict = ParseExtraFilters(extraFilters);
+            foreach (var (key, value) in extraFiltersDict)
+            {
+                var matchingIds = await MatchJsonbContainsIdsAsync("events", key, value);
+                query = query.Where(e => matchingIds.Contains(e.Id));
+            }
 
             return await query
                 .OrderByDescending(e => e.IsFeatured)
@@ -199,7 +210,8 @@ namespace Explorea.Server.Repositories.Implementations
             await _db.Destinations
                 .AsNoTracking()
                 .Include(d => d.City)
-                .Where(d => !d.IsDeleted && d.Visibility == "published" && d.Slug == slug)
+                // Mirror GetNearby* — "inactive" rows are still valid pins to click into.
+                .Where(d => !d.IsDeleted && d.Visibility != "draft" && d.Visibility != "rejected" && d.Slug == slug)
                 .FirstOrDefaultAsync();
 
         public async Task<Place?> GetPlaceBySlugAsync(string slug) =>
@@ -217,7 +229,7 @@ namespace Explorea.Server.Repositories.Implementations
                 .AsNoTracking()
                 .Include(e => e.Type)
                 .Include(e => e.Images)
-                .Where(e => !e.IsDeleted && e.Visibility == "published" && e.EndDatetime >= now && e.Slug == slug)
+                .Where(e => !e.IsDeleted && e.Visibility != "draft" && e.Visibility != "rejected" && e.EndDatetime >= now && e.Slug == slug)
                 .FirstOrDefaultAsync();
         }
 

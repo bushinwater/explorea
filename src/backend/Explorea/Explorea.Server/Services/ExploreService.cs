@@ -49,7 +49,7 @@ namespace Explorea.Server.Services
             if (type == "all" || type == "event")
             {
                 var events = await _exploreRepository
-                    .GetNearbyEventsAsync(lat, lng, radiusKm, perTypeLimit, minRating, eventTypeIds, minPrice, maxPrice, regionId, includeAll);
+                    .GetNearbyEventsAsync(lat, lng, radiusKm, perTypeLimit, minRating, eventTypeIds, minPrice, maxPrice, extraFilters, regionId, includeAll);
 
                 markers.AddRange(events.Select(MapEvent));
             }

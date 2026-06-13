@@ -18,10 +18,13 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { of } from 'rxjs';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AdminDestinationsService } from './admin-destinations.service';
 import { CountryOption, DestinationImage, DestinationRow, InterestTagOption, RegionOption, TypeOption } from './admin-destinations.models';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { AdminProfileService } from '../core/services/admin-profile.service';
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
@@ -96,7 +99,9 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
   protected readonly selectedCountryId = signal<number | null>(null);
   protected readonly filteredRegions  = computed(() => {
     const cid = this.selectedCountryId();
-    if (cid === null) return this.localRegions();
+    // Regions are gated by the country pick — the dropdown stays empty until
+    // a country is chosen so the user never sees a region from another country.
+    if (cid === null) return [];
     return this.localRegions().filter(r => r.countryId === cid);
   });
   protected readonly allInterestTags     = signal<InterestTagOption[]>([]);
@@ -106,10 +111,13 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
   protected readonly newTypeName      = signal('');
   protected readonly isCreatingType   = signal(false);
   protected readonly locationOutsideRegion = signal(false);
+  protected readonly nameAlreadyExists = signal(false);
+  protected readonly nameChecking      = signal(false);
 
   private regionBoundary: any = null;
   private regionBoundaryRaw: string | null = null;
   private regionsRaw: RegionGeoItem[] | null = null;
+  private serbiaOutlineRaw: string | null = null;
 
   protected readonly filterDefs     = signal<FilterDefinition[]>([]);
   protected readonly showAddFilter  = signal(false);
@@ -137,7 +145,22 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
     private readonly http: HttpClient,
     protected readonly ui: AdminUiPreferencesService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly profileSvc: AdminProfileService,
   ) {}
+
+  /**
+   * Pre-selects the admin's home country in the form once both the country list
+   * and the profile have loaded. Idempotent — only fires when the user hasn't
+   * already picked a country manually (e.g. on re-open).
+   */
+  private maybeApplyDefaultCountry(): void {
+    if (this.lockedRegionId !== null) return;
+    if (this.form.value.countryId) return;
+    const cid = this.profileSvc.profile()?.countryId;
+    if (cid == null) return;
+    if (!this.localCountries().some(c => c.id === cid)) return;
+    this.form.patchValue({ countryId: String(cid) });
+  }
 
   ngOnInit(): void {
     this.localTypes.set([...this.types]);
@@ -147,12 +170,20 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
       this.cdr.detectChanges();
     });
     this.svc.getRegionsGeo().subscribe(data => {
+      // Always keep the full region list — applyRegionScopeOverlay nulls
+      // `regions` when serbiaOutline is the active overlay, but we still
+      // need the per-region geometry for super_admin's region picker.
+      this.regionsRaw = data.regions ?? null;
+      this.serbiaOutlineRaw = data.serbiaOutline;
       const result = applyRegionScopeOverlay(this.map, data, this.lockedRegionId);
       this.regionBoundaryRaw = result.boundaryRaw;
-      this.regionsRaw = result.regions;
       this.regionBoundary = result.boundaryRaw ? parseRegionBoundary(result.boundaryRaw) : null;
     });
-    this.svc.getCountries().subscribe(c => { this.localCountries.set(c); this.cdr.detectChanges(); });
+    this.svc.getCountries().subscribe(c => {
+      this.localCountries.set(c);
+      this.maybeApplyDefaultCountry();
+      this.cdr.detectChanges();
+    });
     this.svc.getAllInterestTags().subscribe(tags => { this.allInterestTags.set(tags); this.cdr.detectChanges(); });
     this.form.controls.countryId.valueChanges.subscribe(val => {
       const id = val ? parseInt(val) : null;
@@ -176,6 +207,44 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
       }
       this.cdr.detectChanges();
     });
+    // SuperAdmin: when a region is picked, switch the minimap outline + validation
+    // boundary from the country to that specific region. Resetting the region
+    // restores the country/all-regions overlay.
+    this.form.controls.regionId.valueChanges.subscribe(val => {
+      if (this.lockedRegionId !== null) return;
+      this.applyRegionBoundaryFromSelection(val ? parseInt(val) : null);
+    });
+    // Live-validate the destination name against existing rows so the user
+    // sees the duplicate warning while still typing, not only on submit.
+    this.sub.add(
+      this.form.controls.name.valueChanges.pipe(
+        debounceTime(350),
+        distinctUntilChanged(),
+        switchMap(value => {
+          const name = (value ?? '').trim();
+          if (name.length < 2) {
+            this.nameAlreadyExists.set(false);
+            this.nameChecking.set(false);
+            return of(null);
+          }
+          this.nameChecking.set(true);
+          return this.http.get<{ exists: boolean }>('/api/admin/check-name', {
+            params: { entity: 'destination', name },
+          });
+        }),
+      ).subscribe({
+        next: res => {
+          this.nameChecking.set(false);
+          this.nameAlreadyExists.set(res?.exists === true);
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.nameChecking.set(false);
+          this.nameAlreadyExists.set(false);
+          this.cdr.detectChanges();
+        },
+      }),
+    );
     setTimeout(() => this.initMap(), 50);
   }
 
@@ -256,7 +325,7 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
   protected save(): void {
     this.form.markAllAsTouched();
     this.saveAttempted.set(true);
-    if (this.form.invalid || this.isSaving() || this.pendingImages().length === 0 || this.locationOutsideRegion()) return;
+    if (this.form.invalid || this.isSaving() || this.pendingImages().length === 0 || this.locationOutsideRegion() || this.nameAlreadyExists()) return;
     if (this.selectedInterestIds().length === 0) return;
     this.isSaving.set(true);
     this.error.set('');
@@ -459,23 +528,40 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
     this.pendingImages.set([]);
     this.pendingHeroIndex.set(0);
     this.uploadingCount.update(n => n + pending.length);
+
+    // Collect uploaded ids by their pending index so we can apply the chosen
+    // hero exactly once after every upload finishes (setHero is single-flight,
+    // so calling it from parallel callbacks would silently drop all but one).
+    const uploadedById = new Map<number, string>();
+
+    const finalizeIfDone = () => {
+      if (this.uploadingCount() !== 0) return;
+      const heroId = uploadedById.get(heroIdx);
+      const fallbackId = [...uploadedById.entries()].sort((a, b) => a[0] - b[0])[0]?.[1] ?? null;
+      const targetId = heroId ?? fallbackId;
+      if (targetId && this.heroImageId() !== targetId) {
+        this.setHero(targetId);
+      }
+      if (this.canFinish) {
+        this.created.emit(this.createdRow()!);
+      }
+    };
+
     pending.forEach(({ file, url }, i) => {
       URL.revokeObjectURL(url);
       this.sub.add(
         this.svc.addImage(destId, file).subscribe({
           next: (img) => {
             this.images.update(l => [...l, img]);
+            uploadedById.set(i, img.id);
             this.uploadingCount.update(n => n - 1);
-            if (i === heroIdx) this.setHero(img.id);
-            else if (this.heroImageId() === null) this.setHero(img.id);
-            if (this.uploadingCount() === 0 && this.canFinish) {
-              this.created.emit(this.createdRow()!);
-            }
+            finalizeIfDone();
             this.cdr.detectChanges();
           },
           error: (err) => {
             this.uploadingCount.update(n => n - 1);
             this.error.set(err?.error?.message ?? 'Greška pri otpremanju slike.');
+            finalizeIfDone();
             this.cdr.detectChanges();
           },
         }),
@@ -554,10 +640,21 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
   }
 
   private setCoords(lat: number, lng: number, reverseGeocode = false): void {
-    this.form.patchValue({ latitude: lat, longitude: lng });
-    if (this.regionBoundary) {
-      this.locationOutsideRegion.set(!isPointInGeoJsonGeometry(lat, lng, this.regionBoundary));
+    // Reject points outside the active region boundary — keeps super_admin
+    // from accidentally pinning a destination outside the region they picked.
+    if (this.regionBoundary && !isPointInGeoJsonGeometry(lat, lng, this.regionBoundary)) {
+      this.locationOutsideRegion.set(true);
+      // Snap marker back to the last valid position if it was dragged out.
+      const prevLat = this.form.value.latitude;
+      const prevLng = this.form.value.longitude;
+      if (this.marker && typeof prevLat === 'number' && typeof prevLng === 'number') {
+        this.marker.setLngLat([prevLng, prevLat]);
+      }
+      this.cdr.detectChanges();
+      return;
     }
+    this.locationOutsideRegion.set(false);
+    this.form.patchValue({ latitude: lat, longitude: lng });
 
     if (!this.map) return;
     if (this.marker) {
@@ -635,6 +732,50 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
   private checkLocationBoundary(lat: number, lng: number): void {
     if (!this.regionBoundary) return;
     this.locationOutsideRegion.set(!isPointInGeoJsonGeometry(lat, lng, this.regionBoundary));
+  }
+
+  /** Updates the minimap overlay + validation boundary to match the user's region pick. */
+  private applyRegionBoundaryFromSelection(regionId: number | null): void {
+    // Don't refit the viewport if the user has already placed a pin — that
+    // call would zoom out and lose the precise context they were aiming at
+    // (e.g. when reverse-geocode auto-selects the region from a fresh click).
+    const skipFit = this.marker !== null;
+    if (regionId !== null) {
+      const region = this.regionsRaw?.find(r => r.id === regionId);
+      if (region?.boundaryGeoJson) {
+        this.regionBoundaryRaw = region.boundaryGeoJson;
+        this.regionBoundary    = parseRegionBoundary(region.boundaryGeoJson);
+        if (this.map) {
+          drawManagedRegion(this.map, region.boundaryGeoJson);
+          if (!skipFit) fitMapToBoundary(this.map, region.boundaryGeoJson);
+        }
+        this.revalidateMarkerLocation();
+        return;
+      }
+    }
+    // Cleared (or unknown region): restore the country/all-regions overlay.
+    if (this.serbiaOutlineRaw) {
+      this.regionBoundaryRaw = this.serbiaOutlineRaw;
+      this.regionBoundary    = parseRegionBoundary(this.serbiaOutlineRaw);
+      if (this.map) {
+        drawManagedRegion(this.map, this.serbiaOutlineRaw);
+        if (!skipFit) fitMapToBoundary(this.map, this.serbiaOutlineRaw);
+      }
+    } else if (this.regionsRaw && this.regionsRaw.length > 0) {
+      this.regionBoundaryRaw = null;
+      this.regionBoundary    = null;
+      if (this.map) {
+        drawManagedRegions(this.map, this.regionsRaw);
+        if (!skipFit) fitMapToRegions(this.map, this.regionsRaw);
+      }
+    }
+    this.revalidateMarkerLocation();
+  }
+
+  private revalidateMarkerLocation(): void {
+    const lat = this.form.value.latitude;
+    const lng = this.form.value.longitude;
+    if (typeof lat === 'number' && typeof lng === 'number') this.checkLocationBoundary(lat, lng);
   }
 
   private buildThemedStyle(base: any, p: typeof DARK): any {

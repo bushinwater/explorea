@@ -40,5 +40,11 @@ namespace Explorea.API.DTOs.Admin.Activity
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
         public DateTimeOffset? DeletedAt { get; set; }
+        /// <summary>
+        /// True when at least one popularity-log event hit this activity in the last 30 days,
+        /// or when the activity was created within that same window. Drives the
+        /// "Aktivno / Neaktivno" status pill in the admin table.
+        /// </summary>
+        public bool HasRecentActivity { get; set; }
     }
 }

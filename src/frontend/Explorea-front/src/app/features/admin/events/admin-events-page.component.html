@@ -441,7 +441,7 @@
                     </span>
                   </td>
                   <td class="evts-td evts-td--hide-md">
-                    <span class="evts-act-status evts-act-status--{{ evtActivityStatus(ev) }}">
+                    <span class="evts-act-status evts-act-status--{{ evtActivityStatus(ev) }}" [title]="statusTooltip(evtActivityStatus(ev))">
                       {{ ui.t(evtActivityStatus(ev) === 'active' ? 'common.status.active' : 'common.status.inactive') }}
                     </span>
                   </td>
@@ -474,7 +474,7 @@
                   </td>
                   @if (filters().tab !== 'active') {
                     <td class="evts-td">
-                      <span class="evts-status evts-status--{{ ev.status }}">{{
+                      <span class="evts-status evts-status--{{ ev.status }}" [title]="statusTooltip(ev.status)">{{
                         statusLabel(ev.status)
                       }}</span>
                     </td>
@@ -684,7 +684,7 @@
         @if (filters().tab === 'deleted') {
           <span class="evts-status evts-status--deleted">{{ ui.t('common.deleted') }}</span>
         } @else {
-          <span class="evts-status evts-status--{{ ev.status }}">{{ statusLabel(ev.status) }}</span>
+          <span class="evts-status evts-status--{{ ev.status }}" [title]="statusTooltip(ev.status)">{{ statusLabel(ev.status) }}</span>
         }
         @if (ev.type) {
           <span class="evts-type-label">

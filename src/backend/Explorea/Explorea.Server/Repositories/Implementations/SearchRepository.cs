@@ -25,9 +25,11 @@ namespace Explorea.Server.Repositories.Implementations
             return await _db.Destinations
             .AsNoTracking()
             .Include(d => d.City)
-            .Where(d => 
-                EF.Functions.ILike(d.Name, contains) ||
-                (d.Description != null && EF.Functions.ILike(d.Description, contains))
+            .Where(d =>
+                !d.IsDeleted &&
+                d.Visibility != "draft" && d.Visibility != "rejected" &&
+                (EF.Functions.ILike(d.Name, contains) ||
+                 (d.Description != null && EF.Functions.ILike(d.Description, contains)))
             )
             .OrderByDescending(d => d.IsFeatured)
             .ThenByDescending(d => d.AvgRating)
@@ -45,7 +47,7 @@ namespace Explorea.Server.Repositories.Implementations
             .Include(p => p.Destination)
             .Include(p => p.Type)
             .Include(p => p.Images)
-            .Where(p => 
+            .Where(p =>
                 !p.IsDeleted &&
                 p.ApprovalStatus == "approved" &&
                 (
@@ -61,7 +63,7 @@ namespace Explorea.Server.Repositories.Implementations
             .ThenByDescending(p => p.AvgRating)
             .ThenBy(p => p.Name)
             .Take(take)
-            .ToListAsync();   
+            .ToListAsync();
         }
         public async Task<List<Event>> SearchEventsAsync(string query, DateTimeOffset now, int take = 25)
         {
@@ -74,9 +76,9 @@ namespace Explorea.Server.Repositories.Implementations
             .Include(e => e.Place)
             .Include(e => e.Type)
             .Include(e => e.Images)
-            .Where(e => 
+            .Where(e =>
                 !e.IsDeleted &&
-                e.Visibility == "published" &&
+                (e.Visibility != "draft" && e.Visibility != "rejected") &&
                 e.EndDatetime >= now &&
                 (
                 EF.Functions.ILike(e.Name, contains) ||
@@ -105,14 +107,15 @@ namespace Explorea.Server.Repositories.Implementations
             .Include(a => a.Place)
             .Include(a => a.Category)
             .Include(a => a.Images)
-            .Where(a => 
-                EF.Functions.ILike(a.Name, contains) ||
+            .Where(a =>
+                !a.IsDeleted &&
+                (EF.Functions.ILike(a.Name, contains) ||
                 (a.Description != null && EF.Functions.ILike(a.Description, contains)) ||
                 (a.StartPoint != null && EF.Functions.ILike(a.StartPoint, contains)) ||
                 (a.City != null && EF.Functions.ILike(a.City.Name, contains)) ||
                 (a.Destination != null && EF.Functions.ILike(a.Destination.Name, contains)) ||
                 (a.Place != null && EF.Functions.ILike(a.Place.Name, contains)) ||
-                EF.Functions.ILike(a.Category.Name, contains)
+                EF.Functions.ILike(a.Category.Name, contains))
             )
             .OrderByDescending(a => a.IsFeatured)
             .ThenByDescending(a => a.AvgRating)
@@ -163,7 +166,7 @@ namespace Explorea.Server.Repositories.Implementations
                 var query = _db.Events.Include(e => e.City).Include(e => e.Type)
                     .Where(e =>
                         !e.IsDeleted &&
-                        e.Visibility == "published" &&
+                        (e.Visibility != "draft" && e.Visibility != "rejected") &&
                         e.EndDatetime >= now)
                     .AsQueryable();
                 if (!string.IsNullOrEmpty(q))
@@ -214,7 +217,7 @@ namespace Explorea.Server.Repositories.Implementations
                     .Include(e => e.Type)
                     .Where(e =>
                         !e.IsDeleted &&
-                        e.Visibility == "published" &&
+                        (e.Visibility != "draft" && e.Visibility != "rejected") &&
                         e.EndDatetime >= now &&
                         e.Latitude != null &&
                         e.Longitude != null)
@@ -238,7 +241,7 @@ namespace Explorea.Server.Repositories.Implementations
       return await _db.Destinations
       .AsNoTracking()
       .Include(d => d.City)
-      .Where(d => !d.IsDeleted && d.Visibility == "published")
+      .Where(d => !d.IsDeleted && d.Visibility != "draft" && d.Visibility != "rejected")
       .OrderByDescending(d => d.IsFeatured)
       .ThenByDescending(d => d.AvgRating)
       .ThenBy(d => d.Name)
@@ -281,7 +284,7 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(e => e.Type)
         .Include(e => e.City)
         .Include(e => e.Images)
-        .Where(e => !e.IsDeleted && e.Visibility == "published" && e.EndDatetime >= now)
+        .Where(e => !e.IsDeleted && (e.Visibility != "draft" && e.Visibility != "rejected") && e.EndDatetime >= now)
         .OrderByDescending(e => e.IsFeatured)
         .ThenBy(e => e.StartDatetime)
         .ThenBy(e => e.Name)
@@ -338,6 +341,7 @@ namespace Explorea.Server.Repositories.Implementations
         FROM destinations d
         LEFT JOIN cities c ON c.id = d.city_id
         WHERE d.is_deleted = FALSE
+          AND d.visibility NOT IN ('draft', 'rejected')
           AND (
                 d.search_vector @@ websearch_to_tsquery('simple', @q)
              OR unaccent(d.name) ILIKE @containsUnaccent
@@ -579,7 +583,7 @@ namespace Explorea.Server.Repositories.Implementations
             .Where(e =>
                 ids.Contains(e.Id) &&
                 !e.IsDeleted &&
-                e.Visibility == "published" &&
+                (e.Visibility != "draft" && e.Visibility != "rejected") &&
                 e.EndDatetime >= now)
             .ToDictionaryAsync(e => e.Id);
 
@@ -640,7 +644,7 @@ namespace Explorea.Server.Repositories.Implementations
         LEFT JOIN places p ON p.id = e.place_id AND p.is_deleted = FALSE
         INNER JOIN event_types et ON et.id = e.type_id
         WHERE e.is_deleted = FALSE
-          AND e.visibility = 'published'
+          AND e.visibility NOT IN ('draft', 'rejected')
           AND e.end_datetime >= @now
           AND (
                 e.search_vector @@ websearch_to_tsquery('simple', @q)

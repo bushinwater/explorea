@@ -28,5 +28,11 @@ namespace Explorea.API.DTOs.Admin.Destination
         public DateTimeOffset UpdatedAt { get; set; }
         public Dictionary<string, string>? ExtraFilters { get; set; }
         public DateTimeOffset? DeletedAt { get; set; }
+        /// <summary>
+        /// True when at least one popularity-log event hit this destination in the last 30 days,
+        /// or when the destination was created within that same window. Drives the
+        /// "Aktivno / Neaktivno" status pill in the admin table.
+        /// </summary>
+        public bool HasRecentActivity { get; set; }
     }
 }

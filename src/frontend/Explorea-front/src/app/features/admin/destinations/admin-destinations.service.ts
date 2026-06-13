@@ -45,6 +45,7 @@ interface ApiDestinationItem {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
+  hasRecentActivity?: boolean;
 }
 
 interface ApiDestinationStats {
@@ -282,6 +283,7 @@ export class AdminDestinationsService {
       typeId: item.typeId,
       typeName: item.typeName,
       status: this.mapStatus(item.status || item.visibility),
+      hasRecentActivity: !!item.hasRecentActivity,
       thumbnailUrl: item.previewImageUrl,
       views: item.views,
       avgRating: item.avgRating,

@@ -418,10 +418,10 @@
                 <!-- Status -->
                 <td class="dest-td">
                   @if (listMode() === 'deleted') {
-                    <span class="dest-status dest-status--deleted">{{ ui.t('common.deleted') }}</span>
+                    <span class="dest-status dest-status--deleted" [title]="statusTooltip('deleted')">{{ ui.t('common.deleted') }}</span>
                   } @else {
-                    <span class="dest-status dest-status--{{ dest.status }}">
-                      {{ statusLabel(dest.status) }}
+                    <span class="dest-status dest-status--{{ activityStatusKey(dest) }}" [title]="statusTooltip(activityStatusKey(dest))">
+                      {{ activityStatusLabel(dest) }}
                     </span>
                   }
                 </td>
@@ -595,9 +595,9 @@
         <!-- Badges -->
         <div class="ddp-badges">
           @if (listMode() === 'deleted') {
-            <span class="dest-status dest-status--deleted">{{ ui.t('common.deleted') }}</span>
+            <span class="dest-status dest-status--deleted" [title]="statusTooltip('deleted')">{{ ui.t('common.deleted') }}</span>
           } @else {
-            <span class="dest-status dest-status--{{ dest.status }}">{{ statusLabel(dest.status) }}</span>
+            <span class="dest-status dest-status--{{ activityStatusKey(dest) }}" [title]="statusTooltip(activityStatusKey(dest))">{{ activityStatusLabel(dest) }}</span>
           }
           @if (dest.avgRating) {
             <span class="ddp-rating">

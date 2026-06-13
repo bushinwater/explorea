@@ -212,7 +212,11 @@ namespace Explorea.Server.Services.Admin
           Popularity = a.Popularity,
 
           IsFeatured = a.IsFeatured,
-          IsActive   = _context.PopularityLogs.Any(l =>
+          IsActive   = a.CreatedAt >= thirtyDaysAgo || _context.PopularityLogs.Any(l =>
+            l.EntityType == "activity" &&
+            l.EntityId == a.Id &&
+            l.CreatedAt >= thirtyDaysAgo),
+          HasRecentActivity = a.CreatedAt >= thirtyDaysAgo || _context.PopularityLogs.Any(l =>
             l.EntityType == "activity" &&
             l.EntityId == a.Id &&
             l.CreatedAt >= thirtyDaysAgo),
@@ -445,6 +449,7 @@ namespace Explorea.Server.Services.Admin
     public async Task<AdminActivityDetailsDto> CreateAsync(AdminCreateActivityDto dto, Guid createdBy)
     {
       ValidateCreateDto(dto);
+      await EnsureUniqueNameAsync(dto.Name);
 
       var now = DateTimeOffset.UtcNow;
 
@@ -626,6 +631,22 @@ namespace Explorea.Server.Services.Admin
       await _repository.SaveChangesAsync();
 
       return true;
+    }
+
+    /// <summary>
+    /// Rejects creating an activity whose name collides with an existing one after
+    /// Serbian-diacritic normalization (e.g. "Krusevac" == "Kruševac" == "KRUSEVAC").
+    /// </summary>
+    private async Task EnsureUniqueNameAsync(string name)
+    {
+      var normalized = NameNormalizer.Normalize(name);
+      if (normalized.Length == 0) return;
+      var existingNames = await _context.Activities
+          .Where(a => !a.IsDeleted)
+          .Select(a => a.Name)
+          .ToListAsync();
+      if (existingNames.Any(n => NameNormalizer.Normalize(n) == normalized))
+        throw new InvalidOperationException($"Aktivnost sa imenom \"{name.Trim()}\" već postoji.");
     }
 
     private static void ValidateCreateDto(AdminCreateActivityDto dto)

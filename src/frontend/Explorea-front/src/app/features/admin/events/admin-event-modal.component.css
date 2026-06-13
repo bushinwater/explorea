@@ -234,6 +234,20 @@
   opacity: 0.6;
 }
 
+.edit-field__input--error {
+  border-color: var(--color-danger, #ef4444);
+}
+
+.edit-field__error {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger, #ef4444);
+}
+
+.edit-field__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
 /* Checkbox */
 .ev-checkbox {
   display: flex;

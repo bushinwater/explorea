@@ -848,10 +848,14 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     return map[t] ?? '—';
   }
 
+  /**
+   * Activity-based pill: aktivno when someone clicked in the last 30 days OR
+   * the event was created within that window (grace period). Source is the
+   * backend-computed `hasRecentActivity` flag — keeps the rule consistent
+   * with how the tourist app decides whether to show the event at all.
+   */
   protected evtActivityStatus(ev: EventRow): 'active' | 'inactive' {
-    const end = ev.endDate ?? ev.startDate;
-    const msSinceEnd = Date.now() - new Date(end).getTime();
-    return msSinceEnd <= 30 * 24 * 60 * 60 * 1000 ? 'active' : 'inactive';
+    return ev.hasRecentActivity ? 'active' : 'inactive';
   }
 
   protected typeIcon(t: EventType | null): string {
@@ -875,6 +879,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     const key = 'events.status.' + s;
     const translated = this.ui.t(key);
     return translated !== key ? translated : s;
+  }
+
+  protected statusTooltip(status: string): string {
+    return this.ui.t('common.status.tooltip.' + status);
   }
 
   protected locationLabel(ev: EventRow): string {

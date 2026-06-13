@@ -36,13 +36,17 @@
             <input
               id="new-dest-name"
               class="edit-field__input"
-              [class.edit-field__input--error]="form.controls.name.invalid && form.controls.name.touched"
+              [class.edit-field__input--error]="(form.controls.name.invalid && form.controls.name.touched) || nameAlreadyExists()"
               formControlName="name"
               [placeholder]="ui.t('common.name_label')"
               maxlength="200"
             />
             @if (form.controls.name.invalid && form.controls.name.touched) {
               <span class="edit-field__error">Naziv je obavezan (maks. 200 znakova).</span>
+            } @else if (nameAlreadyExists()) {
+              <span class="edit-field__error">Destinacija sa ovim imenom već postoji.</span>
+            } @else if (nameChecking()) {
+              <span class="edit-field__hint">Provera imena…</span>
             }
           </div>
 

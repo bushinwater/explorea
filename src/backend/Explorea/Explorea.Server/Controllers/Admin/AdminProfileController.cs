@@ -41,6 +41,7 @@ namespace Explorea.Server.Controllers.Admin
                 ManagedRegionId = user.ManagedRegionId,
                 ManagedRegionName = user.ManagedRegion?.Name,
                 CountryContext = roleName == "super_admin" ? "Srbija" : null,
+                CountryId = user.CountryId,
             });
         }
     }

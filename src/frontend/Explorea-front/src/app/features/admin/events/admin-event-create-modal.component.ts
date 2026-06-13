@@ -16,7 +16,8 @@ import {
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, Subscription, debounceTime, distinctUntilChanged, of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import {
   CountryOption,
@@ -32,6 +33,7 @@ import {
 import { AdminEventsService } from './admin-events.service';
 import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
+import { AdminProfileService } from '../core/services/admin-profile.service';
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 import { isPointInGeoJsonGeometry, parseRegionBoundary } from '../core/utils/geo-boundary.utils';
 import { applyRegionScopeOverlay, drawManagedRegion, drawManagedRegions, fitMapToBoundary, fitMapToRegions, RegionGeoItem } from '../core/utils/region-overlay.utils';
@@ -122,8 +124,10 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   protected readonly selectedRegionId = signal<number | null>(null);
   protected readonly filteredRegions = computed(() => {
     const cid = this.selectedCountryId();
-    const all = this.allRegions();
-    return cid === null ? all : all.filter(r => r.countryId === cid);
+    // Regions are gated by the country pick — the dropdown stays empty until
+    // a country is chosen so the user never sees a region from another country.
+    if (cid === null) return [];
+    return this.allRegions().filter(r => r.countryId === cid);
   });
 
   // Destination search
@@ -176,6 +180,8 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   }
 
   protected readonly locationOutsideRegion = signal(false);
+  protected readonly nameAlreadyExists     = signal(false);
+  protected readonly nameChecking          = signal(false);
   protected readonly lockedCountryId = signal<number | null>(null);
 
   private regionBoundary: any = null;
@@ -196,6 +202,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     private readonly http: HttpClient,
     private readonly cdr: ChangeDetectorRef,
     protected readonly ui: AdminUiPreferencesService,
+    private readonly profileSvc: AdminProfileService,
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -205,6 +212,36 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   }
 
   ngAfterViewInit(): void {
+    // Live duplicate-name check so the user sees the warning while typing.
+    this.sub.add(
+      this.nameInput$.pipe(
+        debounceTime(350),
+        distinctUntilChanged(),
+        switchMap(value => {
+          const name = (value ?? '').trim();
+          if (name.length < 2 || this.isCreated()) {
+            this.nameAlreadyExists.set(false);
+            this.nameChecking.set(false);
+            return of(null);
+          }
+          this.nameChecking.set(true);
+          return this.http.get<{ exists: boolean }>('/api/admin/check-name', {
+            params: { entity: 'event', name },
+          });
+        }),
+      ).subscribe({
+        next: res => {
+          this.nameChecking.set(false);
+          this.nameAlreadyExists.set(res?.exists === true);
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.nameChecking.set(false);
+          this.nameAlreadyExists.set(false);
+          this.cdr.detectChanges();
+        },
+      }),
+    );
     this.sub.add(
       this.destSearch$.pipe(debounceTime(300), distinctUntilChanged()).subscribe(q => {
         if (!q.trim()) { this.destinationResults.set([]); this.showDestResults.set(false); this.isSearchingDest.set(false); this.cdr.detectChanges(); return; }
@@ -241,7 +278,17 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
       next: t => { this.allInterestTags.set(t); this.cdr.detectChanges(); }, error: () => {},
     }));
     this.sub.add(this.eventsService.getCountries().subscribe({
-      next: c => { this.countries.set(c); this.cdr.detectChanges(); }, error: () => {},
+      next: c => {
+        this.countries.set(c);
+        // Pre-select super_admin's home country so they don't have to pick it
+        // manually on every Create. TOs are already locked to a region.
+        if (this.isSuperAdmin && !this.lockedRegionId && this.selectedCountryId() === null) {
+          const cid = this.profileSvc.profile()?.countryId;
+          if (cid != null && c.some(x => x.id === cid)) this.selectedCountryId.set(cid);
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {},
     }));
     this.sub.add(this.eventsService.getRegionsWithCountry().subscribe({
       next: r => {
@@ -282,7 +329,10 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
 
   protected updateText(field: keyof Pick<EventForm, 'name' | 'description' | 'startDatetime' | 'endDatetime' | 'price' | 'address' | 'ticketUrl'>, value: string): void {
     this.form.update(f => ({ ...f, [field]: value }));
+    if (field === 'name') this.nameInput$.next(value);
   }
+
+  private readonly nameInput$ = new Subject<string>();
 
   protected updateType(value: string): void {
     const typeId = value ? Number(value) : null;
@@ -579,7 +629,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   }
 
   protected submit(): void {
-    if (this.isSaving() || this.isCreated() || this.locationOutsideRegion()) return;
+    if (this.isSaving() || this.isCreated() || this.locationOutsideRegion() || this.nameAlreadyExists()) return;
 
     const f = this.form();
     const errs: string[] = [];
@@ -597,6 +647,10 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     const isFreeEntry = fek !== null && f.extraFilters[fek] === 'true';
     const price = isFreeEntry ? null : (f.price.trim() ? Number(f.price.trim().replace(',', '.')) : null);
     if (price !== null && (isNaN(price) || price < 0)) errs.push('Cena mora biti pozitivan broj.');
+    if (!isFreeEntry) {
+      if (price === null) errs.push('Cena je obavezna kada ulaz nije besplatan.');
+      if (!f.ticketUrl.trim()) errs.push('Link za karte je obavezan kada ulaz nije besplatan.');
+    }
     if (!f.description.trim()) errs.push('Opis događaja je obavezan.');
     if (this.selectedCountryId() === null) errs.push('Država je obavezna.');
     if (this.selectedRegionId() === null) errs.push('Regija je obavezna.');
@@ -763,16 +817,31 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     this.pendingHeroIndex.set(0);
     this.uploadingCount.update(n => n + pending.length);
     let settled = 0;
-    const checkDone = () => { if (++settled === pending.length) onComplete?.(); };
+
+    // Collect uploaded ids by their pending index so we can apply the chosen
+    // hero exactly once after every upload finishes (setHero is single-flight,
+    // so calling it from parallel callbacks would silently drop all but one).
+    const uploadedById = new Map<number, string>();
+
+    const checkDone = () => {
+      if (++settled !== pending.length) return;
+      const heroId = uploadedById.get(heroIdx);
+      const fallbackId = [...uploadedById.entries()].sort((a, b) => a[0] - b[0])[0]?.[1] ?? null;
+      const targetId = heroId ?? fallbackId;
+      if (targetId && this.heroImageId() !== targetId) {
+        this.setHero(targetId);
+      }
+      onComplete?.();
+    };
+
     pending.forEach(({ file, url }, i) => {
       URL.revokeObjectURL(url);
       this.sub.add(
         this.eventsService.uploadEventImage(eventId, file).subscribe({
           next: img => {
             this.images.update(l => [...l, img]);
+            uploadedById.set(i, img.id);
             this.uploadingCount.update(n => n - 1);
-            if (i === heroIdx) this.setHero(img.id);
-            else if (this.heroImageId() === null) this.setHero(img.id);
             checkDone();
             this.cdr.detectChanges();
           },

@@ -18,6 +18,11 @@ export interface AdminProfile {
   managedRegionId: number | null;
   managedRegionName: string | null;
   countryContext: string | null;
+  /**
+   * User's home country id — used by admin create modals to pre-select the
+   * country dropdown so super_admin doesn't have to pick it manually.
+   */
+  countryId: number | null;
 }
 
 // ===== WIDGET SYSTEM =====

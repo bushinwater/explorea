@@ -32,6 +32,7 @@ namespace Explorea.Server.Repositories.Implementations
           .Include(a => a.Category)
           .AsQueryable();
 
+
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
         var q = query.Query.Trim().ToLower();
@@ -98,6 +99,7 @@ namespace Explorea.Server.Repositories.Implementations
         .AsNoTracking()
         .Include(d => d.City)
         .AsQueryable();
+
 
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
@@ -168,8 +170,9 @@ namespace Explorea.Server.Repositories.Implementations
           .AsNoTracking()
           .Include(e => e.City)
           .Include(e => e.Type)
-          .Where(e => !e.IsDeleted && e.Visibility == "published" && e.EndDatetime >= now)
+          .Where(e => !e.IsDeleted && e.Visibility != "draft" && e.Visibility != "rejected" && e.EndDatetime >= now)
           .AsQueryable();
+
 
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
@@ -257,6 +260,7 @@ namespace Explorea.Server.Repositories.Implementations
         .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved")
         .AsQueryable();
 
+
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
         var q = query.Query.Trim().ToLower();
@@ -327,6 +331,7 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(a => a.Destination)
         .Where(a => !a.IsDeleted)
         .AsQueryable();
+
 
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
@@ -480,8 +485,9 @@ namespace Explorea.Server.Repositories.Implementations
         .AsNoTracking()
         .Include(d => d.City)
         .Include(d => d.Type)
-        .Where(d => !d.IsDeleted && d.Visibility == "published")
+        .Where(d => !d.IsDeleted && d.Visibility != "draft" && d.Visibility != "rejected")
         .AsQueryable();
+
 
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
@@ -528,10 +534,7 @@ namespace Explorea.Server.Repositories.Implementations
       var extraFiltersDict = ParseExtraFilters(query.ExtraFilters);
       foreach (var (key, value) in extraFiltersDict)
       {
-        var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-        var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
-        var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
-            "SELECT id FROM destinations WHERE extra_filters @> @snippet", param).ToListAsync();
+        var matchingIds = await MatchJsonbContainsIdsAsync("destinations", key, value);
         destinationsQuery = destinationsQuery.Where(d => matchingIds.Contains(d.Id));
       }
 
@@ -626,8 +629,9 @@ namespace Explorea.Server.Repositories.Implementations
         .Include(e => e.City)
         .Include(e => e.Type)
         .Include(e => e.Destination)
-        .Where(e => !e.IsDeleted && e.Visibility == "published" && e.EndDatetime >= now)
+        .Where(e => !e.IsDeleted && e.Visibility != "draft" && e.Visibility != "rejected" && e.EndDatetime >= now)
         .AsQueryable();
+
 
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
@@ -689,10 +693,7 @@ namespace Explorea.Server.Repositories.Implementations
       var extraFiltersDict = ParseExtraFilters(query.ExtraFilters);
       foreach (var (key, value) in extraFiltersDict)
       {
-        var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-        var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
-        var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
-            "SELECT id FROM events WHERE extra_filters @> @snippet", param).ToListAsync();
+        var matchingIds = await MatchJsonbContainsIdsAsync("events", key, value);
         eventsQuery = eventsQuery.Where(e => matchingIds.Contains(e.Id));
       }
 
@@ -798,6 +799,7 @@ namespace Explorea.Server.Repositories.Implementations
           .Where(p => !p.IsDeleted && p.ApprovalStatus == "approved")
           .AsQueryable();
 
+
       if (!string.IsNullOrWhiteSpace(query.Query))
       {
           var q = query.Query.Trim().ToLower();
@@ -859,10 +861,7 @@ namespace Explorea.Server.Repositories.Implementations
       var extraFiltersDict = ParseExtraFilters(query.ExtraFilters);
       foreach (var (key, value) in extraFiltersDict)
       {
-        var snippet = $"{{\"{key}\": {value.ToLower()}}}";
-        var param = new NpgsqlParameter { ParameterName = "snippet", Value = snippet, NpgsqlDbType = NpgsqlDbType.Jsonb };
-        var matchingIds = await _db.Database.SqlQueryRaw<Guid>(
-            "SELECT id FROM places WHERE extra_filters @> @snippet", param).ToListAsync();
+        var matchingIds = await MatchJsonbContainsIdsAsync("places", key, value);
         placesQuery = placesQuery.Where(p => matchingIds.Contains(p.Id));
       }
 
@@ -941,6 +940,62 @@ namespace Explorea.Server.Repositories.Implementations
         .ToListAsync();
 
       return (items, total);
+    }
+
+    // Admin stores Dictionary<string,string>, so JSONB values are usually JSON strings (e.g. "true").
+    // Older rows may have raw JSON values (true / 1 / etc.), so we match either representation.
+    private async Task<List<Guid>> MatchJsonbContainsIdsAsync(string table, string key, string value)
+    {
+      var asJsonString = $"{{\"{key}\": {System.Text.Json.JsonSerializer.Serialize(value)}}}";
+      var lowered = value.ToLowerInvariant();
+      var asRaw = lowered is "true" or "false"
+          ? $"{{\"{key}\": {lowered}}}"
+          : null;
+
+      if (asRaw == null)
+      {
+        var p = new NpgsqlParameter { ParameterName = "snippet", Value = asJsonString, NpgsqlDbType = NpgsqlDbType.Jsonb };
+        return await _db.Database.SqlQueryRaw<Guid>(
+            $"SELECT id FROM {table} WHERE extra_filters @> @snippet", p).ToListAsync();
+      }
+
+      var p1 = new NpgsqlParameter { ParameterName = "snippetStr", Value = asJsonString, NpgsqlDbType = NpgsqlDbType.Jsonb };
+      var p2 = new NpgsqlParameter { ParameterName = "snippetRaw", Value = asRaw,        NpgsqlDbType = NpgsqlDbType.Jsonb };
+      return await _db.Database.SqlQueryRaw<Guid>(
+          $"SELECT id FROM {table} WHERE extra_filters @> @snippetStr OR extra_filters @> @snippetRaw", p1, p2).ToListAsync();
+    }
+
+    /// <summary>
+    /// Tourist app should hide entities that nobody has visited recently. A new
+    /// row (created within the last 30 days) is exempt so it isn't filtered out
+    /// before anyone has had a chance to click it.
+    /// </summary>
+    private IQueryable<Explorea.API.Models.Activity> WhereRecentlyActive(IQueryable<Explorea.API.Models.Activity> q)
+    {
+      var t = DateTimeOffset.UtcNow.AddDays(-30);
+      return q.Where(a => a.CreatedAt >= t ||
+          _db.PopularityLogs.Any(l => l.EntityType == "activity" && l.EntityId == a.Id && l.CreatedAt >= t));
+    }
+
+    private IQueryable<Destination> WhereRecentlyActive(IQueryable<Destination> q)
+    {
+      var t = DateTimeOffset.UtcNow.AddDays(-30);
+      return q.Where(d => d.CreatedAt >= t ||
+          _db.PopularityLogs.Any(l => l.EntityType == "destination" && l.EntityId == d.Id && l.CreatedAt >= t));
+    }
+
+    private IQueryable<Event> WhereRecentlyActive(IQueryable<Event> q)
+    {
+      var t = DateTimeOffset.UtcNow.AddDays(-30);
+      return q.Where(e => e.CreatedAt >= t ||
+          _db.PopularityLogs.Any(l => l.EntityType == "event" && l.EntityId == e.Id && l.CreatedAt >= t));
+    }
+
+    private IQueryable<Place> WhereRecentlyActive(IQueryable<Place> q)
+    {
+      var t = DateTimeOffset.UtcNow.AddDays(-30);
+      return q.Where(p => p.CreatedAt >= t ||
+          _db.PopularityLogs.Any(l => l.EntityType == "place" && l.EntityId == p.Id && l.CreatedAt >= t));
     }
 
     private static Dictionary<string, string> ParseExtraFilters(List<string>? raw)

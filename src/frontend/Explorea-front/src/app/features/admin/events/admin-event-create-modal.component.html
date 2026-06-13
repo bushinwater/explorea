@@ -43,11 +43,17 @@
             <input
               id="ev-c-name"
               class="edit-field__input"
+              [class.edit-field__input--error]="nameAlreadyExists()"
               type="text"
               [value]="form().name"
               (input)="updateText('name', $any($event.target).value)"
               [placeholder]="ui.t('events.modal.name_ph')"
             />
+            @if (nameAlreadyExists()) {
+              <span class="edit-field__error">Događaj sa ovim imenom već postoji.</span>
+            } @else if (nameChecking()) {
+              <span class="edit-field__hint">Provera imena…</span>
+            }
           </div>
 
           <div class="edit-field ev-field--full">

@@ -795,6 +795,10 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     return this.ui.t('common.status.' + status);
   }
 
+  protected statusTooltip(status: string): string {
+    return this.ui.t('common.status.tooltip.' + status);
+  }
+
   protected ownerDocumentLabel(type: string): string {
     const map: Record<string, string> = {
       identity: 'Licni dokument',

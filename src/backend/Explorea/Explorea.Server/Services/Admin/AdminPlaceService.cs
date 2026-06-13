@@ -265,6 +265,7 @@ namespace Explorea.Server.Services.Admin
 
         public async Task<AdminPlaceDetailDto> CreateAsync(AdminCreatePlaceDto dto, Guid createdBy)
         {
+            await EnsureUniqueNameAsync(dto.Name);
             var user = await _userRepo.GetByIdWithRoleAsync(createdBy);
 
             string approvalStatus;
@@ -829,6 +830,22 @@ namespace Explorea.Server.Services.Admin
 
             await _queueRepo.AddAsync(queueItem);
             await _queueRepo.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Rejects creating a place whose name collides with an existing one after
+        /// Serbian-diacritic normalization ("Sumarice" == "Šumarice" == "SUMARICE").
+        /// </summary>
+        private async Task EnsureUniqueNameAsync(string name)
+        {
+            var normalized = NameNormalizer.Normalize(name);
+            if (normalized.Length == 0) return;
+            var existingNames = await _context.Places
+                .Where(p => !p.IsDeleted)
+                .Select(p => p.Name)
+                .ToListAsync();
+            if (existingNames.Any(n => NameNormalizer.Normalize(n) == normalized))
+                throw new InvalidOperationException($"Objekat sa imenom \"{name.Trim()}\" već postoji.");
         }
 
         private static Point CreatePoint(double? latitude, double? longitude)

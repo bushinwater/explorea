@@ -220,6 +220,9 @@ export class Explore implements AfterViewInit, OnDestroy {
   showLocationModal = false;
   private pendingRoutePin: ExploreMarker | null = null;
   private restoredMapState: ExplorePersistedState['map'] = null;
+  // When navigating from an entity detail page with ?entityType=…&slug=…,
+  // remember which pin to auto-select once markers finish loading.
+  private pendingPinSelection: { entityType: string; slug: string } | null = null;
 
   // Search
   searchQuery = '';
@@ -286,6 +289,7 @@ export class Explore implements AfterViewInit, OnDestroy {
     this.extraFilters = {};
     this.filterDefs = [];
     this.filterDefsTypeId = null;
+    this.ensureEventsFreeEntryFilter();
     this.fetchMarkers();
   }
 
@@ -307,6 +311,12 @@ export class Explore implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit() {
     const restoredState = this.restoreExploreState();
+    const qp = this.route.snapshot.queryParamMap;
+    const reqEntityType = qp.get('entityType');
+    const reqSlug = qp.get('slug');
+    if (reqEntityType && reqSlug) {
+      this.pendingPinSelection = { entityType: reqEntityType, slug: reqSlug };
+    }
     document.documentElement.classList.add('no-scroll');
     document.body.classList.add('no-scroll');
     if (!restoredState) {
@@ -371,9 +381,11 @@ export class Explore implements AfterViewInit, OnDestroy {
         this.activityCategories = res.activityCategories;
         this.eventTypes         = res.eventTypes;
         this.destinationTypes   = res.destinationTypes;
-        if (this.showExtraFilters && this.selectedSubcatIds.length === 1) {
-          const entityType = ENTITY_TYPE_BACKEND_MAP[this.subcatEntityType!];
+        if (this.subcatEntityType !== null && this.selectedSubcatIds.length === 1) {
+          const entityType = ENTITY_TYPE_BACKEND_MAP[this.subcatEntityType];
           this.loadFilterDefs(this.selectedSubcatIds[0], entityType);
+        } else {
+          this.ensureEventsFreeEntryFilter();
         }
         this.cdr.detectChanges();
       },
@@ -400,6 +412,7 @@ export class Explore implements AfterViewInit, OnDestroy {
         }
         this.filterDefs        = defs;
         this.filterDefsLoading = false;
+        this.ensureEventsFreeEntryFilter();
         this.cdr.detectChanges();
       },
       error: () => {
@@ -452,7 +465,34 @@ export class Explore implements AfterViewInit, OnDestroy {
   }
 
   get showExtraFilters(): boolean {
-    return this.subcatEntityType !== null && this.selectedSubcatIds.length === 1;
+    if (this.subcatEntityType !== null && this.selectedSubcatIds.length === 1) return true;
+    // Events share a "Besplatan ulaz" filter across all event types, so when
+    // events are selected we always expose at least that filter — regardless
+    // of how many (0, 2+, or mixed with other entity types) subcats are picked.
+    if (this.selectedEntityTypes.includes('dogadjaji')) return true;
+    return false;
+  }
+
+  private syntheticFreeEntryDef(): FilterDefinition {
+    return {
+      id: -1,
+      filterKey: 'free_entry',
+      filterLabel: 'Besplatan ulaz',
+      filterType: 'boolean',
+      sortOrder: 0,
+      options: [],
+    };
+  }
+
+  private ensureEventsFreeEntryFilter(): void {
+    if (!this.selectedEntityTypes.includes('dogadjaji')) return;
+    // When user picked exactly one event subcategory, the server response
+    // already includes free_entry — don't add a duplicate.
+    const serverLoadedEventDefs =
+      this.subcatEntityType === 'dogadjaji' && this.selectedSubcatIds.length === 1;
+    if (serverLoadedEventDefs) return;
+    if (this.filterDefs.some(d => d.filterKey === 'free_entry')) return;
+    this.filterDefs = [this.syntheticFreeEntryDef(), ...this.filterDefs];
   }
 
   isSubcatSelected(id: number): boolean {
@@ -475,6 +515,7 @@ export class Explore implements AfterViewInit, OnDestroy {
       const entityType = ENTITY_TYPE_BACKEND_MAP[this.subcatEntityType];
       this.loadFilterDefs(this.selectedSubcatIds[0], entityType);
     }
+    this.ensureEventsFreeEntryFilter();
     this.fetchMarkers();
   }
 
@@ -624,6 +665,7 @@ export class Explore implements AfterViewInit, OnDestroy {
 
     this.visiblePins = this.filteredPins;
     this.visiblePinsCount = this.filteredPins.length;
+    this.ensureEventsFreeEntryFilter();
   }
 
   private restoreExploreState(): boolean {
@@ -652,6 +694,19 @@ export class Explore implements AfterViewInit, OnDestroy {
       this.pinElements.get(this.pinKey(this.selectedPin))?.classList.remove('map-pin-btn--selected');
     }
     this.selectedPin = null;
+  }
+
+  private applyPendingPinSelection() {
+    if (!this.pendingPinSelection || !this.map) return;
+    const { entityType, slug } = this.pendingPinSelection;
+    const pin = this.pins.find(p => p.entityType === entityType && p.slug === slug);
+    if (!pin) return;
+    this.pendingPinSelection = null;
+    if (this.map.loaded()) {
+      this.flyToPin(pin);
+    } else {
+      this.map.once('load', () => this.flyToPin(pin));
+    }
   }
 
   private flyToPin(pin: ExploreMarker) {
@@ -754,6 +809,7 @@ export class Explore implements AfterViewInit, OnDestroy {
         this.pins = result.markers;
         this.loading = false;
         this.addMarkers();
+        this.applyPendingPinSelection();
         this.cdr.detectChanges();
       },
       error: () => {
@@ -1000,9 +1056,23 @@ export class Explore implements AfterViewInit, OnDestroy {
       return;
     }
     try {
-      const bounds          = this.map.getBounds();
-      this.visiblePins      = this.filteredPins.filter(p => bounds.contains([p.lng, p.lat]));
-      this.visiblePinsCount = this.visiblePins.length;
+      if (this.activeFilterCount > 0) {
+        // Filters active → drawer should expose results beyond the current
+        // viewport. Rank everything by distance to the map center and cap at 50
+        // so very large result sets stay manageable.
+        const center = this.map.getCenter();
+        const sorted = [...this.filteredPins].sort((a, b) => {
+          const da = (a.lat - center.lat) ** 2 + (a.lng - center.lng) ** 2;
+          const db = (b.lat - center.lat) ** 2 + (b.lng - center.lng) ** 2;
+          return da - db;
+        });
+        this.visiblePins      = sorted.slice(0, 50);
+        this.visiblePinsCount = this.visiblePins.length;
+      } else {
+        const bounds          = this.map.getBounds();
+        this.visiblePins      = this.filteredPins.filter(p => bounds.contains([p.lng, p.lat]));
+        this.visiblePinsCount = this.visiblePins.length;
+      }
     } catch {
       this.visiblePins      = this.filteredPins;
       this.visiblePinsCount = this.filteredPins.length;

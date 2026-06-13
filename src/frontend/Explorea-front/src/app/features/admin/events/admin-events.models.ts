@@ -109,6 +109,12 @@ export interface EventRow {
   endDate: string | null;
   priority: EventPriority | null;
   status: EventStatus;
+  /**
+   * Backend-computed: at least one click in the last 30 days, OR created
+   * within the last 30 days (grace period for brand-new rows). Drives the
+   * "Aktivno / Neaktivno" status pill in the admin table.
+   */
+  hasRecentActivity: boolean;
   heroImageUrl: string | null;
   imageItems: EventImageItem[];
   expectedGuests: number | null;
