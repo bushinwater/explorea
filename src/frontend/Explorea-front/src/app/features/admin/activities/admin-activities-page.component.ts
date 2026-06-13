@@ -260,6 +260,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   private regionBoundary: any = null;
   private regionBoundaryRaw: string | null = null;
   private regionsRaw: RegionGeoItem[] | null = null;
+  private serbiaOutlineRaw: string | null = null;
   protected readonly hoverRating = signal<number | null>(null);
   protected readonly allInterestTags = signal<InterestTagOption[]>([]);
   protected readonly selectedInterestIds = signal<number[]>([]);
@@ -1113,6 +1114,55 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       const region = this.regions().find(r => r.id === regionId);
       if (region?.countryId != null) this.selectedCountryId.set(region.countryId);
     }
+    // Swap minimap overlay + pin-validation boundary to the picked region
+    // (super_admin only — managed-region admins are already locked).
+    if (!this.managedRegion()) {
+      this.applyRegionBoundaryFromSelection(regionId === 'all' ? null : regionId);
+    }
+  }
+
+  /** Updates the minimap overlay + validation boundary to match the region pick. */
+  private applyRegionBoundaryFromSelection(regionId: number | null): void {
+    // Skip the auto-fit when a pin already exists — that would zoom out and
+    // lose the precise context the user is currently aiming at.
+    const skipFit = this.mapLatitude() !== null;
+    if (regionId !== null) {
+      const region = this.regionsRaw?.find(r => r.id === regionId);
+      if (region?.boundaryGeoJson) {
+        this.regionBoundaryRaw = region.boundaryGeoJson;
+        this.regionBoundary    = parseRegionBoundary(region.boundaryGeoJson);
+        if (this.map) {
+          drawManagedRegion(this.map, region.boundaryGeoJson);
+          if (!skipFit) fitMapToBoundary(this.map, region.boundaryGeoJson);
+        }
+        this.revalidateMarkerLocation();
+        return;
+      }
+    }
+    if (this.serbiaOutlineRaw) {
+      this.regionBoundaryRaw = this.serbiaOutlineRaw;
+      this.regionBoundary    = parseRegionBoundary(this.serbiaOutlineRaw);
+      if (this.map) {
+        drawManagedRegion(this.map, this.serbiaOutlineRaw);
+        if (!skipFit) fitMapToBoundary(this.map, this.serbiaOutlineRaw);
+      }
+    } else if (this.regionsRaw && this.regionsRaw.length > 0) {
+      this.regionBoundaryRaw = null;
+      this.regionBoundary    = null;
+      if (this.map) {
+        drawManagedRegions(this.map, this.regionsRaw);
+        if (!skipFit) fitMapToRegions(this.map, this.regionsRaw);
+      }
+    }
+    this.revalidateMarkerLocation();
+  }
+
+  private revalidateMarkerLocation(): void {
+    const lat = this.mapLatitude();
+    const lng = this.mapLongitude();
+    if (lat !== null && lng !== null && this.regionBoundary) {
+      this.locationOutsideRegion.set(!isPointInGeoJsonGeometry(lat, lng, this.regionBoundary));
+    }
   }
 
   protected onModalCountryChange(value: string): void {
@@ -1770,9 +1820,13 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           this.subscription.add(
             this.activitiesService.getRegionsGeo().subscribe({
               next: (geo) => {
+                // Always cache the full region list — applyRegionScopeOverlay nulls
+                // `regions` when serbiaOutline is the active overlay, but we still need
+                // per-region geometry so super_admin can switch the overlay later.
+                this.regionsRaw = geo.regions ?? null;
+                this.serbiaOutlineRaw = geo.serbiaOutline;
                 const result = applyRegionScopeOverlay(this.map, geo, mr ? mr.id : null, { fit: !this.isEditMode() });
                 this.regionBoundaryRaw = result.boundaryRaw;
-                this.regionsRaw = result.regions;
                 this.regionBoundary = result.boundaryRaw ? parseRegionBoundary(result.boundaryRaw) : null;
               },
             }),
