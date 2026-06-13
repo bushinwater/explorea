@@ -1450,6 +1450,10 @@
     width: auto;
     z-index: 100;
   }
+
+  .pin-popup__image-wrap {
+    height: 130px;
+  }
 }
 
 /* =====================

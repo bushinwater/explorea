@@ -247,7 +247,7 @@
         </div>
 
         <button class="cta-btn" (click)="buyTickets()" type="button">
-          {{ 'EVENT_DETAIL.BUY_TICKET' | translate }}
+          {{ (event.price ? 'EVENT_DETAIL.BUY_TICKET' : 'EVENT_DETAIL.VISIT_ORGANIZER_SITE') | translate }}
         </button>
 
         <p class="booking-card__note">
@@ -369,7 +369,7 @@
     <strong>{{ 'EVENT_DETAIL.FREE' | translate }}</strong>
   </div>
   <button class="cta-btn" (click)="buyTickets()" type="button">
-    {{ 'EVENT_DETAIL.BUY_TICKET' | translate }}
+    {{ (event.price ? 'EVENT_DETAIL.BUY_TICKET' : 'EVENT_DETAIL.VISIT_ORGANIZER_SITE') | translate }}
   </button>
 </div>
 

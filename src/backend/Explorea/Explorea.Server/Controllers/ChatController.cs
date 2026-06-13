@@ -38,8 +38,30 @@ namespace Explorea.Server.Controllers
             else
                 reply = await _chatService.ChatAsync(history, request.Message, request.Context);
 
+            // Hide raw provider/debug output from the user and replace it with a
+            // friendly fallback (e.g. when Gemini returns an empty response or
+            // refuses to answer due to safety filters).
+            if (IsProviderError(reply))
+                reply = BuildFriendlyFallback();
+
             var references = await ExtractReferencesAsync(reply);
             return Ok(new { reply, references });
+        }
+
+        private static bool IsProviderError(string reply)
+        {
+            if (string.IsNullOrWhiteSpace(reply)) return true;
+            return reply.StartsWith("[Gre", StringComparison.OrdinalIgnoreCase)
+                || reply.StartsWith("[Prazan odgovor", StringComparison.OrdinalIgnoreCase)
+                || reply.StartsWith("[Nema teksta", StringComparison.OrdinalIgnoreCase)
+                || reply.StartsWith("Nisam uspeo da obradim", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string BuildFriendlyFallback()
+        {
+            return "Izvinite, trenutno ne mogu da formulisem odgovor na to pitanje. " +
+                   "Pokusajte da postavite pitanje na drugi nacin ili me pitajte za " +
+                   "destinacije, mesta, dogadjaje ili aktivnosti u Srbiji.";
         }
 
         [HttpGet("history")]

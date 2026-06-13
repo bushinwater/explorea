@@ -527,22 +527,49 @@ export class AdminSettingsPageComponent implements OnInit, OnDestroy {
     this.isTestReportSending.set(true);
     this.testReportResult.set(null);
 
+    // Save the current form first so the report uses the user's latest selection
+    // (frequency, topics, priority, hour). Otherwise the previously saved values
+    // are used, which can mislead the user.
+    const form = this.notificationsForm();
+    const priority = this.normalizeNotificationPriority(form.priority);
     this.subscription.add(
-      this.adminSettingsService.forceSendReport().subscribe({
-        next: (result) => {
-          this.isTestReportSending.set(false);
-          this.testReportResult.set({
-            ok: true,
-            message: result.sentCount > 0
-              ? this.ui.t('settings.toast.report_sent')
-              : this.ui.t('settings.toast.report_empty'),
-          });
-        },
-        error: () => {
-          this.isTestReportSending.set(false);
-          this.testReportResult.set({ ok: false, message: this.ui.t('settings.toast.report_error') });
-        },
-      }),
+      this.adminSettingsService
+        .updateNotifications({
+          notificationsEnabled: form.notificationsEnabled,
+          emailNotificationsEnabled: form.emailNotificationsEnabled,
+          marketingEmailsEnabled: form.marketingEmailsEnabled,
+          reportTopics: priority === 'important'
+            ? this.lastAllNotificationsReportTopics
+            : this.normalizeReportTopics(form.reportTopics),
+          priority,
+          deliveryFrequencyDays: this.normalizeDeliveryFrequencyDays(form.deliveryFrequencyDays),
+          deliveryHour: this.normalizeDeliveryHour(form.deliveryHour),
+        })
+        .subscribe({
+          next: () => {
+            this.subscription.add(
+              this.adminSettingsService.forceSendReport().subscribe({
+                next: (result) => {
+                  this.isTestReportSending.set(false);
+                  this.testReportResult.set({
+                    ok: true,
+                    message: result.sentCount > 0
+                      ? this.ui.t('settings.toast.report_sent')
+                      : this.ui.t('settings.toast.report_empty'),
+                  });
+                },
+                error: () => {
+                  this.isTestReportSending.set(false);
+                  this.testReportResult.set({ ok: false, message: this.ui.t('settings.toast.report_error') });
+                },
+              }),
+            );
+          },
+          error: () => {
+            this.isTestReportSending.set(false);
+            this.testReportResult.set({ ok: false, message: this.ui.t('settings.toast.report_error') });
+          },
+        }),
     );
   }
 

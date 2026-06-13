@@ -105,30 +105,87 @@ namespace Explorea.Server.Services.Admin
             var needsSystem  = topics.Contains("system")  || topics.Contains("weekly_summary");
             var needsUsers   = topics.Contains("weekly_summary");
 
+            var isSuperAdmin   = user.Role?.Name == RoleNames.SuperAdmin;
+            var isTO           = user.Role?.Name == RoleNames.TouristOrganization;
+            var isPlaceOwner   = user.Role?.Name == RoleNames.PlaceOwner;
+            int? managedRegion = user.ManagedRegionId;
+
+            // For TO: precompute the set of entity IDs in their managed region so
+            // we can scope reviews/events accordingly. SuperAdmin sees everything.
+            // PlaceOwner sees only their own places/events.
+            List<Guid>? scopedPlaceIds = null;
+            List<Guid>? scopedEventIds = null;
+            if (isTO && managedRegion.HasValue)
+            {
+                scopedPlaceIds = await _db.Places.AsNoTracking()
+                    .Where(p => !p.IsDeleted && p.City != null && p.City.RegionId == managedRegion.Value)
+                    .Select(p => p.Id).ToListAsync();
+                scopedEventIds = await _db.Events.AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.City != null && e.City.RegionId == managedRegion.Value)
+                    .Select(e => e.Id).ToListAsync();
+            }
+            else if (isPlaceOwner)
+            {
+                scopedPlaceIds = await _db.Places.IgnoreQueryFilters().AsNoTracking()
+                    .Where(p => !p.IsDeleted && p.CreatedBy == user.Id)
+                    .Select(p => p.Id).ToListAsync();
+                scopedEventIds = await _db.Events.IgnoreQueryFilters().AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.CreatedBy == user.Id)
+                    .Select(e => e.Id).ToListAsync();
+            }
+
             if (needsReviews)
             {
-                data.NewReviewsCount = await _db.Reviews.AsNoTracking()
-                    .CountAsync(r => !r.IsDeleted && r.CreatedAt >= periodStart);
+                var reviewsQuery = _db.Reviews.AsNoTracking()
+                    .Where(r => !r.IsDeleted && r.CreatedAt >= periodStart);
+                if (!isSuperAdmin)
+                {
+                    var placeIds = scopedPlaceIds ?? new List<Guid>();
+                    var eventIds = scopedEventIds ?? new List<Guid>();
+                    reviewsQuery = reviewsQuery.Where(r =>
+                        (r.EntityType == "place" && placeIds.Contains(r.EntityId)) ||
+                        (r.EntityType == "event" && eventIds.Contains(r.EntityId)));
+                }
+                data.NewReviewsCount = await reviewsQuery.CountAsync();
 
-                data.HiddenReviewsCount = await _db.Reviews.AsNoTracking()
-                    .CountAsync(r => !r.IsDeleted && r.IsHidden);
+                var hiddenQuery = _db.Reviews.AsNoTracking()
+                    .Where(r => !r.IsDeleted && r.IsHidden);
+                if (!isSuperAdmin)
+                {
+                    var placeIds = scopedPlaceIds ?? new List<Guid>();
+                    var eventIds = scopedEventIds ?? new List<Guid>();
+                    hiddenQuery = hiddenQuery.Where(r =>
+                        (r.EntityType == "place" && placeIds.Contains(r.EntityId)) ||
+                        (r.EntityType == "event" && eventIds.Contains(r.EntityId)));
+                }
+                data.HiddenReviewsCount = await hiddenQuery.CountAsync();
             }
 
             if (needsEvents)
             {
-                data.NewEventsCount = await _db.Events.AsNoTracking()
-                    .CountAsync(e => e.CreatedAt >= periodStart);
-
-                data.UpcomingEventsCount = await _db.Events.AsNoTracking()
-                    .CountAsync(e => e.StartDatetime > now);
+                var eventsQuery = _db.Events.AsNoTracking().Where(e => e.CreatedAt >= periodStart);
+                var upcomingQuery = _db.Events.AsNoTracking().Where(e => e.StartDatetime > now);
+                if (!isSuperAdmin)
+                {
+                    var eventIds = scopedEventIds ?? new List<Guid>();
+                    eventsQuery = eventsQuery.Where(e => eventIds.Contains(e.Id));
+                    upcomingQuery = upcomingQuery.Where(e => eventIds.Contains(e.Id));
+                }
+                data.NewEventsCount = await eventsQuery.CountAsync();
+                data.UpcomingEventsCount = await upcomingQuery.CountAsync();
             }
 
             if (needsSystem)
             {
-                data.PendingPlacesCount = await _db.Places.AsNoTracking()
-                    .CountAsync(p => !p.IsDeleted && p.ApprovalStatus.ToLower() == "pending");
+                var pendingPlacesQuery = _db.Places.AsNoTracking()
+                    .Where(p => !p.IsDeleted && p.ApprovalStatus.ToLower() == "pending");
+                if (!isSuperAdmin)
+                {
+                    var placeIds = scopedPlaceIds ?? new List<Guid>();
+                    pendingPlacesQuery = pendingPlacesQuery.Where(p => placeIds.Contains(p.Id));
+                }
+                data.PendingPlacesCount = await pendingPlacesQuery.CountAsync();
 
-                var isSuperAdmin = user.Role?.Name == RoleNames.SuperAdmin;
                 data.OpenTicketsCount = await _db.SupportTickets.AsNoTracking()
                     .CountAsync(t =>
                         (t.Status == SupportTicketStatuses.Open || t.Status == SupportTicketStatuses.InProgress) &&
@@ -137,8 +194,9 @@ namespace Explorea.Server.Services.Admin
                             : t.AssignedToUserId == user.Id));
             }
 
-            if (needsUsers)
+            if (needsUsers && isSuperAdmin)
             {
+                // Only SuperAdmin sees the global new-users count.
                 data.NewUsersCount = await _db.Users.AsNoTracking()
                     .CountAsync(u => u.IsActive && u.CreatedAt >= periodStart);
             }
