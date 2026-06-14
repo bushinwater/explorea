@@ -1256,10 +1256,14 @@
           }
 
           <div class="edit-field">
-            <label class="edit-field__label">{{ ui.t('common.description_label') }} <span class="edit-field__required">*</span></label>
+            <label class="edit-field__label">
+              {{ ui.t('common.description_label') }} <span class="edit-field__required">*</span>
+              <span class="edit-field__counter">{{ (createForm().description ?? '').length }} / {{ MAX_DESC }}</span>
+            </label>
             <textarea
               class="edit-field__textarea"
               rows="4"
+              [attr.maxlength]="MAX_DESC"
               [value]="createForm().description ?? ''"
               (input)="updateCreateField('description', $any($event.target).value)"
               [placeholder]="ui.t('common.description_label')"

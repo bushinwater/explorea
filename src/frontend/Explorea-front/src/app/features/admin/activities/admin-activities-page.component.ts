@@ -190,6 +190,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
   protected readonly deletingFilterId = signal<number | null>(null);
   protected readonly filterContextMenu = signal<{ id: number; key: string; x: number; y: number } | null>(null);
 
+  // Matches the description cap used by destinations / places / events so
+  // admins get a consistent ceiling across all create modals.
+  protected readonly MAX_DESC = 2000;
+
   protected readonly createForm = signal<CreateActivityDto>({
     name: '',
     slug: '',
@@ -1325,6 +1329,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     if (!this.managedRegion() && !this.selectedCountryId()) return;
     if (!this.managedRegion() && this.modalRegionId() === 'all') return;
     if (!form.description?.trim()) { this.errorMessage.set('Opis je obavezno polje.'); return; }
+    if ((form.description?.length ?? 0) > this.MAX_DESC) { this.errorMessage.set(`Opis ne sme imati više od ${this.MAX_DESC} znakova.`); return; }
     if (!this.selectedInterestIds().length) { this.errorMessage.set('Potrebno je odabrati bar jedno interesovanje.'); return; }
     if (!this.editExistingImages().length && !this.modalImagePreviews().length) { this.errorMessage.set('Dodajte bar jednu sliku.'); return; }
     if (this.mapLatitude() === null) { this.errorMessage.set('Lokacija je obavezna — kliknite na mapu ili unesite adresu.'); return; }

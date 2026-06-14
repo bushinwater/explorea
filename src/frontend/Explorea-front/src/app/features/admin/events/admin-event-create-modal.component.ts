@@ -41,6 +41,10 @@ import { applyRegionScopeOverlay, drawManagedRegion, drawManagedRegions, fitMapT
 
 const MAX_IMAGES = 10;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+// Match the description cap used by destinations / places so admins get a
+// consistent limit across all create modals (2k chars is enough for a
+// rich event description without letting the column blow up unbounded).
+const MAX_DESC = 2000;
 
 const DARK = {
   land: '#1e2e24', water: '#102840', park: '#1e3228',
@@ -96,6 +100,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
   @ViewChild('mapEl', { static: false }) private mapEl?: ElementRef<HTMLDivElement>;
 
   protected readonly form = signal<EventForm>(this.emptyForm());
+  protected readonly MAX_DESC = MAX_DESC;
   protected readonly errors = signal<string[]>([]);
   protected readonly isSaving = signal(false);
   protected readonly isGeocoding = signal(false);
@@ -719,6 +724,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
       if (!f.ticketUrl.trim()) errs.push('Link za karte je obavezan kada ulaz nije besplatan.');
     }
     if (!f.description.trim()) errs.push('Opis događaja je obavezan.');
+    else if (f.description.length > MAX_DESC) errs.push(`Opis ne sme imati više od ${MAX_DESC} znakova.`);
     if (this.selectedCountryId() === null) errs.push('Država je obavezna.');
     if (this.selectedRegionId() === null) errs.push('Regija je obavezna.');
     if (!f.destinationId) errs.push('Destinacija je obavezna.');

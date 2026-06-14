@@ -284,13 +284,15 @@
           </div>
 
           <div class="edit-field ev-field--full">
-            <label class="edit-field__label" for="ev-c-desc">{{
-              ui.t('common.description_label')
-            }} <span class="edit-field__required">*</span></label>
+            <label class="edit-field__label" for="ev-c-desc">
+              {{ ui.t('common.description_label') }} <span class="edit-field__required">*</span>
+              <span class="edit-field__counter">{{ form().description.length }} / {{ MAX_DESC }}</span>
+            </label>
             <textarea
               id="ev-c-desc"
               class="edit-field__textarea"
               rows="4"
+              [attr.maxlength]="MAX_DESC"
               [value]="form().description"
               (input)="updateText('description', $any($event.target).value)"
               [placeholder]="ui.t('events.modal.desc_ph')"
