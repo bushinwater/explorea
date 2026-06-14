@@ -34,6 +34,10 @@ export class AdminUiPreferencesService {
 
     this.language.set(savedLanguage ?? 'sr');
     this.setTheme(savedTheme ?? 'dark', false);
+    // Force-sync the tourist-app theme key here too. The root ThemeService is
+    // constructed AFTER this initializer runs and would otherwise default to
+    // dark when only `admin-theme` is set, overwriting our data-theme attr.
+    localStorage.setItem('theme', this.isDark() ? 'dark' : 'light');
     await this.loadDictionary(this.language());
   }
 
@@ -43,6 +47,11 @@ export class AdminUiPreferencesService {
     if (persist) localStorage.setItem(this.themeStorageKey, theme);
 
     this.isDark.set(this.resolveIsDark(theme));
+    // Mirror the resolved value into the tourist-app's `theme` key so its
+    // ThemeService — which is constructed by the root component AFTER our
+    // app initializer runs — reads the same preference instead of resetting
+    // data-theme back to dark on every refresh.
+    if (persist) localStorage.setItem('theme', this.isDark() ? 'dark' : 'light');
     this.applyTheme();
   }
 

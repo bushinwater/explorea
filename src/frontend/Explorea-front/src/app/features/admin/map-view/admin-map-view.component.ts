@@ -656,7 +656,11 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
       this.currentMapTheme = wantTheme;
       const style = wantTheme === 'dark' ? this.darkStyle : this.lightStyle;
       if (!style) return;
-      this.map.setStyle(style);
+      // Register the listener BEFORE setStyle — otherwise on a fast load the
+      // event can fire between the setStyle call and our once() call, leaving
+      // the regions un-redrawn until the user toggles them off and back on.
+      // Also pass a deep-clone so we don't reuse the previous load's mutated
+      // style object (maplibre keeps internal state on the style instance).
       this.map.once('style.load', () => {
         this.add3DBuildings();
         this.addMarkers();
@@ -665,6 +669,7 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
           if (this.regionData.regions.length === 1) this.fitToRegion(this.regionData.regions[0]);
         }
       });
+      this.map.setStyle(JSON.parse(JSON.stringify(style)));
     });
     this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   }
