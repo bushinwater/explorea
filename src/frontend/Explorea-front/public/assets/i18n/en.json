@@ -395,7 +395,8 @@
     "SUBMIT": "Send reset link",
     "BACK_TO_LOGIN": "Back to login",
     "SENT_TITLE": "Check your email",
-    "SENT_DESC": "We sent a password reset link to {{ email }}. The link expires in 1 hour."
+    "SENT_DESC": "We sent a password reset link to {{ email }}. The link expires in 1 hour.",
+    "ERROR_OAUTH_NO_PASSWORD": "This account uses Google login — change your password through Google."
   },
   "RESET_PASSWORD": {
     "TITLE": "Set new password",

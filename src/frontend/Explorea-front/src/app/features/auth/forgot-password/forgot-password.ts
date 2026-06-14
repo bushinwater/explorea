@@ -17,9 +17,17 @@ export class ForgotPassword {
   emailError = '';
   loading = false;
   sent = false;
-  /** Server-side message (e.g. "ovaj nalog koristi Google login…") — shown
-   *  instead of the generic "sent" panel when the backend explicitly refuses. */
-  serverError = '';
+  /** i18n key (e.g. FORGOT_PASSWORD.ERROR_OAUTH_NO_PASSWORD) — shown via the
+   *  translate pipe instead of the generic "sent" panel when the backend
+   *  explicitly refuses with a known error code. */
+  serverErrorKey = '';
+  /** Raw message fallback when the backend response has no recognized code. */
+  serverErrorText = '';
+
+  /** Map of backend error code → i18n key for this page. */
+  private static readonly ERROR_CODE_KEYS: Record<string, string> = {
+    OAUTH_NO_LOCAL_PASSWORD: 'FORGOT_PASSWORD.ERROR_OAUTH_NO_PASSWORD',
+  };
 
   private static readonly EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -48,7 +56,8 @@ export class ForgotPassword {
     }
 
     this.loading = true;
-    this.serverError = '';
+    this.serverErrorKey = '';
+    this.serverErrorText = '';
     this.cdr.detectChanges();
 
     this.authService.forgotPassword({ email: this.email.trim() }).subscribe({
@@ -63,9 +72,18 @@ export class ForgotPassword {
         // reset flow — surfaced so the user understands what to do next.
         // Other errors fall back to the "we pretended to send it" panel so
         // we don't leak which emails exist on the platform.
-        const msg = err?.error?.message;
+        const msg: string | undefined = err?.error?.message;
         if (err?.status === 400 && typeof msg === 'string' && msg.length) {
-          this.serverError = msg;
+          // Backend prefixes known errors with a stable CODE: "CODE: message"
+          // so the frontend can swap in the right i18n key per language.
+          const match = msg.match(/^([A-Z][A-Z0-9_]+):\s*(.*)$/);
+          const code = match ? match[1] : null;
+          const i18nKey = code ? ForgotPassword.ERROR_CODE_KEYS[code] : null;
+          if (i18nKey) {
+            this.serverErrorKey = i18nKey;
+          } else {
+            this.serverErrorText = match ? match[2] : msg;
+          }
         } else {
           this.sent = true;
         }

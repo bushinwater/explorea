@@ -395,7 +395,8 @@
     "SUBMIT": "Pošalji link",
     "BACK_TO_LOGIN": "Nazad na prijavu",
     "SENT_TITLE": "Proverite email",
-    "SENT_DESC": "Poslali smo link za resetovanje lozinke na {{ email }}. Link ističe za 1 sat."
+    "SENT_DESC": "Poslali smo link za resetovanje lozinke na {{ email }}. Link ističe za 1 sat.",
+    "ERROR_OAUTH_NO_PASSWORD": "Ovaj nalog koristi Google login — promenu lozinke uradi na Google nalogu."
   },
   "RESET_PASSWORD": {
     "TITLE": "Postavi novu lozinku",

@@ -285,8 +285,9 @@ namespace Explorea.Server.Services
             // password to reset. Refuse early with a clear message instead of
             // sending a reset email that wouldn't work, and so the inbox-holder
             // doesn't accidentally end up with an unintended local password.
+            // Code marker is read by the frontend to pick the right i18n key.
             if (user.PasswordHash == null)
-                throw new Exception("Ovaj nalog koristi Google login — promenu lozinke uradi na Google nalogu.");
+                throw new Exception("OAUTH_NO_LOCAL_PASSWORD: Ovaj nalog koristi Google login — promenu lozinke uradi na Google nalogu.");
 
             var rawToken = _jwtHelper.GenerateRefreshToken();
             var tokenHash = _jwtHelper.HashToken(rawToken);
@@ -336,7 +337,7 @@ namespace Explorea.Server.Services
             // account lost its password would still land here and otherwise
             // bypass VerifyPassword with a null hash.
             if (user.PasswordHash == null)
-                throw new Exception("Ovaj nalog koristi Google login — promenu lozinke uradi na Google nalogu.");
+                throw new Exception("OAUTH_NO_LOCAL_PASSWORD: Ovaj nalog koristi Google login — promenu lozinke uradi na Google nalogu.");
 
             if (_passwordHelper.VerifyPassword(newPassword, user.PasswordHash))
                 throw new Exception("New password must be different from the current password.");
