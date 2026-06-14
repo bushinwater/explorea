@@ -8,6 +8,7 @@ import {
   OnInit,
   ViewChild,
   computed,
+  effect,
   signal,
 } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
@@ -275,7 +276,18 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     protected readonly authContext: AdminAuthContextService,
     protected readonly ui: AdminUiPreferencesService,
     private readonly profileService: AdminProfileService,
-  ) {}
+  ) {
+    // Catch programmatic modalRegionId changes (reverse-geocode after a map
+    // click, destination autocomplete pick, etc.) and keep the minimap overlay
+    // + validation boundary in sync. onModalRegionChange() handles user picks;
+    // this effect handles every other set() path through one place.
+    effect(() => {
+      const rid = this.modalRegionId();
+      if (this.managedRegion()) return;
+      if (!this.regionsRaw && !this.serbiaOutlineRaw) return;
+      this.applyRegionBoundaryFromSelection(rid === 'all' ? null : rid);
+    });
+  }
 
   ngOnInit(): void {
     const openId   = this.route.snapshot.queryParamMap.get('openId');
@@ -1114,11 +1126,9 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       const region = this.regions().find(r => r.id === regionId);
       if (region?.countryId != null) this.selectedCountryId.set(region.countryId);
     }
-    // Swap minimap overlay + pin-validation boundary to the picked region
-    // (super_admin only — managed-region admins are already locked).
-    if (!this.managedRegion()) {
-      this.applyRegionBoundaryFromSelection(regionId === 'all' ? null : regionId);
-    }
+    // Overlay swap is handled by the modalRegionId effect — calling it again
+    // here would just duplicate work for user picks while missing the
+    // programmatic-set case (reverse-geocode after a map click).
   }
 
   /** Updates the minimap overlay + validation boundary to match the region pick. */

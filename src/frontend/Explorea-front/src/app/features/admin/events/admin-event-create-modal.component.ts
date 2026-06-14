@@ -12,6 +12,7 @@ import {
   SimpleChanges,
   ViewChild,
   computed,
+  effect,
   signal,
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
@@ -204,7 +205,20 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     private readonly cdr: ChangeDetectorRef,
     protected readonly ui: AdminUiPreferencesService,
     private readonly profileSvc: AdminProfileService,
-  ) {}
+  ) {
+    // Catch programmatic selectedRegionId changes (reverse-geocode after a
+    // map click, destination autocomplete pick, etc.) and keep the minimap
+    // overlay + validation boundary in sync. updateRegion() handles user
+    // picks; this effect handles every other set() path through one place.
+    effect(() => {
+      const rid = this.selectedRegionId();
+      if (this.lockedRegionId !== null) return;
+      // regionsRaw isn't a signal — read it directly. Skip until it's loaded
+      // so we don't blank the overlay during ngOnInit.
+      if (!this.regionsRaw && !this.serbiaOutlineRaw) return;
+      this.applyRegionBoundaryFromSelection(rid);
+    });
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['lockedRegionId'] && this.lockedRegionId !== null) {
@@ -376,11 +390,9 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     const regionId = value ? Number(value) : null;
     this.selectedRegionId.set(regionId);
     this.clearDestination();
-    // Swap minimap overlay + pin-validation boundary to the picked region
-    // (super_admin only — TOs are already locked to their managed region).
-    if (this.lockedRegionId === null) {
-      this.applyRegionBoundaryFromSelection(regionId);
-    }
+    // Overlay swap is handled by the selectedRegionId effect — calling it again
+    // here would just duplicate work for user picks while missing the
+    // programmatic-set case (reverse-geocode after a map click).
   }
 
   /** Updates the minimap overlay + validation boundary to match the region pick. */

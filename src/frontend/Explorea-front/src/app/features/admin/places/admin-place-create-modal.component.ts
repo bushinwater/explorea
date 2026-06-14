@@ -207,6 +207,17 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
         this.form.patchValue({ slug: this.toSlug(name) }, { emitEvent: false });
       }
     });
+    // Re-run overlay/validation when regionId is patched programmatically
+    // (e.g. reverse-geocode after a map click). The template-bound onRegionChange
+    // only fires for user input on the <select>, so without this listener the
+    // minimap stays on the country outline after an auto-fill.
+    this.sub.add(
+      this.form.controls.regionId.valueChanges.subscribe(val => {
+        if (this.lockedRegionId !== null) return;
+        const id = val ? +val : null;
+        this.applyRegionBoundaryFromSelection(id);
+      }),
+    );
     // Live duplicate-name check so the user sees the warning while typing.
     this.sub.add(
       this.form.controls.name.valueChanges.pipe(
@@ -288,11 +299,9 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
     } else {
       this.loadCities();
     }
-    // Swap the minimap overlay + pin-validation boundary to the picked region
-    // (super_admin only — TOs are already locked to their managed region).
-    if (this.lockedRegionId === null) {
-      this.applyRegionBoundaryFromSelection(regionId ? +regionId : null);
-    }
+    // Overlay swap is handled by the regionId.valueChanges subscription —
+    // calling it again here would just duplicate the work for user picks while
+    // missing the programmatic-patch case (reverse-geocode after a map click).
     this.cdr.detectChanges();
   }
 
