@@ -17,6 +17,9 @@ export class ForgotPassword {
   emailError = '';
   loading = false;
   sent = false;
+  /** Server-side message (e.g. "ovaj nalog koristi Google login…") — shown
+   *  instead of the generic "sent" panel when the backend explicitly refuses. */
+  serverError = '';
 
   private static readonly EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -45,6 +48,7 @@ export class ForgotPassword {
     }
 
     this.loading = true;
+    this.serverError = '';
     this.cdr.detectChanges();
 
     this.authService.forgotPassword({ email: this.email.trim() }).subscribe({
@@ -53,9 +57,18 @@ export class ForgotPassword {
         this.sent = true;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err: any) => {
         this.loading = false;
-        this.sent = true;
+        // 400 with a server message — e.g. OAuth-only account refusing the
+        // reset flow — surfaced so the user understands what to do next.
+        // Other errors fall back to the "we pretended to send it" panel so
+        // we don't leak which emails exist on the platform.
+        const msg = err?.error?.message;
+        if (err?.status === 400 && typeof msg === 'string' && msg.length) {
+          this.serverError = msg;
+        } else {
+          this.sent = true;
+        }
         this.cdr.detectChanges();
       },
     });

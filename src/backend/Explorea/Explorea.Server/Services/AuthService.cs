@@ -281,6 +281,13 @@ namespace Explorea.Server.Services
             if (user == null)
                 throw new Exception("User with this email does not exist.");
 
+            // OAuth-only accounts (signed up via Google etc.) don't have a local
+            // password to reset. Refuse early with a clear message instead of
+            // sending a reset email that wouldn't work, and so the inbox-holder
+            // doesn't accidentally end up with an unintended local password.
+            if (user.PasswordHash == null)
+                throw new Exception("Ovaj nalog koristi Google login — promenu lozinke uradi na Google nalogu.");
+
             var rawToken = _jwtHelper.GenerateRefreshToken();
             var tokenHash = _jwtHelper.HashToken(rawToken);
             var now = DateTimeOffset.UtcNow;
@@ -323,6 +330,13 @@ namespace Explorea.Server.Services
             var user = await _userRepository.GetByIdAsync(resetToken.UserId);
             if (user == null)
                 throw new Exception("User not found.");
+
+            // Defensive: ForgotPasswordAsync already blocks OAuth-only accounts
+            // from receiving a reset email, but a stale token issued before the
+            // account lost its password would still land here and otherwise
+            // bypass VerifyPassword with a null hash.
+            if (user.PasswordHash == null)
+                throw new Exception("Ovaj nalog koristi Google login — promenu lozinke uradi na Google nalogu.");
 
             if (_passwordHelper.VerifyPassword(newPassword, user.PasswordHash))
                 throw new Exception("New password must be different from the current password.");
