@@ -141,6 +141,36 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
 
   protected readonly allTypeOptions = computed(() => [...this.types, ...this.extraTypes()]);
 
+  // Working hours editor — seeded all-closed; the OpenNow filter in the tourist
+  // app reads from this so admins need to be able to manage it after creation.
+  protected readonly DAY_LABELS = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
+  protected readonly workingDays = signal<{ isClosed: boolean; opensAt: string; closesAt: string }[]>(
+    Array.from({ length: 7 }, () => ({ isClosed: true, opensAt: '09:00', closesAt: '17:00' })),
+  );
+
+  protected toggleWorkingDay(index: number): void {
+    this.workingDays.update(rows => rows.map((r, i) => i === index ? { ...r, isClosed: !r.isClosed } : r));
+  }
+
+  protected updateWorkingDay(index: number, field: 'opensAt' | 'closesAt', value: string): void {
+    this.workingDays.update(rows => rows.map((r, i) => i === index ? { ...r, [field]: value } : r));
+  }
+
+  /**
+   * Serializes the 7-row working-hours signal into the backend DTO format.
+   * dayOfWeek uses the ISO 8601 convention (Mon=1 … Sun=7) — that's what the
+   * DB CHECK constraint and SearchPageRepository.GetCurrentDayOfWeekNumber()
+   * both expect. Sending 0 would trip the place_working_days_day_of_week_check
+   * constraint and return a 400 from the PUT/POST.
+   */
+  private buildWorkingDaysPayload() {
+    return this.workingDays().map((row, index) => ({
+      dayOfWeek: index + 1,
+      isClosed: row.isClosed,
+      intervals: row.isClosed ? [] : [{ opensAt: `${row.opensAt}:00`, closesAt: `${row.closesAt}:00` }],
+    }));
+  }
+
   protected readonly statusOptions = [
     { value: 'approved', label: 'Aktivno' },
     { value: 'pending',  label: 'Na čekanju' },
@@ -218,6 +248,24 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
           // Extra filters
           if (detail.extraFilters) {
             this.modalExtraFilters.set({ ...detail.extraFilters });
+          }
+
+          // Working hours — map DB rows (ISO 8601: Mon=1..Sun=7) into our
+          // Mon→Sun order (index 0..6); pick the first interval if multiple exist.
+          if (detail.workingDays?.length) {
+            const rows = this.workingDays();
+            const next = rows.map(r => ({ ...r }));
+            for (const wd of detail.workingDays) {
+              const i = wd.dayOfWeek - 1; // 1(Mon)→0, 7(Sun)→6
+              if (i < 0 || i > 6) continue;
+              const interval = wd.intervals?.[0];
+              next[i] = {
+                isClosed: wd.isClosed,
+                opensAt:  interval ? interval.opensAt.substring(0, 5) : next[i].opensAt,
+                closesAt: interval ? interval.closesAt.substring(0, 5) : next[i].closesAt,
+              };
+            }
+            this.workingDays.set(next);
           }
 
           this.images.set(detail.images);
@@ -633,6 +681,7 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
         latitude:       v.latitude ?? undefined,
         longitude:      v.longitude ?? undefined,
         extraFilters:   ef,
+        workingDays:    this.buildWorkingDaysPayload(),
       }).subscribe({
         next: updated => {
           const pendingHero = this.heroImageId();
@@ -653,9 +702,11 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
             saveInterests();
           }
         },
-        error: () => {
+        error: (err: any) => {
+          console.error('[place-edit] PUT failed:', err?.status, err?.error);
           this.isSaving.set(false);
-          this.error.set('Greška pri čuvanju izmena.');
+          const serverMsg = err?.error?.message ?? err?.error;
+          this.error.set(typeof serverMsg === 'string' ? serverMsg : 'Greška pri čuvanju izmena.');
           this.cdr.detectChanges();
         },
       }),

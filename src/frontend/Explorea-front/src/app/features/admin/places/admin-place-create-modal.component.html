@@ -430,6 +430,41 @@
           </div>
         </div>
 
+        <!-- Working hours -->
+        <div class="working-hours">
+          <label class="edit-field__label">Radno vreme</label>
+          <div class="working-hours__list">
+            @for (row of workingDays(); track $index; let i = $index) {
+              <div class="working-hours__row">
+                <span class="working-hours__day">{{ DAY_LABELS[i] }}</span>
+                <label class="working-hours__toggle">
+                  <input
+                    type="checkbox"
+                    [checked]="!row.isClosed"
+                    (change)="toggleWorkingDay(i)"
+                  />
+                  <span>{{ row.isClosed ? 'Zatvoreno' : 'Otvoreno' }}</span>
+                </label>
+                @if (!row.isClosed) {
+                  <input
+                    class="working-hours__time"
+                    type="time"
+                    [value]="row.opensAt"
+                    (input)="updateWorkingDay(i, 'opensAt', $any($event.target).value)"
+                  />
+                  <span class="working-hours__sep">—</span>
+                  <input
+                    class="working-hours__time"
+                    type="time"
+                    [value]="row.closesAt"
+                    (input)="updateWorkingDay(i, 'closesAt', $any($event.target).value)"
+                  />
+                }
+              </div>
+            }
+          </div>
+        </div>
+
         <!-- Interest tags -->
         @if (allInterestTags().length > 0) {
           <div class="edit-modal__interests-section">

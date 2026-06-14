@@ -225,6 +225,15 @@ export interface CreatePlaceDto {
   websiteUrl?: string;
   isFeatured?: boolean;
   extraFilters?: Record<string, string>;
+  workingDays?: CreatePlaceWorkingDayDto[];
+}
+
+/** Single day's working hours sent to the backend on create or update. */
+export interface CreatePlaceWorkingDayDto {
+  dayOfWeek: number;
+  isClosed: boolean;
+  note?: string | null;
+  intervals: { opensAt: string; closesAt: string }[];
 }
 
 export interface OwnerSubmissionDocument {
@@ -253,4 +262,5 @@ export interface UpdatePlaceDto {
   isFeatured?: boolean;
   approvalStatus?: string;
   extraFilters?: Record<string, string>;
+  workingDays?: CreatePlaceWorkingDayDto[];
 }

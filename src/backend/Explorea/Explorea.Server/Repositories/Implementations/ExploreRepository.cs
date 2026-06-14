@@ -103,7 +103,12 @@ namespace Explorea.Server.Repositories.Implementations
             if (openNow == true)
             {
                 var nowTime = TimeOnly.FromDateTime(DateTime.UtcNow);
-                var today = (short)DateTime.UtcNow.DayOfWeek;
+                // DB stores day_of_week with the ISO 8601 convention (Mon=1 … Sun=7),
+                // which is enforced by a CHECK constraint. C#'s DayOfWeek enum has
+                // Sunday=0, so map Sunday → 7 explicitly; without this, the OpenNow
+                // filter would never match places on Sundays.
+                var dow = DateTime.UtcNow.DayOfWeek;
+                var today = (short)(dow == DayOfWeek.Sunday ? 7 : (int)dow);
 
                 query = query
                     .Include(p => p.WorkingDays)

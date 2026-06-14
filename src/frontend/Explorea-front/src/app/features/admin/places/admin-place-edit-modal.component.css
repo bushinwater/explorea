@@ -917,3 +917,58 @@
 .filter-ctx-menu__item .material-icons {
   font-size: 16px;
 }
+
+/* ── Working hours editor ─────────────────────────────────────────────── */
+.working-hours {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.working-hours__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.working-hours__row {
+  display: grid;
+  grid-template-columns: 100px auto 1fr 12px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+.working-hours__day {
+  font-weight: 600;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+}
+.working-hours__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.working-hours__time {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+}
+.working-hours__sep {
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+@media (max-width: 600px) {
+  .working-hours__row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .working-hours__sep { display: none; }
+}

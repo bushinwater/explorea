@@ -148,6 +148,13 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
   protected readonly nameAlreadyExists     = signal(false);
   protected readonly nameChecking          = signal(false);
 
+  // Working hours — 7 rows (Mon→Sun) seeded all-closed; the OpenNow filter in the
+  // tourist app relies on these rows so admins need a way to set them at create time.
+  protected readonly DAY_LABELS = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
+  protected readonly workingDays = signal<{ isClosed: boolean; opensAt: string; closesAt: string }[]>(
+    Array.from({ length: 7 }, () => ({ isClosed: true, opensAt: '09:00', closesAt: '17:00' })),
+  );
+
   private regionBoundary: any = null;
   private regionBoundaryRaw: string | null = null;
   private regionsRaw: RegionGeoItem[] | null = null;
@@ -614,6 +621,29 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   // ── Save ────────────────────────────────────────────────────────────────
+  protected toggleWorkingDay(index: number): void {
+    this.workingDays.update(rows => rows.map((r, i) => i === index ? { ...r, isClosed: !r.isClosed } : r));
+  }
+
+  protected updateWorkingDay(index: number, field: 'opensAt' | 'closesAt', value: string): void {
+    this.workingDays.update(rows => rows.map((r, i) => i === index ? { ...r, [field]: value } : r));
+  }
+
+  /**
+   * Serializes the 7-row working-hours signal into the backend DTO format.
+   * dayOfWeek uses the ISO 8601 convention (Mon=1 … Sun=7) — that's what the
+   * DB CHECK constraint and SearchPageRepository.GetCurrentDayOfWeekNumber()
+   * both expect. Sending 0 would trip the place_working_days_day_of_week_check
+   * constraint and return a 400 from the PUT/POST.
+   */
+  private buildWorkingDaysPayload() {
+    return this.workingDays().map((row, index) => ({
+      dayOfWeek: index + 1,
+      isClosed: row.isClosed,
+      intervals: row.isClosed ? [] : [{ opensAt: `${row.opensAt}:00`, closesAt: `${row.closesAt}:00` }],
+    }));
+  }
+
   protected save(): void {
     this.saveAttempted.set(true);
     this.form.markAllAsTouched();
@@ -663,6 +693,7 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
         email:        v.email || undefined,
         websiteUrl:   v.websiteUrl || undefined,
         extraFilters: Object.keys(ef).length ? ef : undefined,
+        workingDays: this.buildWorkingDaysPayload(),
       }).subscribe({
         next: detail => {
           this.createdId = detail.id;
