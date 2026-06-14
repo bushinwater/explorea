@@ -123,6 +123,15 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
   hoverRating: number | null = null;
   minPrice: number | null = null;
   maxPrice: number | null = null;
+  // Shadow values for "what's actually been applied to the network query" —
+  // every other filter applies on toggle, but the price inputs are debounced
+  // behind an Apply button so admins can finish typing before refetching.
+  appliedMinPrice: number | null = null;
+  appliedMaxPrice: number | null = null;
+
+  get priceDirty(): boolean {
+    return this.minPrice !== this.appliedMinPrice || this.maxPrice !== this.appliedMaxPrice;
+  }
   selectedSubcatIds: number[] = [];
   extraFilters: Record<string, string> = {};
   filterDefs: FilterDefinition[] = [];
@@ -253,11 +262,19 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
     if (cur[key] === value) delete cur[key];
     else cur[key] = value;
     this.extraFilters = cur;
+    this.fetchMarkers();
   }
 
-  setMinRating(val: number): void { this.minRating = this.minRating === val ? null : val; }
+  setMinRating(val: number): void {
+    this.minRating = this.minRating === val ? null : val;
+    this.fetchMarkers();
+  }
 
-  applyFilters(): void { this.fetchMarkers(); }
+  applyFilters(): void {
+    this.appliedMinPrice = this.minPrice;
+    this.appliedMaxPrice = this.maxPrice;
+    this.fetchMarkers();
+  }
 
   resetFilters(): void {
     this.selectedEntityTypes = [];
@@ -266,6 +283,8 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
     this.selectedSubcatIds = [];
     this.minPrice = null;
     this.maxPrice = null;
+    this.appliedMinPrice = null;
+    this.appliedMaxPrice = null;
     this.extraFilters = {};
     this.filterDefs = [];
     this.filterDefsTypeId = null;
@@ -429,15 +448,12 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
     });
 
     this.map.on('zoomend', () => {
-      const newZoom = this.map.getZoom();
-      const tier = (z: number) => z < 8 ? 0 : z < 11 ? 1 : 2;
-      if (tier(newZoom) !== tier(this.currentZoom)) {
-        this.currentZoom = newZoom;
-        this.addMarkers();
-        this.cdr.detectChanges();
-      } else {
-        this.currentZoom = newZoom;
-      }
+      this.currentZoom = this.map.getZoom();
+      // Always rebuild — pixel distances between pins change continuously with
+      // zoom, so a tier-based shortcut would leave overlapping clouds inside a
+      // tier and would never re-expose pins as the user zooms in.
+      this.addMarkers();
+      this.cdr.detectChanges();
     });
   }
 
@@ -477,8 +493,8 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
     const params: any = { radius: 1000, limit: 1000, includeAll: true };
     if (this.minRating !== null) params.minRating = this.minRating;
     if (this.openNowOnly) params.openNow = true;
-    if (this.minPrice !== null) params.minPrice = this.minPrice;
-    if (this.maxPrice !== null) params.maxPrice = this.maxPrice;
+    if (this.appliedMinPrice !== null) params.minPrice = this.appliedMinPrice;
+    if (this.appliedMaxPrice !== null) params.maxPrice = this.appliedMaxPrice;
     if (Object.keys(this.extraFilters).length > 0) params.extraFilters = this.extraFilters;
 
     if (this.subcatEntityType === 'place'       && this.selectedSubcatIds.length > 0) params.placeTypeIds         = this.selectedSubcatIds;
@@ -521,12 +537,56 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  /** Minimum pixel distance between two rendered pins. Country-level keeps the
+   *  cloud sparse (~56px); as the user zooms toward a city we relax the gap so
+   *  more places/events appear, until at street-level we let almost everything
+   *  through. Threshold is recomputed every time we (re-)render markers. */
+  private get pinMinPixelDist(): number {
+    const z = this.map?.getZoom() ?? 0;
+    // Linear ramp anchored at z=8 (country) → 56px down to z=15 (streets) → 24px.
+    return Math.max(24, Math.round(56 - Math.max(0, z - 8) * 5));
+  }
+
+  /**
+   * Drops pins that would visually overlap at the current zoom level. Sorted by
+   * a coarse priority (destination → event → activity → place, then by rating
+   * and featured) so the most important pin wins each contested cell. As the
+   * map zooms in, pixel distances between locations grow and previously hidden
+   * pins reappear automatically.
+   */
+  private thinByPixelDistance(pins: ExploreMarker[]): ExploreMarker[] {
+    if (pins.length === 0 || !this.map) return pins;
+    const typeOrder: Record<string, number> = { destination: 0, event: 1, activity: 2, place: 3 };
+    const sorted = [...pins].sort((a, b) => {
+      const ta = typeOrder[a.entityType] ?? 9;
+      const tb = typeOrder[b.entityType] ?? 9;
+      if (ta !== tb) return ta - tb;
+      return (b.avgRating ?? 0) - (a.avgRating ?? 0);
+    });
+
+    const kept: { pin: ExploreMarker; x: number; y: number }[] = [];
+    const minDist = this.pinMinPixelDist;
+    const minDistSq = minDist * minDist;
+    for (const pin of sorted) {
+      const { x, y } = this.map.project([pin.lng, pin.lat]);
+      let tooClose = false;
+      for (const k of kept) {
+        const dx = k.x - x;
+        const dy = k.y - y;
+        if (dx * dx + dy * dy < minDistSq) { tooClose = true; break; }
+      }
+      if (!tooClose) kept.push({ pin, x, y });
+    }
+    return kept.map(k => k.pin);
+  }
+
   private addMarkers(): void {
     this.markers.forEach(m => m.remove());
     this.markers = [];
     this.pinElements.clear();
 
-    this.filteredPins.forEach(pin => {
+    const visible = this.thinByPixelDistance(this.filteredPins);
+    visible.forEach(pin => {
       const icon  = this.getPinIcon(pin.entityType);
       const color = this.getPinColor(pin.entityType);
       const isSelected = this.selectedPin?.entityType === pin.entityType && this.selectedPin?.id === pin.id;
@@ -542,7 +602,11 @@ export class AdminMapViewComponent implements AfterViewInit, OnDestroy {
       `;
       el.addEventListener('click', e => {
         e.stopPropagation();
-        this.map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(this.map.getZoom(), 12), duration: 800 });
+        // Destinations are area-sized (a city, a region) so 12 keeps the surroundings
+        // in view; places / events / activities are point entities, so we zoom in
+        // further (15) so the admin lands on the actual spot they clicked.
+        const targetZoom = pin.entityType === 'destination' ? 12 : 15;
+        this.map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(this.map.getZoom(), targetZoom), duration: 800 });
         this.onPinClick(pin);
       });
 

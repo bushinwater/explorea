@@ -265,11 +265,14 @@
     </div>
   }
 
-  <!-- Akcije -->
-  @if (activeFilterCount > 0) {
+  <!-- Akcije — sve ostalo se primenjuje na klik; samo cena ima Apply dugme
+       dok admin završi kucanje (inače bi svaka cifra okidala novi network call). -->
+  @if (activeFilterCount > 0 || priceDirty) {
     <div class="filter-actions">
       <button class="ghost-btn ghost-btn--sm" type="button" (click)="resetFilters()">{{ ui.t('map.reset') }}</button>
-      <button class="primary-btn" type="button" (click)="applyFilters()">{{ ui.t('map.apply') }}</button>
+      @if (priceDirty) {
+        <button class="primary-btn" type="button" (click)="applyFilters()">{{ ui.t('map.apply') }}</button>
+      }
     </div>
   }
 
