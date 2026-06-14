@@ -126,6 +126,20 @@ namespace Explorea.Server.Repositories.Implementations
 
             return await query.CountAsync();
         }
+
+        public async Task<int> CountDeletedAsync(
+            List<Guid>? restrictToDestinationIds,
+            List<int>? restrictToCityIds
+        )
+        {
+            var query = _db.Events
+                .IgnoreQueryFilters()
+                .Where(e => e.IsDeleted);
+
+            query = ApplyAccessRestrictions(query, restrictToDestinationIds, restrictToCityIds);
+
+            return await query.CountAsync();
+        }
         public async Task<int> CountApprovedThisMonthAsync(
             List<Guid>? restrictToDestinationIds,
             List<int>? restrictToCityIds

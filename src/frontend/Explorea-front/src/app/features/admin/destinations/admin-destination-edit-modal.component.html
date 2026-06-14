@@ -198,15 +198,6 @@
             </select>
           </div>
 
-          <div class="edit-field">
-            <label class="edit-field__label" for="dest-vis">Status</label>
-            <select id="dest-vis" class="edit-field__select" formControlName="visibility">
-              @for (opt of visibilityOptions; track opt.value) {
-                <option [value]="opt.value">{{ opt.label }}</option>
-              }
-            </select>
-          </div>
-
           <div class="edit-field__coords">
             <span class="edit-field__coords-label">{{ ui.t('common.coords') }} <span class="edit-field__required">*</span></span>
             <span class="edit-field__coords-value">

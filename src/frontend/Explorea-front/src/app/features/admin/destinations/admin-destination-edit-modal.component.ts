@@ -117,13 +117,9 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
   protected readonly isAddingFilter = signal(false);
   protected readonly extraFilters   = signal<Record<string, string>>({});
 
-  protected readonly visibilityOptions = [
-    { value: 'published', label: 'Aktivno' },
-    { value: 'draft',     label: 'Na čekanju' },
-    { value: 'inactive',  label: 'Neaktivno' },
-    { value: 'rejected',  label: 'Odbijeno' },
-  ];
-
+  // Status pill is now auto-driven by the click-based sync (SyncInactiveVisibilityAsync),
+  // so the edit modal no longer exposes a manual status picker. The form control
+  // keeps the existing visibility value silently so updates don't blank it out.
   private map: MapLibreMap | null = null;
   private marker: Marker | null = null;
   private lightStyle: any;

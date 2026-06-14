@@ -62,6 +62,10 @@ namespace Explorea.Server.Services.Admin
                 restrictToDestinationIds,
                 restrictToCityIds
             );
+            var deletedCount = await _eventRepo.CountDeletedAsync(
+                restrictToDestinationIds,
+                restrictToCityIds
+            );
 
             var pendingCount = await _queueRepo.CountAsync(
                 entityType: "event",
@@ -109,7 +113,8 @@ namespace Explorea.Server.Services.Admin
 
                 TabPendingCount = pendingCount,
                 TabActiveCount = activeCount,
-                TabExpiredCount = expiredCount
+                TabExpiredCount = expiredCount,
+                TabDeletedCount = deletedCount
             };
         }
 
@@ -587,6 +592,12 @@ namespace Explorea.Server.Services.Admin
             if (dto.PlaceId != target.PlaceId) { AddChangedField(changedFields, "objekat", target.PlaceId, dto.PlaceId); target.PlaceId = dto.PlaceId; }
             if (dto.IsFeatured    != null) { AddChangedField(changedFields, "istaknuto", target.IsFeatured, dto.IsFeatured.Value); target.IsFeatured = dto.IsFeatured.Value; }
             if (dto.RecursAnnually != null) { AddChangedField(changedFields, "ponavlja se svake godine", target.RecursAnnually, dto.RecursAnnually.Value); target.RecursAnnually = dto.RecursAnnually.Value; }
+            // Only super_admin can change visibility manually — TOs / place owners
+            // stay locked to the current value to keep approval flow intact.
+            if (dto.Visibility != null && user?.Role.Name == RoleNames.SuperAdmin) {
+                AddChangedField(changedFields, "status", target.Visibility, dto.Visibility);
+                target.Visibility = dto.Visibility;
+            }
             if (dto.ExtraFilters  != null) target.ExtraFilters = JsonSerializer.Serialize(dto.ExtraFilters);
 
             target.UpdatedAt = DateTimeOffset.UtcNow;
@@ -882,7 +893,8 @@ namespace Explorea.Server.Services.Admin
                 RejectedNote = "events.stats.hint.rejected",
                 TabPendingCount = pendingCount,
                 TabActiveCount = activeCount,
-                TabExpiredCount = expiredCount
+                TabExpiredCount = expiredCount,
+                TabDeletedCount = 0
             };
         }
 
@@ -1262,6 +1274,7 @@ namespace Explorea.Server.Services.Admin
                 Views          = await _db.PopularityLogs.CountAsync(l => l.EntityType == "event" && l.Source == "click" && l.EntityId == e.Id),
                 IsFeatured     = e.IsFeatured,
                 RecursAnnually = e.RecursAnnually,
+                Visibility     = e.Visibility,
                 Images         = e.Images.OrderBy(i => i.SortOrder)
                                     .Select(i => new AdminEventImageDto { Id = i.Id, ImageUrl = i.ImageUrl, SortOrder = i.SortOrder })
                                     .ToList(),

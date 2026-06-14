@@ -187,6 +187,7 @@
                 }
               </div>
 
+              <div class="evts-filter-grid">
               <div class="evts-filter-section">
                 <label class="evts-filter-section__label">{{ ui.t('events.filter.type') }}</label>
                 <div class="evts-filter-chips">
@@ -253,6 +254,44 @@
                     </button>
                   }
                 </div>
+              </div>
+
+              <!-- Date / calendar filter (same layout as the tourist events calendar) -->
+              <div class="evts-filter-section">
+                <label class="evts-filter-section__label">Datum</label>
+                <div class="calendar-card">
+                  <div class="calendar-header">
+                    <button class="calendar-nav" type="button" (click)="prevCalendarMonth()">
+                      <span class="material-icons">chevron_left</span>
+                    </button>
+                    <span class="calendar-month">{{ calendarMonthLabel }}</span>
+                    <button class="calendar-nav" type="button" (click)="nextCalendarMonth()">
+                      <span class="material-icons">chevron_right</span>
+                    </button>
+                  </div>
+                  <div class="calendar-grid">
+                    @for (d of DAY_LABELS; track d) {
+                      <div class="calendar-day-label">{{ d }}</div>
+                    }
+                    @for (cell of calendarGrid; track trackByCalendarCell($index, cell)) {
+                      <button
+                        type="button"
+                        class="calendar-cell"
+                        [class.other-month]="!cell.isCurrentMonth"
+                        [class.today]="isCalendarToday(cell.date)"
+                        [class.selected]="isCalendarSelected(cell.date)"
+                        [class.has-events]="cell.count > 0"
+                        (click)="selectCalendarDate(cell)"
+                      >
+                        {{ cell.date.getDate() }}
+                        @if (cell.isCurrentMonth && cell.count > 0) {
+                          <span class="cell-dot"></span>
+                        }
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
               </div>
 
               @if (filterDefs().length > 0) {
@@ -368,6 +407,9 @@
           (click)="setTab('deleted')"
         >
           {{ ui.t('events.tabs.deleted') }}
+          @if (stats()?.tabDeletedCount) {
+            <span class="evts-tab__badge">{{ compactCount(stats()!.tabDeletedCount) }}</span>
+          }
         </button>
       </div>
 

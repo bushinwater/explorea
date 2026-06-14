@@ -121,6 +121,7 @@ interface ApiEventDetailItem {
   popularity: number;
   isFeatured: boolean;
   recursAnnually: boolean;
+  visibility?: string;
   images: { id: string; imageUrl: string; sortOrder: number }[];
   createdAt: string;
   updatedAt: string;
@@ -426,6 +427,12 @@ export class AdminEventsService {
 
     if (filters.destinationId !== null) params = params.set('destinationId', filters.destinationId);
 
+    if (filters.selectedDate) {
+      const start = new Date(filters.selectedDate + 'T00:00:00');
+      const end   = new Date(filters.selectedDate + 'T23:59:59.999');
+      params = params.set('startFrom', start.toISOString()).set('startTo', end.toISOString());
+    }
+
     for (const [key, value] of Object.entries(filters.extraFilters ?? {})) {
       params = params.append('extraFilters', `${key}:${value}`);
     }
@@ -701,6 +708,7 @@ export class AdminEventsService {
       priority: base?.priority ?? null,
       status: base?.status ?? 'active',
       hasRecentActivity: base?.hasRecentActivity ?? false,
+      visibility: e.visibility ?? base?.visibility,
       heroImageUrl: imgs[0]?.imageUrl ?? base?.heroImageUrl ?? null,
       imageItems: imgs,
       expectedGuests: base?.expectedGuests ?? null,

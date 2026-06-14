@@ -17,5 +17,6 @@ namespace Explorea.API.DTOs.Admin.Event
     public int TabPendingCount { get; set; }
     public int TabActiveCount { get; set; }
     public int TabExpiredCount { get; set; }
+    public int TabDeletedCount { get; set; }
   }
 }

@@ -43,6 +43,24 @@
             />
           </div>
 
+          <!-- Status / visibility — super_admin only -->
+          @if (isSuperAdmin) {
+            <div class="edit-field ev-field--full">
+              <label class="edit-field__label" for="ev-e-vis">Status</label>
+              <select
+                id="ev-e-vis"
+                class="edit-field__select"
+                (change)="updateVisibility($any($event.target).value)"
+              >
+                @for (opt of visibilityOptions; track opt.value) {
+                  <option [value]="opt.value" [selected]="form().visibility === opt.value">
+                    {{ opt.label }}
+                  </option>
+                }
+              </select>
+            </div>
+          }
+
           <!-- Type + add new type -->
           <div class="edit-field ev-field--full">
             <label class="edit-field__label" for="ev-e-type"

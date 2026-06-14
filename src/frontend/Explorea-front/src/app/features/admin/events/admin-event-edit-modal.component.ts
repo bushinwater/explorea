@@ -70,6 +70,7 @@ interface EditForm {
   ticketUrl: string;
   isFeatured: boolean;
   recursAnnually: boolean;
+  visibility: string;
   extraFilters: Record<string, string>;
 }
 
@@ -95,8 +96,13 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
 
   protected readonly form = signal<EditForm>({
     name: '', description: '', typeId: null, startDatetime: '', endDatetime: '',
-    price: '', address: '', destinationId: null, placeId: null, ticketUrl: '', isFeatured: false, recursAnnually: false, extraFilters: {},
+    price: '', address: '', destinationId: null, placeId: null, ticketUrl: '', isFeatured: false, recursAnnually: false, visibility: 'published', extraFilters: {},
   });
+  protected readonly visibilityOptions = [
+    { value: 'published', label: 'Aktivno' },
+    { value: 'inactive',  label: 'Neaktivno' },
+    { value: 'rejected',  label: 'Odbijeno' },
+  ];
   protected readonly errors = signal<string[]>([]);
   protected readonly isSaving = signal(false);
   protected readonly isGeocoding = signal(false);
@@ -202,6 +208,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
       ticketUrl: ev.ticketUrl ?? '',
       isFeatured: ev.isFeatured,
       recursAnnually: ev.recursAnnually,
+      visibility: ev.visibility ?? 'published',
       extraFilters: ev.extraFilters ?? {},
     });
     this.mapLatitude.set(ev.latitude ?? null);
@@ -230,6 +237,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
             ticketUrl: detail.ticketUrl ?? f.ticketUrl,
             description: detail.description ?? f.description,
             recursAnnually: detail.recursAnnually,
+            visibility: detail.visibility ?? f.visibility,
           }));
           if (this.mapLatitude() === null && detail.latitude != null) {
             if (this.map) {
@@ -399,6 +407,10 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
 
   protected updateText(field: keyof Pick<EditForm, 'name' | 'description' | 'startDatetime' | 'endDatetime' | 'price' | 'address' | 'ticketUrl'>, value: string): void {
     this.form.update(f => ({ ...f, [field]: value }));
+  }
+
+  protected updateVisibility(value: string): void {
+    this.form.update(f => ({ ...f, visibility: value }));
   }
 
   protected updateType(value: string): void {
@@ -715,6 +727,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
       ticketUrl: f.ticketUrl.trim() || null,
       isFeatured: f.isFeatured,
       recursAnnually: f.recursAnnually,
+      visibility: f.visibility,
       extraFilters: f.extraFilters,
     };
 

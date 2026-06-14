@@ -186,7 +186,8 @@
   top: calc(100% + 6px);
   right: 0;
   z-index: 200;
-  width: 320px;
+  width: 640px;
+  max-width: calc(100vw - 32px);
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -196,6 +197,29 @@
   flex-direction: column;
   gap: var(--sp-4);
   overflow: visible;
+}
+
+/* Two-column inner grid: regular filter chips fill the first column row by row,
+   the calendar (last child) drops into the second column and spans all rows so
+   the panel stays compact instead of stacking everything vertically. */
+.evts-filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+  align-items: start;
+}
+.evts-filter-grid > .evts-filter-section:last-child {
+  grid-column: 2;
+  grid-row: 1 / span 4;
+}
+
+@media (max-width: 720px) {
+  .evts-filter-panel { width: 320px; }
+  .evts-filter-grid { grid-template-columns: 1fr; }
+  .evts-filter-grid > .evts-filter-section:last-child {
+    grid-column: auto;
+    grid-row: auto;
+  }
 }
 
 .evts-filter-panel__header {
@@ -1636,3 +1660,91 @@
 @media (max-width: 600px) {
   .ddp-analytics-stats { grid-template-columns: 1fr; }
 }
+
+/* ══════════════════════════════════════
+   CALENDAR (mirrors tourist events-list)
+   ══════════════════════════════════════ */
+.calendar-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+}
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+.calendar-month {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+  text-transform: capitalize;
+}
+.calendar-nav {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+.calendar-nav:hover { background: var(--color-border); }
+.calendar-nav .material-icons { font-size: 20px; }
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.calendar-day-label {
+  text-align: center;
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+  padding: 4px 0;
+  text-transform: uppercase;
+}
+.calendar-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  gap: 1px;
+}
+.calendar-cell:hover:not(.other-month) { background: var(--color-border); }
+.calendar-cell.other-month {
+  color: var(--color-text-secondary);
+  opacity: 0.35;
+  cursor: default;
+}
+.calendar-cell.today {
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+}
+.calendar-cell.selected {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: transparent;
+}
+.cell-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+.calendar-cell.selected .cell-dot { background: #fff; }
+

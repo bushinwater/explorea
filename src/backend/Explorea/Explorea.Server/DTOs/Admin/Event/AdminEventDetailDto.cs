@@ -30,6 +30,7 @@ namespace Explorea.API.DTOs.Admin.Event
         public bool            IsFeatured     { get; set; }
         public bool            RecursAnnually { get; set; }
         public List<AdminEventImageDto> Images { get; set; } = new();
+        public string?         Visibility     { get; set; }
         public DateTimeOffset  CreatedAt      { get; set; }
         public DateTimeOffset  UpdatedAt      { get; set; }
         public Dictionary<string, string>? ExtraFilters { get; set; }

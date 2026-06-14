@@ -115,6 +115,11 @@ export interface EventRow {
    * "Aktivno / Neaktivno" status pill in the admin table.
    */
   hasRecentActivity: boolean;
+  /**
+   * Raw visibility column from the events row (published / inactive / rejected).
+   * Edit modal uses this to pre-fill the status select for super_admin.
+   */
+  visibility?: string;
   heroImageUrl: string | null;
   imageItems: EventImageItem[];
   expectedGuests: number | null;
@@ -148,6 +153,7 @@ export interface EventStats {
   tabPendingCount: number;
   tabActiveCount: number;
   tabExpiredCount: number;
+  tabDeletedCount: number;
 }
 
 export interface EventFilters {
@@ -158,6 +164,8 @@ export interface EventFilters {
   extraFilters: Record<string, string>;
   tab: EventsTab;
   sortBy: 'none' | 'updatedAt_desc' | 'updatedAt_asc';
+  /** ISO date (YYYY-MM-DD) when a single calendar day is picked, or null for no date filter. */
+  selectedDate: string | null;
   page: number;
   pageSize: number;
 }
@@ -214,6 +222,7 @@ export interface UpdateEventPayload {
   ticketUrl?: string | null;
   isFeatured?: boolean;
   recursAnnually?: boolean;
+  visibility?: string;
   extraFilters?: Record<string, string>;
 }
 

@@ -9,6 +9,7 @@ import {
   computed,
   signal,
 } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { StatCardComponent } from '@shared/components';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
@@ -76,11 +77,20 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     extraFilters: {},
     tab: 'active',
     sortBy: 'none',
+    selectedDate: null,
     page: 1,
     pageSize: 20,
   });
 
   protected readonly filterDefs = signal<FilterDefinition[]>([]);
+
+  // ─── Calendar filter (mirrors the tourist events page layout) ──────────
+  readonly DAY_LABELS = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub', 'Ned'];
+  protected calendarViewDate = new Date();
+  protected selectedCalendarDate: Date | null = null;
+  protected calendarGrid: { date: Date; isCurrentMonth: boolean; count: number }[] = [];
+  /** Map of `YYYY-MM-DD` → number of events on that day in the current view month. */
+  private calendarCounts = new Map<string, number>();
 
   protected readonly events = signal<EventRow[]>([]);
   protected readonly stats = signal<EventStats | null>(null);
@@ -150,6 +160,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       f.typeId !== null,
       f.cityId !== null,
       f.destinationId !== null,
+      f.selectedDate !== null,
       ...Object.keys(f.extraFilters).map(() => true),
     ].filter(Boolean).length;
   });
@@ -205,6 +216,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     private readonly auth: AuthService,
     protected readonly dashAuth: DashboardAuthService,
     protected readonly ui: AdminUiPreferencesService,
+    private readonly http: HttpClient,
   ) {
     effect(() => {
       const rid = this.lockedRegionId();
@@ -280,6 +292,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       const ev = items.find(e => e.id === openEditId);
       if (ev) this.openEditFromRow(ev);
     } : undefined);
+    this.loadCalendarMonth();
   }
 
   ngOnDestroy(): void {
@@ -292,6 +305,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.isPanelClosing.set(false);
     this.patchFilter({ tab, page: 1 });
     this.loadEvents();
+    this.loadCalendarMonth();
   }
 
   protected updateSearch(value: string): void {
@@ -339,9 +353,12 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       extraFilters: {},
       tab: f.tab,
       sortBy: 'none',
+      selectedDate: null,
       page: 1,
       pageSize: f.pageSize,
     }));
+    this.selectedCalendarDate = null;
+    this.loadCalendarMonth();
     this.filterDefs.set([]);
     this.currentPage.set(1);
     this.loadEvents();
@@ -964,6 +981,123 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     if (this.isPanelOpen() && !this.isPanelClosing()) { this.closeDetailsPanel(); return; }
   }
 
+  // ─── Calendar filter ────────────────────────────────────────────────
+  get calendarMonthLabel(): string {
+    return this.calendarViewDate.toLocaleDateString('sr-Latn-RS', { month: 'long', year: 'numeric' });
+  }
+
+  protected prevCalendarMonth(): void {
+    this.calendarViewDate = new Date(this.calendarViewDate.getFullYear(), this.calendarViewDate.getMonth() - 1, 1);
+    this.loadCalendarMonth();
+  }
+
+  protected nextCalendarMonth(): void {
+    this.calendarViewDate = new Date(this.calendarViewDate.getFullYear(), this.calendarViewDate.getMonth() + 1, 1);
+    this.loadCalendarMonth();
+  }
+
+  protected selectCalendarDate(cell: { date: Date; isCurrentMonth: boolean }): void {
+    if (!cell.isCurrentMonth) return;
+    const same = this.selectedCalendarDate && isSameDay(cell.date, this.selectedCalendarDate);
+    this.selectedCalendarDate = same ? null : cell.date;
+    const iso = this.selectedCalendarDate ? this.toIsoDate(this.selectedCalendarDate) : null;
+    this.patchFilter({ selectedDate: iso, page: 1 });
+    this.loadEvents();
+  }
+
+  protected isCalendarToday(date: Date): boolean { return isSameDay(date, new Date()); }
+  protected isCalendarSelected(date: Date): boolean {
+    return !!this.selectedCalendarDate && isSameDay(date, this.selectedCalendarDate);
+  }
+  protected trackByCalendarCell(_: number, c: { date: Date }): string { return c.date.toISOString(); }
+
+  /**
+   * Fetches all events for the currently viewed month, counts them per day, and
+   * rebuilds the calendar grid. Mirrors the tourist app's calendar tab so the
+   * admin gets the same per-day dot indicators next to the table.
+   */
+  private loadCalendarMonth(): void {
+    const year  = this.calendarViewDate.getFullYear();
+    const month = this.calendarViewDate.getMonth();
+    const start = new Date(year, month, 1);
+    const end   = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+    let params = new HttpParams()
+      .set('page', 1)
+      .set('pageSize', 500)
+      .set('startFrom', start.toISOString())
+      .set('startTo',   end.toISOString());
+
+    const tab = this.filters().tab;
+    if (tab === 'active' || tab === 'expired') {
+      this.subscription.add(
+        this.http.get<{ total: number; items: { startDatetime?: string; startDate?: string }[] }>(
+          '/api/admin/events',
+          { params },
+        ).subscribe({
+          next: res => {
+            this.calendarCounts = this.buildCountsFromItems(res.items, year, month);
+            this.buildCalendarGrid();
+          },
+          error: () => {
+            this.calendarCounts = new Map();
+            this.buildCalendarGrid();
+          },
+        }),
+      );
+    } else {
+      // Non-paged tabs (deleted/rejected/pending) — just skip the count load and
+      // render an empty-dot grid; the date filter still applies if user picks one.
+      this.calendarCounts = new Map();
+      this.buildCalendarGrid();
+    }
+  }
+
+  private buildCountsFromItems(
+    items: { startDatetime?: string; startDate?: string }[],
+    year: number,
+    month: number,
+  ): Map<string, number> {
+    const counts = new Map<string, number>();
+    for (const it of items) {
+      const raw = it.startDatetime ?? it.startDate;
+      if (!raw) continue;
+      const d = new Date(raw);
+      if (d.getFullYear() !== year || d.getMonth() !== month) continue;
+      const key = this.toIsoDate(d);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return counts;
+  }
+
+  private buildCalendarGrid(): void {
+    const year  = this.calendarViewDate.getFullYear();
+    const month = this.calendarViewDate.getMonth();
+    const lastDay  = new Date(year, month + 1, 0);
+    const firstDay = new Date(year, month, 1);
+    const startOffset = (firstDay.getDay() + 6) % 7; // Monday-first
+
+    const cells: { date: Date; isCurrentMonth: boolean; count: number }[] = [];
+    for (let i = startOffset - 1; i >= 0; i--) {
+      cells.push({ date: new Date(year, month, -i), isCurrentMonth: false, count: 0 });
+    }
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(year, month, d);
+      cells.push({ date, isCurrentMonth: true, count: this.calendarCounts.get(this.toIsoDate(date)) ?? 0 });
+    }
+    while (cells.length % 7 !== 0) {
+      const n = cells.length - startOffset - lastDay.getDate() + 1;
+      cells.push({ date: new Date(year, month + 1, n), isCurrentMonth: false, count: 0 });
+    }
+    this.calendarGrid = cells;
+  }
+
+  private toIsoDate(d: Date): string {
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${m}-${day}`;
+  }
+
   private patchFilter(patch: Partial<EventFilters>): void {
     this.filters.update((current) => ({ ...current, ...patch }));
     if (patch.page !== undefined) this.currentPage.set(patch.page);
@@ -1094,4 +1228,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       }),
     );
   }
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() &&
+         a.getMonth()    === b.getMonth()    &&
+         a.getDate()     === b.getDate();
 }

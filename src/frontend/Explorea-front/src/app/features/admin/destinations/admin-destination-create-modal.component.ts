@@ -125,13 +125,9 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
   protected readonly isAddingFilter = signal(false);
   protected readonly extraFilters   = signal<Record<string, string>>({});
 
-  protected readonly visibilityOptions = [
-    { value: 'published', label: 'Aktivno'     },
-    { value: 'draft',     label: 'Na čekanju'  },
-    { value: 'inactive',  label: 'Neaktivno'   },
-    { value: 'rejected',  label: 'Odbijeno'    },
-  ];
-
+  // Visibility is now auto-managed by the click-based sync — the form keeps a
+  // hidden default of "published" so super_admin doesn't have to pick a status
+  // at create time. SyncInactiveVisibilityAsync flips it later based on clicks.
   private map: MapLibreMap | null = null;
   private marker: Marker | null = null;
   private lightStyle: any;
