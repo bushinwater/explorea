@@ -241,6 +241,12 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
         },
       }),
     );
+    // Clear any leftover save/validation error message as soon as the user
+    // edits any form field — so a stale "polje X je obavezno" or upload error
+    // disappears the moment they start typing/picking a fix.
+    this.sub.add(this.form.valueChanges.subscribe(() => {
+      if (this.error()) this.error.set('');
+    }));
     setTimeout(() => this.initMap(), 50);
   }
 
@@ -455,6 +461,10 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
     const input = event.target as HTMLInputElement;
     const rawFiles = Array.from(input.files ?? []);
     input.value = '';
+    // Clear any prior error (e.g. "previous file too large", "exceeded image
+    // cap") so a fresh pick starts on a clean slate — the same handler will
+    // re-set the error if this new attempt also fails.
+    this.error.set('');
     const files = rawFiles.filter(f => f.size <= MAX_FILE_SIZE);
     if (files.length < rawFiles.length) { this.error.set('Slike moraju biti manje od 5 MB.'); }
     if (!files.length) { this.cdr.detectChanges(); return; }

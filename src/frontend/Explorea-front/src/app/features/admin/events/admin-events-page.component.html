@@ -516,9 +516,15 @@
                   </td>
                   @if (filters().tab !== 'active') {
                     <td class="evts-td">
-                      <span class="evts-status evts-status--{{ ev.status }}" [title]="statusTooltip(ev.status)">{{
-                        statusLabel(ev.status)
-                      }}</span>
+                      @if (filters().tab === 'deleted') {
+                        <span class="evts-deleted-when" [title]="ev.deletedAt">
+                          {{ ui.t('common.deleted') }} · {{ formatTimeAgo(ev.deletedAt) }}
+                        </span>
+                      } @else {
+                        <span class="evts-status evts-status--{{ ev.status }}" [title]="statusTooltip(ev.status)">{{
+                          statusLabel(ev.status)
+                        }}</span>
+                      }
                     </td>
                   }
                   <td class="evts-td evts-td--actions" (click)="$event.stopPropagation()">

@@ -660,8 +660,9 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
             this.loadEvents();
             setTimeout(() => this.successMessage.set(''), 4000);
           },
-          error: () => {
-            this.errorMessage.set('Vraćanje nije uspelo.');
+          error: (err) => {
+            const msg = err?.error?.message;
+            this.errorMessage.set(msg || 'Vraćanje nije uspelo.');
             setTimeout(() => this.errorMessage.set(''), 4000);
           },
         }),
@@ -932,6 +933,20 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
 
   protected formatRating(r: number): string {
     return r > 0 ? r.toFixed(1) : '—';
+  }
+
+  /** Human "pre N min/h/dana" from an ISO timestamp — used by the deleted tab
+   *  to replace the status pill with a "when was it deleted" hint. */
+  protected formatTimeAgo(value: string | null | undefined): string {
+    if (!value) return '—';
+    const ts = new Date(value).getTime();
+    if (Number.isNaN(ts)) return '—';
+    const minutes = Math.max(1, Math.floor((Date.now() - ts) / 60000));
+    if (minutes < 60) return this.ui.t('common.time_ago.min', { n: minutes });
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return this.ui.t('common.time_ago.hours',   { n: hours });
+    const days = Math.floor(hours / 24);
+    return this.ui.t('common.time_ago.days', { n: days });
   }
 
   protected starArray(): number[] {

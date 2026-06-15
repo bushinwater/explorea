@@ -419,7 +419,8 @@ namespace Explorea.Server.Services.Admin
 
                 var ownerCount = await _db.PopularityLogs
                     .CountAsync(l => l.EntityType == "destination" && l.Source == "click" && l.EntityId == id);
-                return MapToListDto(ownerDestination, new Dictionary<Guid, int> { [id] = ownerCount });
+                var ownerRecentlyActiveIds = await GetRecentlyActiveIdsAsync("destination", new[] { id });
+                return MapToListDto(ownerDestination, new Dictionary<Guid, int> { [id] = ownerCount }, ownerRecentlyActiveIds);
             }
             else if (user?.Role.Name != RoleNames.SuperAdmin)
             {
@@ -430,7 +431,12 @@ namespace Explorea.Server.Services.Admin
             if (destination == null) return null;
             var viewCount = await _db.PopularityLogs
                 .CountAsync(l => l.EntityType == "destination" && l.Source == "click" && l.EntityId == id);
-            return MapToListDto(destination, new Dictionary<Guid, int> { [id] = viewCount });
+            // Pass recently-active IDs explicitly so the DDP preview panel's
+            // status pill matches the list view. Without this the mapper falls
+            // back to a CreatedAt check, which can flip "Neaktivno" in the
+            // table to "Aktivno" in the panel for any row younger than 30 days.
+            var recentlyActiveIds = await GetRecentlyActiveIdsAsync("destination", new[] { id });
+            return MapToListDto(destination, new Dictionary<Guid, int> { [id] = viewCount }, recentlyActiveIds);
         }
 
         /// <summary>
@@ -911,7 +917,12 @@ namespace Explorea.Server.Services.Admin
             CityId          = d.CityId,
             Views           = viewCounts?.GetValueOrDefault(d.Id) ?? 0,
             Status          = MapStatus(d.Visibility),
-            HasRecentActivity = recentlyActiveIds?.Contains(d.Id) ?? (d.CreatedAt >= DateTimeOffset.UtcNow.AddDays(-30)),
+            // Strict: aktivno iff a popularity-log click happened in the last 30 days.
+            // The fallback when recentlyActiveIds wasn't passed used to be a CreatedAt
+            // grace period; that diverged from the table where any caller already
+            // queries popularity_logs, so the pill could flip Aktivno↔Neaktivno
+            // between list and detail views for new rows with zero clicks.
+            HasRecentActivity = recentlyActiveIds?.Contains(d.Id) ?? false,
             TypeId          = d.TypeId,
             TypeName        = d.Type?.Name,
             AvgRating       = d.AvgRating,

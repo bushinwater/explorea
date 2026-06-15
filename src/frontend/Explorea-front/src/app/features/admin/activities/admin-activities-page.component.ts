@@ -555,9 +555,10 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
           this.total.update(t => Math.max(0, t - 1));
           this.loadActivities();
         },
-        error: () => {
+        error: (err) => {
           this.isRestoring.set(false);
-          this.errorMessage.set(this.ui.t('activities.error.restore'));
+          const msg = err?.error?.message;
+          this.errorMessage.set(msg || this.ui.t('activities.error.restore'));
         },
       }),
     );
@@ -980,6 +981,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
 
   protected updateCreateField<K extends keyof CreateActivityDto>(key: K, value: CreateActivityDto[K]): void {
     this.createForm.update((f) => ({ ...f, [key]: value }));
+    if (this.errorMessage()) this.errorMessage.set('');
     if (key === 'name') this.nameInput$.next(typeof value === 'string' ? value : '');
   }
 
@@ -1055,6 +1057,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     const rawFiles = Array.from(input.files ?? []);
     input.value = '';
+    this.errorMessage.set('');
     const files = rawFiles.filter(f => f.size <= 5 * 1024 * 1024);
     if (files.length < rawFiles.length) { this.errorMessage.set(this.ui.t('activities.error.image_size')); this.cdr.detectChanges(); }
     if (!files.length) return;
@@ -1991,7 +1994,14 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
               this.activitiesService.searchDestinations(city).subscribe({
                 next: results => {
                   if (!results.length) return;
-                  const dest = results[0];
+                  // Fuzzy search: only auto-pick when the destination's name
+                  // actually matches the geocoded city; otherwise a click in
+                  // a city without its own destination row would yank in an
+                  // unrelated destination from elsewhere in the country.
+                  const norm = (s: string) => s.trim().toLocaleLowerCase('sr-Latn');
+                  const targetCity = norm(city);
+                  const dest = results.find(r => norm(r.name) === targetCity);
+                  if (!dest) return;
                   this.createForm.update(f => ({ ...f, destinationId: dest.id }));
                   this.destinationSearchText.set(dest.name);
                   this.destinationResults.set([]);

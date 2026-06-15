@@ -405,9 +405,13 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
           this.closeDetailsPanel();
           this.loadPlaces();
         },
-        error: () => {
+        error: (err) => {
           this.isRestoring.set(false);
-          this.errorMessage.set(this.ui.t('places.error.restore'));
+          // Backend returns a Serbian message for guard rails like
+          // "destination still soft-deleted" — surface it instead of the
+          // generic translated key.
+          const msg = err?.error?.message;
+          this.errorMessage.set(msg || this.ui.t('places.error.restore'));
         },
       }),
     );

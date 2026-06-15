@@ -186,7 +186,7 @@
             @for (f of extraFiltersEntries; track f.key) {
               <span class="amenity-chip">
                 <span class="material-icons">{{ f.icon }}</span>
-                {{ f.labelKey | translate }}
+                {{ f.label }}
               </span>
             }
           </div>
@@ -283,7 +283,7 @@
                         @for (f of extraFiltersEntries; track f.key) {
                           <div class="offers-chip-card">
                             <span class="material-icons offers-chip-card__icon">{{ f.icon }}</span>
-                            <span class="offers-chip-card__label">{{ f.labelKey | translate }}</span>
+                            <span class="offers-chip-card__label">{{ f.label }}</span>
                           </div>
                         }
                       </div>

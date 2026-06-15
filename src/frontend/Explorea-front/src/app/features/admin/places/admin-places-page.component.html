@@ -315,6 +315,9 @@
         (click)="setListMode('deleted')"
       >
         {{ ui.t('places.tabs.deleted') }}
+        @if (stats()?.deletedCount) {
+          <span class="place-tab__badge place-tab__badge--red">{{ compactCount(stats()!.deletedCount) }}</span>
+        }
       </button>
     </div>
 

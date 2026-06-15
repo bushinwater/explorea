@@ -208,6 +208,10 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnInit(): void {
+    // Clear save/validation errors as soon as the user edits a form field.
+    this.sub.add(this.form.valueChanges.subscribe(() => {
+      if (this.error()) this.error.set('');
+    }));
     this.svc.getRegionsGeo().subscribe(data => {
       const result = applyRegionScopeOverlay(this.map, data, this.lockedRegionId, { fit: false });
       this.regionBoundaryRaw = result.boundaryRaw;
@@ -587,6 +591,7 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
     const input = event.target as HTMLInputElement;
     const rawFiles = Array.from(input.files ?? []);
     input.value = '';
+    this.error.set('');
     const files = rawFiles.filter(f => f.size <= MAX_FILE_SIZE);
     if (files.length < rawFiles.length) { this.error.set('Slike moraju biti manje od 5 MB.'); }
     if (!files.length) { this.cdr.detectChanges(); return; }
@@ -847,7 +852,13 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
                 this.svc.searchDestinations(city).subscribe({
                   next: results => {
                     if (!results.length) return;
-                    const dest = results[0];
+                    // Fuzzy backend search — require exact name match against
+                    // the geocoded city to avoid pulling in an unrelated
+                    // destination + the wrong region.
+                    const norm = (s: string) => s.trim().toLocaleLowerCase('sr-Latn');
+                    const targetCity = norm(city);
+                    const dest = results.find(r => norm(r.name) === targetCity);
+                    if (!dest) return;
                     this.selectedDestinationId.set(dest.id);
                     this.destinationQuery.set(dest.name);
                     this.destinationResults.set([]);

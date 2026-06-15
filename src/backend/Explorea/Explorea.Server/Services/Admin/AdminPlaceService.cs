@@ -190,6 +190,15 @@ namespace Explorea.Server.Services.Admin
             var pendingCount = await query.CountAsync(p => p.ApprovalStatus == "pending");
             var inactiveCount = await query.CountAsync(p => p.ApprovalStatus == "rejected");
             var addedLast30Days = await query.CountAsync(p => p.CreatedAt >= thirtyDaysAgo);
+            // Deleted tab — needs to bypass the default `!IsDeleted` filter so
+            // we surface soft-deleted rows. Apply the same TO/owner restrictions
+            // by re-using the WHERE shape built above.
+            var deletedQuery = _context.Places.IgnoreQueryFilters().Where(p => p.IsDeleted);
+            if (user?.Role.Name == RoleNames.PlaceOwner)
+                deletedQuery = deletedQuery.Where(p => p.CreatedBy == currentUserId);
+            else if (user?.Role.Name == RoleNames.TouristOrganization && user.ManagedRegionId.HasValue)
+                deletedQuery = deletedQuery.Where(p => p.City != null && p.City.RegionId == user.ManagedRegionId.Value);
+            var deletedCount = await deletedQuery.CountAsync();
 
             var topPlaces = await query
                 .OrderByDescending(p => p.AvgRating)
@@ -212,6 +221,7 @@ namespace Explorea.Server.Services.Admin
                 ActiveCount = activeCount,
                 PendingCount = pendingCount,
                 InactiveCount = inactiveCount,
+                DeletedCount = deletedCount,
                 AddedLast30Days = addedLast30Days,
                 TopPlaces = topPlaces.Select(p => new AdminPlaceTopItemDto
                 {
@@ -768,6 +778,22 @@ namespace Explorea.Server.Services.Admin
             else if (user?.Role.Name != RoleNames.SuperAdmin)
             {
                 throw new UnauthorizedAccessException("Access denied.");
+            }
+
+            // If the parent destination is still soft-deleted, blocking the
+            // restore is the only correct option — bringing the place back
+            // first would surface it in the active tab while its destination
+            // is hidden, which breaks listings that filter by destination.
+            if (place.DestinationId.HasValue)
+            {
+                var dest = await _context.Destinations
+                    .IgnoreQueryFilters()
+                    .Where(d => d.Id == place.DestinationId.Value)
+                    .Select(d => new { d.IsDeleted, d.Name })
+                    .FirstOrDefaultAsync();
+                if (dest != null && dest.IsDeleted)
+                    throw new InvalidOperationException(
+                        $"Najpre vratite destinaciju \"{dest.Name}\" iz taba obrisanih, pa ćete moći da vratite ovaj objekat.");
             }
 
             place.IsDeleted = false;

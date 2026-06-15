@@ -159,6 +159,7 @@ builder.Services.AddSingleton<IAdminErrorLogService, AdminErrorLogService>();
 builder.Services.AddHttpClient<IChatService, GeminiChatService>();
 builder.Services.AddHostedService<SupportRetentionService>();
 builder.Services.AddHostedService<UserPurgeService>();
+builder.Services.AddHostedService<SoftDeleteCleanupService>();
 builder.Services.AddHostedService<DatabaseBackupService>();
 builder.Services.AddHostedService<NotificationReportBackgroundService>();
 builder.Services.AddHostedService<EventAnnualRecurrenceService>();

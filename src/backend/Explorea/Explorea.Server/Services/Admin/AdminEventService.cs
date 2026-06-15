@@ -684,6 +684,21 @@ namespace Explorea.Server.Services.Admin
                 throw new UnauthorizedAccessException("Nemate dozvolu za vraćanje obrisanih događaja.");
             }
 
+            // Block restore if the parent destination is still soft-deleted —
+            // an active event under a hidden destination would slip into the
+            // listings (which filter by destination) in a broken state.
+            if (ev.DestinationId.HasValue)
+            {
+                var dest = await _db.Destinations
+                    .IgnoreQueryFilters()
+                    .Where(d => d.Id == ev.DestinationId.Value)
+                    .Select(d => new { d.IsDeleted, d.Name })
+                    .FirstOrDefaultAsync();
+                if (dest != null && dest.IsDeleted)
+                    throw new InvalidOperationException(
+                        $"Najpre vratite destinaciju \"{dest.Name}\" iz taba obrisanih, pa ćete moći da vratite ovaj događaj.");
+            }
+
             ev.IsDeleted = false;
             ev.DeletedAt = null;
             ev.UpdatedAt = DateTimeOffset.UtcNow;
@@ -1206,7 +1221,8 @@ namespace Explorea.Server.Services.Admin
             CreatedAt      = e.CreatedAt,
             UpdatedAt      = e.UpdatedAt,
             DeletedAt      = e.DeletedAt,
-            HasRecentActivity = recentlyActiveIds?.Contains(e.Id) ?? (e.CreatedAt >= DateTimeOffset.UtcNow.AddDays(-30)),
+            // Strict: aktivno iff a popularity-log click happened in the last 30 days.
+            HasRecentActivity = recentlyActiveIds?.Contains(e.Id) ?? false,
         };
 
         /// <summary>

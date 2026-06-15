@@ -249,7 +249,8 @@
   display: flex;
   align-items: center;
   gap: var(--sp-5);
-  width: 100%;
+  /* No explicit width — width:100% + horizontal margin made the border-bottom
+     run past the card's rounded right edge. */
   margin: 0 var(--sp-6) var(--sp-4);
   padding: 0;
   border-bottom: 1px solid var(--color-border);

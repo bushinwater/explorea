@@ -167,6 +167,7 @@ export interface PlaceStats {
   activeCount: number;
   pendingCount: number;
   inactiveCount: number;
+  deletedCount: number;
   addedLast30Days: number;
   topPlaces: TopPlace[];
 }

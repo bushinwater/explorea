@@ -353,6 +353,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
 
   protected updateText(field: keyof Pick<EventForm, 'name' | 'description' | 'startDatetime' | 'endDatetime' | 'price' | 'address' | 'ticketUrl'>, value: string): void {
     this.form.update(f => ({ ...f, [field]: value }));
+    if (this.errors().length) this.errors.set([]);
     if (field === 'name') this.nameInput$.next(value);
   }
 
@@ -804,6 +805,7 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
     const input = event.target as HTMLInputElement;
     const rawFiles = Array.from(input.files ?? []);
     input.value = '';
+    this.errors.set([]);
     const files = rawFiles.filter(f => f.size <= MAX_FILE_SIZE);
     if (files.length < rawFiles.length) { this.errors.set(['Slike moraju biti manje od 5 MB.']); }
     if (!files.length) { this.cdr.detectChanges(); return; }
@@ -1075,7 +1077,17 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
               this.eventsService.searchDestinations(city).subscribe({
                 next: results => {
                   if (!results.length) return;
-                  const dest = results[0];
+                  // searchDestinations is a fuzzy search — clicking somewhere
+                  // like Leskovac (which isn't its own destination) would
+                  // otherwise pop the closest-named match (e.g. Aranđelovac)
+                  // and yank the region with it. Only auto-fill when the top
+                  // result's name actually matches the geocoded city. Region
+                  // is owned by region-by-coords below, which is authoritative
+                  // because it checks against the actual region geometry.
+                  const norm = (s: string) => s.trim().toLocaleLowerCase('sr-Latn');
+                  const targetCity = norm(city);
+                  const dest = results.find(r => norm(r.name) === targetCity);
+                  if (!dest) return;
                   this.form.update(f => ({ ...f, destinationId: dest.id, placeId: null }));
                   this.selectedDestName.set(dest.name);
                   this.destinationQuery.set(dest.name);

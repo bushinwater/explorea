@@ -136,6 +136,10 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
   ) {}
 
   ngOnInit(): void {
+    // Clear stale validation / save errors as soon as the user edits a field.
+    this.sub.add(this.form.valueChanges.subscribe(() => {
+      if (this.error()) this.error.set('');
+    }));
     this.localTypes.set([...this.types]);
     this.svc.getRegions().subscribe(r => { this.localRegions.set(r); this.cdr.detectChanges(); });
     this.svc.getRegionsGeo().subscribe(data => {
@@ -268,6 +272,9 @@ export class DestinationEditModalComponent implements OnInit, OnChanges, OnDestr
     const input = event.target as HTMLInputElement;
     const rawFiles = Array.from(input.files ?? []);
     input.value = '';
+    // Fresh pick → clear previous upload errors so a valid file silently
+    // replaces a "previous file too large" message.
+    this.error.set('');
     const files = rawFiles.filter(f => f.size <= MAX_FILE_SIZE);
     if (files.length < rawFiles.length) { this.error.set('Slike moraju biti manje od 5 MB.'); }
     if (!files.length) { this.cdr.detectChanges(); return; }

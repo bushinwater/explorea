@@ -5,7 +5,7 @@ import {
 import { Subscription } from 'rxjs';
 import { CommonModule, Location, NgStyle } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { PlaceDetail } from '../../../core/models/place.model';
 import { EventCard } from '../../../core/models/event.model';
@@ -69,6 +69,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private savedService = inject(SavedService);
   private cdr = inject(ChangeDetectorRef);
+  private translate = inject(TranslateService);
 
   place: PlaceDetail | null = null;
   loading = true;
@@ -461,7 +462,7 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
   }
 
-  get extraFiltersEntries(): { key: string; icon: string; labelKey: string }[] {
+  get extraFiltersEntries(): { key: string; icon: string; label: string }[] {
     const f = this.place?.extraFilters;
     if (!f) return [];
     const iconMap: Record<string, string> = {
@@ -476,15 +477,24 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
       spa: 'spa', gym: 'fitness_center', restaurant: 'restaurant',
       roomService: 'room_service', bar: 'local_bar', elevator: 'elevator',
     };
-    const builtInKeys = new Set(Object.keys(iconMap));
+    // Humanize a raw filter key for display when no i18n entry exists:
+    // "has_air_conditioning" → "Air conditioning". Admin-created filter keys
+    // are inherently DB-driven, so we can't ship a translation for every one
+    // — falling back to the key text reads better than the literal i18n path.
+    const humanize = (raw: string) =>
+      raw.replace(/^has_/, '')
+         .replace(/_/g, ' ')
+         .replace(/([a-z])([A-Z])/g, '$1 $2')
+         .toLowerCase()
+         .replace(/^./, c => c.toUpperCase());
     return Object.entries(f)
       .filter(([, v]) => v === true || (typeof v === 'string' && v))
       .map(([k]) => {
         const amenityName = k.replace(/^has_/, '').toUpperCase();
-        const labelKey = builtInKeys.has(k)
-          ? 'PLACE_DETAIL.AMENITIES.' + amenityName
-          : k.replace(/^has_/, '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        return { key: k, icon: iconMap[k] ?? 'check_circle', labelKey };
+        const i18nKey = 'PLACE_DETAIL.AMENITIES.' + amenityName;
+        const translated = this.translate.instant(i18nKey);
+        const label = translated && translated !== i18nKey ? translated : humanize(k);
+        return { key: k, icon: iconMap[k] ?? 'check_circle', label };
       });
   }
 

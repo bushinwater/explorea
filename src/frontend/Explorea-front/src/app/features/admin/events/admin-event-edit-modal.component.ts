@@ -407,6 +407,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
 
   protected updateText(field: keyof Pick<EditForm, 'name' | 'description' | 'startDatetime' | 'endDatetime' | 'price' | 'address' | 'ticketUrl'>, value: string): void {
     this.form.update(f => ({ ...f, [field]: value }));
+    if (this.errors().length) this.errors.set([]);
   }
 
   protected updateVisibility(value: string): void {
@@ -753,6 +754,7 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
     const input = event.target as HTMLInputElement;
     const rawFiles = Array.from(input.files ?? []);
     input.value = '';
+    this.errors.set([]);
     const files = rawFiles.filter(f => f.size <= MAX_FILE_SIZE);
     if (files.length < rawFiles.length) { this.errors.set(['Slike moraju biti manje od 5 MB.']); }
     if (!files.length) { this.cdr.detectChanges(); return; }
@@ -874,7 +876,13 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
               this.eventsService.searchDestinations(city).subscribe({
                 next: results => {
                   if (!results.length) return;
-                  const dest = results[0];
+                  // Fuzzy search: require exact name match against the geocoded
+                  // city, otherwise a click in e.g. Leskovac (no destination)
+                  // would auto-pick Aranđelovac and override the region.
+                  const norm = (s: string) => s.trim().toLocaleLowerCase('sr-Latn');
+                  const targetCity = norm(city);
+                  const dest = results.find(r => norm(r.name) === targetCity);
+                  if (!dest) return;
                   this.form.update(f => ({ ...f, destinationId: dest.id, placeId: null }));
                   this.selectedDestName.set(dest.name);
                   this.destinationQuery.set(dest.name);

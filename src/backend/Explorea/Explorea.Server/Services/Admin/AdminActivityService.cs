@@ -212,11 +212,14 @@ namespace Explorea.Server.Services.Admin
           Popularity = a.Popularity,
 
           IsFeatured = a.IsFeatured,
-          IsActive   = a.CreatedAt >= thirtyDaysAgo || _context.PopularityLogs.Any(l =>
+          // Strict: aktivno = neko je kliknuo u poslednjih 30 dana. Brand-new
+          // rows with zero clicks read as Neaktivno until the first visit, which
+          // matches what admins expect ("niko nije usao u nju u zadnjih 30 dana").
+          IsActive   = _context.PopularityLogs.Any(l =>
             l.EntityType == "activity" &&
             l.EntityId == a.Id &&
             l.CreatedAt >= thirtyDaysAgo),
-          HasRecentActivity = a.CreatedAt >= thirtyDaysAgo || _context.PopularityLogs.Any(l =>
+          HasRecentActivity = _context.PopularityLogs.Any(l =>
             l.EntityType == "activity" &&
             l.EntityId == a.Id &&
             l.CreatedAt >= thirtyDaysAgo),
@@ -337,6 +340,13 @@ namespace Explorea.Server.Services.Admin
         .ToListAsync();
 
       var views = await _context.PopularityLogs.CountAsync(l => l.EntityType == "activity" && l.Source == "click" && l.EntityId == id);
+      // Match the list query's strict IsActive semantics: aktivno iff someone
+      // has clicked this activity in the last 30 days. The old `!IsDeleted`
+      // shortcut flipped every undeleted activity to "Aktivno" even when it
+      // hadn't been clicked in months.
+      var thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30);
+      var hasRecentActivity = await _context.PopularityLogs.AnyAsync(l =>
+        l.EntityType == "activity" && l.EntityId == id && l.CreatedAt >= thirtyDaysAgo);
 
       return new AdminActivityDetailsDto
       {
@@ -378,7 +388,7 @@ namespace Explorea.Server.Services.Admin
         Longitude = activity.Longitude,
 
         IsFeatured = activity.IsFeatured,
-        IsActive   = !activity.IsDeleted,
+        IsActive   = !activity.IsDeleted && hasRecentActivity,
 
         OrganizerWebsite = activity.OrganizerWebsite,
 
@@ -621,6 +631,21 @@ namespace Explorea.Server.Services.Admin
       var activity = await _repository.GetByIdAsync(id);
 
       if (activity == null || !activity.IsDeleted) return false;
+
+      // Block restore if the parent destination is still soft-deleted — an
+      // active activity under a hidden destination would slip into listings
+      // (which filter by destination) in a broken state.
+      if (activity.DestinationId.HasValue)
+      {
+        var dest = await _context.Destinations
+            .IgnoreQueryFilters()
+            .Where(d => d.Id == activity.DestinationId.Value)
+            .Select(d => new { d.IsDeleted, d.Name })
+            .FirstOrDefaultAsync();
+        if (dest != null && dest.IsDeleted)
+          throw new InvalidOperationException(
+              $"Najpre vratite destinaciju \"{dest.Name}\" iz taba obrisanih, pa ćete moći da vratite ovu aktivnost.");
+      }
 
       activity.IsDeleted = false;
       activity.DeletedAt = null;

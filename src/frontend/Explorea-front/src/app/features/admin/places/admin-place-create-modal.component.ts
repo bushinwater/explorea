@@ -196,6 +196,10 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
       this.regionBoundary = result.boundaryRaw ? parseRegionBoundary(result.boundaryRaw) : null;
     });
     this.loadInterestTags();
+    // Clear save/validation errors as soon as the user edits a form field.
+    this.sub.add(this.form.valueChanges.subscribe(() => {
+      if (this.error()) this.error.set('');
+    }));
     setTimeout(() => this.initMap(), 50);
 
     const profile = this.profileSvc.profile();
@@ -559,6 +563,7 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
     const input = event.target as HTMLInputElement;
     const rawFiles = Array.from(input.files ?? []);
     input.value = '';
+    this.error.set('');
     const files = rawFiles.filter(f => f.size <= MAX_FILE_SIZE);
     if (files.length < rawFiles.length) { this.error.set('Slike moraju biti manje od 5 MB.'); }
     if (!files.length) { this.cdr.detectChanges(); return; }
@@ -917,7 +922,13 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
                 this.svc.searchDestinations(city).subscribe({
                   next: results => {
                     if (!results.length) return;
-                    const dest = results[0];
+                    // Fuzzy backend search — require exact name match so a click
+                    // in a city without its own destination doesn't pull in an
+                    // unrelated destination + the wrong region.
+                    const norm = (s: string) => s.trim().toLocaleLowerCase('sr-Latn');
+                    const targetCity = norm(city);
+                    const dest = results.find(r => norm(r.name) === targetCity);
+                    if (!dest) return;
                     this.selectedDestinationId.set(dest.id);
                     this.destinationQuery.set(dest.name);
                     this.destinationResults.set([]);
