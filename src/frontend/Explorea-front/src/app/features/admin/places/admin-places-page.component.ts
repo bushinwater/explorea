@@ -871,7 +871,16 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
     this.isFilterOpen.set(false);
     if (this.isDetailsPanelOpen() && !this.isPanelClosing()) {
       const target = event.target as Element;
-      if (!target.closest('.ddp-panel') && !target.closest('.place-card')) {
+      // Same fix as admin-events-page: don't auto-close the DDP when a
+      // click lands in the edit/create modal stacked over it.
+      const insideAllowed =
+           target.closest('.ddp-panel')
+        || target.closest('.place-card')
+        || target.closest('.edit-modal__panel')
+        || target.closest('.edit-modal__backdrop')
+        || target.closest('.confirm-dialog')
+        || target.closest('.modal-shell');
+      if (!insideAllowed) {
         this.closeDetailsPanel();
       }
     }

@@ -990,7 +990,20 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.isFilterOpen.set(false);
     if (this.isPanelOpen() && !this.isPanelClosing()) {
       const target = event.target as Element;
-      if (!target.closest('.ddp-panel') && !target.closest('.evts-card')) {
+      // Don't auto-close the DDP panel when the click happens inside the
+      // edit/create modal or any popup it spawns (confirm dialog, calendar
+      // picker, etc.). Without this, every click on an interest chip in the
+      // edit modal counted as "outside DDP" → closeDetailsPanel ran → 220ms
+      // later selectedEvent went null → the edit modal blinked out from
+      // under the user mid-interaction.
+      const insideAllowed =
+           target.closest('.ddp-panel')
+        || target.closest('.evts-card')
+        || target.closest('.edit-modal__panel')
+        || target.closest('.edit-modal__backdrop')
+        || target.closest('.confirm-dialog')
+        || target.closest('.modal-shell');
+      if (!insideAllowed) {
         this.closeDetailsPanel();
       }
     }

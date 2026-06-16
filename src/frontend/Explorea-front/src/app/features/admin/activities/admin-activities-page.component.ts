@@ -1607,7 +1607,14 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     this.activeMenuId.set(null);
     if (this.isDetailsPanelOpen() && !this.isPanelClosing()) {
       const target = event.target as Element;
-      if (!target.closest('.ddp-panel') && !target.closest('.activity-card')) {
+      const insideAllowed =
+           target.closest('.ddp-panel')
+        || target.closest('.activity-card')
+        || target.closest('.edit-modal__panel')
+        || target.closest('.edit-modal__backdrop')
+        || target.closest('.confirm-dialog')
+        || target.closest('.modal-shell');
+      if (!insideAllowed) {
         this.closeDetailsPanel();
       }
     }

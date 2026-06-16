@@ -911,7 +911,14 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   onDocumentClick(event: MouseEvent): void {
     if (this.isDetailsPanelOpen() && !this.isPanelClosing()) {
       const target = event.target as Element;
-      if (!target.closest('.ddp-panel') && !target.closest('.dest-card')) {
+      const insideAllowed =
+           target.closest('.ddp-panel')
+        || target.closest('.dest-card')
+        || target.closest('.edit-modal__panel')
+        || target.closest('.edit-modal__backdrop')
+        || target.closest('.confirm-dialog')
+        || target.closest('.modal-shell');
+      if (!insideAllowed) {
         this.closeDetailsPanel();
       }
     }
