@@ -62,6 +62,7 @@ const LIGHT = {
 export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDestroy {
   @Input() types: TypeOption[] = [];
   @Input() lockedRegionId: number | null = null;
+  @Input() isSuperAdmin = false;
   @Output() cancel       = new EventEmitter<void>();
   @Output() created      = new EventEmitter<DestinationRow>();
   @Output() typeCreated  = new EventEmitter<TypeOption>();
@@ -124,6 +125,8 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
   protected readonly newFilterLabel = signal('');
   protected readonly isAddingFilter = signal(false);
   protected readonly extraFilters   = signal<Record<string, string>>({});
+  protected readonly deletingFilterId = signal<number | null>(null);
+  protected readonly filterContextMenu = signal<{ id: number; key: string; x: number; y: number } | null>(null);
 
   // Visibility is now auto-managed by the click-based sync — the form keeps a
   // hidden default of "published" so super_admin doesn't have to pick a status
@@ -437,6 +440,36 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
     );
   }
 
+  protected openFilterContextMenu(event: MouseEvent, def: FilterDefinition): void {
+    event.preventDefault();
+    this.filterContextMenu.set({ id: def.id, key: def.filterKey, x: event.clientX, y: event.clientY });
+    this.cdr.detectChanges();
+  }
+
+  protected closeFilterContextMenu(): void {
+    this.filterContextMenu.set(null);
+  }
+
+  protected deleteFilterDef(id: number): void {
+    if (this.deletingFilterId() !== null) return;
+    const def = this.filterDefs().find(d => d.id === id);
+    if (!def) return;
+    this.deletingFilterId.set(id);
+    this.sub.add(
+      this.lookupService.deleteFilterDefinition(id).subscribe({
+        next: () => {
+          this.filterDefs.update(d => d.filter(x => x.id !== id));
+          const ef = { ...this.extraFilters() };
+          delete ef[def.filterKey];
+          this.extraFilters.set(ef);
+          this.deletingFilterId.set(null);
+          this.cdr.detectChanges();
+        },
+        error: () => { this.deletingFilterId.set(null); this.cdr.detectChanges(); },
+      }),
+    );
+  }
+
   protected setHero(imageId: string): void {
     const destId = this.createdRow()?.id;
     if (!destId || this.isSettingHero()) return;
@@ -540,17 +573,31 @@ export class DestinationCreateModalComponent implements OnInit, OnChanges, OnDes
     // so calling it from parallel callbacks would silently drop all but one).
     const uploadedById = new Map<number, string>();
 
+    const emitCreated = () => {
+      if (this.canFinish) this.created.emit(this.createdRow()!);
+    };
+
     const finalizeIfDone = () => {
       if (this.uploadingCount() !== 0) return;
       const heroId = uploadedById.get(heroIdx);
       const fallbackId = [...uploadedById.entries()].sort((a, b) => a[0] - b[0])[0]?.[1] ?? null;
       const targetId = heroId ?? fallbackId;
-      if (targetId && this.heroImageId() !== targetId) {
-        this.setHero(targetId);
+      const needsHeroUpdate = targetId && this.heroImageId() !== targetId;
+      if (!needsHeroUpdate) {
+        emitCreated();
+        return;
       }
-      if (this.canFinish) {
-        this.created.emit(this.createdRow()!);
-      }
+      // Chain the setPreviewImage HTTP call BEFORE we emit `created`. The
+      // parent closes the modal on emit, which fires ngOnDestroy →
+      // sub.unsubscribe() and cancels every in-flight request. Without this
+      // chain, the user's hero choice silently vanishes and they're forced
+      // to re-pick it in the edit modal.
+      this.sub.add(
+        this.svc.setPreviewImage(this.createdRow()!.id, targetId!).subscribe({
+          next: () => { this.heroImageId.set(targetId!); emitCreated(); },
+          error: () => { emitCreated(); },
+        }),
+      );
     };
 
     pending.forEach(({ file, url }, i) => {

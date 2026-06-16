@@ -122,7 +122,8 @@
               <div class="ev-filter-defs">
                 @for (def of filterDefs(); track def.id) {
                   @if (def.filterType === 'boolean') {
-                    <label class="ev-filter-chip" [class.ev-filter-chip--active]="extraFilters()[def.filterKey] === 'true'">
+                    <label class="ev-filter-chip" [class.ev-filter-chip--active]="extraFilters()[def.filterKey] === 'true'"
+                           (contextmenu)="openFilterContextMenu($event, def)">
                       <input type="checkbox"
                         [checked]="extraFilters()[def.filterKey] === 'true'"
                         (change)="updateExtraFilter(def.filterKey, $any($event.target).checked)" />
@@ -130,7 +131,8 @@
                     </label>
                   } @else if (def.filterType === 'select' || def.filterType === 'multi_select') {
                     <div class="ev-filter-select-group">
-                      <span class="ev-filter-select-label">{{ def.filterLabel }}</span>
+                      <span class="ev-filter-select-label"
+                            (contextmenu)="openFilterContextMenu($event, def)">{{ def.filterLabel }}</span>
                       <div class="ev-filter-opts">
                         @for (opt of def.options; track opt.optionValue) {
                           <label class="ev-filter-chip" [class.ev-filter-chip--active]="extraFilters()[def.filterKey] === opt.optionValue">
@@ -462,3 +464,23 @@
   }
 
 </aside>
+
+@if (filterContextMenu()) {
+  <div class="filter-ctx-backdrop" (click)="closeFilterContextMenu()"></div>
+  <div class="filter-ctx-menu"
+       [style.left.px]="filterContextMenu()!.x"
+       [style.top.px]="filterContextMenu()!.y">
+    @if (isSuperAdmin) {
+      <button class="filter-ctx-menu__item filter-ctx-menu__item--danger" type="button"
+              [disabled]="deletingFilterId() !== null"
+              (click)="deleteFilterDef(filterContextMenu()!.id); closeFilterContextMenu()">
+        @if (deletingFilterId() === filterContextMenu()!.id) {
+          <span class="material-icons edit-modal__spin">sync</span>
+        } @else {
+          <span class="material-icons">delete_forever</span>
+        }
+        {{ ui.t('common.delete_filter_from_db') }}
+      </button>
+    }
+  </div>
+}

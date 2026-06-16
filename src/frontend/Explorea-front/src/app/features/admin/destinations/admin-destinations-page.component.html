@@ -22,6 +22,7 @@
   <app-destination-create-modal
     [types]="types()"
     [lockedRegionId]="lockedRegionId()"
+    [isSuperAdmin]="isSuperAdmin()"
     (cancel)="closeCreateModal()"
     (created)="onDestinationCreated($event)"
     (typeCreated)="onTypeCreated($event)"

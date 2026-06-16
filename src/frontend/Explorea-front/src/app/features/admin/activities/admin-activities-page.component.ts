@@ -1638,12 +1638,19 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
       minRating: this.parseMinRating(qp.get('minRating')),
       regionId: this.parsePositiveInt(qp.get('regionId'), 0) || 'all',
       extraFilters,
-      sortBy: 'none',
+      sortBy: this.parseActivitySort(qp.get('sortBy')),
       page,
       pageSize,
     });
 
     this.currentPage.set(page);
+  }
+
+  private parseActivitySort(value: string | null): 'none' | 'updatedAt_desc' | 'updatedAt_asc' {
+    const allowed = ['none', 'updatedAt_desc', 'updatedAt_asc'] as const;
+    return (allowed as readonly string[]).includes(value ?? '')
+      ? (value as 'none' | 'updatedAt_desc' | 'updatedAt_asc')
+      : 'none';
   }
 
   private syncFiltersToQueryParams(): void {
@@ -1666,6 +1673,7 @@ export class AdminActivitiesPageComponent implements OnInit, OnDestroy {
     if (f.regionId !== 'all')   qp['regionId']   = f.regionId;
     const efEntries = Object.entries(f.extraFilters);
     if (efEntries.length)       qp['extraFilters'] = efEntries.map(([k, v]) => `${k}:${v}`);
+    if (f.sortBy !== 'none')    qp['sortBy']     = f.sortBy;
     if (f.page > 1)             qp['page']       = f.page;
     if (f.pageSize !== 20)      qp['pageSize']   = f.pageSize;
 

@@ -230,6 +230,10 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
       }),
     );
 
+    // Restore filter/sort state from the URL so reload/navigation lands on
+    // the same view the user left. Runs before lockedRegionId is forced so
+    // a TO admin's pinned region still wins.
+    this.hydrateFiltersFromQueryParams();
     const rid = this.lockedRegionId();
     if (rid !== null) this.patchFilter({ regionId: rid });
     this.loadStats();
@@ -309,6 +313,7 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
       pageSize: f.pageSize,
     }));
     this.currentPage.set(1);
+    this.syncFiltersToQueryParams();
     this.loadPlaces();
   }
 
@@ -875,6 +880,74 @@ export class AdminPlacesPageComponent implements OnInit, OnDestroy {
   private patchFilter(patch: Partial<PlaceFilters>): void {
     this.filters.update((current) => ({ ...current, ...patch }));
     if (patch.page !== undefined) this.currentPage.set(patch.page);
+    this.syncFiltersToQueryParams();
+  }
+
+  private syncFiltersToQueryParams(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: this.buildQueryParams(),
+      replaceUrl: true,
+    });
+  }
+
+  private buildQueryParams(): Record<string, unknown> {
+    const f = this.filters();
+    const qp: Record<string, unknown> = {};
+    if (f.search.trim()) qp['search'] = f.search.trim();
+    if (f.typeId !== 'all') qp['typeId'] = f.typeId;
+    if (f.status !== 'all') qp['status'] = f.status;
+    if (f.regionId !== 'all') qp['regionId'] = f.regionId;
+    if (f.minRating !== null) qp['minRating'] = f.minRating;
+    if (f.amenityId !== null) qp['amenityId'] = f.amenityId;
+    if (f.sortBy !== 'none') qp['sortBy'] = f.sortBy;
+    if (f.page > 1) qp['page'] = f.page;
+    if (f.pageSize !== 20) qp['pageSize'] = f.pageSize;
+    const create = this.route.snapshot.queryParamMap.get('create');
+    if (create === 'true') qp['create'] = 'true';
+    return qp;
+  }
+
+  private hydrateFiltersFromQueryParams(): void {
+    const qp = this.route.snapshot.queryParamMap;
+    const page = this.parsePositiveIntPlace(qp.get('page'), 1);
+    const pageSize = this.parsePositiveIntPlace(qp.get('pageSize'), this.filters().pageSize);
+
+    const allowedStatuses: (PlaceStatus | 'all')[] = ['all', 'approved', 'pending', 'rejected', 'inactive'];
+    const status = qp.get('status');
+    const allowedSorts = ['none', 'updatedAt_desc', 'updatedAt_asc'] as const;
+    const sortByRaw = qp.get('sortBy');
+    const sortBy: PlaceFilters['sortBy'] = (allowedSorts as readonly string[]).includes(sortByRaw ?? '')
+      ? (sortByRaw as PlaceFilters['sortBy'])
+      : 'none';
+
+    const typeRaw = qp.get('typeId');
+    const typeN = typeRaw ? Number(typeRaw) : NaN;
+    const regionRaw = qp.get('regionId');
+    const regionN = regionRaw ? Number(regionRaw) : NaN;
+    const amenityRaw = qp.get('amenityId');
+    const amenityN = amenityRaw ? Number(amenityRaw) : NaN;
+    const rawRating = qp.get('minRating');
+    const ratingN = rawRating !== null ? Number(rawRating) : NaN;
+
+    this.filters.set({
+      search: qp.get('search')?.trim() ?? '',
+      typeId: Number.isFinite(typeN) && typeN >= 1 ? typeN : 'all',
+      status: allowedStatuses.includes(status as PlaceStatus | 'all') ? (status as PlaceStatus | 'all') : 'all',
+      regionId: Number.isFinite(regionN) && regionN >= 1 ? regionN : 'all',
+      minRating: Number.isFinite(ratingN) && ratingN >= 1 && ratingN <= 5 ? ratingN : null,
+      amenityId: Number.isFinite(amenityN) && amenityN >= 1 ? amenityN : null,
+      sortBy,
+      page,
+      pageSize,
+    });
+
+    this.currentPage.set(page);
+  }
+
+  private parsePositiveIntPlace(value: string | null, fallback: number): number {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed >= 1 ? parsed : fallback;
   }
 
   private loadPlaces(afterLoad?: (items: PlaceRow[]) => void): void {

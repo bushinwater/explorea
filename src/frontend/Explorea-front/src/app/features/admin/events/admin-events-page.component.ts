@@ -286,6 +286,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     if (this.lockedRegionId() !== null || this.dashAuth.role() !== 'tourist_organization') {
       this.loadFilterOptions();
     }
+    // Restore filter/sort/tab/calendar-date from URL so reload + navigate
+    // away & back lands on the same list.
+    this.hydrateFiltersFromQueryParams();
+    this.selectedCalendarDate = this.filters().selectedDate;
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
     if (openEditId) this.pendingScrollRowId = openEditId;
     this.loadEvents(openEditId ? (items) => {
@@ -361,6 +365,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     this.loadCalendarMonth();
     this.filterDefs.set([]);
     this.currentPage.set(1);
+    this.syncFiltersToQueryParams();
     this.loadEvents();
   }
 
@@ -1116,6 +1121,80 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
   private patchFilter(patch: Partial<EventFilters>): void {
     this.filters.update((current) => ({ ...current, ...patch }));
     if (patch.page !== undefined) this.currentPage.set(patch.page);
+    this.syncFiltersToQueryParams();
+  }
+
+  private syncFiltersToQueryParams(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: this.buildQueryParams(),
+      replaceUrl: true,
+    });
+  }
+
+  private buildQueryParams(): Record<string, unknown> {
+    const f = this.filters();
+    const qp: Record<string, unknown> = {};
+    if (f.search.trim()) qp['search'] = f.search.trim();
+    if (f.typeId !== null) qp['typeId'] = f.typeId;
+    if (f.cityId !== null) qp['cityId'] = f.cityId;
+    if (f.destinationId !== null) qp['destinationId'] = f.destinationId;
+    const efEntries = Object.entries(f.extraFilters);
+    if (efEntries.length) qp['extraFilters'] = efEntries.map(([k, v]) => `${k}:${v}`);
+    if (f.tab !== 'active') qp['tab'] = f.tab;
+    if (f.sortBy !== 'none') qp['sortBy'] = f.sortBy;
+    if (f.selectedDate) qp['date'] = f.selectedDate;
+    if (f.page > 1) qp['page'] = f.page;
+    if (f.pageSize !== 20) qp['pageSize'] = f.pageSize;
+    const create = this.route.snapshot.queryParamMap.get('create');
+    if (create === 'true') qp['create'] = 'true';
+    return qp;
+  }
+
+  private hydrateFiltersFromQueryParams(): void {
+    const qp = this.route.snapshot.queryParamMap;
+    const page = this.parsePositiveIntEv(qp.get('page'), 1);
+    const pageSize = this.parsePositiveIntEv(qp.get('pageSize'), this.filters().pageSize);
+
+    const extraFilters: Record<string, string> = {};
+    for (const raw of qp.getAll('extraFilters')) {
+      const idx = raw.indexOf(':');
+      if (idx > 0) extraFilters[raw.slice(0, idx)] = raw.slice(idx + 1);
+    }
+
+    const allowedSorts = ['none', 'updatedAt_desc', 'updatedAt_asc'] as const;
+    const sortByRaw = qp.get('sortBy');
+    const sortBy: EventFilters['sortBy'] = (allowedSorts as readonly string[]).includes(sortByRaw ?? '')
+      ? (sortByRaw as EventFilters['sortBy'])
+      : 'none';
+
+    const tabRaw = qp.get('tab');
+    const allowedTabs: EventsTab[] = ['active', 'pending', 'expired', 'rejected', 'deleted'];
+    const tab: EventsTab = allowedTabs.includes(tabRaw as EventsTab) ? (tabRaw as EventsTab) : this.filters().tab;
+
+    const typeN = qp.get('typeId') ? Number(qp.get('typeId')) : NaN;
+    const cityN = qp.get('cityId') ? Number(qp.get('cityId')) : NaN;
+    const dateRaw = qp.get('date');
+
+    this.filters.set({
+      search: qp.get('search')?.trim() ?? '',
+      typeId: Number.isFinite(typeN) && typeN >= 1 ? typeN : null,
+      cityId: Number.isFinite(cityN) && cityN >= 1 ? cityN : null,
+      destinationId: qp.get('destinationId') ?? null,
+      extraFilters,
+      tab,
+      sortBy,
+      selectedDate: dateRaw && /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : null,
+      page,
+      pageSize,
+    });
+
+    this.currentPage.set(page);
+  }
+
+  private parsePositiveIntEv(value: string | null, fallback: number): number {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed >= 1 ? parsed : fallback;
   }
 
   private loadEvents(afterLoad?: (items: EventRow[]) => void): void {

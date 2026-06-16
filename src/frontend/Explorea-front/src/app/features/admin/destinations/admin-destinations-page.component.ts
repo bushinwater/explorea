@@ -203,6 +203,10 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     this.loadStats();
     this.loadRegions();
     this.loadTypes();
+    // Restore filter/sort state from the URL before the first load so the
+    // user lands on the same list they left if they refresh, deep-link, or
+    // navigate away and back.
+    this.hydrateFiltersFromQueryParams();
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
     if (openEditId) this.pendingScrollRowId = openEditId;
     this.loadDestinations(openEditId ? (items) => {
@@ -289,6 +293,7 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
     }));
     this.filterDefs.set([]);
     this.currentPage.set(1);
+    this.syncFiltersToQueryParams();
     this.loadDestinations();
   }
 
@@ -808,6 +813,87 @@ export class AdminDestinationsPageComponent implements OnInit, OnDestroy {
   private patchFilter(patch: Partial<DestinationFilters>): void {
     this.filters.update((current) => ({ ...current, ...patch }));
     if (patch.page !== undefined) this.currentPage.set(patch.page);
+    this.syncFiltersToQueryParams();
+  }
+
+  /**
+   * Serializes the current filter signal to the URL so any subsequent
+   * re-init of this component (full page nav, lazy-route swap, even a
+   * spurious filter signal reset triggered elsewhere) restores from a
+   * single source of truth — the URL.
+   *
+   * Designed to be a no-op when the user hasn't touched anything: default
+   * values (`'all'`, empty search, page 1, default pageSize) are omitted
+   * so URLs stay clean.
+   */
+  private syncFiltersToQueryParams(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: this.buildQueryParams(),
+      replaceUrl: true,
+    });
+  }
+
+  private buildQueryParams(): Record<string, unknown> {
+    const f = this.filters();
+    const qp: Record<string, unknown> = {};
+    if (f.search.trim()) qp['search'] = f.search.trim();
+    if (f.category !== 'all') qp['category'] = f.category;
+    if (f.status !== 'all') qp['status'] = f.status;
+    if (f.region !== 'all') qp['region'] = f.region;
+    if (f.minRating !== null) qp['minRating'] = f.minRating;
+    const efEntries = Object.entries(f.extraFilters);
+    if (efEntries.length) qp['extraFilters'] = efEntries.map(([k, v]) => `${k}:${v}`);
+    if (f.sortBy !== 'none') qp['sortBy'] = f.sortBy;
+    if (f.page > 1) qp['page'] = f.page;
+    if (f.pageSize !== 20) qp['pageSize'] = f.pageSize;
+    // Preserve transient "create"/"openId" URL params so this sync doesn't
+    // accidentally close an in-flight modal flow.
+    const create = this.route.snapshot.queryParamMap.get('create');
+    if (create === 'true') qp['create'] = 'true';
+    return qp;
+  }
+
+  private hydrateFiltersFromQueryParams(): void {
+    const qp = this.route.snapshot.queryParamMap;
+    const page = this.parsePositiveInt(qp.get('page'), 1);
+    const pageSize = this.parsePositiveInt(qp.get('pageSize'), this.filters().pageSize);
+
+    const extraFilters: Record<string, string> = {};
+    for (const raw of qp.getAll('extraFilters')) {
+      const idx = raw.indexOf(':');
+      if (idx > 0) extraFilters[raw.slice(0, idx)] = raw.slice(idx + 1);
+    }
+
+    const allowedStatuses: (DestinationStatus | 'all')[] = ['active', 'pending', 'inactive', 'rejected', 'all'];
+    const status = qp.get('status');
+    const sortByRaw = qp.get('sortBy');
+    const allowedSorts = ['none', 'updatedAt_desc', 'updatedAt_asc'] as const;
+    const sortBy: DestinationFilters['sortBy'] = (allowedSorts as readonly string[]).includes(sortByRaw ?? '')
+      ? (sortByRaw as DestinationFilters['sortBy'])
+      : 'none';
+
+    const rawRating = qp.get('minRating');
+    const ratingN = rawRating !== null ? Number(rawRating) : NaN;
+
+    this.filters.set({
+      search: qp.get('search')?.trim() ?? '',
+      category: qp.get('category') ?? 'all',
+      status: allowedStatuses.includes(status as DestinationStatus | 'all') ? (status as DestinationStatus | 'all') : 'all',
+      region: qp.get('region') ?? 'all',
+      minRating: Number.isFinite(ratingN) && ratingN >= 1 && ratingN <= 5 ? ratingN : null,
+      extraFilters,
+      sortBy,
+      page,
+      pageSize,
+    });
+
+    this.currentPage.set(page);
+  }
+
+  private parsePositiveInt(value: string | null, fallback: number): number {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed >= 1 ? parsed : fallback;
   }
 
   private clearCreateQueryParam(): void {
