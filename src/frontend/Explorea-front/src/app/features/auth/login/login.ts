@@ -48,7 +48,20 @@ export class Login implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/profile';
+    this.returnUrl = Login.sanitizeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
+  }
+
+  /**
+   * Only accept internal, single-slash absolute paths. Anything starting with
+   * `//`, `\`, or a scheme would let `navigateByUrl` jump off-site after a
+   * legitimate login (classic phishing redirect chain).
+   */
+  private static sanitizeReturnUrl(raw: string | null | undefined): string {
+    const fallback = '/profile';
+    if (!raw) return fallback;
+    if (raw[0] !== '/') return fallback;
+    if (raw.startsWith('//') || raw.startsWith('/\\')) return fallback;
+    return raw;
   }
 
   validateEmail(): boolean {

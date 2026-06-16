@@ -178,6 +178,17 @@ namespace Explorea.Server.Services.Admin
 
       var thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30);
 
+      // Pre-aggregate the popularity-log lookup once instead of running two
+      // correlated subqueries per row inside the projection (which was
+      // 2 × pageSize round-trips and turned every list page into the slowest
+      // endpoint in the admin panel).
+      var activeActivityIds = await _context.PopularityLogs
+        .Where(l => l.EntityType == "activity" && l.CreatedAt >= thirtyDaysAgo)
+        .Select(l => l.EntityId)
+        .Distinct()
+        .ToListAsync();
+      var activeIdSet = activeActivityIds.ToHashSet();
+
       var items = await activitiesQuery
         .Skip((query.Page - 1) * query.PageSize)
         .Take(query.PageSize)
@@ -212,17 +223,6 @@ namespace Explorea.Server.Services.Admin
           Popularity = a.Popularity,
 
           IsFeatured = a.IsFeatured,
-          // Strict: aktivno = neko je kliknuo u poslednjih 30 dana. Brand-new
-          // rows with zero clicks read as Neaktivno until the first visit, which
-          // matches what admins expect ("niko nije usao u nju u zadnjih 30 dana").
-          IsActive   = _context.PopularityLogs.Any(l =>
-            l.EntityType == "activity" &&
-            l.EntityId == a.Id &&
-            l.CreatedAt >= thirtyDaysAgo),
-          HasRecentActivity = _context.PopularityLogs.Any(l =>
-            l.EntityType == "activity" &&
-            l.EntityId == a.Id &&
-            l.CreatedAt >= thirtyDaysAgo),
 
           PreviewImageUrl = a.Images
             .OrderBy(i => i.SortOrder)
@@ -234,6 +234,16 @@ namespace Explorea.Server.Services.Admin
           DeletedAt = a.DeletedAt
         })
         .ToListAsync();
+
+      // Strict: aktivno = neko je kliknuo u poslednjih 30 dana. Brand-new
+      // rows with zero clicks read as Neaktivno until the first visit, which
+      // matches what admins expect ("niko nije usao u nju u zadnjih 30 dana").
+      foreach (var item in items)
+      {
+        var isActive = activeIdSet.Contains(item.Id);
+        item.IsActive          = isActive;
+        item.HasRecentActivity = isActive;
+      }
 
       return (items, total);
     }

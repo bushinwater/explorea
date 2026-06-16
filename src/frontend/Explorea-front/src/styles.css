@@ -784,3 +784,18 @@ body:has(.edit-modal__panel) .chat-bubble-wrapper {
 body.customizer-open .chat-bubble-wrapper {
   right: calc(min(360px, 100vw) + 24px);
 }
+
+/* ===== ADMIN TABLE STICKY HEADER =====
+   Keeps column headers visible while admins scroll long lists. The wrappers
+   below already scroll vertically; sticking the thead to the top of the
+   scroll container costs zero JS and prevents users from losing context on
+   page 1 of a 200-row deleted tab. */
+.evts-table thead,
+.place-table thead,
+.dest-table thead,
+.activity-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-surface, #fff);
+}

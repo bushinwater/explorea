@@ -877,10 +877,14 @@ namespace Explorea.Server.Services.Admin
                 .Select(p => p.Id)
                 .ToListAsync();
 
+            // Wrap the disjunction so EntityType == "event" applies to both
+            // branches. Without the outer parens, && binds tighter than || and
+            // the ApprovedByTO branch leaks non-event queue rows (places /
+            // destinations linked to the owner's hotel) into the event count.
             var pendingCount = await _db.SubmissionQueue.CountAsync(q =>
                 q.EntityType == "event" &&
-                (q.SubmittedByUserId == ownerId && q.Status == "Pending") ||
-                (q.Status == "ApprovedByTO" && q.LinkedPlaceId != null && ownedPlaceIds.Contains(q.LinkedPlaceId!.Value)));
+                ((q.SubmittedByUserId == ownerId && q.Status == "Pending") ||
+                 (q.Status == "ApprovedByTO" && q.LinkedPlaceId != null && ownedPlaceIds.Contains(q.LinkedPlaceId!.Value))));
 
             var rejectedCount = await _db.SubmissionQueue.CountAsync(q =>
                 q.EntityType == "event" &&

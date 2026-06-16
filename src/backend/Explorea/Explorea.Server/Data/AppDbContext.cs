@@ -338,6 +338,27 @@ namespace Explorea.Server.Data
             modelBuilder.Entity<Event>().HasQueryFilter(e => !e.IsDeleted);
             modelBuilder.Entity<Activity>().HasQueryFilter(a => !a.IsDeleted);
 
+            // Hot-path indexes. Every admin list/stats endpoint hits popularity_logs
+            // with WHERE entity_type=… AND created_at >= now()-30d to compute the
+            // Aktivno/Neaktivno pill; without this composite index it's a seq scan
+            // that grows linearly with the log table.
+            modelBuilder.Entity<PopularityLog>()
+                .HasIndex(l => new { l.EntityType, l.EntityId, l.CreatedAt });
+
+            // SubmissionQueue is filtered by DestinationId in stats and queue lists,
+            // and by (DestinationId, Status) when computing pending/approved counts.
+            modelBuilder.Entity<SubmissionQueue>()
+                .HasIndex(q => new { q.DestinationId, q.Status });
+
+            // Cascading soft-delete and queue clean-up both pivot on
+            // (destination_id, is_deleted) for these three children.
+            modelBuilder.Entity<Place>()
+                .HasIndex(p => new { p.DestinationId, p.IsDeleted });
+            modelBuilder.Entity<Event>()
+                .HasIndex(e => new { e.DestinationId, e.IsDeleted });
+            modelBuilder.Entity<Activity>()
+                .HasIndex(a => new { a.DestinationId, a.IsDeleted });
+
             modelBuilder.Entity<ReportTemplate>()
                 .Property(t => t.Parameters)
                 .HasColumnType("jsonb");

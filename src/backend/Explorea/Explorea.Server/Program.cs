@@ -231,9 +231,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// TEMP SEED SUPER ADMIN
-using (var scope = app.Services.CreateScope())
+// TEMP SEED SUPER ADMIN — Development only. A hardcoded credential in
+// production is a known-account backdoor; gating to Development prevents
+// it from existing in any non-dev deploy until a proper seed strategy
+// (one-off migration / CLI command) replaces this block.
+if (app.Environment.IsDevelopment())
 {
+    using var scope = app.Services.CreateScope();
+    {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var passwordHelper = scope.ServiceProvider.GetRequiredService<PasswordHelper>();
 
@@ -287,6 +292,7 @@ using (var scope = app.Services.CreateScope())
         });
 
         await db.SaveChangesAsync();
+    }
     }
 }
 
@@ -357,7 +363,13 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseCors("AllowAngular");
-//app.UseHttpsRedirection();
+// HTTPS redirect is a no-op when the front end and API both run on http
+// locally, but in any non-development deploy it must be on so tokens and
+// credentials don't traverse the network unencrypted.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.Use(async (context, next) =>
 {
