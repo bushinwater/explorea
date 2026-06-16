@@ -157,8 +157,11 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
   // Working hours — 7 rows (Mon→Sun) seeded all-closed; the OpenNow filter in the
   // tourist app relies on these rows so admins need a way to set them at create time.
   protected readonly DAY_LABELS = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
-  protected readonly workingDays = signal<{ isClosed: boolean; opensAt: string; closesAt: string }[]>(
-    Array.from({ length: 7 }, () => ({ isClosed: true, opensAt: '09:00', closesAt: '17:00' })),
+  // `isAlwaysOpen` marks 24/7 days; the payload still ships opens 00:00 /
+  // closes 23:59 so the DB CHECK (opens != closes) is satisfied. The
+  // IsOpenNow logic treats 00:00–23:59 as covering the whole day.
+  protected readonly workingDays = signal<{ isClosed: boolean; isAlwaysOpen: boolean; opensAt: string; closesAt: string }[]>(
+    Array.from({ length: 7 }, () => ({ isClosed: true, isAlwaysOpen: false, opensAt: '09:00', closesAt: '17:00' })),
   );
 
   private regionBoundary: any = null;
@@ -711,11 +714,30 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
 
   // ── Save ────────────────────────────────────────────────────────────────
   protected toggleWorkingDay(index: number): void {
-    this.workingDays.update(rows => rows.map((r, i) => i === index ? { ...r, isClosed: !r.isClosed } : r));
+    this.workingDays.update(rows => rows.map((r, i) => {
+      if (i !== index) return r;
+      const becomesClosed = !r.isClosed;
+      // Closing a day clears the 24/7 flag so re-opening starts on the normal
+      // 09–17 default instead of resurrecting yesterday's 24h choice.
+      return { ...r, isClosed: becomesClosed, isAlwaysOpen: becomesClosed ? false : r.isAlwaysOpen };
+    }));
+  }
+
+  protected toggleAlwaysOpen(index: number): void {
+    this.workingDays.update(rows => rows.map((r, i) => {
+      if (i !== index) return r;
+      const next = !r.isAlwaysOpen;
+      return next
+        ? { ...r, isClosed: false, isAlwaysOpen: true, opensAt: '00:00', closesAt: '23:59' }
+        : { ...r, isAlwaysOpen: false };
+    }));
   }
 
   protected updateWorkingDay(index: number, field: 'opensAt' | 'closesAt', value: string): void {
-    this.workingDays.update(rows => rows.map((r, i) => i === index ? { ...r, [field]: value } : r));
+    // Manually editing a time drops the 24/7 flag; the user clearly wants
+    // custom hours now.
+    this.workingDays.update(rows => rows.map((r, i) =>
+      i === index ? { ...r, [field]: value, isAlwaysOpen: false } : r));
   }
 
   /**

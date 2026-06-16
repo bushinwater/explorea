@@ -289,7 +289,10 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
     // Restore filter/sort/tab/calendar-date from URL so reload + navigate
     // away & back lands on the same list.
     this.hydrateFiltersFromQueryParams();
-    this.selectedCalendarDate = this.filters().selectedDate;
+    // MOJ FIKS
+    this.selectedCalendarDate = this.filters().selectedDate
+  ? new Date(this.filters().selectedDate as string)
+  : null;
     const openEditId = (history.state as { openEditId?: string })?.openEditId ?? null;
     if (openEditId) this.pendingScrollRowId = openEditId;
     this.loadEvents(openEditId ? (items) => {
