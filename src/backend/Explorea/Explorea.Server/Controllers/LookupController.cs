@@ -82,6 +82,14 @@ namespace Explorea.Server.Controllers
         [HttpGet("region-by-coords")]
         public async Task<IActionResult> GetRegionByCoords([FromQuery] double lat, [FromQuery] double lng)
         {
+            // PostGIS will throw on NaN/Infinity and silently misbehave on
+            // out-of-range geographic coordinates; reject at the boundary so
+            // malformed input doesn't bubble into the SQL layer.
+            if (double.IsNaN(lat) || double.IsInfinity(lat) || lat < -90 || lat > 90)
+                return BadRequest(new { message = "lat must be between -90 and 90." });
+            if (double.IsNaN(lng) || double.IsInfinity(lng) || lng < -180 || lng > 180)
+                return BadRequest(new { message = "lng must be between -180 and 180." });
+
             var (regionId, countryId) = await _lookup.GetRegionByCoordinatesAsync(lat, lng);
             return Ok(new { regionId, countryId });
         }

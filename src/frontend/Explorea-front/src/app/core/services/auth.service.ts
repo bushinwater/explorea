@@ -91,6 +91,11 @@ export class AuthService {
   clearTokens(): void {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    // Per-user chat history lives in the DB once you're logged in; on logout
+    // we also wipe the local guest-mode cache so the next person sharing
+    // the browser (or a fresh login with this account) doesn't see the
+    // previous session's blob as a stale ChatBubble starter.
+    localStorage.removeItem('explorea_chat_history');
   }
 
   isLoggedIn(): boolean {

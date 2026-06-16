@@ -20,6 +20,7 @@ namespace Explorea.Server.Services.Admin
         private readonly IEmailService _emailService;
         private readonly IConfiguration _config;
         private readonly AppDbContext _db;
+        private readonly ILogger<AdminReviewService> _logger;
 
         public AdminReviewService(
             IAdminReviewRepository reviewRepo,
@@ -29,7 +30,8 @@ namespace Explorea.Server.Services.Admin
             ILookupRepository lookupRepo,
             IEmailService emailService,
             IConfiguration config,
-            AppDbContext db)
+            AppDbContext db,
+            ILogger<AdminReviewService> logger)
         {
             _reviewRepo      = reviewRepo;
             _assignmentRepo  = assignmentRepo;
@@ -38,6 +40,7 @@ namespace Explorea.Server.Services.Admin
             _lookupRepo      = lookupRepo;
             _emailService    = emailService;
             _config          = config;
+            _logger          = logger;
             _db              = db;
         }
 
@@ -195,7 +198,15 @@ namespace Explorea.Server.Services.Admin
                         entityLink,
                         reason);
                 }
-                catch { /* email je non-fatal */ }
+                catch (Exception ex)
+                {
+                    // Email is non-fatal for the delete itself, but a silent
+                    // catch hides delivery outages that the ops team needs to
+                    // see (Gmail throttling, expired app password, etc.).
+                    _logger.LogWarning(ex,
+                        "Failed to send review-deletion email to {Email} for entity {EntityName}.",
+                        reviewer.Email, entityName);
+                }
             }
 
             return true;

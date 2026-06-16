@@ -22,6 +22,7 @@ namespace Explorea.Server.Services.Admin
         private readonly AppDbContext _db;
         private readonly ISavedItemCleanupService _savedItemCleanup;
         private readonly IEmailService _emailService;
+        private readonly ILogger<AdminDestinationService> _logger;
 
         private static readonly GeometryFactory _geometryFactory =
             new GeometryFactory(new PrecisionModel(), 4326);
@@ -34,7 +35,8 @@ namespace Explorea.Server.Services.Admin
             ICloudinaryService cloudinary,
             AppDbContext db,
             ISavedItemCleanupService savedItemCleanup,
-            IEmailService emailService)
+            IEmailService emailService,
+            ILogger<AdminDestinationService> logger)
         {
             _destinationRepo = destinationRepo;
             _assignmentRepo  = assignmentRepo;
@@ -44,6 +46,7 @@ namespace Explorea.Server.Services.Admin
             _db              = db;
             _savedItemCleanup = savedItemCleanup;
             _emailService    = emailService;
+            _logger          = logger;
         }
 
         public async Task<(List<AdminDestinationListDto> Items, int Total)> GetAllAsync(
@@ -877,7 +880,12 @@ namespace Explorea.Server.Services.Admin
                         parentEntityName,
                         items);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex,
+                        "Failed to send cascade-deletion email to {Email} ({Owner}) for {ParentType} \"{ParentName}\".",
+                        owner.Email, owner.FirstName, parentEntityType, parentEntityName);
+                }
             }
         }
 

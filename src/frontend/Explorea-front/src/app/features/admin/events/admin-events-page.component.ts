@@ -655,14 +655,14 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
           next: () => {
             this.selectedEvent.set(null);
             this.isPanelOpen.set(false);
-            this.successMessage.set('Događaj je vraćen.');
+            this.successMessage.set(this.ui.t('events.success.restored'));
             this.loadStats();
             this.loadEvents();
             setTimeout(() => this.successMessage.set(''), 4000);
           },
           error: (err) => {
             const msg = err?.error?.message;
-            this.errorMessage.set(msg || 'Vraćanje nije uspelo.');
+            this.errorMessage.set(msg || this.ui.t('events.error.restore'));
             setTimeout(() => this.errorMessage.set(''), 4000);
           },
         }),
@@ -690,7 +690,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       const input = this.renewDateInput();
       const selectedDate = input ? new Date(input) : null;
       if (!selectedDate || Number.isNaN(selectedDate.getTime()) || selectedDate <= new Date()) {
-        this.errorMessage.set('Unesi budući datum za obnovu događaja.');
+        this.errorMessage.set(this.ui.t('events.error.renew_future_date'));
         setTimeout(() => this.errorMessage.set(''), 4000);
         return;
       }
@@ -706,13 +706,13 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
             this.isRenewOpen.set(false);
             this.selectedEvent.set(null);
             this.isPanelOpen.set(false);
-            this.successMessage.set('Događaj je obnovljen.');
+            this.successMessage.set(this.ui.t('events.success.renewed'));
             this.loadStats();
             this.loadEvents();
             setTimeout(() => this.successMessage.set(''), 4000);
           },
           error: (err) => {
-            this.errorMessage.set(err?.error?.message ?? 'Obnova događaja nije uspela.');
+            this.errorMessage.set(err?.error?.message ?? this.ui.t('events.error.renew'));
             setTimeout(() => this.errorMessage.set(''), 4000);
           },
         }),
@@ -739,7 +739,7 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
       if (this._editFromPanel) {
         this.isPanelOpen.set(true);
       }
-      this.successMessage.set('Izmene su sačuvane.');
+      this.successMessage.set(this.ui.t('events.success.saved'));
       this.loadEvents();
       setTimeout(() => this.successMessage.set(''), 4000);
     }, 220);
@@ -774,13 +774,13 @@ export class AdminEventsPageComponent implements OnInit, OnDestroy {
               this.confirmAction.set(null);
               this.selectedEvent.set(null);
               this.isPanelOpen.set(false);
-              this.successMessage.set('Događaj je obrisan.');
+              this.successMessage.set(this.ui.t('events.success.deleted'));
               this.loadStats();
               this.loadEvents();
               setTimeout(() => this.successMessage.set(''), 4000);
             },
             error: (err) => {
-              this.errorMessage.set(err?.error?.message ?? 'Brisanje nije uspelo.');
+              this.errorMessage.set(err?.error?.message ?? this.ui.t('events.error.delete'));
               setTimeout(() => this.errorMessage.set(''), 4000);
             },
           }),

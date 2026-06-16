@@ -864,11 +864,28 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
                     this.destinationResults.set([]);
                     this.showDestinationDropdown.set(false);
                     if (this.lockedRegionId === null) {
-                      if (dest.regionId != null) {
+                      // /api/region-by-coords is the polygon-authoritative
+                      // source for the region; only fall back to the dest's
+                      // stored region_id when the polygon lookup hasn't
+                      // populated the form yet (defensive guard against the
+                      // race the create modal had — see comment there).
+                      const currentRegionId = this.form.value.regionId;
+                      const effectiveRegionId = currentRegionId
+                        ? Number(currentRegionId)
+                        : dest.regionId;
+                      if (dest.regionId != null && !currentRegionId) {
                         this.form.patchValue({ regionId: String(dest.regionId) });
-                        this.loadCities(dest.regionId, dest.cityId ?? undefined, dest.cityId == null ? (dest.city ?? dest.name) : undefined);
                       }
-                      if (dest.countryId != null) this.selectedCountryId.set(dest.countryId);
+                      if (effectiveRegionId != null) {
+                        this.loadCities(
+                          effectiveRegionId,
+                          dest.cityId ?? undefined,
+                          dest.cityId == null ? (dest.city ?? dest.name) : undefined,
+                        );
+                      }
+                      if (dest.countryId != null && !this.selectedCountryId()) {
+                        this.selectedCountryId.set(dest.countryId);
+                      }
                     }
                     this.cdr.detectChanges();
                   },

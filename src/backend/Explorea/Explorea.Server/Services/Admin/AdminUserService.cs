@@ -24,6 +24,7 @@ namespace Explorea.Server.Services.Admin
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
         private readonly AppDbContext _db;
+        private readonly ILogger<AdminUserService> _logger;
 
         public AdminUserService(
             IUserRepository userRepository,
@@ -32,7 +33,8 @@ namespace Explorea.Server.Services.Admin
             PasswordHelper passwordHelper,
             IEmailService emailService,
             IConfiguration configuration,
-            AppDbContext db)
+            AppDbContext db,
+            ILogger<AdminUserService> logger)
         {
             _userRepository = userRepository;
             _authRepository = authRepository;
@@ -41,6 +43,7 @@ namespace Explorea.Server.Services.Admin
             _emailService = emailService;
             _configuration = configuration;
             _db = db;
+            _logger = logger;
         }
 
         public async Task<(List<AdminUserDirectoryItemDto> Items, int Total)> GetDirectoryAsync(
@@ -226,8 +229,16 @@ namespace Explorea.Server.Services.Admin
 
             var frontendBase = _configuration["FrontendSettings:BaseUrl"] ?? "";
             var appealLink = $"{frontendBase}/appeal?userId={user.Id}";
-            try { await _emailService.SendAccountDeletedEmailAsync(user.Email, user.FirstName, appealLink); }
-            catch { /* don't fail the delete if email sending fails */ }
+            try
+            {
+                await _emailService.SendAccountDeletedEmailAsync(user.Email, user.FirstName, appealLink);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "Failed to send account-deleted email to {Email}; delete itself succeeded.",
+                    user.Email);
+            }
         }
 
         public async Task<(List<AdminUserDirectoryItemDto> Items, int Total)> GetDeletedDirectoryAsync(

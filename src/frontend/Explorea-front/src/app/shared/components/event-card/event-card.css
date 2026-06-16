@@ -7,6 +7,11 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   flex-shrink: 0;
   width: 280px;
+  /* Column flex so the body can flex-grow; cards in a horizontal scroll-row
+     then end up the same height regardless of how many lines the location
+     wraps to. */
+  display: flex;
+  flex-direction: column;
 }
 
 .event-card:hover {
@@ -61,6 +66,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  /* Fill remaining vertical space so the footer of every card lines up. */
+  flex: 1 1 auto;
 }
 
 .event-card__name {
@@ -87,10 +94,31 @@
   color: var(--color-text-secondary);
 }
 
+.event-card__location {
+  /* flex-start so 2-line addresses align the icon with the first line. */
+  align-items: flex-start;
+}
+
 .event-card__date .material-icons,
 .event-card__location .material-icons {
   font-size: 14px;
   color: var(--color-primary);
+}
+
+.event-card__location .material-icons {
+  line-height: 1.3;
+  flex-shrink: 0;
+}
+
+.event-card__location-text {
+  /* Clamp to 2 lines + reserve the slot so siblings with shorter addresses
+     don't render shorter cards. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.3;
+  min-height: calc(2 * 1.3em);
 }
 
 .event-card__footer {
@@ -98,6 +126,8 @@
   padding-top: var(--spacing-sm);
   display: flex;
   align-items: center;
+  /* Push to bottom of body so footer of every card lines up. */
+  margin-top: auto;
 }
 
 .event-card__planner-btn {

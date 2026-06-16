@@ -886,8 +886,15 @@ export class EventEditModalComponent implements OnInit, OnChanges, AfterViewInit
                   this.form.update(f => ({ ...f, destinationId: dest.id, placeId: null }));
                   this.selectedDestName.set(dest.name);
                   this.destinationQuery.set(dest.name);
-                  if (dest.countryId != null) this.selectedCountryId.set(dest.countryId);
-                  if (dest.regionId != null) this.selectedRegionId.set(dest.regionId);
+                  // Defer to region-by-coords (polygon-authoritative). Only
+                  // fill country/region from the dest if the geographic
+                  // lookup hasn't populated them yet.
+                  if (dest.countryId != null && !this.selectedCountryId()) {
+                    this.selectedCountryId.set(dest.countryId);
+                  }
+                  if (dest.regionId != null && this.selectedRegionId() == null) {
+                    this.selectedRegionId.set(dest.regionId);
+                  }
                   this.cdr.detectChanges();
                 },
               });

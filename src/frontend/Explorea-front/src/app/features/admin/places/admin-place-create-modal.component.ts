@@ -32,7 +32,7 @@ import {
   PlaceTypeOption,
   RegionOption,
 } from './admin-places.models';
-import { FilterDefinition } from '../../../core/services/lookup.service';
+import { FilterDefinition, LookupService } from '../../../core/services/lookup.service';
 import { AdminUiPreferencesService } from '../core/services/admin-ui-preferences.service';
 import { MAP_STYLE_URL, patchStyleSources } from '../../../core/utils/map-style.utils';
 import { isPointInGeoJsonGeometry, parseRegionBoundary } from '../core/utils/geo-boundary.utils';
@@ -129,6 +129,8 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
   protected readonly showAddFilter   = signal(false);
   protected readonly newFilterLabel  = signal('');
   protected readonly isAddingFilter  = signal(false);
+  protected readonly deletingFilterId = signal<number | null>(null);
+  protected readonly filterContextMenu = signal<{ id: number; key: string; x: number; y: number } | null>(null);
 
   // New: interest tags
   protected readonly allInterestTags    = signal<InterestTagOption[]>([]);
@@ -174,6 +176,7 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
     protected readonly ui: AdminUiPreferencesService,
     private readonly cdr: ChangeDetectorRef,
     private readonly profileSvc: AdminProfileService,
+    private readonly lookupService: LookupService,
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -519,6 +522,36 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
           this.cdr.detectChanges();
         },
         error: () => { this.isAddingFilter.set(false); this.cdr.detectChanges(); },
+      }),
+    );
+  }
+
+  protected openFilterContextMenu(event: MouseEvent, def: FilterDefinition): void {
+    event.preventDefault();
+    this.filterContextMenu.set({ id: def.id, key: def.filterKey, x: event.clientX, y: event.clientY });
+    this.cdr.detectChanges();
+  }
+
+  protected closeFilterContextMenu(): void {
+    this.filterContextMenu.set(null);
+  }
+
+  protected deleteFilterDef(id: number): void {
+    if (this.deletingFilterId() !== null) return;
+    const def = this.modalFilterDefs().find(d => d.id === id);
+    if (!def) return;
+    this.deletingFilterId.set(id);
+    this.sub.add(
+      this.lookupService.deleteFilterDefinition(id).subscribe({
+        next: () => {
+          this.modalFilterDefs.update(d => d.filter(x => x.id !== id));
+          const ef = { ...this.modalExtraFilters() };
+          delete ef[def.filterKey];
+          this.modalExtraFilters.set(ef);
+          this.deletingFilterId.set(null);
+          this.cdr.detectChanges();
+        },
+        error: () => { this.deletingFilterId.set(null); this.cdr.detectChanges(); },
       }),
     );
   }
@@ -934,11 +967,32 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
                     this.destinationResults.set([]);
                     this.showDestinationDropdown.set(false);
                     if (this.lockedRegionId === null) {
-                      if (dest.regionId != null) {
+                      // /api/region-by-coords is the polygon-authoritative
+                      // source for the region of these coordinates. We only
+                      // fall back to the destination's stored region_id (which
+                      // can be wrong if the dest was created with a bad
+                      // selection — e.g. Novi Sad currently sits in
+                      // region_id=3 in some envs) when the polygon lookup
+                      // hasn't filled it in yet. Same defensive guard for
+                      // countryId so a fast-arriving dest match doesn't
+                      // overwrite the slower-but-correct geographic call.
+                      const currentRegionId = this.form.value.regionId;
+                      const effectiveRegionId = currentRegionId
+                        ? Number(currentRegionId)
+                        : dest.regionId;
+                      if (dest.regionId != null && !currentRegionId) {
                         this.form.patchValue({ regionId: String(dest.regionId) });
-                        this.loadCities(dest.regionId, dest.cityId ?? undefined, dest.cityId == null ? (dest.city ?? dest.name) : undefined);
                       }
-                      if (dest.countryId != null) this.selectedCountryId.set(dest.countryId);
+                      if (effectiveRegionId != null) {
+                        this.loadCities(
+                          effectiveRegionId,
+                          dest.cityId ?? undefined,
+                          dest.cityId == null ? (dest.city ?? dest.name) : undefined,
+                        );
+                      }
+                      if (dest.countryId != null && !this.selectedCountryId()) {
+                        this.selectedCountryId.set(dest.countryId);
+                      }
                     }
                     this.cdr.detectChanges();
                   },

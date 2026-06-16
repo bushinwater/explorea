@@ -68,10 +68,18 @@ export class ChatBubble implements OnInit, OnDestroy {
       this.chatService.getHistory().subscribe({
         next: (res) => {
           this.messages = res.messages;
+          // Wipe any leftover guest-session blob the moment we know the DB
+          // is the source of truth — otherwise the user sees stale messages
+          // from a prior guest session in DevTools and (worse) the error
+          // branch below could resurrect them on the next transient failure.
+          this.clearLocalHistory();
           this.cdr.detectChanges();
         },
         error: () => {
-          this.messages = this.loadLocalHistory();
+          // Don't fall back to localStorage for an authenticated user — that
+          // could expose another user's guest history if multiple people
+          // share the browser. Start empty and let the user retry.
+          this.messages = [];
           this.cdr.detectChanges();
         },
       });
@@ -181,7 +189,7 @@ export class ChatBubble implements OnInit, OnDestroy {
             // Account is empty → migrate local history to server
             this.chatService.saveHistory(this.messages).subscribe();
           }
-          localStorage.removeItem(ChatBubble.STORAGE_KEY);
+          this.clearLocalHistory();
           this.loading = false;
           this.cdr.detectChanges();
           this.dispatchMessage(text);
@@ -263,6 +271,12 @@ export class ChatBubble implements OnInit, OnDestroy {
   private saveLocalHistory(messages: ChatMessage[]): void {
     try {
       localStorage.setItem(ChatBubble.STORAGE_KEY, JSON.stringify(messages));
+    } catch { /* storage unavailable */ }
+  }
+
+  private clearLocalHistory(): void {
+    try {
+      localStorage.removeItem(ChatBubble.STORAGE_KEY);
     } catch { /* storage unavailable */ }
   }
 }

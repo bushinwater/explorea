@@ -1091,8 +1091,19 @@ export class EventCreateModalComponent implements AfterViewInit, OnChanges, OnDe
                   this.form.update(f => ({ ...f, destinationId: dest.id, placeId: null }));
                   this.selectedDestName.set(dest.name);
                   this.destinationQuery.set(dest.name);
-                  if (dest.countryId != null) this.selectedCountryId.set(dest.countryId);
-                  if (dest.regionId != null) this.selectedRegionId.set(dest.regionId);
+                  // region-by-coords below is polygon-authoritative; only fall
+                  // back to dest.regionId / dest.countryId here when they
+                  // arrive first (i.e. nothing has been set yet). Otherwise a
+                  // dest with a stale stored region (e.g. a destination
+                  // whose region_id was wrong in the DB) would overwrite the
+                  // correct geographic answer when this callback finishes
+                  // last in the race.
+                  if (dest.countryId != null && !this.selectedCountryId()) {
+                    this.selectedCountryId.set(dest.countryId);
+                  }
+                  if (dest.regionId != null && this.selectedRegionId() == null) {
+                    this.selectedRegionId.set(dest.regionId);
+                  }
                   this.cdr.detectChanges();
                 },
               });
