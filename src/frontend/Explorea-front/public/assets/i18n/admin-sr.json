@@ -748,6 +748,7 @@
   "common.filter_select": "Izbor",
   "common.filter_multiselect": "Višestruki izbor",
   "common.no_filter_defs": "Nema definisanih filtera za ovaj tip.",
+  "common.delete_filter_from_db": "Obriši filter iz baze",
   "common.search_destination": "Pretraži destinaciju...",
   "common.search_place": "Pretraži objekat...",
   "common.all_countries": "Sve zemlje",

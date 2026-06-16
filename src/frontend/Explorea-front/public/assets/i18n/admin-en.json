@@ -748,6 +748,7 @@
   "common.filter_select": "Select",
   "common.filter_multiselect": "Multi-select",
   "common.no_filter_defs": "No filters defined for this type.",
+  "common.delete_filter_from_db": "Delete filter from database",
   "common.search_destination": "Search destination...",
   "common.search_place": "Search place...",
   "common.all_countries": "All countries",
