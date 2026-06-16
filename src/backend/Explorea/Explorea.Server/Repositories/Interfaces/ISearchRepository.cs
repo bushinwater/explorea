@@ -15,7 +15,10 @@ namespace Explorea.Server.Repositories.Interfaces
             SearchMapAsync(double lat, double lng, double radiusKm, string type);
 
         // DEDICATED METODE
-        Task<List<SearchProjection<Destination>>> SearchDestinationsAsync(string query, int take = 25);
+        // includeAllVisibility=true skips the tourist-only filter that hides
+        // draft/rejected destinations. The admin destination list shows every
+        // visibility regardless, so the admin search has to match.
+        Task<List<SearchProjection<Destination>>> SearchDestinationsAsync(string query, int take = 25, bool includeAllVisibility = false);
         Task<List<SearchProjection<Place>>> SearchPlacesAsync(string query, int take = 25);
         Task<List<SearchProjection<Event>>> SearchEventsAsync(string query, DateTimeOffset now, int take = 25);
         Task<List<SearchProjection<Activity>>> SearchActivitiesAsync(string query, int take = 25);

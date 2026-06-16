@@ -96,7 +96,11 @@ namespace Explorea.Server.Services.Admin
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var hits = await _searchRepo.SearchDestinationsAsync(search, take: 200);
+                // includeAllVisibility=true so the admin search can find draft
+                // and rejected destinations the admin can already see in the
+                // table — otherwise typing "cacak" on a Čačak whose visibility
+                // is 'draft' returns no rows even though the list shows it.
+                var hits = await _searchRepo.SearchDestinationsAsync(search, take: 200, includeAllVisibility: true);
                 var searchIds = hits.Select(h => h.Entity.Id).ToList();
 
                 if (searchIds.Count == 0)

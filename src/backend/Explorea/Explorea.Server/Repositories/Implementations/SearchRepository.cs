@@ -293,15 +293,16 @@ namespace Explorea.Server.Repositories.Implementations
     }
 
     // RAW SQL DEO
-    async Task<List<SearchProjection<Destination>>> ISearchRepository.SearchDestinationsAsync(string query, int take)
+    async Task<List<SearchProjection<Destination>>> ISearchRepository.SearchDestinationsAsync(string query, int take, bool includeAllVisibility)
     {
-        var rows = await ExecuteDestinationSearchAsync(query, take);
+        var rows = await ExecuteDestinationSearchAsync(query, take, includeAllVisibility);
         if(rows.Count == 0) return new List<SearchProjection<Destination>>();
 
         var ids = rows.Select(r => r.Id).ToList();
 
         var entities = await _db.Destinations
             .AsNoTracking()
+            .IgnoreQueryFilters()
             .Include(d => d.City)
             .Where(d => ids.Contains(d.Id))
             .ToDictionaryAsync(d => d.Id);
@@ -318,9 +319,16 @@ namespace Explorea.Server.Repositories.Implementations
             .ToList();
     }
 
-    private async Task<List<DestinationSearchHitRow>> ExecuteDestinationSearchAsync(string query, int take)
+    private async Task<List<DestinationSearchHitRow>> ExecuteDestinationSearchAsync(string query, int take, bool includeAllVisibility = false)
     {
-        const string sql = """
+        // Tourist-facing search hides drafts/rejected; admin search must not,
+        // otherwise admins can see a destination in the list but can't find it
+        // by name (e.g. Čačak in `draft` doesn't show up for "cacak").
+        var visibilityClause = includeAllVisibility
+            ? string.Empty
+            : "AND d.visibility NOT IN ('draft', 'rejected')";
+
+        var sql = $"""
         SELECT
             d.id AS id,
             ts_rank(
@@ -341,7 +349,7 @@ namespace Explorea.Server.Repositories.Implementations
         FROM destinations d
         LEFT JOIN cities c ON c.id = d.city_id
         WHERE d.is_deleted = FALSE
-          AND d.visibility NOT IN ('draft', 'rejected')
+          {visibilityClause}
           AND (
                 d.search_vector @@ websearch_to_tsquery('simple', @q)
              OR unaccent(d.name) ILIKE @containsUnaccent
