@@ -246,6 +246,19 @@ export class Explore implements AfterViewInit, OnDestroy {
     return ['destination', 'event', 'activity', 'place'];
   }
 
+  /**
+   * Minimum pixel distance between two rendered pins. Country-level keeps the
+   * cloud sparse (~56px); as the user zooms toward a city we relax the gap so
+   * more places / events appear, until at street-level we let almost
+   * everything through. Mirrors the admin map-view behavior so the tourist
+   * map progressively reveals pins as the user zooms in instead of stepping
+   * between coarse tiers.
+   */
+  private get pinMinPixelDist(): number {
+    const z = this.map?.getZoom() ?? this.currentZoom ?? 0;
+    return Math.max(24, Math.round(56 - Math.max(0, z - 8) * 5));
+  }
+
   get filteredPins(): ExploreMarker[] {
     // If user explicitly picked types, respect their selection (skip zoom filter)
     if (this.selectedEntityTypes.length > 0) {
@@ -979,16 +992,12 @@ export class Explore implements AfterViewInit, OnDestroy {
     });
 
     this.map.on('zoomend', () => {
-      const newZoom = this.map.getZoom();
-      const tier = (z: number) => z < 11 ? 0 : z < 13 ? 1 : 2;
-      const oldTier = tier(this.currentZoom);
-      const newTier = tier(newZoom);
-      this.currentZoom = newZoom;
-      if (oldTier !== newTier) {
-        // Rebuild markers so visible types match the new zoom tier
-        this.addMarkers();
-        this.cdr.detectChanges();
-      }
+      this.currentZoom = this.map.getZoom();
+      // Always rebuild — pinMinPixelDist changes continuously with zoom, so
+      // a tier-based shortcut would leave overlapping clouds inside a tier
+      // and would never re-expose pins as the user zooms in past 11/13.
+      this.addMarkers();
+      this.cdr.detectChanges();
     });
 
     this.map.on('moveend', () => {
@@ -1103,7 +1112,10 @@ export class Explore implements AfterViewInit, OnDestroy {
     const typeOrder: Record<string, number> = { destination: 0, event: 1, activity: 2, place: 3 };
     const SPREAD_RADIUS_DEG = 0.0008; // ~80m on equator — visible only when zoomed in
 
-    pins.forEach(pin => {
+    // First pass: compute the final lng/lat for every pin (with the
+    // shared-location spread applied) so we can run the pixel-distance
+    // thinning on the actual positions the markers would render at.
+    const positioned = pins.map(pin => {
       const groupKey = `${pin.lng.toFixed(4)},${pin.lat.toFixed(4)}`;
       const group = groups.get(groupKey)!;
       let lng = pin.lng;
@@ -1113,15 +1125,18 @@ export class Explore implements AfterViewInit, OnDestroy {
           (typeOrder[a.entityType] ?? 9) - (typeOrder[b.entityType] ?? 9),
         );
         const idx = sorted.findIndex(p => p.entityType === pin.entityType && p.slug === pin.slug);
-        // Keep first (highest-priority, usually destination) at the origin,
-        // arrange the rest evenly around it.
         if (idx > 0) {
           const angle = ((idx - 1) / Math.max(1, group.length - 1)) * Math.PI * 2;
           lng += Math.cos(angle) * SPREAD_RADIUS_DEG;
           lat += Math.sin(angle) * SPREAD_RADIUS_DEG;
         }
       }
+      return { pin, lng, lat };
+    });
 
+    const visible = this.thinByPixelDistance(positioned);
+
+    visible.forEach(({ pin, lng, lat }) => {
       const el = document.createElement('div');
       el.className = 'map-pin-btn';
       const key = this.pinKey(pin);
@@ -1151,6 +1166,41 @@ export class Explore implements AfterViewInit, OnDestroy {
     });
 
     this.updateVisibleCount();
+  }
+
+  /**
+   * Drops pins that would visually overlap at the current zoom level. Same
+   * idea as the admin map-view: sort by a coarse priority (destination →
+   * event → activity → place, then by rating) so the most important pin
+   * wins each contested cell. As the user zooms in, pixel distances grow
+   * and previously hidden pins reappear automatically.
+   */
+  private thinByPixelDistance(positioned: { pin: ExploreMarker; lng: number; lat: number }[]):
+      { pin: ExploreMarker; lng: number; lat: number }[] {
+    if (positioned.length === 0 || !this.map) return positioned;
+    const typeOrder: Record<string, number> = { destination: 0, event: 1, activity: 2, place: 3 };
+
+    const sorted = [...positioned].sort((a, b) => {
+      const ta = typeOrder[a.pin.entityType] ?? 9;
+      const tb = typeOrder[b.pin.entityType] ?? 9;
+      if (ta !== tb) return ta - tb;
+      return (b.pin.avgRating ?? 0) - (a.pin.avgRating ?? 0);
+    });
+
+    const kept: { pin: ExploreMarker; lng: number; lat: number; x: number; y: number }[] = [];
+    const minDist = this.pinMinPixelDist;
+    const minDistSq = minDist * minDist;
+    for (const item of sorted) {
+      const { x, y } = this.map.project([item.lng, item.lat]);
+      let tooClose = false;
+      for (const k of kept) {
+        const dx = k.x - x;
+        const dy = k.y - y;
+        if (dx * dx + dy * dy < minDistSq) { tooClose = true; break; }
+      }
+      if (!tooClose) kept.push({ ...item, x, y });
+    }
+    return kept.map(({ pin, lng, lat }) => ({ pin, lng, lat }));
   }
 
   getPinIcon(entityType: string): string {
