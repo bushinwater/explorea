@@ -225,14 +225,15 @@ namespace Explorea.Server.Services.Admin
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var term = search.Trim().ToLower();
+                // Diacritic-insensitive ILIKE on every searchable column.
+                var pattern = $"%{NameNormalizer.Normalize(search)}%";
                 query = query.Where(e =>
-                    e.Name.ToLower().Contains(term) ||
-                    (e.Description != null && e.Description.ToLower().Contains(term)) ||
-                    (e.Address != null && e.Address.ToLower().Contains(term)) ||
-                    (e.City != null && e.City.Name.ToLower().Contains(term)) ||
-                    (e.Destination != null && e.Destination.Name.ToLower().Contains(term)) ||
-                    (e.Type != null && e.Type.Name.ToLower().Contains(term)));
+                    EF.Functions.ILike(EF.Functions.Unaccent(e.Name), pattern) ||
+                    (e.Description != null && EF.Functions.ILike(EF.Functions.Unaccent(e.Description), pattern)) ||
+                    (e.Address != null && EF.Functions.ILike(EF.Functions.Unaccent(e.Address), pattern)) ||
+                    (e.City != null && EF.Functions.ILike(EF.Functions.Unaccent(e.City.Name), pattern)) ||
+                    (e.Destination != null && EF.Functions.ILike(EF.Functions.Unaccent(e.Destination.Name), pattern)) ||
+                    (e.Type != null && EF.Functions.ILike(EF.Functions.Unaccent(e.Type.Name), pattern)));
             }
 
             if (destinationId.HasValue)
@@ -303,12 +304,12 @@ namespace Explorea.Server.Services.Admin
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var term = search.Trim().ToLower();
+                var pattern = $"%{NameNormalizer.Normalize(search)}%";
                 evQuery = evQuery.Where(e =>
-                    e.Name.ToLower().Contains(term) ||
-                    (e.Description != null && e.Description.ToLower().Contains(term)) ||
-                    (e.City != null && e.City.Name.ToLower().Contains(term)) ||
-                    (e.Destination != null && e.Destination.Name.ToLower().Contains(term)));
+                    EF.Functions.ILike(EF.Functions.Unaccent(e.Name), pattern) ||
+                    (e.Description != null && EF.Functions.ILike(EF.Functions.Unaccent(e.Description), pattern)) ||
+                    (e.City != null && EF.Functions.ILike(EF.Functions.Unaccent(e.City.Name), pattern)) ||
+                    (e.Destination != null && EF.Functions.ILike(EF.Functions.Unaccent(e.Destination.Name), pattern)));
             }
 
             if (destinationId.HasValue)
@@ -1034,14 +1035,15 @@ namespace Explorea.Server.Services.Admin
         {
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var term = search.Trim().ToLower();
+                // Diacritic-insensitive ILIKE on every searchable column.
+                var pattern = $"%{NameNormalizer.Normalize(search)}%";
                 query = query.Where(e =>
-                    e.Name.ToLower().Contains(term) ||
-                    (e.Description != null && e.Description.ToLower().Contains(term)) ||
-                    (e.Address != null && e.Address.ToLower().Contains(term)) ||
-                    (e.City != null && e.City.Name.ToLower().Contains(term)) ||
-                    (e.Destination != null && e.Destination.Name.ToLower().Contains(term)) ||
-                    (e.Type != null && e.Type.Name.ToLower().Contains(term)));
+                    EF.Functions.ILike(EF.Functions.Unaccent(e.Name), pattern) ||
+                    (e.Description != null && EF.Functions.ILike(EF.Functions.Unaccent(e.Description), pattern)) ||
+                    (e.Address != null && EF.Functions.ILike(EF.Functions.Unaccent(e.Address), pattern)) ||
+                    (e.City != null && EF.Functions.ILike(EF.Functions.Unaccent(e.City.Name), pattern)) ||
+                    (e.Destination != null && EF.Functions.ILike(EF.Functions.Unaccent(e.Destination.Name), pattern)) ||
+                    (e.Type != null && EF.Functions.ILike(EF.Functions.Unaccent(e.Type.Name), pattern)));
             }
 
             if (destinationId.HasValue)

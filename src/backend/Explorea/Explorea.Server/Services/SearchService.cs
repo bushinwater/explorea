@@ -475,12 +475,15 @@ namespace Explorea.Server.Services
     {
       if(string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(query)) return 0;
 
-      var tokens = value
+      // Strip diacritics on both sides so DiceSimilarity("čačak", "cacak")
+      // operates on the same character set; without this the bigrams diverge
+      // and similarity drops well below the 0.72 fuzzy threshold.
+      var tokens = RemoveDiacritics(value)
           .ToLowerInvariant()
           .Split(new[] { ' ', '-', '_', ',', '.', ';', ':', '/', '\\', '(', ')', '[', ']', '{', '}', '!', '?' },
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-      var q = query.ToLowerInvariant();
+      var q = RemoveDiacritics(query).ToLowerInvariant();
 
       double max = 0;
 
@@ -715,11 +718,33 @@ namespace Explorea.Server.Services
       );
     }
 
+    /// <summary>
+    /// Strips combining diacritics so name-matching against a query is
+    /// accent-insensitive (e.g. "Čačak" matches "cacak"). Without this, the
+    /// strict-score branch in SearchAsync hits 0 for any name containing
+    /// č/ć/š/ž and the result silently falls into the fuzzy filter, where
+    /// pg_trgm's similarity (also non-unaccented) is too low to pass the
+    /// 0.45 threshold — so the result vanishes entirely.
+    /// </summary>
+    private static string RemoveDiacritics(string value)
+    {
+      if (string.IsNullOrEmpty(value)) return value;
+      var normalized = value.Normalize(System.Text.NormalizationForm.FormD);
+      var sb = new System.Text.StringBuilder(normalized.Length);
+      foreach (var ch in normalized)
+      {
+        if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch)
+            != System.Globalization.UnicodeCategory.NonSpacingMark)
+          sb.Append(ch);
+      }
+      return sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
+    }
+
     private static string[] Tokenize(string? value)
     {
       if(string.IsNullOrWhiteSpace(value)) return Array.Empty<string>();
 
-      return value
+      return RemoveDiacritics(value)
           .ToLowerInvariant()
           .Split(new[] {' ', '-', '_', ',', '.', ':', ';', '/', '\\', '(', ')', '[', ']', '{', '}', '!', '?' },
               StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
@@ -731,21 +756,24 @@ namespace Explorea.Server.Services
       if(string.IsNullOrWhiteSpace(source)) return false;
 
       var tokens = Tokenize(source);
-      return tokens.Contains(query.ToLowerInvariant());
+      return tokens.Contains(RemoveDiacritics(query).ToLowerInvariant());
     }
 
     private static bool StartsWithWord(string? source, string query)
     {
       if(string.IsNullOrWhiteSpace(source)) return false;
 
-      var q = query.ToLowerInvariant();
+      var q = RemoveDiacritics(query).ToLowerInvariant();
       var tokens = Tokenize(source);
       return tokens.Any(t => t.StartsWith(q));
     }
 
     private static bool EqualsInsensitive(string source, string query)
     {
-      return string.Equals(source, query, StringComparison.OrdinalIgnoreCase);
+      return string.Equals(
+        RemoveDiacritics(source),
+        RemoveDiacritics(query),
+        StringComparison.OrdinalIgnoreCase);
     }
 
     private sealed class SearchCandidate

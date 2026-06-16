@@ -52,9 +52,12 @@ namespace Explorea.Server.Services.Admin
       }
       else if (!string.IsNullOrWhiteSpace(query.Search))
       {
-        var search = query.Search.Trim().ToLower();
+        // Diacritic-insensitive match: unaccent(name) ILIKE '%cacak%' so
+        // typing "cacak" finds "Čačak". Plain ToLower().Contains kept č≠c
+        // and silently dropped every name with č/ć/š/ž/đ.
+        var pattern = $"%{NameNormalizer.Normalize(query.Search)}%";
         activitiesQuery = activitiesQuery.Where(a =>
-          a.Name.ToLower().Contains(search)
+          EF.Functions.ILike(EF.Functions.Unaccent(a.Name), pattern)
         );
       }
 
@@ -266,8 +269,10 @@ namespace Explorea.Server.Services.Admin
 
       if (!string.IsNullOrWhiteSpace(query.Search))
       {
-        var search = query.Search.Trim().ToLower();
-        activitiesQuery = activitiesQuery.Where(a => a.Name.ToLower().Contains(search));
+        // Same diacritic-insensitive pattern as the active-list path above.
+        var pattern = $"%{NameNormalizer.Normalize(query.Search)}%";
+        activitiesQuery = activitiesQuery.Where(a =>
+          EF.Functions.ILike(EF.Functions.Unaccent(a.Name), pattern));
       }
 
       if (query.RegionId.HasValue)

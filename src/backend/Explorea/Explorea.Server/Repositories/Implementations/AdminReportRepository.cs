@@ -1,6 +1,7 @@
 using Explorea.API.DTOs.Admin.Report;
 using Explorea.API.Models;
 using Explorea.Server.Data;
+using Explorea.Server.Helpers;
 using Explorea.Server.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -1269,32 +1270,36 @@ namespace Explorea.Server.Repositories.Implementations
             string entity, string q, List<Guid>? destIds, Guid? placeOwnerUserId)
         {
             if (string.IsNullOrWhiteSpace(q)) return [];
-            var lower = q.ToLower();
+            // Strip diacritics from the query so the unaccent()-wrapped ILIKE
+            // below matches č/ć/š/ž/đ regardless of how the user types them.
+            // `ToLower()` alone left "cacak" non-matching against "Čačak"
+            // because the lowercase č is still ≠ c.
+            var pattern = $"%{NameNormalizer.Normalize(q)}%";
 
             return entity switch
             {
                 "destinations" => await _db.Destinations
                     .Where(d => !d.IsDeleted)
                     .Where(d => destIds == null || destIds.Contains(d.Id))
-                    .Where(d => d.Name.ToLower().Contains(lower))
+                    .Where(d => EF.Functions.ILike(EF.Functions.Unaccent(d.Name), pattern))
                     .OrderBy(d => d.Name).Take(20)
                     .Select(d => new EntitySearchItemDto { Id = d.Id, Name = d.Name })
                     .ToListAsync(),
 
                 "activities" => await ScopeActivities(destIds, placeOwnerUserId)
-                    .Where(a => a.Name.ToLower().Contains(lower))
+                    .Where(a => EF.Functions.ILike(EF.Functions.Unaccent(a.Name), pattern))
                     .OrderBy(a => a.Name).Take(20)
                     .Select(a => new EntitySearchItemDto { Id = a.Id, Name = a.Name })
                     .ToListAsync(),
 
                 "events" => await ScopeEvents(destIds, placeOwnerUserId)
-                    .Where(e => e.Name.ToLower().Contains(lower))
+                    .Where(e => EF.Functions.ILike(EF.Functions.Unaccent(e.Name), pattern))
                     .OrderBy(e => e.Name).Take(20)
                     .Select(e => new EntitySearchItemDto { Id = e.Id, Name = e.Name })
                     .ToListAsync(),
 
                 "places" => await ScopePlaces(destIds, placeOwnerUserId)
-                    .Where(p => p.Name.ToLower().Contains(lower))
+                    .Where(p => EF.Functions.ILike(EF.Functions.Unaccent(p.Name), pattern))
                     .OrderBy(p => p.Name).Take(20)
                     .Select(p => new EntitySearchItemDto { Id = p.Id, Name = p.Name })
                     .ToListAsync(),

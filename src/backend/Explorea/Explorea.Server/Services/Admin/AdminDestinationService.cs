@@ -177,13 +177,13 @@ namespace Explorea.Server.Services.Admin
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var term = search.Trim().ToLower();
+                var pattern = $"%{NameNormalizer.Normalize(search)}%";
                 query = query.Where(d =>
-                    d.Name.ToLower().Contains(term) ||
-                    d.Slug.ToLower().Contains(term) ||
-                    (d.City != null && d.City.Name.ToLower().Contains(term)) ||
-                    (d.Country != null && d.Country.Name.ToLower().Contains(term)) ||
-                    (d.Type != null && d.Type.Name.ToLower().Contains(term)));
+                    EF.Functions.ILike(EF.Functions.Unaccent(d.Name), pattern) ||
+                    EF.Functions.ILike(d.Slug, pattern) ||
+                    (d.City != null && EF.Functions.ILike(EF.Functions.Unaccent(d.City.Name), pattern)) ||
+                    (d.Country != null && EF.Functions.ILike(EF.Functions.Unaccent(d.Country.Name), pattern)) ||
+                    (d.Type != null && EF.Functions.ILike(EF.Functions.Unaccent(d.Type.Name), pattern)));
             }
 
             if (cityId.HasValue)

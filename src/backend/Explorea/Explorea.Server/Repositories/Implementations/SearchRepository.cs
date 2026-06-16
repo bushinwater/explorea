@@ -1,4 +1,4 @@
-using Explorea.API.Models;
+﻿using Explorea.API.Models;
 using Explorea.Server.Data;
 using Explorea.Server.Repositories.Interfaces;
 using Explorea.Server.Models;
@@ -323,7 +323,7 @@ namespace Explorea.Server.Repositories.Implementations
     {
         // Tourist-facing search hides drafts/rejected; admin search must not,
         // otherwise admins can see a destination in the list but can't find it
-        // by name (e.g. Čačak in `draft` doesn't show up for "cacak").
+        // by name (e.g. ÄŒaÄak in `draft` doesn't show up for "cacak").
         var visibilityClause = includeAllVisibility
             ? string.Empty
             : "AND d.visibility NOT IN ('draft', 'rejected')";
@@ -336,14 +336,14 @@ namespace Explorea.Server.Repositories.Implementations
                 websearch_to_tsquery('simple', @q)
             ) AS fts_rank,
             GREATEST(
-                similarity(d.name, @q),
-                word_similarity(@q, COALESCE(d.name, ''))
+                similarity(unaccent(d.name), @qUnaccent),
+                word_similarity(@qUnaccent, unaccent(COALESCE(d.name, '')))
             ) AS name_similarity,
             CASE
                 WHEN c.name IS NULL THEN NULL
                 ELSE GREATEST(
-                    similarity(c.name, @q),
-                    word_similarity(@q, COALESCE(c.name, ''))
+                    similarity(unaccent(c.name), @qUnaccent),
+                    word_similarity(@qUnaccent, unaccent(COALESCE(c.name, '')))
                 )
             END AS city_similarity
         FROM destinations d
@@ -359,8 +359,8 @@ namespace Explorea.Server.Repositories.Implementations
                     @enableFuzzy = TRUE
                 AND (
                         GREATEST(
-                            similarity(d.name, @q),
-                            word_similarity(@q, COALESCE(d.name, ''))
+                            similarity(unaccent(d.name), @qUnaccent),
+                            word_similarity(@qUnaccent, unaccent(COALESCE(d.name, '')))
                         ) >= @nameThreshold
                     )
                 )
@@ -372,13 +372,13 @@ namespace Explorea.Server.Repositories.Implementations
             ) DESC,
             GREATEST(
                 GREATEST(
-                    similarity(d.name, @q),
-                    word_similarity(@q, COALESCE(d.name, ''))
+                    similarity(unaccent(d.name), @qUnaccent),
+                    word_similarity(@qUnaccent, unaccent(COALESCE(d.name, '')))
                 ),
                 COALESCE(
                     GREATEST(
-                        similarity(c.name, @q),
-                        word_similarity(@q, COALESCE(c.name, ''))
+                        similarity(unaccent(c.name), @qUnaccent),
+                        word_similarity(@qUnaccent, unaccent(COALESCE(c.name, '')))
                     ),
                     0
                 )
@@ -451,28 +451,28 @@ namespace Explorea.Server.Repositories.Implementations
                     websearch_to_tsquery('simple', @q)
                 ) AS fts_rank,
                 GREATEST(
-                    similarity(p.name, @q),
-                    word_similarity(@q, COALESCE(p.name, ''))
+                    similarity(unaccent(p.name), @qUnaccent),
+                    word_similarity(@qUnaccent, unaccent(COALESCE(p.name, '')))
                 ) AS name_similarity,
                 CASE
                     WHEN c.name IS NULL THEN NULL
                     ELSE GREATEST(
-                        similarity(c.name, @q),
-                        word_similarity(@q, COALESCE(c.name, ''))
+                        similarity(unaccent(c.name), @qUnaccent),
+                        word_similarity(@qUnaccent, unaccent(COALESCE(c.name, '')))
                     )
                 END AS city_similarity,
                 CASE
                     WHEN d.name IS NULL THEN NULL
                     ELSE GREATEST(
-                        similarity(d.name, @q),
-                        word_similarity(@q, COALESCE(d.name, ''))
+                        similarity(unaccent(d.name), @qUnaccent),
+                        word_similarity(@qUnaccent, unaccent(COALESCE(d.name, '')))
                     )
                 END AS destination_similarity,
                 CASE
                     WHEN pt.name IS NULL THEN NULL
                     ELSE GREATEST(
-                        similarity(pt.name, @q),
-                        word_similarity(@q, COALESCE(pt.name, ''))
+                        similarity(unaccent(pt.name), @qUnaccent),
+                        word_similarity(@qUnaccent, unaccent(COALESCE(pt.name, '')))
                     )
                 END AS type_similarity
             FROM places p
@@ -493,20 +493,20 @@ namespace Explorea.Server.Repositories.Implementations
                         @enableFuzzy = TRUE
                     AND (
                             GREATEST(
-                                similarity(p.name, @q),
-                                word_similarity(@q, COALESCE(p.name, ''))
+                                similarity(unaccent(p.name), @qUnaccent),
+                                word_similarity(@qUnaccent, unaccent(COALESCE(p.name, '')))
                             ) >= @nameThreshold
                             OR GREATEST(
-                                similarity(c.name, @q),
-                                word_similarity(@q, COALESCE(c.name, ''))
+                                similarity(unaccent(c.name), @qUnaccent),
+                                word_similarity(@qUnaccent, unaccent(COALESCE(c.name, '')))
                             ) >= @relatedThreshold
                             OR GREATEST(
-                                similarity(d.name, @q),
-                                word_similarity(@q, COALESCE(d.name, ''))
+                                similarity(unaccent(d.name), @qUnaccent),
+                                word_similarity(@qUnaccent, unaccent(COALESCE(d.name, '')))
                             ) >= @relatedThreshold
                             OR GREATEST(
-                                similarity(pt.name, @q),
-                                word_similarity(@q, COALESCE(pt.name, ''))
+                                similarity(unaccent(pt.name), @qUnaccent),
+                                word_similarity(@qUnaccent, unaccent(COALESCE(pt.name, '')))
                             ) >= @relatedThreshold
                         )
                     )
@@ -518,27 +518,27 @@ namespace Explorea.Server.Repositories.Implementations
                 ) DESC,
                 GREATEST(
                     GREATEST(
-                        similarity(p.name, @q),
-                        word_similarity(@q, COALESCE(p.name, ''))
+                        similarity(unaccent(p.name), @qUnaccent),
+                        word_similarity(@qUnaccent, unaccent(COALESCE(p.name, '')))
                     ),
                     COALESCE(
                         GREATEST(
-                            similarity(c.name, @q),
-                            word_similarity(@q, COALESCE(c.name, ''))
+                            similarity(unaccent(c.name), @qUnaccent),
+                            word_similarity(@qUnaccent, unaccent(COALESCE(c.name, '')))
                         ),
                         0
                     ),
                     COALESCE(
                         GREATEST(
-                            similarity(d.name, @q),
-                            word_similarity(@q, COALESCE(d.name, ''))
+                            similarity(unaccent(d.name), @qUnaccent),
+                            word_similarity(@qUnaccent, unaccent(COALESCE(d.name, '')))
                         ),
                         0
                     ),
                     COALESCE(
                         GREATEST(
-                            similarity(pt.name, @q),
-                            word_similarity(@q, COALESCE(pt.name, ''))
+                            similarity(unaccent(pt.name), @qUnaccent),
+                            word_similarity(@qUnaccent, unaccent(COALESCE(pt.name, '')))
                         ),
                         0
                     )
@@ -618,33 +618,33 @@ namespace Explorea.Server.Repositories.Implementations
                 websearch_to_tsquery('simple', @q)
             ) AS fts_rank,
             GREATEST(
-                similarity(e.name, @q),
-                word_similarity(@q, COALESCE(e.name, ''))
+                similarity(unaccent(e.name), @qUnaccent),
+                word_similarity(@qUnaccent, unaccent(COALESCE(e.name, '')))
             ) AS name_similarity,
             CASE
                 WHEN c.name IS NULL THEN NULL
                 ELSE GREATEST(
-                    similarity(c.name, @q),
-                    word_similarity(@q, COALESCE(c.name, ''))
+                    similarity(unaccent(c.name), @qUnaccent),
+                    word_similarity(@qUnaccent, unaccent(COALESCE(c.name, '')))
                 )
             END AS city_similarity,
             CASE
                 WHEN d.name IS NULL THEN NULL
                 ELSE GREATEST(
-                    similarity(d.name, @q),
-                    word_similarity(@q, COALESCE(d.name, ''))
+                    similarity(unaccent(d.name), @qUnaccent),
+                    word_similarity(@qUnaccent, unaccent(COALESCE(d.name, '')))
                 )
             END AS destination_similarity,
             CASE
                 WHEN p.name IS NULL THEN NULL
                 ELSE GREATEST(
-                    similarity(p.name, @q),
-                    word_similarity(@q, COALESCE(p.name, ''))
+                    similarity(unaccent(p.name), @qUnaccent),
+                    word_similarity(@qUnaccent, unaccent(COALESCE(p.name, '')))
                 )
             END AS place_similarity,
             GREATEST(
-                similarity(et.name, @q),
-                word_similarity(@q, COALESCE(et.name, ''))
+                similarity(unaccent(et.name), @qUnaccent),
+                word_similarity(@qUnaccent, unaccent(COALESCE(et.name, '')))
             ) AS type_similarity
         FROM events e
         LEFT JOIN cities c ON c.id = e.city_id
@@ -663,24 +663,24 @@ namespace Explorea.Server.Repositories.Implementations
                     @enableFuzzy = TRUE
                 AND (
                         GREATEST(
-                            similarity(e.name, @q),
-                            word_similarity(@q, COALESCE(e.name, ''))
+                            similarity(unaccent(e.name), @qUnaccent),
+                            word_similarity(@qUnaccent, unaccent(COALESCE(e.name, '')))
                         ) >= @nameThreshold
                         OR GREATEST(
                             similarity(COALESCE(c.name, ''), @q),
-                            word_similarity(@q, COALESCE(c.name, ''))
+                            word_similarity(@qUnaccent, unaccent(COALESCE(c.name, '')))
                         ) >=  @relatedThreshold
                         OR GREATEST(
                             similarity(COALESCE(d.name, ''), @q),
-                            word_similarity(@q, COALESCE(d.name, ''))
+                            word_similarity(@qUnaccent, unaccent(COALESCE(d.name, '')))
                         ) >=  @relatedThreshold
                         OR GREATEST(
                             similarity(COALESCE(p.name, ''), @q),
-                            word_similarity(@q, COALESCE(d.name, ''))
+                            word_similarity(@qUnaccent, unaccent(COALESCE(d.name, '')))
                         ) >=  @relatedThreshold
                         OR GREATEST(
                             similarity(COALESCE(et.name, ''), @q),
-                            word_similarity(@q, COALESCE(et.name, ''))
+                            word_similarity(@qUnaccent, unaccent(COALESCE(et.name, '')))
                         ) >=  @relatedThreshold
                     )
                 )
@@ -692,33 +692,33 @@ namespace Explorea.Server.Repositories.Implementations
             ) DESC,
             GREATEST(
                 GREATEST(
-                    similarity(e.name, @q),
-                    word_similarity(@q, COALESCE(e.name, ''))
+                    similarity(unaccent(e.name), @qUnaccent),
+                    word_similarity(@qUnaccent, unaccent(COALESCE(e.name, '')))
                 ),
                 COALESCE(
                     GREATEST(
-                        similarity(c.name, @q),
-                        word_similarity(@q, COALESCE(c.name, ''))
+                        similarity(unaccent(c.name), @qUnaccent),
+                        word_similarity(@qUnaccent, unaccent(COALESCE(c.name, '')))
                     ),
                     0
                 ),
                 COALESCE(
                     GREATEST(
-                        similarity(d.name, @q),
-                        word_similarity(@q, COALESCE(d.name, ''))
+                        similarity(unaccent(d.name), @qUnaccent),
+                        word_similarity(@qUnaccent, unaccent(COALESCE(d.name, '')))
                     ),
                     0
                 ),
                 COALESCE(
                     GREATEST(
-                        similarity(p.name, @q),
-                        word_similarity(@q, COALESCE(p.name, ''))
+                        similarity(unaccent(p.name), @qUnaccent),
+                        word_similarity(@qUnaccent, unaccent(COALESCE(p.name, '')))
                     ),
                     0
                 ),
                 GREATEST(
-                    similarity(et.name, @q),
-                    word_similarity(@q, COALESCE(et.name, ''))
+                    similarity(unaccent(et.name), @qUnaccent),
+                    word_similarity(@qUnaccent, unaccent(COALESCE(et.name, '')))
                 )
             ) DESC,
             e.is_featured DESC,
@@ -795,33 +795,33 @@ namespace Explorea.Server.Repositories.Implementations
                     websearch_to_tsquery('simple', @q)
                 ) AS fts_rank,
                 GREATEST(
-                    similarity(a.name, @q),
-                    word_similarity(@q, COALESCE(a.name, ''))
+                    similarity(unaccent(a.name), @qUnaccent),
+                    word_similarity(@qUnaccent, unaccent(COALESCE(a.name, '')))
                 ) AS name_similarity,
                 CASE
                     WHEN c.name IS NULL THEN NULL
                     ELSE GREATEST(
-                        similarity(c.name, @q),
-                        word_similarity(@q, COALESCE(c.name, ''))
+                        similarity(unaccent(c.name), @qUnaccent),
+                        word_similarity(@qUnaccent, unaccent(COALESCE(c.name, '')))
                     )
                 END AS city_similarity,
                 CASE
                     WHEN d.name IS NULL THEN NULL
                     ELSE GREATEST(
-                        similarity(d.name, @q),
-                        word_similarity(@q, COALESCE(d.name, ''))
+                        similarity(unaccent(d.name), @qUnaccent),
+                        word_similarity(@qUnaccent, unaccent(COALESCE(d.name, '')))
                     )
                 END AS destination_similarity,
                 CASE
                     WHEN p.name IS NULL THEN NULL
                     ELSE GREATEST(
-                        similarity(p.name, @q),
-                        word_similarity(@q, COALESCE(p.name, ''))
+                        similarity(unaccent(p.name), @qUnaccent),
+                        word_similarity(@qUnaccent, unaccent(COALESCE(p.name, '')))
                     )
                 END AS place_similarity,
                 GREATEST(
-                    similarity(ac.name, @q),
-                    word_similarity(@q, COALESCE(ac.name, ''))
+                    similarity(unaccent(ac.name), @qUnaccent),
+                    word_similarity(@qUnaccent, unaccent(COALESCE(ac.name, '')))
                 ) AS category_similarity
             FROM activities a
             LEFT JOIN cities c ON c.id = a.city_id
@@ -838,24 +838,24 @@ namespace Explorea.Server.Repositories.Implementations
                         @enableFuzzy = TRUE
                     AND (
                             GREATEST(
-                                similarity(a.name, @q),
-                                word_similarity(@q, COALESCE(a.name, ''))
+                                similarity(unaccent(a.name), @qUnaccent),
+                                word_similarity(@qUnaccent, unaccent(COALESCE(a.name, '')))
                             ) >= @nameThreshold
                             OR GREATEST(
                                 similarity(COALESCE(c.name, ''), @q),
-                                word_similarity(@q, COALESCE(c.name, ''))
+                                word_similarity(@qUnaccent, unaccent(COALESCE(c.name, '')))
                             ) >= @relatedThreshold
                             OR GREATEST(
                                 similarity(COALESCE(d.name, ''), @q),
-                                word_similarity(@q, COALESCE(d.name, ''))
+                                word_similarity(@qUnaccent, unaccent(COALESCE(d.name, '')))
                             ) >= @relatedThreshold
                             OR GREATEST(
                                 similarity(COALESCE(p.name, ''), @q),
-                                word_similarity(@q, COALESCE(p.name, ''))
+                                word_similarity(@qUnaccent, unaccent(COALESCE(p.name, '')))
                             ) >= @relatedThreshold
                             OR GREATEST(
                                 similarity(COALESCE(ac.name, ''), @q),
-                                word_similarity(@q, COALESCE(ac.name, ''))
+                                word_similarity(@qUnaccent, unaccent(COALESCE(ac.name, '')))
                             ) >= @relatedThreshold
                         )
                     )
@@ -867,33 +867,33 @@ namespace Explorea.Server.Repositories.Implementations
                 ) DESC,
                 GREATEST(
                     GREATEST(
-                        similarity(a.name, @q),
-                        word_similarity(@q, COALESCE(a.name, ''))
+                        similarity(unaccent(a.name), @qUnaccent),
+                        word_similarity(@qUnaccent, unaccent(COALESCE(a.name, '')))
                     ),
                     COALESCE(
                         GREATEST(
-                            similarity(c.name, @q),
-                            word_similarity(@q, COALESCE(c.name, ''))
+                            similarity(unaccent(c.name), @qUnaccent),
+                            word_similarity(@qUnaccent, unaccent(COALESCE(c.name, '')))
                         ),
                         0
                     ),
                     COALESCE(
                         GREATEST(
-                            similarity(d.name, @q),
-                            word_similarity(@q, COALESCE(d.name, ''))
+                            similarity(unaccent(d.name), @qUnaccent),
+                            word_similarity(@qUnaccent, unaccent(COALESCE(d.name, '')))
                         ),
                         0
                     ),
                     COALESCE(
                         GREATEST(
-                            similarity(p.name, @q),
-                            word_similarity(@q, COALESCE(p.name, ''))
+                            similarity(unaccent(p.name), @qUnaccent),
+                            word_similarity(@qUnaccent, unaccent(COALESCE(p.name, '')))
                         ),
                         0
                     ),
                     GREATEST(
-                        similarity(ac.name, @q),
-                        word_similarity(@q, COALESCE(ac.name, ''))
+                        similarity(unaccent(ac.name), @qUnaccent),
+                        word_similarity(@qUnaccent, unaccent(COALESCE(ac.name, '')))
                     )
                 ) DESC,
                 a.is_featured DESC,
@@ -956,13 +956,20 @@ namespace Explorea.Server.Repositories.Implementations
        var trimmedQuery = query.Trim();
        var enableFuzzy = trimmedQuery.Length >= 2;
        var contains = $"%{trimmedQuery}%";
-       var containsUnaccent = $"%{NormalizeQuery(trimmedQuery)}%";
+       var queryUnaccented = NormalizeQuery(trimmedQuery);
+       var containsUnaccent = $"%{queryUnaccented}%";
 
        var (nameThreshold, relatedThreshold) = GetSimilarityThreshold(trimmedQuery);
 
        var cmd = new NpgsqlCommand(sql, conn);
 
        cmd.Parameters.AddWithValue("@q", query);
+       // @qUnaccent is the diacritic-stripped, lower-cased version of @q â€”
+       // used by every similarity()/word_similarity() call so e.g.
+       // similarity(unaccent('ÄŒaÄak'), 'cacak') = 1.0 instead of the raw
+       // similarity('ÄŒaÄak', 'cacak') = 0.09 which used to silently drop the
+       // entity below every fuzzy threshold.
+       cmd.Parameters.AddWithValue("@qUnaccent", queryUnaccented);
        cmd.Parameters.AddWithValue("@contains", contains);
        cmd.Parameters.AddWithValue("@containsUnaccent", containsUnaccent);
        cmd.Parameters.AddWithValue("@enableFuzzy", enableFuzzy);

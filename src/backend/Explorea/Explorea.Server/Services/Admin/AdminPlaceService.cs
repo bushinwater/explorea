@@ -132,8 +132,10 @@ namespace Explorea.Server.Services.Admin
 
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
-                var s = query.Search.Trim().ToLower();
-                placesQuery = placesQuery.Where(p => p.Name.ToLower().Contains(s));
+                // Diacritic-insensitive ILIKE so "cacak" finds "Čačak".
+                var pattern = $"%{NameNormalizer.Normalize(query.Search)}%";
+                placesQuery = placesQuery.Where(p =>
+                    EF.Functions.ILike(EF.Functions.Unaccent(p.Name), pattern));
             }
 
             if (query.TypeId.HasValue)
