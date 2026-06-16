@@ -87,8 +87,10 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
     regionId:       new FormControl<string | null>(null, [Validators.required]),
     cityId:         new FormControl<string | null>(null),
     priceRange:     new FormControl(''),
-    phone:          new FormControl('', [Validators.required, Validators.pattern(/^\+?[\d\s\(\)\-\.]{7,20}$/)]),
-    email:          new FormControl('', [Validators.required, Validators.email]),
+    // See PlaceCreateModalComponent.updateContactRequiredness — required is
+    // toggled by type (accommodation places need contact info, others don't).
+    phone:          new FormControl('', [Validators.pattern(/^\+?[\d\s\(\)\-\.]{7,20}$/)]),
+    email:          new FormControl('', [Validators.email]),
     websiteUrl:     new FormControl(''),
     approvalStatus: new FormControl('approved'),
     isFeatured:     new FormControl(false),
@@ -211,6 +213,11 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
     // Clear save/validation errors as soon as the user edits a form field.
     this.sub.add(this.form.valueChanges.subscribe(() => {
       if (this.error()) this.error.set('');
+    }));
+    // Toggle phone/email requirement when the user picks (or changes) a type
+    // — accommodation-style places require contact info, others don't.
+    this.sub.add(this.form.controls.typeId.valueChanges.subscribe((v) => {
+      this.updateContactRequiredness(v);
     }));
     this.svc.getRegionsGeo().subscribe(data => {
       const result = applyRegionScopeOverlay(this.map, data, this.lockedRegionId, { fit: false });
@@ -716,6 +723,36 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
         },
       }),
     );
+  }
+
+  // Place types that legitimately need contact info (people book/reserve);
+  // others keep phone/email as optional. Keyword-matched + diacritic-stripped
+  // so admin can spell "Apartman"/"Vile"/"Hostel" however they like.
+  private static readonly ACCOMMODATION_KEYWORDS = [
+    'hotel', 'hostel', 'motel', 'apartman', 'vila', 'pansion', 'soba', 'smestaj',
+  ];
+
+  private updateContactRequiredness(typeIdValue: string | null): void {
+    const typeId = typeIdValue ? Number(typeIdValue) : null;
+    const type = this.allTypeOptions().find(t => t.id === typeId);
+    const needs = this.isAccommodationType(type?.name ?? null);
+
+    const phoneValidators = [Validators.pattern(/^\+?[\d\s\(\)\-\.]{7,20}$/)];
+    const emailValidators = [Validators.email];
+    if (needs) {
+      phoneValidators.unshift(Validators.required);
+      emailValidators.unshift(Validators.required);
+    }
+    this.form.controls.phone.setValidators(phoneValidators);
+    this.form.controls.email.setValidators(emailValidators);
+    this.form.controls.phone.updateValueAndValidity({ emitEvent: false });
+    this.form.controls.email.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private isAccommodationType(name: string | null): boolean {
+    if (!name) return false;
+    const n = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    return PlaceEditModalComponent.ACCOMMODATION_KEYWORDS.some(kw => n.includes(kw));
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────

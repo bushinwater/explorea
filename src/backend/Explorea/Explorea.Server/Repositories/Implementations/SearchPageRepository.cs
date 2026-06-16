@@ -249,6 +249,7 @@ namespace Explorea.Server.Repositories.Implementations
     {
       var userPoint = BuildUserPoint(query.UserLat, query.UserLng);
       var currentDay = GetCurrentDayOfWeekNumber();
+      var previousDay = currentDay == 1 ? 7 : currentDay - 1;
       var currentTime = GetCurrentUtcTimeOnly();
       
       var placesQuery = _db.Places
@@ -309,10 +310,19 @@ namespace Explorea.Server.Repositories.Implementations
           ? Math.Round(p.Location.Distance(userPoint) / 1000.0, 2)
           : null,
           PreviewImageUrl = p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
+          // Overnight-aware: an interval where opens > closes (e.g. 21:00–02:00)
+          // wraps past midnight, so it can also be matched against yesterday
+          // for the early-morning slice. See SearchPlacesAsync below for the
+          // same predicate used as a WHERE clause.
           IsOpen = p.WorkingDays.Any(wd =>
-            wd.DayOfWeek == currentDay &&
-            !wd.IsClosed &&
-            wd.Intervals.Any(i => i.OpensAt <= currentTime && i.ClosesAt > currentTime)
+            wd.DayOfWeek == currentDay && !wd.IsClosed &&
+            wd.Intervals.Any(i =>
+              (i.OpensAt < i.ClosesAt && i.OpensAt <= currentTime && i.ClosesAt > currentTime) ||
+              (i.OpensAt > i.ClosesAt && i.OpensAt <= currentTime)
+            )
+          ) || p.WorkingDays.Any(wd =>
+            wd.DayOfWeek == previousDay && !wd.IsClosed &&
+            wd.Intervals.Any(i => i.OpensAt > i.ClosesAt && i.ClosesAt > currentTime)
           ),
           PriceRange = p.PriceRange
         })
@@ -788,6 +798,7 @@ namespace Explorea.Server.Repositories.Implementations
     {
       var userPoint = BuildUserPoint(query.UserLat, query.UserLng);
       var currentDay = GetCurrentDayOfWeekNumber();
+      var previousDay = currentDay == 1 ? 7 : currentDay - 1;
       var currentTime = GetCurrentUtcTimeOnly();
 
       var placesQuery = _db.Places
@@ -851,11 +862,21 @@ namespace Explorea.Server.Repositories.Implementations
 
       if (query.OpenNow == true)
       {
+        // Overnight-aware: a place with an interval where opens > closes (e.g.
+        // 21:00–02:00) is "open now" at 01:30 even though the closes_at column
+        // numerically reads earlier than now. We have to also probe yesterday's
+        // intervals to catch the early-morning tail.
         placesQuery = placesQuery.Where(p =>
             p.WorkingDays.Any(wd =>
-                wd.DayOfWeek == currentDay &&
-                !wd.IsClosed &&
-                wd.Intervals.Any(i => i.OpensAt <= currentTime && i.ClosesAt >= currentTime)));
+                wd.DayOfWeek == currentDay && !wd.IsClosed &&
+                wd.Intervals.Any(i =>
+                    (i.OpensAt < i.ClosesAt && i.OpensAt <= currentTime && i.ClosesAt > currentTime) ||
+                    (i.OpensAt > i.ClosesAt && i.OpensAt <= currentTime)
+                ))
+            || p.WorkingDays.Any(wd =>
+                wd.DayOfWeek == previousDay && !wd.IsClosed &&
+                wd.Intervals.Any(i => i.OpensAt > i.ClosesAt && i.ClosesAt > currentTime))
+        );
       }
 
       var extraFiltersDict = ParseExtraFilters(query.ExtraFilters);

@@ -88,8 +88,12 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
     regionId:    new FormControl<string | null>(null, [Validators.required]),
     cityId:      new FormControl<string | null>(null),
     priceRange:  new FormControl(''),
-    phone:       new FormControl('', [Validators.required, Validators.pattern(/^\+?[\d\s\(\)\-\.]{7,20}$/)]),
-    email:       new FormControl('', [Validators.required, Validators.email]),
+    // Validators below are the BASE rules (format only); whether phone/email
+    // are also required is decided per-type in updateContactRequiredness()
+    // because only accommodation-style places (hotel, hostel, vila, etc.) have
+    // a legitimate business reason to enforce contact info.
+    phone:       new FormControl('', [Validators.pattern(/^\+?[\d\s\(\)\-\.]{7,20}$/)]),
+    email:       new FormControl('', [Validators.email]),
     websiteUrl:  new FormControl(''),
     latitude:    new FormControl<number | null>(null),
     longitude:   new FormControl<number | null>(null),
@@ -203,6 +207,14 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
     this.sub.add(this.form.valueChanges.subscribe(() => {
       if (this.error()) this.error.set('');
     }));
+    // Toggle phone/email requirement when the user picks (or changes) a type.
+    // Hotels/apartmani/hosteli etc. legitimately require contact info; a
+    // park bench or a public square doesn't, and forcing it caused admins to
+    // type junk values just to get past validation.
+    this.sub.add(this.form.controls.typeId.valueChanges.subscribe((v) => {
+      this.updateContactRequiredness(v);
+    }));
+    this.updateContactRequiredness(this.form.controls.typeId.value);
     setTimeout(() => this.initMap(), 50);
 
     const profile = this.profileSvc.profile();
@@ -270,6 +282,45 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
     this.themeObserver?.disconnect();
     this.map?.remove();
     this.pendingImages().forEach(p => URL.revokeObjectURL(p.url));
+  }
+
+  /**
+   * Place types whose business model genuinely needs contact info (people
+   * book/reserve) — phone and email become required for these. Everything
+   * else (parks, viewpoints, restaurants without delivery, etc.) keeps the
+   * format validators but isn't forced to fill them in.
+   *
+   * Matching is substring + diacritic-insensitive so admin can spell
+   * "Apartman", "Apartmani", "vila", "Vile", etc. however they like.
+   */
+  private static readonly ACCOMMODATION_KEYWORDS = [
+    'hotel', 'hostel', 'motel', 'apartman', 'vila', 'pansion', 'soba', 'smestaj',
+  ];
+
+  private updateContactRequiredness(typeIdValue: string | null): void {
+    const typeId = typeIdValue ? Number(typeIdValue) : null;
+    const type = this.allTypeOptions().find(t => t.id === typeId);
+    const needs = this.isAccommodationType(type?.name ?? null);
+
+    const phoneValidators = [Validators.pattern(/^\+?[\d\s\(\)\-\.]{7,20}$/)];
+    const emailValidators = [Validators.email];
+    if (needs) {
+      phoneValidators.unshift(Validators.required);
+      emailValidators.unshift(Validators.required);
+    }
+    this.form.controls.phone.setValidators(phoneValidators);
+    this.form.controls.email.setValidators(emailValidators);
+    this.form.controls.phone.updateValueAndValidity({ emitEvent: false });
+    this.form.controls.email.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private isAccommodationType(name: string | null): boolean {
+    if (!name) return false;
+    const n = name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '');
+    return PlaceCreateModalComponent.ACCOMMODATION_KEYWORDS.some(kw => n.includes(kw));
   }
 
   private applyRegionLock(): void {
