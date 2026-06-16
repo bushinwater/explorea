@@ -104,6 +104,10 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
 
   // Core state
   protected readonly isClosing      = signal(false);
+  // Mirrors the dynamic phone/email required state so the asterisk + inline
+  // error reflect the current type without the template having to dig into
+  // form validators every change-detection cycle.
+  protected readonly contactRequired = signal(false);
   protected readonly saveAttempted  = signal(false);
   protected readonly isSaving       = signal(false);
   protected readonly isGeocoding    = signal(false);
@@ -157,11 +161,13 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
   // Working hours — 7 rows (Mon→Sun) seeded all-closed; the OpenNow filter in the
   // tourist app relies on these rows so admins need a way to set them at create time.
   protected readonly DAY_LABELS = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
-  // `isAlwaysOpen` marks 24/7 days; the payload still ships opens 00:00 /
-  // closes 23:59 so the DB CHECK (opens != closes) is satisfied. The
-  // IsOpenNow logic treats 00:00–23:59 as covering the whole day.
-  protected readonly workingDays = signal<{ isClosed: boolean; isAlwaysOpen: boolean; opensAt: string; closesAt: string }[]>(
-    Array.from({ length: 7 }, () => ({ isClosed: true, isAlwaysOpen: false, opensAt: '09:00', closesAt: '17:00' })),
+  // Single "Open 24/7" toggle for the whole place. When on, the per-day editor
+  // is hidden and the payload ships seven open days with 00:00–23:59 (which
+  // satisfies the DB CHECK opens != closes and is treated as "all day" by the
+  // IsOpenNow logic). When off, admin edits each day individually.
+  protected readonly isOpen247    = signal(false);
+  protected readonly workingDays  = signal<{ isClosed: boolean; opensAt: string; closesAt: string }[]>(
+    Array.from({ length: 7 }, () => ({ isClosed: true, opensAt: '09:00', closesAt: '17:00' })),
   );
 
   private regionBoundary: any = null;
@@ -315,6 +321,7 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
     this.form.controls.email.setValidators(emailValidators);
     this.form.controls.phone.updateValueAndValidity({ emitEvent: false });
     this.form.controls.email.updateValueAndValidity({ emitEvent: false });
+    this.contactRequired.set(needs);
   }
 
   private isAccommodationType(name: string | null): boolean {
@@ -714,30 +721,17 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
 
   // ── Save ────────────────────────────────────────────────────────────────
   protected toggleWorkingDay(index: number): void {
-    this.workingDays.update(rows => rows.map((r, i) => {
-      if (i !== index) return r;
-      const becomesClosed = !r.isClosed;
-      // Closing a day clears the 24/7 flag so re-opening starts on the normal
-      // 09–17 default instead of resurrecting yesterday's 24h choice.
-      return { ...r, isClosed: becomesClosed, isAlwaysOpen: becomesClosed ? false : r.isAlwaysOpen };
-    }));
+    this.workingDays.update(rows => rows.map((r, i) =>
+      i === index ? { ...r, isClosed: !r.isClosed } : r));
   }
 
-  protected toggleAlwaysOpen(index: number): void {
-    this.workingDays.update(rows => rows.map((r, i) => {
-      if (i !== index) return r;
-      const next = !r.isAlwaysOpen;
-      return next
-        ? { ...r, isClosed: false, isAlwaysOpen: true, opensAt: '00:00', closesAt: '23:59' }
-        : { ...r, isAlwaysOpen: false };
-    }));
+  protected toggleOpen247(): void {
+    this.isOpen247.update(v => !v);
   }
 
   protected updateWorkingDay(index: number, field: 'opensAt' | 'closesAt', value: string): void {
-    // Manually editing a time drops the 24/7 flag; the user clearly wants
-    // custom hours now.
     this.workingDays.update(rows => rows.map((r, i) =>
-      i === index ? { ...r, [field]: value, isAlwaysOpen: false } : r));
+      i === index ? { ...r, [field]: value } : r));
   }
 
   /**
@@ -748,6 +742,17 @@ export class PlaceCreateModalComponent implements OnInit, OnChanges, OnDestroy {
    * constraint and return a 400 from the PUT/POST.
    */
   private buildWorkingDaysPayload() {
+    // When the place is marked Open 24/7 we send every day as open
+    // 00:00–23:59 regardless of the per-day editor state so the place's
+    // schedule comes out consistent (and the per-day editor is hidden in
+    // the template anyway).
+    if (this.isOpen247()) {
+      return Array.from({ length: 7 }, (_, index) => ({
+        dayOfWeek: index + 1,
+        isClosed: false,
+        intervals: [{ opensAt: '00:00:00', closesAt: '23:59:00' }],
+      }));
+    }
     return this.workingDays().map((row, index) => ({
       dayOfWeek: index + 1,
       isClosed: row.isClosed,

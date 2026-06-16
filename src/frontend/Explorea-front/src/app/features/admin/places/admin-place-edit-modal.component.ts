@@ -103,6 +103,9 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
 
   // Core state
   protected readonly isClosing      = signal(false);
+  // Tracks the dynamic phone/email required state so the asterisk + inline
+  // error mirror updateContactRequiredness instead of being hardcoded.
+  protected readonly contactRequired = signal(false);
   protected readonly saveAttempted  = signal(false);
   protected readonly isLoading      = signal(true);
   protected readonly isSaving       = signal(false);
@@ -146,16 +149,25 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
   // Working hours editor — seeded all-closed; the OpenNow filter in the tourist
   // app reads from this so admins need to be able to manage it after creation.
   protected readonly DAY_LABELS = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
+  // Single "Open 24/7" toggle for the whole place. Same semantics as the
+  // create modal — see buildWorkingDaysPayload for the wire format.
+  protected readonly isOpen247   = signal(false);
   protected readonly workingDays = signal<{ isClosed: boolean; opensAt: string; closesAt: string }[]>(
     Array.from({ length: 7 }, () => ({ isClosed: true, opensAt: '09:00', closesAt: '17:00' })),
   );
 
   protected toggleWorkingDay(index: number): void {
-    this.workingDays.update(rows => rows.map((r, i) => i === index ? { ...r, isClosed: !r.isClosed } : r));
+    this.workingDays.update(rows => rows.map((r, i) =>
+      i === index ? { ...r, isClosed: !r.isClosed } : r));
+  }
+
+  protected toggleOpen247(): void {
+    this.isOpen247.update(v => !v);
   }
 
   protected updateWorkingDay(index: number, field: 'opensAt' | 'closesAt', value: string): void {
-    this.workingDays.update(rows => rows.map((r, i) => i === index ? { ...r, [field]: value } : r));
+    this.workingDays.update(rows => rows.map((r, i) =>
+      i === index ? { ...r, [field]: value } : r));
   }
 
   /**
@@ -166,6 +178,13 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
    * constraint and return a 400 from the PUT/POST.
    */
   private buildWorkingDaysPayload() {
+    if (this.isOpen247()) {
+      return Array.from({ length: 7 }, (_, index) => ({
+        dayOfWeek: index + 1,
+        isClosed: false,
+        intervals: [{ opensAt: '00:00:00', closesAt: '23:59:00' }],
+      }));
+    }
     return this.workingDays().map((row, index) => ({
       dayOfWeek: index + 1,
       isClosed: row.isClosed,
@@ -270,13 +289,21 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
               const i = wd.dayOfWeek - 1; // 1(Mon)→0, 7(Sun)→6
               if (i < 0 || i > 6) continue;
               const interval = wd.intervals?.[0];
+              const opensAt = interval ? interval.opensAt.substring(0, 5) : next[i].opensAt;
+              const closesAt = interval ? interval.closesAt.substring(0, 5) : next[i].closesAt;
               next[i] = {
                 isClosed: wd.isClosed,
-                opensAt:  interval ? interval.opensAt.substring(0, 5) : next[i].opensAt,
-                closesAt: interval ? interval.closesAt.substring(0, 5) : next[i].closesAt,
+                opensAt,
+                closesAt,
               };
             }
             this.workingDays.set(next);
+            // If the saved schedule is "open 00:00–23:59 every single day"
+            // surface it as the 24/7 toggle so the user sees one checkbox
+            // instead of seven identical rows.
+            const all247 = next.every(d =>
+              !d.isClosed && d.opensAt === '00:00' && d.closesAt === '23:59');
+            this.isOpen247.set(all247);
           }
 
           this.images.set(detail.images);
@@ -747,6 +774,7 @@ export class PlaceEditModalComponent implements OnInit, OnChanges, OnDestroy {
     this.form.controls.email.setValidators(emailValidators);
     this.form.controls.phone.updateValueAndValidity({ emitEvent: false });
     this.form.controls.email.updateValueAndValidity({ emitEvent: false });
+    this.contactRequired.set(needs);
   }
 
   private isAccommodationType(name: string | null): boolean {

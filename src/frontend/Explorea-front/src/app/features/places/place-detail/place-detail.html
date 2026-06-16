@@ -276,6 +276,23 @@
                       }
                     </div>
                   }
+                  @if (place.workingDays && place.workingDays.length > 0) {
+                    <div class="working-hours-display">
+                      <h3 class="subsection__title">
+                        <span class="material-icons">schedule</span>
+                        {{ 'PLACE_DETAIL.WORKING_HOURS' | translate }}
+                      </h3>
+                      <ul class="working-hours-display__list">
+                        @for (day of sortedWorkingDays(); track day.dayOfWeek) {
+                          <li class="working-hours-display__row"
+                              [class.working-hours-display__row--today]="day.dayOfWeek === todayIsoDay">
+                            <span class="working-hours-display__day">{{ ('PLACE_DETAIL.DAY_' + day.dayOfWeek) | translate }}</span>
+                            <span class="working-hours-display__hours">{{ formatWorkingDay(day) }}</span>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
                   @if (extraFiltersEntries.length > 0) {
                     <div class="offers-section">
                       <h3 class="subsection__title">{{ 'PLACE_DETAIL.WHAT_OFFERS' | translate }}</h3>

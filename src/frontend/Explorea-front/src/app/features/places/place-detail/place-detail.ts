@@ -81,6 +81,12 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
   nearbyEventsLoading = false;
   nearbyEventsLoaded = false;
 
+  /** ISO day-of-week (Mon=1..Sun=7) — used to highlight "today" in working hours. */
+  readonly todayIsoDay = ((): number => {
+    const dow = new Date().getDay();
+    return dow === 0 ? 7 : dow;
+  })();
+
   isSaved = false;
   isSavedLoading = false;
   showPlannerModal = false;
@@ -521,7 +527,9 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     const lng = this.place.location?.lng ?? 0;
     this.eventService.getVenueOrNearbyEvents(this.place.id, lat, lng).subscribe({
       next: (events) => {
-        this.nearbyEvents = events;
+        // Cap the nearby-events strip at 3 — that's all the place detail page
+        // visually accommodates without pushing reviews below the fold.
+        this.nearbyEvents = events.slice(0, 3);
         this.nearbyEventsLoaded = true;
         this.nearbyEventsLoading = false;
         this.cdr.detectChanges();
@@ -534,6 +542,35 @@ export class PlaceDetailComponent implements OnInit, OnDestroy {
     });
   }
   toggleDescription(): void { this.descriptionExpanded = !this.descriptionExpanded; }
+
+  /** Sorts working days starting from today so the most relevant row is on top. */
+  sortedWorkingDays(): { dayOfWeek: number; isClosed: boolean; intervals: { opensAt: string; closesAt: string }[] }[] {
+    if (!this.place?.workingDays) return [];
+    return [...this.place.workingDays].sort((a, b) => {
+      // Order: today → tomorrow → … → yesterday.
+      const norm = (d: number) => (d - this.todayIsoDay + 7) % 7;
+      return norm(a.dayOfWeek) - norm(b.dayOfWeek);
+    });
+  }
+
+  /**
+   * Renders one row: "Closed", "Open 24h" (when 00:00–23:59), or
+   * "09:00 – 17:00" / "09:00 – 17:00, 18:00 – 22:00" for explicit intervals.
+   * Times sent by the API include seconds (HH:mm:ss); we trim to HH:mm.
+   */
+  formatWorkingDay(day: { isClosed: boolean; intervals: { opensAt: string; closesAt: string }[] }): string {
+    if (day.isClosed || day.intervals.length === 0) {
+      return this.translate.instant('PLACE_DETAIL.HOURS_CLOSED');
+    }
+    const trim = (t: string) => (t?.length >= 5 ? t.substring(0, 5) : t ?? '');
+    const isAllDay = day.intervals.length === 1
+      && trim(day.intervals[0].opensAt) === '00:00'
+      && trim(day.intervals[0].closesAt) === '23:59';
+    if (isAllDay) return this.translate.instant('PLACE_DETAIL.HOURS_24H');
+    return day.intervals
+      .map(i => `${trim(i.opensAt)} – ${trim(i.closesAt)}`)
+      .join(', ');
+  }
 
   openLightbox(index: number): void {
     this.lightboxIndex = index;

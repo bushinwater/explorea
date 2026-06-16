@@ -1497,3 +1497,43 @@
   color: var(--color-text-secondary);
   white-space: nowrap;
 }
+
+.working-hours-display {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+.working-hours-display .subsection__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.working-hours-display__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.working-hours-display__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: 4px 0;
+}
+.working-hours-display__row--today {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-bold);
+}
+.working-hours-display__day {
+  flex: 0 0 auto;
+}
+.working-hours-display__hours {
+  flex: 1 1 auto;
+  text-align: right;
+}

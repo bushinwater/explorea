@@ -966,6 +966,29 @@
   text-align: center;
   color: var(--color-text-secondary);
 }
+.working-hours__247-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 12px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+.working-hours__247-toggle input[type="checkbox"] { cursor: pointer; }
+.edit-field__info-icon {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  vertical-align: middle;
+  margin-left: 4px;
+  cursor: help;
+}
 @media (max-width: 600px) {
   .working-hours__row {
     grid-template-columns: 1fr;
